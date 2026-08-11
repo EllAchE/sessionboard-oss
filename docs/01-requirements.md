@@ -314,6 +314,8 @@ comped tickets and badges. The direction is program → registration.
 | T-2 | **[REQUIRED]** | Deployed and publicly reachable |
 | T-3 | **[REQUIRED]** | Self-hostable — the entire premise is not paying a vendor |
 | T-4 | **[REQUIRED]** | Two distinct authenticated roles: organizer/admin and speaker/participant |
+| T-4a | **[REQUIRED]** | **Magic-link auth everywhere** — every role, no passwords anywhere in the system. Email a signed, short-lived, single-use link; exchange it for a session |
+| T-4b | **[IMPORTANT]** | Long-lived sessions for speakers (weeks). A speaker returns to the portal once a month; forcing a new link every visit is the failure mode magic links are supposed to avoid |
 | T-5 | **[REQUIRED]** | File storage for headshots, slides, and documents |
 | T-6 | **[REQUIRED]** | Outbound transactional email on the deployed instance |
 | T-7 | **[IMPORTANT]** | Seedable demo event, so a judge can evaluate in minutes |
@@ -378,14 +380,21 @@ sitting across the whole set.
 behind a fixture-backed interface (N-1b); a live run (N-1c) is optional and credential-dependent.
 See §11.
 
+**6. Auth model** (T-4a). The brief shows account creation at submission time but never specifies a
+mechanism. → **Magic links for every role, no passwords anywhere.** Confirmed by Logan.
+
+Rationale: no password storage, no reset flow, no lockout policy, no credential-stuffing surface,
+and it matches how a speaker actually behaves — they return to the portal weeks apart and would have
+forgotten a password anyway. Sessionboard itself does the opposite for participants (passwords) while
+using magic links for reviewers and AV crew; the inconsistency is theirs, not a reason to copy it.
+
+The one real cost is email deliverability: if the link doesn't arrive, nobody gets in. Mitigation is
+D-3's demo seeding — the deployed instance must expose a way for a judge to enter as a seeded speaker
+without waiting on an inbox.
+
 ### Still genuinely open
 
-Nothing blocking. One item worth a decision before build:
-
-- **Auth model for speakers.** The brief shows account creation at submission time but never
-  specifies the mechanism. Sessionboard uses passwords for participants and magic links elsewhere.
-  Absent guidance, **magic link** — no password storage, fewer support paths, and it matches how a
-  speaker actually re-enters a portal weeks later.
+Nothing. Every ambiguity in the brief has a recorded decision above.
 
 ---
 
