@@ -1,8 +1,9 @@
 # Requirements
 
 Full requirement and deliverable list, derived **only** from the competition brief and its 42
-embedded screenshots. Every line is tagged. Nothing here is invented — where the brief is silent,
-the item appears under [Open questions](#open-questions-for-review) instead of being guessed at.
+embedded screenshots. Every line is tagged. Nothing here is invented — where the brief is silent or
+contradicts itself, the call is recorded under [Resolved ambiguities](#resolved-ambiguities) with
+its reasoning rather than buried in a table cell.
 
 Goals and context: [`00-goals.md`](00-goals.md). Source: [`reference/source-brief.txt`](reference/source-brief.txt).
 
@@ -42,8 +43,15 @@ These are submission artifacts, not product features. All three are required to 
 | D-5 | **[OPTIONAL]** | Token-spend receipts, up to $500 reimbursable (includes Codex Pro / Claude Max subscriptions) |
 
 > Note on D-3: "testable with the walkthrough" means a judge must be able to create an event,
-> submit a talk, and get accepted **without us seeding the database for them**. Sign-up and demo
-> data reset matter more than they look.
+> submit a talk, and get accepted **without us seeding the database for them**. This is a stronger
+> bar than the brief's literal words and it is deliberate — a judge who has to email us for a login
+> scores us below one who does not. Sign-up and demo-data reset matter more than they look.
+>
+> It does **not** conflict with the seeded demo event in `T-7`. Both paths ship: the cold path
+> proves the product is real, the seeded path means a judge sees a populated agenda and a review
+> queue in the first minute instead of an empty shell. What the two together require is `T-7a` —
+> magic links must be reachable without a working inbox on the demo deployment, or email
+> deliverability becomes a single point of failure during judging.
 
 ---
 
@@ -56,7 +64,7 @@ Basis: `reference/screenshots/01-event-config/`.
 | E-1 | **[REQUIRED]** | Create an event with: Event Name\*, Event Slug\*, Starts At\*, Ends At\*, Timezone |
 | E-2 | **[IMPORTANT]** | Optional event metadata: Event Type, Website URL, Location, Theme (long text) |
 | E-3 | **[IMPORTANT]** | Event branding: logo (square, ~300×300) and background/banner (~1500×500) image upload |
-| E-4 | **[IMPORTANT]** | **Tracks**, **Rooms**, **Tags**, and session **Formats** as event-scoped configurable lists — every downstream feature (routing, conflict detection, filters, agenda views) depends on these existing |
+| E-4 | **[REQUIRED]** | **Tracks**, **Rooms**, **Tags**, and session **Formats** as event-scoped configurable lists. **Required by dependency**, not by the brief's own words: `F-5` puts Format/Tags/Track on the submission form, `A-2` defines conflict detection as "across rooms and tracks", and `A-4` makes Room and Track session fields — all three are REQUIRED and none function without this |
 | E-5 | **[OPTIONAL]** | **Personas** and custom **Fields** library (Sessionboard's Settings → Library) |
 | E-6 | **[OPTIONAL]** | Multi-event support in one install; event switcher |
 | E-7 | **[OPTIONAL]** | Exhibitor / sponsor group entities |
@@ -75,7 +83,7 @@ Basis: `reference/screenshots/02-submission-forms/` (11 screenshots of the 7-ste
 | --- | --- | --- |
 | F-1 | **[REQUIRED]** | An organizer-facing form **builder**; multiple independent forms per event |
 | F-2 | **[REQUIRED]** | **Conditional logic** — show/hide questions based on earlier answers |
-| F-3 | **[REQUIRED]** | **Category-based routing** — a submission's category/track determines where it goes and who reviews it |
+| F-3 | **[REQUIRED]** | **Category-based routing** — a submission's category/track determines where it goes and who reviews it. **Same mechanism as `V-5`**: this row is the submission-side entry point, `V-5` is the reviewer-side view. Build one routing model that both read; two implementations will drift and disagree about who owns a submission |
 | F-4 | **[REQUIRED]** | Form targets either **Abstracts** or **Sessions**; participants can be toggled on/off |
 | F-5 | **[REQUIRED]** | Abstract field set, each field drag-reorderable with an independent Required toggle: Title\* (locked, text, 255), Description\* (rich text, 5,000), Format\*, Tags\*, Track\*, Level |
 | F-6 | **[REQUIRED]** | Participant field set: First Name\*, Last Name\*, Email\* (all locked), Mobile Phone, Biography (rich text, 5,000) |
@@ -127,10 +135,10 @@ author red-boxed the **entire Portals section** of Sessionboard's doc index (`00
 | S-4 | **[REQUIRED]** | **Slides and supporting-document upload**, attached to their session |
 | S-5 | **[REQUIRED]** | My Submissions list showing session ref (e.g. `SESS-4`), title, format badge, and status (Accepted / Pending) |
 | S-6 | **[REQUIRED]** | **Resource / wiki pages** inside the portal, authored by organizers |
-| S-7 | **[REQUIRED]** | **Raw HTML embed support** in those wiki pages, so existing reference material can be pasted in |
+| S-7 | **[REQUIRED]** | **Raw HTML embed support** in those wiki pages, so existing reference material can be pasted in. **Accepted stored-XSS surface** — authoring is organizer-only and organizers are trusted, so the risk is an organizer attacking their own speakers. Do not extend authoring to speakers without sanitizing first, and serve embeds from a separate origin if that ever changes |
 | S-8 | **[IMPORTANT]** | Speaker links: LinkedIn, X, Facebook, personal website |
 | S-9 | **[IMPORTANT]** | View and edit a submission after it is submitted |
-| S-10 | **[IMPORTANT]** | Admin **impersonation** — "Back to Admin Mode" implies organizers can view the portal as a given speaker. Enormous support-cost saver, and cheap |
+| S-10 | **[REQUIRED]** | Admin **impersonation** — "Back to Admin Mode" implies organizers can view the portal as a given speaker. Promoted from IMPORTANT on three independent grounds: it is the largest support-cost saver in the portal, it is nearly free under magic-link auth (`T-4a`), and it is the escape hatch that lets a judge reach a speaker's portal without waiting on an inbox (`D-3`, `T-7a`) |
 | S-11 | **[OPTIONAL]** | Portal appearance / branding settings |
 | S-12 | **[OPTIONAL]** | Multiple portal types (contact / group / submission portals); switching between them |
 | S-13 | **[OPTIONAL]** | Group portal access sharing (co-speakers, sponsors) |
@@ -165,7 +173,7 @@ evaluations** sits outside the box.
 | V-2 | **[REQUIRED]** | Accept / decline a submission, inline from the list |
 | V-3 | **[REQUIRED]** | **Scoring** of submissions by named reviewers |
 | V-4 | **[REQUIRED]** | **Multi-round** review — the brief says "across multiple rounds"; the accept/decline *queue* statuses are how a round is staged before it is committed |
-| V-5 | **[REQUIRED]** | **Evaluation plans**: which reviewers see which submissions, on what criteria — red-boxed by the author |
+| V-5 | **[REQUIRED]** | **Evaluation plans**: which reviewers see which submissions, on what criteria — red-boxed by the author. **Reads the same routing model as `F-3`**; the category assigned at submission is what populates a reviewer's queue. The criteria/scorecard half is genuinely additional |
 | V-6 | **[IMPORTANT]** | Configurable columns (Sessionboard exposes 39 session fields, ~18 shown by default), sort, filter, saved views |
 | V-7 | **[IMPORTANT]** | Manually add a submission from the admin side (Details + Participants) — organizers always have invited talks that never touch the CFP |
 | V-8 | **[IMPORTANT]** | Export submissions to CSV / XLSX |
@@ -193,7 +201,7 @@ interest and to "cover the basics".
 | A-4 | **[REQUIRED]** | Session scheduling fields: Starts At, Ends At, Room, Track, Capacity |
 | A-5 | **[IMPORTANT]** | Unscheduled queue — accepted sessions with no slot yet, surfaced rather than silently missing |
 | A-6 | **[IMPORTANT]** | Draft vs. published agenda, so organizers can rearrange without speakers seeing churn |
-| A-7 | **[OPTIONAL]** | Speaker double-booking detection (same person, overlapping slots) — distinct from room/track conflicts and arguably the one organizers feel most |
+| A-7 | **[REQUIRED]** | Speaker double-booking detection (same person, overlapping slots). The brief only says "across rooms and tracks", which is why this started OPTIONAL — but a room clash is a spreadsheet error while a speaker booked in two places at once fails publicly, on the day. Promoted under the brief's own tiebreaker: this is a call an organizer would want us to have made |
 | A-8 | **[OPTIONAL]** | **AI agenda builder** — brief: "less so, cover the basics" |
 | A-9 | **[OPTIONAL]** | Month view; CEU credits; Client ID field |
 
@@ -319,6 +327,7 @@ comped tickets and badges. The direction is program → registration.
 | T-5 | **[REQUIRED]** | File storage for headshots, slides, and documents |
 | T-6 | **[REQUIRED]** | Outbound transactional email on the deployed instance |
 | T-7 | **[IMPORTANT]** | Seedable demo event, so a judge can evaluate in minutes |
+| T-7a | **[REQUIRED]** | On the demo deployment, a magic link must be obtainable **without a working inbox** — surfaced on screen, in a dev mailbox, or via `S-10` impersonation. Without this, `T-4a` makes email deliverability a single point of failure for `D-3` |
 | T-8 | **[IMPORTANT]** | Setup docs good enough for the AI Engineer team to run it themselves |
 
 ---
