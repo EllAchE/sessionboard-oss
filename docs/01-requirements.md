@@ -280,10 +280,29 @@ platform) to eliminate manual data re-entry."*
 | ID | Tag | Requirement |
 | --- | --- | --- |
 | N-1 | **[REQUIRED]** | **One-way** sync to **Accelevents**. One-way is the author's word — we push, we do not reconcile |
+| N-1a | **[REQUIRED]** | A real client written against the published OpenAPI spec — endpoints, field mapping, auth header, error handling — not a placeholder |
+| N-1b | **[REQUIRED]** | The client sits behind a named interface with a fixture-backed fake, so the demo, tests, and a judge without credentials all exercise the full path |
+| N-1c | **[OPTIONAL]** | Live end-to-end run against a real Accelevents account (needs a key we may not get) |
 | N-2 | **[OPTIONAL]** | Any other integration (Cvent, Swoogo, Zoom appear in Sessionboard; none are asked for) |
 
-> N-1 is the highest-risk item in the spec: it depends on a third-party API we have not yet
-> confirmed access to. See [Open questions](#open-questions-for-review).
+**What Accelevents is.** The AI Engineer team's ticketing and attendee-registration platform. It
+knows who bought a ticket and who checked in; it does not manage speakers or the program. Feature #7
+exists because today an organizer re-types accepted speakers into Accelevents by hand so they get
+comped tickets and badges. The direction is program → registration.
+
+| Fact | Value |
+| --- | --- |
+| REST base URL | `https://api.accelevents.com/rest/` |
+| Auth | API key in an `AUTHENTICATION` header |
+| Key generation | Manage Enterprise → Integrations → API Key, **Owner only** |
+| Plan gating | **Enterprise and White Label plans only** |
+| Other surfaces | Webhooks (ticket purchase, attendee check-in); OpenAPI spec; `llms.txt` index |
+| Docs | https://developer.accelevents.com/docs/accelevents-api-documentation |
+
+> **Lack of a key does not block this requirement.** The contract is public — OpenAPI spec plus an
+> `llms.txt` markdown index — so the client, the field mapping, and the push logic can all be
+> written and unit-tested against it. What a key would add is a live end-to-end run (N-1c), and no
+> competitor is likely to have one either. Build N-1a for real, demo it through N-1b.
 
 ---
 
@@ -330,24 +349,43 @@ Orthogonal to product value. The brief lists these with its own weighting langua
 
 ---
 
-## Open questions for review
+## Resolved ambiguities
 
-Things I could not resolve from the source. Each changes scope.
+The brief is silent or self-contradictory on these. Each is now decided; recorded here so the
+reasoning is auditable rather than buried in a table cell.
 
-1. **Accelevents access.** N-1 is a required feature against a third-party API. Do we have
-   credentials or sandbox access? If not, the honest options are a documented adapter with a stub,
-   or a generic webhook/CSV export presented as the integration point.
-2. **Dashboard conflict** (§9) — required feature #6 vs. "optional, best efforts" screenshot header.
-   My reading is above; confirm it.
-3. **Embeds conflict** (§10) — same shape. Confirm the required-output / optional-admin split.
-4. **"Multiple rounds"** (V-4) is one clause in the brief with no screenshot behind it. Is a staged
-   accept/decline queue enough, or do they mean genuinely independent scoring rounds with
-   different reviewer pools?
-5. **Requirements freeze.** The brief promises polished walkthrough videos "Saturday and Sunday",
-   after which requirements freeze. Those dates have passed relative to the deadline — this doc is
-   built from the **written brief only**. The videos should be checked before we commit scope.
-6. **Scale.** Nothing in the brief states expected submission volume. It affects almost nothing at
-   the sizes a single conference implies, but it decides whether bulk operations matter.
+**1. Dashboard** (§9). Feature #6 appears in the required numbered list, but the screenshot section
+header says "optional but nice to have, best efforts." → The narrow reading is required: **a view of
+who still owes an outstanding task**, which is what feature #6 actually names. The broader analytics
+suite behind those seven screenshots is optional.
+
+**2. Embeds** (§10). Feature #9 is required and "Embeds" is red-boxed on the annotated index, but
+the screenshot header says "(OPTIONAL)." → The **output** is required — an embeddable session list,
+speaker list, and agenda, reachable by URL. The **admin UI for configuring embeds** is optional; a
+config file or sensible defaults satisfies the requirement.
+
+**3. "Multiple rounds"** (V-4). → Read as **genuinely independent scoring rounds**: a submission can
+be scored, promoted, and scored again by a different reviewer pool against a different scorecard.
+The accept/decline queue statuses are the staging mechanism, not the rounds themselves. This is the
+more demanding reading and it is what a program committee actually does.
+
+**4. Scale.** → Assume **one conference, hundreds to low thousands of submissions, tens of
+reviewers**. Consequences: no sharding, no queue infrastructure, no pagination heroics. Bulk
+operations still matter for review assignment and status changes, because those are done in one
+sitting across the whole set.
+
+**5. Accelevents.** → Not an open question. Build the real client from the published spec (N-1a)
+behind a fixture-backed interface (N-1b); a live run (N-1c) is optional and credential-dependent.
+See §11.
+
+### Still genuinely open
+
+Nothing blocking. One item worth a decision before build:
+
+- **Auth model for speakers.** The brief shows account creation at submission time but never
+  specifies the mechanism. Sessionboard uses passwords for participants and magic links elsewhere.
+  Absent guidance, **magic link** — no password storage, fewer support paths, and it matches how a
+  speaker actually re-enters a portal weeks later.
 
 ---
 

@@ -70,8 +70,9 @@ site that can be tested against their walkthrough video.
 
 **Deadline: Wednesday, August 12, 10:00 PM PT.**
 
-The brief also promises a more polished walkthrough video posted Saturday and Sunday, after which
-**requirements freeze**. Anything not in the frozen set is out of scope for the competition entry.
+Scope is frozen against the **written brief and its screenshots** as captured in
+[`reference/source-brief.txt`](reference/source-brief.txt). Ambiguities in it are decided under
+*Resolved ambiguities* in the requirements doc rather than left open.
 
 ## Reference material
 
