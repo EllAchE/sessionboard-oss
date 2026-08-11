@@ -7,6 +7,10 @@ its reasoning rather than buried in a table cell.
 
 Goals and context: [`00-goals.md`](00-goals.md). Source: [`reference/source-brief.txt`](reference/source-brief.txt).
 
+**This is a reading of the brief, not a plan for building it.** Rows are grouped by subject and
+numbered for reference, not ordered by build sequence. A tag says whether the entry is incomplete
+without the row — not when to build it, or whether it is affordable. Sequencing lives elsewhere.
+
 ---
 
 ## How to read the tags
@@ -28,6 +32,19 @@ The author's own priority markers are the strongest signal available, and there 
    they tag individual controls rather than whole features. Full list in
    [Appendix A](#appendix-a-verbatim-author-annotations).
 
+A **†** on a row means the tag is a judgment call rather than something the brief states. Seven rows
+carry one; the reasoning for each is in [Resolved ambiguities](#resolved-ambiguities) or in the row
+itself. Everything unmarked traces to brief text or an annotation.
+
+### Couplings that a single row does not reveal
+
+| This | Is depended on by | If it is missing |
+| --- | --- | --- |
+| `E-4` tracks / rooms / formats | `F-5`, `A-2`, `A-4` | The form has no Track field and conflict detection has nothing to compare |
+| `S-14`/`S-15` tasks + completion state | `B-1` | The dashboard has nothing to count; feature #6 has no data |
+| `F-3` / `V-5` routing model | each other | Two implementations that disagree about who owns a submission |
+| `T-6` outbound mail | `C-2`, `C-3`, `T-4a` | Four REQUIRED rows fail together, and nobody can log in — mitigated by `T-7a` |
+
 ---
 
 ## 1. Competition deliverables
@@ -38,7 +55,7 @@ These are submission artifacts, not product features. All three are required to 
 | --- | --- | --- |
 | D-1 | **[REQUIRED]** | Their competition entry form, filled out |
 | D-2 | **[REQUIRED]** | A public **open-source repository** |
-| D-3 | **[REQUIRED]** | A **deployed, live site** that a judge can test against the walkthrough video |
+| D-3 † | **[REQUIRED]** | A **deployed, live site** that a judge can test against the walkthrough video |
 | D-4 | **[REQUIRED]** | Delivered by **Wed Aug 12, 10:00 PM PT** |
 | D-5 | **[OPTIONAL]** | Token-spend receipts, up to $500 reimbursable (includes Codex Pro / Claude Max subscriptions) |
 
@@ -64,7 +81,7 @@ Basis: `reference/screenshots/01-event-config/`.
 | E-1 | **[REQUIRED]** | Create an event with: Event Name\*, Event Slug\*, Starts At\*, Ends At\*, Timezone |
 | E-2 | **[IMPORTANT]** | Optional event metadata: Event Type, Website URL, Location, Theme (long text) |
 | E-3 | **[IMPORTANT]** | Event branding: logo (square, ~300×300) and background/banner (~1500×500) image upload |
-| E-4 | **[REQUIRED]** | **Tracks**, **Rooms**, **Tags**, and session **Formats** as event-scoped configurable lists. **Required by dependency**, not by the brief's own words: `F-5` puts Format/Tags/Track on the submission form, `A-2` defines conflict detection as "across rooms and tracks", and `A-4` makes Room and Track session fields — all three are REQUIRED and none function without this |
+| E-4 † | **[REQUIRED]** | **Tracks**, **Rooms**, **Tags**, and session **Formats** as event-scoped configurable lists. **Required by dependency**, not by the brief's own words: `F-5` puts Format/Tags/Track on the submission form, `A-2` defines conflict detection as "across rooms and tracks", and `A-4` makes Room and Track session fields — all three are REQUIRED and none function without this. Cardinality follows the incumbent: **Tags multi-select; Track, Format, Level and Room single-select** |
 | E-5 | **[OPTIONAL]** | **Personas** and custom **Fields** library (Sessionboard's Settings → Library) |
 | E-6 | **[OPTIONAL]** | Multi-event support in one install; event switcher |
 | E-7 | **[OPTIONAL]** | Exhibitor / sponsor group entities |
@@ -78,6 +95,12 @@ Basis: `reference/screenshots/01-event-config/`.
 category-based routing."*
 
 Basis: `reference/screenshots/02-submission-forms/` (11 screenshots of the 7-step builder wizard).
+
+> **`F-1`–`F-8` is a general-purpose form engine.** Multiple forms per event, conditional show/hide,
+> drag-reorderable fields with independent required toggles, custom field types with character
+> limits, participant roles with min/max counts. The brief buys all of it with one sentence. It is
+> the largest single block of work in this document by a wide margin, and how much of it to honor is
+> worth deciding deliberately rather than discovering mid-build.
 
 | ID | Tag | Requirement |
 | --- | --- | --- |
@@ -138,7 +161,7 @@ author red-boxed the **entire Portals section** of Sessionboard's doc index (`00
 | S-7 | **[REQUIRED]** | **Raw HTML embed support** in those wiki pages, so existing reference material can be pasted in. **Accepted stored-XSS surface** — authoring is organizer-only and organizers are trusted, so the risk is an organizer attacking their own speakers. Do not extend authoring to speakers without sanitizing first, and serve embeds from a separate origin if that ever changes |
 | S-8 | **[IMPORTANT]** | Speaker links: LinkedIn, X, Facebook, personal website |
 | S-9 | **[IMPORTANT]** | View and edit a submission after it is submitted |
-| S-10 | **[REQUIRED]** | Admin **impersonation** — "Back to Admin Mode" implies organizers can view the portal as a given speaker. Promoted from IMPORTANT on three independent grounds: it is the largest support-cost saver in the portal, it is nearly free under magic-link auth (`T-4a`), and it is the escape hatch that lets a judge reach a speaker's portal without waiting on an inbox (`D-3`, `T-7a`) |
+| S-10 † | **[REQUIRED]** | Admin **impersonation** — "Back to Admin Mode" implies organizers can view the portal as a given speaker. Promoted from IMPORTANT on three independent grounds: it is the largest support-cost saver in the portal, it is nearly free under magic-link auth (`T-4a`), and it is the escape hatch that lets a judge reach a speaker's portal without waiting on an inbox (`D-3`, `T-7a`). **Must be full impersonation, not preview** — Sessionboard's "View portal as…" cannot complete tasks, which is what makes it useless for support and for judging |
 | S-11 | **[OPTIONAL]** | Portal appearance / branding settings |
 | S-12 | **[OPTIONAL]** | Multiple portal types (contact / group / submission portals); switching between them |
 | S-13 | **[OPTIONAL]** | Group portal access sharing (co-speakers, sponsors) |
@@ -201,7 +224,7 @@ interest and to "cover the basics".
 | A-4 | **[REQUIRED]** | Session scheduling fields: Starts At, Ends At, Room, Track, Capacity |
 | A-5 | **[IMPORTANT]** | Unscheduled queue — accepted sessions with no slot yet, surfaced rather than silently missing |
 | A-6 | **[IMPORTANT]** | Draft vs. published agenda, so organizers can rearrange without speakers seeing churn |
-| A-7 | **[REQUIRED]** | Speaker double-booking detection (same person, overlapping slots). The brief only says "across rooms and tracks", which is why this started OPTIONAL — but a room clash is a spreadsheet error while a speaker booked in two places at once fails publicly, on the day. Promoted under the brief's own tiebreaker: this is a call an organizer would want us to have made |
+| A-7 † | **[REQUIRED]** | Speaker double-booking detection (same person, overlapping slots). The brief only says "across rooms and tracks", which is why this started OPTIONAL — but a room clash is a spreadsheet error while a speaker booked in two places at once fails publicly, on the day. Promoted under the brief's own tiebreaker: this is a call an organizer would want us to have made |
 | A-8 | **[OPTIONAL]** | **AI agenda builder** — brief: "less so, cover the basics" |
 | A-9 | **[OPTIONAL]** | Month view; CEU credits; Client ID field |
 
@@ -218,7 +241,8 @@ Author red-boxed the **Communications** section: Creating & sending emails, Emai
 | --- | --- | --- |
 | C-1 | **[REQUIRED]** | **Email templates** with merge fields, editable by organizers |
 | C-2 | **[REQUIRED]** | **Automated triggered sends**: submission confirmation, acceptance, decline, task reminder, draft-deadline reminder |
-| C-3 | **[REQUIRED]** | **Calendar invites that land on the speaker's own calendar** — Gmail, Outlook, iCal. Practically: a real `.ics` attachment / `METHOD:REQUEST` invite, not a "add to calendar" link |
+| C-3 | **[REQUIRED]** | **Calendar invites that land on the speaker's own calendar** — Gmail, Outlook, iCal. A real `.ics` / `METHOD:REQUEST` invite that updates in place when a session is rescheduled |
+| C-3a | **[REQUIRED]** | An **"add to calendar" link** on the session in the portal, alongside `C-3`. Cheap, and it covers the weaker reading of the brief's wording if `C-3` slips |
 | C-4 | **[REQUIRED]** | Manual ad-hoc send to a filtered audience (all accepted speakers, everyone with an open task, etc.) |
 | C-5 | **[IMPORTANT]** | Send log — what went to whom and when. Without it, organizers cannot answer "did she get it?" |
 | C-6 | **[OPTIONAL]** | Email themes / branded layout |
@@ -244,7 +268,7 @@ suite** shown in the screenshots as optional.
 
 | ID | Tag | Requirement |
 | --- | --- | --- |
-| B-1 | **[REQUIRED]** | Live view of **accepted speakers with outstanding tasks**, and which tasks |
+| B-1 † | **[REQUIRED]** | Live view of **accepted speakers with outstanding tasks**, and which tasks. **The incumbent appears not to have this** — Sessionboard's own FAQ states there is no central task-completion report. This is the one required row where we are not cloning a feature but supplying a missing one, which makes it the strongest thing to lead a demo with |
 | B-2 | **[IMPORTANT]** | Counters: submissions, accepted speakers, and status breakdown (Accepted / Pending / Declined / Drafts / Withdrawn) |
 | B-3 | **[IMPORTANT]** | Actionable nudges — "N accepted sessions still need a time slot", "N speakers missing a bio or headshot", each linking to the fix |
 | B-4 | **[OPTIONAL]** | Prebuilt dashboards: Event Overview, Submissions Pipeline, Speaker Tracking, Review Progress, Schedule Health |
@@ -269,7 +293,7 @@ on the doc index — but the screenshot section is headed *"CMS > Embeds (OPTION
 
 | ID | Tag | Requirement |
 | --- | --- | --- |
-| G-1 | **[REQUIRED]** | **Embeddable speaker gallery**, mobile-friendly, droppable into their existing site |
+| G-1 † | **[REQUIRED]** | **Embeddable speaker gallery**, mobile-friendly, droppable into their existing site |
 | G-2 | **[REQUIRED]** | **Embeddable schedule itinerary**, mobile-friendly |
 | G-3 | **[REQUIRED]** | Embeds **auto-update** as sessions and speakers change — no re-paste |
 | G-4 | **[IMPORTANT]** | Public list of sessions and list of speakers |
@@ -353,10 +377,37 @@ Orthogonal to product value. The brief lists these with its own weighting langua
 | **[EXCLUDED]** | Payments, fees, invoicing | *"NOT NEEDED"* on the Payments & Fees screenshot |
 | **[EXCLUDED]** | Design fidelity to Sessionboard | *"Cloning the exact design is not a requirement"* |
 | **[EXCLUDED]** | Speaker CRM | Brief calls these "extra features optional" |
-| **[EXCLUDED]** | Contacts & data / import / history | The one un-boxed section on the author's annotated doc index |
+| **[EXCLUDED]** † | Contacts & data / import / history | The one un-boxed section on the author's annotated doc index. Inference from *absence* of a red box, so the weakest-evidence call in this document — re-checked against the survey and upheld, see [Coverage check](#coverage-check-against-the-incumbent) |
 | **[EXCLUDED]** | Awards, Studio, Marketing modules | Present in Sessionboard, absent from the brief |
 | **[EXCLUDED]** | AI agents (Reviewer, Scheduler, Coordinator, Team Lead) | Sessionboard markets them; the brief asks for none |
 | **[EXCLUDED]** | Exhibitor / sponsor management | Visible in screenshots, never requested |
+
+---
+
+## Coverage check against the incumbent
+
+[`reference/sessionboard-survey.md`](reference/sessionboard-survey.md) — an inventory of the real
+Sessionboard built by an agent with no access to the brief or to this document — was walked against
+every row here, asking one question: *what does the incumbent do that we never mention?*
+
+**It found no missing required feature.** Everything in the survey that this document omits is either
+excluded on evidence or genuinely absent from the brief (awards, speaker CRM, marketing/content
+production, SSO, localization, SMS, imports, audit logging, regional deployments). Five findings did
+change rows:
+
+| Finding | Effect |
+| --- | --- |
+| Sessionboard ships "add to calendar" links and calendar merge tags; a **push `.ics` that updates on reschedule is undocumented**, and its ad-hoc emails cannot carry attachments | `C-3` is likely a capability the incumbent *lacks*. Kept REQUIRED and added `C-3a` so the cheap reading ships too — together they cannot be wrong |
+| Sessionboard's FAQ states there is **no central task-completion report** | `B-1` is not a clone but a fix — annotated as the strongest demo opener |
+| Its **"View portal as…" is preview-only**; tasks cannot be completed from it | `S-10` specified as full impersonation |
+| Participants **log in with passwords**; magic links exist only for reviewers, AV crew, and advocates | `T-4a` is a straight improvement on the incumbent for the persona that matters most |
+| Tags are multi-select; Track, Format, Level, Room are single-select | Cardinality pinned on `E-4` |
+
+**Verdict on the *Contacts & data* exclusion**, the weakest call in this document: **upheld.** That
+area is import mechanics, dedup, bulk edit, and event cloning. Nothing in it is implied by any of the
+brief's nine features. The one item worth a second look is event cloning — organizers run the
+conference annually — but the brief never mentions a second edition, and `E-6` already covers
+multi-event as OPTIONAL.
 
 ---
 
