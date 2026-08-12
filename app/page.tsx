@@ -5,6 +5,7 @@ import {
   FileCheck,
   Github,
   ListChecks,
+  LogIn,
   Mic,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -47,12 +48,29 @@ export default function Home() {
           <span>Cicero</span>
         </a>
         <div className={styles.navLinks}>
-          <a href="#product">Product</a>
-          <a href="/demo">Live demo</a>
-          <a href="https://github.com/EllAchE/sessionboard-oss" aria-label="Cicero on GitHub">
+          <a className={styles.productLink} href="#product">
+            Product
+          </a>
+          <a className={styles.demoLink} href="/demo">
+            Live demo
+          </a>
+          <a
+            className={styles.githubLink}
+            href="https://github.com/EllAchE/sessionboard-oss"
+            aria-label="Cicero on GitHub"
+          >
             <Github size={17} aria-hidden="true" />
             <span>GitHub</span>
           </a>
+          <Button
+            className={styles.navCta}
+            href="/signin"
+            variant="primary"
+            size="sm"
+            iconRight={<LogIn size={15} aria-hidden="true" />}
+          >
+            Sign in
+          </Button>
         </div>
       </nav>
 
@@ -66,19 +84,19 @@ export default function Home() {
           </p>
           <div className={styles.actions}>
             <Button
-              href="/signin?email=organizer@example.com&next=/admin"
+              href="/signin"
               variant="primary"
+              size="lg"
+              iconRight={<LogIn size={17} aria-hidden="true" />}
+            >
+              Sign in to Cicero
+            </Button>
+            <Button
+              href="/signin?email=organizer@example.com&next=/admin"
               size="lg"
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
-              Explore the live demo
-            </Button>
-            <Button
-              href="https://github.com/EllAchE/sessionboard-oss"
-              size="lg"
-              iconLeft={<Github size={17} aria-hidden="true" />}
-            >
-              View on GitHub
+              Try the organizer demo
             </Button>
           </div>
         </div>
