@@ -16,6 +16,21 @@ Cicero covers the whole spine, not a slice of it:
 MIT licensed. No account required to read a published agenda, no password anywhere, and a
 one-command self-host that needs no API key from anyone.
 
+## Look at the running one first
+
+**<https://cicero.lhar8771.workers.dev>** is deployed and seeded.
+
+Sign in as `organizer@example.com` and you land in the organizer dashboard. That deployment records
+mail instead of sending it, so the sign-in link comes straight back on the page and you never need
+an inbox; every message it would have sent is readable at
+[`/admin/mail`](https://cicero.lhar8771.workers.dev/admin/mail).
+
+Without signing in at all: the [public event page](https://cicero.lhar8771.workers.dev/demo), the
+[programme](https://cicero.lhar8771.workers.dev/demo/agenda), an
+[open call for speakers](https://cicero.lhar8771.workers.dev/submit/demo/speak) you can submit to,
+the [embeddable agenda](https://cicero.lhar8771.workers.dev/embed/demo/agenda) an event site would
+iframe, and the [REST API](https://cicero.lhar8771.workers.dev/api/v1/events/demo/agenda).
+
 ## Try it in one command
 
 ```bash
@@ -28,7 +43,8 @@ configure. Email has no API key in a fresh clone, so every message the app would
 and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
 a real inbox.
 
-To load the demo conference (5 speakers, 3 tracks, 14 submissions, a scheduled two-day agenda):
+To load the demo conference (15 submissions mid-review, 7 accepted speakers, 4 tracks, 3 rooms, and
+a two-day agenda with gaps still in it):
 
 ```bash
 docker compose exec app npm run db:seed
@@ -125,6 +141,10 @@ actually use." These are ours, stated out loud rather than buried.
   support — the point is to finish the stuck speaker's task for them.
 - **Speaker double-booking detection.** A room clash is a spreadsheet error someone catches. A
   speaker booked in two rooms at once is a failure the audience watches happen.
+- **Calendar invites that update in place.** A real `METHOD:REQUEST` with a bumped `SEQUENCE`, so
+  moving a talk to Thursday moves the entry already in the speaker's calendar. An add-to-calendar
+  link, which is the usual reading of this requirement, ships as well, but it leaves the old slot
+  sitting there after every reschedule.
 - **The outstanding-task dashboard.** Sessionboard's own FAQ says it has no central
   task-completion report. This is the place we add something missing rather than clone something
   present.
