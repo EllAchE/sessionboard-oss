@@ -70,6 +70,12 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const noFormsReason =
+    props.forms.length === 0
+      ? 'This event has no CFP form yet. Create one before adding a submission by hand.'
+      : null;
+  const banner = error ?? noFormsReason;
+
   const selected = useMemo(
     () => props.forms.find((entry) => entry.id === formId) ?? null,
     [props.forms, formId],
@@ -165,7 +171,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
         </div>
       </header>
 
-      {error ? <p className={queue.error}>{error}</p> : null}
+      {banner ? <p className={queue.error}>{banner}</p> : null}
 
       <form
         className={styles.form}
