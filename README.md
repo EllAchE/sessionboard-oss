@@ -100,6 +100,8 @@ reviewers, blind-until-close and author-anonymized modes, recusal, reviewer work
 a reviewer surface that shows a reviewer their assignments and nothing else — no accept/decline
 controls, no event configuration.
 
+![The review queue, sorted by score, with keyboard shortcuts along the bottom](docs/images/review-queue.jpg)
+
 **Speaker portal.** Magic-link sign-in, profile and headshot, deliverable uploads that version
 rather than overwrite, review comments that reach the speaker, tasks with reminder cadences, custom
 portal pages, group access.
@@ -108,8 +110,12 @@ portal pages, group access.
 clashes and — the one the brief doesn't ask for — **speaker double-booking**, which is the clash
 that fails publicly on the day.
 
+![The agenda grid, with the unscheduled rail on the left and a clash banner above it](docs/images/agenda.jpg)
+
 **Comms.** Branded templates, a send log, and a real `.ics` `METHOD:REQUEST` that bumps `SEQUENCE`
 so a reschedule *updates the existing calendar entry in place* rather than adding a second one.
+
+![The mailbox, showing a rendered reminder with its links pulled out](docs/images/mailbox.jpg)
 
 **Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary
 and speaker gallery — all server-rendered, all readable with no account, each with a copyable embed
