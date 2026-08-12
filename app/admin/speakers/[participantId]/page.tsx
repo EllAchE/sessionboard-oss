@@ -7,6 +7,7 @@ import { can } from '@/lib/context';
 import { SPEAKER_WORKFLOW_OPTIONS, getSpeakerProfile } from '@/lib/services/participants';
 import { SpeakerForm, type SpeakerFormValues } from '../SpeakerForm';
 import { SpeakerStatus } from '../SpeakerStatus';
+import { ViewPortalAsButton } from '../ViewPortalAs';
 import { speakersContext } from '../context';
 import styles from '../speakers.module.css';
 
@@ -66,6 +67,9 @@ export default async function SpeakerDetailPage({
             </p>
           </div>
           <div className={styles.headActions}>
+            {can(ctx, 'event:manage') ? (
+              <ViewPortalAsButton participantId={speaker.id} name={speaker.name} />
+            ) : null}
             <span className={styles.statusPicker}>
               <span className={styles.fieldLabel}>Status</span>
               <SpeakerStatus

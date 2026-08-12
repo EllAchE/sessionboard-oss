@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Avatar, Badge, DataTable, Input, Select, type DataTableColumn } from '@/components/ui';
 import type { SpeakerProfile, SpeakerWorkflowStatus } from '@/lib/services/participants';
 import { SpeakerStatus, type StatusOption } from './SpeakerStatus';
+import { ViewPortalAsRowButton } from './ViewPortalAs';
 import styles from './speakers.module.css';
 
 type Facet = 'all' | 'incomplete' | 'travel' | 'overdue';
@@ -121,6 +122,19 @@ function columns(
           <span className={styles.muted}>Nothing on file</span>
         ),
     },
+    ...(canManage
+      ? [
+          {
+            id: 'viewAs',
+            header: <span className={styles.visuallyHidden}>View as</span>,
+            width: 'var(--control-md)',
+            align: 'right' as const,
+            render: (row: SpeakerProfile) => (
+              <ViewPortalAsRowButton participantId={row.id} name={row.name} />
+            ),
+          },
+        ]
+      : []),
     {
       id: 'sessions',
       header: 'Sessions',

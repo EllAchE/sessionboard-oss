@@ -1,8 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { startImpersonation } from '../../../lib/auth';
 import { isAppError } from '../../../lib/errors';
 import * as speakers from '../../../lib/services/participants';
+import { getEvent } from '../../../lib/services/events';
 import { manageSpeakersContext, speakersContext } from './context';
 import type { ActionResult } from './types';
 
@@ -69,6 +72,27 @@ export async function createSpeakerAction(
   } catch (error) {
     return failure(error, 'speaker create');
   }
+}
+
+/**
+ * `S-10`, the way in. The way out already existed — the portal shell's "Return to admin" banner —
+ * but nothing opened the door, so the capability was unreachable from the product.
+ *
+ * A redirect rather than a returned result: by the time this resolves the cookie is a different
+ * identity, so there is no admin page left to render a toast on.
+ */
+export async function viewPortalAsAction(participantId: string): Promise<ActionResult<never>> {
+  let slug: string;
+  try {
+    const ctx = await manageSpeakersContext();
+    const userId = await speakers.userIdForParticipant(ctx, participantId);
+    slug = (await getEvent(ctx.eventId))?.slug ?? '';
+    if (!slug) return { ok: false, message: 'That event could not be found.' };
+    await startImpersonation(ctx, userId);
+  } catch (error) {
+    return failure(error, 'view portal as speaker');
+  }
+  redirect(`/portal/${slug}`);
 }
 
 export async function updateSpeakerAction(

@@ -258,6 +258,26 @@ export async function listSpeakerProfiles(ctx: EventContext): Promise<SpeakerPro
   });
 }
 
+/**
+ * `S-10`. Impersonation is expressed to the organizer as a participant — a name on the roster — but
+ * a session is opened against a user account, and the two are not the same thing: a person can be a
+ * participant in several events behind one login. Resolving it here keeps the action from reaching
+ * past the service layer for the join, and scoping to `ctx.eventId` is what stops an organizer of
+ * one event from naming a participant id belonging to another.
+ */
+export async function userIdForParticipant(
+  ctx: EventContext,
+  participantId: string,
+): Promise<string> {
+  requireCapability(ctx, 'event:manage');
+  const row = await getDb().query.participant.findFirst({
+    where: and(eq(participant.id, participantId), eq(participant.eventId, ctx.eventId)),
+    columns: { userId: true },
+  });
+  if (!row) throw notFound('That speaker');
+  return row.userId;
+}
+
 export async function getSpeakerProfile(
   ctx: EventContext,
   participantId: string,
