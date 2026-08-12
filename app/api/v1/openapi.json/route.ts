@@ -61,7 +61,7 @@ function okResponse(description: string, schema: JsonSchema): JsonSchema {
   return { description, content: jsonContent(schema) };
 }
 
-function buildSpec(): JsonSchema {
+export function buildSpec(origin = appUrl()): JsonSchema {
   const listOf = (name: string): JsonSchema => ({
     type: 'object',
     properties: {
@@ -85,7 +85,7 @@ function buildSpec(): JsonSchema {
       ].join('\n'),
       license: { name: 'MIT' },
     },
-    servers: [{ url: `${appUrl()}/api/v1` }],
+    servers: [{ url: `${origin.replace(/\/+$/, '')}/api/v1` }],
     tags: [
       { name: 'Events', description: 'Event metadata' },
       { name: 'Program', description: 'Sessions, speakers and the agenda' },

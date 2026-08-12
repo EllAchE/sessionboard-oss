@@ -112,8 +112,9 @@ and speaker gallery — all server-rendered, all readable with no account, each 
 snippet, per-embed filters and styling. The embed is an auto-resizing iframe over a live route, so
 "updates without re-pasting the snippet" comes for free.
 
-**Integrations.** A public REST API with a generated OpenAPI document, an Accelevents speaker-push
-client, and a one-way Airtable mirror.
+**Integrations.** A public REST API with a generated
+[`docs/openapi.json`](docs/openapi.json) schema, an Accelevents speaker-push client, and a one-way
+Airtable mirror.
 
 ## Deployment
 
@@ -196,6 +197,7 @@ coexist without either seeing the other.
 3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
    API layers, the form-engine verdict, and what the Accelevents research actually found
 4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
+5. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 
 ### Reference material
 

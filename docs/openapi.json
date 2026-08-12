@@ -1,0 +1,1361 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Cicero API",
+    "version": "1.0.0",
+    "description": "Read the public program of a Cicero event, and submit to an open call for speakers.\n\nPublic reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key\nissued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and shown once, at creation.",
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://cicero.lhar8771.workers.dev/api/v1"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Events",
+      "description": "Event metadata"
+    },
+    {
+      "name": "Program",
+      "description": "Sessions, speakers and the agenda"
+    },
+    {
+      "name": "Submissions",
+      "description": "The call for speakers"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A per-event API key. Public read endpoints do not require it."
+      }
+    },
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "URL-safe identifier for the event"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone, e.g. America/Los_Angeles"
+          },
+          "startsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO date"
+          },
+          "endsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO date"
+          },
+          "websiteUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "venueName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "venueAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "tagline",
+          "description",
+          "timezone",
+          "startsOn",
+          "endsOn",
+          "websiteUrl",
+          "venueName",
+          "venueAddress"
+        ],
+        "description": "A conference or event"
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "UUID"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Human-readable reference, e.g. SESS-4"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "cancelled"
+            ]
+          },
+          "startsAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "endsAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "room": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "track": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "format": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ceuCredits": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "speakers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "jobTitle": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isPrimary": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "jobTitle",
+                "company",
+                "isPrimary"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "ref",
+          "title",
+          "description",
+          "status",
+          "startsAt",
+          "endsAt",
+          "room",
+          "track",
+          "format",
+          "ceuCredits",
+          "speakers"
+        ],
+        "description": "A scheduled session on the agenda"
+      },
+      "Speaker": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "UUID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pronouns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jobTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown"
+          },
+          "headshotUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ]
+            }
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "pronouns",
+          "jobTitle",
+          "company",
+          "bio",
+          "headshotUrl",
+          "links",
+          "sessions"
+        ],
+        "description": "A speaker with at least one accepted session"
+      },
+      "Agenda": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "description": "URL-safe identifier for the event"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tagline": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Markdown"
+              },
+              "timezone": {
+                "type": "string",
+                "description": "IANA timezone, e.g. America/Los_Angeles"
+              },
+              "startsOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date"
+              },
+              "endsOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date"
+              },
+              "websiteUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "venueName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "venueAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "slug",
+              "name",
+              "tagline",
+              "description",
+              "timezone",
+              "startsOn",
+              "endsOn",
+              "websiteUrl",
+              "venueName",
+              "venueAddress"
+            ],
+            "description": "A conference or event"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "description": "ISO date in the event timezone"
+                },
+                "sessions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "UUID"
+                      },
+                      "ref": {
+                        "type": "string",
+                        "description": "Human-readable reference, e.g. SESS-4"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Markdown"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "draft",
+                          "published",
+                          "cancelled"
+                        ]
+                      },
+                      "startsAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "ISO 8601"
+                      },
+                      "endsAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "ISO 8601"
+                      },
+                      "room": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "track": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "format": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "ceuCredits": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "speakers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "jobTitle": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "company": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "isPrimary": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "jobTitle",
+                            "company",
+                            "isPrimary"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "ref",
+                      "title",
+                      "description",
+                      "status",
+                      "startsAt",
+                      "endsAt",
+                      "room",
+                      "track",
+                      "format",
+                      "ceuCredits",
+                      "speakers"
+                    ],
+                    "description": "A scheduled session on the agenda"
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "sessions"
+              ]
+            }
+          },
+          "unscheduled": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "UUID"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "Human-readable reference, e.g. SESS-4"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Markdown"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "cancelled"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "room": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ceuCredits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "speakers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "jobTitle": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "company": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "isPrimary": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "jobTitle",
+                      "company",
+                      "isPrimary"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "ref",
+                "title",
+                "description",
+                "status",
+                "startsAt",
+                "endsAt",
+                "room",
+                "track",
+                "format",
+                "ceuCredits",
+                "speakers"
+              ],
+              "description": "A scheduled session on the agenda"
+            }
+          }
+        },
+        "required": [
+          "event",
+          "days",
+          "unscheduled"
+        ],
+        "description": "The published agenda, grouped by day"
+      },
+      "Submission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "UUID"
+          },
+          "ref": {
+            "type": "string",
+            "description": "Human-readable reference, e.g. ABS-12"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "submitted",
+              "under_review",
+              "accepted",
+              "declined",
+              "waitlisted",
+              "withdrawn"
+            ]
+          },
+          "track": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "format": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "submitter": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "email"
+            ]
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Custom form answers, keyed by field key"
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "decidedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          }
+        },
+        "required": [
+          "id",
+          "ref",
+          "title",
+          "description",
+          "status",
+          "track",
+          "format",
+          "level",
+          "tags",
+          "submitter",
+          "answers",
+          "submittedAt",
+          "decidedAt"
+        ],
+        "description": "A CFP submission. Requires an API key."
+      },
+      "NewSubmission": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Submitter email; an account is created if none exists"
+          },
+          "name": {
+            "type": "string",
+            "description": "Submitter display name"
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "Keyed by the form field key. Built-in keys are title, description, format, track, level, tags."
+          }
+        },
+        "required": [
+          "email",
+          "answers"
+        ],
+        "description": "A submission to a published form"
+      },
+      "NewSubmissionResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "submitted"
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "ref",
+          "status",
+          "title"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "unauthorized",
+                  "forbidden",
+                  "not_found",
+                  "invalid",
+                  "conflict",
+                  "rate_limited",
+                  "unavailable",
+                  "internal"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Field-keyed messages when code is invalid"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "description": "Every non-2xx response has this shape"
+      }
+    }
+  },
+  "paths": {
+    "/events/{slug}": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "Fetch one event",
+        "operationId": "getEvent",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/sessions": {
+      "get": {
+        "tags": [
+          "Program"
+        ],
+        "summary": "List sessions",
+        "description": "Published sessions only. Filters accept a track or room name, or its id.",
+        "operationId": "listSessions",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to published",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "published",
+                "cancelled"
+              ],
+              "description": "Defaults to published"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "description": "Track name or id",
+            "schema": {
+              "type": "string",
+              "description": "Track name or id"
+            }
+          },
+          {
+            "name": "room",
+            "in": "query",
+            "required": false,
+            "description": "Room name or id",
+            "schema": {
+              "type": "string",
+              "description": "Room name or id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Session"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/speakers": {
+      "get": {
+        "tags": [
+          "Program"
+        ],
+        "summary": "List speakers",
+        "description": "Everyone on an accepted submission. Emails are not included.",
+        "operationId": "listSpeakers",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The speakers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Speaker"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/agenda": {
+      "get": {
+        "tags": [
+          "Program"
+        ],
+        "summary": "Fetch the agenda",
+        "description": "Published sessions grouped by day in the event's timezone.",
+        "operationId": "getAgenda",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The agenda",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Agenda"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/submissions": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "List submissions",
+        "description": "Requires an API key issued for this event.",
+        "operationId": "listSubmissions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "submitted",
+                "under_review",
+                "accepted",
+                "declined",
+                "waitlisted",
+                "withdrawn"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to 100",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Defaults to 100"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching submissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Submission"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/forms/{formId}/submissions": {
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Submit to a call for speakers",
+        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed.",
+        "operationId": "createSubmission",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "description": "The form's id or slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewSubmission"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewSubmissionResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "summary": "This document",
+        "operationId": "getOpenApi",
+        "responses": {
+          "200": {
+            "description": "The OpenAPI description",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
