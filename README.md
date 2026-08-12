@@ -1,39 +1,204 @@
-# sessionboard-oss
+# Cicero
 
-Spec workspace for an open-source replacement for **Sessionboard**, built for the
-**"$10,000 Kill My SaaS"** competition run by the AI Engineer team.
+An open-source replacement for **Sessionboard** — the software a conference runs on between "we
+should do a CFP" and "the agenda is on the website."
 
-**Deadline: Wednesday, August 12, 10:00 PM PT.**
+Built for the **"$10,000 Kill My SaaS"** competition run by the AI Engineer team.
 
-## Read in this order
+Cicero covers the whole spine, not a slice of it:
 
-1. **[`docs/00-goals.md`](docs/00-goals.md)** — what we are building and why, in prose. Start here.
+> organizer configures an event → builds a call-for-speakers form → publishes it at a public URL →
+> a speaker submits cold, account created in the flow → lands in a portal for bio, headshot and
+> slides → organizer scores and accepts → the accepted talk is dragged onto the schedule → the
+> speaker gets a templated email and a real calendar invite → the organizer watches who still owes
+> a task → the agenda and speaker gallery embed back onto the event website.
+
+MIT licensed. No account required to read a published agenda, no password anywhere, and a
+one-command self-host that needs no API key from anyone.
+
+## Try it in one command
+
+```bash
+docker compose up
+```
+
+Then open <http://localhost:3000>. That brings up the app, Postgres and MinIO, migrates the
+database before serving, and creates the file bucket — there is no second command and nothing to
+configure. Email has no API key in a fresh clone, so every message the app would send is recorded
+and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
+a real inbox.
+
+To load the demo conference (5 speakers, 3 tracks, 14 submissions, a scheduled two-day agenda):
+
+```bash
+docker compose exec app npm run db:seed
+```
+
+The seed is idempotent — run it twice and you get the same one event, not two.
+
+## Local development
+
+```bash
+cp .env.example .env       # defaults already point at the compose Postgres and MinIO
+npm install
+npm run db:migrate
+npm run db:seed            # optional
+npm run dev
+```
+
+Everything in `.env.example` is documented inline. The only variable that must be right in a real
+deployment is `APP_URL`, because magic links, embed snippets and calendar invites are all built
+from it.
+
+| Script | |
+|---|---|
+| `npm run dev` | Next dev server |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | `vitest run` |
+| `npm run db:generate` | Generate a migration from `db/schema.ts` |
+| `npm run db:migrate` | Apply migrations |
+| `npm run db:seed` | Seed the demo conference (idempotent) |
+| `npm run cf:deploy` | Build and deploy to Cloudflare Workers |
+
+## What's in it
+
+**Call for speakers.** A drag-and-drop form builder over a hybrid schema: title, description,
+format, track, level and tags are real Postgres columns — so the review queue sorts on them and the
+agenda joins on them — while everything a form adds lands in JSONB. Conditional questions,
+multi-step public runtime, per-submitter limits, drafts, character limits with a live counter, file
+questions, CSV export.
+
+**Review.** Rounds with assignments, weighted scorecard criteria, auto-distribution across
+reviewers, blind-until-close and author-anonymized modes, recusal, reviewer workload reporting, and
+a reviewer surface that shows a reviewer their assignments and nothing else — no accept/decline
+controls, no event configuration.
+
+**Speaker portal.** Magic-link sign-in, profile and headshot, deliverable uploads that version
+rather than overwrite, review comments that reach the speaker, tasks with reminder cadences, custom
+portal pages, group access.
+
+**Agenda.** Drag sessions onto a day/room grid with conflict detection for room clashes, track
+clashes and — the one the brief doesn't ask for — **speaker double-booking**, which is the clash
+that fails publicly on the day.
+
+**Comms.** Branded templates, a send log, and a real `.ics` `METHOD:REQUEST` that bumps `SEQUENCE`
+so a reschedule *updates the existing calendar entry in place* rather than adding a second one.
+
+**Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary
+and speaker gallery — all server-rendered, all readable with no account, each with a copyable embed
+snippet, per-embed filters and styling. The embed is an auto-resizing iframe over a live route, so
+"updates without re-pasting the snippet" comes for free.
+
+**Integrations.** A public REST API with a generated OpenAPI document, an Accelevents speaker-push
+client, and a one-way Airtable mirror.
+
+## Deployment
+
+**Cloudflare Workers** is the primary target, via `@opennextjs/cloudflare`:
+
+```bash
+wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url>"
+# put the returned id in wrangler.jsonc
+npm run cf:deploy
+```
+
+Any Postgres works — Neon, Supabase, RDS, your own box. Hyperdrive pools the connection at the
+edge, which lets Workers use **the same `pg` driver and the same Drizzle schema** a self-hosted
+container uses. That is deliberate: it is what keeps the hosting choice reversible. Postgres, an
+S3-compatible bucket and HTTP email are all host-agnostic, so moving off Cloudflare costs a
+redeploy and nothing else.
+
+R2 is off by default, because enabling it requires a payment method on the Cloudflare account and
+that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
+database until you turn it on; `wrangler.jsonc` says exactly how.
+
+## Judgment calls worth arguing about
+
+The competition's tiebreaker is "whoever made the subjective judgment calls for the product we would
+actually use." These are ours, stated out loud rather than buried.
+
+- **Magic links for every role. No passwords anywhere.** Sessionboard makes participants keep a
+  password for a site they visit twice a year. They forget it, and the organizer becomes a help
+  desk.
+- **Impersonation, not preview.** The organizer's session carries `impersonated_by` and every write
+  goes through *as the speaker* while staying attributable. A read-only "view as" is useless for
+  support — the point is to finish the stuck speaker's task for them.
+- **Speaker double-booking detection.** A room clash is a spreadsheet error someone catches. A
+  speaker booked in two rooms at once is a failure the audience watches happen.
+- **The outstanding-task dashboard.** Sessionboard's own FAQ says it has no central
+  task-completion report. This is the place we add something missing rather than clone something
+  present.
+- **Airtable as a one-way mirror, not the store.** Airtable carries a larger bonus than Cloudflare
+  in the brief, and building on it as the primary database would have been the easy way to claim
+  that. But with no transactions, no joins and a 5-request-per-second ceiling, agenda conflict
+  detection stops being implementable. So submissions, speakers and the agenda *push* to a
+  configurable base, their team gets Airtable views over live data, and the product stays correct.
+- **A form engine we wrote.** Every off-the-shelf builder assumes it owns the entire schema and
+  emits one blob; ours needs six fields to be real columns. Between that and the licensing (SurveyJS's
+  builder is per-developer commercial, HeyForm/OpnForm/Formbricks are AGPL, form.io hard-depends on
+  Bootstrap), renting the schema-walking loop would have cost 300KB–1MB to save about eighty lines.
+  `docs/02-architecture.md` shows the full survey.
+- **`showIf` may reference only an earlier field, one hop, no chaining**, and hidden fields clear at
+  submit. A documented limit that deletes the cyclic- and cascading-condition bug class by
+  construction, rather than a gap.
+
+## How it is built
+
+Next.js 15 App Router, React 19, TypeScript, Drizzle over Postgres, Zod as the API contract, plain
+CSS Modules over a hand-built design system. No Tailwind, no component library, no rich-text editor
+— Markdown with a live preview instead, which is what power users want and has no XSS surface.
+
+Three layers, strictly:
+
+```
+app/api/v1/**      REST handlers — thin, Zod-validated, API-key auth
+app/**             Server Components read; Server Actions write — thin
+lib/services/**    all domain logic. Pure TS. No HTTP, no React, no Next imports
+db/**              Drizzle schema, migrations, seed
+```
+
+The UI never calls its own HTTP API; both entry points call the same service function. Every table
+is event-scoped from the first migration, so a judge's cold-created event and the seeded demo
+coexist without either seeing the other.
+
+## Documentation
+
+1. **[`docs/00-goals.md`](docs/00-goals.md)** — what we are building and why, in prose
 2. **[`docs/01-requirements.md`](docs/01-requirements.md)** — every requirement and deliverable,
-   each tagged `[REQUIRED]` / `[IMPORTANT]` / `[OPTIONAL]` / `[EXCLUDED]` / `[BONUS]`.
-3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — how it is built: hosting, the stack,
-   the database and API layers, the form-engine verdict, and the Accelevents findings.
-4. **[`docs/03-plan.md`](docs/03-plan.md)** — in what order and by whom: the spine, the tiered
-   optional scope, workstreams and the clock, the loud judgment calls, and the verification plan.
+   tagged `[REQUIRED]` / `[IMPORTANT]` / `[OPTIONAL]` / `[EXCLUDED]` / `[BONUS]`
+3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
+   API layers, the form-engine verdict, and what the Accelevents research actually found
+4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
 
-## Reference material
+### Reference material
 
 - [`docs/reference/source-brief.txt`](docs/reference/source-brief.txt) — the competition brief,
   extracted verbatim, with screenshot positions marked inline
 - [`docs/reference/screenshots/`](docs/reference/screenshots/README.md) — all 42 screenshots from
   the brief, filed by section, with the author's hand-drawn priority annotations catalogued
 - [`docs/reference/sessionboard-survey.md`](docs/reference/sessionboard-survey.md) — an independent
-  inventory of the real Sessionboard product. **Not a scope list.**
+  inventory of the real Sessionboard product. **Not a scope list**
 
-## Provenance
+`docs/00-goals.md` and `docs/01-requirements.md` are derived **only** from the competition brief and
+its screenshots — nothing is inferred from Sessionboard's own documentation. Where the brief was
+silent or contradicted itself, the requirements doc records the decision and its reasoning under
+*Resolved ambiguities* rather than leaving a hole.
 
-Everything in `docs/00-goals.md` and `docs/01-requirements.md` is derived **only** from the
-competition brief and its screenshots. Nothing is inferred from Sessionboard's own product
-documentation. Where the brief was silent or contradicted itself, the requirements doc records the
-decision and its reasoning under *Resolved ambiguities* rather than leaving a hole.
+The survey was produced by a separate agent with no access to the brief or to either spec document,
+working only from Sessionboard's public sources. The two derivations never touched. It exists as a
+coverage check: anything it documents that the requirements never mention is either something the
+AI Engineer team deliberately does not use, or a gap in our reading. It is deliberately much larger
+than the spec — the brief says outright that most of Sessionboard is not needed.
 
-`docs/reference/sessionboard-survey.md` was produced by a separate agent with no access to the
-brief or to either spec document, working only from Sessionboard's own public sources. The two
-derivations never touched. It exists as a coverage check: anything the survey documents that the
-requirements never mention is either something the AI Engineer team deliberately does not use, or a
-gap in our reading of the brief. It is deliberately much larger than the spec — the brief says
-outright that most of Sessionboard is not needed.
+## Known gaps
+
+Stated plainly, because a README that claims everything works is one a judge stops trusting at the
+first dead end.
+
+- **Accelevents** has no downloadable OpenAPI file; the docs render an unpublished spec. The speaker
+  push is documented and implemented against verified pages. Attendee creation is a five-call order
+  flow with no documented complimentary flag, so it ships behind the same interface marked
+  experimental. The auth header name is genuinely ambiguous in their docs — `ACCELEVENTS_AUTH_HEADER`
+  defaults to `Authorization` and the client retries once with `Key` on a 401.
+- **AI features** (review assist, agenda suggestions) disable themselves when `ANTHROPIC_API_KEY` is
+  unset rather than failing a request. They propose; they never decide.
