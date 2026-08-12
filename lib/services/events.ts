@@ -75,6 +75,28 @@ export async function currentEventContext(): Promise<EventContext> {
   return requireEventContext(await currentEventId());
 }
 
+/**
+ * Unauthenticated: the landing page has to offer a way into a published programme without knowing
+ * who is asking. Newest first, because the edition someone wants is almost always the current one.
+ */
+export async function listPublicEvents(limit = 8): Promise<EventSummary[]> {
+  const rows = await getDb().query.event.findMany({
+    orderBy: [desc(event.createdAt)],
+    limit,
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    tagline: row.tagline,
+    timezone: row.timezone,
+    startsOn: row.startsOn,
+    endsOn: row.endsOn,
+    roles: [],
+  }));
+}
+
 export async function getEvent(eventId: string) {
   const row = await getDb().query.event.findFirst({ where: eq(event.id, eventId) });
   if (!row) throw notFound('Event');
