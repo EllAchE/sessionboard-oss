@@ -86,6 +86,28 @@ const PEOPLE = [
 
 const [existing] = await db.select().from(event).where(eq(event.slug, SLUG));
 if (existing) await db.delete(event).where(eq(event.id, existing.id));
+
+// Anything else a demo identity owns goes with them. `event.owner_user_id` is a restricting
+// reference, so a rehearsal event created while signed in as one of these addresses would block
+// the user delete below and leave the seed half-applied — with the demo event already gone.
+const demoUsers = await db
+  .select({ id: user.id })
+  .from(user)
+  .where(
+    inArray(
+      user.email,
+      PEOPLE.map((person) => person.email),
+    ),
+  );
+if (demoUsers.length > 0) {
+  await db.delete(event).where(
+    inArray(
+      event.ownerUserId,
+      demoUsers.map((row) => row.id),
+    ),
+  );
+}
+
 await db.delete(user).where(
   inArray(
     user.email,
