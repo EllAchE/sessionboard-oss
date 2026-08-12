@@ -36,7 +36,7 @@ export type ReviewerScorecardProps = {
   trackName: string | null;
   formatName: string | null;
   tags: Array<{ id: string; name: string }>;
-  answers: Array<{ key: string; value: string }>;
+  answers: Array<{ key: string; label: string; value: string }>;
   authorHidden: boolean;
   submitterName: string;
   speakers: ScorecardSpeaker[];
@@ -200,7 +200,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                 <div className={styles.answerList}>
                   {props.answers.map((answer) => (
                     <div key={answer.key} className={styles.answer}>
-                      <span className={styles.answerKey}>{answer.key}</span>
+                      <span className={styles.answerKey}>{answer.label}</span>
                       <span className={styles.answerValue}>{answer.value || '—'}</span>
                     </div>
                   ))}

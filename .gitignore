@@ -9,3 +9,6 @@ next-env.d.ts
 !.env.example
 .DS_Store
 coverage/
+
+# Per-workstream scratch notes from the build sessions.
+tasks/

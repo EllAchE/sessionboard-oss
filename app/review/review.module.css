@@ -314,8 +314,6 @@
 .answerKey {
   font: var(--type-label);
   color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-eyebrow);
 }
 
 .answerValue {

@@ -38,11 +38,15 @@ function queryString(params: Search): string {
 }
 
 /** Answers are speaker-authored and of unknown shape; they render as text, never as markup. */
-function answerEntries(answers: Record<string, unknown>): Array<{ key: string; value: string }> {
+function answerEntries(
+  answers: Record<string, unknown>,
+  labels: Record<string, string>,
+): Array<{ key: string; label: string; value: string }> {
   return Object.entries(answers)
     .filter(([, value]) => value !== null && value !== undefined && value !== '')
     .map(([key, value]) => ({
       key,
+      label: labels[key] ?? key,
       value: Array.isArray(value)
         ? value.map((entry) => String(entry)).join(', ')
         : typeof value === 'object'
@@ -121,7 +125,7 @@ export default async function SubmissionReviewPage({
       trackName={detail.trackName}
       formatName={detail.formatName}
       tags={detail.tags}
-      answers={answerEntries(detail.answers)}
+      answers={answerEntries(detail.answers, detail.answerLabels)}
       submittedAt={detail.submittedAt ? detail.submittedAt.toISOString() : null}
       decidedAt={detail.decidedAt ? detail.decidedAt.toISOString() : null}
       decisionNote={detail.decisionNote}

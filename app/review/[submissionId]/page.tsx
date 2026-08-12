@@ -51,6 +51,7 @@ export default async function ReviewerSubmissionPage({
       tags={detail.tags}
       answers={Object.entries(detail.answers).map(([key, value]) => ({
         key,
+        label: detail.answerLabels[key] ?? key,
         value: Array.isArray(value) ? value.join(', ') : String(value ?? ''),
       }))}
       authorHidden={detail.authorHidden}

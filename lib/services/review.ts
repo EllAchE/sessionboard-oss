@@ -4,6 +4,7 @@ import {
   aiReview,
   event,
   file,
+  formField,
   membership,
   participant,
   participantRole,
@@ -1286,6 +1287,8 @@ export type SubmissionReview = {
   formatName: string | null;
   tags: Array<{ id: string; name: string }>;
   answers: Record<string, unknown>;
+  /** Answer keys are form-local slugs; the question wording lives on the field row. */
+  answerLabels: Record<string, string>;
   submittedAt: Date | null;
   decidedAt: Date | null;
   decisionNote: string | null;
@@ -1323,7 +1326,7 @@ export async function loadSubmissionReview(
   const round = await resolveRound(ctx, roundId ?? null);
   const criteria = round ? await listCriteria(round.id) : [];
 
-  const [submitter, trackRow, formatRow, tagRows, speakerRows, assignmentRows, aiRow] =
+  const [submitter, trackRow, formatRow, tagRows, speakerRows, assignmentRows, aiRow, fieldRows] =
     await Promise.all([
       db.query.user.findFirst({ where: eq(user.id, row.submitterUserId) }),
       row.trackId
@@ -1379,6 +1382,10 @@ export async function loadSubmissionReview(
         where: eq(aiReview.submissionId, row.id),
         orderBy: [desc(aiReview.createdAt)],
       }),
+      db
+        .select({ key: formField.key, label: formField.label })
+        .from(formField)
+        .where(eq(formField.formId, row.formId)),
     ]);
 
   const assignmentIds = assignmentRows.map((assignment) => assignment.id);
@@ -1433,6 +1440,7 @@ export async function loadSubmissionReview(
     formatName: formatRow?.name ?? null,
     tags: tagRows,
     answers: row.answers as Record<string, unknown>,
+    answerLabels: Object.fromEntries(fieldRows.map((field) => [field.key, field.label])),
     submittedAt: row.submittedAt,
     decidedAt: row.decidedAt,
     decisionNote: row.decisionNote,

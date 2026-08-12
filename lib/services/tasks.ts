@@ -675,3 +675,152 @@ export async function copyableEvents(ctx: EventContext): Promise<{ id: string; n
 }
 
 export { FILE_IDS_KEY };
+
+// ---------------------------------------------------------------------------
+// Organizer-side task authoring — S-14
+// ---------------------------------------------------------------------------
+
+export type TaskAudience = 'all_participants' | 'accepted_participants' | 'manual';
+
+export type TaskInput = {
+  name: string;
+  descriptionMarkdown?: string | null;
+  kind: TaskKind;
+  audience: TaskAudience;
+  dueAt?: Date | null;
+  required?: boolean;
+  linkUrl?: string | null;
+  formId?: string | null;
+  reminderDaysBefore?: number[];
+};
+
+function normalizeTaskInput(input: TaskInput): TaskInput {
+  const name = input.name.trim();
+  if (!name) throw invalid('Give the task a name');
+  if (input.kind === 'link' && !input.linkUrl?.trim()) {
+    throw invalid('A link task needs the URL the speaker should open');
+  }
+  if (input.kind === 'form' && !input.formId) {
+    throw invalid('A form task needs a portal form to point at');
+  }
+  return {
+    ...input,
+    name,
+    descriptionMarkdown: input.descriptionMarkdown?.trim() || null,
+    linkUrl: input.kind === 'link' ? (input.linkUrl?.trim() ?? null) : null,
+    formId: input.kind === 'form' ? (input.formId ?? null) : null,
+    reminderDaysBefore: (input.reminderDaysBefore ?? [])
+      .filter((days) => Number.isFinite(days) && days > 0)
+      .sort((a, b) => b - a),
+  };
+}
+
+/**
+ * Fanning out on write rather than on portal open: `B-1` counts assignment rows, so an organizer
+ * who adds a task mid-cycle should see the outstanding count move immediately instead of waiting
+ * for every speaker to sign in.
+ */
+async function fanOutAssignments(eventId: string): Promise<void> {
+  const participants = await getDb()
+    .select({ id: participant.id })
+    .from(participant)
+    .where(eq(participant.eventId, eventId));
+  await Promise.all(participants.map((row) => ensureAssignments(eventId, row.id)));
+}
+
+export async function createTask(ctx: EventContext, input: TaskInput): Promise<{ id: string }> {
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can create tasks');
+  const clean = normalizeTaskInput(input);
+  const db = getDb();
+
+  const existing = await db
+    .select({ position: task.position })
+    .from(task)
+    .where(eq(task.eventId, ctx.eventId));
+  const position = existing.reduce((max, row) => Math.max(max, row.position + 1), 0);
+
+  // A file-upload task without somewhere to put the file is a dead end in the portal, so the
+  // request is created with it and named after it rather than being a second thing to configure.
+  const requestId =
+    clean.kind === 'file_upload'
+      ? (
+          await db
+            .insert(fileRequest)
+            .values({ eventId: ctx.eventId, label: clean.name, helpText: clean.descriptionMarkdown })
+            .returning({ id: fileRequest.id })
+        )[0].id
+      : null;
+
+  const [created] = await db
+    .insert(task)
+    .values({
+      eventId: ctx.eventId,
+      name: clean.name,
+      descriptionMarkdown: clean.descriptionMarkdown,
+      kind: clean.kind,
+      audience: clean.audience,
+      formId: clean.formId ?? null,
+      fileRequestId: requestId,
+      linkUrl: clean.linkUrl ?? null,
+      dueAt: clean.dueAt ?? null,
+      required: clean.required ?? true,
+      position,
+      reminderDaysBefore: clean.reminderDaysBefore ?? [],
+    })
+    .returning({ id: task.id });
+
+  await fanOutAssignments(ctx.eventId);
+  return { id: created.id };
+}
+
+export async function updateTask(
+  ctx: EventContext,
+  taskId: string,
+  input: TaskInput,
+): Promise<void> {
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can edit tasks');
+  const clean = normalizeTaskInput(input);
+  const db = getDb();
+
+  const [row] = await db
+    .select()
+    .from(task)
+    .where(and(eq(task.id, taskId), eq(task.eventId, ctx.eventId)))
+    .limit(1);
+  if (!row) throw notFound('That task');
+
+  await db
+    .update(task)
+    .set({
+      name: clean.name,
+      descriptionMarkdown: clean.descriptionMarkdown,
+      kind: clean.kind,
+      audience: clean.audience,
+      formId: clean.formId ?? null,
+      linkUrl: clean.linkUrl ?? null,
+      dueAt: clean.dueAt ?? null,
+      required: clean.required ?? true,
+      reminderDaysBefore: clean.reminderDaysBefore ?? [],
+    })
+    .where(eq(task.id, taskId));
+
+  if (row.fileRequestId && clean.kind === 'file_upload') {
+    await db
+      .update(fileRequest)
+      .set({ label: clean.name, helpText: clean.descriptionMarkdown })
+      .where(eq(fileRequest.id, row.fileRequestId));
+  }
+  await fanOutAssignments(ctx.eventId);
+}
+
+export async function deleteTask(ctx: EventContext, taskId: string): Promise<void> {
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can delete tasks');
+  const db = getDb();
+  const [row] = await db
+    .select({ id: task.id })
+    .from(task)
+    .where(and(eq(task.id, taskId), eq(task.eventId, ctx.eventId)))
+    .limit(1);
+  if (!row) throw notFound('That task');
+  await db.delete(task).where(eq(task.id, taskId));
+}

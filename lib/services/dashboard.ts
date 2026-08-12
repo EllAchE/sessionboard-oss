@@ -665,6 +665,10 @@ export type AdminTaskRow = {
   audience: (typeof task.$inferSelect)['audience'];
   required: boolean;
   dueAt: string | null;
+  descriptionMarkdown: string | null;
+  linkUrl: string | null;
+  formId: string | null;
+  reminderDaysBefore: number[];
   assigned: number;
   notStarted: number;
   inProgress: number;
@@ -699,6 +703,10 @@ export async function listTasksForAdmin(
         audience: row.audience,
         required: row.required,
         dueAt: row.dueAt ? row.dueAt.toISOString() : null,
+        descriptionMarkdown: row.descriptionMarkdown,
+        linkUrl: row.linkUrl,
+        formId: row.formId,
+        reminderDaysBefore: row.reminderDaysBefore ?? [],
         assigned: mine.length,
         notStarted: mine.filter((entry) => entry.status === 'not_started').length,
         inProgress: mine.filter((entry) => entry.status === 'in_progress').length,

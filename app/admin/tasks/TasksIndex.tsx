@@ -1,7 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { Badge, Card, CardBody, CardHeader, CardTitle, DataTable } from '@/components/ui';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  DataTable,
+  Dialog,
+  IconButton,
+  Select,
+  useToast,
+} from '@/components/ui';
 import type { DataTableColumn } from '@/components/ui';
 import type {
   AdminTaskRow,
@@ -10,7 +24,10 @@ import type {
 } from '@/lib/services/dashboard';
 import { Counter } from '../dashboard/widgets';
 import { OutstandingTasks } from '../dashboard/OutstandingTasks';
+import { copyTasksAction, deleteTaskAction } from './actions';
+import { TaskEditor } from './TaskEditor';
 import styles from '../dashboard/dashboard.module.css';
+import editor from './editor.module.css';
 
 const KIND_LABEL: Record<AdminTaskRow['kind'], string> = {
   form: 'Form',
@@ -90,13 +107,100 @@ export function TasksIndex({
   assignments,
   summary,
   speakerCount,
+  forms,
+  copyableEvents,
+  canManage,
 }: {
   tasks: AdminTaskRow[];
   assignments: OutstandingTaskRow[];
   summary: TaskCompletionSummary;
   speakerCount: number;
+  forms: Array<{ id: string; name: string }>;
+  copyableEvents: Array<{ id: string; name: string }>;
+  canManage: boolean;
 }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [pending, startTransition] = useTransition();
   const [view, setView] = useState<'assignments' | 'tasks'>('assignments');
+  const [editing, setEditing] = useState<AdminTaskRow | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [confirming, setConfirming] = useState<AdminTaskRow | null>(null);
+  const [copySource, setCopySource] = useState('');
+
+  const openNew = () => {
+    setEditing(null);
+    setEditorOpen(true);
+  };
+
+  const openEdit = (row: AdminTaskRow) => {
+    setEditing(row);
+    setEditorOpen(true);
+  };
+
+  const confirmDelete = () => {
+    const row = confirming;
+    if (!row) return;
+    setConfirming(null);
+    startTransition(async () => {
+      const result = await deleteTaskAction(row.id);
+      if (!result.ok) {
+        toast({ title: result.message, tone: 'danger' });
+        return;
+      }
+      toast({ title: `${row.name} deleted`, tone: 'success' });
+      router.refresh();
+    });
+  };
+
+  const copyFrom = () => {
+    if (!copySource) return;
+    startTransition(async () => {
+      const result = await copyTasksAction(copySource);
+      if (!result.ok) {
+        toast({ title: result.message, tone: 'danger' });
+        return;
+      }
+      setCopySource('');
+      toast({ title: 'Tasks copied', tone: 'success' });
+      router.refresh();
+    });
+  };
+
+  const columns: Array<DataTableColumn<AdminTaskRow>> = canManage
+    ? [
+        ...COLUMNS,
+        {
+          id: 'actions',
+          header: <span className={editor.visuallyHidden}>Actions</span>,
+          width: 'calc(var(--control-md) * 2.4)',
+          align: 'right',
+          render: (row) => (
+            <span className={editor.rowActions}>
+              <IconButton
+                label={`Edit ${row.name}`}
+                size="xs"
+                disabled={pending}
+                onKeyDown={(event) => event.stopPropagation()}
+                onClick={() => openEdit(row)}
+              >
+                <Pencil size={14} />
+              </IconButton>
+              <IconButton
+                label={`Delete ${row.name}`}
+                size="xs"
+                variant="danger"
+                disabled={pending}
+                onKeyDown={(event) => event.stopPropagation()}
+                onClick={() => setConfirming(row)}
+              >
+                <Trash2 size={14} />
+              </IconButton>
+            </span>
+          ),
+        },
+      ]
+    : COLUMNS;
 
   return (
     <div className={styles.page}>
@@ -108,6 +212,36 @@ export function TasksIndex({
             {tasks.length} tasks across {speakerCount} participants.
           </p>
         </div>
+        {canManage ? (
+          <div className={editor.headActions}>
+            {copyableEvents.length > 0 ? (
+              <label className={editor.copy}>
+                <span className={editor.label}>Copy tasks from</span>
+                <Select
+                  selectSize="sm"
+                  value={copySource}
+                  disabled={pending}
+                  onChange={(event) => setCopySource(event.target.value)}
+                >
+                  <option value="">Another event…</option>
+                  {copyableEvents.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {entry.name}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            ) : null}
+            {copySource ? (
+              <Button size="sm" loading={pending} onClick={copyFrom}>
+                Copy
+              </Button>
+            ) : null}
+            <Button variant="primary" size="sm" iconLeft={<Plus size={14} />} onClick={openNew}>
+              New task
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div className={styles.counterGrid}>
@@ -159,14 +293,42 @@ export function TasksIndex({
           <CardBody>
             <DataTable
               label="Tasks"
-              columns={COLUMNS}
+              columns={columns}
               rows={tasks}
               getRowId={(row) => row.id}
-              emptyState="No tasks defined for this event yet."
+              emptyState={
+                canManage
+                  ? 'No tasks yet. "New task" adds the first one.'
+                  : 'No tasks defined for this event yet.'
+              }
             />
           </CardBody>
         </Card>
       )}
+
+      <TaskEditor
+        open={editorOpen}
+        editing={editing}
+        forms={forms}
+        onClose={() => setEditorOpen(false)}
+      />
+
+      <Dialog
+        open={confirming !== null}
+        onOpenChange={(open) => (open ? undefined : setConfirming(null))}
+        title={`Delete ${confirming?.name ?? ''}?`}
+        description={`Every speaker's copy of this task goes with it, including ${
+          confirming ? confirming.completed + confirming.waived : 0
+        } already finished.`}
+        footer={
+          <>
+            <Button onClick={() => setConfirming(null)}>Keep it</Button>
+            <Button variant="danger" onClick={confirmDelete}>
+              Delete task
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
