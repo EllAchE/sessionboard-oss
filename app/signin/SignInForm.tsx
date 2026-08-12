@@ -7,7 +7,15 @@ import styles from './signin.module.css';
 
 const INITIAL: SignInState = { sent: false };
 
-export function SignInForm({ next, mailboxHint }: { next: string; mailboxHint: boolean }) {
+export function SignInForm({
+  next,
+  defaultEmail,
+  mailboxHint,
+}: {
+  next: string;
+  defaultEmail: string;
+  mailboxHint: boolean;
+}) {
   const [state, action, pending] = useActionState(requestLinkAction, INITIAL);
 
   return (
@@ -15,7 +23,8 @@ export function SignInForm({ next, mailboxHint }: { next: string; mailboxHint: b
       <CardHeader>
         <CardTitle>Sign in to Cicero</CardTitle>
         <CardDescription>
-          We email you a link. There is no password to forget — for organizers, reviewers or speakers.
+          We email you a link. Organizers, reviewers and speakers all sign in the same way, and none
+          of them have a password to forget.
         </CardDescription>
       </CardHeader>
       <CardBody>
@@ -35,8 +44,8 @@ export function SignInForm({ next, mailboxHint }: { next: string; mailboxHint: b
               </>
             ) : mailboxHint ? (
               <p className={styles.hint}>
-                This instance logs mail instead of sending it — open <a href="/admin/mail">/admin/mail</a> to
-                click the link.
+                This instance logs mail instead of sending it. Open{' '}
+                <a href="/admin/mail">/admin/mail</a> to click the link.
               </p>
             ) : null}
           </div>
@@ -51,6 +60,7 @@ export function SignInForm({ next, mailboxHint }: { next: string; mailboxHint: b
                 autoComplete="email"
                 required
                 autoFocus
+                defaultValue={defaultEmail}
                 placeholder="you@example.com"
                 invalid={Boolean(state.error)}
               />

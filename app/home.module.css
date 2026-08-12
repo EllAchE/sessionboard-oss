@@ -3,17 +3,31 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--space-10) var(--space-6) var(--space-12);
-  gap: var(--space-8);
+  padding: var(--space-16) var(--space-6) var(--space-16);
+  gap: var(--space-16);
   background: var(--surface-page);
 }
 
-.masthead {
+.masthead,
+.section,
+.panel,
+.footer {
   width: 100%;
-  max-width: 720px;
+  max-width: 880px;
+}
+
+.masthead {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.eyebrow {
+  font: var(--type-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-accent);
+  margin: 0;
 }
 
 .wordmark {
@@ -31,18 +45,112 @@
 }
 
 .actions {
-  width: 100%;
-  max-width: 720px;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+  margin-top: var(--space-3);
 }
 
-.panels {
-  width: 100%;
-  max-width: 720px;
-  display: grid;
+.section {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
+}
+
+/* A hairline rather than a shadow or a band: the design system builds hierarchy from rules first. */
+.section::before {
+  content: '';
+  display: block;
+  height: var(--border-width);
+  background: var(--border-hairline);
+}
+
+.sectionTitle {
+  font: var(--type-title);
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.sectionLead {
+  font: var(--type-body);
+  color: var(--text-muted);
+  max-width: 68ch;
+  margin: 0;
+}
+
+.sectionLead a {
+  color: var(--text-link);
+}
+
+.code {
+  font: var(--type-mono);
+  background: var(--surface-sunken);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 1px var(--space-1);
+  color: var(--text-body);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: var(--space-8);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font: var(--type-body);
+  text-decoration: none;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+}
+
+.chip:hover {
+  border-color: var(--border-accent);
+  background: var(--surface-hover);
+}
+
+.steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: var(--space-5);
+  max-width: 72ch;
+  color: var(--text-body);
+  font: var(--type-body);
+}
+
+.steps li::marker {
+  color: var(--text-accent);
+  font: var(--type-mono);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+
+.cardBody {
+  font: var(--type-body);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .linkList {
@@ -83,12 +191,27 @@
 }
 
 .footer {
-  width: 100%;
-  max-width: 720px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid var(--border-hairline);
   font: var(--type-label);
-  color: var(--text-faint);
 }
 
 .footer a {
-  color: inherit;
+  color: var(--text-faint);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--text-body);
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .root {
+    padding: var(--space-10) var(--space-4) var(--space-12);
+    gap: var(--space-12);
+  }
 }

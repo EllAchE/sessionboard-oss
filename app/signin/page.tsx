@@ -7,16 +7,20 @@ export const metadata = { title: 'Sign in · Cicero' };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; email?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, email } = await searchParams;
 
   /** Only relative paths, so `?next=https://evil.example` cannot turn sign-in into an open redirect. */
   const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/admin';
 
   return (
     <main className={styles.root}>
-      <SignInForm next={safeNext} mailboxHint={activeTransportName() === 'log'} />
+      <SignInForm
+        next={safeNext}
+        defaultEmail={email ?? ''}
+        mailboxHint={activeTransportName() === 'log'}
+      />
     </main>
   );
 }

@@ -216,7 +216,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       {issued ? (
         <div className={styles.newKey}>
           <strong className={styles.disabledTitle}>
-            Copy “{issued.name}” now — it is not shown again
+            Copy “{issued.name}” now, because it is not shown again
           </strong>
           <div className={styles.newKeyValue}>
             <code className={styles.secret}>{issued.plaintext}</code>

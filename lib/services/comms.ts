@@ -571,7 +571,7 @@ export const DEFAULT_TEMPLATES: Array<{
   {
     key: 'submission.confirmation',
     name: 'Submission received',
-    subject: 'We received “{{submission.title}}”',
+    subject: 'We received "{{submission.title}}"',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -591,7 +591,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'We are delighted to tell you that **{{submission.title}}** ({{submission.ref}}) has been accepted for {{event.name}}.',
+      'Good news: **{{submission.title}}** ({{submission.ref}}) has been accepted for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
       '',
@@ -609,7 +609,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thank you for submitting **{{submission.title}}** to {{event.name}}. We had far more strong proposals than slots this year, and on this occasion we are not able to include it in the programme.',
+      'Thank you for submitting **{{submission.title}}** to {{event.name}}. We had many more strong proposals than slots this year, and we are not able to include it in the programme.',
       '',
       '{{submission.decisionNote}}',
       '',
@@ -624,7 +624,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Your session at {{event.name}} is scheduled. This email carries a calendar invitation — accepting it will put the session on your own calendar, and it will update in place if we ever have to move you.',
+      'Your session at {{event.name}} is scheduled. This email carries a calendar invitation. Accept it and the session lands on your own calendar, and it updates itself in place if we ever have to move you.',
       '',
       '- **Session:** {{session.title}} ({{session.ref}})',
       '- **Starts:** {{session.startsAt}}',
