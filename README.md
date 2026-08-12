@@ -247,9 +247,6 @@ first dead end.
   This is a plan limit, not a bug in the app: nothing in the code can render an admin table in 10ms
   of CPU. The fix is one line of billing (Workers Paid, $5/month, raises the cap to 30s) or a
   redeploy to any host without a CPU quota. A self-hosted `docker compose up` has no such ceiling.
-- **A reviewer can submit a scorecard with no scores filled in.** It saves as a review with an empty
-  score set instead of being rejected, which then counts toward the round's progress. Validate
-  before trusting a reviewer-progress number.
 - **Reviewers are added by role, not by invitation.** There is no "invite a reviewer" flow and no
   per-submission manual assignment — rounds assign in bulk. The same gap is why the `manual`
   audience is hidden from the compose screen: nothing yet assigns a task to one named participant.

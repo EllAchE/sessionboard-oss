@@ -793,6 +793,16 @@ export async function saveScorecard(
   }
 
   const aggregate = aggregateScorecard(criteria, clean);
+
+  /**
+   * A review with nothing scored is not a review, and letting one complete puts a row in the
+   * reviewer-progress count that says an opinion exists where none does. A partial scorecard still
+   * completes on request: skipping one criterion is a judgment, skipping all of them is a misclick.
+   */
+  if (input.complete === true && criteria.length > 0 && aggregate.scoredCount === 0) {
+    throw invalid('Score at least one criterion before submitting the review');
+  }
+
   const completing = input.complete ?? aggregate.complete;
 
   await db
