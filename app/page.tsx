@@ -142,7 +142,7 @@ export default async function Home() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Everything here runs on a seeded conference</h2>
         <p className={styles.sectionLead}>
-          <code className={styles.code}>/demo</code> holds fifteen talk submissions part-way through
+          <code className={styles.code}>/demo</code> holds fourteen talk submissions part-way through
           a scored review round, seven accepted speakers, a two-day schedule with gaps still in it,
           and a pile of speaker tasks nobody has finished. It is ordinary data, and you can edit all
           of it.

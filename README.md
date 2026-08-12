@@ -31,6 +31,13 @@ Without signing in at all: the [public event page](https://cicero.lhar8771.worke
 the [embeddable agenda](https://cicero.lhar8771.workers.dev/embed/demo/agenda) an event site would
 iframe, and the [REST API](https://cicero.lhar8771.workers.dev/api/v1/events/demo/agenda).
 
+![The organizer dashboard, opening on outstanding speaker tasks](docs/images/dashboard.jpg)
+
+The dashboard leads on who still owes you something, because that is the one report Sessionboard's
+own FAQ says it does not have. Everything else on this page exists in the incumbent too.
+
+![The published programme, without an account](docs/images/public-agenda.jpg)
+
 ## Try it in one command
 
 ```bash
@@ -43,7 +50,7 @@ configure. Email has no API key in a fresh clone, so every message the app would
 and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
 a real inbox.
 
-To load the demo conference (15 submissions mid-review, 7 accepted speakers, 4 tracks, 3 rooms, and
+To load the demo conference (14 submissions mid-review, 7 accepted speakers, 4 tracks, 3 rooms, and
 a two-day agenda with gaps still in it):
 
 ```bash
