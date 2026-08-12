@@ -81,6 +81,24 @@ export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
   'published',
   'cancelled',
 ]);
+export const prospectStage = pgEnum('prospect_stage', [
+  'researching',
+  'identified',
+  'contacted',
+  'interested',
+  'confirmed',
+  'declined',
+]);
+export const contactActivityKind = pgEnum('contact_activity_kind', [
+  'created',
+  'imported',
+  'updated',
+  'stage_change',
+  'event_added',
+  'email_sent',
+  'merged',
+]);
+export const segmentKind = pgEnum('segment_kind', ['dynamic', 'curated']);
 
 // ---------------------------------------------------------------------------
 // Identity. Users are global; everything role-shaped is event-scoped through
@@ -948,4 +966,194 @@ export const savedView = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ byUserSurface: index('saved_view_user_surface_idx').on(t.userId, t.surface) }),
+);
+
+/**
+ * The speaker database sits *above* events, so it hangs off the organizer's account rather than
+ * carrying the `eventId` every other table does. That is the whole point of it: a speaker who came
+ * back for the third year running should not be re-keyed, and a prospect being sourced belongs to
+ * nobody's event yet.
+ */
+export const contact = pgTable(
+  'contact',
+  {
+    id: id(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    jobTitle: text('job_title'),
+    company: text('company'),
+    bioMarkdown: text('bio_markdown'),
+    headshotUrl: text('headshot_url'),
+    location: text('location'),
+    source: text('source'),
+    tags: jsonb('tags').$type<string[]>().notNull().default([]),
+    /** Values for the organizer's own `crm_field` definitions, keyed by that field's `key`. */
+    customFields: jsonb('custom_fields').$type<Record<string, string>>().notNull().default({}),
+    /**
+     * Set when this record lost a merge. The row is kept rather than deleted so that links made
+     * before the merge still resolve, and it is filtered out of every directory read.
+     */
+    mergedIntoContactId: uuid('merged_into_contact_id'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    uniqueEmail: unique('contact_owner_email').on(t.ownerUserId, t.email),
+    byOwner: index('contact_owner_idx').on(t.ownerUserId),
+    byName: index('contact_name_idx').on(t.name),
+  }),
+);
+
+export const contactNote = pgTable(
+  'contact_note',
+  {
+    id: id(),
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contact.id, { onDelete: 'cascade' }),
+    /** Set when the note was written on a pipeline card rather than the contact itself. */
+    prospectId: uuid('prospect_id'),
+    authorUserId: uuid('author_user_id').references(() => user.id, { onDelete: 'set null' }),
+    authorName: text('author_name').notNull(),
+    bodyMarkdown: text('body_markdown').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byContact: index('contact_note_contact_idx').on(t.contactId) }),
+);
+
+export const contactActivity = pgTable(
+  'contact_activity',
+  {
+    id: id(),
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contact.id, { onDelete: 'cascade' }),
+    prospectId: uuid('prospect_id'),
+    kind: contactActivityKind('kind').notNull(),
+    summary: text('summary').notNull(),
+    actorUserId: uuid('actor_user_id').references(() => user.id, { onDelete: 'set null' }),
+    actorName: text('actor_name').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byContact: index('contact_activity_contact_idx').on(t.contactId) }),
+);
+
+/** What ties a cross-event contact to the per-event `participant` it was pushed into. */
+export const contactEventLink = pgTable(
+  'contact_event_link',
+  {
+    id: id(),
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contact.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id').references(() => participant.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    uniqueLink: unique('contact_event_link_pair').on(t.contactId, t.eventId),
+    byContact: index('contact_event_link_contact_idx').on(t.contactId),
+  }),
+);
+
+/** Organizer-defined columns on the directory, the CRM counterpart of `field_library_entry`. */
+export const crmField = pgTable(
+  'crm_field',
+  {
+    id: id(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    label: text('label').notNull(),
+    type: fieldType('type').notNull(),
+    options: jsonb('options').$type<string[]>().notNull().default([]),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({ uniqueKey: unique('crm_field_owner_key').on(t.ownerUserId, t.key) }),
+);
+
+/**
+ * A saved slice of the directory. A dynamic segment stores the filter and re-runs it, so a contact
+ * imported tomorrow joins it on its own; a curated one stores the member ids and stays put.
+ */
+export const contactSegment = pgTable(
+  'contact_segment',
+  {
+    id: id(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    kind: segmentKind('kind').notNull().default('dynamic'),
+    filters: jsonb('filters').$type<Record<string, unknown>>().notNull().default({}),
+    memberContactIds: jsonb('member_contact_ids').$type<string[]>().notNull().default([]),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ byOwner: index('contact_segment_owner_idx').on(t.ownerUserId) }),
+);
+
+/** A contact being sourced: one card on the kanban board. */
+export const prospect = pgTable(
+  'prospect',
+  {
+    id: id(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    contactId: uuid('contact_id')
+      .notNull()
+      .references(() => contact.id, { onDelete: 'cascade' }),
+    /** Null while sourcing is speculative — a prospect need not be aimed at an event yet. */
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'set null' }),
+    stage: prospectStage('stage').notNull().default('identified'),
+    score: integer('score'),
+    rationale: text('rationale'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ byOwnerStage: index('prospect_owner_stage_idx').on(t.ownerUserId, t.stage) }),
+);
+
+export const contactCampaign = pgTable(
+  'contact_campaign',
+  {
+    id: id(),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'set null' }),
+    subject: text('subject').notNull(),
+    bodyMarkdown: text('body_markdown').notNull(),
+    recipientCount: integer('recipient_count').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byOwner: index('contact_campaign_owner_idx').on(t.ownerUserId) }),
+);
+
+export const contactCampaignRecipient = pgTable(
+  'contact_campaign_recipient',
+  {
+    id: id(),
+    campaignId: uuid('campaign_id')
+      .notNull()
+      .references(() => contactCampaign.id, { onDelete: 'cascade' }),
+    contactId: uuid('contact_id').references(() => contact.id, { onDelete: 'set null' }),
+    email: text('email').notNull(),
+    /** The rendered subject after merge tags resolved, which is what the organizer needs to audit. */
+    renderedSubject: text('rendered_subject').notNull(),
+    emailLogId: uuid('email_log_id').references(() => emailLog.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byCampaign: index('contact_campaign_recipient_idx').on(t.campaignId) }),
 );
