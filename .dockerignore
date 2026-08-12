@@ -6,7 +6,10 @@ node_modules
 .env
 .env.*
 !.env.example
-docs
+# docs/images is not documentation as far as the build is concerned: the landing page imports two
+# of those screenshots through next/image, so excluding the whole directory fails webpack.
+docs/*
+!docs/images
 coverage
 *.tsbuildinfo
 .DS_Store

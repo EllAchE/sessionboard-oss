@@ -11,8 +11,12 @@ services:
       POSTGRES_USER: cicero
       POSTGRES_PASSWORD: cicero
       POSTGRES_DB: cicero
+    # 5434 on the host because a developer cloning this very likely already has Postgres on
+    # 5432, and a bind collision would fail `docker compose up` before anything starts. The app
+    # reaches it over the compose network on 5432 either way; this mapping is for psql and for
+    # running the seed from outside the container.
     ports:
-      - '5432:5432'
+      - '5434:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

@@ -30,6 +30,9 @@ COPY --from=build /app/next.config.ts ./next.config.ts
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=build /app/db ./db
+# `db/seed.ts` reaches into the service layer, so the demo data cannot be loaded from a runtime
+# image that carries only the compiled bundle.
+COPY --from=build /app/lib ./lib
 
 RUN useradd --system --uid 1001 cicero && chown -R cicero:cicero /app
 USER cicero
