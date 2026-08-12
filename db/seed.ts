@@ -934,7 +934,17 @@ const STATUSES = ['completed', 'completed', 'in_progress', 'not_started', 'not_s
 await db.insert(taskAssignment).values(
   tasks.flatMap((row, taskIndex) =>
     uniqueAccepted.map((person, personIndex) => {
-      const status = STATUSES[(taskIndex + personIndex) % STATUSES.length];
+      const rotated = STATUSES[(taskIndex + personIndex) % STATUSES.length];
+      /**
+       * This loop never inserts a `file` row or an `answers` payload, so `file_upload` and `form`
+       * tasks have no evidence to back a `completed` status — `listPortalTasks` would immediately
+       * read it back down to `in_progress` anyway (see `reconcileStatus` in `lib/services/tasks.ts`),
+       * and a seed that ships a row it knows will be reinterpreted on read is worse than one that
+       * just tells the truth. `acknowledge` and `link` tasks have no separate evidence — the status
+       * flag *is* the evidence — so they still rotate all the way to done.
+       */
+      const needsEvidence = row.kind === 'file_upload' || row.kind === 'form';
+      const status = needsEvidence && rotated === 'completed' ? 'in_progress' : rotated;
       return {
         taskId: row.id,
         participantId: person.id,
