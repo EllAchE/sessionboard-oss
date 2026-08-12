@@ -1,0 +1,78 @@
+.root {
+  --star-size: var(--control-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-05);
+}
+
+.sm {
+  --star-size: var(--control-xs);
+}
+
+.md {
+  --star-size: var(--control-sm);
+}
+
+.lg {
+  --star-size: var(--control-md);
+}
+
+.starBox,
+.starButton {
+  position: relative;
+  display: inline-flex;
+  width: var(--star-size);
+  height: var(--star-size);
+}
+
+.starButton {
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.starButton:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.starClip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  overflow: hidden;
+  display: inline-flex;
+}
+
+.starEmpty,
+.starFilled {
+  width: var(--star-size);
+  height: var(--star-size);
+  flex-shrink: 0;
+}
+
+.starEmpty {
+  color: var(--border-strong);
+  fill: none;
+  stroke: currentColor;
+}
+
+.starFilled {
+  color: var(--accent);
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.starButton:hover .starEmpty {
+  color: var(--border-accent);
+}
+
+.starButton:hover .starFilled {
+  color: var(--accent-hover);
+}

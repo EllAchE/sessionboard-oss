@@ -1,0 +1,19 @@
+.root {
+  display: inline;
+  font: var(--type-mono);
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  vertical-align: baseline;
+}
+
+.sm {
+  font-size: var(--text-2xs);
+  padding: var(--space-05) var(--space-1);
+}
+
+.md {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+}

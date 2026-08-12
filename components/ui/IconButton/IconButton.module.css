@@ -1,0 +1,87 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid transparent;
+  color: var(--text-body);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.root svg {
+  width: 1em;
+  height: 1em;
+}
+
+.root:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  color: var(--text-faint);
+  background: var(--surface-sunken);
+  border-color: var(--border-hairline);
+}
+
+.xs {
+  width: var(--control-xs);
+  height: var(--control-xs);
+  font-size: var(--text-sm);
+}
+
+.sm {
+  width: var(--control-sm);
+  height: var(--control-sm);
+  font-size: var(--text-md);
+}
+
+.md {
+  width: var(--control-md);
+  height: var(--control-md);
+  font-size: var(--text-lg);
+}
+
+.ghost {
+  background: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.ghost:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.secondary {
+  background: var(--surface-card);
+  border-color: var(--border-default);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.secondary:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.danger {
+  background: transparent;
+  color: var(--status-danger-fg);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--status-danger-bg);
+}
+
+.danger:active:not(:disabled) {
+  background: color-mix(in srgb, var(--status-danger-bg) 60%, var(--surface-active));
+}

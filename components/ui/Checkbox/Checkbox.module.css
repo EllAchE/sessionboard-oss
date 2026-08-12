@@ -1,0 +1,86 @@
+.root {
+  appearance: none;
+  display: inline-block;
+  vertical-align: middle;
+  box-sizing: border-box;
+  width: var(--control-xs);
+  height: var(--control-xs);
+  margin: 0;
+  position: relative;
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.root:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.root:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-color: var(--border-focus);
+}
+
+.root[aria-invalid='true'] {
+  border-color: var(--status-danger-fg);
+}
+
+.root[aria-invalid='true']:focus-visible {
+  border-color: var(--status-danger-fg);
+  box-shadow:
+    0 0 0 var(--border-width-thick) var(--surface-card),
+    0 0 0 calc(var(--border-width-thick) * 2)
+      color-mix(in srgb, var(--status-danger-fg) 40%, transparent);
+}
+
+.root:checked,
+.root:indeterminate {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.root:checked::after {
+  content: '';
+  position: absolute;
+  left: 28%;
+  top: 48%;
+  width: 42%;
+  height: 68%;
+  border: solid var(--text-on-accent);
+  border-width: 0 var(--border-width-thick) var(--border-width-thick) 0;
+  transform: translateY(-58%) rotate(45deg);
+}
+
+.root:indeterminate::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  top: 50%;
+  width: 56%;
+  height: 0;
+  border-top: var(--border-width-thick) solid var(--text-on-accent);
+  transform: translateY(-50%);
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  background: var(--surface-sunken);
+  border-color: var(--border-hairline);
+}
+
+.root:disabled:checked,
+.root:disabled:indeterminate {
+  background: var(--surface-sunken);
+  border-color: var(--border-hairline);
+}
+
+.root:disabled:checked::after,
+.root:disabled:indeterminate::after {
+  border-color: var(--text-faint);
+}

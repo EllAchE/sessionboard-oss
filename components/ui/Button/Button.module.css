@@ -1,0 +1,147 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  border: var(--border-width) solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.root:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.root:disabled {
+  cursor: not-allowed;
+  background: var(--surface-sunken);
+  border-color: var(--border-hairline);
+  color: var(--text-faint);
+}
+
+.content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.contentHidden {
+  visibility: hidden;
+}
+
+.label {
+  display: inline-flex;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--space-4);
+  height: var(--space-4);
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-full);
+  border: var(--border-width-thick) solid color-mix(in srgb, currentcolor 30%, transparent);
+  border-top-color: currentcolor;
+  animation: spin var(--duration-slow) linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Sizes */
+.sm {
+  height: var(--control-sm);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.md {
+  height: var(--control-md);
+  padding: 0 var(--space-4);
+}
+
+.lg {
+  height: var(--control-lg);
+  padding: 0 var(--space-5);
+  font-size: var(--text-lg);
+}
+
+/* Variants */
+.primary {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.primary:active:not(:disabled) {
+  background: var(--accent-press);
+  border-color: var(--accent-press);
+}
+
+.secondary {
+  background: var(--surface-card);
+  color: var(--text-body);
+  border-color: var(--border-default);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.secondary:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-body);
+  border-color: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.ghost:active:not(:disabled) {
+  background: var(--surface-active);
+}
+
+.danger {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+  border-color: var(--border-accent);
+}
+
+.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--status-danger-bg) 50%, var(--surface-hover));
+}
+
+.danger:active:not(:disabled) {
+  background: color-mix(in srgb, var(--status-danger-bg) 30%, var(--surface-active));
+}
+
+.fullWidth {
+  width: 100%;
+}

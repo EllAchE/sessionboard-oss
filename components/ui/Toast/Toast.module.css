@@ -1,0 +1,123 @@
+.viewport {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: calc(var(--sidebar-width) + var(--space-24));
+  max-width: calc(100vw - var(--space-8));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-raised);
+  border: var(--border-width) solid var(--border-hairline);
+  border-left: var(--border-width-thick) solid var(--tone-fg, var(--border-default));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: slide var(--duration-normal) var(--ease-out);
+}
+
+.info {
+  --tone-fg: var(--status-info-fg);
+  --tone-bg: var(--status-info-bg);
+}
+
+.success {
+  --tone-fg: var(--status-success-fg);
+  --tone-bg: var(--status-success-bg);
+}
+
+.warning {
+  --tone-fg: var(--status-warning-fg);
+  --tone-bg: var(--status-warning-bg);
+}
+
+.danger {
+  --tone-fg: var(--status-danger-fg);
+  --tone-bg: var(--status-danger-bg);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--control-xs);
+  height: var(--control-xs);
+  border-radius: var(--radius-full);
+  background: var(--tone-bg);
+  color: var(--tone-fg);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-05);
+}
+
+.title {
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+}
+
+.description {
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--text-muted);
+}
+
+.action {
+  align-self: flex-start;
+  margin-top: var(--space-1);
+  padding: 0;
+  font: var(--type-label);
+  color: var(--tone-fg);
+  text-decoration: underline;
+  text-underline-offset: var(--space-05);
+  border-radius: var(--radius-xs);
+}
+
+.action:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--control-xs);
+  height: var(--control-xs);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.dismiss:hover {
+  background: var(--surface-hover);
+  color: var(--text-body);
+}
+
+.dismiss:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+@keyframes slide {
+  from {
+    opacity: 0;
+    transform: translateX(var(--space-4));
+  }
+}

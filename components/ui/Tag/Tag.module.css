@@ -1,0 +1,53 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-05) var(--space-2);
+  border-radius: var(--radius-sm);
+  font: var(--type-label);
+  border: var(--border-width) solid var(--border-hairline);
+}
+
+.neutral {
+  background: var(--surface-sunken);
+  color: var(--text-body);
+}
+
+.accent {
+  background: var(--accent-subtle);
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.label {
+  display: inline-flex;
+}
+
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.removeButton:hover {
+  background: var(--surface-active);
+}
+
+.removeButton:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.removeIcon {
+  width: 1em;
+  height: 1em;
+}

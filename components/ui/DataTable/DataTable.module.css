@@ -1,0 +1,151 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.root:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font: var(--type-body);
+  color: var(--text-body);
+}
+
+.caption {
+  padding: var(--space-2) var(--space-3);
+  font: var(--type-label);
+  color: var(--text-muted);
+  text-align: left;
+  caption-side: top;
+}
+
+.head th {
+  position: relative;
+  height: var(--row-height);
+  padding: 0 var(--space-3);
+  font: var(--type-label);
+  color: var(--text-muted);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: left;
+  background: var(--surface-card);
+  box-shadow: inset 0 -1px 0 var(--border-default);
+}
+
+.sticky th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.row {
+  height: var(--row-height);
+  background: var(--surface-card);
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.row td {
+  height: var(--row-height);
+  padding: 0 var(--space-3);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  box-shadow: inset 0 -1px 0 var(--border-hairline);
+}
+
+.row:last-child td {
+  box-shadow: none;
+}
+
+.row:hover {
+  background: var(--surface-hover);
+}
+
+.row[data-selected='true'] {
+  background: var(--surface-selected);
+}
+
+.row[data-selected='true']:hover {
+  background: color-mix(in srgb, var(--surface-selected) 75%, var(--surface-active));
+}
+
+/* The active row is the keyboard cursor. It reads independently of selection. */
+.row[data-active='true'] td:first-child {
+  box-shadow:
+    inset var(--border-width-thick) 0 0 var(--accent),
+    inset 0 -1px 0 var(--border-hairline);
+}
+
+.row[data-active='true'] {
+  background: var(--surface-hover);
+}
+
+.row[data-active='true'][data-selected='true'] {
+  background: color-mix(in srgb, var(--surface-selected) 75%, var(--surface-active));
+}
+
+.root:focus-visible .row[data-active='true'] td {
+  box-shadow:
+    inset 0 -1px 0 var(--border-hairline),
+    inset 0 1px 0 var(--border-accent);
+}
+
+.root:focus-visible .row[data-active='true'] td:first-child {
+  box-shadow:
+    inset var(--border-width-thick) 0 0 var(--accent),
+    inset 0 -1px 0 var(--border-hairline),
+    inset 0 1px 0 var(--border-accent);
+}
+
+.left {
+  text-align: left;
+}
+
+.center {
+  text-align: center;
+}
+
+.right {
+  text-align: right;
+}
+
+.mono {
+  font: var(--type-mono);
+  color: var(--text-muted);
+}
+
+.selectCell {
+  width: var(--control-lg);
+  padding-left: var(--space-3);
+  padding-right: 0;
+  text-align: left;
+}
+
+.selectCell input {
+  vertical-align: middle;
+}
+
+.empty {
+  padding: var(--space-10) var(--space-4);
+  color: var(--text-faint);
+  text-align: center;
+  box-shadow: none;
+}
+
+.strong {
+  color: var(--text-strong);
+  font-weight: var(--weight-medium);
+}

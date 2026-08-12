@@ -1,0 +1,63 @@
+.root {
+  display: flex;
+  flex-direction: column;
+}
+
+.list {
+  display: flex;
+  align-items: stretch;
+  border-bottom: var(--border-width) solid var(--border-hairline);
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-lg);
+  padding-inline: var(--space-3);
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.trigger:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.selected {
+  color: var(--text-strong);
+  box-shadow: inset 0 calc(var(--border-width-thick) * -1) 0 0 var(--accent);
+}
+
+.selected:focus-visible {
+  box-shadow:
+    var(--ring-focus),
+    inset 0 calc(var(--border-width-thick) * -1) 0 0 var(--accent);
+}
+
+.trigger:disabled {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.panel {
+  padding-block: var(--space-3);
+}
+
+.panel:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}

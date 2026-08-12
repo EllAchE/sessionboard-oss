@@ -1,0 +1,52 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-weight: var(--weight-medium);
+}
+
+.xs {
+  width: var(--control-xs);
+  height: var(--control-xs);
+  font-size: var(--text-2xs);
+}
+
+.sm {
+  width: var(--control-sm);
+  height: var(--control-sm);
+  font-size: var(--text-xs);
+}
+
+.md {
+  width: var(--control-md);
+  height: var(--control-md);
+  font-size: var(--text-sm);
+}
+
+.lg {
+  width: var(--control-lg);
+  height: var(--control-lg);
+  font-size: var(--text-lg);
+}
+
+.initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -1,1 +1,124 @@
 /* Owned by the design-system workstream. Replaced wholesale from docs/handoff/design-system.md §1. */
+
+:root {
+  /* ---- Travertine: warm stone neutrals. The whole product sits on these. ---- */
+  --stone-0: #FFFFFF;  --stone-25: #FCFBF8;  --stone-50: #F8F6F1;
+  --stone-100: #F1EEE6; --stone-200: #E4DFD3; --stone-300: #D2CABA;
+  --stone-400: #B0A794; --stone-500: #8A8170; --stone-600: #6A6255;
+  --stone-700: #4D473E; --stone-800: #33302A; --stone-900: #211F1B;
+  --stone-950: #141311;
+
+  /* ---- Vermilion: cinnabar red used on Roman wall painting. The one loud color. ---- */
+  --vermilion-50: #FDF4F1;  --vermilion-100: #F9E2DA; --vermilion-200: #F0BEAE;
+  --vermilion-300: #E2937B; --vermilion-400: #D06A4B; --vermilion-500: #B7391F;
+  --vermilion-600: #9C2E17; --vermilion-700: #7C2412; --vermilion-800: #591A0D;
+  --vermilion-900: #3A1109;
+
+  /* ---- Support hues. Semantic only; never decorative. ---- */
+  --lapis-100: #DCE5F2; --lapis-300: #90A8CE; --lapis-500: #2C4A7C; --lapis-700: #1C3054;
+  --verdigris-100: #D9EAE3; --verdigris-300: #86BAAA; --verdigris-500: #2F7361; --verdigris-700: #1D4C3F;
+  --ochre-100: #F6E9CC; --ochre-300: #DCBB6C; --ochre-500: #A8781C; --ochre-700: #6F4E0F;
+
+  --surface-page: var(--stone-50);     --surface-card: var(--stone-0);
+  --surface-sunken: var(--stone-100);  --surface-raised: var(--stone-0);
+  --surface-inverse: var(--stone-900); --surface-hover: var(--stone-100);
+  --surface-active: var(--stone-200);  --surface-selected: var(--vermilion-50);
+  --surface-overlay: rgba(33, 31, 27, 0.45);
+
+  --text-strong: var(--stone-900); --text-body: var(--stone-800);
+  --text-muted: var(--stone-600);  --text-faint: var(--stone-500);
+  --text-inverse: var(--stone-50); --text-accent: var(--vermilion-600);
+  --text-link: var(--lapis-500);   --text-on-accent: #FFFFFF;
+
+  --border-hairline: var(--stone-200); --border-default: var(--stone-300);
+  --border-strong: var(--stone-400);   --border-accent: var(--vermilion-500);
+  --border-focus: var(--vermilion-500);
+
+  --status-info-fg: var(--lapis-500);        --status-info-bg: var(--lapis-100);
+  --status-success-fg: var(--verdigris-500); --status-success-bg: var(--verdigris-100);
+  --status-warning-fg: var(--ochre-700);     --status-warning-bg: var(--ochre-100);
+  --status-danger-fg: var(--vermilion-600);  --status-danger-bg: var(--vermilion-50);
+
+  --accent: var(--vermilion-500); --accent-hover: var(--vermilion-600);
+  --accent-press: var(--vermilion-700); --accent-subtle: var(--vermilion-50);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --surface-page: #17150F; --surface-card: #201D17; --surface-sunken: #131109;
+  --surface-raised: #2A261E; --surface-inverse: var(--stone-50);
+  --surface-hover: #2A261E; --surface-active: #353026; --surface-selected: #3A2018;
+  --surface-overlay: rgba(10, 9, 7, 0.6);
+  --text-strong: #F6F3EC; --text-body: #E2DCD0; --text-muted: #A79E8C; --text-faint: #7E7666;
+  --text-inverse: var(--stone-900); --text-accent: var(--vermilion-300);
+  --text-link: var(--lapis-300); --text-on-accent: #FFFFFF;
+  --border-hairline: #322D24; --border-default: #423C31; --border-strong: #57503F;
+  --border-accent: var(--vermilion-400); --border-focus: var(--vermilion-300);
+  --status-info-fg: var(--lapis-300); --status-info-bg: #1B2436;
+  --status-success-fg: var(--verdigris-300); --status-success-bg: #162C26;
+  --status-warning-fg: var(--ochre-300); --status-warning-bg: #2E2411;
+  --status-danger-fg: var(--vermilion-300); --status-danger-bg: #33150D;
+  --accent: var(--vermilion-400); --accent-hover: var(--vermilion-300);
+  --accent-press: var(--vermilion-500); --accent-subtle: #2E1710;
+  color-scheme: dark;
+}
+
+:root {
+  /* ---- Typography. The var() indirections resolve to the self-hosted faces from app/fonts.ts. ---- */
+  --font-display: var(--font-spectral, "Spectral"), "Iowan Old Style", Georgia, serif;
+  --font-ui: var(--font-archivo, "Archivo"), -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-plex-mono, "IBM Plex Mono"), ui-monospace, "SF Mono", monospace;
+
+  --text-2xs:11px; --text-xs:12px; --text-sm:13px; --text-md:14px; --text-lg:16px;
+  --text-xl:19px; --text-2xl:24px; --text-3xl:31px; --text-4xl:40px; --text-5xl:54px; --text-6xl:72px;
+
+  --leading-tight:1.12; --leading-snug:1.28; --leading-normal:1.5; --leading-loose:1.65;
+  --weight-regular:400; --weight-medium:500; --weight-semibold:600; --weight-bold:700;
+
+  --tracking-inscribed:0.18em; --tracking-eyebrow:0.1em; --tracking-tight:-0.015em;
+  --tracking-tighter:-0.025em; --tracking-normal:0;
+
+  --type-display: var(--weight-regular) var(--text-5xl)/var(--leading-tight) var(--font-display);
+  --type-title:   var(--weight-regular) var(--text-3xl)/var(--leading-tight) var(--font-display);
+  --type-heading: var(--weight-semibold) var(--text-lg)/var(--leading-snug) var(--font-ui);
+  --type-body:    var(--weight-regular) var(--text-md)/var(--leading-normal) var(--font-ui);
+  --type-prose:   var(--weight-regular) var(--text-lg)/var(--leading-loose) var(--font-display);
+  --type-label:   var(--weight-medium) var(--text-xs)/1.2 var(--font-ui);
+  --type-mono:    var(--weight-regular) var(--text-sm)/1.4 var(--font-mono);
+
+  /* ---- Geometry. 4px base with a 2px micro step — dense tables need the half. ---- */
+  --space-0:0px; --space-05:2px; --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px; --space-12:48px;
+  --space-16:64px; --space-20:80px; --space-24:96px; --space-32:128px;
+
+  /* Radii stay small. Stone is cut, not moulded. */
+  --radius-xs:2px; --radius-sm:3px; --radius-md:5px; --radius-lg:8px; --radius-xl:12px; --radius-full:999px;
+  --border-width:1px; --border-width-thick:2px;
+
+  --control-xs:22px; --control-sm:28px; --control-md:32px; --control-lg:40px;
+  --row-height:36px; --sidebar-width:232px; --topbar-height:48px;
+  --content-max:1200px; --prose-max:68ch;
+
+  /* ---- Elevation. Hierarchy comes from hairlines first. ---- */
+  --shadow-xs: 0 1px 0 rgba(33,31,27,0.04);
+  --shadow-sm: 0 1px 2px rgba(33,31,27,0.06), 0 0 0 1px rgba(33,31,27,0.04);
+  --shadow-md: 0 2px 6px rgba(33,31,27,0.08), 0 0 0 1px rgba(33,31,27,0.05);
+  --shadow-lg: 0 8px 24px rgba(33,31,27,0.12), 0 0 0 1px rgba(33,31,27,0.06);
+  --shadow-overlay: 0 16px 48px rgba(33,31,27,0.2), 0 0 0 1px rgba(33,31,27,0.08);
+  --shadow-inset: inset 0 1px 2px rgba(33,31,27,0.06);
+  --ring-focus: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--vermilion-300);
+
+  /* ---- Motion. Fast and unfussy. A power tool should never make you wait. ---- */
+  --duration-instant:60ms; --duration-fast:110ms; --duration-normal:180ms; --duration-slow:300ms;
+  --ease-standard: cubic-bezier(0.2,0,0,1); --ease-out: cubic-bezier(0.16,1,0.3,1);
+  --ease-in: cubic-bezier(0.5,0,0.9,0.2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+  }
+}
