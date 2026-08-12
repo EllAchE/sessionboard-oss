@@ -29,6 +29,13 @@
       "when": 1786517387905,
       "tag": "0003_crm_speaker_database",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786517972798,
+      "tag": "0004_approval_gate_and_speaker_status",
+      "breakpoints": true
     }
   ]
 }

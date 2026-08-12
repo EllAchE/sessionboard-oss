@@ -99,6 +99,22 @@ export const contactActivityKind = pgEnum('contact_activity_kind', [
   'merged',
 ]);
 export const segmentKind = pgEnum('segment_kind', ['dynamic', 'curated']);
+/**
+ * Separate from `scheduledSessionStatus`, which answers "is this slot on the published grid".
+ * This one answers "has anyone read the abstract" — a session can be firmly scheduled while its
+ * copy is still being argued over, and only the second question gates what the public sees.
+ */
+export const contentApprovalStatus = pgEnum('content_approval_status', [
+  'in_review',
+  'approved',
+  'changes_requested',
+]);
+export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
+  'invited',
+  'confirmed',
+  'declined',
+  'withdrawn',
+]);
 
 // ---------------------------------------------------------------------------
 // Identity. Users are global; everything role-shaped is event-scoped through
@@ -403,6 +419,12 @@ export const submission = pgTable(
     personaId: uuid('persona_id').references(() => persona.id, { onDelete: 'set null' }),
 
     status: submissionStatus('status').notNull().default('draft'),
+    /**
+     * Defaults to approved because the review that decided to accept the talk *was* the read of the
+     * abstract. Starting at `in_review` would silently empty the public agenda for every organizer
+     * who never learns this gate exists, which is a worse failure than an unread edit going live.
+     */
+    contentStatus: contentApprovalStatus('content_status').notNull().default('approved'),
     answers: jsonb('answers').$type<Record<string, unknown>>().notNull().default({}),
 
     submittedAt: timestamp('submitted_at', { withTimezone: true }),
@@ -454,6 +476,8 @@ export const participant = pgTable(
     headshotFileId: uuid('headshot_file_id'),
     links: jsonb('links').$type<{ label: string; url: string }[]>().notNull().default([]),
     timezone: text('timezone'),
+    /** Where this person is in the organizer's own pipeline, independent of any one submission. */
+    workflowStatus: speakerWorkflowStatus('workflow_status').notNull().default('invited'),
     dietaryNotes: text('dietary_notes'),
     accessibilityNotes: text('accessibility_notes'),
     createdAt: createdAt(),
