@@ -1,261 +1,176 @@
+import Image from 'next/image';
 import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardDescription,
-  CardTitle,
-} from '@/components/ui';
-import { currentActor } from '@/lib/auth';
-import { listEventsForUser, listPublicEvents } from '@/lib/services/events';
-import { activeTransportName } from '@/lib/mail';
+  ArrowRight,
+  CalendarCheck,
+  FileCheck,
+  Github,
+  ListChecks,
+  Mic,
+} from 'lucide-react';
+import { Button } from '@/components/ui';
+import dashboardImage from '@/docs/images/dashboard.jpg';
+import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import styles from './home.module.css';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = {
-  title: 'Cicero',
+  title: 'Cicero · Conference operations, without the chaos',
   description:
-    'Open source conference management: call for speakers, review, agenda, speaker portal and the email around all of it.',
+    'Manage proposals, reviews, speakers, schedules, and conference communications in one calm workspace.',
 };
 
-const DIFFERENCES = [
+const FEATURES = [
   {
-    title: 'A dashboard for who still owes you something',
-    body: "Sessionboard's own FAQ says it has no central task-completion report, which is the one place we add something rather than match it. Cicero opens on every outstanding task across every speaker, ordered by how late it is.",
+    icon: <FileCheck size={20} aria-hidden="true" />,
+    title: 'Collect and decide',
+    body: 'Publish your call for speakers, route proposals to the right reviewers, and make confident decisions without spreadsheet archaeology.',
   },
   {
-    title: 'Sign-in links for everyone, no passwords anywhere',
-    body: 'A speaker touches your software four times in six months and has forgotten the password by the second. Organizers, reviewers and speakers all get an emailed link instead.',
+    icon: <CalendarCheck size={20} aria-hidden="true" />,
+    title: 'Build a schedule that holds up',
+    body: 'Place sessions across rooms and tracks while conflicts surface before they become show-day problems.',
   },
   {
-    title: 'Impersonation that can write',
-    body: 'A read-only "view as speaker" is useless the moment someone is stuck. An organizer here can finish the task as the speaker, and the write stays attributable through impersonated_by.',
-  },
-  {
-    title: 'Calendar invites that update in place',
-    body: "A real VCALENDAR METHOD:REQUEST with a bumped SEQUENCE, so moving a talk to Thursday moves the entry already sitting in the speaker's calendar instead of adding a second one next to it.",
-  },
-  {
-    title: 'Double-booked speakers, not just double-booked rooms',
-    body: 'A room clash is a spreadsheet error you fix over coffee. A speaker booked into two rooms at 14:00 fails in public, on the day, in front of the people who paid.',
-  },
-  {
-    title: 'Airtable as a mirror, not as the database',
-    body: 'Airtable has no transactions, no joins and a five-request-per-second ceiling, so conflict detection cannot be written against it. Cicero keeps Postgres as the store and pushes submissions, speakers and the agenda into a base you configure.',
+    icon: <ListChecks size={20} aria-hidden="true" />,
+    title: 'Keep every speaker moving',
+    body: 'See outstanding bios, headshots, slides, and approvals at a glance, then follow up from the same place.',
   },
 ];
 
-const DEMO_LINKS = [
-  { href: '/demo', label: 'Public event page' },
-  { href: '/demo/agenda', label: 'Programme' },
-  { href: '/demo/speakers', label: 'Speakers' },
-  { href: '/submit/demo/speak', label: 'Live call for speakers' },
-  { href: '/embed/demo/agenda', label: 'Embeddable agenda' },
-  { href: '/api/v1/events/demo/agenda', label: 'REST API' },
-];
-
-/**
- * The front door has to answer "where do I go" for four different people at once — an organizer
- * with events, an organizer with none, a speaker, and an attendee who only wants the programme —
- * without knowing which one is asking until the session is read. Everything below the fold is the
- * same for all of them, because a judge arriving cold and a returning organizer both benefit from
- * the demo entry point being on the page they already landed on.
- */
-export default async function Home() {
-  const actor = await currentActor();
-  const [mine, published] = await Promise.all([
-    actor ? listEventsForUser(actor.userId) : Promise.resolve([]),
-    listPublicEvents(),
-  ]);
-
-  const organizing = mine.filter((entry) => entry.roles.includes('organizer'));
-  const speaking = mine.filter(
-    (entry) => !entry.roles.includes('organizer') && entry.roles.includes('speaker'),
-  );
-  const reviewing = mine.filter((entry) => entry.roles.includes('reviewer'));
-  const linkOnScreen = activeTransportName() === 'log';
-
+export default function Home() {
   return (
     <main className={styles.root}>
-      <header className={styles.masthead}>
-        <p className={styles.eyebrow}>An open source replacement for Sessionboard</p>
-        <h1 className={styles.wordmark}>Cicero</h1>
-        <p className={styles.tagline}>
-          Conference software for the part nobody enjoys: the call for speakers, the review, the
-          agenda, and every email in between. Open source, and yours to run.
-        </p>
-
-        <div className={styles.actions}>
-          {actor ? (
-            <>
-              {organizing.length > 0 && (
-                <Button href="/admin" variant="primary">
-                  Organizer dashboard
-                </Button>
-              )}
-              {organizing.length > 0 && <Button href="/crm">Speaker database</Button>}
-              {organizing.length === 0 && (
-                <Button href="/events/new" variant="primary">
-                  Create your first event
-                </Button>
-              )}
-              {speaking.length > 0 && <Button href="/portal">Speaker portal</Button>}
-              {reviewing.length > 0 && <Button href="/review">Review queue</Button>}
-              {organizing.length > 0 && <Button href="/events/new">New event</Button>}
-            </>
-          ) : (
-            <>
-              <Button href="/signin?email=organizer@example.com&next=/admin" variant="primary">
-                Open the demo as an organizer
-              </Button>
-              <Button href="/demo">Read the programme</Button>
-              <Button href="/signin?next=/events/new" variant="ghost">
-                Start your own event
-              </Button>
-            </>
-          )}
+      <nav className={styles.nav} aria-label="Primary navigation">
+        <a className={styles.brand} href="/" aria-label="Cicero home">
+          <span className={styles.brandMark} aria-hidden="true">
+            <Mic size={18} />
+          </span>
+          <span>Cicero</span>
+        </a>
+        <div className={styles.navLinks}>
+          <a href="#product">Product</a>
+          <a href="/demo">Live demo</a>
+          <a href="https://github.com/EllAchE/sessionboard-oss" aria-label="Cicero on GitHub">
+            <Github size={17} aria-hidden="true" />
+            <span>GitHub</span>
+          </a>
         </div>
-      </header>
+      </nav>
 
-      {actor && mine.length > 0 && (
-        <Card className={styles.panel}>
-          <CardHeader>
-            <CardTitle>Your events</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <ul className={styles.linkList}>
-              {mine.map((entry) => (
-                <li key={entry.id} className={styles.linkRow}>
-                  <a className={styles.linkName} href={`/${entry.slug}`}>
-                    {entry.name}
-                  </a>
-                  <span className={styles.linkNote}>{entry.roles.join(' · ')}</span>
-                </li>
-              ))}
-            </ul>
-          </CardBody>
-        </Card>
-      )}
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Everything here runs on a seeded conference</h2>
-        <p className={styles.sectionLead}>
-          <code className={styles.code}>/demo</code> holds fourteen talk submissions part-way through
-          a scored review round, seven accepted speakers, a two-day schedule with gaps still in it,
-          and a pile of speaker tasks nobody has finished. It is ordinary data, and you can edit all
-          of it.
-        </p>
-        {linkOnScreen && (
-          <p className={styles.sectionLead}>
-            Sign in as <code className={styles.code}>organizer@example.com</code>. This deployment
-            writes mail to <a href="/admin/mail">/admin/mail</a> rather than sending it, so the
-            sign-in link comes back on the page and you never have to find an inbox.
+      <section className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>From call for speakers to show day</p>
+          <h1>Conference operations that stay out of the way.</h1>
+          <p className={styles.heroLead}>
+            Cicero brings proposals, reviews, schedules, speaker tasks, and communications into one
+            calm workspace, so organizers can focus on the programme.
           </p>
-        )}
-        <ul className={styles.chips}>
-          {DEMO_LINKS.map((link) => (
-            <li key={link.href}>
-              <a className={styles.chip} href={link.href}>
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+          <div className={styles.actions}>
+            <Button
+              href="/signin?email=organizer@example.com&next=/admin"
+              variant="primary"
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Explore the live demo
+            </Button>
+            <Button
+              href="https://github.com/EllAchE/sessionboard-oss"
+              size="lg"
+              iconLeft={<Github size={17} aria-hidden="true" />}
+            >
+              View on GitHub
+            </Button>
+          </div>
+        </div>
+
+        <div className={styles.heroVisual} aria-label="Cicero organizer dashboard preview">
+          <div className={styles.windowBar} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <Image
+            className={styles.heroImage}
+            src={dashboardImage}
+            alt="Cicero organizer dashboard showing event progress and next actions"
+            priority
+            sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1080px"
+          />
+          <div className={`${styles.callout} ${styles.calloutTasks}`}>
+            <ListChecks size={17} aria-hidden="true" />
+            <span>Every outstanding task, in one view</span>
+          </div>
+          <div className={`${styles.callout} ${styles.calloutSchedule}`}>
+            <CalendarCheck size={17} aria-hidden="true" />
+            <span>Conflicts surfaced before show day</span>
+          </div>
+        </div>
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>The whole loop, in one place</h2>
-        <ol className={styles.steps}>
-          <li>
-            Build a call for speakers in the form builder, with conditional questions and your own
-            fields, then publish it at a public URL.
-          </li>
-          <li>
-            Speakers submit cold. An account is created inside the flow, so nobody registers before
-            they know whether they want to.
-          </li>
-          <li>
-            Reviewers score against a scorecard you define, in rounds, without seeing each
-            other&apos;s numbers first. Claude can draft a rationale, and never decides.
-          </li>
-          <li>
-            Accepted talks drag onto the schedule. Room clashes, track clashes and double-booked
-            speakers surface as you drop them.
-          </li>
-          <li>
-            Acceptance mail goes out from a template you control, carrying a calendar invite that
-            updates itself when you reschedule.
-          </li>
-          <li>
-            Speakers finish bios, headshots and slides in a portal, and the agenda and speaker
-            gallery embed straight back onto your event site.
-          </li>
-        </ol>
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Where it deliberately differs</h2>
-        <p className={styles.sectionLead}>
-          Six calls we made against how the incumbent works. Each one is testable in the demo above.
-        </p>
-        <div className={styles.grid}>
-          {DIFFERENCES.map((item) => (
-            <Card key={item.title}>
-              <CardHeader>
-                <CardTitle>{item.title}</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <p className={styles.cardBody}>{item.body}</p>
-              </CardBody>
-            </Card>
+      <section className={styles.product} id="product">
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>One calm workspace</p>
+          <h2>Move every speaker from proposal to stage.</h2>
+          <p>
+            The full programme stays connected, from the first submission through the final public
+            schedule.
+          </p>
+        </div>
+        <div className={styles.features}>
+          {FEATURES.map((feature) => (
+            <article className={styles.feature} key={feature.title}>
+              <span className={styles.featureIcon}>{feature.icon}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Run it on your own machine</h2>
-        <p className={styles.sectionLead}>
-          <code className={styles.code}>docker compose up</code> brings up the app, Postgres and an
-          S3-compatible file store, and lands you on a first-run screen with nothing else to
-          configure. Point it at any Postgres URL you already have if you would rather.
-        </p>
-        <div className={styles.badges}>
-          <Badge tone="accent">MIT licensed</Badge>
-          <Badge>Postgres</Badge>
-          <Badge>Next.js on Cloudflare Workers or Node</Badge>
-          <Badge>No hosted dependency</Badge>
+      <section className={styles.programme}>
+        <div className={styles.programmeVisual}>
+          <Image
+            src={publicAgendaImage}
+            alt="A public Cicero conference agenda laid out by time and room"
+            sizes="(max-width: 820px) 94vw, 58vw"
+          />
+        </div>
+        <div className={styles.programmeCopy}>
+          <p className={styles.eyebrow}>Ready for the audience</p>
+          <h2>A public programme people can actually use.</h2>
+          <p>
+            Publish a clear agenda, session list, and speaker gallery without duplicating work or
+            waiting on another handoff.
+          </p>
+          <a className={styles.textLink} href="/demo/agenda">
+            Browse the demo programme <ArrowRight size={16} aria-hidden="true" />
+          </a>
         </div>
       </section>
 
-      {published.length > 0 && (
-        <Card className={styles.panel}>
-          <CardHeader>
-            <CardTitle>Public programmes</CardTitle>
-            <CardDescription>
-              Schedule, speakers and sessions, readable without an account.
-            </CardDescription>
-          </CardHeader>
-          <CardBody>
-            <ul className={styles.linkList}>
-              {published.map((entry) => (
-                <li key={entry.id} className={styles.linkRow}>
-                  <a className={styles.linkName} href={`/${entry.slug}`}>
-                    {entry.name}
-                  </a>
-                  <span className={styles.linkNote}>{entry.tagline ?? `/${entry.slug}`}</span>
-                </li>
-              ))}
-            </ul>
-          </CardBody>
-        </Card>
-      )}
+      <section className={styles.finalCta}>
+        <p className={styles.eyebrow}>See the whole workflow</p>
+        <h2>Start with a conference already in motion.</h2>
+        <p>
+          The live demo is filled with proposals, speakers, pending tasks, and a two-day programme
+          you can explore.
+        </p>
+        <Button
+          href="/signin?email=organizer@example.com&next=/admin"
+          variant="primary"
+          size="lg"
+          iconRight={<ArrowRight size={17} aria-hidden="true" />}
+        >
+          Open the organizer demo
+        </Button>
+      </section>
 
       <footer className={styles.footer}>
-        <a href="https://github.com/EllAchE/sessionboard-oss">Source on GitHub</a>
-        <a href="/admin/mail">Every email this instance sent</a>
-        <a href="/api/v1/openapi.json">OpenAPI schema</a>
+        <span>© 2026 Cicero</span>
+        <a href="https://github.com/EllAchE/sessionboard-oss" aria-label="Cicero on GitHub">
+          <Github size={17} aria-hidden="true" />
+          <span>GitHub</span>
+        </a>
       </footer>
     </main>
   );
