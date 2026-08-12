@@ -38,8 +38,10 @@ export function SignInForm({
                   Open your sign-in link
                 </Button>
                 <p className={styles.hint}>
-                  This instance logs mail instead of sending it, so the link is here rather than in an
-                  inbox. Every message it would have sent is at <a href="/admin/mail">/admin/mail</a>.
+                  {state.undelivered
+                    ? 'The mail provider would not deliver to that address on this demo deployment, so the link is here instead.'
+                    : 'This instance logs mail instead of sending it, so the link is here rather than in an inbox.'}{' '}
+                  Every message it sends is at <a href="/admin/mail">/admin/mail</a>.
                 </p>
               </>
             ) : mailboxHint ? (

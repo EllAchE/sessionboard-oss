@@ -73,7 +73,7 @@ export type MagicLinkRequest = {
  */
 export async function requestMagicLink(
   request: MagicLinkRequest,
-): Promise<{ email: string; link: string }> {
+): Promise<{ email: string; link: string; delivered: boolean }> {
   const db = getDb();
   const account = await findOrCreateUser(request.email, request.name);
   const token = randomToken();
@@ -96,7 +96,7 @@ export async function requestMagicLink(
     'If you did not ask for it, you can ignore this email.',
   ].join('\n');
 
-  await sendMail({
+  const { sent } = await sendMail({
     to: account.email,
     subject: 'Your sign-in link',
     html: renderMarkdown(body),
@@ -105,7 +105,7 @@ export async function requestMagicLink(
     templateKey: 'auth.magic_link',
   });
 
-  return { email: account.email, link };
+  return { email: account.email, link, delivered: sent };
 }
 
 /**
