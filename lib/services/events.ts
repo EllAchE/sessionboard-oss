@@ -76,6 +76,16 @@ export async function currentEventContext(): Promise<EventContext> {
 }
 
 /**
+ * The cookie's raw value, for the admin pages that carry no event segment and check membership
+ * themselves. Unlike `currentEventId` it never throws, because those pages have their own empty
+ * state for someone who has no events yet.
+ */
+export async function currentEventIdHint(): Promise<string | null> {
+  const store = await cookies();
+  return store.get(EVENT_COOKIE)?.value ?? null;
+}
+
+/**
  * Unauthenticated: the landing page has to offer a way into a published programme without knowing
  * who is asking. Newest first, because the edition someone wants is almost always the current one.
  */

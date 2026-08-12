@@ -1,4 +1,5 @@
 import { requireCurrentActor } from '@/lib/auth';
+import { currentEventIdHint } from '@/lib/services/events';
 import { activeTransportName } from '@/lib/mail';
 import {
   AUDIENCE_LABELS,
@@ -41,6 +42,7 @@ export default async function CommsPage({
   const actor = await requireCurrentActor();
   const { event, options } = await resolveAdminEvent({
     eventParam: params.event ?? null,
+    cookieEventId: await currentEventIdHint(),
     userId: actor.userId,
   });
 

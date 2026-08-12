@@ -1,5 +1,6 @@
 import { Card, CardBody } from '@/components/ui';
 import { requireCurrentActor } from '@/lib/auth';
+import { currentEventIdHint } from '@/lib/services/events';
 import {
   TEMPLATE_VARIABLES,
   ensureDefaultTemplates,
@@ -23,6 +24,7 @@ export default async function TemplatesPage({
   const actor = await requireCurrentActor();
   const { event, options } = await resolveAdminEvent({
     eventParam: params.event ?? null,
+    cookieEventId: await currentEventIdHint(),
     userId: actor.userId,
   });
 

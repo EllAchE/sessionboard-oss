@@ -1557,24 +1557,26 @@ export async function listEventsForAdmin(userId: string): Promise<AdminEventOpti
 }
 
 /**
- * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=` and
- * falls back to the caller's most recent one.
+ * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=`, then
+ * from the same cookie the rest of the admin shell reads, then from the caller's newest event. The
+ * cookie step is what keeps the mailbox showing the event the sidebar says is selected.
  *
- * The parameter is matched against the caller's own events rather than looked up directly. These
+ * Both candidates are matched against the caller's own events rather than looked up directly. These
  * pages have no `requireEventContext` between them and the database, so resolving `?event=` by slug
  * would hand any signed-in organizer another event's mailbox for the price of guessing a slug.
  */
 export async function resolveAdminEvent(options: {
   eventParam?: string | null;
+  cookieEventId?: string | null;
   userId: string;
 }): Promise<{ event: EventRow | null; options: AdminEventOption[] }> {
   const db = getDb();
   const all = await listEventsForAdmin(options.userId);
 
-  const asked = options.eventParam;
-  const chosen = asked
-    ? (all.find((entry) => entry.id === asked || entry.slug === asked) ?? all[0])
-    : all[0];
+  const pick = (wanted: string | null | undefined) =>
+    wanted ? all.find((entry) => entry.id === wanted || entry.slug === wanted) : undefined;
+
+  const chosen = pick(options.eventParam) ?? pick(options.cookieEventId) ?? all[0];
   if (!chosen) return { event: null, options: all };
 
   const [row] = await db.select().from(eventTable).where(eq(eventTable.id, chosen.id)).limit(1);

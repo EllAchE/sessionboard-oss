@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CalendarDays, Download, Inbox, Link2 } from 'lucide-react';
 import { Badge, Card, CardBody } from '@/components/ui';
 import { requireCurrentActor } from '@/lib/auth';
+import { currentEventIdHint } from '@/lib/services/events';
 import { activeTransportName } from '@/lib/mail';
 import { getMail, listMail, resolveAdminEvent } from '@/lib/services/comms';
 import { CommsTabs } from '../comms/CommsTabs';
@@ -56,6 +57,7 @@ export default async function MailboxPage({
   const actor = await requireCurrentActor();
   const { event, options } = await resolveAdminEvent({
     eventParam: params.event ?? null,
+    cookieEventId: await currentEventIdHint(),
     userId: actor.userId,
   });
 
