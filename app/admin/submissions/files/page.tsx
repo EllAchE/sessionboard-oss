@@ -30,6 +30,10 @@ export default async function SubmissionFilesPage() {
     submissionRef: row.submissionRef,
     submissionTitle: row.submissionTitle,
     submissionStatus: row.submissionStatus,
+    version: row.version,
+    versionCount: row.versionCount,
+    isCurrent: row.isCurrent,
+    commentCount: row.commentCount,
   }));
 
   return <FilesBrowser rows={rows} />;

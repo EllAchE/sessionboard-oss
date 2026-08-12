@@ -5,10 +5,12 @@ import { requireEventContext } from '@/lib/auth';
 import type { EventContext } from '@/lib/context';
 import { isAppError, notFound } from '@/lib/errors';
 import type { AnswerMap, AnswerValue, FormFieldSpec } from '@/lib/forms/contract';
-import { deleteFile } from '@/lib/services/files';
+import { recordRevision } from '@/lib/services/content';
+import { addFileComment, deleteFile } from '@/lib/services/files';
 import {
   ensureParticipant,
   getEventBySlug,
+  listMySubmissions,
   revokeSubmissionAccess,
   setHeadshot,
   shareSubmissionAccess,
@@ -26,6 +28,7 @@ import {
   saveTaskForm,
 } from '@/lib/services/tasks';
 import type { FormState } from '../form-state';
+import { myDeliverable } from './deliverable';
 
 /**
  * Every write the speaker can make. Each action re-resolves the session from the form's own
@@ -101,6 +104,8 @@ function refresh(eventSlug: string): void {
 export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
   try {
     const { ctx, me, eventSlug } = await actionSession(formData);
+
+    await recordRevision(ctx, 'participant', me.id, 'Edited their speaker profile');
 
     const labels = formData.getAll('linkLabel').map((entry) => String(entry));
     const urls = formData.getAll('linkUrl').map((entry) => String(entry));
@@ -201,6 +206,29 @@ export async function saveTaskFormAction(_prev: FormState, formData: FormData): 
 }
 
 // ---------------------------------------------------------------------------
+// Deliverables — `CNT-05`
+// ---------------------------------------------------------------------------
+
+/**
+ * The speaker's half of the review thread. Ownership is proven by resolving the file through the
+ * speaker's own task list before anything is written.
+ */
+export async function postDeliverableCommentAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const { ctx, me, eventSlug } = await actionSession(formData);
+    const deliverable = await myDeliverable(ctx, me, text(formData, 'fileId'));
+    await addFileComment(ctx, deliverable.current.id, text(formData, 'body'));
+    refresh(eventSlug);
+    return { status: 'ok', message: 'Comment posted — the organizers can see it' };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Sessions — `S-9`
 // ---------------------------------------------------------------------------
 
@@ -210,6 +238,10 @@ export async function saveSubmissionAction(_prev: FormState, formData: FormData)
     const submissionId = text(formData, 'submissionId');
     const formId = text(formData, 'formId');
     const fields = formId ? await submissionFields(formId) : [];
+
+    const mine = await listMySubmissions(me.id);
+    if (!mine.some((entry) => entry.id === submissionId)) throw notFound('That session');
+    await recordRevision(ctx, 'session', submissionId, 'Edited the session content');
 
     await updateMySubmission(ctx, me.id, submissionId, {
       title: text(formData, 'title'),

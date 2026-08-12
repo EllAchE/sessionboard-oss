@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { EmbedBody } from '../../../embed/EmbedBody';
@@ -17,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return { title: `Sessions · ${bundle.event.name}` };
 }
 
-/** `G-4`. The session list, which is the agenda with the clock taken off. */
+/** `G-4`, `EMB-01`–`EMB-03`. The session list, which is the agenda with the clock taken off. */
 export default async function PublicSessionsPage({
   params,
   searchParams,
@@ -30,7 +29,6 @@ export default async function PublicSessionsPage({
   if (!bundle) notFound();
 
   const options = parseEmbedOptions(search);
-  const activeTrack = options.tracks[0] ?? null;
 
   return (
     <PublicChrome event={bundle.event} active="sessions">
@@ -39,29 +37,6 @@ export default async function PublicSessionsPage({
           <h2 className={styles.sectionTitle}>Sessions</h2>
           <span className={styles.sectionLink}>{bundle.sessions.length} published</span>
         </div>
-
-        {bundle.tracks.length > 0 ? (
-          <div className={styles.filterBar}>
-            <Link
-              href={`/${bundle.event.slug}/sessions`}
-              className={styles.filterChip}
-              data-active={!activeTrack}
-            >
-              All tracks
-            </Link>
-            {bundle.tracks.map((track) => (
-              <Link
-                key={track.id}
-                href={`/${bundle.event.slug}/sessions?track=${encodeURIComponent(track.name)}`}
-                className={styles.filterChip}
-                data-active={activeTrack?.toLowerCase() === track.name.toLowerCase()}
-              >
-                {track.name}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-
         <EmbedBody view="sessions" bundle={bundle} options={{ ...options, columns: 2 }} />
       </section>
     </PublicChrome>

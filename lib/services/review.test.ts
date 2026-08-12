@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import type { EventContext, MembershipRole } from '../context';
 import {
+  ANONYMOUS_AUTHOR,
   aggregateScorecard,
+  carriesIdentity,
   filterQueue,
+  hidesAuthorship,
   isAgendaEligible,
   nextStatusForDecision,
   parseSubmissionImport,
   planAssignments,
+  redactAuthorship,
+  redactSubmitter,
+  reminderBody,
   sortQueue,
   summarizeReviews,
   type CriterionSpec,
@@ -286,5 +293,143 @@ describe('parseSubmissionImport', () => {
     );
     expect(parsed.rows.map((entry) => entry.title)).toEqual(['Good talk']);
     expect(parsed.errors).toHaveLength(1);
+  });
+});
+
+const contextFor = (...roles: MembershipRole[]): EventContext => ({
+  actor: { userId: 'u1', email: 'u1@example.test', name: 'Ada', impersonatedByUserId: null },
+  eventId: 'e1',
+  roles,
+});
+
+describe('hidesAuthorship', () => {
+  it('hides the author from a reviewer on an anonymized round', () => {
+    expect(hidesAuthorship({ anonymized: true }, contextFor('reviewer'))).toBe(true);
+  });
+
+  it('never hides the author from an organizer, who still has to run conflict checks', () => {
+    expect(hidesAuthorship({ anonymized: true }, contextFor('organizer'))).toBe(false);
+    expect(hidesAuthorship({ anonymized: true }, contextFor('organizer', 'reviewer'))).toBe(false);
+  });
+
+  it('leaves a normal round alone', () => {
+    expect(hidesAuthorship({ anonymized: false }, contextFor('reviewer'))).toBe(false);
+    expect(hidesAuthorship(null, contextFor('reviewer'))).toBe(false);
+  });
+});
+
+describe('carriesIdentity', () => {
+  it('catches identity questions however the form spelled them', () => {
+    for (const key of ['Speaker name', 'company', 'your_email', 'linkedin-url', 'Job title']) {
+      expect(carriesIdentity(key)).toBe(true);
+    }
+  });
+
+  it('leaves substantive questions in place', () => {
+    for (const key of ['Why this talk', 'prerequisites', 'session_outline']) {
+      expect(carriesIdentity(key)).toBe(false);
+    }
+  });
+});
+
+describe('redactAuthorship', () => {
+  const subject = {
+    submitterName: 'Ada Lovelace',
+    submitterEmail: 'ada@example.test',
+    speakers: [
+      {
+        participantId: 'p1',
+        name: 'Ada Lovelace',
+        email: 'ada@example.test',
+        jobTitle: 'Analyst',
+        company: 'Analytical Engines',
+        bioMarkdown: 'Ada wrote the first program.',
+        isPrimary: true,
+        kind: 'speaker',
+      },
+      {
+        participantId: 'p2',
+        name: 'Charles Babbage',
+        email: 'charles@example.test',
+        jobTitle: 'Engineer',
+        company: 'Analytical Engines',
+        bioMarkdown: null,
+        isPrimary: false,
+        kind: 'speaker',
+      },
+    ],
+    answers: { 'Speaker bio': 'Ada, of London', 'Why this talk': 'Because engines matter' },
+  };
+
+  it('strips every channel the author could be recognised through', () => {
+    const redacted = redactAuthorship(subject);
+    expect(redacted.submitterName).toBe(ANONYMOUS_AUTHOR);
+    expect(redacted.submitterEmail).toBe('');
+    expect(redacted.speakers.map((speaker) => speaker.name)).toEqual([
+      `${ANONYMOUS_AUTHOR} 1`,
+      `${ANONYMOUS_AUTHOR} 2`,
+    ]);
+    expect(redacted.speakers.every((speaker) => speaker.email === '')).toBe(true);
+    expect(redacted.speakers.every((speaker) => speaker.company === null)).toBe(true);
+    expect(redacted.speakers.every((speaker) => speaker.bioMarkdown === null)).toBe(true);
+    expect(Object.keys(redacted.answers)).toEqual(['Why this talk']);
+  });
+
+  it('does not leak an identity through the participant id either', () => {
+    const redacted = redactAuthorship(subject);
+    expect(redacted.speakers.map((speaker) => speaker.participantId)).toEqual([
+      'anonymous-0',
+      'anonymous-1',
+    ]);
+  });
+
+  it('leaves the original untouched, so an organizer read is never poisoned by a reviewer read', () => {
+    redactAuthorship(subject);
+    expect(subject.submitterName).toBe('Ada Lovelace');
+    expect(subject.speakers[0].company).toBe('Analytical Engines');
+  });
+
+  it('redacts a queue row without needing the full speaker list', () => {
+    const row = { submitterName: 'Ada Lovelace', submitterEmail: 'ada@example.test', title: 'On Engines' };
+    expect(redactSubmitter(row)).toEqual({
+      submitterName: ANONYMOUS_AUTHOR,
+      submitterEmail: '',
+      title: 'On Engines',
+    });
+  });
+});
+
+describe('reminderBody', () => {
+  it('names what the reviewer still owes and links them straight to it', () => {
+    const body = reminderBody(
+      {
+        reviewerUserId: 'u2',
+        name: 'Grace',
+        email: 'grace@example.test',
+        outstanding: [
+          { displayRef: 'ABS-12', title: 'On Engines' },
+          { displayRef: 'ABS-14', title: 'On Compilers' },
+        ],
+      },
+      { name: 'Round one', closesAt: new Date('2026-09-01T00:00:00Z') },
+      'https://cicero.test/review',
+      'Please finish before the programme meeting.',
+    );
+
+    expect(body).toContain('Hi Grace,');
+    expect(body).toContain('2 submissions still waiting');
+    expect(body).toContain('ABS-12 — On Engines');
+    expect(body).toContain('https://cicero.test/review');
+    expect(body).toContain('2026-09-01');
+    expect(body).toContain('Please finish before the programme meeting.');
+  });
+
+  it('speaks in the singular for a single outstanding review', () => {
+    const body = reminderBody(
+      { reviewerUserId: 'u2', name: 'Grace', email: 'grace@example.test', outstanding: [{ displayRef: 'ABS-12', title: 'On Engines' }] },
+      { name: 'Round one', closesAt: null },
+      'https://cicero.test/review',
+    );
+    expect(body).toContain('1 submission still waiting');
   });
 });

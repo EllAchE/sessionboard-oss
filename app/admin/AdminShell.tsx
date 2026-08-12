@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import {
   CalendarDays,
   ClipboardList,
+  Contact,
   FileText,
   LayoutDashboard,
   Mail,
@@ -29,6 +30,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
       { id: 'submissions', label: 'Submissions', href: '/admin/submissions', icon: <ClipboardList size={15} /> },
       { id: 'agenda', label: 'Agenda', href: '/admin/agenda', icon: <CalendarDays size={15} /> },
       { id: 'speakers', label: 'Speakers', href: '/admin/speakers', icon: <Users size={15} /> },
+      { id: 'crm', label: 'Speaker CRM', href: '/crm', icon: <Contact size={15} /> },
     ],
   },
   {

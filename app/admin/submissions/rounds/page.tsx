@@ -37,7 +37,11 @@ export default async function ReviewRoundsPage({
     }),
   ]);
 
-  const criteria = selected ? await review.listCriteria(selected.id) : [];
+  const [criteria, declined, outstanding] = await Promise.all([
+    selected ? review.listCriteria(selected.id) : [],
+    selected ? review.listRoundAssignments(ctx, selected.id, ['declined']) : [],
+    selected ? review.outstandingReviewers(ctx, selected.id) : [],
+  ]);
 
   const roundRows: RoundWire[] = rounds.map((round) => {
     const rows = workloads.find((entry) => entry.roundId === round.id)?.rows ?? [];
@@ -46,8 +50,10 @@ export default async function ReviewRoundsPage({
       name: round.name,
       status: round.status,
       blindUntilClose: round.blindUntilClose,
+      anonymized: round.anonymized,
       assignedCount: rows.reduce((sum, row) => sum + row.assigned, 0),
       completedCount: rows.reduce((sum, row) => sum + row.completed, 0),
+      declinedCount: round.id === selected?.id ? declined.length : 0,
     };
   });
 
@@ -82,6 +88,14 @@ export default async function ReviewRoundsPage({
         averageGiven: row.averageGiven,
       }))}
       pendingSubmissionIds={queue.rows.map((row) => row.id)}
+      recusals={declined.map((row) => ({
+        assignmentId: row.assignmentId,
+        displayRef: row.displayRef,
+        title: row.title,
+        reviewerName: row.reviewerName,
+        reason: row.comment,
+      }))}
+      outstandingReviewerCount={outstanding.length}
     />
   );
 }

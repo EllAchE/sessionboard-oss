@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return { title: `Speakers · ${bundle.event.name}` };
 }
 
-/** `G-4`, and `G-8` on a full page: `?sb-speaker-id=` narrows to one person. */
+/** `G-4`, `EMB-04`, `EMB-05`, and `G-8`: `?sb-speaker-id=` still narrows to one person. */
 export default async function PublicSpeakersPage({
   params,
   searchParams,
@@ -35,7 +35,12 @@ export default async function PublicSpeakersPage({
           <h2 className={styles.sectionTitle}>Speakers</h2>
           <span className={styles.sectionLink}>{bundle.speakers.length} announced</span>
         </div>
-        <EmbedBody view="speakers" bundle={bundle} options={parseEmbedOptions(search)} />
+        <EmbedBody
+          view="speakers"
+          bundle={bundle}
+          options={parseEmbedOptions(search)}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+        />
       </section>
     </PublicChrome>
   );

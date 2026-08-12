@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { EmbedBody } from '../../../embed/EmbedBody';
@@ -17,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return { title: `Agenda · ${bundle.event.name}` };
 }
 
-/** `G-4`. Full-page agenda with a track filter, over the same read model as `/embed/[slug]/agenda`. */
+/** `G-4`. The room-by-time grid, over the same read model as `/embed/[slug]/agenda`. */
 export default async function PublicAgendaPage({
   params,
   searchParams,
@@ -29,9 +28,6 @@ export default async function PublicAgendaPage({
   const bundle = await loadPublicBundle(slug);
   if (!bundle) notFound();
 
-  const options = parseEmbedOptions(search);
-  const activeTrack = options.tracks[0] ?? null;
-
   return (
     <PublicChrome event={bundle.event} active="agenda">
       <section className={styles.section}>
@@ -39,30 +35,7 @@ export default async function PublicAgendaPage({
           <h2 className={styles.sectionTitle}>Agenda</h2>
           <span className={styles.sectionLink}>{bundle.sessions.length} published sessions</span>
         </div>
-
-        {bundle.tracks.length > 0 ? (
-          <div className={styles.filterBar}>
-            <Link
-              href={`/${bundle.event.slug}/agenda`}
-              className={styles.filterChip}
-              data-active={!activeTrack}
-            >
-              All tracks
-            </Link>
-            {bundle.tracks.map((track) => (
-              <Link
-                key={track.id}
-                href={`/${bundle.event.slug}/agenda?track=${encodeURIComponent(track.name)}`}
-                className={styles.filterChip}
-                data-active={activeTrack?.toLowerCase() === track.name.toLowerCase()}
-              >
-                {track.name}
-              </Link>
-            ))}
-          </div>
-        ) : null}
-
-        <EmbedBody view="agenda" bundle={bundle} options={options} />
+        <EmbedBody view="agenda" bundle={bundle} options={parseEmbedOptions(search)} />
       </section>
     </PublicChrome>
   );

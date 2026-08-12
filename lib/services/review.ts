@@ -21,8 +21,12 @@ import {
 } from '../../db/schema';
 import type { EventContext } from '../context';
 import { can, requireCapability } from '../context';
-import { conflict, invalid, notFound } from '../errors';
+import { appUrl } from '../env';
+import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef } from '../ids';
+import { sendMail } from '../mail';
+import { markdownToText, renderMarkdown } from '../markdown';
+import { loadCommsContext, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 
 /**
@@ -278,6 +282,8 @@ export type ReviewRoundRecord = {
   position: number;
   status: 'draft' | 'open' | 'closed';
   blindUntilClose: boolean;
+  /** Reviewers score without an author attached; organizers still see one. */
+  anonymized: boolean;
   opensAt: Date | null;
   closesAt: Date | null;
 };
@@ -320,6 +326,7 @@ function toRoundRecord(row: typeof reviewRound.$inferSelect): ReviewRoundRecord 
     position: row.position,
     status: row.status,
     blindUntilClose: row.blindUntilClose,
+    anonymized: row.anonymized,
     opensAt: row.opensAt,
     closesAt: row.closesAt,
   };
@@ -382,6 +389,7 @@ export type CreateRoundInput = {
   name: string;
   status?: 'draft' | 'open' | 'closed';
   blindUntilClose?: boolean;
+  anonymized?: boolean;
   opensAt?: Date | null;
   closesAt?: Date | null;
   /** Omitted means the default scorecard; an explicit empty array means no criteria. */
@@ -407,6 +415,7 @@ export async function createRound(
       position: existing.length,
       status: input.status ?? 'draft',
       blindUntilClose: input.blindUntilClose ?? true,
+      anonymized: input.anonymized ?? false,
       opensAt: input.opensAt ?? null,
       closesAt: input.closesAt ?? null,
     })
@@ -433,6 +442,7 @@ export type RoundPatch = {
   name?: string;
   status?: 'draft' | 'open' | 'closed';
   blindUntilClose?: boolean;
+  anonymized?: boolean;
   opensAt?: Date | null;
   closesAt?: Date | null;
 };
@@ -453,6 +463,7 @@ export async function updateRound(
   }
   if (patch.status !== undefined) values.status = patch.status;
   if (patch.blindUntilClose !== undefined) values.blindUntilClose = patch.blindUntilClose;
+  if (patch.anonymized !== undefined) values.anonymized = patch.anonymized;
   if (patch.opensAt !== undefined) values.opensAt = patch.opensAt;
   if (patch.closesAt !== undefined) values.closesAt = patch.closesAt;
 
@@ -746,6 +757,10 @@ export async function saveScorecard(
     if (!assignment) throw notFound('That review assignment');
   }
 
+  if (assignment.status === 'declined' && !can(ctx, 'submission:decide')) {
+    throw conflict('You recused yourself from that submission');
+  }
+
   const criteria = await listCriteria(input.roundId);
   const byId = new Map(criteria.map((criterion) => [criterion.id, criterion]));
 
@@ -799,19 +814,140 @@ export async function saveScorecard(
   return { assignmentId: assignment.id, aggregate };
 }
 
+/**
+ * `ABS-12`. A reviewer who knows the author, or the subject, or simply cannot get to it, takes
+ * themselves off the assignment rather than leaving it pending forever. The row survives in
+ * `declined` so the organizer can see the gap and reassign it; deleting it would make a recusal
+ * indistinguishable from an assignment that was never made.
+ */
 export async function declineAssignment(
   ctx: EventContext,
   assignmentId: string,
+  reason?: string | null,
 ): Promise<void> {
   requireCapability(ctx, 'submission:review');
   const assignment = await loadAssignment(ctx, assignmentId);
   if (assignment.reviewerUserId !== ctx.actor.userId && !can(ctx, 'submission:decide')) {
     throw conflict('That assignment belongs to another reviewer');
   }
+  const trimmed = reason?.trim();
   await getDb()
     .update(reviewAssignment)
-    .set({ status: 'declined', completedAt: new Date() })
+    .set({
+      status: 'declined',
+      completedAt: new Date(),
+      comment: trimmed ? trimmed : assignment.comment,
+    })
     .where(eq(reviewAssignment.id, assignment.id));
+}
+
+// ---------------------------------------------------------------------------
+// Anonymized review — `ABS-07`
+// ---------------------------------------------------------------------------
+
+export const ANONYMOUS_AUTHOR = 'Anonymous author';
+
+/**
+ * The rule, stated once. An anonymized round hides the author from whoever is scoring; an organizer
+ * keeps identity because acceptance decisions and conflict checks need a name attached. Every
+ * surface that hands a submission to a reviewer asks this rather than deciding for itself, so a
+ * route added later cannot quietly opt out of it.
+ */
+export function hidesAuthorship(
+  round: Pick<ReviewRoundRecord, 'anonymized'> | null | undefined,
+  ctx: EventContext,
+): boolean {
+  return Boolean(round?.anonymized) && !can(ctx, 'submission:decide');
+}
+
+/**
+ * Answer keys whose value names or locates a human. Custom form fields are free text, so this is a
+ * word list rather than a schema — an over-redacted answer costs a reviewer some context, while an
+ * under-redacted one defeats the round.
+ */
+const IDENTITY_WORDS = new Set([
+  'affiliation',
+  'author',
+  'authors',
+  'avatar',
+  'bio',
+  'biography',
+  'bluesky',
+  'company',
+  'email',
+  'employer',
+  'firstname',
+  'fullname',
+  'github',
+  'handle',
+  'headshot',
+  'homepage',
+  'instagram',
+  'job',
+  'jobtitle',
+  'lastname',
+  'linkedin',
+  'mail',
+  'mastodon',
+  'mobile',
+  'name',
+  'org',
+  'organisation',
+  'organization',
+  'phone',
+  'photo',
+  'picture',
+  'pronouns',
+  'speaker',
+  'speakers',
+  'surname',
+  'telephone',
+  'twitter',
+  'url',
+  'website',
+]);
+
+export function carriesIdentity(answerKey: string): boolean {
+  return answerKey
+    .split(/[^a-zA-Z0-9]+/)
+    .some((word) => IDENTITY_WORDS.has(word.toLowerCase()));
+}
+
+export function redactSubmitter<T extends { submitterName: string; submitterEmail: string }>(
+  subject: T,
+): T {
+  return { ...subject, submitterName: ANONYMOUS_AUTHOR, submitterEmail: '' };
+}
+
+export type AuthoredSubject = {
+  submitterName: string;
+  submitterEmail: string;
+  speakers: ReviewSpeaker[];
+  answers: Record<string, unknown>;
+};
+
+/**
+ * Strips every handle on the author: the submitter, each speaker's name, address, affiliation and
+ * bio, the participant ids that would let an adjacent route re-resolve them, and any free-text
+ * answer whose key names a person.
+ */
+export function redactAuthorship<T extends AuthoredSubject>(subject: T): T {
+  const many = subject.speakers.length > 1;
+  return {
+    ...redactSubmitter(subject),
+    speakers: subject.speakers.map((speaker, index) => ({
+      ...speaker,
+      participantId: `anonymous-${index}`,
+      name: many ? `${ANONYMOUS_AUTHOR} ${index + 1}` : ANONYMOUS_AUTHOR,
+      email: '',
+      jobTitle: null,
+      company: null,
+      bioMarkdown: null,
+    })),
+    answers: Object.fromEntries(
+      Object.entries(subject.answers).filter(([key]) => !carriesIdentity(key)),
+    ),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1071,10 +1207,13 @@ export async function loadQueue(
         : all.filter((row) => tab.statuses.includes(row.status)).length;
   }
 
+  // Redacted before the filter runs, so a blind reviewer cannot recover a name by searching for it.
+  const visible = hidesAuthorship(round, ctx) ? all.map(redactSubmitter) : all;
+
   return {
     round,
     criteria,
-    rows: sortQueue(filterQueue(all, filters), filters.sort),
+    rows: sortQueue(filterQueue(visible, filters), filters.sort),
     counts,
     tracks,
     formats,
@@ -1158,6 +1297,9 @@ export type SubmissionReview = {
   /** Blinded to the actor's own row while an open round hides peer scores. */
   reviewers: ReviewerScorecard[];
   blinded: boolean;
+  /** `ABS-07`: the author has been stripped out of everything above for this actor. */
+  authorHidden: boolean;
+  myAssignmentStatus: AssignmentStatus | null;
   summary: ReviewSummary;
   myScores: ScoreValue[];
   myComment: string | null;
@@ -1277,8 +1419,9 @@ export async function loadSubmissionReview(
     : reviewers;
 
   const mine = reviewers.find((reviewer) => reviewer.reviewerUserId === ctx.actor.userId) ?? null;
+  const authorHidden = hidesAuthorship(round, ctx);
 
-  return {
+  const detail: SubmissionReview = {
     id: row.id,
     ref: row.ref,
     displayRef: formatRef('submission', row.ref),
@@ -1309,7 +1452,9 @@ export async function loadSubmissionReview(
     criteria,
     reviewers: visible,
     blinded,
+    authorHidden,
     summary: summarizeReviews(criteria, blinded ? visible : reviewers),
+    myAssignmentStatus: mine?.status ?? null,
     myScores: mine?.scores ?? [],
     myComment: mine?.comment ?? null,
     myAssignmentId: mine?.assignmentId ?? null,
@@ -1323,6 +1468,8 @@ export async function loadSubmissionReview(
         }
       : null,
   };
+
+  return authorHidden ? redactAuthorship(detail) : detail;
 }
 
 // ---------------------------------------------------------------------------
@@ -1997,4 +2144,377 @@ export async function loadAiReviewSubject(
     criteria: detail.criteria,
     roundId: detail.round?.id ?? null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// The reviewer's own surface — `CFP-10`, `ABS-12`
+// ---------------------------------------------------------------------------
+
+export type ReviewerAssignmentRow = {
+  assignmentId: string;
+  submissionId: string;
+  ref: number;
+  displayRef: string;
+  title: string;
+  trackName: string | null;
+  formatName: string | null;
+  level: string | null;
+  status: AssignmentStatus;
+  comment: string | null;
+  completedAt: Date | null;
+  submitterName: string;
+  average: number | null;
+  scoredCount: number;
+};
+
+export type ReviewerQueue = {
+  round: ReviewRoundRecord | null;
+  rounds: ReviewRoundRecord[];
+  criteria: CriterionSpec[];
+  authorHidden: boolean;
+  /** What is still theirs to do, in the order they should work through it. */
+  assignments: ReviewerAssignmentRow[];
+  recused: ReviewerAssignmentRow[];
+  pendingCount: number;
+  completedCount: number;
+};
+
+/**
+ * Everything the reviewer dashboard renders, scoped to this reviewer's own assignments. It is
+ * deliberately not `loadQueue` with a filter: a reviewer's working set is the assignment list, and
+ * building it from the other direction is what keeps unassigned submissions off the screen.
+ */
+export async function loadReviewerQueue(
+  ctx: EventContext,
+  roundId?: string | null,
+): Promise<ReviewerQueue> {
+  requireCapability(ctx, 'submission:review');
+  const db = getDb();
+
+  const rounds = await listRounds(ctx);
+  const round =
+    rounds.find((candidate) => candidate.id === roundId) ??
+    rounds.find((candidate) => candidate.status === 'open') ??
+    rounds[rounds.length - 1] ??
+    null;
+
+  const empty: ReviewerQueue = {
+    round,
+    rounds,
+    criteria: [],
+    authorHidden: hidesAuthorship(round, ctx),
+    assignments: [],
+    recused: [],
+    pendingCount: 0,
+    completedCount: 0,
+  };
+  if (!round) return empty;
+
+  const criteria = await listCriteria(round.id);
+  const rows = await db
+    .select({
+      assignmentId: reviewAssignment.id,
+      status: reviewAssignment.status,
+      comment: reviewAssignment.comment,
+      completedAt: reviewAssignment.completedAt,
+      submissionId: submission.id,
+      ref: submission.ref,
+      title: submission.title,
+      trackId: submission.trackId,
+      formatId: submission.formatId,
+      level: submission.level,
+      submitterName: user.name,
+      submitterEmail: user.email,
+    })
+    .from(reviewAssignment)
+    .innerJoin(submission, eq(submission.id, reviewAssignment.submissionId))
+    .innerJoin(user, eq(user.id, submission.submitterUserId))
+    .where(
+      and(
+        eq(reviewAssignment.reviewRoundId, round.id),
+        eq(reviewAssignment.reviewerUserId, ctx.actor.userId),
+        eq(submission.eventId, ctx.eventId),
+      ),
+    )
+    .orderBy(asc(submission.ref));
+
+  if (rows.length === 0) return { ...empty, criteria };
+
+  const [scoreRows, tracks, formats] = await Promise.all([
+    db
+      .select({
+        assignmentId: scoreTable.reviewAssignmentId,
+        criterionId: scoreTable.criterionId,
+        value: scoreTable.value,
+      })
+      .from(scoreTable)
+      .where(
+        inArray(
+          scoreTable.reviewAssignmentId,
+          rows.map((row) => row.assignmentId),
+        ),
+      ),
+    db
+      .select({ id: trackTable.id, name: trackTable.name })
+      .from(trackTable)
+      .where(eq(trackTable.eventId, ctx.eventId)),
+    db
+      .select({ id: sessionFormat.id, name: sessionFormat.name })
+      .from(sessionFormat)
+      .where(eq(sessionFormat.eventId, ctx.eventId)),
+  ]);
+
+  const scoresByAssignment = new Map<string, ScoreValue[]>();
+  for (const entry of scoreRows) {
+    const list = scoresByAssignment.get(entry.assignmentId) ?? [];
+    list.push({ criterionId: entry.criterionId, value: entry.value });
+    scoresByAssignment.set(entry.assignmentId, list);
+  }
+
+  const trackNames = new Map(tracks.map((row) => [row.id, row.name]));
+  const formatNames = new Map(formats.map((row) => [row.id, row.name]));
+  const authorHidden = hidesAuthorship(round, ctx);
+
+  const all: ReviewerAssignmentRow[] = rows.map((row) => {
+    const aggregate = aggregateScorecard(criteria, scoresByAssignment.get(row.assignmentId) ?? []);
+    const built: ReviewerAssignmentRow = {
+      assignmentId: row.assignmentId,
+      submissionId: row.submissionId,
+      ref: row.ref,
+      displayRef: formatRef('submission', row.ref),
+      title: row.title,
+      trackName: row.trackId ? (trackNames.get(row.trackId) ?? null) : null,
+      formatName: row.formatId ? (formatNames.get(row.formatId) ?? null) : null,
+      level: row.level,
+      status: row.status,
+      comment: row.comment,
+      completedAt: row.completedAt,
+      submitterName: row.submitterName ?? row.submitterEmail,
+      average: aggregate.average,
+      scoredCount: aggregate.scoredCount,
+    };
+    return authorHidden
+      ? { ...built, submitterName: ANONYMOUS_AUTHOR }
+      : built;
+  });
+
+  const active = all.filter((row) => row.status !== 'declined');
+
+  return {
+    round,
+    rounds,
+    criteria,
+    authorHidden,
+    // Unscored first: the point of the dashboard is the work that is left.
+    assignments: [...active].sort(
+      (a, b) => Number(a.status === 'completed') - Number(b.status === 'completed') || a.ref - b.ref,
+    ),
+    recused: all.filter((row) => row.status === 'declined'),
+    pendingCount: active.filter((row) => row.status !== 'completed').length,
+    completedCount: active.filter((row) => row.status === 'completed').length,
+  };
+}
+
+/**
+ * The detail a reviewer is allowed to open. Assignment is the gate: `submission:read_all` lets a
+ * reviewer read the queue, but it does not entitle them to score a submission nobody gave them.
+ */
+export async function loadAssignedReview(
+  ctx: EventContext,
+  submissionId: string,
+  roundId?: string | null,
+): Promise<SubmissionReview> {
+  requireCapability(ctx, 'submission:review');
+  const round = await resolveRound(ctx, roundId ?? null);
+  if (!round) throw notFound('A review round');
+
+  if (!can(ctx, 'submission:decide')) {
+    const assignment = await getDb().query.reviewAssignment.findFirst({
+      where: and(
+        eq(reviewAssignment.reviewRoundId, round.id),
+        eq(reviewAssignment.submissionId, submissionId),
+        eq(reviewAssignment.reviewerUserId, ctx.actor.userId),
+      ),
+    });
+    if (!assignment) throw forbidden('That submission is not assigned to you');
+    if (assignment.status === 'declined') {
+      throw forbidden('You recused yourself from this submission');
+    }
+  }
+
+  return loadSubmissionReview(ctx, submissionId, round.id);
+}
+
+export type RoundAssignmentRow = {
+  assignmentId: string;
+  submissionId: string;
+  displayRef: string;
+  title: string;
+  reviewerUserId: string;
+  reviewerName: string;
+  reviewerEmail: string;
+  status: AssignmentStatus;
+  comment: string | null;
+  completedAt: Date | null;
+};
+
+/** Assignment-level detail for the organizer, which is where a recusal has to become visible. */
+export async function listRoundAssignments(
+  ctx: EventContext,
+  roundId: string,
+  statuses?: AssignmentStatus[],
+): Promise<RoundAssignmentRow[]> {
+  requireCapability(ctx, 'submission:review');
+  await requireRound(ctx, roundId);
+
+  const rows = await getDb()
+    .select({
+      assignmentId: reviewAssignment.id,
+      submissionId: submission.id,
+      ref: submission.ref,
+      title: submission.title,
+      reviewerUserId: user.id,
+      reviewerName: user.name,
+      reviewerEmail: user.email,
+      status: reviewAssignment.status,
+      comment: reviewAssignment.comment,
+      completedAt: reviewAssignment.completedAt,
+    })
+    .from(reviewAssignment)
+    .innerJoin(submission, eq(submission.id, reviewAssignment.submissionId))
+    .innerJoin(user, eq(user.id, reviewAssignment.reviewerUserId))
+    .where(eq(reviewAssignment.reviewRoundId, roundId))
+    .orderBy(asc(submission.ref));
+
+  return rows
+    .filter((row) => !statuses || statuses.includes(row.status))
+    .map((row) => ({
+      assignmentId: row.assignmentId,
+      submissionId: row.submissionId,
+      displayRef: formatRef('submission', row.ref),
+      title: row.title,
+      reviewerUserId: row.reviewerUserId,
+      reviewerName: row.reviewerName ?? row.reviewerEmail,
+      reviewerEmail: row.reviewerEmail,
+      status: row.status,
+      comment: row.comment,
+      completedAt: row.completedAt,
+    }));
+}
+
+// ---------------------------------------------------------------------------
+// Reviewer reminders — `ABS-08`
+// ---------------------------------------------------------------------------
+
+export type OutstandingReviewer = {
+  reviewerUserId: string;
+  name: string;
+  email: string;
+  outstanding: Array<{ displayRef: string; title: string }>;
+};
+
+export type ReminderOutcome = {
+  reviewers: number;
+  assignments: number;
+  sent: number;
+  failed: number;
+  logIds: string[];
+};
+
+/** Who still owes this round a score, and which submissions they owe it on. */
+export async function outstandingReviewers(
+  ctx: EventContext,
+  roundId: string,
+): Promise<OutstandingReviewer[]> {
+  const pending = await listRoundAssignments(ctx, roundId, ['pending']);
+
+  const byReviewer = new Map<string, OutstandingReviewer>();
+  for (const row of pending) {
+    const entry = byReviewer.get(row.reviewerUserId) ?? {
+      reviewerUserId: row.reviewerUserId,
+      name: row.reviewerName,
+      email: row.reviewerEmail,
+      outstanding: [],
+    };
+    entry.outstanding.push({ displayRef: row.displayRef, title: row.title });
+    byReviewer.set(row.reviewerUserId, entry);
+  }
+
+  return [...byReviewer.values()].sort(
+    (a, b) => b.outstanding.length - a.outstanding.length || a.name.localeCompare(b.name),
+  );
+}
+
+export function reminderBody(
+  reviewer: OutstandingReviewer,
+  round: Pick<ReviewRoundRecord, 'name' | 'closesAt'>,
+  link: string,
+  note?: string | null,
+): string {
+  const count = reviewer.outstanding.length;
+  const lines = [
+    `Hi ${reviewer.name},`,
+    '',
+    `You have ${count} submission${count === 1 ? '' : 's'} still waiting for your score in **${round.name}**.`,
+    '',
+    ...reviewer.outstanding.map((row) => `- ${row.displayRef} — ${row.title}`),
+    '',
+    `[Open your review queue](${link})`,
+  ];
+  if (round.closesAt) {
+    lines.push('', `The round closes on ${round.closesAt.toISOString().slice(0, 10)}.`);
+  }
+  if (note?.trim()) lines.push('', note.trim());
+  return lines.join('\n');
+}
+
+/**
+ * `ABS-08`. One message per reviewer listing exactly what they still owe, through the same
+ * `sendMail` path as everything else — so the send lands in `email_log` and is readable at
+ * `/admin/mail` whether or not the transport delivered it.
+ */
+export async function remindOutstandingReviewers(
+  ctx: EventContext,
+  roundId: string,
+  options: { reviewerUserIds?: string[]; note?: string | null } = {},
+): Promise<ReminderOutcome> {
+  requireCapability(ctx, 'comms:send');
+  const round = await requireRound(ctx, roundId);
+
+  const all = await outstandingReviewers(ctx, roundId);
+  const targets = options.reviewerUserIds?.length
+    ? all.filter((reviewer) => options.reviewerUserIds?.includes(reviewer.reviewerUserId))
+    : all;
+
+  if (targets.length === 0) {
+    throw invalid('Every reviewer on this round has finished. There is nothing to remind them of.');
+  }
+
+  const { branding } = await loadCommsContext(ctx.eventId);
+  const link = `${appUrl()}/review?round=${round.id}`;
+  const outcome: ReminderOutcome = {
+    reviewers: targets.length,
+    assignments: targets.reduce((sum, reviewer) => sum + reviewer.outstanding.length, 0),
+    sent: 0,
+    failed: 0,
+    logIds: [],
+  };
+
+  for (const reviewer of targets) {
+    const body = reminderBody(reviewer, round, link, options.note);
+    const result = await sendMail({
+      to: reviewer.email,
+      subject: `${reviewer.outstanding.length} review${reviewer.outstanding.length === 1 ? '' : 's'} outstanding — ${round.name}`,
+      html: wrapInBranding(branding, renderMarkdown(body)),
+      text: markdownToText(body),
+      eventId: ctx.eventId,
+      templateKey: 'review.reminder',
+    });
+
+    outcome.logIds.push(result.id);
+    if (result.sent) outcome.sent += 1;
+    else outcome.failed += 1;
+  }
+
+  return outcome;
 }

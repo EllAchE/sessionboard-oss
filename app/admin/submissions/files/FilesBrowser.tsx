@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Download, FileDown } from 'lucide-react';
+import { ChevronLeft, Download, FileDown, MessageSquare } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -15,6 +15,7 @@ import {
 } from '../../../../components/ui';
 import { formatBytes } from '../../../../lib/services/file-format';
 import { checkArchiveBudget } from './archive';
+import { FilesNav } from './FilesNav';
 import { FILE_KINDS, fileKindLabel, type FileKind } from './kind';
 import queue from '../submissions.module.css';
 import styles from './files.module.css';
@@ -33,6 +34,10 @@ export type FileRowWire = {
   submissionRef: string | null;
   submissionTitle: string | null;
   submissionStatus: string | null;
+  version: number;
+  versionCount: number;
+  isCurrent: boolean;
+  commentCount: number;
 };
 
 const SOURCE_LABEL: Record<FileRowWire['source'], string> = {
@@ -88,6 +93,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
   const [kind, setKind] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [showSuperseded, setShowSuperseded] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const statuses = useMemo(() => {
@@ -98,6 +104,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return rows.filter((row) => {
+      if (!showSuperseded && !row.isCurrent) return false;
       if (kind && row.kind !== kind) return false;
       if (status && row.submissionStatus !== status) return false;
       if (!needle) return true;
@@ -105,7 +112,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
         .filter(Boolean)
         .some((value) => (value as string).toLowerCase().includes(needle));
     });
-  }, [rows, kind, status, search]);
+  }, [rows, kind, status, search, showSuperseded]);
 
   const byId = useMemo(() => new Map(rows.map((row) => [row.fileId, row])), [rows]);
   const selected = useMemo(
@@ -137,12 +144,53 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
         id: 'filename',
         header: 'File',
         strong: true,
-        width: '30%',
+        width: '28%',
         render: (row) => (
-          <Link className={styles.fileLink} href={`/admin/submissions/files/${row.fileId}`} prefetch={false}>
-            {row.filename}
-          </Link>
+          <span className={styles.inlineRow}>
+            <Link
+              className={styles.fileLink}
+              href={`/admin/submissions/files/detail/${row.fileId}`}
+              prefetch={false}
+            >
+              {row.filename}
+            </Link>
+            <a
+              href={`/admin/submissions/files/${row.fileId}`}
+              aria-label={`Download ${row.filename}`}
+            >
+              <Download size={14} />
+            </a>
+          </span>
         ),
+      },
+      {
+        id: 'versions',
+        header: 'Version',
+        width: '104px',
+        render: (row) => (
+          <span className={styles.inlineRow}>
+            <span className={styles.versionNumber}>v{row.version}</span>
+            {row.versionCount > 1 && (
+              <Badge tone={row.isCurrent ? 'info' : 'neutral'}>
+                {row.isCurrent ? `${row.versionCount} versions` : 'Superseded'}
+              </Badge>
+            )}
+          </span>
+        ),
+      },
+      {
+        id: 'comments',
+        header: 'Feedback',
+        width: '92px',
+        align: 'right',
+        render: (row) =>
+          row.commentCount > 0 ? (
+            <span className={styles.inlineRow}>
+              <MessageSquare size={13} aria-hidden /> {row.commentCount}
+            </span>
+          ) : (
+            <span className={queue.muted}>—</span>
+          ),
       },
       {
         id: 'kind',
@@ -211,13 +259,16 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
 
   return (
     <div className={queue.page}>
+      <FilesNav />
+
       <header className={queue.header}>
         <div className={queue.headings}>
           <span className={queue.eyebrow}>Review</span>
           <h1 className={queue.title}>Files</h1>
           <p className={queue.subtitle}>
             {visible.length} of {rows.length} file{rows.length === 1 ? '' : 's'} ·{' '}
-            {formatBytes(visibleBytes)} shown
+            {formatBytes(visibleBytes)} shown ·{' '}
+            {showSuperseded ? 'every version' : 'current versions only'}
           </p>
         </div>
         <div className={queue.actions}>
@@ -274,6 +325,13 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
             </option>
           ))}
         </Select>
+        <Button
+          size="sm"
+          variant={showSuperseded ? 'secondary' : 'ghost'}
+          onClick={() => setShowSuperseded((current) => !current)}
+        >
+          {showSuperseded ? 'Hide older versions' : 'Show older versions'}
+        </Button>
         <Button
           size="sm"
           variant="ghost"

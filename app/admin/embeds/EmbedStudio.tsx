@@ -15,10 +15,16 @@ import {
   Select,
   Switch,
 } from '@/components/ui';
+import {
+  EMBED_VIEWS,
+  EMBED_VIEW_LABEL,
+  EMBED_VIEW_SUMMARY,
+  type EmbedView,
+} from '../../embed/model';
 import dashboard from '../dashboard/dashboard.module.css';
 import styles from './embeds.module.css';
 
-type View = 'agenda' | 'speakers' | 'sessions';
+type View = EmbedView;
 
 type Config = {
   id: string;
@@ -41,16 +47,10 @@ type Config = {
 
 const STORAGE_KEY = 'cicero-embeds';
 
-const VIEW_LABEL: Record<View, string> = {
-  agenda: 'Schedule itinerary',
-  speakers: 'Speaker gallery',
-  sessions: 'Session list',
-};
-
 function blank(view: View = 'agenda'): Config {
   return {
     id: `embed-${Date.now()}`,
-    name: VIEW_LABEL[view],
+    name: EMBED_VIEW_LABEL[view],
     view,
     enabled: true,
     tracks: [],
@@ -190,6 +190,22 @@ export function EmbedStudio({
 
   const iframeSnippet = `<iframe src="${publicUrl}" title="${eventName} ${active.view}" style="width:100%;height:600px;border:0" loading="lazy"></iframe>`;
 
+  const everyWidget = useMemo(
+    () =>
+      EMBED_VIEWS.map((view) => {
+        const config = { ...active, view };
+        return {
+          view,
+          url: `${origin}/embed/${eventSlug}/${view}${queryFor(config)}`,
+          snippet: [
+            `<div ${datasetFor(config).join(' ')} data-event="${eventSlug}"></div>`,
+            `<script src="${origin}/embed.js" async></script>`,
+          ].join('\n'),
+        };
+      }),
+    [active, eventSlug, origin],
+  );
+
   const copy = (text: string, key: string) => {
     void navigator.clipboard.writeText(text).then(() => {
       setCopied(key);
@@ -232,7 +248,7 @@ export function EmbedStudio({
                       onClick={() => setActiveId(config.id)}
                     >
                       {config.name}
-                      <span className={styles.savedMeta}> · {VIEW_LABEL[config.view]}</span>
+                      <span className={styles.savedMeta}> · {EMBED_VIEW_LABEL[config.view]}</span>
                     </button>
                     <Badge tone={config.enabled ? 'success' : 'neutral'}>
                       {config.enabled ? 'Live' : 'Off'}
@@ -277,10 +293,13 @@ export function EmbedStudio({
                     value={active.view}
                     onChange={(e) => update({ view: e.target.value as View })}
                   >
-                    <option value="agenda">Schedule itinerary</option>
-                    <option value="speakers">Speaker gallery</option>
-                    <option value="sessions">Session list</option>
+                    {EMBED_VIEWS.map((view) => (
+                      <option key={view} value={view}>
+                        {EMBED_VIEW_LABEL[view]}
+                      </option>
+                    ))}
                   </Select>
+                  <span className={styles.fieldHint}>{EMBED_VIEW_SUMMARY[active.view]}</span>
                 </label>
 
                 <div className={styles.toggleRow}>
@@ -524,6 +543,48 @@ export function EmbedStudio({
 
           <Card>
             <CardHeader>
+              <CardTitle>Every widget type</CardTitle>
+              <CardDescription>
+                The same filters, styling, and field choices applied to each of the five widgets.
+                Copy the snippet or the shareable URL for whichever ones your site needs.
+              </CardDescription>
+            </CardHeader>
+            <CardBody>
+              <div className={styles.savedList}>
+                {everyWidget.map((entry) => (
+                  <div key={entry.view} className={styles.savedRow}>
+                    <span className={styles.savedName}>
+                      {EMBED_VIEW_LABEL[entry.view]}
+                      <span className={styles.savedMeta}> · {EMBED_VIEW_SUMMARY[entry.view]}</span>
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      iconLeft={
+                        copied === `snippet-${entry.view}` ? <Check size={14} /> : <Copy size={14} />
+                      }
+                      onClick={() => copy(entry.snippet, `snippet-${entry.view}`)}
+                    >
+                      Snippet
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      iconLeft={
+                        copied === `link-${entry.view}` ? <Check size={14} /> : <Copy size={14} />
+                      }
+                      onClick={() => copy(entry.url, `link-${entry.view}`)}
+                    >
+                      URL
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Public pages</CardTitle>
               <CardDescription>
                 The same data as a full page, for organizers without a website to embed into.
@@ -533,8 +594,7 @@ export function EmbedStudio({
               <div className={styles.savedList}>
                 {[
                   ['', 'Event home'],
-                  ['/agenda', 'Agenda'],
-                  ['/speakers', 'Speakers'],
+                  ...EMBED_VIEWS.map((view) => [`/${view}`, EMBED_VIEW_LABEL[view]] as const),
                 ].map(([path, label]) => (
                   <div key={label} className={styles.savedRow}>
                     <span className={styles.savedName}>{label}</span>

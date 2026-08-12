@@ -1,3 +1,7 @@
+import Link from 'next/link';
+import { FileText, MessageSquare } from 'lucide-react';
+import { Badge } from '@/components/ui';
+import { countCommentsByLineage, lineageIdOf } from '@/lib/services/files';
 import { listPortalTasks, sortForPortal } from '@/lib/services/tasks';
 import { headshotUrl, portalSession } from '../context';
 import styles from '../../portal.module.css';
@@ -20,6 +24,17 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
   );
   const uploaded = tasks.reduce((total, entry) => total + entry.files.length, 0);
 
+  const commentCounts = await countCommentsByLineage(event.id);
+  const delivered = tasks.flatMap((entry) =>
+    entry.files.map((record) => ({
+      id: record.id,
+      filename: record.filename,
+      version: record.version,
+      taskName: entry.name,
+      comments: commentCounts.get(lineageIdOf(record)) ?? 0,
+    })),
+  );
+
   return (
     <div className={styles.stack}>
       <div className={styles.pageHead}>
@@ -31,6 +46,33 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
             : 'Nothing received yet.'}
         </p>
       </div>
+
+      {delivered.length > 0 && (
+        <section className={styles.stackTight}>
+          <h2 className={styles.sectionTitle}>What you have sent</h2>
+          <p className={styles.hint}>
+            Open a file to read the organizers&apos; feedback, reply to it, or upload a new version
+            without losing the one on record.
+          </p>
+          <ul className={styles.fileList}>
+            {delivered.map((record) => (
+              <li key={record.id} className={styles.fileRow}>
+                <FileText size={15} aria-hidden />
+                <Link className={styles.fileName} href={`/portal/${eventSlug}/files/${record.id}`}>
+                  {record.filename}
+                </Link>
+                <span className={styles.faint}>{record.taskName}</span>
+                {record.version > 1 && <Badge tone="info">Version {record.version}</Badge>}
+                {record.comments > 0 && (
+                  <span className={styles.faint}>
+                    <MessageSquare size={13} aria-hidden /> {record.comments}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <HeadshotPanel eventSlug={eventSlug} headshotUrl={headshotUrl(eventSlug, me.headshotFileId)} />
 

@@ -14,7 +14,7 @@
     "enabled": true
   },
 
-  // Pooled Neon connection. The id is a placeholder until someone runs
+  // Pooled Neon connection, created with
   // `wrangler hyperdrive create cicero --connection-string=<neon-url>`.
   //
   // `localConnectionString` is what `wrangler dev` dials, so local runs never reach the
@@ -25,7 +25,7 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "00000000000000000000000000000000",
+      "id": "0d0c43d957e24187a177a06a6dd7faed",
       "localConnectionString": "postgresql://cicero:cicero@127.0.0.1:5432/cicero"
     }
   ],

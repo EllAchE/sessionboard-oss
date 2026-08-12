@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Plus, Trash2 } from 'lucide-react';
+import { BellRing, ChevronLeft, Plus, Trash2, UserMinus } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -20,12 +20,12 @@ import {
 import {
   addCriterionAction,
   autoAssignAction,
-  createRoundAction,
   deleteCriterionAction,
   deleteRoundAction,
   updateCriterionAction,
   updateRoundAction,
 } from '../actions';
+import { createRoundAction, releaseAssignmentAction, remindReviewersAction } from './actions';
 import styles from '../submissions.module.css';
 
 export type RoundWire = {
@@ -33,8 +33,18 @@ export type RoundWire = {
   name: string;
   status: 'draft' | 'open' | 'closed';
   blindUntilClose: boolean;
+  anonymized: boolean;
   assignedCount: number;
   completedCount: number;
+  declinedCount: number;
+};
+
+export type RecusalWire = {
+  assignmentId: string;
+  displayRef: string;
+  title: string;
+  reviewerName: string;
+  reason: string | null;
 };
 
 export type CriterionWire = {
@@ -63,6 +73,8 @@ export type RoundsManagerProps = {
   workload: WorkloadWire[];
   /** Submissions eligible for assignment in this round — everything still awaiting a verdict. */
   pendingSubmissionIds: string[];
+  recusals: RecusalWire[];
+  outstandingReviewerCount: number;
 };
 
 const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success'> = {
@@ -85,6 +97,8 @@ export function RoundsManager(props: RoundsManagerProps) {
 
   const [newRoundName, setNewRoundName] = useState('');
   const [newRoundBlind, setNewRoundBlind] = useState(true);
+  const [newRoundAnonymized, setNewRoundAnonymized] = useState(false);
+  const [reminderNote, setReminderNote] = useState('');
 
   const [criterionLabel, setCriterionLabel] = useState('');
   const [criterionWeight, setCriterionWeight] = useState('1');
@@ -237,6 +251,22 @@ export function RoundsManager(props: RoundsManagerProps) {
                   />
                   Blind
                 </span>
+                <span className={styles.keyRow}>
+                  <Switch
+                    size="sm"
+                    checked={round.anonymized}
+                    aria-label={`Anonymized authorship for ${round.name}`}
+                    onCheckedChange={(checked) =>
+                      run(
+                        () => updateRoundAction(round.id, { anonymized: checked }),
+                        checked
+                          ? 'Reviewers can no longer see who submitted.'
+                          : 'Reviewers can see who submitted again.',
+                      )
+                    }
+                  />
+                  Anonymized
+                </span>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -269,7 +299,15 @@ export function RoundsManager(props: RoundsManagerProps) {
                 />
                 Blind
               </span>
-              <span />
+              <span className={styles.keyRow}>
+                <Switch
+                  size="sm"
+                  checked={newRoundAnonymized}
+                  aria-label="Anonymized authorship"
+                  onCheckedChange={setNewRoundAnonymized}
+                />
+                Anonymized
+              </span>
               <Button
                 size="sm"
                 variant="primary"
@@ -280,6 +318,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                     const result = await createRoundAction({
                       name: newRoundName,
                       blindUntilClose: newRoundBlind,
+                      anonymized: newRoundAnonymized,
                     });
                     if (result.ok) setNewRoundName('');
                     return result;
@@ -289,6 +328,11 @@ export function RoundsManager(props: RoundsManagerProps) {
                 Add round
               </Button>
             </div>
+            <p className={styles.aiNote}>
+              Blind hides other reviewers&rsquo; scores until the round closes. Anonymized hides the
+              author from reviewers — names, contact details, affiliations and bios are stripped
+              from what they see, while organizers keep all of it for conflict checks and decisions.
+            </p>
           </div>
         </CardBody>
       </Card>
@@ -495,6 +539,76 @@ export function RoundsManager(props: RoundsManagerProps) {
                     emptyState="No reviewers on this event yet."
                   />
                 </div>
+
+                <div className={styles.inlineStack}>
+                  <Input
+                    inputSize="sm"
+                    placeholder="Optional line to include, e.g. a deadline"
+                    aria-label="Reminder note"
+                    value={reminderNote}
+                    onChange={(event) => setReminderNote(event.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    iconLeft={<BellRing size={14} />}
+                    loading={pending}
+                    disabled={props.outstandingReviewerCount === 0}
+                    onClick={() =>
+                      run(async () => {
+                        const result = await remindReviewersAction(selectedRound.id, {
+                          note: reminderNote.trim() ? reminderNote.trim() : null,
+                        });
+                        if (result.ok) setReminderNote('');
+                        return result;
+                      }, 'Reminder sent. Every message is recorded in Mail.')
+                    }
+                  >
+                    Remind outstanding reviewers
+                  </Button>
+                  <span className={styles.aiNote}>
+                    {props.outstandingReviewerCount === 0
+                      ? 'Nobody has an outstanding assignment in this round.'
+                      : `${props.outstandingReviewerCount} reviewer${
+                          props.outstandingReviewerCount === 1 ? '' : 's'
+                        } still owe scores. Each send is logged under Mail.`}
+                  </span>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recusals · {selectedRound.declinedCount}</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <div className={styles.stack}>
+                {props.recusals.map((recusal) => (
+                  <div key={recusal.assignmentId} className={styles.criterionEditor}>
+                    <span>
+                      <strong>{recusal.displayRef}</strong> {recusal.title}
+                    </span>
+                    <span className={styles.muted}>{recusal.reviewerName}</span>
+                    <span className={styles.muted}>{recusal.reason ?? 'No reason given'}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      iconLeft={<UserMinus size={14} />}
+                      loading={pending}
+                      onClick={() =>
+                        run(
+                          () => releaseAssignmentAction(recusal.assignmentId),
+                          'Assignment released. Auto-assign will hand it to someone else.',
+                        )
+                      }
+                    >
+                      Release
+                    </Button>
+                  </div>
+                ))}
+                {props.recusals.length === 0 ? (
+                  <p className={styles.muted}>No reviewer has recused themselves in this round.</p>
+                ) : null}
               </div>
             </CardBody>
           </Card>

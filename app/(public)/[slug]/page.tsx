@@ -79,7 +79,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             </Link>
           </div>
           <EmbedBody
-            view="speakers"
+            view="gallery"
             bundle={{ ...bundle, speakers: bundle.speakers.slice(0, 6) }}
             options={{ ...options, showBio: false }}
           />

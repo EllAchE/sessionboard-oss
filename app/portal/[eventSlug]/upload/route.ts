@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { requireEventContext } from '@/lib/auth';
 import { httpStatus, invalid, notFound, toPublicError } from '@/lib/errors';
+import { replaceDeliverable } from '@/lib/services/content';
 import { adhocSpec, storeFile, validateUpload, type UploadInput } from '@/lib/services/files';
 import { ensureParticipant, getEventBySlug, setHeadshot } from '@/lib/services/portal';
 import { attachTaskFiles } from '@/lib/services/tasks';
@@ -60,6 +61,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
       return NextResponse.json({
         ok: true,
         message: picked.length === 1 ? 'File uploaded' : `${picked.length} files uploaded`,
+      });
+    }
+
+    if (intent === 'replace') {
+      const fileId = String(body.get('fileId') ?? '');
+      if (!fileId) throw invalid('That deliverable could not be found');
+      const [candidate] = await toUploads(picked.slice(0, 1));
+      const next = await replaceDeliverable(ctx, fileId, candidate);
+      revalidatePath(`/portal/${eventSlug}`, 'layout');
+      return NextResponse.json({
+        ok: true,
+        message: `Uploaded as version ${next.version} — the earlier version is still on file`,
+        fileId: next.id,
       });
     }
 

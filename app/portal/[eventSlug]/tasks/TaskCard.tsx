@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import Link from 'next/link';
 import { CheckCircle2, Download, ExternalLink, FileText, Trash2 } from 'lucide-react';
 import { Badge, Button, IconButton, cn } from '@/components/ui';
 import { acceptAttribute, describeAcceptedTypes, formatBytes } from '@/lib/services/file-format';
@@ -149,21 +150,20 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
 
   return (
     <div className={styles.stackTight}>
-      {spec && (
-        <p className={styles.hint}>
-          {spec.helpText ? `${spec.helpText} · ` : ''}
-          {describeAcceptedTypes(spec)} · up to {spec.maxSizeMb} MB
-          {spec.allowMultiple ? ' · several files allowed' : ' · one file'}
-        </p>
-      )}
+      {spec?.helpText && <p className={styles.hint}>{spec.helpText}</p>}
 
       {task.files.length > 0 && (
         <ul className={styles.fileList}>
           {task.files.map((record) => (
             <li key={record.id} className={styles.fileRow}>
               <FileText size={15} aria-hidden />
-              <span className={styles.fileName}>{record.filename}</span>
-              <span className={styles.faint}>{formatBytes(record.sizeBytes)}</span>
+              <Link className={styles.fileName} href={`/portal/${eventSlug}/files/${record.id}`}>
+                {record.filename}
+              </Link>
+              <span className={styles.faint}>
+                {record.version > 1 ? `v${record.version} · ` : ''}
+                {formatBytes(record.sizeBytes)}
+              </span>
               <a
                 href={`/portal/${eventSlug}/file/${record.id}?download`}
                 aria-label={`Download ${record.filename}`}
@@ -177,13 +177,17 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
       )}
 
       {full ? (
-        <p className={styles.hint}>Remove the current file to upload a different one.</p>
+        <p className={styles.hint}>
+          Open the file above to upload a new version — the one on record stays downloadable.
+        </p>
       ) : (
         <Uploader
           eventSlug={eventSlug}
           intent="task"
           assignmentId={task.assignmentId}
           accept={spec ? acceptAttribute(spec) : undefined}
+          acceptedLabel={spec ? describeAcceptedTypes(spec) : 'Any file type'}
+          maxSizeMb={spec?.maxSizeMb ?? 25}
           multiple={spec?.allowMultiple ?? true}
           buttonLabel={task.files.length > 0 ? 'Upload another' : 'Upload'}
         />

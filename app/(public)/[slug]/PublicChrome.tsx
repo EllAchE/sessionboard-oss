@@ -5,8 +5,10 @@ import styles from './public-event.module.css';
 const TABS = [
   { id: 'home', label: 'Overview', path: '' },
   { id: 'agenda', label: 'Agenda', path: '/agenda' },
-  { id: 'speakers', label: 'Speakers', path: '/speakers' },
+  { id: 'itinerary', label: 'Schedule', path: '/itinerary' },
   { id: 'sessions', label: 'Sessions', path: '/sessions' },
+  { id: 'speakers', label: 'Speakers', path: '/speakers' },
+  { id: 'gallery', label: 'Speaker gallery', path: '/gallery' },
 ];
 
 export function PublicChrome({

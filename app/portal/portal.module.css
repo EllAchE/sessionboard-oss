@@ -668,6 +668,53 @@
   font-weight: var(--weight-medium);
 }
 
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font: var(--type-label);
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: var(--space-2);
+}
+
+.backLink:hover {
+  color: var(--text-strong);
+}
+
+.versionNumber {
+  font: var(--type-mono);
+  color: var(--text-muted);
+  min-width: var(--space-8);
+}
+
+.commentList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.comment {
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.commentHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.commentAuthor {
+  font: var(--type-heading);
+  font-size: var(--text-md);
+  color: var(--text-strong);
+}
+
 @media (max-width: 640px) {
   .main {
     padding: var(--space-6) var(--space-4) var(--space-12);

@@ -15,16 +15,23 @@ export function Uploader({
   eventSlug,
   intent,
   assignmentId,
+  fileId,
   accept,
+  acceptedLabel,
+  maxSizeMb,
   multiple = false,
   buttonLabel = 'Upload',
   helpText,
   compact = false,
 }: {
   eventSlug: string;
-  intent: 'headshot' | 'task';
+  intent: 'headshot' | 'task' | 'replace';
   assignmentId?: string;
+  fileId?: string;
   accept?: string;
+  /** `CNT-02`. Stated before the picker opens, never only in the error that follows a bad pick. */
+  acceptedLabel: string;
+  maxSizeMb: number;
   multiple?: boolean;
   buttonLabel?: string;
   helpText?: string | null;
@@ -46,6 +53,7 @@ export function Uploader({
     const body = new FormData();
     body.set('intent', intent);
     if (assignmentId) body.set('assignmentId', assignmentId);
+    if (fileId) body.set('fileId', fileId);
     for (const entry of Array.from(files)) body.append('files', entry);
 
     setPending(true);
@@ -71,6 +79,11 @@ export function Uploader({
   return (
     <div className={compact ? styles.stackTight : styles.dropzone}>
       {helpText && <p className={styles.hint}>{helpText}</p>}
+      <p className={styles.hint}>
+        Accepted file types: <strong>{acceptedLabel}</strong> · Maximum size:{' '}
+        <strong>{maxSizeMb} MB</strong>
+        {multiple ? ' · several files allowed' : ' · one file at a time'}
+      </p>
       <input
         ref={inputRef}
         type="file"

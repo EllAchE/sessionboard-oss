@@ -1,7 +1,7 @@
 import { BYTES_PER_MB } from './file-format';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, or } from 'drizzle-orm';
 import { getDb } from '../../db/client';
-import { file, fileRequest } from '../../db/schema';
+import { file, fileComment, fileRequest } from '../../db/schema';
 import type { EventContext } from '../context';
 import { conflict, invalid, notFound } from '../errors';
 import { getStorage, storageKey } from '../storage';
@@ -9,6 +9,7 @@ import { isNotNull } from 'drizzle-orm';
 import { participant, submission, taskAssignment, user } from '../../db/schema';
 import { requireCapability } from '../context';
 import { formatRef } from '../ids';
+import { renderMarkdown } from '../markdown';
 
 /**
  * `S-3`, `S-4`, `S-18`. Every read and write goes through the app rather than a presigned URL, so a
@@ -23,6 +24,8 @@ export type FileRecord = {
   contentType: string;
   sizeBytes: number;
   uploadedByUserId: string | null;
+  rootFileId: string | null;
+  version: number;
   createdAt: Date;
 };
 
@@ -215,17 +218,224 @@ export async function listFiles(eventId: string, fileIds: string[]): Promise<Fil
 }
 
 /**
- * Deletes the row and then the object. The other order would leave a `file` row pointing at nothing,
- * which reads as data loss; an orphaned object reads as nothing at all.
+ * Deletes the rows and then the objects. The other order would leave a `file` row pointing at
+ * nothing, which reads as data loss; an orphaned object reads as nothing at all.
+ *
+ * Removing a deliverable removes its whole lineage. Keeping superseded versions behind a deleted
+ * current one would leave the event holding bytes nobody can reach from any screen.
  */
 export async function deleteFile(ctx: EventContext, fileId: string): Promise<void> {
   const record = await getFileRecord(ctx.eventId, fileId);
-  await getDb().delete(file).where(and(eq(file.id, record.id), eq(file.eventId, ctx.eventId)));
-  try {
-    await getStorage().delete(record.storageKey);
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
+  const lineage = await lineageRows(ctx.eventId, record);
+
+  await getDb().delete(file).where(
+    and(
+      eq(file.eventId, ctx.eventId),
+      inArray(
+        file.id,
+        lineage.map((row) => row.id),
+      ),
+    ),
+  );
+
+  for (const row of lineage) {
+    try {
+      await getStorage().delete(row.storageKey);
+    } catch (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+    }
   }
+}
+
+// ---------------------------------------------------------------------------
+// `CNT-04` deliverable versions
+// ---------------------------------------------------------------------------
+
+/** The id every version of a deliverable shares. A first version is the root of its own lineage. */
+export function lineageIdOf(record: Pick<FileRecord, 'id' | 'rootFileId'>): string {
+  return record.rootFileId ?? record.id;
+}
+
+async function lineageRows(eventId: string, record: FileRecord): Promise<FileRecord[]> {
+  const root = lineageIdOf(record);
+  return getDb()
+    .select()
+    .from(file)
+    .where(and(eq(file.eventId, eventId), or(eq(file.id, root), eq(file.rootFileId, root))))
+    .orderBy(asc(file.version), asc(file.createdAt));
+}
+
+export type FileVersion = FileRecord & {
+  uploaderName: string | null;
+  uploaderEmail: string | null;
+  isCurrent: boolean;
+};
+
+/**
+ * Every version of one deliverable, oldest first. Any id in the lineage resolves the same list, so a
+ * stale link to version 1 still opens the history rather than a dead end.
+ */
+export async function listFileVersions(eventId: string, fileId: string): Promise<FileVersion[]> {
+  const record = await getFileRecord(eventId, fileId);
+  const rows = await lineageRows(eventId, record);
+
+  const uploaderIds = [
+    ...new Set(rows.map((row) => row.uploadedByUserId).filter((id): id is string => Boolean(id))),
+  ];
+  const uploaders = uploaderIds.length
+    ? await getDb()
+        .select({ id: user.id, name: user.name, email: user.email })
+        .from(user)
+        .where(inArray(user.id, uploaderIds))
+    : [];
+  const uploaderById = new Map(uploaders.map((row) => [row.id, row]));
+
+  const top = rows.reduce((highest, row) => Math.max(highest, row.version), 0);
+  return rows.map((row) => {
+    const uploader = row.uploadedByUserId ? uploaderById.get(row.uploadedByUserId) : undefined;
+    return {
+      ...row,
+      uploaderName: uploader?.name ?? null,
+      uploaderEmail: uploader?.email ?? null,
+      isCurrent: row.version === top,
+    };
+  });
+}
+
+/** The version anything pointing at this lineage should be reading right now. */
+export async function currentVersionOf(eventId: string, fileId: string): Promise<FileRecord> {
+  const record = await getFileRecord(eventId, fileId);
+  const rows = await lineageRows(eventId, record);
+  return rows[rows.length - 1] ?? record;
+}
+
+/**
+ * Stores a replacement as the next version of an existing deliverable. The prior row is untouched,
+ * which is the whole point: the organizer who already reviewed version 2 can still open version 2.
+ */
+export async function supersedeFile(
+  ctx: EventContext,
+  previousFileId: string,
+  input: UploadInput,
+): Promise<FileRecord> {
+  const previous = await getFileRecord(ctx.eventId, previousFileId);
+  const rows = await lineageRows(ctx.eventId, previous);
+  const root = lineageIdOf(previous);
+  const nextVersion = rows.reduce((highest, row) => Math.max(highest, row.version), 0) + 1;
+
+  const key = storageKey(ctx.eventId, input.filename);
+  await getStorage().put(key, input.bytes, input.contentType || 'application/octet-stream');
+
+  const [row] = await getDb()
+    .insert(file)
+    .values({
+      eventId: ctx.eventId,
+      storageKey: key,
+      filename: input.filename,
+      contentType: input.contentType || 'application/octet-stream',
+      sizeBytes: input.sizeBytes,
+      uploadedByUserId: ctx.actor.userId,
+      rootFileId: root,
+      version: nextVersion,
+    })
+    .returning();
+
+  return row;
+}
+
+// ---------------------------------------------------------------------------
+// `CNT-05` review conversation on a deliverable
+// ---------------------------------------------------------------------------
+
+export type DeliverableComment = {
+  id: string;
+  fileId: string;
+  version: number;
+  authorUserId: string | null;
+  authorName: string;
+  bodyMarkdown: string;
+  bodyHtml: string;
+  createdAt: Date;
+};
+
+/**
+ * The thread is keyed to the lineage, not to one upload. Feedback written against version 1 is the
+ * reason version 2 exists, so it has to still be on screen when version 2 arrives.
+ */
+export async function listFileComments(eventId: string, fileId: string): Promise<DeliverableComment[]> {
+  const record = await getFileRecord(eventId, fileId);
+  const rows = await lineageRows(eventId, record);
+  const versionById = new Map(rows.map((row) => [row.id, row.version]));
+
+  const comments = await getDb()
+    .select()
+    .from(fileComment)
+    .where(
+      inArray(
+        fileComment.fileId,
+        rows.map((row) => row.id),
+      ),
+    )
+    .orderBy(asc(fileComment.createdAt));
+
+  return comments.map((row) => ({
+    id: row.id,
+    fileId: row.fileId,
+    version: versionById.get(row.fileId) ?? 1,
+    authorUserId: row.authorUserId,
+    authorName: row.authorName,
+    bodyMarkdown: row.bodyMarkdown,
+    bodyHtml: renderMarkdown(row.bodyMarkdown),
+    createdAt: row.createdAt,
+  }));
+}
+
+export async function addFileComment(
+  ctx: EventContext,
+  fileId: string,
+  bodyMarkdown: string,
+): Promise<DeliverableComment> {
+  const body = bodyMarkdown.trim();
+  if (body.length === 0) throw invalid('Write something before posting it');
+  if (body.length > 4000) throw invalid('Keep a comment under 4000 characters');
+
+  const record = await getFileRecord(ctx.eventId, fileId);
+  const [row] = await getDb()
+    .insert(fileComment)
+    .values({
+      fileId: record.id,
+      authorUserId: ctx.actor.userId,
+      authorName: ctx.actor.name ?? ctx.actor.email,
+      bodyMarkdown: body,
+    })
+    .returning();
+
+  return {
+    id: row.id,
+    fileId: row.fileId,
+    version: record.version,
+    authorUserId: row.authorUserId,
+    authorName: row.authorName,
+    bodyMarkdown: row.bodyMarkdown,
+    bodyHtml: renderMarkdown(row.bodyMarkdown),
+    createdAt: row.createdAt,
+  };
+}
+
+/** How many comments each lineage carries, for a table that has to show it a hundred rows at a time. */
+export async function countCommentsByLineage(eventId: string): Promise<Map<string, number>> {
+  const rows = await getDb()
+    .select({ fileId: fileComment.fileId, rootFileId: file.rootFileId, id: file.id })
+    .from(fileComment)
+    .innerJoin(file, eq(file.id, fileComment.fileId))
+    .where(eq(file.eventId, eventId));
+
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    const root = row.rootFileId ?? row.id;
+    counts.set(root, (counts.get(root) ?? 0) + 1);
+  }
+  return counts;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,6 +465,10 @@ export type EventFileRow = FileRecord & {
   submissionRef: string | null;
   submissionTitle: string | null;
   submissionStatus: string | null;
+  lineageId: string;
+  versionCount: number;
+  isCurrent: boolean;
+  commentCount: number;
 };
 
 const FILE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -300,6 +514,7 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
     db
       .select({
         fileId: taskAssignment.fileId,
+        answers: taskAssignment.answers,
         submissionId: taskAssignment.submissionId,
         ownerName: user.name,
         ownerEmail: user.email,
@@ -307,7 +522,7 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
       .from(taskAssignment)
       .innerJoin(participant, eq(participant.id, taskAssignment.participantId))
       .innerJoin(user, eq(user.id, participant.userId))
-      .where(and(eq(participant.eventId, ctx.eventId), isNotNull(taskAssignment.fileId))),
+      .where(eq(participant.eventId, ctx.eventId)),
     db
       .select({
         fileId: participant.headshotFileId,
@@ -321,7 +536,15 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
 
   if (files.length === 0) return [];
 
-  type Attribution = Omit<EventFileRow, keyof FileRecord>;
+  type Attribution = {
+    source: EventFileSource;
+    ownerName: string | null;
+    ownerEmail: string | null;
+    submissionId: string | null;
+    submissionRef: string | null;
+    submissionTitle: string | null;
+    submissionStatus: string | null;
+  };
   const submissionById = new Map(submissions.map((row) => [row.id, row]));
   const attribution = new Map<string, Attribution>();
 
@@ -346,7 +569,11 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
     if (row.fileId) attribution.set(row.fileId, describe('headshot', row, null));
   }
   for (const row of taskUploads) {
-    if (row.fileId) attribution.set(row.fileId, describe('task', row, row.submissionId));
+    const attributed = describe('task', row, row.submissionId);
+    if (row.fileId) attribution.set(row.fileId, attributed);
+    for (const candidate of uuidsIn(row.answers ?? {})) {
+      attribution.set(candidate, attributed);
+    }
   }
   // Last, because a file reachable from a submission answer is best described by that submission.
   for (const row of submissions) {
@@ -365,6 +592,37 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
     submissionStatus: null,
   };
 
-  return files.map((record) => ({ ...record, ...(attribution.get(record.id) ?? unattached) }));
+  /**
+   * A replacement upload is attached to nothing — the submission answer or task assignment still
+   * names an earlier version. Attribution is therefore resolved per lineage, or every re-upload
+   * would drop out of the organizer's table as an orphan the moment it was made.
+   */
+  const byLineage = new Map<string, Attribution>();
+  for (const record of files) {
+    const direct = attribution.get(record.id);
+    if (direct) byLineage.set(lineageIdOf(record), direct);
+  }
+
+  const versionCounts = new Map<string, number>();
+  const topVersions = new Map<string, number>();
+  for (const record of files) {
+    const root = lineageIdOf(record);
+    versionCounts.set(root, (versionCounts.get(root) ?? 0) + 1);
+    topVersions.set(root, Math.max(topVersions.get(root) ?? 0, record.version));
+  }
+
+  const commentCounts = await countCommentsByLineage(ctx.eventId);
+
+  return files.map((record) => {
+    const root = lineageIdOf(record);
+    return {
+      ...record,
+      ...(attribution.get(record.id) ?? byLineage.get(root) ?? unattached),
+      lineageId: root,
+      versionCount: versionCounts.get(root) ?? 1,
+      isCurrent: record.version === (topVersions.get(root) ?? record.version),
+      commentCount: commentCounts.get(root) ?? 0,
+    };
+  });
 }
 
