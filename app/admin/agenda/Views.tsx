@@ -176,7 +176,7 @@ export function GroupedView({
             {group.name} <span className={styles.listMuted}>({group.rows.length})</span>
           </h3>
           {group.rows.length === 0 ? (
-            <p className={styles.listMuted}>Nothing here yet.</p>
+            <p className={styles.listMuted}>Nothing scheduled here.</p>
           ) : (
             group.rows.map((entry) => (
               <Row

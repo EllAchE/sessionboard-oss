@@ -34,10 +34,10 @@ export default async function SubmissionsPage({
 
       {submissions.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>Nothing here yet</div>
+          <div className={styles.emptyTitle}>No talks yet</div>
           <p>
             When a talk with your name on it is submitted, it appears here with its reference and
-            status — and once the schedule is published, its time and room.
+            status. Once the schedule is published, its time and room show up alongside them.
           </p>
         </div>
       ) : (
