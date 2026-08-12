@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -120,6 +120,8 @@ export function PipelineBoard({ columns }: Props) {
   const [board, setBoard] = useState(columns);
   const [dragging, setDragging] = useState<CardWire | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => setBoard(columns), [columns]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const stages = useMemo(
