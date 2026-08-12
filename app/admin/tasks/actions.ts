@@ -45,15 +45,31 @@ async function run(work: () => Promise<unknown>): Promise<TaskActionResult> {
   }
 }
 
+/**
+ * A bare `YYYY-MM-DD` from `<input type="date">` parses as UTC midnight, which renders as the day
+ * before anywhere west of Greenwich. A deadline is also owed by the *end* of its day, so the date
+ * becomes 23:59 local rather than the start of it.
+ */
+function parseDeadline(value: string): Date | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (!parts) {
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), 23, 59, 0, 0);
+}
+
 /** The panel posts strings because that is what an input holds; parsing belongs on this side. */
 function toServiceInput(input: TaskFormInput): tasks.TaskInput {
-  const due = input.dueAt.trim() ? new Date(input.dueAt) : null;
+  const due = parseDeadline(input.dueAt);
   return {
     name: input.name,
     descriptionMarkdown: input.descriptionMarkdown,
     kind: input.kind,
     audience: input.audience,
-    dueAt: due && !Number.isNaN(due.getTime()) ? due : null,
+    dueAt: due,
     required: input.required,
     linkUrl: input.linkUrl,
     formId: input.formId || null,

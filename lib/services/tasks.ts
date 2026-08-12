@@ -728,6 +728,19 @@ async function fanOutAssignments(eventId: string): Promise<void> {
   await Promise.all(participants.map((row) => ensureAssignments(eventId, row.id)));
 }
 
+/**
+ * A file-upload task without somewhere to put the file is a dead end in the portal, so the request
+ * is created alongside it and named after it rather than being a second thing to configure. It
+ * carries no help text of its own — the task's instructions already render directly above it.
+ */
+async function createRequestFor(eventId: string, clean: TaskInput): Promise<string> {
+  const [created] = await getDb()
+    .insert(fileRequest)
+    .values({ eventId, label: clean.name })
+    .returning({ id: fileRequest.id });
+  return created.id;
+}
+
 export async function createTask(ctx: EventContext, input: TaskInput): Promise<{ id: string }> {
   if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can create tasks');
   const clean = normalizeTaskInput(input);
@@ -739,17 +752,7 @@ export async function createTask(ctx: EventContext, input: TaskInput): Promise<{
     .where(eq(task.eventId, ctx.eventId));
   const position = existing.reduce((max, row) => Math.max(max, row.position + 1), 0);
 
-  // A file-upload task without somewhere to put the file is a dead end in the portal, so the
-  // request is created with it and named after it rather than being a second thing to configure.
-  const requestId =
-    clean.kind === 'file_upload'
-      ? (
-          await db
-            .insert(fileRequest)
-            .values({ eventId: ctx.eventId, label: clean.name, helpText: clean.descriptionMarkdown })
-            .returning({ id: fileRequest.id })
-        )[0].id
-      : null;
+  const requestId = clean.kind === 'file_upload' ? await createRequestFor(ctx.eventId, clean) : null;
 
   const [created] = await db
     .insert(task)
@@ -789,6 +792,13 @@ export async function updateTask(
     .limit(1);
   if (!row) throw notFound('That task');
 
+  // Switching an existing task over to file upload has to grow it an upload target too, or the
+  // portal renders a task the speaker cannot act on.
+  const requestId =
+    clean.kind === 'file_upload' && !row.fileRequestId
+      ? await createRequestFor(ctx.eventId, clean)
+      : row.fileRequestId;
+
   await db
     .update(task)
     .set({
@@ -797,6 +807,7 @@ export async function updateTask(
       kind: clean.kind,
       audience: clean.audience,
       formId: clean.formId ?? null,
+      fileRequestId: requestId,
       linkUrl: clean.linkUrl ?? null,
       dueAt: clean.dueAt ?? null,
       required: clean.required ?? true,
@@ -807,7 +818,7 @@ export async function updateTask(
   if (row.fileRequestId && clean.kind === 'file_upload') {
     await db
       .update(fileRequest)
-      .set({ label: clean.name, helpText: clean.descriptionMarkdown })
+      .set({ label: clean.name })
       .where(eq(fileRequest.id, row.fileRequestId));
   }
   await fanOutAssignments(ctx.eventId);
@@ -817,10 +828,15 @@ export async function deleteTask(ctx: EventContext, taskId: string): Promise<voi
   if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can delete tasks');
   const db = getDb();
   const [row] = await db
-    .select({ id: task.id })
+    .select({ id: task.id, fileRequestId: task.fileRequestId })
     .from(task)
     .where(and(eq(task.id, taskId), eq(task.eventId, ctx.eventId)))
     .limit(1);
   if (!row) throw notFound('That task');
   await db.delete(task).where(eq(task.id, taskId));
+  // The request only ever existed to serve this task; already-uploaded files hang off the
+  // assignment, not the request, so they survive it.
+  if (row.fileRequestId) {
+    await db.delete(fileRequest).where(eq(fileRequest.id, row.fileRequestId));
+  }
 }
