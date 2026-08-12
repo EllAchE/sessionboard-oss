@@ -245,8 +245,10 @@ first dead end.
   flow with no documented complimentary flag, so it ships behind the same interface marked
   experimental. The auth header name is genuinely ambiguous in their docs — `ACCELEVENTS_AUTH_HEADER`
   defaults to `Authorization` and the client retries once with `Key` on a 401.
-- **AI features** (review assist, agenda suggestions) disable themselves when `ANTHROPIC_API_KEY` is
-  unset rather than failing a request. They propose; they never decide.
+- **AI features** (review assist, agenda suggestions) stay on the screen when `ANTHROPIC_API_KEY` is
+  unset. Each says so and falls back — a rule-based reader for the review, a deterministic
+  earliest-free-slot planner for the agenda. Hiding an unconfigured feature hides the shape of it,
+  and the shape is the point: they propose, they never decide. The demo runs without a key.
 - **The demo deployment sits on the Cloudflare Workers free plan, which caps CPU at 10ms per
   request.** Rendering a dense admin page on a cold isolate goes over that, and Cloudflare answers
   `error code: 1102` with a 503 — so roughly one navigation in eight fails, and reloading fixes it.
