@@ -84,7 +84,7 @@ export default async function MailboxPage({
           <p className={styles.eyebrow}>Communications</p>
           <h1 className={styles.title}>Mailbox</h1>
           <p className={styles.lede}>
-            Every message this instance has sent or tried to send, with its rendered body, its
+            Every message this event has sent or tried to send, with its rendered body, its
             calendar attachment and any error the provider returned.
           </p>
         </div>

@@ -8,8 +8,16 @@
   // Magic links, calendar invites and embed snippets are all read outside a request — in an inbox,
   // a calendar client, or someone else's website — so a relative path is never enough and this has
   // to be the real origin. Self-hosters set APP_URL in the environment instead.
+  //
+  // MAIL_FROM is still the Resend shared test domain, which only delivers to the email address on
+  // the Resend account itself (https://resend.com/docs/knowledge-base/403-error-resend-dev-domain) —
+  // fine for the one operator testing sign-in, not for a real speaker or organizer. TODO before
+  // public launch: verify a real domain in Resend and point MAIL_FROM at it. RESEND_API_KEY is set
+  // separately as a secret (`wrangler secret put RESEND_API_KEY`), never as a var.
   "vars": {
-    "APP_URL": "https://cicero.lhar8771.workers.dev"
+    "APP_URL": "https://cicero.lhar8771.workers.dev",
+    "MAIL_TRANSPORT": "resend",
+    "MAIL_FROM": "Cicero <onboarding@resend.dev>"
   },
 
   "assets": {
