@@ -21,10 +21,14 @@ const KINDS: Array<{ value: AdminTaskRow['kind']; label: string; hint: string }>
   { value: 'link', label: 'External link', hint: 'The speaker visits a page you link to.' },
 ];
 
+/**
+ * `manual` is a real value in the enum, but nothing assigns a manual task to anyone — there is no
+ * per-participant "assign this task" surface yet, so offering it would create a task no speaker
+ * could ever see. It goes back in alongside that surface.
+ */
 const AUDIENCES: Array<{ value: AdminTaskRow['audience']; label: string }> = [
   { value: 'all_participants', label: 'Everyone in the event' },
   { value: 'accepted_participants', label: 'Accepted speakers only' },
-  { value: 'manual', label: 'Nobody yet — I will assign it' },
 ];
 
 const BLANK: TaskFormInput = {

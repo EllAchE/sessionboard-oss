@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -16,7 +17,7 @@ import {
   user,
 } from '../../db/schema';
 import type { EventContext } from '../context';
-import { can } from '../context';
+import { can, requireCapability } from '../context';
 import { appUrl } from '../env';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import type { AnswerMap, FormFieldSpec } from '../forms/contract';
@@ -110,6 +111,21 @@ export function assertCompletable(evidence: CompletionEvidence): void {
       if (!evidence.acknowledged) throw invalid('Confirm this task before marking it done');
       return;
   }
+}
+
+/**
+ * `assertCompletable` guarantees this on every write path: a `file_upload` or `form` assignment
+ * cannot reach `completed` without the evidence — a file, an answer set — sitting beside it. That
+ * guarantee only holds for rows written through this service, though. A row written directly (seed
+ * data, a migration, a hand edit in the database) can still land with the flag set and nothing behind
+ * it, and `/portal/[eventSlug]/tasks` and `/portal/[eventSlug]/files` both read `listPortalTasks`, so
+ * either both screens are wrong together or neither is. Reading resolves that by re-deriving the
+ * status from the evidence instead of trusting the stored flag: a kind that needs evidence to
+ * complete is only shown as `completed` when the evidence is actually present.
+ */
+export function reconcileStatus(kind: TaskKind, status: TaskStatus, hasEvidence: boolean): TaskStatus {
+  if (status !== 'completed' || hasEvidence) return status;
+  return kind === 'file_upload' || kind === 'form' ? 'in_progress' : status;
 }
 
 export type PortalTask = {
@@ -212,6 +228,10 @@ export async function ensureAssignments(eventId: string, participantId: string):
     .onConflictDoNothing();
 }
 
+// ---------------------------------------------------------------------------
+// Organizer-authored task types
+// ---------------------------------------------------------------------------
+
 export async function listPortalTasks(eventId: string, participantId: string): Promise<PortalTask[]> {
   const db = getDb();
   const rows = await db
@@ -244,65 +264,74 @@ export async function listPortalTasks(eventId: string, participantId: string): P
   const titleById = new Map(submissions.map((row) => [row.id, row.title]));
 
   const now = new Date();
-  return rows.map(({ assignment, task: row, fileRequest: request, form: portalForm }) => ({
-    assignmentId: assignment.id,
-    taskId: row.id,
-    name: row.name,
-    descriptionMarkdown: row.descriptionMarkdown,
-    descriptionHtml: renderMarkdown(row.descriptionMarkdown),
-    kind: row.kind,
-    status: assignment.status,
-    required: row.required,
-    position: row.position,
-    dueAt: row.dueAt,
-    overdue: isOverdue(assignment.status, row.dueAt, now),
-    completedAt: assignment.completedAt,
-    linkUrl: row.linkUrl,
-    submissionId: assignment.submissionId,
-    submissionTitle: assignment.submissionId ? (titleById.get(assignment.submissionId) ?? null) : null,
-    answers: formAnswersOf(assignment.answers),
-    fileRequest: request
-      ? {
-          id: request.id,
-          label: request.label,
-          helpText: request.helpText,
-          acceptedTypes: request.acceptedTypes ?? [],
-          maxSizeMb: request.maxSizeMb,
-          allowMultiple: request.allowMultiple,
-        }
-      : null,
-    files: fileIdsOf(assignment.answers)
+  return rows.map(({ assignment, task: row, fileRequest: request, form: portalForm }) => {
+    const taskFiles = fileIdsOf(assignment.answers)
       .map((id) => filesById.get(id))
-      .filter((record): record is FileRecord => Boolean(record)),
-    form: portalForm
-      ? {
-          id: portalForm.id,
-          name: portalForm.name,
-          introMarkdown: portalForm.introMarkdown,
-          confirmationSubject: portalForm.confirmationSubject,
-          confirmationBodyMarkdown: portalForm.confirmationBodyMarkdown,
-          fields: fields
-            .filter((field) => field.formId === portalForm.id)
-            .map(
-              (field): FormFieldSpec => ({
-                id: field.id,
-                key: field.key,
-                builtinKey: null,
-                type: field.type,
-                label: field.label,
-                position: field.position,
-                step: field.step,
-                required: field.required,
-                options: field.options ?? null,
-                showIf: field.showIf ?? null,
-                minLength: field.minLength,
-                maxLength: field.maxLength,
-                charLimitGroup: field.charLimitGroup,
-              }),
-            ),
-        }
-      : null,
-  }));
+      .filter((record): record is FileRecord => Boolean(record));
+    const answers = formAnswersOf(assignment.answers);
+    const hasEvidence =
+      row.kind === 'file_upload' ? taskFiles.length > 0 : row.kind === 'form' ? answers !== null : true;
+    const status = reconcileStatus(row.kind, assignment.status, hasEvidence);
+    const completedAt = status === 'completed' ? assignment.completedAt : null;
+
+    return {
+      assignmentId: assignment.id,
+      taskId: row.id,
+      name: row.name,
+      descriptionMarkdown: row.descriptionMarkdown,
+      descriptionHtml: renderMarkdown(row.descriptionMarkdown),
+      kind: row.kind,
+      status,
+      required: row.required,
+      position: row.position,
+      dueAt: row.dueAt,
+      overdue: isOverdue(status, row.dueAt, now),
+      completedAt,
+      linkUrl: row.linkUrl,
+      submissionId: assignment.submissionId,
+      submissionTitle: assignment.submissionId ? (titleById.get(assignment.submissionId) ?? null) : null,
+      answers,
+      fileRequest: request
+        ? {
+            id: request.id,
+            label: request.label,
+            helpText: request.helpText,
+            acceptedTypes: request.acceptedTypes ?? [],
+            maxSizeMb: request.maxSizeMb,
+            allowMultiple: request.allowMultiple,
+          }
+        : null,
+      files: taskFiles,
+      form: portalForm
+        ? {
+            id: portalForm.id,
+            name: portalForm.name,
+            introMarkdown: portalForm.introMarkdown,
+            confirmationSubject: portalForm.confirmationSubject,
+            confirmationBodyMarkdown: portalForm.confirmationBodyMarkdown,
+            fields: fields
+              .filter((field) => field.formId === portalForm.id)
+              .map(
+                (field): FormFieldSpec => ({
+                  id: field.id,
+                  key: field.key,
+                  builtinKey: null,
+                  type: field.type,
+                  label: field.label,
+                  position: field.position,
+                  step: field.step,
+                  required: field.required,
+                  options: field.options ?? null,
+                  showIf: field.showIf ?? null,
+                  minLength: field.minLength,
+                  maxLength: field.maxLength,
+                  charLimitGroup: field.charLimitGroup,
+                }),
+              ),
+          }
+        : null,
+    };
+  });
 }
 
 export type TaskSummary = {
