@@ -403,3 +403,94 @@
 .tabPanel {
   padding-top: var(--space-4);
 }
+
+.paletteButton {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-2);
+  padding: var(--space-05) 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: grab;
+  text-align: left;
+}
+
+.paletteButton:disabled {
+  cursor: default;
+  color: var(--text-faint);
+}
+
+.paletteButton:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.paletteButton[data-dragging='true'] {
+  opacity: 0.5;
+}
+
+.libraryHint {
+  font: var(--type-body);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+.rowTrailing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+}
+
+.preview {
+  max-width: var(--prose-max);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.previewProse {
+  font: var(--type-prose);
+  color: var(--text-body);
+}
+
+.previewNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sectionBreak {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-05);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.requiredMark {
+  color: var(--status-danger-fg);
+}
+
+.counter {
+  font: var(--type-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  align-self: flex-end;
+}
+
+.counter[data-over='true'] {
+  color: var(--status-danger-fg);
+}
+
+.choiceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body);
+  font-size: var(--text-sm);
+  color: var(--text-body);
+}

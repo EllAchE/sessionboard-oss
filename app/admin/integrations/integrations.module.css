@@ -1,0 +1,237 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: var(--content-max);
+  padding: var(--space-8) var(--space-6) var(--space-16);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.headings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.eyebrow {
+  font: var(--type-label);
+  color: var(--text-faint);
+  letter-spacing: var(--tracking-inscribed);
+  text-transform: uppercase;
+}
+
+.title {
+  font: var(--type-title);
+  color: var(--text-strong);
+  letter-spacing: var(--tracking-tight);
+}
+
+.subtitle {
+  font: var(--type-body);
+  color: var(--text-muted);
+  max-width: var(--prose-max);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  font: var(--type-heading);
+  color: var(--text-strong);
+}
+
+.note {
+  font: var(--type-body);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  max-width: var(--prose-max);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.disabled {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: var(--border-width) dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.disabledTitle {
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+}
+
+.envList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.env {
+  font: var(--type-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.mono {
+  font: var(--type-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.newKey {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-accent);
+  border-radius: var(--radius-md);
+  background: var(--accent-subtle);
+}
+
+.newKeyValue {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.secret {
+  font: var(--type-mono);
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  border: var(--border-width) solid var(--border-default);
+  overflow-wrap: anywhere;
+}
+
+.createRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.createInput {
+  min-width: 16rem;
+  flex: 1 1 16rem;
+}
+
+.error {
+  font: var(--type-body);
+  font-size: var(--text-sm);
+  color: var(--status-danger-fg);
+}
+
+.feedback {
+  font: var(--type-body);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.ok {
+  color: var(--status-success-fg);
+}
+
+.bad {
+  color: var(--status-danger-fg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-3);
+}
+
+.tableCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.tableName {
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+}
+
+.counts {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.fields {
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  line-height: var(--leading-snug);
+}
+
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.cellStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-05);
+}
+
+.cellSub {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
