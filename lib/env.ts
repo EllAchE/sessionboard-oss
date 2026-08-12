@@ -8,6 +8,14 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
  *
  * Bindings are not env vars and do not come through here: `HYPERDRIVE` and the R2 buckets are
  * objects, fetched from the Cloudflare context by the modules that own them.
+ *
+ * On a deployed Worker the Cloudflare env is the only source consulted and `process.env` is ignored
+ * rather than used as a fallback. OpenNext compiles whatever `.env` sat next to the build into the
+ * bundle and injects it at runtime, so a developer's local file otherwise outranks the deployed
+ * Worker's own configuration — which is how production came to address a MinIO container on
+ * localhost and fail every upload. `next dev` keeps the fallback, because there the Cloudflare
+ * context is a miniflare that only knows `wrangler.jsonc` and `.dev.vars`, and `.env` is still the
+ * documented place to configure a local machine. Self-hosted there is no context at all.
  */
 function fromCloudflare(key: string): string | undefined {
   try {
@@ -18,7 +26,18 @@ function fromCloudflare(key: string): string | undefined {
   }
 }
 
+function deployedToWorkers(): boolean {
+  if (process.env.NODE_ENV === 'development') return false;
+  try {
+    getCloudflareContext();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function env(key: string): string | undefined {
+  if (deployedToWorkers()) return fromCloudflare(key);
   return fromCloudflare(key) ?? process.env[key] ?? undefined;
 }
 

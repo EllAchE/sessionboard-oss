@@ -29,6 +29,13 @@
   // connection string with no password, so every override needs one even under trust auth.
   // Override without editing this file:
   //   WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://user:pass@127.0.0.1:5432/cicero
+  //
+  // Query caching belongs on the Hyperdrive config, not on this binding, so it cannot be set here:
+  //   wrangler hyperdrive update <id> --caching-disabled
+  // Cicero wants it off. Hyperdrive caches read queries for 60s by default, and nearly every read
+  // here immediately follows a write by the same person: an organizer adds a track, creates a
+  // review round, submits a score, then looks at the list it belongs to. Served from cache those
+  // writes look like they silently failed, so people do them twice.
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",

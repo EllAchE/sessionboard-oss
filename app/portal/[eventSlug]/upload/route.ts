@@ -80,6 +80,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
     throw invalid('That upload is not something the portal collects');
   } catch (error) {
     const publicError = toPublicError(error);
+    // `toPublicError` drops the original so a connection string cannot reach the speaker; logging it
+    // here is the other half of that bargain. Without it a failed upload leaves no trace anywhere,
+    // which is how a misrouted storage backend once hid behind "Something went wrong" indefinitely.
+    if (publicError.code === 'internal') {
+      const detail = error instanceof Error ? (error.stack ?? error.message) : String(error);
+      console.error(`portal upload failed: ${detail}`);
+    }
     return NextResponse.json({ ok: false, message: publicError.message }, { status: httpStatus(error) });
   }
 }
