@@ -10,6 +10,7 @@ import type {
 } from '@/lib/services/dashboard';
 import { Counter } from '../dashboard/widgets';
 import { OutstandingTasks } from '../dashboard/OutstandingTasks';
+import { NewTaskDialog } from './NewTaskDialog';
 import styles from '../dashboard/dashboard.module.css';
 
 const KIND_LABEL: Record<AdminTaskRow['kind'], string> = {
@@ -90,11 +91,13 @@ export function TasksIndex({
   assignments,
   summary,
   speakerCount,
+  canManage,
 }: {
   tasks: AdminTaskRow[];
   assignments: OutstandingTaskRow[];
   summary: TaskCompletionSummary;
   speakerCount: number;
+  canManage: boolean;
 }) {
   const [view, setView] = useState<'assignments' | 'tasks'>('assignments');
 
@@ -108,6 +111,7 @@ export function TasksIndex({
             {tasks.length} tasks across {speakerCount} participants.
           </p>
         </div>
+        {canManage && <NewTaskDialog />}
       </div>
 
       <div className={styles.counterGrid}>
