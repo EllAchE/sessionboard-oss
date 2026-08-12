@@ -25,6 +25,10 @@ mail instead of sending it, so the sign-in link comes straight back on the page 
 an inbox; every message it would have sent is readable at
 [`/admin/mail`](https://cicero.lhar8771.workers.dev/admin/mail).
 
+Type your own address instead and it works the same way — an account is created on the spot and you
+are dropped at "create an event," which is the cold path this was built to survive. Your event and
+the seeded demo cannot see each other.
+
 Without signing in at all: the [public event page](https://cicero.lhar8771.workers.dev/demo), the
 [programme](https://cicero.lhar8771.workers.dev/demo/agenda), an
 [open call for speakers](https://cicero.lhar8771.workers.dev/submit/demo/speak) you can submit to,
@@ -136,6 +140,12 @@ R2 is off by default, because enabling it requires a payment method on the Cloud
 that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
 database until you turn it on; `wrangler.jsonc` says exactly how.
 
+Two things to know before you deploy this yourself. The free plan's 10ms CPU limit is real and you
+will notice it — see the last section. And **`next build` reads `.env` and inlines what it finds
+into the bundle**, so a `.env` sitting in the working directory at build time ships to Cloudflare
+baked into the worker. Keep secrets in `wrangler secret put`, and check that `.env` holds only
+local development values before running `npm run cf:build`.
+
 ## Judgment calls worth arguing about
 
 The competition's tiebreaker is "whoever made the subjective judgment calls for the product we would
@@ -231,3 +241,17 @@ first dead end.
   defaults to `Authorization` and the client retries once with `Key` on a 401.
 - **AI features** (review assist, agenda suggestions) disable themselves when `ANTHROPIC_API_KEY` is
   unset rather than failing a request. They propose; they never decide.
+- **The demo deployment sits on the Cloudflare Workers free plan, which caps CPU at 10ms per
+  request.** Rendering a dense admin page on a cold isolate goes over that, and Cloudflare answers
+  `error code: 1102` with a 503 — so roughly one navigation in eight fails, and reloading fixes it.
+  This is a plan limit, not a bug in the app: nothing in the code can render an admin table in 10ms
+  of CPU. The fix is one line of billing (Workers Paid, $5/month, raises the cap to 30s) or a
+  redeploy to any host without a CPU quota. A self-hosted `docker compose up` has no such ceiling.
+- **A reviewer can submit a scorecard with no scores filled in.** It saves as a review with an empty
+  score set instead of being rejected, which then counts toward the round's progress. Validate
+  before trusting a reviewer-progress number.
+- **Reviewers are added by role, not by invitation.** There is no "invite a reviewer" flow and no
+  per-submission manual assignment — rounds assign in bulk. The same gap is why the `manual`
+  audience is hidden from the compose screen: nothing yet assigns a task to one named participant.
+- **The embed builder exports HTML and an iframe snippet only.** JSON, XML and iCal exports of the
+  same data are reachable through the REST API but have no button in the embed admin.
