@@ -237,6 +237,26 @@ export function isAcceptingSubmissions(
 // Loading the public form
 // ---------------------------------------------------------------------------
 
+export type OpenCallSummary = { slug: string; name: string; closesAt: Date | null };
+
+/**
+ * The open calls for speakers on an event's public front door. A call nobody can find is a call
+ * nobody answers, and until this existed the only route to a published form was a link the
+ * organizer had pasted somewhere else.
+ *
+ * Soonest deadline first, because that is the one a speaker has to act on.
+ */
+export async function listOpenCalls(eventId: string, now = new Date()): Promise<OpenCallSummary[]> {
+  const rows = await getDb().query.form.findMany({
+    where: and(eq(form.eventId, eventId), eq(form.kind, 'cfp'), eq(form.status, 'open')),
+  });
+
+  return rows
+    .filter((row) => isAcceptingSubmissions(row, now))
+    .sort((a, b) => (a.closesAt?.getTime() ?? Infinity) - (b.closesAt?.getTime() ?? Infinity))
+    .map((row) => ({ slug: row.slug, name: row.name, closesAt: row.closesAt }));
+}
+
 export type PublicFormBundle = {
   event: {
     id: string;

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { listOpenCalls } from '@/lib/services/submissions';
 import { EmbedBody } from '../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../embed/queries';
 import { PublicChrome, publicStyles as styles } from './PublicChrome';
@@ -28,6 +29,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
   const { event } = bundle;
   const dates = [event.startsOn, event.endsOn].filter(Boolean).join(' – ');
   const options = parseEmbedOptions({ limit: '6', columns: '3' });
+  const [call] = await listOpenCalls(event.id);
 
   return (
     <PublicChrome event={event} active="home">
@@ -40,7 +42,20 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
           <span>{event.timezone.replace('_', ' ')}</span>
         </div>
         <div className={styles.heroActions}>
-          <Link href={`/${event.slug}/agenda`} className={styles.action} data-primary="true">
+          {call ? (
+            <Link
+              href={`/submit/${event.slug}/${call.slug}`}
+              className={styles.action}
+              data-primary="true"
+            >
+              Submit a talk
+            </Link>
+          ) : null}
+          <Link
+            href={`/${event.slug}/agenda`}
+            className={styles.action}
+            data-primary={call ? undefined : 'true'}
+          >
             See the agenda
           </Link>
           <Link href={`/${event.slug}/speakers`} className={styles.action}>
