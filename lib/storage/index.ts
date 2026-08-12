@@ -9,7 +9,7 @@ export type StoredObject = {
 };
 
 export interface Storage {
-  readonly name: 'r2' | 's3';
+  readonly name: 'r2' | 's3' | 'postgres';
   put(key: string, body: ArrayBuffer | Uint8Array, contentType: string): Promise<void>;
   get(key: string): Promise<StoredObject>;
   delete(key: string): Promise<void>;
@@ -111,9 +111,67 @@ function s3Storage(): Storage {
   };
 }
 
+/**
+ * The database as an object store. Imported lazily for the same reason S3 is — the driver should
+ * not load on a deployment that never reaches this branch.
+ */
+function postgresStorage(): Storage {
+  return {
+    name: 'postgres',
+    async put(key, body, contentType) {
+      const bytes = body instanceof Uint8Array ? body : new Uint8Array(body);
+      const [{ getDb }, { fileBlob }] = await Promise.all([
+        import('../../db/client'),
+        import('../../db/schema'),
+      ]);
+      await getDb()
+        .insert(fileBlob)
+        .values({ storageKey: key, contentType, sizeBytes: bytes.byteLength, bytes })
+        .onConflictDoUpdate({
+          target: fileBlob.storageKey,
+          set: { contentType, sizeBytes: bytes.byteLength, bytes },
+        });
+    },
+    async get(key) {
+      const [{ getDb }, { fileBlob }, { eq }] = await Promise.all([
+        import('../../db/client'),
+        import('../../db/schema'),
+        import('drizzle-orm'),
+      ]);
+      const [row] = await getDb().select().from(fileBlob).where(eq(fileBlob.storageKey, key));
+      if (!row) throw notFound('That file');
+      const bytes = row.bytes;
+      return {
+        body: new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(bytes);
+            controller.close();
+          },
+        }),
+        contentType: row.contentType,
+        sizeBytes: row.sizeBytes,
+      };
+    },
+    async delete(key) {
+      const [{ getDb }, { fileBlob }, { eq }] = await Promise.all([
+        import('../../db/client'),
+        import('../../db/schema'),
+        import('drizzle-orm'),
+      ]);
+      await getDb().delete(fileBlob).where(eq(fileBlob.storageKey, key));
+    },
+  };
+}
+
+/**
+ * R2 first because a Workers deployment that has the binding should always use it. S3 next, which
+ * is what the compose stack and any self-host with a bucket configure. The database last, so a
+ * deployment that configured neither still accepts uploads instead of failing at the first headshot.
+ */
 export function getStorage(): Storage {
   const bucket = r2Binding();
-  return bucket ? r2Storage(bucket) : s3Storage();
+  if (bucket) return r2Storage(bucket);
+  return env('S3_BUCKET') ? s3Storage() : postgresStorage();
 }
 
 /**

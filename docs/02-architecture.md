@@ -17,12 +17,19 @@ secondary target, not the thing the architecture bends around.
 | Runtime | Workers, `@opennextjs/cloudflare` | Node 22 container, `next start` |
 | Database | Neon Postgres via **Hyperdrive** | Postgres 16 in `docker-compose` |
 | DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** |
-| File storage | R2 via S3 API | MinIO, or any S3 endpoint |
+| File storage | Postgres by default, R2 binding when bound | MinIO, or any S3 endpoint |
 | Email | Resend HTTP API | SMTP via nodemailer |
 | Scheduled sends | Cron Triggers → `/api/cron` | any cron hitting `/api/cron` |
 
 `wrangler.jsonc` sets `main: ".open-next/worker.js"`, `nodejs_compat`, and an `[assets]` binding.
-`open-next.config.ts` configures the ISR cache handler.
+
+**File storage defaults to the database, not R2.** `lib/storage` resolves in three steps — the `FILES`
+R2 binding if present, then an `S3_BUCKET` if configured, then a `file_blob` row. R2 would be the
+better store, but it cannot be enabled on a Cloudflare account without a payment method on file, and
+an open-source project that demands a credit card before it will run is a worse product than one
+that keeps a few headshots in Postgres. The binding always wins where it exists, so turning R2 on is
+uncommenting two config blocks and changes no code. Same reasoning drops the R2 ISR cache: nearly
+every route is dynamic and per-event, so there is little to persist.
 
 ### Why Postgres, and why this is the load-bearing decision
 

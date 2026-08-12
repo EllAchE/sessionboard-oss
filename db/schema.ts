@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -635,6 +636,25 @@ export const file = pgTable(
   },
   (t) => ({ byEvent: index('file_event_idx').on(t.eventId) }),
 );
+
+const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
+  dataType: () => 'bytea',
+  fromDriver: (value) => new Uint8Array(value),
+});
+
+/**
+ * Object storage of last resort, addressed by the same key R2 and S3 use. A deployment with neither
+ * an R2 binding nor an S3 endpoint keeps uploads here: it costs a row per file, and it buys a
+ * Cloudflare deploy that needs no second service — R2 cannot be enabled without a payment method on
+ * the account — and a `docker compose up` with no MinIO in it.
+ */
+export const fileBlob = pgTable('file_blob', {
+  storageKey: text('storage_key').primaryKey(),
+  contentType: text('content_type').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  bytes: bytea('bytes').notNull(),
+  createdAt: createdAt(),
+});
 
 export const fileRequest = pgTable(
   'file_request',

@@ -30,14 +30,14 @@
     }
   ],
 
-  "r2_buckets": [
-    {
-      "binding": "FILES",
-      "bucket_name": "cicero-files"
-    },
-    {
-      "binding": "NEXT_INC_CACHE_R2_BUCKET",
-      "bucket_name": "cicero-inc-cache"
-    }
-  ]
+  // No R2 by default. Enabling it requires a payment method on the Cloudflare account, which is a
+  // bad thing to demand of someone cloning an open-source project, so uploads fall back to the
+  // `file_blob` table and the ISR cache is left unconfigured. To use R2 instead: enable it, create
+  // the two buckets, uncomment this and the `incrementalCache` line in `open-next.config.ts`.
+  // `lib/storage` prefers the binding whenever it is present, so nothing else changes.
+  //
+  // "r2_buckets": [
+  //   { "binding": "FILES", "bucket_name": "cicero-files" },
+  //   { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "cicero-inc-cache" }
+  // ]
 }
