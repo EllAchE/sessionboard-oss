@@ -10,6 +10,10 @@ Spec workspace for an open-source replacement for **Sessionboard**, built for th
 1. **[`docs/00-goals.md`](docs/00-goals.md)** — what we are building and why, in prose. Start here.
 2. **[`docs/01-requirements.md`](docs/01-requirements.md)** — every requirement and deliverable,
    each tagged `[REQUIRED]` / `[IMPORTANT]` / `[OPTIONAL]` / `[EXCLUDED]` / `[BONUS]`.
+3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — how it is built: hosting, the stack,
+   the database and API layers, the form-engine verdict, and the Accelevents findings.
+4. **[`docs/03-plan.md`](docs/03-plan.md)** — in what order and by whom: the spine, the tiered
+   optional scope, workstreams and the clock, the loud judgment calls, and the verification plan.
 
 ## Reference material
 
