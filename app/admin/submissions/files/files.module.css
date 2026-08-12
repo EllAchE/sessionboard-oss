@@ -1,0 +1,38 @@
+.fileLink {
+  color: var(--text-body);
+  text-decoration: none;
+  border-bottom: var(--border-width) solid transparent;
+}
+
+.fileLink:hover {
+  color: var(--text-strong);
+  border-bottom-color: var(--border-default);
+}
+
+.fileLink:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-radius: var(--radius-xs);
+}
+
+.ref {
+  font: var(--type-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+.owner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-05);
+  line-height: var(--leading-snug);
+}
+
+.owner > :last-child {
+  font: var(--type-label);
+  color: var(--text-faint);
+}
+
+.hiddenForm {
+  display: none;
+}

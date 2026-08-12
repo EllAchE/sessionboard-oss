@@ -5,6 +5,10 @@ import { file, fileRequest } from '../../db/schema';
 import type { EventContext } from '../context';
 import { conflict, invalid, notFound } from '../errors';
 import { getStorage, storageKey } from '../storage';
+import { isNotNull } from 'drizzle-orm';
+import { participant, submission, taskAssignment, user } from '../../db/schema';
+import { requireCapability } from '../context';
+import { formatRef } from '../ids';
 
 /**
  * `S-3`, `S-4`, `S-18`. Every read and write goes through the app rather than a presigned URL, so a
@@ -222,5 +226,145 @@ export async function deleteFile(ctx: EventContext, fileId: string): Promise<voi
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
   }
+}
+
+// ---------------------------------------------------------------------------
+// `V-11` event-wide file index
+// ---------------------------------------------------------------------------
+
+/** Every file on the event, newest first. `listFiles` needs the ids up front; this one finds them. */
+export async function listEventFiles(eventId: string): Promise<FileRecord[]> {
+  return getDb()
+    .select()
+    .from(file)
+    .where(eq(file.eventId, eventId))
+    .orderBy(desc(file.createdAt));
+}
+
+/**
+ * Where a file came from. `unattached` is not an error state: an event logo and a file whose
+ * submission answer was later cleared both land there, and both still have to be downloadable.
+ */
+export type EventFileSource = 'submission' | 'task' | 'headshot' | 'unattached';
+
+export type EventFileRow = FileRecord & {
+  source: EventFileSource;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  submissionId: string | null;
+  submissionRef: string | null;
+  submissionTitle: string | null;
+  submissionStatus: string | null;
+};
+
+const FILE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function uuidsIn(answers: Record<string, unknown>): string[] {
+  const found: string[] = [];
+  for (const value of Object.values(answers)) {
+    if (typeof value === 'string' && FILE_UUID.test(value)) found.push(value);
+    else if (Array.isArray(value)) {
+      for (const entry of value) {
+        if (typeof entry === 'string' && FILE_UUID.test(entry)) found.push(entry);
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * The bulk-download screen's backing query. Which answer holds a file id is a property of the form
+ * rather than of the submission, so submission attribution collects anything uuid-shaped out of
+ * `answers` and lets the join against `file` decide what was really a file — the same trick
+ * `listSubmissionFiles` uses, widened from a set of submissions to the whole event.
+ */
+export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRow[]> {
+  requireCapability(ctx, 'submission:read_all');
+  const db = getDb();
+
+  const [files, submissions, taskUploads, headshots] = await Promise.all([
+    listEventFiles(ctx.eventId),
+    db
+      .select({
+        id: submission.id,
+        ref: submission.ref,
+        title: submission.title,
+        status: submission.status,
+        answers: submission.answers,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
+      .from(submission)
+      .innerJoin(user, eq(user.id, submission.submitterUserId))
+      .where(eq(submission.eventId, ctx.eventId)),
+    db
+      .select({
+        fileId: taskAssignment.fileId,
+        submissionId: taskAssignment.submissionId,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
+      .from(taskAssignment)
+      .innerJoin(participant, eq(participant.id, taskAssignment.participantId))
+      .innerJoin(user, eq(user.id, participant.userId))
+      .where(and(eq(participant.eventId, ctx.eventId), isNotNull(taskAssignment.fileId))),
+    db
+      .select({
+        fileId: participant.headshotFileId,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
+      .from(participant)
+      .innerJoin(user, eq(user.id, participant.userId))
+      .where(and(eq(participant.eventId, ctx.eventId), isNotNull(participant.headshotFileId))),
+  ]);
+
+  if (files.length === 0) return [];
+
+  type Attribution = Omit<EventFileRow, keyof FileRecord>;
+  const submissionById = new Map(submissions.map((row) => [row.id, row]));
+  const attribution = new Map<string, Attribution>();
+
+  const describe = (
+    source: EventFileSource,
+    owner: { ownerName: string | null; ownerEmail: string | null },
+    submissionId: string | null,
+  ): Attribution => {
+    const parent = submissionId ? submissionById.get(submissionId) : undefined;
+    return {
+      source,
+      ownerName: owner.ownerName,
+      ownerEmail: owner.ownerEmail,
+      submissionId: parent?.id ?? null,
+      submissionRef: parent ? formatRef('submission', parent.ref) : null,
+      submissionTitle: parent?.title ?? null,
+      submissionStatus: parent?.status ?? null,
+    };
+  };
+
+  for (const row of headshots) {
+    if (row.fileId) attribution.set(row.fileId, describe('headshot', row, null));
+  }
+  for (const row of taskUploads) {
+    if (row.fileId) attribution.set(row.fileId, describe('task', row, row.submissionId));
+  }
+  // Last, because a file reachable from a submission answer is best described by that submission.
+  for (const row of submissions) {
+    for (const candidate of uuidsIn(row.answers)) {
+      attribution.set(candidate, describe('submission', row, row.id));
+    }
+  }
+
+  const unattached: Attribution = {
+    source: 'unattached',
+    ownerName: null,
+    ownerEmail: null,
+    submissionId: null,
+    submissionRef: null,
+    submissionTitle: null,
+    submissionStatus: null,
+  };
+
+  return files.map((record) => ({ ...record, ...(attribution.get(record.id) ?? unattached) }));
 }
 

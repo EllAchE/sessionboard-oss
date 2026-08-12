@@ -1,0 +1,247 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { requireCapability, type EventContext } from '@/lib/context';
+import { invalid, isAppError } from '@/lib/errors';
+import { currentEventContext, updateEvent } from '@/lib/services/events';
+import * as settings from '@/lib/services/settings';
+import type { ActionResult, EntityKind } from './types';
+
+/**
+ * Thin, like the rest of `/admin`: resolve the event, check the capability, call the service,
+ * translate a thrown `AppError` into something the panel can put under a field. Every rule —
+ * what a colour may be, whether a delete is allowed — lives in `lib/services/settings.ts`.
+ *
+ * The panels post a `Record<string, string>` because one table edits all six taxonomies. The cast
+ * on the way into the service is safe in the only sense that matters: each `create`/`update` runs
+ * the row through its zod schema before it touches a column.
+ */
+
+const PATH = '/admin/settings';
+
+async function manageContext(): Promise<EventContext> {
+  const ctx = await currentEventContext();
+  requireCapability(ctx, 'event:manage');
+  return ctx;
+}
+
+async function run<T>(work: () => Promise<T>): Promise<ActionResult<T>> {
+  try {
+    const data = await work();
+    revalidatePath(PATH);
+    return { ok: true, data };
+  } catch (error) {
+    if (isAppError(error)) return { ok: false, message: error.message, details: error.details };
+    console.error(`settings action failed: ${String(error)}`);
+    return { ok: false, message: 'Something went wrong. Try again.' };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// String map in, typed service input out
+// ---------------------------------------------------------------------------
+
+type Parser = (raw: string, key: string) => unknown;
+
+const asText: Parser = (raw) => raw;
+
+const asNullableNumber: Parser = (raw, key) => {
+  if (raw.trim() === '') return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) throw invalid('That is not a number', { [key]: 'Enter a number' });
+  return value;
+};
+
+/** Absent rather than null: the service's default (30 minutes) should win over a blank box. */
+const asNumber: Parser = (raw, key) => {
+  if (raw.trim() === '') return undefined;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) throw invalid('That is not a number', { [key]: 'Enter a number' });
+  return value;
+};
+
+const asList: Parser = (raw) =>
+  raw
+    .split(/[,\n]/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+const PARSERS: Record<EntityKind, Record<string, Parser>> = {
+  track: { name: asText, color: asText, description: asText },
+  room: { name: asText, capacity: asNullableNumber, floor: asText },
+  format: { name: asText, durationMinutes: asNumber, description: asText },
+  tag: { name: asText, color: asText },
+  persona: { name: asText, description: asText },
+  field: { key: asText, label: asText, type: asText, helpText: asText, options: asList },
+};
+
+/** Only the keys the caller actually sent, so an update patches rather than blanks. */
+function toInput(kind: EntityKind, values: Record<string, string>): Record<string, unknown> {
+  const parsers = PARSERS[kind];
+  const out: Record<string, unknown> = {};
+  for (const [key, parse] of Object.entries(parsers)) {
+    const raw = values[key];
+    if (raw === undefined) continue;
+    const parsed = parse(raw, key);
+    if (parsed === undefined) continue;
+    out[key] = parsed;
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Collection CRUD
+// ---------------------------------------------------------------------------
+
+export async function createRowAction(
+  kind: EntityKind,
+  values: Record<string, string>,
+): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    const input = toInput(kind, values);
+    switch (kind) {
+      case 'track':
+        await settings.createTrack(ctx, input as settings.TrackInput);
+        break;
+      case 'room':
+        await settings.createRoom(ctx, input as settings.RoomInput);
+        break;
+      case 'format':
+        await settings.createFormat(ctx, input as settings.FormatInput);
+        break;
+      case 'tag':
+        await settings.createTag(ctx, input as settings.TagInput);
+        break;
+      case 'persona':
+        await settings.createPersona(ctx, input as settings.PersonaInput);
+        break;
+      case 'field':
+        await settings.createFieldEntry(ctx, input as settings.FieldEntryInput);
+        break;
+    }
+    return null;
+  });
+}
+
+export async function updateRowAction(
+  kind: EntityKind,
+  id: string,
+  values: Record<string, string>,
+): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    const patch = toInput(kind, values);
+    switch (kind) {
+      case 'track':
+        await settings.updateTrack(ctx, id, patch as Partial<settings.TrackInput>);
+        break;
+      case 'room':
+        await settings.updateRoom(ctx, id, patch as Partial<settings.RoomInput>);
+        break;
+      case 'format':
+        await settings.updateFormat(ctx, id, patch as Partial<settings.FormatInput>);
+        break;
+      case 'tag':
+        await settings.updateTag(ctx, id, patch as Partial<settings.TagInput>);
+        break;
+      case 'persona':
+        await settings.updatePersona(ctx, id, patch as Partial<settings.PersonaInput>);
+        break;
+      case 'field':
+        await settings.updateFieldEntry(ctx, id, patch as Partial<settings.FieldEntryInput>);
+        break;
+    }
+    return null;
+  });
+}
+
+/**
+ * `reassignTo` is the lossless path and the one the dialog offers first; `force` is the organizer
+ * accepting, after being shown the count, that the reference is about to be blanked.
+ */
+export async function removeRowAction(
+  kind: EntityKind,
+  id: string,
+  options: settings.RemoveOptions = {},
+): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    switch (kind) {
+      case 'track':
+        await settings.removeTrack(ctx, id, options);
+        break;
+      case 'room':
+        await settings.removeRoom(ctx, id, options);
+        break;
+      case 'format':
+        await settings.removeFormat(ctx, id, options);
+        break;
+      case 'tag':
+        await settings.removeTag(ctx, id, options);
+        break;
+      case 'persona':
+        await settings.removePersona(ctx, id, options);
+        break;
+      case 'field':
+        await settings.removeFieldEntry(ctx, id, options);
+        break;
+    }
+    return null;
+  });
+}
+
+export async function reorderRowsAction(
+  kind: EntityKind,
+  orderedIds: string[],
+): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    switch (kind) {
+      case 'track':
+        await settings.reorderTracks(ctx, orderedIds);
+        break;
+      case 'room':
+        await settings.reorderRooms(ctx, orderedIds);
+        break;
+      case 'format':
+        await settings.reorderFormats(ctx, orderedIds);
+        break;
+      case 'persona':
+        await settings.reorderPersonas(ctx, orderedIds);
+        break;
+      default:
+        throw invalid('That list has no order to change');
+    }
+    return null;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// The event itself
+// ---------------------------------------------------------------------------
+
+export type EventPatch = {
+  name?: string;
+  tagline?: string | null;
+  timezone?: string;
+  startsOn?: string | null;
+  endsOn?: string | null;
+};
+
+/**
+ * `updateEvent` owns the trimming and the timezone default. The slug is deliberately absent: it is
+ * the public URL of every submitted talk, and the service does not accept a change to it — see
+ * `tasks/W10-notes.md`.
+ */
+export async function updateEventAction(patch: EventPatch): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    if (patch.startsOn && patch.endsOn && patch.endsOn < patch.startsOn) {
+      throw invalid('The event ends before it starts', { endsOn: 'Must be on or after the start' });
+    }
+    await updateEvent(ctx, patch);
+    revalidatePath('/admin');
+    return null;
+  });
+}
