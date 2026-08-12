@@ -23,7 +23,17 @@ export function SignInForm({ next, mailboxHint }: { next: string; mailboxHint: b
           <div className={styles.sent}>
             <p className={styles.sentLead}>Check {state.email} for your sign-in link.</p>
             <p className={styles.hint}>It works once and expires in 30 minutes.</p>
-            {mailboxHint ? (
+            {state.link ? (
+              <>
+                <Button href={state.link} variant="primary" fullWidth>
+                  Open your sign-in link
+                </Button>
+                <p className={styles.hint}>
+                  This instance logs mail instead of sending it, so the link is here rather than in an
+                  inbox. Every message it would have sent is at <a href="/admin/mail">/admin/mail</a>.
+                </p>
+              </>
+            ) : mailboxHint ? (
               <p className={styles.hint}>
                 This instance logs mail instead of sending it — open <a href="/admin/mail">/admin/mail</a> to
                 click the link.

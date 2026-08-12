@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react';
 import { cn } from '../cn';
 import styles from './Button.module.css';
 
@@ -13,9 +13,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   iconLeft?: ReactNode;
   iconRight?: ReactNode;
   fullWidth?: boolean;
+  /** Renders an anchor instead. Navigation that looks like an action still has to be a link. */
+  href?: string;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement & HTMLAnchorElement, ButtonProps>(
   (
     {
       variant = 'secondary',
@@ -27,30 +29,51 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       className,
       children,
+      href,
       ...rest
     },
     ref,
   ) => {
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          styles.root,
-          styles[variant],
-          styles[size],
-          fullWidth && styles.fullWidth,
-          className,
-        )}
-        disabled={disabled || loading}
-        aria-busy={loading || undefined}
-        {...rest}
-      >
+    const classes = cn(
+      styles.root,
+      styles[variant],
+      styles[size],
+      fullWidth && styles.fullWidth,
+      className,
+    );
+    const inner = (
+      <>
         {loading && <span className={styles.spinner} aria-hidden="true" />}
         <span className={cn(styles.content, loading && styles.contentHidden)}>
           {iconLeft && <span className={styles.icon}>{iconLeft}</span>}
           {children !== undefined && <span className={styles.label}>{children}</span>}
           {iconRight && <span className={styles.icon}>{iconRight}</span>}
         </span>
+      </>
+    );
+
+    if (href !== undefined) {
+      return (
+        <a
+          ref={ref}
+          href={href}
+          className={classes}
+          {...(rest as unknown as AnchorHTMLAttributes<HTMLAnchorElement>)}
+        >
+          {inner}
+        </a>
+      );
+    }
+
+    return (
+      <button
+        ref={ref}
+        className={classes}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        {...rest}
+      >
+        {inner}
       </button>
     );
   },

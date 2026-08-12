@@ -71,7 +71,9 @@ export type MagicLinkRequest = {
  * Always reports success to the caller. Whether an address has an account is not something an
  * unauthenticated visitor gets to enumerate, and the UI copy ("check your inbox") is true either way.
  */
-export async function requestMagicLink(request: MagicLinkRequest): Promise<{ email: string }> {
+export async function requestMagicLink(
+  request: MagicLinkRequest,
+): Promise<{ email: string; link: string }> {
   const db = getDb();
   const account = await findOrCreateUser(request.email, request.name);
   const token = randomToken();
@@ -103,7 +105,7 @@ export async function requestMagicLink(request: MagicLinkRequest): Promise<{ ema
     templateKey: 'auth.magic_link',
   });
 
-  return { email: account.email };
+  return { email: account.email, link };
 }
 
 /**

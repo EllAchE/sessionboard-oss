@@ -15,6 +15,13 @@
       "when": 1786514437439,
       "tag": "0001_file_blob",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786516730864,
+      "tag": "0002_file_versions_and_revisions",
+      "breakpoints": true
     }
   ]
 }

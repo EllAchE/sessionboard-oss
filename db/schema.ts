@@ -73,6 +73,7 @@ export const taskStatus = pgEnum('task_status', [
   'completed',
   'waived',
 ]);
+export const contentRevisionKind = pgEnum('content_revision_kind', ['session', 'participant']);
 export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
 export const syncStatus = pgEnum('sync_status', ['pending', 'synced', 'failed']);
 export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
@@ -480,6 +481,11 @@ export const reviewRound = pgTable(
     status: reviewRoundStatus('status').notNull().default('draft'),
     /** Reviewers see each other's scores only once the round closes. */
     blindUntilClose: boolean('blind_until_close').notNull().default(true),
+    /**
+     * Blind in the other direction: the reviewer cannot see who wrote what. Organizers always see
+     * identity, so acceptance decisions and conflict checks still have a name attached to them.
+     */
+    anonymized: boolean('anonymized').notNull().default(false),
     opensAt: timestamp('opens_at', { withTimezone: true }),
     closesAt: timestamp('closes_at', { withTimezone: true }),
     createdAt: createdAt(),
@@ -632,9 +638,61 @@ export const file = pgTable(
     uploadedByUserId: uuid('uploaded_by_user_id').references(() => user.id, {
       onDelete: 'set null',
     }),
+    /**
+     * Re-uploading a deliverable supersedes rather than replaces: the new row points at the first
+     * version of its lineage and takes the next `version`, so the old bytes stay downloadable.
+     * Null means this row *is* the first version. Highest `version` in a lineage is the current one.
+     */
+    rootFileId: uuid('root_file_id'),
+    version: integer('version').notNull().default(1),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('file_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('file_event_idx').on(t.eventId),
+    byRoot: index('file_root_idx').on(t.rootFileId),
+  }),
+);
+
+/**
+ * Review conversation on a deliverable, readable by organizer and speaker alike — the point is that
+ * "slides need a bigger font on slide 4" reaches the person who can fix it without leaving the app.
+ */
+export const fileComment = pgTable(
+  'file_comment',
+  {
+    id: id(),
+    fileId: uuid('file_id')
+      .notNull()
+      .references(() => file.id, { onDelete: 'cascade' }),
+    authorUserId: uuid('author_user_id').references(() => user.id, { onDelete: 'set null' }),
+    authorName: text('author_name').notNull(),
+    bodyMarkdown: text('body_markdown').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byFile: index('file_comment_file_idx').on(t.fileId) }),
+);
+
+/**
+ * A before-snapshot written on every organizer edit to session or speaker content, which is what
+ * makes "who changed the abstract, and put it back" answerable. Storing the prior state rather than
+ * a diff keeps restore a single write and survives later schema drift in the entity itself.
+ */
+export const contentRevision = pgTable(
+  'content_revision',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    entityKind: contentRevisionKind('entity_kind').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
+    summary: text('summary').notNull(),
+    editorUserId: uuid('editor_user_id').references(() => user.id, { onDelete: 'set null' }),
+    editorName: text('editor_name').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEntity: index('content_revision_entity_idx').on(t.entityKind, t.entityId) }),
 );
 
 const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
