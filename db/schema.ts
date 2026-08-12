@@ -1,0 +1,873 @@
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core';
+
+/**
+ * Every event-owned table carries `eventId` from day one. `E-6` (multi-event) is tagged OPTIONAL,
+ * but `D-3` requires a judge's cold-created event to coexist with the seeded demo without either
+ * clobbering the other — retrofitting the column later would be a rewrite.
+ */
+
+const id = () => uuid('id').primaryKey().defaultRandom();
+const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
+const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
+
+export const membershipRole = pgEnum('membership_role', ['organizer', 'reviewer', 'speaker']);
+export const formKind = pgEnum('form_kind', ['cfp', 'portal']);
+export const formStatus = pgEnum('form_status', ['draft', 'open', 'closed']);
+export const fieldType = pgEnum('field_type', [
+  'short_text',
+  'long_text',
+  'markdown',
+  'select',
+  'multi_select',
+  'radio',
+  'checkbox',
+  'number',
+  'email',
+  'url',
+  'date',
+  'file',
+  'section_break',
+]);
+export const submissionStatus = pgEnum('submission_status', [
+  'draft',
+  'submitted',
+  'under_review',
+  'accepted',
+  'declined',
+  'waitlisted',
+  'withdrawn',
+]);
+export const participantRoleKind = pgEnum('participant_role_kind', [
+  'speaker',
+  'co_speaker',
+  'moderator',
+  'panelist',
+]);
+export const reviewRoundStatus = pgEnum('review_round_status', ['draft', 'open', 'closed']);
+export const reviewAssignmentStatus = pgEnum('review_assignment_status', [
+  'pending',
+  'completed',
+  'declined',
+]);
+export const taskAudience = pgEnum('task_audience', [
+  'all_participants',
+  'accepted_participants',
+  'manual',
+]);
+export const taskKind = pgEnum('task_kind', ['form', 'file_upload', 'acknowledge', 'link']);
+export const taskStatus = pgEnum('task_status', [
+  'not_started',
+  'in_progress',
+  'completed',
+  'waived',
+]);
+export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
+export const syncStatus = pgEnum('sync_status', ['pending', 'synced', 'failed']);
+export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
+  'draft',
+  'published',
+  'cancelled',
+]);
+
+// ---------------------------------------------------------------------------
+// Identity. Users are global; everything role-shaped is event-scoped through
+// `membership`. `role` decides which surface a session may enter and nothing
+// more — `E-8` (Sessionboard's permission grid) stays excluded.
+// ---------------------------------------------------------------------------
+
+export const user = pgTable('user', {
+  id: id(),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const event = pgTable('event', {
+  id: id(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  tagline: text('tagline'),
+  descriptionMarkdown: text('description_markdown'),
+  timezone: text('timezone').notNull().default('America/Los_Angeles'),
+  startsOn: text('starts_on'),
+  endsOn: text('ends_on'),
+  websiteUrl: text('website_url'),
+  venueName: text('venue_name'),
+  venueAddress: text('venue_address'),
+  logoFileId: uuid('logo_file_id'),
+  ownerUserId: uuid('owner_user_id')
+    .notNull()
+    .references(() => user.id),
+  /** Per-event counters backing the human-readable refs (`ABS-12`, `SESS-4`) that `S-5` calls for. */
+  submissionSeq: integer('submission_seq').notNull().default(0),
+  sessionSeq: integer('session_seq').notNull().default(0),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const membership = pgTable(
+  'membership',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    role: membershipRole('role').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    uniqueRole: unique('membership_user_event_role').on(t.userId, t.eventId, t.role),
+    byEvent: index('membership_event_idx').on(t.eventId),
+  }),
+);
+
+export const magicToken = pgTable(
+  'magic_token',
+  {
+    id: id(),
+    tokenHash: text('token_hash').notNull().unique(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'cascade' }),
+    redirectTo: text('redirect_to'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byUser: index('magic_token_user_idx').on(t.userId) }),
+);
+
+/**
+ * `impersonatedByUserId` is what makes `S-10` full impersonation rather than preview: the session
+ * acts as `userId` so every write is real, and stays attributable to the organizer who opened it.
+ */
+export const sessionCookie = pgTable(
+  'session_cookie',
+  {
+    id: id(),
+    tokenHash: text('token_hash').notNull().unique(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    impersonatedByUserId: uuid('impersonated_by_user_id').references(() => user.id, {
+      onDelete: 'cascade',
+    }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byUser: index('session_cookie_user_idx').on(t.userId) }),
+);
+
+// ---------------------------------------------------------------------------
+// Event taxonomy
+// ---------------------------------------------------------------------------
+
+export const track = pgTable(
+  'track',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    color: text('color'),
+    description: text('description'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('track_event_idx').on(t.eventId) }),
+);
+
+export const room = pgTable(
+  'room',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    capacity: integer('capacity'),
+    floor: text('floor'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('room_event_idx').on(t.eventId) }),
+);
+
+export const sessionFormat = pgTable(
+  'session_format',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    durationMinutes: integer('duration_minutes').notNull().default(30),
+    description: text('description'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('session_format_event_idx').on(t.eventId) }),
+);
+
+export const tag = pgTable(
+  'tag',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    color: text('color'),
+    createdAt: createdAt(),
+  },
+  (t) => ({ uniqueName: unique('tag_event_name').on(t.eventId, t.name) }),
+);
+
+/** `E-5`: a persona is the audience segment a submission targets. */
+export const persona = pgTable(
+  'persona',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('persona_event_idx').on(t.eventId) }),
+);
+
+/** `E-5`: reusable question definitions an organizer can drop into any form. */
+export const fieldLibraryEntry = pgTable(
+  'field_library_entry',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    label: text('label').notNull(),
+    type: fieldType('type').notNull(),
+    helpText: text('help_text'),
+    options: jsonb('options').$type<string[]>(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ uniqueKey: unique('field_library_event_key').on(t.eventId, t.key) }),
+);
+
+// ---------------------------------------------------------------------------
+// Forms
+// ---------------------------------------------------------------------------
+
+export const form = pgTable(
+  'form',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    kind: formKind('kind').notNull().default('cfp'),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    status: formStatus('status').notNull().default('draft'),
+    introMarkdown: text('intro_markdown'),
+    opensAt: timestamp('opens_at', { withTimezone: true }),
+    closesAt: timestamp('closes_at', { withTimezone: true }),
+    /** `F-13` */
+    maxSubmissionsPerUser: integer('max_submissions_per_user'),
+    /** `F-14` */
+    allowDrafts: boolean('allow_drafts').notNull().default(true),
+    /** `F-16`: addresses notified on each new submission. */
+    notifyEmails: jsonb('notify_emails').$type<string[]>().notNull().default([]),
+    confirmationSubject: text('confirmation_subject'),
+    confirmationBodyMarkdown: text('confirmation_body_markdown'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ uniqueSlug: unique('form_event_slug').on(t.eventId, t.slug) }),
+);
+
+/**
+ * `builtinKey` places one of the six locked fields in the form's running order and lets an
+ * organizer relabel it. The *value* still lands in its real `submission` column, never in
+ * `submission.answers` — see `lib/forms/contract.ts`.
+ *
+ * `showIf` may reference only an earlier field, one hop, no chaining. That restriction removes
+ * cyclic and cascading-condition bugs by construction rather than by testing.
+ */
+export const formField = pgTable(
+  'form_field',
+  {
+    id: id(),
+    formId: uuid('form_id')
+      .notNull()
+      .references(() => form.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    step: integer('step').notNull().default(0),
+    type: fieldType('type').notNull(),
+    key: text('key').notNull(),
+    builtinKey: text('builtin_key'),
+    label: text('label').notNull(),
+    helpText: text('help_text'),
+    placeholder: text('placeholder'),
+    required: boolean('required').notNull().default(false),
+    options: jsonb('options').$type<string[]>(),
+    showIf: jsonb('show_if').$type<{
+      fieldId: string;
+      op: 'eq' | 'neq' | 'includes' | 'gt' | 'lt' | 'is_empty' | 'not_empty';
+      value?: string | number;
+    }>(),
+    minLength: integer('min_length'),
+    maxLength: integer('max_length'),
+    /** `F-15`: fields sharing a group are counted together against one combined limit. */
+    charLimitGroup: text('char_limit_group'),
+    libraryEntryId: uuid('library_entry_id').references(() => fieldLibraryEntry.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byForm: index('form_field_form_idx').on(t.formId),
+    uniqueKey: unique('form_field_form_key').on(t.formId, t.key),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Submissions — the hybrid table. The six built-ins are real columns because
+// the review queue sorts on them, the agenda joins on them, conflict detection
+// compares them and the embeds filter on them. Everything else is `answers`,
+// which is only ever read back whole, per submission.
+// ---------------------------------------------------------------------------
+
+export const submission = pgTable(
+  'submission',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    formId: uuid('form_id')
+      .notNull()
+      .references(() => form.id, { onDelete: 'cascade' }),
+    /** Human-readable ref rendered as `ABS-{ref}`. Unique within the event. */
+    ref: integer('ref').notNull(),
+    submitterUserId: uuid('submitter_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+
+    title: text('title').notNull(),
+    descriptionMarkdown: text('description_markdown'),
+    formatId: uuid('format_id').references(() => sessionFormat.id, { onDelete: 'set null' }),
+    trackId: uuid('track_id').references(() => track.id, { onDelete: 'set null' }),
+    level: text('level'),
+    personaId: uuid('persona_id').references(() => persona.id, { onDelete: 'set null' }),
+
+    status: submissionStatus('status').notNull().default('draft'),
+    answers: jsonb('answers').$type<Record<string, unknown>>().notNull().default({}),
+
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    decisionNote: text('decision_note'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    uniqueRef: unique('submission_event_ref').on(t.eventId, t.ref),
+    byEventStatus: index('submission_event_status_idx').on(t.eventId, t.status),
+    byForm: index('submission_form_idx').on(t.formId),
+  }),
+);
+
+export const submissionTag = pgTable(
+  'submission_tag',
+  {
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => submission.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tag.id, { onDelete: 'cascade' }),
+  },
+  (t) => ({ uniquePair: unique('submission_tag_pair').on(t.submissionId, t.tagId) }),
+);
+
+/**
+ * A person in the context of one event, carrying the portal-owned profile. The plan listed
+ * `participant` and `profile` separately; they are folded together because every field on the
+ * profile is event-scoped and one-to-one with the participant.
+ */
+export const participant = pgTable(
+  'participant',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    displayName: text('display_name'),
+    pronouns: text('pronouns'),
+    jobTitle: text('job_title'),
+    company: text('company'),
+    bioMarkdown: text('bio_markdown'),
+    headshotFileId: uuid('headshot_file_id'),
+    links: jsonb('links').$type<{ label: string; url: string }[]>().notNull().default([]),
+    timezone: text('timezone'),
+    dietaryNotes: text('dietary_notes'),
+    accessibilityNotes: text('accessibility_notes'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ uniquePerEvent: unique('participant_event_user').on(t.eventId, t.userId) }),
+);
+
+export const participantRole = pgTable(
+  'participant_role',
+  {
+    id: id(),
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => submission.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => participant.id, { onDelete: 'cascade' }),
+    kind: participantRoleKind('kind').notNull().default('speaker'),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    uniquePair: unique('participant_role_pair').on(t.submissionId, t.participantId),
+    byParticipant: index('participant_role_participant_idx').on(t.participantId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Review
+// ---------------------------------------------------------------------------
+
+export const reviewRound = pgTable(
+  'review_round',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    position: integer('position').notNull().default(0),
+    status: reviewRoundStatus('status').notNull().default('draft'),
+    /** Reviewers see each other's scores only once the round closes. */
+    blindUntilClose: boolean('blind_until_close').notNull().default(true),
+    opensAt: timestamp('opens_at', { withTimezone: true }),
+    closesAt: timestamp('closes_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('review_round_event_idx').on(t.eventId) }),
+);
+
+export const scorecardCriterion = pgTable(
+  'scorecard_criterion',
+  {
+    id: id(),
+    reviewRoundId: uuid('review_round_id')
+      .notNull()
+      .references(() => reviewRound.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    description: text('description'),
+    weight: integer('weight').notNull().default(1),
+    maxScore: integer('max_score').notNull().default(5),
+    position: integer('position').notNull().default(0),
+  },
+  (t) => ({ byRound: index('scorecard_criterion_round_idx').on(t.reviewRoundId) }),
+);
+
+export const reviewAssignment = pgTable(
+  'review_assignment',
+  {
+    id: id(),
+    reviewRoundId: uuid('review_round_id')
+      .notNull()
+      .references(() => reviewRound.id, { onDelete: 'cascade' }),
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => submission.id, { onDelete: 'cascade' }),
+    reviewerUserId: uuid('reviewer_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: reviewAssignmentStatus('status').notNull().default('pending'),
+    comment: text('comment'),
+    assignedAt: createdAt(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (t) => ({
+    uniqueTriple: unique('review_assignment_triple').on(
+      t.reviewRoundId,
+      t.submissionId,
+      t.reviewerUserId,
+    ),
+    byReviewer: index('review_assignment_reviewer_idx').on(t.reviewerUserId),
+    bySubmission: index('review_assignment_submission_idx').on(t.submissionId),
+  }),
+);
+
+export const score = pgTable(
+  'score',
+  {
+    id: id(),
+    reviewAssignmentId: uuid('review_assignment_id')
+      .notNull()
+      .references(() => reviewAssignment.id, { onDelete: 'cascade' }),
+    criterionId: uuid('criterion_id')
+      .notNull()
+      .references(() => scorecardCriterion.id, { onDelete: 'cascade' }),
+    value: integer('value').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => ({ uniquePair: unique('score_assignment_criterion').on(t.reviewAssignmentId, t.criterionId) }),
+);
+
+/**
+ * `V-9`. Kept out of `score` because an AI opinion is advisory and must never be averaged into a
+ * human panel's numbers — an AI that silently decided an acceptance would be a worse product.
+ */
+export const aiReview = pgTable(
+  'ai_review',
+  {
+    id: id(),
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => submission.id, { onDelete: 'cascade' }),
+    reviewRoundId: uuid('review_round_id').references(() => reviewRound.id, {
+      onDelete: 'cascade',
+    }),
+    model: text('model').notNull(),
+    rationaleMarkdown: text('rationale_markdown').notNull(),
+    criterionScores: jsonb('criterion_scores')
+      .$type<{ criterionId: string; value: number; note?: string }[]>()
+      .notNull()
+      .default([]),
+    createdAt: createdAt(),
+  },
+  (t) => ({ bySubmission: index('ai_review_submission_idx').on(t.submissionId) }),
+);
+
+// ---------------------------------------------------------------------------
+// Schedule
+// ---------------------------------------------------------------------------
+
+/**
+ * `icsUid` is stable for the lifetime of the row and `icsSequence` increments on every change that
+ * an attendee's calendar must see. Together they are what make `C-3` update an invite in place
+ * instead of duplicating it.
+ */
+export const scheduledSession = pgTable(
+  'scheduled_session',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    submissionId: uuid('submission_id').references(() => submission.id, { onDelete: 'set null' }),
+    ref: integer('ref').notNull(),
+    title: text('title').notNull(),
+    descriptionMarkdown: text('description_markdown'),
+    roomId: uuid('room_id').references(() => room.id, { onDelete: 'set null' }),
+    trackId: uuid('track_id').references(() => track.id, { onDelete: 'set null' }),
+    formatId: uuid('format_id').references(() => sessionFormat.id, { onDelete: 'set null' }),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    status: scheduledSessionStatus('status').notNull().default('draft'),
+    /** `A-9` */
+    ceuCredits: text('ceu_credits'),
+    clientId: text('client_id'),
+    icsUid: text('ics_uid').notNull(),
+    icsSequence: integer('ics_sequence').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    uniqueRef: unique('scheduled_session_event_ref').on(t.eventId, t.ref),
+    byEventStart: index('scheduled_session_event_start_idx').on(t.eventId, t.startsAt),
+    byRoom: index('scheduled_session_room_idx').on(t.roomId),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Tasks and files
+// ---------------------------------------------------------------------------
+
+export const file = pgTable(
+  'file',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    storageKey: text('storage_key').notNull(),
+    filename: text('filename').notNull(),
+    contentType: text('content_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    uploadedByUserId: uuid('uploaded_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('file_event_idx').on(t.eventId) }),
+);
+
+export const fileRequest = pgTable(
+  'file_request',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    helpText: text('help_text'),
+    acceptedTypes: jsonb('accepted_types').$type<string[]>().notNull().default([]),
+    maxSizeMb: integer('max_size_mb').notNull().default(25),
+    allowMultiple: boolean('allow_multiple').notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('file_request_event_idx').on(t.eventId) }),
+);
+
+export const task = pgTable(
+  'task',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    descriptionMarkdown: text('description_markdown'),
+    kind: taskKind('kind').notNull(),
+    audience: taskAudience('audience').notNull().default('accepted_participants'),
+    formId: uuid('form_id').references(() => form.id, { onDelete: 'set null' }),
+    fileRequestId: uuid('file_request_id').references(() => fileRequest.id, {
+      onDelete: 'set null',
+    }),
+    linkUrl: text('link_url'),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    required: boolean('required').notNull().default(true),
+    position: integer('position').notNull().default(0),
+    /** `C-7`: days before `dueAt` on which a reminder fires. Empty means no reminders. */
+    reminderDaysBefore: jsonb('reminder_days_before').$type<number[]>().notNull().default([]),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('task_event_idx').on(t.eventId) }),
+);
+
+export const taskAssignment = pgTable(
+  'task_assignment',
+  {
+    id: id(),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => task.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => participant.id, { onDelete: 'cascade' }),
+    status: taskStatus('status').notNull().default('not_started'),
+    submissionId: uuid('submission_id').references(() => submission.id, { onDelete: 'cascade' }),
+    fileId: uuid('file_id').references(() => file.id, { onDelete: 'set null' }),
+    answers: jsonb('answers').$type<Record<string, unknown>>(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    lastRemindedAt: timestamp('last_reminded_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    uniquePair: unique('task_assignment_pair').on(t.taskId, t.participantId),
+    byParticipant: index('task_assignment_participant_idx').on(t.participantId),
+    byStatus: index('task_assignment_status_idx').on(t.status),
+  }),
+);
+
+// ---------------------------------------------------------------------------
+// Portal content and comms
+// ---------------------------------------------------------------------------
+
+/**
+ * `allowRawHtml` is the brief's "HTML embed support for existing reference material." It is true
+ * only for organizer-authored pages; speaker-authored markdown is always rendered with raw HTML
+ * stripped. See `lib/markdown.ts`.
+ */
+export const portalPage = pgTable(
+  'portal_page',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    bodyMarkdown: text('body_markdown').notNull().default(''),
+    allowRawHtml: boolean('allow_raw_html').notNull().default(true),
+    published: boolean('published').notNull().default(false),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ uniqueSlug: unique('portal_page_event_slug').on(t.eventId, t.slug) }),
+);
+
+export const portalTheme = pgTable('portal_theme', {
+  id: id(),
+  eventId: uuid('event_id')
+    .notNull()
+    .unique()
+    .references(() => event.id, { onDelete: 'cascade' }),
+  logoFileId: uuid('logo_file_id'),
+  accentColor: text('accent_color'),
+  welcomeMarkdown: text('welcome_markdown'),
+  supportEmail: text('support_email'),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const emailTemplate = pgTable(
+  'email_template',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    name: text('name').notNull(),
+    subject: text('subject').notNull(),
+    bodyMarkdown: text('body_markdown').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    attachIcs: boolean('attach_ics').notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ uniqueKey: unique('email_template_event_key').on(t.eventId, t.key) }),
+);
+
+/**
+ * Doubles as the dev mailbox rendered at `/admin/mail`, which satisfies `T-7a` and removes email
+ * deliverability as a single point of failure during judging: a judge who never receives a message
+ * can still read it.
+ */
+export const emailLog = pgTable(
+  'email_log',
+  {
+    id: id(),
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'cascade' }),
+    toEmail: text('to_email').notNull(),
+    fromEmail: text('from_email').notNull(),
+    subject: text('subject').notNull(),
+    bodyHtml: text('body_html').notNull(),
+    bodyText: text('body_text').notNull(),
+    templateKey: text('template_key'),
+    icsBody: text('ics_body'),
+    status: emailStatus('status').notNull().default('queued'),
+    error: text('error'),
+    providerMessageId: text('provider_message_id'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEventCreated: index('email_log_event_created_idx').on(t.eventId, t.createdAt) }),
+);
+
+// ---------------------------------------------------------------------------
+// Integrations, API, saved state
+// ---------------------------------------------------------------------------
+
+export const apiKey = pgTable(
+  'api_key',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    prefix: text('prefix').notNull(),
+    keyHash: text('key_hash').notNull(),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byPrefix: index('api_key_prefix_idx').on(t.prefix) }),
+);
+
+export const accelevantsSync = pgTable(
+  'accelevents_sync',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id').references(() => participant.id, {
+      onDelete: 'cascade',
+    }),
+    remoteId: text('remote_id'),
+    status: syncStatus('status').notNull().default('pending'),
+    error: text('error'),
+    requestBody: jsonb('request_body'),
+    responseBody: jsonb('response_body'),
+    syncedAt: timestamp('synced_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEvent: index('accelevents_sync_event_idx').on(t.eventId) }),
+);
+
+export const airtableSync = pgTable(
+  'airtable_sync',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    entityType: text('entity_type').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    remoteRecordId: text('remote_record_id'),
+    status: syncStatus('status').notNull().default('pending'),
+    error: text('error'),
+    syncedAt: timestamp('synced_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    uniqueEntity: unique('airtable_sync_entity').on(t.eventId, t.entityType, t.entityId),
+  }),
+);
+
+export const savedView = pgTable(
+  'saved_view',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    surface: text('surface').notNull(),
+    name: text('name').notNull(),
+    filters: jsonb('filters').$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byUserSurface: index('saved_view_user_surface_idx').on(t.userId, t.surface) }),
+);
