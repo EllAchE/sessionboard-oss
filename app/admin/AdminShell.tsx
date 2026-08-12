@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   CalendarDays,
   ClipboardList,
@@ -16,6 +16,7 @@ import {
 import { CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import type { EventSummary } from '@/lib/services/events';
 import { EventSwitcher } from './EventSwitcher';
+import { QuickActions } from './QuickActions';
 import { ThemeToggle } from './ThemeToggle';
 import styles from './admin.module.css';
 
@@ -73,6 +74,8 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [commandOpen, setCommandOpen] = useState(false);
+  const currentEvent = events.find((event) => event.id === currentEventId) ?? events[0];
 
   /** Longest matching href wins, so /admin/forms/abc highlights Forms rather than Overview. */
   const activeId = useMemo(() => {
@@ -123,7 +126,17 @@ export function AdminShell({
         </header>
         <main className={styles.content}>{children}</main>
       </div>
-      <CommandMenu items={commands} hotkey placeholder="Jump to…" />
+      <QuickActions
+        currentEventSlug={currentEvent?.slug}
+        onOpenCommand={() => setCommandOpen(true)}
+      />
+      <CommandMenu
+        items={commands}
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        hotkey
+        placeholder="Jump to…"
+      />
     </div>
   );
 }
