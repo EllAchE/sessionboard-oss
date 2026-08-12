@@ -1,3 +1,4 @@
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './schema';
@@ -11,25 +12,41 @@ import * as schema from './schema';
 
 export type Database = ReturnType<typeof drizzle<typeof schema>>;
 
-let pool: Pool | undefined;
+/**
+ * Workers never exposes bindings as globals; they arrive on a per-request context that
+ * `getCloudflareContext` throws for when absent, which is the normal case under `next start`,
+ * `tsx` scripts and vitest. Absence is therefore the self-hosted path, not an error.
+ */
+function hyperdriveConnectionString(): string | undefined {
+  try {
+    return getCloudflareContext().env.HYPERDRIVE?.connectionString;
+  } catch {
+    return undefined;
+  }
+}
 
-function connectionString(): string {
-  const hyperdrive = (globalThis as { HYPERDRIVE?: { connectionString: string } }).HYPERDRIVE;
-  const url = hyperdrive?.connectionString ?? process.env.DATABASE_URL;
+function build(connectionString: string, max: number): Database {
+  return drizzle(new Pool({ connectionString, max }), { schema, casing: 'snake_case' });
+}
+
+let nodePool: Database | undefined;
+
+export function getDb(): Database {
+  const hyperdrive = hyperdriveConnectionString();
+  if (hyperdrive) {
+    // Not cached, deliberately. A workerd socket belongs to the request that opened it, so a
+    // module-scoped pool survives into the next request on a warm isolate and every query on it
+    // hangs until the runtime cancels it — a reliable every-other-request 500. Hyperdrive is
+    // itself the pool, which is what makes one short-lived connection per request the right shape.
+    return build(hyperdrive, 1);
+  }
+
+  const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error('DATABASE_URL is not set and no Hyperdrive binding is present');
   }
-  return url;
-}
-
-export function getDb(): Database {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: connectionString(),
-      max: Number(process.env.DATABASE_POOL_MAX ?? 5),
-    });
-  }
-  return drizzle(pool, { schema, casing: 'snake_case' });
+  nodePool ??= build(url, Number(process.env.DATABASE_POOL_MAX ?? 5));
+  return nodePool;
 }
 
 export { schema };

@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cicero",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  "observability": {
+    "enabled": true
+  },
+
+  // Pooled Neon connection. The id is a placeholder until someone runs
+  // `wrangler hyperdrive create cicero --connection-string=<neon-url>`.
+  //
+  // `localConnectionString` is what `wrangler dev` dials, so local runs never reach the
+  // remote database. It points at the docker-compose Postgres; miniflare rejects a
+  // connection string with no password, so every override needs one even under trust auth.
+  // Override without editing this file:
+  //   WRANGLER_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://user:pass@127.0.0.1:5432/cicero
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000000000000000000000000000",
+      "localConnectionString": "postgresql://cicero:cicero@127.0.0.1:5432/cicero"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "cicero-files"
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "cicero-inc-cache"
+    }
+  ]
+}

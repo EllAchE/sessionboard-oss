@@ -1,0 +1,12 @@
+node_modules
+.next
+.open-next
+.wrangler
+.git
+.env
+.env.*
+!.env.example
+docs
+coverage
+*.tsbuildinfo
+.DS_Store
