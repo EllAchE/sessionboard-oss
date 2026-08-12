@@ -104,8 +104,7 @@ export function AiProposalDialog({
       <div className={styles.form}>
         {!enabled && (
           <p className={styles.proposalNote}>
-            The agenda assistant is off. Set <code>ANTHROPIC_API_KEY</code> to turn it on — the rest
-            of the board works either way.
+            The agenda assistant is off for this event. The rest of the board works either way.
           </p>
         )}
 

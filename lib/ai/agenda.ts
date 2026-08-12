@@ -26,7 +26,9 @@ import {
  *   - **The model's answer is not trusted.** Every returned placement is re-checked with the same
  *     `detectConflicts` the board uses, and anything that clashes is dropped from the proposal
  *     rather than shown as a good slot. A conflict-free proposal is the entire product claim.
- *   - **No key means disabled, never broken.** `available()` is what the surface asks first.
+ *   - **No key means a worse planner, not an absent feature.** Without `ANTHROPIC_API_KEY` the
+ *     greedy planner in `planLocally` answers instead, through the same validation, so the surface
+ *     behaves identically and a self-hoster who never signs up for anything still gets a draft.
  */
 
 export const AGENDA_MODEL = 'claude-sonnet-5';
@@ -74,14 +76,73 @@ export type AgendaProposal = {
   message?: string;
 };
 
-const DISABLED: AgendaProposal = {
-  status: 'disabled',
-  placements: [],
-  unplaced: [],
-  notes: null,
-  model: null,
-  message: 'Set ANTHROPIC_API_KEY to enable the agenda assistant.',
-};
+const SLOT_STEP_MINUTES = 15;
+
+/**
+ * What runs when no model is configured. Deliberately a real planner rather than an empty
+ * "disabled" state: the greedy rule below — earliest free slot, filling rooms across before moving
+ * time forward — is what an organizer does by hand with a whiteboard, so the draft is worth
+ * accepting rather than a placeholder telling someone to go find an API key.
+ *
+ * It emits the same `RawPlacement` shape the model does and is handed to the same
+ * `validateProposal`, so a slot from here is trusted exactly as little as a slot from Claude.
+ * Being deterministic, it also means the same queue always lands the same way, which the model
+ * path cannot promise.
+ */
+function planLocally(context: ProposalContext): RawPlacement[] {
+  const world: ScheduleEntry[] = [...context.entries];
+  const placements: RawPlacement[] = [];
+
+  const fits = (item: QueueItem, dayKey: string, startMinute: number, roomId: string) => {
+    const minutes = item.durationMinutes || DEFAULT_SESSION_MINUTES;
+    const startsAt = zonedTimeToUtc(dayKey, startMinute, context.timezone);
+    const provisional = provisionalEntry(item, {
+      sessionId: `proposed-${item.id}`,
+      roomId,
+      startsAt,
+      endsAt: addMinutes(startsAt, minutes),
+    });
+    const clashes = detectConflicts([...world, provisional]).some(
+      (conflict) => conflict.severity === 'error' && conflict.sessionIds.includes(provisional.id),
+    );
+    return clashes ? null : provisional;
+  };
+
+  for (const item of context.queue) {
+    const minutes = item.durationMinutes || DEFAULT_SESSION_MINUTES;
+
+    const starts = context.dayKeys.flatMap((dayKey) => {
+      const walk: { dayKey: string; startMinute: number }[] = [];
+      for (
+        let startMinute = context.dayStartMinute;
+        startMinute + minutes <= context.dayEndMinute;
+        startMinute += SLOT_STEP_MINUTES
+      ) {
+        walk.push({ dayKey, startMinute });
+      }
+      return walk;
+    });
+
+    /** Rooms inside the time walk, so parallel tracks fill before the day runs long. */
+    const found = starts
+      .flatMap((candidate) => context.rooms.map((room) => ({ ...candidate, room })))
+      .find((candidate) => fits(item, candidate.dayKey, candidate.startMinute, candidate.room.id));
+    if (!found) continue;
+
+    const entry = fits(item, found.dayKey, found.startMinute, found.room.id);
+    if (!entry) continue;
+    world.push(entry);
+    placements.push({
+      id: item.id,
+      dayKey: found.dayKey,
+      startMinute: found.startMinute,
+      roomId: found.room.id,
+      rationale: `Earliest ${minutes}-minute slot free in ${found.room.name}.`,
+    });
+  }
+
+  return placements;
+}
 
 function describeExisting(context: ProposalContext): string {
   const placed = context.entries.filter((entry) => entry.startsAt && entry.endsAt);
@@ -261,7 +322,6 @@ function reasonFor(conflicts: Conflict[]): string {
 }
 
 export async function proposeAgenda(context: ProposalContext): Promise<AgendaProposal> {
-  if (!available()) return DISABLED;
   if (context.queue.length === 0) {
     return {
       status: 'empty',
@@ -280,6 +340,18 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       notes: null,
       model: AGENDA_MODEL,
       message: 'Add a room before asking for a draft agenda.',
+    };
+  }
+
+  if (!available()) {
+    const { placements, unplaced } = validateProposal(context, planLocally(context));
+    return {
+      status: 'ok',
+      placements,
+      unplaced,
+      notes:
+        'Drafted by the built-in planner, which fills the earliest free slot in each room. It has no view of what makes two talks a bad pair — read it as a starting grid, not a programme.',
+      model: null,
     };
   }
 

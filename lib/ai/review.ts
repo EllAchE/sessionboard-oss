@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { env, features } from '../env';
+import { env } from '../env';
 import { unavailable } from '../errors';
 import { markdownToText } from '../markdown';
 import type { AiReviewSubject, CriterionSpec } from '../services/review';
@@ -13,10 +13,15 @@ import type { AiReviewSubject, CriterionSpec } from '../services/review';
 
 export const AI_REVIEW_MODEL = 'claude-sonnet-5';
 
-/** The whole surface hides behind this; a missing key disables the feature, it never crashes it. */
+/**
+ * Always on. Without a key the rule-based reader below answers instead, so the surface is never
+ * missing — only less insightful, and it labels itself as such.
+ */
 export function aiReviewEnabled(): boolean {
-  return features.ai();
+  return true;
 }
+
+export const HEURISTIC_MODEL = 'built-in heuristic';
 
 export type AiCriterionScore = { criterionId: string; value: number; note?: string };
 
@@ -144,12 +149,102 @@ export function normalizeScores(
  * unusable; the callers surface that as a message, not a 500, and the UI never offers the button
  * when `aiReviewEnabled()` is false in the first place.
  */
+function words(text: string | null | undefined): number {
+  const plain = markdownToText(text ?? '').trim();
+  return plain ? plain.split(/\s+/).length : 0;
+}
+
+/** 0 at or below `weak`, 1 at or above `strong`, linear between. */
+function ramp(value: number, weak: number, strong: number): number {
+  if (value <= weak) return 0;
+  if (value >= strong) return 1;
+  return (value - weak) / (strong - weak);
+}
+
+/**
+ * What a reviewer gets when no model is configured. It is honest about its own ceiling: it reads
+ * how complete and considered a proposal *looks* — abstract depth, whether a bio was written,
+ * whether the speaker classified their own talk — and never pretends to judge whether the idea is
+ * any good. That is still the triage a programme chair does first on a pile of two hundred, so it
+ * earns its place rather than standing in for something better.
+ *
+ * Criteria are matched on their label because scorecards name what they measure. A criterion the
+ * matcher does not recognise falls back to overall completeness, which is the safe direction: it
+ * moves a thin submission down and leaves a full one alone.
+ */
+function heuristicReview(subject: AiReviewSubject): AiReviewResult {
+  const abstract = words(subject.descriptionMarkdown);
+  const bio = subject.speakerBios.reduce((total, entry) => total + words(entry), 0);
+  const titleWords = subject.title.trim().split(/\s+/).filter(Boolean).length;
+  const answered = Object.values(subject.answers).filter(
+    (value) => value !== null && value !== undefined && value !== '',
+  ).length;
+  const classified = [subject.trackName, subject.formatName, subject.level].filter(Boolean).length;
+
+  const depth = ramp(abstract, 25, 180);
+  const speaker = ramp(bio, 10, 90);
+  const specificity = ramp(titleWords, 2, 8);
+  const thoroughness = (ramp(answered, 0, 3) + ramp(classified, 0, 3)) / 2;
+  const overall = (depth + speaker + specificity + thoroughness) / 4;
+
+  const signalFor = (label: string): { value: number; because: string } => {
+    const text = label.toLowerCase();
+    if (/speaker|bio|experience|credential|author/.test(text)) {
+      return { value: speaker, because: `speaker bio runs ${bio} words` };
+    }
+    if (/clarity|abstract|description|content|quality|depth/.test(text)) {
+      return { value: depth, because: `abstract runs ${abstract} words` };
+    }
+    if (/relevance|fit|track|topic|audience/.test(text)) {
+      return {
+        value: (specificity + thoroughness) / 2,
+        because: `${classified} of 3 classification fields set, title is ${titleWords} words`,
+      };
+    }
+    if (/original|novel|unique/.test(text)) {
+      return { value: specificity, because: `judged only from title specificity` };
+    }
+    return { value: overall, because: 'overall completeness of the proposal' };
+  };
+
+  const criterionScores: AiCriterionScore[] = subject.criteria.map((criterion) => {
+    const { value, because } = signalFor(criterion.label);
+    return {
+      criterionId: criterion.id,
+      value: Math.max(1, Math.min(criterion.maxScore, Math.round(1 + value * (criterion.maxScore - 1)))),
+      note: `Completeness signal: ${because}.`,
+    };
+  });
+
+  const observations = [
+    `- Abstract: **${abstract} words**${abstract < 25 ? ' — thin enough that a reviewer cannot judge it' : ''}`,
+    `- Speaker bio: **${bio} words**${bio === 0 ? ' — none supplied' : ''}`,
+    `- Title: **${titleWords} words**`,
+    `- Classification: **${classified} of 3** set (track, format, level)`,
+    `- Extra questions answered: **${answered}**`,
+  ].join('\n');
+
+  return {
+    model: HEURISTIC_MODEL,
+    rationaleMarkdown: [
+      '**No language model is configured on this deployment**, so this is a rule-based reading of how complete the submission is — not an opinion on whether the talk is good. Treat it as a triage signal and score it yourself.',
+      '',
+      observations,
+      '',
+      abstract < 25 || bio === 0
+        ? '_This proposal is missing enough that it would be worth asking the speaker for more before reviewing it properly._'
+        : '_Nothing obviously missing; the substance is a judgement call for a human reviewer._',
+    ].join('\n'),
+    criterionScores,
+  };
+}
+
 export async function generateAiReview(subject: AiReviewSubject): Promise<AiReviewResult> {
   const apiKey = env('ANTHROPIC_API_KEY');
-  if (!apiKey) throw unavailable('AI review is not configured for this deployment');
   if (subject.criteria.length === 0) {
     throw unavailable('This review round has no scorecard criteria to score against');
   }
+  if (!apiKey) return heuristicReview(subject);
 
   const client = new Anthropic({ apiKey });
 

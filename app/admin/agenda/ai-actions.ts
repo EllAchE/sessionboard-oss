@@ -1,11 +1,7 @@
 'use server';
 
 import { requireCapability } from '@/lib/context';
-import {
-  available as agendaAiAvailable,
-  proposeAgenda,
-  type AgendaProposal,
-} from '@/lib/ai/agenda';
+import { proposeAgenda, type AgendaProposal } from '@/lib/ai/agenda';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_GRID, agendaDayKeys } from '@/lib/services/schedule';
 import { loadAgenda } from './data';
@@ -34,8 +30,12 @@ export type WireProposal = {
   unplaced: { title: string; reason: string }[];
 };
 
+/**
+ * Always on. `lib/ai/agenda` falls back to a deterministic planner when no model is configured, so
+ * gating the button on the key would hide a feature that works.
+ */
 export async function agendaAssistantEnabled(): Promise<boolean> {
-  return agendaAiAvailable();
+  return true;
 }
 
 export async function proposeAgendaAction(guidance?: string | null): Promise<WireProposal> {
