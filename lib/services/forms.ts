@@ -429,6 +429,13 @@ export type NewFieldInput = {
   maxLength?: number | null;
   charLimitGroup?: string | null;
   libraryEntryId?: string | null;
+  /**
+   * Where the question lands in the running order. Omitted, it goes last. It travels with the insert
+   * rather than in a follow-up `reorderFields` call because that call has to describe the whole form,
+   * and the builder could only describe the form as it stood *before* the insert — so a mid-form add
+   * was reliably rejected for not covering every question.
+   */
+  index?: number;
 };
 
 export async function addField(
@@ -470,7 +477,20 @@ export async function addField(
     })
     .returning();
 
-  return toBuilderField(created);
+  if (input.index === undefined) return toBuilderField(created);
+
+  // A new question carries no condition and nothing points at it yet, and the fields around it keep
+  // their relative order, so no existing `showIf` can be invalidated by where it lands.
+  const ordering = fields.map((field) => field.id);
+  ordering.splice(Math.max(0, Math.min(input.index, ordering.length)), 0, created.id);
+  const db = getDb();
+  await Promise.all(
+    ordering.map((id, index) =>
+      db.update(formField).set({ position: index }).where(eq(formField.id, id)),
+    ),
+  );
+
+  return toBuilderField({ ...created, position: ordering.indexOf(created.id) });
 }
 
 export type FieldPatch = {
@@ -713,6 +733,7 @@ export async function addFieldFromLibrary(
   formId: string,
   entryId: string,
   step?: number,
+  index?: number,
 ): Promise<BuilderField> {
   requireCapability(ctx, 'form:manage');
   const entry = await getDb().query.fieldLibraryEntry.findFirst({
@@ -726,6 +747,7 @@ export async function addFieldFromLibrary(
     helpText: entry.helpText,
     options: entry.options ?? null,
     step,
+    index,
     libraryEntryId: entry.id,
   });
 }

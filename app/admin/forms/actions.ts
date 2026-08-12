@@ -145,10 +145,11 @@ export async function addFieldFromLibraryAction(
   formId: string,
   entryId: string,
   step: number,
+  index?: number,
 ): Promise<ActionResult> {
   return run(`/admin/forms/${formId}`, async () => {
     const ctx = await formManageContext();
-    await forms.addFieldFromLibrary(ctx, formId, entryId, step);
+    await forms.addFieldFromLibrary(ctx, formId, entryId, step, index);
     return null;
   });
 }

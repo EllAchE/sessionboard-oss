@@ -112,9 +112,11 @@ export function SubmissionEditor({
 export function WithdrawForm({
   eventSlug,
   submissionId,
+  draft = false,
 }: {
   eventSlug: string;
   submissionId: string;
+  draft?: boolean;
 }) {
   const [state, action] = useActionState(withdrawSubmissionAction, IDLE_STATE);
   const [confirming, setConfirming] = useState(false);
@@ -127,7 +129,7 @@ export function WithdrawForm({
       {confirming ? (
         <div className={styles.taskActions}>
           <SubmitButton variant="danger" size="sm">
-            Yes, withdraw this session
+            {draft ? 'Yes, discard this draft' : 'Yes, withdraw this session'}
           </SubmitButton>
           <button type="button" className={styles.checkLink} onClick={() => setConfirming(false)}>
             Keep it
@@ -136,7 +138,7 @@ export function WithdrawForm({
       ) : (
         <div className={styles.taskActions}>
           <button type="button" className={styles.checkLink} onClick={() => setConfirming(true)}>
-            Withdraw this session
+            {draft ? 'Discard this draft' : 'Withdraw this session'}
           </button>
         </div>
       )}

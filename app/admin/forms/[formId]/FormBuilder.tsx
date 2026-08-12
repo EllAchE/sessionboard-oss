@@ -172,22 +172,14 @@ export function FormBuilder({
         type,
         label: fieldTypeLabel(type),
         step: target.step,
+        index: target.index,
       });
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      const newId = result.data.id;
-      const payload = orderPayload(ordered);
-      payload.splice(target.index, 0, { id: newId, step: target.step });
-      const reorder = await reorderFieldsAction(form.id, payload);
-      if (!reorder.ok) {
-        setError(reorder.message);
-        router.refresh();
-        return;
-      }
       setError(null);
-      setAwaitingEditId(newId);
+      setAwaitingEditId(result.data.id);
       router.refresh();
     });
   };
@@ -195,7 +187,7 @@ export function FormBuilder({
   const addFromLibrary = (entryId: string, target: DropTarget) => {
     setNotice(null);
     startTransition(async () => {
-      const result = await addFieldFromLibraryAction(form.id, entryId, target.step);
+      const result = await addFieldFromLibraryAction(form.id, entryId, target.step, target.index);
       handle(result);
     });
   };

@@ -36,6 +36,7 @@ export type NewFieldInputWire = {
   minLength?: number | null;
   maxLength?: number | null;
   charLimitGroup?: string | null;
+  index?: number;
 };
 
 export type FieldPatchWire = {

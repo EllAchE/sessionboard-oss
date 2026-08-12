@@ -269,6 +269,7 @@ export type PortalSubmission = {
   formatName: string | null;
   trackName: string | null;
   formId: string;
+  formSlug: string;
   formName: string;
   formStatus: (typeof form.$inferSelect)['status'];
   formClosesAt: Date | null;
@@ -357,6 +358,7 @@ export async function listMySubmissions(participantId: string): Promise<PortalSu
     formatName,
     trackName,
     formId: parent.id,
+    formSlug: parent.slug,
     formName: parent.name,
     formStatus: parent.status,
     formClosesAt: parent.closesAt,

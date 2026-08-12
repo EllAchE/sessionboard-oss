@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CalendarClock, ChevronLeft, MapPin } from 'lucide-react';
-import { Badge, Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
+import { Badge, Button, Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
 import { isAppError } from '@/lib/errors';
 import {
   getMySubmission,
@@ -99,7 +99,36 @@ export default async function SubmissionDetailPage({
         </Card>
       )}
 
-      {submission.editable ? (
+      {submission.status === 'draft' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>This one has not been sent yet</CardTitle>
+          </CardHeader>
+          <CardBody>
+            {submission.editable ? (
+              <>
+                <p className={styles.muted}>
+                  Organizers cannot see a draft, and it still counts against how many sessions you
+                  may submit to “{submission.formName}”. Picking it up again opens the form with
+                  everything you typed still in place.
+                </p>
+                <div className={styles.taskActions} style={{ marginTop: 'var(--space-4)' }}>
+                  <Link
+                    href={`/submit/${eventSlug}/${submission.formSlug}?draft=${submission.id}`}
+                  >
+                    <Button variant="primary">Finish and submit</Button>
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <p className={styles.muted}>
+                “{submission.formName}” has closed, so this draft can no longer be sent. Discard it
+                below if you want the slot back for another event.
+              </p>
+            )}
+          </CardBody>
+        </Card>
+      ) : submission.editable ? (
         <SubmissionEditor eventSlug={eventSlug} submission={submission} fields={fields} />
       ) : (
         <Card>
@@ -135,14 +164,19 @@ export default async function SubmissionDetailPage({
       {submission.status !== 'withdrawn' && submission.isPrimary && (
         <Card>
           <CardHeader>
-            <CardTitle>Cannot make it?</CardTitle>
+            <CardTitle>{submission.status === 'draft' ? 'Changed your mind?' : 'Cannot make it?'}</CardTitle>
           </CardHeader>
           <CardBody>
             <p className={styles.muted}>
-              Withdrawing tells the organizers straight away and takes the session out of the
-              programme. It is not deleted, so they can see what happened.
+              {submission.status === 'draft'
+                ? 'Discarding a draft frees the slot it holds against your submission limit. Nothing reaches the organizers either way.'
+                : 'Withdrawing tells the organizers straight away and takes the session out of the programme. It is not deleted, so they can see what happened.'}
             </p>
-            <WithdrawForm eventSlug={eventSlug} submissionId={submission.id} />
+            <WithdrawForm
+              eventSlug={eventSlug}
+              submissionId={submission.id}
+              draft={submission.status === 'draft'}
+            />
           </CardBody>
         </Card>
       )}
