@@ -1,3 +1,4 @@
+import { can } from '@/lib/context';
 import { currentEventContext } from '@/lib/services/events';
 import {
   listSpeakers,
@@ -25,6 +26,7 @@ export default async function AdminTasksPage() {
       assignments={assignments}
       summary={summarizeTaskCompletion(assignments)}
       speakerCount={speakers.length}
+      canManage={can(ctx, 'task:manage')}
     />
   );
 }
