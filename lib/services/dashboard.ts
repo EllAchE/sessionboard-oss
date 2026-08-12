@@ -9,6 +9,8 @@ import {
   reviewRound,
   room,
   scheduledSession,
+  score,
+  scorecardCriterion,
   submission,
   task,
   taskAssignment,
@@ -718,6 +720,120 @@ export function toCsv(rows: unknown[][]): string {
   return rows.map((row) => row.map(csvCell).join(',')).join('\n');
 }
 
+/**
+ * `ABS-13`. One row per reviewer rather than one per submission, on purpose: an average that hides
+ * a 5 and a 1 agreeing to 3 is exactly the number a programme committee needs to argue about, and
+ * the disagreement is what people take into the room. Scores are rescaled to a common 0–5 so rounds
+ * with different scorecards can sit in one file.
+ */
+async function buildReviewScoreReport(ctx: EventContext): Promise<string> {
+  const header = [
+    'Ref',
+    'Title',
+    'Submission status',
+    'Round',
+    'Reviewer',
+    'Reviewer email',
+    'Review status',
+    'Score',
+    'Criteria scored',
+    'Comment',
+    'Completed',
+  ];
+
+  const db = getDb();
+  const rounds = await db.query.reviewRound.findMany({
+    where: eq(reviewRound.eventId, ctx.eventId),
+  });
+  if (rounds.length === 0) return toCsv([header]);
+
+  const roundIds = rounds.map((row) => row.id);
+  const [assignments, criteria, submissions] = await Promise.all([
+    db.query.reviewAssignment.findMany({
+      where: inArray(reviewAssignment.reviewRoundId, roundIds),
+    }),
+    db.query.scorecardCriterion.findMany({
+      where: inArray(scorecardCriterion.reviewRoundId, roundIds),
+    }),
+    db.query.submission.findMany({ where: eq(submission.eventId, ctx.eventId) }),
+  ]);
+  if (assignments.length === 0) return toCsv([header]);
+
+  const [scores, reviewers] = await Promise.all([
+    db.query.score.findMany({
+      where: inArray(
+        score.reviewAssignmentId,
+        assignments.map((row) => row.id),
+      ),
+    }),
+    db.query.user.findMany({
+      where: inArray(user.id, [...new Set(assignments.map((row) => row.reviewerUserId))]),
+    }),
+  ]);
+
+  const roundName = new Map(rounds.map((row) => [row.id, row.name]));
+  const reviewerById = new Map(reviewers.map((row) => [row.id, row]));
+  const submissionById = new Map(submissions.map((row) => [row.id, row]));
+  const criterionById = new Map(criteria.map((row) => [row.id, row]));
+
+  const scoresByAssignment = new Map<string, typeof scores>();
+  for (const row of scores) {
+    scoresByAssignment.set(row.reviewAssignmentId, [
+      ...(scoresByAssignment.get(row.reviewAssignmentId) ?? []),
+      row,
+    ]);
+  }
+
+  const rows = assignments
+    .map((assignment) => {
+      const proposal = submissionById.get(assignment.submissionId);
+      const reviewer = reviewerById.get(assignment.reviewerUserId);
+      const mine = scoresByAssignment.get(assignment.id) ?? [];
+
+      let weighted = 0;
+      let totalWeight = 0;
+      for (const entry of mine) {
+        const criterion = criterionById.get(entry.criterionId);
+        if (!criterion || criterion.maxScore <= 0) continue;
+        weighted += criterion.weight * (entry.value / criterion.maxScore);
+        totalWeight += criterion.weight;
+      }
+
+      return {
+        ref: proposal ? `ABS-${proposal.ref}` : '',
+        title: proposal?.title ?? '',
+        submissionStatus: proposal?.status ?? '',
+        round: roundName.get(assignment.reviewRoundId) ?? '',
+        reviewer: reviewer?.name ?? '',
+        email: reviewer?.email ?? '',
+        status: assignment.status,
+        score: totalWeight > 0 ? ((weighted / totalWeight) * 5).toFixed(2) : '',
+        scored: mine.length,
+        comment: assignment.comment ?? '',
+        completed: assignment.completedAt?.toISOString().slice(0, 10) ?? '',
+      };
+    })
+    .filter((row) => row.ref !== '')
+    .sort((a, b) => a.ref.localeCompare(b.ref) || a.reviewer.localeCompare(b.reviewer));
+
+  return toCsv([
+    header,
+    ...rows.map((row) => [
+      row.ref,
+      row.title,
+      row.submissionStatus,
+      row.round,
+      row.reviewer,
+      row.email,
+      row.status,
+      row.score,
+      row.scored,
+      row.comment,
+      row.completed,
+    ]),
+  ]);
+}
+
 export async function buildReport(ctx: EventContext, report: ReportId): Promise<string> {
   requireCapability(ctx, 'submission:read_all');
 
@@ -783,6 +899,8 @@ export async function buildReport(ctx: EventContext, report: ReportId): Promise<
       ]),
     ]);
   }
+
+  if (report === 'review-scores') return buildReviewScoreReport(ctx);
 
   const db = getDb();
   const [submissions, forms, tracks] = await Promise.all([

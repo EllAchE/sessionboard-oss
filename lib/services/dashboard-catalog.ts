@@ -8,7 +8,12 @@
 // `B-8` reports
 // ---------------------------------------------------------------------------
 
-export type ReportId = 'outstanding-tasks' | 'task-completion' | 'speakers' | 'submissions';
+export type ReportId =
+  | 'outstanding-tasks'
+  | 'task-completion'
+  | 'speakers'
+  | 'submissions'
+  | 'review-scores';
 
 export const REPORTS: { id: ReportId; name: string; description: string }[] = [
   {
@@ -30,6 +35,11 @@ export const REPORTS: { id: ReportId; name: string; description: string }[] = [
     id: 'submissions',
     name: 'Submission pipeline',
     description: 'Every submission with its form, track, status and decision date.',
+  },
+  {
+    id: 'review-scores',
+    name: 'Review scores',
+    description: 'One row per reviewer per submission: score, completion state and comment.',
   },
 ];
 
