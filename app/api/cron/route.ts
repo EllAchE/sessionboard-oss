@@ -1,0 +1,43 @@
+import { NextResponse } from 'next/server';
+import { runScheduledJobs } from '@/lib/services/comms';
+import { env } from '@/lib/env';
+
+/**
+ * `C-7`'s dispatcher. Cloudflare Cron Triggers hit this in production; a plain crontab or a
+ * `systemd` timer hits it self-hosted. Both deliver at least once and neither guarantees it will
+ * not fire twice, so every job behind `runScheduledJobs` carries its own guard rather than
+ * assuming this handler runs exactly once.
+ *
+ * `CRON_SECRET` is optional on purpose: the jobs are idempotent and send nothing that is not
+ * already due, so an unauthenticated call is a wasted query rather than a way to spam speakers. Set
+ * it on any deployment reachable from the open internet.
+ */
+export const dynamic = 'force-dynamic';
+
+async function run(request: Request): Promise<Response> {
+  const secret = env('CRON_SECRET');
+  if (secret) {
+    const header = request.headers.get('authorization') ?? '';
+    const provided = header.replace(/^Bearer\s+/i, '');
+    if (provided !== secret) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+  }
+
+  try {
+    const result = await runScheduledJobs();
+    return NextResponse.json({ ok: true, ...result });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request): Promise<Response> {
+  return run(request);
+}
+
+export async function POST(request: Request): Promise<Response> {
+  return run(request);
+}
