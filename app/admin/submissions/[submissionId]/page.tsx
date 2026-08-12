@@ -1,3 +1,4 @@
+import { aiModelConfigured } from '../../../../lib/ai/notice';
 import { aiReviewEnabled } from '../../../../lib/ai/review';
 import { can } from '../../../../lib/context';
 import { renderMarkdown } from '../../../../lib/markdown';
@@ -193,6 +194,7 @@ export default async function SubmissionReviewPage({
           : null
       }
       aiEnabled={aiReviewEnabled()}
+      aiModelConfigured={aiModelConfigured()}
       canDecide={can(ctx, 'submission:decide')}
       prevHref={hrefFor(-1)}
       nextHref={hrefFor(1)}

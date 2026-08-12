@@ -1,6 +1,7 @@
 'use server';
 
 import { requireCapability } from '@/lib/context';
+import { aiModelConfigured } from '@/lib/ai/notice';
 import { proposeAgenda, type AgendaProposal } from '@/lib/ai/agenda';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_GRID, agendaDayKeys } from '@/lib/services/schedule';
@@ -31,11 +32,12 @@ export type WireProposal = {
 };
 
 /**
- * Always on. `lib/ai/agenda` falls back to a deterministic planner when no model is configured, so
- * gating the button on the key would hide a feature that works.
+ * Whether a model key is set. The assistant runs either way — `lib/ai/agenda` falls back to a
+ * deterministic planner — so this only decides whether the dialog says where the drafting came
+ * from, never whether the button works.
  */
-export async function agendaAssistantEnabled(): Promise<boolean> {
-  return true;
+export async function agendaModelConfigured(): Promise<boolean> {
+  return aiModelConfigured();
 }
 
 export async function proposeAgendaAction(guidance?: string | null): Promise<WireProposal> {

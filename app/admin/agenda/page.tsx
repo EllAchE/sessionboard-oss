@@ -1,7 +1,7 @@
 import { can } from '@/lib/context';
 import { currentEventContext } from '@/lib/services/events';
 import { AgendaBoard } from './AgendaBoard';
-import { agendaAssistantEnabled } from './ai-actions';
+import { agendaModelConfigured } from './ai-actions';
 import { loadAgenda, toWire } from './data';
 
 /**
@@ -15,9 +15,9 @@ export const metadata = { title: 'Agenda · Cicero' };
 
 export default async function AgendaPage() {
   const ctx = await currentEventContext();
-  const [data, assistantEnabled] = await Promise.all([
+  const [data, modelConfigured] = await Promise.all([
     loadAgenda(ctx.eventId),
-    agendaAssistantEnabled(),
+    agendaModelConfigured(),
   ]);
 
   return (
@@ -29,7 +29,7 @@ export default async function AgendaPage() {
       entries={toWire(data.entries)}
       queue={data.queue}
       descriptions={data.descriptions}
-      assistantEnabled={assistantEnabled}
+      modelConfigured={modelConfigured}
       canManage={can(ctx, 'agenda:manage')}
     />
   );

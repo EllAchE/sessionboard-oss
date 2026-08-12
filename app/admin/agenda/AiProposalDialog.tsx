@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button, Checkbox, Dialog, Textarea } from '@/components/ui';
 import { formatZonedRange } from '@/lib/services/schedule';
+import { AI_KEY_MISSING_NOTE } from '@/lib/ai/notice';
 import { proposeAgendaAction, type WireProposal } from './ai-actions';
 import styles from './agenda.module.css';
 
@@ -15,13 +16,13 @@ import styles from './agenda.module.css';
 
 export function AiProposalDialog({
   open,
-  enabled,
+  modelConfigured,
   timeZone,
   onOpenChange,
   onApply,
 }: {
   open: boolean;
-  enabled: boolean;
+  modelConfigured: boolean;
   timeZone: string;
   onOpenChange: (open: boolean) => void;
   onApply: (
@@ -91,7 +92,6 @@ export function AiProposalDialog({
               variant="primary"
               onClick={request}
               loading={pending}
-              disabled={!enabled}
               iconLeft={<Sparkles size={14} />}
             >
               Suggest a schedule
@@ -102,13 +102,9 @@ export function AiProposalDialog({
       }
     >
       <div className={styles.form}>
-        {!enabled && (
-          <p className={styles.proposalNote}>
-            The agenda assistant is off for this event. The rest of the board works either way.
-          </p>
-        )}
+        {!modelConfigured && <p className={styles.proposalNote}>{AI_KEY_MISSING_NOTE}</p>}
 
-        {enabled && !proposal && (
+        {!proposal && (
           <div className={styles.field}>
             <label className={styles.label} htmlFor="agenda-guidance">
               Anything it should know? (optional)

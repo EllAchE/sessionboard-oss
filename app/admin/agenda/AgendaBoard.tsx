@@ -111,7 +111,7 @@ export function AgendaBoard({
   entries: wireEntries,
   queue: initialQueue,
   descriptions,
-  assistantEnabled,
+  modelConfigured,
   canManage,
 }: {
   event: AgendaData['event'];
@@ -121,7 +121,7 @@ export function AgendaBoard({
   entries: WireEntry[];
   queue: QueueItem[];
   descriptions: Record<string, string>;
-  assistantEnabled: boolean;
+  modelConfigured: boolean;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -653,7 +653,7 @@ export function AgendaBoard({
 
       <AiProposalDialog
         open={proposalOpen}
-        enabled={assistantEnabled}
+        modelConfigured={modelConfigured}
         timeZone={timeZone}
         onOpenChange={setProposalOpen}
         onApply={handleProposal}

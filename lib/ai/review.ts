@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from '../env';
 import { unavailable } from '../errors';
 import { markdownToText } from '../markdown';
+import { AI_KEY_MISSING_NOTE_MARKDOWN } from './notice';
 import type { AiReviewSubject, CriterionSpec } from '../services/review';
 
 /**
@@ -14,8 +15,8 @@ import type { AiReviewSubject, CriterionSpec } from '../services/review';
 export const AI_REVIEW_MODEL = 'claude-sonnet-5';
 
 /**
- * Always on. Without a key the rule-based reader below answers instead, so the surface is never
- * missing — only less insightful, and it labels itself as such.
+ * Always on. Without a key the rule-based reader below answers and says plainly that no key is set,
+ * so the surface is never missing — only less insightful, and never pretending otherwise.
  */
 export function aiReviewEnabled(): boolean {
   return true;
@@ -227,7 +228,9 @@ function heuristicReview(subject: AiReviewSubject): AiReviewResult {
   return {
     model: HEURISTIC_MODEL,
     rationaleMarkdown: [
-      '**No language model is configured on this deployment**, so this is a rule-based reading of how complete the submission is — not an opinion on whether the talk is good. Treat it as a triage signal and score it yourself.',
+      AI_KEY_MISSING_NOTE_MARKDOWN,
+      '',
+      'Until then, what follows is a rule-based reading of how complete the submission is, not an opinion on whether the talk is good. Treat it as triage and score it yourself.',
       '',
       observations,
       '',
