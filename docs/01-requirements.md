@@ -312,7 +312,7 @@ platform) to eliminate manual data re-entry."*
 | ID | Tag | Requirement |
 | --- | --- | --- |
 | N-1 | **[REQUIRED]** | **One-way** sync to **Accelevents**. One-way is the author's word — we push, we do not reconcile |
-| N-1a | **[REQUIRED]** | A real client written against the published OpenAPI spec — endpoints, field mapping, auth header, error handling — not a placeholder |
+| N-1a | **[REQUIRED]** | A real client written against the documented endpoints — field mapping, auth header, error handling — not a placeholder |
 | N-1b | **[REQUIRED]** | The client sits behind a named interface with a fixture-backed fake, so the demo, tests, and a judge without credentials all exercise the full path |
 | N-1c | **[OPTIONAL]** | Live end-to-end run against a real Accelevents account (needs a key we may not get) |
 | N-2 | **[OPTIONAL]** | Any other integration (Cvent, Swoogo, Zoom appear in Sessionboard; none are asked for) |
@@ -325,16 +325,18 @@ comped tickets and badges. The direction is program → registration.
 | Fact | Value |
 | --- | --- |
 | REST base URL | `https://api.accelevents.com/rest/` |
-| Auth | API key in an `AUTHENTICATION` header |
+| Auth | API key in a header whose name the docs give three ways — see `docs/02-architecture.md` §7 |
 | Key generation | Manage Enterprise → Integrations → API Key, **Owner only** |
 | Plan gating | **Enterprise and White Label plans only** |
-| Other surfaces | Webhooks (ticket purchase, attendee check-in); OpenAPI spec; `llms.txt` index |
+| Other surfaces | Webhooks (ticket purchase, attendee check-in); `llms.txt` index. The docs render a spec that is not published as a downloadable file |
 | Docs | https://developer.accelevents.com/docs/accelevents-api-documentation |
 
-> **Lack of a key does not block this requirement.** The contract is public — OpenAPI spec plus an
-> `llms.txt` markdown index — so the client, the field mapping, and the push logic can all be
-> written and unit-tested against it. What a key would add is a live end-to-end run (N-1c), and no
-> competitor is likely to have one either. Build N-1a for real, demo it through N-1b.
+> **Lack of a key does not block this requirement.** The contract is public enough — rendered
+> endpoint reference plus an `llms.txt` markdown index — that the client, the field mapping, and
+> the push logic can all be written and unit-tested against it. What a key would add is a live
+> end-to-end run (N-1c), and no competitor is likely to have one either. Build N-1a for real, demo
+> it through N-1b. The documentation's real gaps — the ambiguous auth header, undocumented rate
+> limits, and unpublished webhook schemas — are catalogued in `docs/02-architecture.md` §7.
 
 ---
 
