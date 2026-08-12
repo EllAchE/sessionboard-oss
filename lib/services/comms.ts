@@ -30,7 +30,7 @@ import {
 import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
-import { listEventsForUser } from './events';
+import { listEventsForUser, pickDefaultEvent } from './events';
 
 /**
  * `C-1`–`C-7`. Everything between an organizer pressing Send and a row in `email_log`: what the
@@ -1550,7 +1550,7 @@ export async function mailForRecipient(
 
 export type AdminEventOption = { id: string; name: string; slug: string };
 
-/** Newest first, which is what a judge who just made an event wants to land on. */
+/** Newest first, which is what a judge who just made an event wants to find at the top. */
 export async function listEventsForAdmin(userId: string): Promise<AdminEventOption[]> {
   const rows = await listEventsForUser(userId);
   return rows.map(({ id, name, slug }) => ({ id, name, slug }));
@@ -1571,12 +1571,13 @@ export async function resolveAdminEvent(options: {
   userId: string;
 }): Promise<{ event: EventRow | null; options: AdminEventOption[] }> {
   const db = getDb();
-  const all = await listEventsForAdmin(options.userId);
+  const mine = await listEventsForUser(options.userId);
+  const all: AdminEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
 
   const pick = (wanted: string | null | undefined) =>
-    wanted ? all.find((entry) => entry.id === wanted || entry.slug === wanted) : undefined;
+    wanted ? mine.find((entry) => entry.id === wanted || entry.slug === wanted) : undefined;
 
-  const chosen = pick(options.eventParam) ?? pick(options.cookieEventId) ?? all[0];
+  const chosen = pick(options.eventParam) ?? pick(options.cookieEventId) ?? pickDefaultEvent(mine);
   if (!chosen) return { event: null, options: all };
 
   const [row] = await db.select().from(eventTable).where(eq(eventTable.id, chosen.id)).limit(1);

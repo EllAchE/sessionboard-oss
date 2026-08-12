@@ -55,6 +55,32 @@ export async function listEventsForUser(userId: string): Promise<EventSummary[]>
 }
 
 /**
+ * Which event the admin shell opens on when the cookie says nothing. The edition someone is running
+ * is almost always the next one to happen, so an event still ahead beats one already past, and the
+ * soonest of those wins. Undated events sort last. Order within a tie is the caller's — newest
+ * first, as `listEventsForUser` returns them.
+ *
+ * Picking arbitrarily instead, which is what a bare `findFirst` does, means an organizer with two
+ * events lands on whichever row the database happened to return.
+ */
+export function pickDefaultEvent<T extends { startsOn: string | null }>(
+  events: T[],
+  today = new Date(),
+): T | undefined {
+  const stamp = today.toISOString().slice(0, 10);
+  const upcoming = events.filter((row) => row.startsOn && row.startsOn >= stamp);
+  if (upcoming.length > 0) {
+    return upcoming.reduce((best, row) => (row.startsOn! < best.startsOn! ? row : best));
+  }
+
+  const past = events.filter((row) => row.startsOn);
+  if (past.length > 0) {
+    return past.reduce((best, row) => (row.startsOn! > best.startsOn! ? row : best));
+  }
+  return events[0];
+}
+
+/**
  * The cookie is a hint, never an authorisation. `requireEventContext` still checks membership, so a
  * stale or hand-edited cookie resolves to `not_found` rather than to someone else's event.
  */
@@ -64,11 +90,10 @@ export async function currentEventId(): Promise<string> {
   if (fromCookie) return fromCookie;
 
   const actor = await requireCurrentActor();
-  const fallback = await getDb().query.membership.findFirst({
-    where: and(eq(membership.userId, actor.userId), eq(membership.role, 'organizer')),
-  });
+  const mine = await listEventsForUser(actor.userId);
+  const fallback = pickDefaultEvent(mine.filter((row) => row.roles.includes('organizer')));
   if (!fallback) throw notFound('An event you can manage');
-  return fallback.eventId;
+  return fallback.id;
 }
 
 export async function currentEventContext(): Promise<EventContext> {
