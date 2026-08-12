@@ -25,7 +25,7 @@ import type {
   TaskCompletionSummary,
   WidgetId,
 } from '@/lib/services/dashboard';
-import { PREBUILT_DASHBOARDS, WIDGETS } from '@/lib/services/dashboard';
+import { PREBUILT_DASHBOARDS, WIDGETS } from '@/lib/services/dashboard-catalog';
 import { OutstandingTasks } from './OutstandingTasks';
 import { SpeakerTrackingWidget } from './SpeakerTracking';
 import {

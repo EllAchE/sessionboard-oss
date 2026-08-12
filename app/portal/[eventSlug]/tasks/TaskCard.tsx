@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { CheckCircle2, Download, ExternalLink, FileText, Trash2 } from 'lucide-react';
 import { Badge, Button, IconButton, cn } from '@/components/ui';
-import { acceptAttribute, describeAcceptedTypes, formatBytes } from '@/lib/services/files';
+import { acceptAttribute, describeAcceptedTypes, formatBytes } from '@/lib/services/file-format';
 import type { PortalTask } from '@/lib/services/tasks';
 import { IDLE_STATE } from '../../form-state';
 import { TASK_STATUS_LABEL, formatDate, formatDateTime, relativeDue, taskTone } from '../../format';

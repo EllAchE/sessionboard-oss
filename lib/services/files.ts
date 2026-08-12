@@ -1,3 +1,4 @@
+import { BYTES_PER_MB } from './file-format';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { file, fileRequest } from '../../db/schema';
@@ -21,6 +22,13 @@ export type FileRecord = {
   createdAt: Date;
 };
 
+export {
+  acceptAttribute,
+  describeAcceptedTypes,
+  formatBytes,
+  BYTES_PER_MB,
+} from './file-format';
+
 export type FileRequestSpec = {
   id: string;
   label: string;
@@ -36,7 +44,6 @@ export type UploadCandidate = {
   sizeBytes: number;
 };
 
-const BYTES_PER_MB = 1024 * 1024;
 
 /** Anything a headshot or a deck could plausibly be, when a request names no types of its own. */
 export const DEFAULT_MAX_SIZE_MB = 25;
@@ -64,16 +71,7 @@ export function matchesAcceptedType(candidate: UploadCandidate, pattern: string)
   return extension === dotted;
 }
 
-export function acceptAttribute(spec: Pick<FileRequestSpec, 'acceptedTypes'>): string | undefined {
-  const types = spec.acceptedTypes.filter((entry) => entry.trim().length > 0);
-  if (types.length === 0) return undefined;
-  return types.map((entry) => (entry.includes('/') || entry.startsWith('.') ? entry : `.${entry}`)).join(',');
-}
 
-export function describeAcceptedTypes(spec: Pick<FileRequestSpec, 'acceptedTypes'>): string {
-  const types = spec.acceptedTypes.filter((entry) => entry.trim().length > 0);
-  return types.length === 0 ? 'Any file type' : types.join(', ');
-}
 
 /**
  * Both limits are enforced here rather than in the route, because the same rules have to hold for a
@@ -226,8 +224,3 @@ export async function deleteFile(ctx: EventContext, fileId: string): Promise<voi
   }
 }
 
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < BYTES_PER_MB) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / BYTES_PER_MB).toFixed(1)} MB`;
-}

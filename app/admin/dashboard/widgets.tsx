@@ -20,7 +20,7 @@ import type {
   ScheduleHealth,
   TaskCompletionSummary,
 } from '@/lib/services/dashboard';
-import { REPORTS } from '@/lib/services/dashboard';
+import { REPORTS } from '@/lib/services/dashboard-catalog';
 import styles from './dashboard.module.css';
 
 export function Counter({
