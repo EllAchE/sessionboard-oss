@@ -52,7 +52,9 @@
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
 }
 
-.navLinks a,
+.productLink,
+.demoLink,
+.githubLink,
 .footer a {
   display: inline-flex;
   align-items: center;
@@ -61,9 +63,15 @@
   text-decoration: none;
 }
 
-.navLinks a:hover,
+.productLink:hover,
+.demoLink:hover,
+.githubLink:hover,
 .footer a:hover {
   color: var(--text-accent);
+}
+
+.navCta {
+  box-shadow: var(--shadow-sm);
 }
 
 .hero {
@@ -381,11 +389,11 @@
     gap: var(--space-4);
   }
 
-  .navLinks a:first-child {
+  .productLink {
     display: none;
   }
 
-  .navLinks a:last-child span {
+  .githubLink span {
     display: none;
   }
 
