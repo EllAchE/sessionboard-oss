@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -16,7 +17,7 @@ import {
   user,
 } from '../../db/schema';
 import type { EventContext } from '../context';
-import { can } from '../context';
+import { can, requireCapability } from '../context';
 import { appUrl } from '../env';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import type { AnswerMap, FormFieldSpec } from '../forms/contract';
@@ -210,6 +211,112 @@ export async function ensureAssignments(eventId: string, participantId: string):
       })),
     )
     .onConflictDoNothing();
+}
+
+// ---------------------------------------------------------------------------
+// Organizer-authored task types
+// ---------------------------------------------------------------------------
+
+export type TaskAudience = (typeof task.$inferSelect)['audience'];
+
+/**
+ * `manual` is a real value in the `task_audience` enum but nothing in this codebase assigns a
+ * `manual` task to anyone — there is no per-participant "assign this task" surface yet. Offering it
+ * here would create a task no speaker could ever see, which is the exact gap this fix closes for
+ * the other five. Once a manual-assignment UI exists, add it here too.
+ */
+export const CUSTOM_TASK_AUDIENCES = ['all_participants', 'accepted_participants'] as const;
+
+const taskName = z.string().trim().min(1, 'Name is required').max(160);
+const taskDescription = z
+  .string()
+  .trim()
+  .max(4000)
+  .transform((value) => value || null)
+  .nullable()
+  .optional();
+
+export const createTaskInput = z.object({
+  name: taskName,
+  description: taskDescription,
+  /** `true` collects a file (`file_upload`); `false` is a plain confirmation (`acknowledge`). */
+  requiresFile: z.boolean().default(false),
+  audience: z.enum(CUSTOM_TASK_AUDIENCES),
+  required: z.boolean().default(true),
+  dueAt: z.date().nullable().optional(),
+});
+export type CreateTaskInput = z.input<typeof createTaskInput>;
+
+function parseTaskInput<T extends z.ZodTypeAny>(schema: T, input: unknown): z.output<T> {
+  const result = schema.safeParse(input);
+  if (result.success) return result.data;
+  const details: Record<string, string> = {};
+  for (const issue of result.error.issues) {
+    const key = issue.path[0];
+    if (typeof key === 'string' && !details[key]) details[key] = issue.message;
+  }
+  throw invalid(result.error.issues[0]?.message ?? 'That is not valid', details);
+}
+
+export type TaskRecord = {
+  id: string;
+  name: string;
+  kind: TaskKind;
+  audience: TaskAudience;
+};
+
+/** One more than the highest `position` already on the event, so a new task sorts to the end. */
+async function nextTaskPosition(eventId: string): Promise<number> {
+  const rows = await getDb().select({ position: task.position }).from(task).where(eq(task.eventId, eventId));
+  return rows.reduce((max, row) => Math.max(max, row.position), -1) + 1;
+}
+
+/**
+ * Materialises every current participant's assignments for the event, right away — the same rule
+ * `ensureAssignments` applies lazily on portal load, run eagerly here after a task is created.
+ * Without this, a task created today has zero rows in `task_assignment` until each speaker's next
+ * portal visit, and `B-1` — the whole reason an organizer would add one — would show nothing for it.
+ * `ensureAssignments` only inserts what is missing per participant, so this is safe to call after
+ * every task, not just a brand new one.
+ */
+async function assignToCurrentParticipants(eventId: string): Promise<void> {
+  const people = await getDb().select({ id: participant.id }).from(participant).where(eq(participant.eventId, eventId));
+  for (const person of people) {
+    await ensureAssignments(eventId, person.id);
+  }
+}
+
+/**
+ * The organizer-facing fix for the gap this ships: the five seeded tasks
+ * ("Confirm your session", "Upload your headshot", …) were the only task types that could ever
+ * exist — there was no create path. A task is already just a row in `task`, not a hardcoded enum,
+ * so the fix is this function plus its UI, not a schema change.
+ *
+ * `form` and `link` kinds are deliberately not offered here: a `form` task needs a form built first
+ * (the form builder's job, see `copyTasksFromEvent`), and a `link` task is organizer copy pointing
+ * off-site. This covers the two kinds a name + description + "needs a file?" toggle fully describes.
+ */
+export async function createTask(ctx: EventContext, input: CreateTaskInput): Promise<TaskRecord> {
+  requireCapability(ctx, 'task:manage');
+  const values = parseTaskInput(createTaskInput, input);
+
+  const [created] = await getDb()
+    .insert(task)
+    .values({
+      eventId: ctx.eventId,
+      name: values.name,
+      descriptionMarkdown: values.description ?? null,
+      kind: values.requiresFile ? 'file_upload' : 'acknowledge',
+      audience: values.audience,
+      required: values.required,
+      dueAt: values.dueAt ?? null,
+      position: await nextTaskPosition(ctx.eventId),
+    })
+    .returning();
+
+  await assignToCurrentParticipants(ctx.eventId);
+
+  return { id: created.id, name: created.name, kind: created.kind, audience: created.audience };
 }
 
 export async function listPortalTasks(eventId: string, participantId: string): Promise<PortalTask[]> {

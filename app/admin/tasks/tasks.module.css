@@ -1,0 +1,45 @@
+/* Form layout for the "New task" dialog. Mirrors `app/admin/comms/comms.module.css`'s composer
+   classes rather than importing them, since a CSS module's class names are scoped per file. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--type-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+.hint {
+  font: var(--type-body);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
