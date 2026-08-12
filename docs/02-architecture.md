@@ -32,6 +32,18 @@ Drizzle schema a self-hosted container uses against local Postgres. Deliberately
 driver: Neon's own docs now steer to Hyperdrive, it is roughly 30–40% faster than HTTP mode, and
 critically it keeps one code path instead of two.
 
+Two details of that sentence are load-bearing, and the spike caught both the hard way (`db/client.ts`):
+
+- **The binding is per-request, never a global.** Workers does not put bindings on `globalThis`; they
+  arrive on a request-scoped context read through `getCloudflareContext()`, which *throws* when there
+  is no request — under `next start`, `tsx` and vitest. That throw is the self-hosted path, not an
+  error, so it is caught and falls through to `DATABASE_URL`.
+- **The pool is not shared across requests on Workers.** A workerd socket belongs to the request that
+  opened it, so a module-scoped `Pool` survives onto the next request on a warm isolate and every
+  query on it hangs until the runtime cancels it — an every-other-request 500. On Workers we open one
+  short-lived connection per request, which is the right shape anyway because Hyperdrive *is* the
+  pool. Self-hosted, the cached pool is kept, because there it is correct.
+
 That is what makes the hosting choice **reversible**, and reversibility is the point. Postgres,
 S3-compatible storage and HTTP email are all host-agnostic. If Workers turns hostile at hour six we
 redeploy to Vercel or Fly and lose exactly one thing — the `Z-1` bonus, which the brief itself calls
