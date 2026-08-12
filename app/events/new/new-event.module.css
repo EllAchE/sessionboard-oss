@@ -1,0 +1,41 @@
+.root {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-8) var(--space-4);
+  background: var(--surface-page);
+}
+
+.card {
+  width: 100%;
+  max-width: 30rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.label {
+  font: var(--type-label);
+  color: var(--text-strong);
+}
+
+.hint {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
