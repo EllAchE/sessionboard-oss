@@ -27,6 +27,7 @@ import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { weightedScore } from '../review-scoring';
 import { loadCommsContext, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 
@@ -92,39 +93,17 @@ export function aggregateScorecard(
   criteria: CriterionSpec[],
   scores: ScoreValue[],
 ): ScoreAggregate {
-  const byId = new Map(criteria.map((criterion) => [criterion.id, criterion]));
-
-  // Last write wins, and a score whose criterion was deleted after the fact is dropped rather than
-  // silently averaged against a weight that no longer exists.
-  const answered = new Map<string, number>();
-  for (const entry of scores) {
-    if (!byId.has(entry.criterionId)) continue;
-    if (typeof entry.value !== 'number' || !Number.isFinite(entry.value)) continue;
-    answered.set(entry.criterionId, entry.value);
-  }
-
+  const result = weightedScore(criteria, scores);
+  const answered = new Set(result.answeredIds);
   const weightTotal = criteria.reduce((sum, criterion) => sum + Math.max(0, criterion.weight), 0);
 
-  let weightScored = 0;
-  let weighted = 0;
-  for (const [criterionId, raw] of answered) {
-    const criterion = byId.get(criterionId) as CriterionSpec;
-    const weight = Math.max(0, criterion.weight);
-    const max = criterion.maxScore > 0 ? criterion.maxScore : SCORE_SCALE;
-    const clamped = Math.max(0, Math.min(max, raw));
-    weightScored += weight;
-    weighted += weight * (clamped / max);
-  }
-
-  const fraction = weightScored > 0 ? weighted / weightScored : null;
-
   return {
-    average: fraction === null ? null : round(fraction * SCORE_SCALE, 2),
-    fraction: fraction === null ? null : round(fraction, 4),
+    average: result.average,
+    fraction: result.fraction,
     scoredCount: answered.size,
     criterionCount: criteria.length,
     complete: criteria.length > 0 && criteria.every((criterion) => answered.has(criterion.id)),
-    weightScored,
+    weightScored: result.weightScored,
     weightTotal,
   };
 }
