@@ -1,4 +1,5 @@
 import { Card, CardBody } from '@/components/ui';
+import { requireCurrentActor } from '@/lib/auth';
 import {
   TEMPLATE_VARIABLES,
   ensureDefaultTemplates,
@@ -19,7 +20,11 @@ export default async function TemplatesPage({
   searchParams: Promise<{ event?: string }>;
 }) {
   const params = await searchParams;
-  const { event, options } = await resolveAdminEvent({ eventParam: params.event ?? null });
+  const actor = await requireCurrentActor();
+  const { event, options } = await resolveAdminEvent({
+    eventParam: params.event ?? null,
+    userId: actor.userId,
+  });
 
   if (!event) {
     return (

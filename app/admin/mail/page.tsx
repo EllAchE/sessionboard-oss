@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CalendarDays, Download, Inbox, Link2 } from 'lucide-react';
 import { Badge, Card, CardBody } from '@/components/ui';
+import { requireCurrentActor } from '@/lib/auth';
 import { activeTransportName } from '@/lib/mail';
 import { getMail, listMail, resolveAdminEvent } from '@/lib/services/comms';
 import { CommsTabs } from '../comms/CommsTabs';
@@ -52,7 +53,11 @@ export default async function MailboxPage({
   searchParams: Promise<{ event?: string; q?: string; id?: string }>;
 }) {
   const params = await searchParams;
-  const { event, options } = await resolveAdminEvent({ eventParam: params.event ?? null });
+  const actor = await requireCurrentActor();
+  const { event, options } = await resolveAdminEvent({
+    eventParam: params.event ?? null,
+    userId: actor.userId,
+  });
 
   const messages = await listMail({
     eventId: event?.id ?? null,
@@ -60,11 +65,8 @@ export default async function MailboxPage({
     limit: 200,
   });
 
-  const selected = params.id
-    ? await getMail(params.id)
-    : messages[0]
-      ? await getMail(messages[0].id)
-      : undefined;
+  const selectedId = params.id ?? messages[0]?.id;
+  const selected = event && selectedId ? await getMail(event.id, selectedId) : undefined;
 
   const transport = activeTransportName();
   const query = (id: string) => {

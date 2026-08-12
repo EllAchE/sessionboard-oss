@@ -30,6 +30,7 @@ import {
 import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { listEventsForUser } from './events';
 
 /**
  * `C-1`–`C-7`. Everything between an organizer pressing Send and a row in `email_log`: what the
@@ -1457,11 +1458,20 @@ export async function runDraftDeadlineReminders(
   return sent;
 }
 
-/** Everything `/api/cron` runs. Safe to call repeatedly; each job carries its own guard. */
-export async function runScheduledJobs(options: { now?: Date } = {}): Promise<ReminderRun> {
+/**
+ * Everything `/api/cron` runs. Safe to call repeatedly; each job carries its own guard.
+ *
+ * Cron passes no `eventId` because it is the whole deployment's clock. Anything triggered by a
+ * person must pass one — otherwise pressing "Run scheduled reminders" mails every event in the
+ * database, including events the presser has never heard of.
+ */
+export async function runScheduledJobs(
+  options: { eventId?: string; now?: Date } = {},
+): Promise<ReminderRun> {
   const now = options.now ?? new Date();
-  const taskRemindersSent = await runTaskReminders({ now });
-  const deadlineRemindersSent = await runDraftDeadlineReminders({ now });
+  const { eventId } = options;
+  const taskRemindersSent = await runTaskReminders({ eventId, now });
+  const deadlineRemindersSent = await runDraftDeadlineReminders({ eventId, now });
   return {
     taskRemindersSent,
     deadlineRemindersSent,
@@ -1498,9 +1508,25 @@ export async function listMail(options: {
     .limit(options.limit ?? 100);
 }
 
-export async function getMail(id: string): Promise<MailboxEntry | undefined> {
+/**
+ * The unscoped read, for `/api/mail/:id/ics`. That route serves the same calendar body the public
+ * `/api/calendar/:sessionId` already serves to anyone, so the id is a capability URL rather than a
+ * hole — but everything rendering *message* content wants `getMail` below.
+ */
+export async function getMailEntry(id: string): Promise<MailboxEntry | undefined> {
   const db = getDb();
   const [row] = await db.select().from(emailLog).where(eq(emailLog.id, id)).limit(1);
+  return row;
+}
+
+/** `eventId` is not optional on purpose: a message id in a query string is not an authorisation. */
+export async function getMail(eventId: string, id: string): Promise<MailboxEntry | undefined> {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(emailLog)
+    .where(and(eq(emailLog.id, id), eq(emailLog.eventId, eventId)))
+    .limit(1);
   return row;
 }
 
@@ -1524,49 +1550,34 @@ export async function mailForRecipient(
 
 export type AdminEventOption = { id: string; name: string; slug: string };
 
-export async function listEventsForAdmin(userId?: string | null): Promise<AdminEventOption[]> {
-  const db = getDb();
-  const rows = await db
-    .select({ id: eventTable.id, name: eventTable.name, slug: eventTable.slug })
-    .from(eventTable)
-    .orderBy(eventTable.createdAt);
-  if (!userId) return rows;
-  // Ownership first; a judge signing in cold should land on the event they just made.
-  const owned = await db
-    .select({ id: eventTable.id })
-    .from(eventTable)
-    .where(eq(eventTable.ownerUserId, userId));
-  const ownedIds = new Set(owned.map((row) => row.id));
-  return [...rows].sort((a, b) => Number(ownedIds.has(b.id)) - Number(ownedIds.has(a.id)));
+/** Newest first, which is what a judge who just made an event wants to land on. */
+export async function listEventsForAdmin(userId: string): Promise<AdminEventOption[]> {
+  const rows = await listEventsForUser(userId);
+  return rows.map(({ id, name, slug }) => ({ id, name, slug }));
 }
 
 /**
- * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=`, then
- * the caller's own events, then whatever exists. Falling through to *something* matters more than
- * being right: an admin page that renders "no event selected" during judging is a dead end.
+ * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=` and
+ * falls back to the caller's most recent one.
+ *
+ * The parameter is matched against the caller's own events rather than looked up directly. These
+ * pages have no `requireEventContext` between them and the database, so resolving `?event=` by slug
+ * would hand any signed-in organizer another event's mailbox for the price of guessing a slug.
  */
 export async function resolveAdminEvent(options: {
   eventParam?: string | null;
-  userId?: string | null;
+  userId: string;
 }): Promise<{ event: EventRow | null; options: AdminEventOption[] }> {
   const db = getDb();
   const all = await listEventsForAdmin(options.userId);
 
-  if (options.eventParam) {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      options.eventParam,
-    );
-    const [byId] = await db
-      .select()
-      .from(eventTable)
-      .where(isUuid ? eq(eventTable.id, options.eventParam) : eq(eventTable.slug, options.eventParam))
-      .limit(1);
-    if (byId) return { event: byId, options: all };
-  }
+  const asked = options.eventParam;
+  const chosen = asked
+    ? (all.find((entry) => entry.id === asked || entry.slug === asked) ?? all[0])
+    : all[0];
+  if (!chosen) return { event: null, options: all };
 
-  const first = all[0];
-  if (!first) return { event: null, options: all };
-  const [row] = await db.select().from(eventTable).where(eq(eventTable.id, first.id)).limit(1);
+  const [row] = await db.select().from(eventTable).where(eq(eventTable.id, chosen.id)).limit(1);
   return { event: row ?? null, options: all };
 }
 

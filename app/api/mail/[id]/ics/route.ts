@@ -1,4 +1,4 @@
-import { getMail } from '@/lib/services/comms';
+import { getMailEntry } from '@/lib/services/comms';
 import { icsFilename } from '@/lib/ics';
 
 /**
@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
   const { id } = await params;
-  const entry = await getMail(id);
+  const entry = await getMailEntry(id);
   if (!entry?.icsBody) {
     return new Response('That message carried no calendar invitation.', { status: 404 });
   }
