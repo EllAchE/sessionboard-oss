@@ -13,6 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "tsx scripts/benchmark.ts",
+    "eval": "tsx scripts/eval-loop.ts",
+    "eval:loop": "tsx scripts/eval-loop.ts --loop",
     "verify:headshots": "tsx scripts/verify-speaker-headshots.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
