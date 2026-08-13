@@ -10,7 +10,7 @@ import {
   type PublicBundle,
   type PublicSession,
 } from '../model';
-import { SessionFacts, ShowMore, SpeakerRoster } from './parts';
+import { RecordingLink, SessionFacts, ShowMore, SpeakerRoster } from './parts';
 import styles from '../embed.module.css';
 
 const MINE = 'mine';
@@ -185,6 +185,7 @@ export function ItineraryWidget({
                     />
                   ) : null}
                   <SpeakerRoster session={session} speakerBase={speakerBase} />
+                  <RecordingLink session={session} />
                 </div>
                 <button
                   type="button"

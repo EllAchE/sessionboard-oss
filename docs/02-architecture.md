@@ -123,7 +123,7 @@ event · track · room · tag · session_format · persona · field_library_entr
 user · membership(user,event,role) · magic_token · session_cookie(+impersonated_by)
 form · form_field · submission · submission_tag · participant · participant_role · profile
 review_round · review_assignment · score · scorecard_criterion
-scheduled_session
+scheduled_session · session_recording(file XOR external HTTPS URL, published_at)
 task · task_assignment · file · file_request
 portal_page · portal_theme · email_template · email_log
 api_key · accelevents_sync · airtable_sync · saved_view
@@ -147,6 +147,21 @@ JSONB is good at.
 The split is therefore not a compromise between two designs; it follows from two genuinely different
 access patterns living in the same row. Section 5 explains why no off-the-shelf form engine can
 express it.
+
+### Post-conference recordings stay behind two publication gates
+
+`session_recording` is a one-to-one child of `scheduled_session`, not a URL column on the public
+programme. Its source is either an event-scoped `file` row or a validated credential-free HTTPS
+URL, enforced as an exclusive pair by a database check. `published_at` is independent of the
+session's agenda status: attaching or replacing media leaves it draft, and publication is refused
+until the public session has ended. A past event end substitutes for a missing session time so
+historical imports are not stranded.
+
+The in-app upload stays at 25 MB and uses the existing `Storage` abstraction. This keeps Worker and
+Postgres memory bounded to the same ceiling as other uploads; full-length masters belong on a
+streaming host and are associated by URL. Stored public playback is still an application route,
+not a presigned object: it rechecks event ownership, recording publication, session publication,
+and submission-content approval before returning the storage stream.
 
 ### `email_log` doubles as the dev mailbox
 

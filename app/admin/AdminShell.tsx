@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Plug,
   Settings,
+  Video,
   Users,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
@@ -33,6 +34,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
       { id: 'overview', label: 'Overview', href: '/admin', icon: <LayoutDashboard size={15} /> },
       { id: 'submissions', label: 'Submissions', href: '/admin/submissions', icon: <ClipboardList size={15} /> },
       { id: 'agenda', label: 'Agenda', href: '/admin/agenda', icon: <CalendarDays size={15} /> },
+      { id: 'recordings', label: 'Recordings', href: '/admin/recordings', icon: <Video size={15} /> },
       { id: 'speakers', label: 'Speakers', href: '/admin/speakers', icon: <Users size={15} /> },
       { id: 'crm', label: 'Speaker CRM', href: '/crm', icon: <Contact size={15} /> },
     ],
