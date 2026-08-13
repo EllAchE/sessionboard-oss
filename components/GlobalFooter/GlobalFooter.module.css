@@ -46,17 +46,6 @@
   text-decoration: none;
 }
 
-.brandMark {
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--radius-md);
-  color: var(--text-on-accent);
-  background: var(--accent);
-  box-shadow: 3px 3px 0 color-mix(in srgb, var(--border-accent) 26%, transparent);
-}
-
 .links {
   display: flex;
   align-items: center;

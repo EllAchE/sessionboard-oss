@@ -266,9 +266,10 @@ export default function RomanAssetsPage() {
               <h2>Logo system</h2>
             </div>
             <p>
-              An open C formed from amphitheatre tiers, ending at a vermilion
-              stage. Use the mark without a container; use the reversed version
-              on charcoal or photography.
+              The default restores Cicero&apos;s original three-column symbol in a
+              bordered square. Use the reversed version on charcoal or
+              photography; the amphitheatre C remains available below as an
+              alternate direction.
             </p>
           </div>
           <div className={styles.logoGrid}>
