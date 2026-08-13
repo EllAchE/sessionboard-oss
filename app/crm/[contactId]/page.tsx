@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import { requireCurrentActor } from '@/lib/auth';
 import { STAGE_LABELS, getContactProfile, listOrganizerEvents } from '@/lib/services/crm';
 import { ContactProfile } from './ContactProfile';
+import { requireCrmOrganizer } from '../context';
 import { toContactWire, toFieldWire } from '../serialize';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Contact · Cicero' };
 
 export default async function ContactPage({ params }: { params: Promise<{ contactId: string }> }) {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const { contactId } = await params;
 
   const profile = await getContactProfile(actor, contactId).catch(() => null);

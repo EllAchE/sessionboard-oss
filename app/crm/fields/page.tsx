@@ -1,5 +1,5 @@
-import { requireCurrentActor } from '@/lib/auth';
 import { CRM_FIELD_TYPES, fieldTakesOptions, listFields } from '@/lib/services/crm';
+import { requireCrmOrganizer } from '../context';
 import { FieldManager } from './FieldManager';
 import { toFieldWire } from '../serialize';
 
@@ -18,7 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default async function FieldsPage() {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const fields = await listFields(actor);
 
   return (

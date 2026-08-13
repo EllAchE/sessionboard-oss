@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import { requireCurrentActor } from '@/lib/auth';
 import { PROSPECT_STAGES, STAGE_LABELS, getProspectDetail } from '@/lib/services/crm';
 import { ProspectDetail } from './ProspectDetail';
+import { requireCrmOrganizer } from '../../context';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ export default async function ProspectPage({
 }: {
   params: Promise<{ prospectId: string }>;
 }) {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const { prospectId } = await params;
 
   const detail = await getProspectDetail(actor, prospectId).catch(() => null);

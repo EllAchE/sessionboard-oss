@@ -6,28 +6,31 @@ import { CrmNav } from './CrmNav';
 import styles from './crm.module.css';
 
 /**
- * The CRM sits above events, so unlike `/admin` it does not require one to exist. It borrows the
- * organizer shell for navigation and nothing else — no service call below this point takes an
- * event id.
+ * The CRM is organization-scoped, but organizer authority still comes from an event membership.
  */
 export default async function CrmLayout({ children }: { children: React.ReactNode }) {
   const actor = await currentActor();
   if (!actor) redirect('/signin?next=/crm');
 
   const events = await listEventsForUser(actor.userId);
+  const organizing = events.filter((candidate) => candidate.roles.includes('organizer'));
+  if (organizing.length === 0) {
+    const reviewing = events.some((candidate) => candidate.roles.includes('reviewer'));
+    redirect(reviewing ? '/review' : '/portal');
+  }
 
   let eventId = '';
-  if (events.length > 0) {
+  if (organizing.length > 0) {
     try {
       eventId = await currentEventId();
     } catch {
-      eventId = events[0].id;
+      eventId = organizing[0].id;
     }
-    if (!events.some((candidate) => candidate.id === eventId)) eventId = events[0].id;
+    if (!organizing.some((candidate) => candidate.id === eventId)) eventId = organizing[0].id;
   }
 
   return (
-    <AdminShell events={events} currentEventId={eventId} actorName={actor.name ?? actor.email}>
+    <AdminShell events={organizing} currentEventId={eventId} actorName={actor.name ?? actor.email}>
       <div className={styles.shell}>
         <CrmNav />
         {children}

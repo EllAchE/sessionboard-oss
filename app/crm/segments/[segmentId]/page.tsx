@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
-import { requireCurrentActor } from '@/lib/auth';
 import { PROSPECT_STAGES, STAGE_LABELS, getSegment, listOrganizerEvents } from '@/lib/services/crm';
 import { Directory } from '../../Directory';
+import { requireCrmOrganizer } from '../../context';
 import { EMPTY_FILTERS } from '../../wire';
 import { toContactWire, toFieldWire } from '../../serialize';
 
@@ -37,7 +37,7 @@ function facetsOf(
 }
 
 export default async function SegmentPage({ params }: { params: Promise<{ segmentId: string }> }) {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const { segmentId } = await params;
 
   const found = await getSegment(actor, segmentId).catch(() => null);

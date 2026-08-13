@@ -1,9 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { requireCurrentActor } from '@/lib/auth';
 import { toPublicError } from '@/lib/errors';
 import * as crm from '@/lib/services/crm';
+import { requireCrmOrganizer } from './context';
 
 /**
  * Every CRM mutation. Each returns a result object rather than throwing, so a rejected merge or a
@@ -31,7 +31,7 @@ export async function createContactAction(
   input: crm.ContactInput,
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const row = await crm.createContact(actor, input);
     revalidateDirectory();
     return { ok: true, data: { id: row.id } };
@@ -45,7 +45,7 @@ export async function updateContactAction(
   patch: Partial<crm.ContactInput>,
 ): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.updateContact(actor, contactId, patch);
     revalidateDirectory();
     revalidatePath(`/crm/${contactId}`);
@@ -61,7 +61,7 @@ export async function addNoteAction(input: {
   body: string;
 }): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.addNote(actor, input);
     revalidatePath(`/crm/${input.contactId}`);
     if (input.prospectId) revalidatePath(`/crm/pipeline/${input.prospectId}`);
@@ -77,7 +77,7 @@ export async function createFieldAction(input: {
   options: string[];
 }): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.createField(actor, input);
     revalidatePath('/crm/fields');
     revalidateDirectory();
@@ -89,7 +89,7 @@ export async function createFieldAction(input: {
 
 export async function deleteFieldAction(fieldId: string): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.deleteField(actor, fieldId);
     revalidatePath('/crm/fields');
     revalidateDirectory();
@@ -106,7 +106,7 @@ export async function createSegmentAction(input: {
   memberContactIds: string[];
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const row = await crm.createSegment(actor, input);
     revalidatePath('/crm/segments');
     return { ok: true, data: { id: row.id } };
@@ -117,7 +117,7 @@ export async function createSegmentAction(input: {
 
 export async function deleteSegmentAction(segmentId: string): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.deleteSegment(actor, segmentId);
     revalidatePath('/crm/segments');
     return { ok: true, data: null };
@@ -132,7 +132,7 @@ export async function mergeContactsAction(input: {
   choices: crm.MergeChoice;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const row = await crm.mergeContacts(actor, input);
     revalidateDirectory();
     revalidatePath(`/crm/${row.id}`);
@@ -150,7 +150,7 @@ export async function enrollProspectAction(input: {
   eventId: string | null;
 }): Promise<ActionResult<{ id: string }>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const row = await crm.enrollProspect(actor, input);
     revalidatePath('/crm/pipeline');
     revalidatePath(`/crm/${input.contactId}`);
@@ -167,7 +167,7 @@ export async function moveProspectAction(input: {
   position?: number;
 }): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.moveProspect(actor, input);
     revalidatePath('/crm/pipeline');
     revalidatePath(`/crm/pipeline/${input.prospectId}`);
@@ -180,7 +180,7 @@ export async function moveProspectAction(input: {
 
 export async function removeProspectAction(prospectId: string): Promise<ActionResult> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     await crm.removeProspect(actor, prospectId);
     revalidatePath('/crm/pipeline');
     return { ok: true, data: null };
@@ -194,7 +194,7 @@ export async function pushToEventAction(input: {
   eventId: string;
 }): Promise<ActionResult<{ eventName: string; created: boolean }>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const result = await crm.pushContactToEvent(actor, input);
     revalidatePath(`/crm/${input.contactId}`);
     revalidatePath('/admin/speakers');
@@ -215,7 +215,7 @@ export async function sendCampaignAction(input: {
   eventId: string | null;
 }): Promise<ActionResult<{ sent: number; failed: number }>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const result = await crm.sendCampaign(actor, input);
     revalidatePath('/crm/campaigns');
     revalidatePath('/crm/dashboard');
@@ -230,7 +230,7 @@ export async function previewImportAction(
   mapping?: crm.ImportMapping,
 ): Promise<ActionResult<crm.ImportPreview>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     return { ok: true, data: await crm.previewImport(actor, csv, mapping) };
   } catch (error) {
     return fail(error);
@@ -242,7 +242,7 @@ export async function importContactsAction(
   mapping: crm.ImportMapping,
 ): Promise<ActionResult<crm.ImportResult>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const result = await crm.importContacts(actor, csv, mapping);
     revalidateDirectory();
     return { ok: true, data: result };
@@ -253,7 +253,7 @@ export async function importContactsAction(
 
 export async function loadSampleContactsAction(): Promise<ActionResult<crm.ImportResult>> {
   try {
-    const actor = await requireCurrentActor();
+    const actor = await requireCrmOrganizer();
     const result = await crm.loadSampleContacts(actor);
     revalidateDirectory();
     return { ok: true, data: result };
