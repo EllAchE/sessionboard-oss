@@ -88,7 +88,8 @@ from it.
 |---|---|
 | `npm run dev` | Next dev server |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | `vitest run` |
+| `npm test` | `vitest run` — no database needed |
+| `npm run test:integration` | The database-backed suite (see below) |
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:seed` | Seed both demo conferences (idempotent) |
@@ -157,6 +158,27 @@ setting. The sign-in page offers `DEMO_SIGNIN_EMAIL` (default `organizer@example
 in. `lib/demo-access.ts` carries the full threat model.
 
 Leave it off on any instance running a real event.
+
+### The two test suites
+
+`npm test` is the fast one and needs nothing: everything it touches is either pure or mocked at the
+service boundary. Keep it that way — it is what makes the suite runnable on any checkout.
+
+`npm run test:integration` runs `*.integration.test.ts` against a real Postgres, because the rules
+worth calling security — who may read a submission, whether an anonymized round actually withholds
+the author, whether blind review actually withholds a peer — are enforced in SQL, and a mocked
+database will agree with whatever the test expects. Each test builds its own event and tears it
+down, so no ordering or truncation is implied.
+
+```bash
+docker compose up -d postgres          # or any Postgres you like
+export DATABASE_URL=postgresql://cicero:cicero@localhost:5434/cicero_test
+npm run db:migrate
+npm run test:integration
+```
+
+Point `DATABASE_URL` at a throwaway database. The suite writes real rows, and while it cleans up
+after each test, it is not something to aim at a database you care about.
 
 ## What's in it
 

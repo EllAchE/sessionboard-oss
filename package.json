@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "tsx scripts/benchmark.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "eval": "tsx scripts/eval-loop.ts",
     "eval:loop": "tsx scripts/eval-loop.ts --loop",
     "verify:headshots": "tsx scripts/verify-speaker-headshots.ts",
