@@ -95,6 +95,31 @@ from it.
 | `npm run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `npm run cf:deploy` | Build and deploy to Cloudflare Workers |
 
+### Sending real email
+
+Out of the box `MAIL_TRANSPORT=log`: every message is written to `email_log` and rendered at
+`/admin/mail`, sign-in links included, and nothing is delivered. That is the right default for a
+clone and for the hosted demo — which is why `wrangler.jsonc` pins `MAIL_TRANSPORT: log` for the
+deployed worker, so a judge clicking around a public demo can never mail a real speaker. Leave it
+that way unless you are running your own event.
+
+To actually send, pick a transport:
+
+| | Set | Notes |
+|---|---|---|
+| **Resend** | `MAIL_TRANSPORT=resend`, `RESEND_API_KEY` | HTTP, so it works on Workers and self-hosted alike. The only option on Cloudflare. |
+| **SMTP** | `MAIL_TRANSPORT=smtp`, and either `SMTP_URL` or `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`) | Self-host only — Workers has no raw TCP. `SMTP_ALLOW_INSECURE=true` accepts a self-signed certificate, for MailHog and other local catchers. |
+
+Both paths need **`MAIL_FROM` set to an address at a domain the provider has verified** (Resend:
+Domains → add and complete the DNS records; SMTP: whatever your relay's envelope rules allow).
+Sending from an unverified domain is rejected by the provider or filed as spam by the recipient, and
+it is the usual reason a correctly configured transport still produces no mail.
+
+Naming a transport you have not configured — `MAIL_TRANSPORT=smtp` with no server set — falls back
+to `log` and warns on the server console. Mail keeps working and stays readable at `/admin/mail`;
+it just is not delivered. Check that console line first if sends look successful and no one is
+receiving anything.
+
 ## What's in it
 
 **Call for speakers.** A drag-and-drop form builder over a hybrid schema: title, description,

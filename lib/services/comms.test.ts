@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DECISION_TEMPLATES,
   DEFAULT_TEMPLATES,
   renderMessage,
   renderSmsText,
@@ -86,6 +87,43 @@ describe('shipped templates', () => {
   it('attach the calendar only where an invite makes sense', () => {
     const attaching = DEFAULT_TEMPLATES.filter((t) => t.attachIcs).map((t) => t.key);
     expect(attaching.sort()).toEqual(['session.cancelled', 'session.invite']);
+  });
+
+  it('have no duplicate keys', () => {
+    const keys = DEFAULT_TEMPLATES.map((t) => t.key);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+/**
+ * `C-2`. A waitlisted speaker used to be unreachable: the status existed, the review queue set it,
+ * and `sendDecisionNotice` threw because no template carried it. Every status an organizer can
+ * decide on has to have somewhere to land.
+ */
+describe('decision notices', () => {
+  it('covers every decided status', () => {
+    expect(Object.keys(DECISION_TEMPLATES).sort()).toEqual([
+      'accepted',
+      'declined',
+      'waitlisted',
+    ]);
+  });
+
+  it('names a template that actually ships', () => {
+    const shipped = new Set(DEFAULT_TEMPLATES.map((t) => t.key));
+    for (const [status, key] of Object.entries(DECISION_TEMPLATES)) {
+      expect({ status, shipped: shipped.has(key) }).toEqual({ status, shipped: true });
+    }
+  });
+
+  it('gives the waitlist its own copy rather than reusing a decline', () => {
+    const waitlisted = DEFAULT_TEMPLATES.find((t) => t.key === 'submission.waitlisted');
+    const declined = DEFAULT_TEMPLATES.find((t) => t.key === 'submission.declined');
+    expect(waitlisted?.subject).not.toBe(declined?.subject);
+    expect(waitlisted?.bodyMarkdown).toContain('{{submission.decisionNote}}');
+    // Still under consideration, so the portal link has to be there to look at.
+    expect(waitlisted?.bodyMarkdown).toContain('{{portal.link}}');
+    expect(waitlisted?.attachIcs ?? false).toBe(false);
   });
 });
 

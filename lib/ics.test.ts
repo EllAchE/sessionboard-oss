@@ -6,6 +6,7 @@ import {
   formatIcsDate,
   icsFilename,
   newIcsUid,
+  readCalendarMethod,
   type CalendarEvent,
 } from './ics';
 
@@ -312,5 +313,26 @@ describe('helpers', () => {
   it('derives a safe filename', () => {
     expect(icsFilename('Stone, mortar & migrations')).toBe('stone-mortar-migrations.ics');
     expect(icsFilename('***')).toBe('session.ics');
+  });
+
+  /**
+   * The MIME part repeats the method, and a strict client trusts that copy over the body. Reading
+   * it back out of the body is what keeps the two from drifting apart.
+   */
+  it('reads back the method each builder declares', () => {
+    expect(readCalendarMethod(buildInvite(BASE))).toBe('REQUEST');
+    expect(readCalendarMethod(buildCancellation(BASE))).toBe('CANCEL');
+    expect(readCalendarMethod(buildDownload(BASE))).toBe('PUBLISH');
+  });
+
+  it('unfolds before reading the method', () => {
+    expect(readCalendarMethod('BEGIN:VCALENDAR\r\nMET\r\n HOD:CANCEL\r\nEND:VCALENDAR\r\n')).toBe(
+      'CANCEL',
+    );
+  });
+
+  it('returns null rather than guessing when no usable method is declared', () => {
+    expect(readCalendarMethod('BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n')).toBeNull();
+    expect(readCalendarMethod('METHOD:COUNTER\r\n')).toBeNull();
   });
 });
