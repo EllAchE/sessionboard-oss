@@ -1,0 +1,44 @@
+{
+  "source": "accelevents",
+  "mode": "replace",
+  "apply": false,
+  "sessions": [
+    {
+      "externalId": "ae-first-settlement-101",
+      "title": "Opening of the Senate: The Powers Returned",
+      "description": "The consuls lay the first motion before the assembled Senate.",
+      "status": "published",
+      "startsAt": "2027-01-13T08:00:00.000Z",
+      "endsAt": "2027-01-13T08:45:00.000Z",
+      "room": "Curia Julia",
+      "track": "Constitution & Office",
+      "format": "Oratio",
+      "ceuCredits": null
+    },
+    {
+      "externalId": "ae-first-settlement-102",
+      "title": "The Provinces Requiring Command",
+      "description": "A full-collection record that can be updated in place by its Accelevents id.",
+      "status": "published",
+      "startsAt": "2027-01-13T09:30:00.000Z",
+      "endsAt": "2027-01-13T10:00:00.000Z",
+      "room": "Curia Julia",
+      "track": "Provinces & Frontiers",
+      "format": "Relatio",
+      "ceuCredits": null
+    },
+    {
+      "externalId": "ae-first-settlement-103",
+      "title": "Counsel on the Shape of Peace",
+      "description": "Agrippa and Maecenas answer questions from the consular committee.",
+      "status": "published",
+      "startsAt": "2027-01-13T13:00:00.000Z",
+      "endsAt": "2027-01-13T14:00:00.000Z",
+      "room": "Portico of Octavia",
+      "track": "Peace & Public Works",
+      "format": "Consilium",
+      "ceuCredits": null
+    }
+  ],
+  "deleteExternalIds": []
+}
