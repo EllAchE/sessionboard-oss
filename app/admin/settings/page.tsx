@@ -1,6 +1,6 @@
 import { can } from '@/lib/context';
 import { currentEventContext, getEvent } from '@/lib/services/events';
-import { FIELD_TYPE_VALUES, loadSettings } from '@/lib/services/settings';
+import { FIELD_TYPE_VALUES, getNotificationPrefs, loadSettings } from '@/lib/services/settings';
 import { SettingsScreen } from './SettingsScreen';
 import type { EntityKind, EntityRow } from './types';
 
@@ -25,7 +25,11 @@ export default async function SettingsPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const [ctx, resolved] = await Promise.all([currentEventContext(), searchParams]);
-  const [snapshot, event] = await Promise.all([loadSettings(ctx), getEvent(ctx.eventId)]);
+  const [snapshot, event, notifications] = await Promise.all([
+    loadSettings(ctx),
+    getEvent(ctx.eventId),
+    getNotificationPrefs(ctx.actor.userId),
+  ]);
 
   const rows: Record<EntityKind, EntityRow[]> = {
     track: snapshot.tracks.map((row) => ({
@@ -81,6 +85,7 @@ export default async function SettingsPage({
         startsOn: event.startsOn,
         endsOn: event.endsOn,
       }}
+      notifications={notifications}
       rows={rows}
       fieldTypes={[...FIELD_TYPE_VALUES]}
       initialTab={resolved.tab ?? 'event'}

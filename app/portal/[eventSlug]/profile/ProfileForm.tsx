@@ -2,9 +2,10 @@
 
 import { useActionState, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Textarea } from '@/components/ui';
+import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Switch, Textarea } from '@/components/ui';
 import { renderMarkdown } from '@/lib/markdown';
 import type { Participant } from '@/lib/services/portal';
+import type { NotificationPrefs } from '@/lib/services/settings';
 import { IDLE_STATE } from '../../form-state';
 import styles from '../../portal.module.css';
 import { saveProfileAction } from '../actions';
@@ -20,12 +21,23 @@ const BIO_LIMIT = 5000;
  * the preview uses the same untrusted renderer the organizer's programme page will use, so what a
  * speaker sees here is exactly what gets published.
  */
-export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Participant }) {
+export function ProfileForm({
+  eventSlug,
+  me,
+  notifications,
+}: {
+  eventSlug: string;
+  me: Participant;
+  notifications: NotificationPrefs;
+}) {
   const [state, action] = useActionState(saveProfileAction, IDLE_STATE);
   const [bio, setBio] = useState(me.bioMarkdown ?? '');
   const [links, setLinks] = useState<LinkRow[]>(
     me.links.length > 0 ? me.links : [{ label: '', url: '' }],
   );
+  const [phone, setPhone] = useState(notifications.phone ?? '');
+  const [notifyEmail, setNotifyEmail] = useState(notifications.notifyEmail);
+  const [notifySms, setNotifySms] = useState(notifications.notifySms);
 
   const setLink = (index: number, patch: Partial<LinkRow>) =>
     setLinks((current) => current.map((row, at) => (at === index ? { ...row, ...patch } : row)));
@@ -91,6 +103,56 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
               />
               <span className={styles.hint}>Used when the magistrates set your hour in the fasti.
               </span>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="phone">
+                Courier number
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={phone}
+                onChange={(untrusted) => setPhone(untrusted.target.value)}
+                placeholder="+1 555 123 4567"
+                invalid={Boolean(state.details?.phone)}
+              />
+              <FieldError state={state} field="phone" />
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Summons</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <div className={styles.stackTight}>
+            <div className={styles.switchRow}>
+              <span className={styles.switchText}>
+                <span className={styles.switchLabel}>Email courier</span>
+                <span className={styles.hint}>Reminders, verdicts, and oration details by email.</span>
+              </span>
+              <input type="hidden" name="notifyEmail" value={notifyEmail ? 'on' : ''} />
+              <Switch checked={notifyEmail} aria-label="Email summons" onCheckedChange={setNotifyEmail} />
+            </div>
+            <div className={styles.switchRow}>
+              <span className={styles.switchText}>
+                <span className={styles.switchLabel}>SMS courier</span>
+                <span className={styles.hint}>
+                  {phone.trim()
+                    ? 'The same summons, dispatched to your phone by SMS.'
+                    : 'Inscribe a courier number above to summon this route.'}
+                </span>
+              </span>
+              <input type="hidden" name="notifySms" value={notifySms ? 'on' : ''} />
+              <Switch
+                checked={notifySms}
+                disabled={!phone.trim()}
+                aria-label="SMS summons"
+                onCheckedChange={setNotifySms}
+              />
             </div>
           </div>
         </CardBody>

@@ -7,14 +7,34 @@ type TaskFixture = {
   dueAt: Date | null;
 };
 
+type PersonFixture = {
+  participantId: string;
+  userId: string;
+  email: string;
+  userName: string;
+  displayName: string;
+  company: string | null;
+  jobTitle: string | null;
+  pronouns: string | null;
+  phone: string | null;
+  notifyEmail: boolean;
+  notifySms: boolean;
+};
+
 const state = vi.hoisted(() => ({
   eventId: 'event-one',
   taskRows: [] as TaskFixture[],
   taskScopeChecks: [] as string[],
+  peopleOverride: null as PersonFixture[] | null,
   sentMail: [] as Array<{
     to: string;
     subject: string;
     text: string;
+    eventId?: string | null;
+  }>,
+  sentSms: [] as Array<{
+    to: string;
+    body: string;
     eventId?: string | null;
   }>,
 }));
@@ -24,6 +44,12 @@ vi.mock('../mail', () => ({
   sendMail: async (input: (typeof state.sentMail)[number]) => {
     state.sentMail.push(input);
     return { id: `mail-${state.sentMail.length}`, sent: true };
+  },
+}));
+vi.mock('../sms', () => ({
+  sendSms: async (input: (typeof state.sentSms)[number]) => {
+    state.sentSms.push(input);
+    return { id: `sms-${state.sentSms.length}`, sent: true };
   },
 }));
 
@@ -76,6 +102,9 @@ const PEOPLE = {
       company: null,
       jobTitle: null,
       pronouns: null,
+      phone: null,
+      notifyEmail: true,
+      notifySms: false,
     },
     {
       participantId: 'participant-two',
@@ -86,6 +115,9 @@ const PEOPLE = {
       company: null,
       jobTitle: null,
       pronouns: null,
+      phone: null,
+      notifyEmail: true,
+      notifySms: false,
     },
   ],
   'event-two': [
@@ -98,6 +130,9 @@ const PEOPLE = {
       company: null,
       jobTitle: null,
       pronouns: null,
+      phone: null,
+      notifyEmail: true,
+      notifySms: false,
     },
   ],
 } as const;
@@ -197,7 +232,7 @@ function createDb() {
   const rowsBySource = new Map<unknown, unknown[]>([
     [eventTable, [EVENTS[eventId]]],
     [portalTheme, []],
-    [participant, [...PEOPLE[eventId]]],
+    [participant, state.peopleOverride ?? [...PEOPLE[eventId]]],
     [participantRole, [...SUBMISSIONS[eventId]]],
     [scheduledSession, []],
     [taskAssignment, taskRows],
@@ -297,5 +332,109 @@ describe('bulk task reminder merge data', () => {
     const recipients = await resolveRecipients('event-one', { kind: 'declined_speakers' });
 
     expect(recipients.map((recipient) => recipient.participantId)).toEqual(['participant-one']);
+  });
+});
+
+/**
+ * `sendCampaign` dual-dispatches per recipient preference by default, and the `channel` override
+ * lets an organizer force a single channel for an urgent send regardless of stored preference.
+ */
+describe('SMS dual-dispatch and channel override', () => {
+  beforeEach(() => {
+    state.eventId = 'event-one';
+    state.taskScopeChecks = [];
+    state.sentMail = [];
+    state.sentSms = [];
+    state.peopleOverride = null;
+    state.taskRows = [
+      {
+        id: 'task-selected',
+        eventId: 'event-one',
+        name: 'Upload headshot',
+        dueAt: new Date('2026-09-12T23:59:00Z'),
+      },
+      {
+        id: 'task-other-event',
+        eventId: 'event-two',
+        name: 'Private task from another event',
+        dueAt: new Date('2026-10-01T23:59:00Z'),
+      },
+    ];
+  });
+
+  it('sends email to an email-preferring recipient and SMS to an SMS-preferring recipient', async () => {
+    state.peopleOverride = [
+      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: true, phone: '+15551111111' },
+      { ...PEOPLE['event-one'][1], notifyEmail: true, notifySms: false, phone: null },
+    ];
+
+    const outcome = await sendCampaign({
+      eventId: 'event-one',
+      subject: 'Reminder',
+      bodyMarkdown: 'Hi {{speaker.firstName}}, complete {{task.name}}.',
+      audience: { kind: 'outstanding_tasks', taskId: 'task-selected' },
+    });
+
+    expect(outcome).toMatchObject({ recipients: 2, sent: 2, failed: 0, sentEmail: 1, sentSms: 1 });
+    expect(state.sentMail).toEqual([expect.objectContaining({ to: 'two@example.test' })]);
+    expect(state.sentSms).toEqual([expect.objectContaining({ to: '+15551111111' })]);
+  });
+
+  it('forces SMS for anyone with a phone number when channel is "sms", ignoring notifySms', async () => {
+    state.peopleOverride = [
+      { ...PEOPLE['event-one'][0], notifyEmail: true, notifySms: false, phone: '+15552222222' },
+      { ...PEOPLE['event-one'][1], notifyEmail: true, notifySms: false, phone: null },
+    ];
+
+    const outcome = await sendCampaign({
+      eventId: 'event-one',
+      subject: 'Room change',
+      bodyMarkdown: 'The room changed.',
+      audience: { kind: 'outstanding_tasks', taskId: 'task-selected' },
+      channel: 'sms',
+    });
+
+    expect(outcome).toMatchObject({ recipients: 2, sent: 1, failed: 0, sentEmail: 0, sentSms: 1 });
+    expect(state.sentMail).toEqual([]);
+    expect(state.sentSms).toEqual([expect.objectContaining({ to: '+15552222222' })]);
+  });
+
+  it('forces email for everyone with an address when channel is "email", ignoring notifyEmail', async () => {
+    state.peopleOverride = [
+      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: false, phone: null },
+      { ...PEOPLE['event-one'][1], notifyEmail: false, notifySms: false, phone: null },
+    ];
+
+    const outcome = await sendCampaign({
+      eventId: 'event-one',
+      subject: 'Room change',
+      bodyMarkdown: 'The room changed.',
+      audience: { kind: 'outstanding_tasks', taskId: 'task-selected' },
+      channel: 'email',
+    });
+
+    expect(outcome).toMatchObject({ recipients: 2, sent: 2, failed: 0, sentEmail: 2, sentSms: 0 });
+    expect(state.sentSms).toEqual([]);
+  });
+
+  it('dispatches both channels for a recipient who opted into both', async () => {
+    state.peopleOverride = [
+      { ...PEOPLE['event-one'][0], notifyEmail: true, notifySms: true, phone: '+15553333333' },
+      { ...PEOPLE['event-one'][1], notifyEmail: true, notifySms: false, phone: null },
+    ];
+
+    const outcome = await sendCampaign({
+      eventId: 'event-one',
+      subject: 'Reminder',
+      bodyMarkdown: 'Complete {{task.name}}.',
+      audience: { kind: 'outstanding_tasks', taskId: 'task-selected' },
+    });
+
+    expect(outcome).toMatchObject({ recipients: 2, sent: 2, failed: 0, sentEmail: 2, sentSms: 1 });
+    expect(state.sentMail).toEqual([
+      expect.objectContaining({ to: 'one@example.test' }),
+      expect.objectContaining({ to: 'two@example.test' }),
+    ]);
+    expect(state.sentSms).toEqual([expect.objectContaining({ to: '+15553333333' })]);
   });
 });

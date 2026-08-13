@@ -72,6 +72,7 @@ export default async function TemplatesPage({
           bodyMarkdown: row.bodyMarkdown,
           enabled: row.enabled,
           attachIcs: row.attachIcs,
+          smsBody: row.smsBody,
         }))}
       />
     </div>

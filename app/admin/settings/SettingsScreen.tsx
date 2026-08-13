@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { Badge, Tabs, TabsList, TabsPanel, TabsTrigger } from '@/components/ui';
 import { CollectionPanel } from './CollectionPanel';
 import { EventPanel } from './EventPanel';
-import { buildSpecs, type EntityKind, type EntityRow, type EventWire } from './types';
+import { NotificationsPanel } from './NotificationsPanel';
+import {
+  buildSpecs,
+  type EntityKind,
+  type EntityRow,
+  type EventWire,
+  type NotificationsWire,
+} from './types';
 import styles from './settings.module.css';
 
 /**
@@ -16,15 +23,23 @@ import styles from './settings.module.css';
 
 type Props = {
   event: EventWire;
+  notifications: NotificationsWire;
   rows: Record<EntityKind, EntityRow[]>;
   fieldTypes: string[];
   initialTab: string;
   canManage: boolean;
 };
 
-export function SettingsScreen({ event, rows, fieldTypes, initialTab, canManage }: Props) {
+export function SettingsScreen({
+  event,
+  notifications,
+  rows,
+  fieldTypes,
+  initialTab,
+  canManage,
+}: Props) {
   const specs = buildSpecs(fieldTypes);
-  const valid = ['event', ...specs.map((spec) => spec.kind)];
+  const valid = ['event', 'notifications', ...specs.map((spec) => spec.kind)];
   const [tab, setTab] = useState(valid.includes(initialTab) ? initialTab : 'event');
 
   const selectTab = (next: string) => {
@@ -49,9 +64,10 @@ export function SettingsScreen({ event, rows, fieldTypes, initialTab, canManage 
         </div>
       </header>
 
-      <Tabs value={tab} onValueChange={selectTab}>
-        <TabsList>
+        <Tabs value={tab} onValueChange={selectTab}>
+          <TabsList>
           <TabsTrigger value="event">Founding charter</TabsTrigger>
+          <TabsTrigger value="notifications">Courier edicts</TabsTrigger>
           {specs.map((spec) => (
             <TabsTrigger key={spec.kind} value={spec.kind}>
               {spec.label}
@@ -64,6 +80,10 @@ export function SettingsScreen({ event, rows, fieldTypes, initialTab, canManage 
 
         <TabsPanel value="event">
           <EventPanel event={event} canManage={canManage} />
+        </TabsPanel>
+
+        <TabsPanel value="notifications">
+          <NotificationsPanel prefs={notifications} />
         </TabsPanel>
 
         {specs.map((spec) => (

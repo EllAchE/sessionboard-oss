@@ -17,6 +17,7 @@ import {
 import type {
   AudienceKind,
   AudienceSpec,
+  ChannelSelection,
   PreviewResult,
   SendOutcome,
   TemplateVariable,
@@ -33,8 +34,16 @@ export type ComposerProps = {
   tracks: Option[];
   formats: Option[];
   tasks: Option[];
-  templates: Array<{ key: string; name: string; subject: string; bodyMarkdown: string; attachIcs: boolean }>;
+  templates: Array<{
+    key: string;
+    name: string;
+    subject: string;
+    bodyMarkdown: string;
+    attachIcs: boolean;
+    smsBody: string | null;
+  }>;
   transport: string;
+  smsTransport: string;
 };
 
 const NEEDS_TRACK: AudienceKind[] = ['track'];
@@ -48,6 +57,8 @@ const NEEDS_TASK: AudienceKind[] = ['outstanding_tasks'];
 export function Composer(props: ComposerProps) {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [channel, setChannel] = useState<ChannelSelection>('auto');
+  const [smsBody, setSmsBody] = useState('');
   const [audienceKind, setAudienceKind] = useState<AudienceKind>('accepted_speakers');
   const [trackId, setTrackId] = useState('');
   const [formatId, setFormatId] = useState('');
@@ -81,6 +92,8 @@ export function Composer(props: ComposerProps) {
     if (audience.taskId) data.set('taskId', audience.taskId);
     if (templateKey) data.set('templateKey', templateKey);
     data.set('attachIcs', attachIcs ? 'on' : 'off');
+    data.set('channel', channel);
+    data.set('smsBody', smsBody);
     return data;
   }
 
@@ -114,6 +127,7 @@ export function Composer(props: ComposerProps) {
     setSubject(template.subject);
     setBody(template.bodyMarkdown);
     setAttachIcs(template.attachIcs);
+    setSmsBody(template.smsBody ?? '');
     setPreview(null);
   }
 
@@ -245,6 +259,24 @@ export function Composer(props: ComposerProps) {
               </div>
 
               <div className={styles.field}>
+                <label className={styles.label} htmlFor="channel">
+                  Courier route
+                </label>
+                <Select
+                  id="channel"
+                  value={channel}
+                  onChange={(e) => {
+                    setChannel(e.target.value as ChannelSelection);
+                    setPreview(null);
+                  }}
+                >
+                  <option value="auto">Honor each recipient&rsquo;s chosen courier</option>
+                  <option value="email">Email every known address</option>
+                  <option value="sms">SMS every known phone</option>
+                </Select>
+              </div>
+
+              <div className={styles.field}>
                 <label className={styles.label} htmlFor="subject">
                   Subject
                 </label>
@@ -274,6 +306,25 @@ export function Composer(props: ComposerProps) {
                   }}
                   placeholder={'Salve {{speaker.firstName|friend}},\n\n…'}
                 />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="smsBody">
+                  SMS dispatch — plain text
+                </label>
+                <Textarea
+                  id="smsBody"
+                  value={smsBody}
+                  onChange={(e) => {
+                    setSmsBody(e.target.value);
+                    setPreview(null);
+                  }}
+                  placeholder="Leave blank to derive a shortened tablet from the dispatch above."
+                />
+                <span className={styles.hint}>
+                  Sent to every citizen this dispatch reaches by text. If empty, Cicero strips and
+                  shortens the markdown dispatch above.
+                </span>
               </div>
 
               <div className={styles.field}>
@@ -349,9 +400,10 @@ export function Composer(props: ComposerProps) {
 
               {outcome && (
                 <p className={`${styles.notice} ${styles.success}`}>
-                  Sent to {outcome.sent} of {outcome.recipients} recipients
-                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Every message is
-                  readable in the courier archive.
+                  Dispatched to {outcome.sent} of {outcome.recipients} recipients (
+                  {outcome.sentEmail} by courier, {outcome.sentSms} by SMS)
+                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Every dispatch is
+                  readable in its courier archive.
                 </p>
               )}
 
@@ -360,6 +412,23 @@ export function Composer(props: ComposerProps) {
                   <CalendarCheck size={16} /> MAIL_TRANSPORT is <code>log</code>: no courier leaves
                   the server. Dispatches appear in the archive with their calendar attachment
                   intact.
+                </p>
+              )}
+
+              {props.smsTransport === 'log' && (
+                <p className={styles.notice}>
+                  <CalendarCheck size={16} /> SMS_TRANSPORT is <code>log</code>: no swift courier
+                  leaves the server. Dispatches rest in the SMS courier archive.
+                </p>
+              )}
+
+              {preview && (
+                <p className={styles.subtle}>
+                  {preview.channelCounts.email} by email courier, {preview.channelCounts.sms} by SMS
+                  {preview.channelCounts.none > 0
+                    ? `, ${preview.channelCounts.none} citizens are unreachable (no address or phone on the rolls)`
+                    : ''}
+                  .
                 </p>
               )}
 
@@ -398,6 +467,13 @@ export function Composer(props: ComposerProps) {
                     className={styles.previewFrame}
                     dangerouslySetInnerHTML={{ __html: preview.message.html }}
                   />
+
+                  {preview.smsPreview && (
+                    <>
+                      <span className={styles.label}>SMS tablet</span>
+                      <p className={styles.mono}>{preview.smsPreview}</p>
+                    </>
+                  )}
                 </>
               )}
             </div>

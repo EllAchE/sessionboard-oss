@@ -69,4 +69,5 @@ export const features = {
   ai: () => Boolean(env('ANTHROPIC_API_KEY')),
   airtable: () => Boolean(env('AIRTABLE_API_KEY') && env('AIRTABLE_BASE_ID')),
   accelevents: () => Boolean(env('ACCELEVENTS_API_KEY')),
+  sms: () => Boolean(env('TWILIO_ACCOUNT_SID') && env('TWILIO_AUTH_TOKEN') && env('SMS_FROM')),
 };

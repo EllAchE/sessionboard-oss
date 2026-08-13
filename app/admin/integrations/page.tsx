@@ -1,10 +1,11 @@
 import { listApiKeys } from '../../api/v1/_lib/auth';
 import * as accelevents from '@/lib/accelevents';
 import * as airtable from '@/lib/airtable';
-import { env } from '@/lib/env';
+import { env, features } from '@/lib/env';
+import { activeSmsTransportName } from '@/lib/sms';
 import { integrationContext } from './context';
 import { IntegrationsScreen } from './IntegrationsScreen';
-import type { AccelEventsPanel, AirtablePanel, ApiKeyRow, SyncLogRow } from './types';
+import type { AccelEventsPanel, AirtablePanel, ApiKeyRow, SmsPanel, SyncLogRow } from './types';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,5 +83,18 @@ export default async function IntegrationsPage() {
     createdAt: key.createdAt.toISOString(),
   }));
 
-  return <IntegrationsScreen keys={keyRows} accelevents={accelPanel} airtable={airtablePanel} />;
+  const smsPanel: SmsPanel = {
+    configured: features.sms(),
+    transport: activeSmsTransportName(),
+    from: env('SMS_FROM') ?? null,
+  };
+
+  return (
+    <IntegrationsScreen
+      keys={keyRows}
+      accelevents={accelPanel}
+      airtable={airtablePanel}
+      sms={smsPanel}
+    />
+  );
 }

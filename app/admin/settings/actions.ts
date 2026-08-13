@@ -245,3 +245,17 @@ export async function updateEventAction(patch: EventPatch): Promise<ActionResult
     return null;
   });
 }
+
+// ---------------------------------------------------------------------------
+// Notifications — the signed-in organizer's own row, not event configuration.
+// No `event:manage` check: every organizer, regardless of role, edits their own alert prefs.
+// ---------------------------------------------------------------------------
+
+export async function saveMyNotificationPrefsAction(
+  patch: settings.NotificationPrefsInput,
+): Promise<ActionResult<settings.NotificationPrefs>> {
+  return run(async () => {
+    const ctx = await currentEventContext();
+    return settings.saveNotificationPrefs(ctx.actor.userId, patch);
+  });
+}
