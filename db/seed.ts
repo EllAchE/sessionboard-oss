@@ -284,6 +284,7 @@ await db.insert(sponsor).values([
   {
     eventId: demo.id,
     kind: 'sponsor',
+    status: 'published',
     name: 'Aquae Urbanae',
     tier: 'Principal',
     websiteUrl: 'https://example.com/aquae-urbanae',
@@ -293,6 +294,7 @@ await db.insert(sponsor).values([
   {
     eventId: demo.id,
     kind: 'sponsor',
+    status: 'published',
     name: 'Fabrica Vitraria',
     tier: 'Supporting',
     websiteUrl: 'https://example.com/fabrica-vitraria',
@@ -302,14 +304,22 @@ await db.insert(sponsor).values([
   {
     eventId: demo.id,
     kind: 'sponsor',
+    status: 'published',
     name: 'Scriptorium Municipale',
     tier: 'Supporting',
     position: 2,
   },
-  { eventId: demo.id, kind: 'sponsor', name: 'Collegium Fabrorum', position: 3 },
+  {
+    eventId: demo.id,
+    kind: 'sponsor',
+    status: 'published',
+    name: 'Collegium Fabrorum',
+    position: 3,
+  },
   {
     eventId: demo.id,
     kind: 'exhibitor',
+    status: 'published',
     name: 'Officina Ferraria',
     tier: 'Standard',
     boothLocation: 'Peristyle, stand 3',
@@ -320,6 +330,7 @@ await db.insert(sponsor).values([
   {
     eventId: demo.id,
     kind: 'exhibitor',
+    status: 'published',
     name: 'Fabrica Vitraria',
     boothLocation: 'Peristyle, stand 7',
     description: 'The same firm as the sponsor above, with a stand of its own.',
@@ -328,6 +339,7 @@ await db.insert(sponsor).values([
   {
     eventId: demo.id,
     kind: 'exhibitor',
+    status: 'published',
     name: 'Horrea Publica',
     boothLocation: 'Lower level, stand 12',
     position: 2,

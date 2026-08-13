@@ -15,6 +15,7 @@ import {
 } from '@/lib/services/agenda-mutations';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_SESSION_MINUTES } from '@/lib/services/schedule';
+import { emitSessionScheduled } from '@/lib/webhooks';
 
 /**
  * Every agenda mutation. Each returns a result object rather than throwing: a drag that lands on a
@@ -140,6 +141,7 @@ export async function placeSessionAction(
     });
 
     await notifyIfPublished(sessionId);
+    await emitSessionScheduled(ctx.eventId, sessionId);
     revalidate();
     return { ok: true, data: { sessionId } };
   } catch (error) {
@@ -304,6 +306,7 @@ export async function saveManualSessionAction(
     });
 
     await notifyIfPublished(sessionId);
+    if (startsAt) await emitSessionScheduled(ctx.eventId, sessionId);
     revalidate();
     return { ok: true, data: { sessionId } };
   } catch (error) {
@@ -443,7 +446,10 @@ export async function applyProposalAction(
       return { data: changedSessionIds, changedSessionIds };
     });
 
-    for (const sessionId of new Set(sessionIds)) await notifyIfPublished(sessionId);
+    for (const sessionId of new Set(sessionIds)) {
+      await notifyIfPublished(sessionId);
+      await emitSessionScheduled(ctx.eventId, sessionId);
+    }
     revalidate();
     return { ok: true, data: { applied: placements.length, failed: 0 } };
   } catch (error) {

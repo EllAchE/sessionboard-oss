@@ -8,8 +8,9 @@ import {
   user,
 } from '@/db/schema';
 import type { EventContext, MembershipRole } from '@/lib/context';
-import { unauthorized } from '@/lib/errors';
+import { forbidden, unauthorized } from '@/lib/errors';
 import { hashToken, randomToken } from '@/lib/ids';
+import { API_KEY_RATE_LIMIT, consumeRateLimit, SPEAKER_API_RATE_LIMIT } from '@/lib/rate-limit';
 
 /**
  * `Z-5`. `Authorization: Bearer <key>`, keys are per event and hashed at rest with the same
@@ -21,18 +22,21 @@ import { hashToken, randomToken } from '@/lib/ids';
  */
 
 const PREFIX_LENGTH = 8;
+export type ApiKeyScope = 'read' | 'write';
 
 export type ApiKeyContext = {
   keyId: string;
   eventId: string;
   eventSlug: string;
   name: string;
+  scope: ApiKeyScope;
 };
 
 export type IssuedKey = {
   id: string;
   name: string;
   prefix: string;
+  scope: ApiKeyScope;
   /** Shown exactly once, at creation. Nothing reconstructs it afterwards. */
   plaintext: string;
   createdAt: Date;
@@ -92,6 +96,8 @@ export async function requireSpeakerSession(
     throw unauthorized('That session is not a speaker on this event');
   }
 
+  await consumeRateLimit(session.id, SPEAKER_API_RATE_LIMIT);
+
   await db
     .update(sessionCookie)
     .set({ lastSeenAt: new Date() })
@@ -114,7 +120,11 @@ export async function requireSpeakerSession(
  * Resolves a key to its event, and rejects it if it is not the event in the path — a key issued for
  * one event must not read another's submissions.
  */
-export async function requireApiKey(request: Request, eventSlug: string): Promise<ApiKeyContext> {
+export async function requireApiKey(
+  request: Request,
+  eventSlug: string,
+  requiredScope: ApiKeyScope = 'read',
+): Promise<ApiKeyContext> {
   const token = bearerToken(request);
   if (!token) throw unauthorized('Send an API key as `Authorization: Bearer <key>`');
 
@@ -135,6 +145,10 @@ export async function requireApiKey(request: Request, eventSlug: string): Promis
   if (!eventRow || eventRow.slug !== eventSlug) {
     throw unauthorized('That API key does not belong to this event');
   }
+  await consumeRateLimit(match.id, API_KEY_RATE_LIMIT);
+  if (requiredScope === 'write' && match.scope !== 'write') {
+    throw forbidden('That API key is read-only');
+  }
 
   // Best-effort: a failed timestamp write must not fail the request it was decorating.
   await db
@@ -148,16 +162,23 @@ export async function requireApiKey(request: Request, eventSlug: string): Promis
     eventId: match.eventId,
     eventSlug,
     name: match.name,
+    scope: match.scope,
   };
 }
 
-export async function issueApiKey(eventId: string, name: string): Promise<IssuedKey> {
+export async function issueApiKey(
+  eventId: string,
+  name: string,
+  scope: ApiKeyScope = 'read',
+): Promise<IssuedKey> {
+  if (scope !== 'read' && scope !== 'write') throw forbidden('Choose a valid API key scope');
   const plaintext = randomToken();
   const [row] = await getDb()
     .insert(apiKey)
     .values({
       eventId,
       name,
+      scope,
       prefix: plaintext.slice(0, PREFIX_LENGTH),
       keyHash: await hashToken(plaintext),
     })
@@ -167,6 +188,7 @@ export async function issueApiKey(eventId: string, name: string): Promise<Issued
     id: row.id,
     name: row.name,
     prefix: row.prefix,
+    scope: row.scope,
     plaintext,
     createdAt: row.createdAt,
   };
@@ -176,6 +198,7 @@ export type ApiKeySummary = {
   id: string;
   name: string;
   prefix: string;
+  scope: ApiKeyScope;
   lastUsedAt: Date | null;
   revokedAt: Date | null;
   createdAt: Date;
@@ -188,6 +211,7 @@ export async function listApiKeys(eventId: string): Promise<ApiKeySummary[]> {
       id: row.id,
       name: row.name,
       prefix: row.prefix,
+      scope: row.scope,
       lastUsedAt: row.lastUsedAt,
       revokedAt: row.revokedAt,
       createdAt: row.createdAt,

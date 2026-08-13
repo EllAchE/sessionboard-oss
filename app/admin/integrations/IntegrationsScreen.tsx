@@ -13,6 +13,7 @@ import {
   DataTable,
   IconButton,
   Input,
+  Select,
   Tabs,
   TabsList,
   TabsPanel,
@@ -22,6 +23,8 @@ import {
 } from '@/components/ui';
 import {
   createApiKeyAction,
+  createWebhookAction,
+  disableWebhookAction,
   pushSpeakersAction,
   revokeApiKeyAction,
   syncAirtableAction,
@@ -35,13 +38,13 @@ import type {
   SmsPanel,
   SyncLogRow,
   TestResult,
+  WebhookPanel,
 } from './types';
 import styles from './integrations.module.css';
 
 /**
- * Three integrations on one screen, each of which degrades to a visibly disabled panel naming the
- * environment variables it wants rather than disappearing — a judge or an operator running without
- * credentials should be able to see what the feature would do.
+ * Integration controls on one screen. Provider-backed panels degrade to a visibly disabled state
+ * naming the environment variables they want rather than disappearing.
  */
 
 const SYNC_TONE: Record<SyncLogRow['status'], 'neutral' | 'success' | 'danger'> = {
@@ -118,6 +121,7 @@ function SyncLog({ rows, label }: { rows: SyncLogRow[]; label: string }) {
 function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState('');
+  const [scope, setScope] = useState<'read' | 'write'>('read');
   const [issued, setIssued] = useState<{
     name: string;
     plaintext: string;
@@ -128,7 +132,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
   const create = () => {
     setError(null);
     startTransition(async () => {
-      const result = await createApiKeyAction(name);
+      const result = await createApiKeyAction(name, scope);
       if (!result.ok) {
         setError(result.message);
         return;
@@ -155,6 +159,14 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       mono: true,
       width: '18%',
       render: (row) => `${row.prefix}…`,
+    },
+    {
+      id: 'scope',
+      header: 'Scope',
+      width: '12%',
+      render: (row) => (
+        <Badge tone={row.scope === 'write' ? 'warning' : 'neutral'}>{row.scope}</Badge>
+      ),
     },
     {
       id: 'status',
@@ -202,9 +214,9 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
         <div className={styles.headings}>
           <h2 className={styles.sectionTitle}>API keys</h2>
           <p className={styles.note}>
-            A key reads this event&apos;s submissions over <code>/api/v1</code>. Public program
-            endpoints need none. Keys are hashed at rest, so the value below is shown once and
-            cannot be recovered.
+            Read-only keys can inspect this event&apos;s submissions. Write keys may also reconcile the
+            programme and run integration mutations. Public program endpoints need none. Keys are
+            hashed at rest, so the value below is shown once and cannot be recovered.
           </p>
         </div>
       </div>
@@ -217,6 +229,15 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
           onChange={(event) => setName(event.target.value)}
           disabled={pending}
         />
+        <Select
+          aria-label="API key scope"
+          value={scope}
+          onChange={(event) => setScope(event.target.value as 'read' | 'write')}
+          disabled={pending}
+        >
+          <option value="read">Read only</option>
+          <option value="write">Read and write</option>
+        </Select>
         <Button variant="primary" iconLeft={<Plus size={15} />} loading={pending} onClick={create}>
           Create key
         </Button>
@@ -254,6 +275,216 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
         getRowId={(row) => row.id}
         label="API keys"
         emptyState={<div className={styles.empty}>No keys yet.</div>}
+      />
+    </div>
+  );
+}
+
+function WebhooksPanel({ panel }: { panel: WebhookPanel }) {
+  const [pending, startTransition] = useTransition();
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [issued, setIssued] = useState<{ name: string; signingSecret: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const create = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await createWebhookAction(name, url);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setIssued({ name: result.data.name, signingSecret: result.data.signingSecret });
+      setName('');
+      setUrl('');
+      setCopied(false);
+    });
+  };
+
+  const disable = (endpointId: string) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await disableWebhookAction(endpointId);
+      if (!result.ok) setError(result.message);
+    });
+  };
+
+  const endpointName = new Map(panel.endpoints.map((endpoint) => [endpoint.id, endpoint.name]));
+  const endpointColumns: DataTableColumn<WebhookPanel['endpoints'][number]>[] = [
+    {
+      id: 'endpoint',
+      header: 'Endpoint',
+      strong: true,
+      render: (row) => (
+        <div className={styles.cellStack}>
+          <span>{row.name}</span>
+          <span className={styles.cellSub}>{row.url}</span>
+        </div>
+      ),
+    },
+    {
+      id: 'events',
+      header: 'Events',
+      render: (row) => <span className={styles.cellSub}>{row.eventTypes.join(', ')}</span>,
+    },
+    {
+      id: 'secret',
+      header: 'Signing secret',
+      mono: true,
+      width: '16%',
+      render: (row) => `${row.secretPrefix}…`,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      width: '12%',
+      render: (row) => (
+        <Badge tone={row.enabled ? 'success' : 'danger'}>
+          {row.enabled ? 'Active' : 'Disabled'}
+        </Badge>
+      ),
+    },
+    {
+      id: 'disable',
+      header: '',
+      width: '6%',
+      align: 'right',
+      render: (row) =>
+        row.enabled ? (
+          <Tooltip content="Disable this webhook">
+            <IconButton
+              label={`Disable ${row.name}`}
+              variant="ghost"
+              disabled={pending}
+              onClick={() => disable(row.id)}
+            >
+              <Trash2 size={15} />
+            </IconButton>
+          </Tooltip>
+        ) : null,
+    },
+  ];
+
+  const deliveryColumns: DataTableColumn<WebhookPanel['deliveries'][number]>[] = [
+    {
+      id: 'event',
+      header: 'Event',
+      strong: true,
+      render: (row) => row.eventType,
+    },
+    {
+      id: 'endpoint',
+      header: 'Endpoint',
+      render: (row) => endpointName.get(row.endpointId) ?? 'Removed endpoint',
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      width: '14%',
+      render: (row) => (
+        <Badge
+          tone={
+            row.status === 'delivered'
+              ? 'success'
+              : row.status === 'failed'
+                ? 'danger'
+                : 'neutral'
+          }
+        >
+          {row.status}
+        </Badge>
+      ),
+    },
+    {
+      id: 'detail',
+      header: 'Detail',
+      render: (row) => (
+        <span className={styles.cellSub}>
+          {row.responseStatus ? `HTTP ${row.responseStatus}` : row.error ?? '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'created',
+      header: 'When',
+      width: '18%',
+      render: (row) => formatWhen(row.createdAt),
+    },
+  ];
+
+  return (
+    <div className={styles.section}>
+      <div className={styles.sectionHead}>
+        <div className={styles.headings}>
+          <h2 className={styles.sectionTitle}>Outbound webhooks</h2>
+          <p className={styles.note}>
+            POST signed JSON when a proposal arrives, a decision is made, or a session is placed on
+            the schedule. Verify <code>X-Cicero-Signature</code> as an HMAC-SHA256 over the raw body.
+          </p>
+        </div>
+      </div>
+
+      <div className={styles.createRow}>
+        <Input
+          className={styles.createInput}
+          placeholder="Name, e.g. Data warehouse"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          disabled={pending}
+        />
+        <Input
+          className={styles.createInput}
+          placeholder="https://example.com/hooks/cicero"
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          disabled={pending}
+        />
+        <Button variant="primary" iconLeft={<Plus size={15} />} loading={pending} onClick={create}>
+          Add webhook
+        </Button>
+      </div>
+
+      {issued ? (
+        <div className={styles.newKey}>
+          <strong className={styles.disabledTitle}>
+            Copy “{issued.name}” signing secret now, because it is not shown again
+          </strong>
+          <div className={styles.newKeyValue}>
+            <code className={styles.secret}>{issued.signingSecret}</code>
+            <Button
+              size="sm"
+              iconLeft={<Copy size={14} />}
+              onClick={() => {
+                void navigator.clipboard.writeText(issued.signingSecret);
+                setCopied(true);
+              }}
+            >
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {error ? <p className={styles.error}>{error}</p> : null}
+
+      <DataTable
+        columns={endpointColumns}
+        rows={panel.endpoints}
+        getRowId={(row) => row.id}
+        label="Webhook endpoints"
+        emptyState={<div className={styles.empty}>No webhook endpoints yet.</div>}
+      />
+      <DataTable
+        columns={deliveryColumns}
+        rows={panel.deliveries}
+        getRowId={(row) => row.id}
+        label="Recent webhook deliveries"
+        emptyState={<div className={styles.empty}>No deliveries yet.</div>}
       />
     </div>
   );
@@ -526,6 +757,7 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
             <li className={styles.env}>TWILIO_ACCOUNT_SID</li>
             <li className={styles.env}>TWILIO_AUTH_TOKEN</li>
             <li className={styles.env}>SMS_FROM</li>
+            <li className={styles.env}>APP_URL (public HTTPS)</li>
           </ul>
         </div>
       </div>
@@ -542,12 +774,16 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
             manual composer&apos;s channel selector. Every send is logged at{' '}
             <code>/admin/sms</code>, the way email is at <code>/admin/mail</code>.
           </p>
+          <p className={styles.note}>
+            Configure Twilio&apos;s inbound webhook at <code>/api/webhooks/twilio/sms</code>.
+            Delivery callbacks are attached to every outbound message automatically.
+          </p>
         </div>
         <div className={styles.actions}>
           {panel.transport === 'twilio' ? (
             <Badge tone="success">Live — Twilio</Badge>
           ) : (
-            <Badge tone="warning">Dev mailbox — SMS_TRANSPORT=log</Badge>
+            <Badge tone="warning">Safe mailbox — check transport and APP_URL</Badge>
           )}
         </div>
       </div>
@@ -561,11 +797,13 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
 
 export function IntegrationsScreen({
   keys,
+  webhooks,
   accelevents,
   airtable,
   sms,
 }: {
   keys: ApiKeyRow[];
+  webhooks: WebhookPanel;
   accelevents: AccelEventsPanel;
   airtable: AirtablePanel;
   sms: SmsPanel;
@@ -577,8 +815,8 @@ export function IntegrationsScreen({
           <span className={styles.eyebrow}>Admin</span>
           <h1 className={styles.title}>Integrations</h1>
           <p className={styles.subtitle}>
-            The public API, the Accelevents speaker push and the Airtable mirror. Each is off until
-            its credentials are set, and says so rather than failing quietly.
+            API credentials, signed webhooks, the Accelevents speaker push, the Airtable mirror and
+            SMS delivery in one place.
           </p>
         </div>
       </header>
@@ -593,6 +831,12 @@ export function IntegrationsScreen({
         </CardHeader>
         <CardBody>
           <ApiKeysPanel keys={keys} />
+        </CardBody>
+      </Card>
+
+      <Card padding="lg">
+        <CardBody>
+          <WebhooksPanel panel={webhooks} />
         </CardBody>
       </Card>
 

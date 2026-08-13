@@ -6,6 +6,7 @@ import {
   participantRole,
   room as roomTable,
   scheduledSession,
+  sessionRecording,
   sessionFormat,
   submission,
   submissionTag,
@@ -15,7 +16,10 @@ import {
 } from '@/db/schema';
 import { eventBrandingUrl } from '@/lib/event-branding';
 import { excerpt, markdownToText, renderMarkdown } from '@/lib/markdown';
+import { publicSponsorLogoUrl } from '@/lib/sponsor-branding';
+import { listPublicSponsors } from '@/lib/services/sponsors';
 import { speakerHeadshotPath } from '@/lib/speaker-headshot';
+import { publicRecordingPath, recordingPublicationIssue } from '@/lib/session-recording';
 import {
   sortSpeakers,
   speakerSlug,
@@ -87,6 +91,7 @@ export async function getPublicEvent(slug: string): Promise<PublicEvent | null> 
     timezone: row.timezone,
     startsOn: row.startsOn,
     endsOn: row.endsOn,
+    endsAt: row.endsAt.toISOString(),
     websiteUrl: row.websiteUrl,
     venueName: row.venueName,
     eventType: row.eventType,
@@ -100,11 +105,13 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
   if (!event) return null;
   const db = getDb();
 
-  const [scheduledRows, tracks, rooms, formats, publicParticipants] = await Promise.all([
+  const [scheduledRows, tracks, rooms, formats, publicParticipants, publicSponsors] =
+    await Promise.all([
     db
-      .select({ session: scheduledSession })
+      .select({ session: scheduledSession, recording: sessionRecording })
       .from(scheduledSession)
       .leftJoin(submission, eq(scheduledSession.submissionId, submission.id))
+      .leftJoin(sessionRecording, eq(sessionRecording.sessionId, scheduledSession.id))
       .where(
         and(
           eq(scheduledSession.eventId, event.id),
@@ -134,9 +141,13 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
         and(eq(participant.eventId, event.id), eq(participant.workflowStatus, 'confirmed')),
       )
       .orderBy(asc(participant.displayName), asc(userTable.name)),
+    listPublicSponsors(event.id),
   ]);
 
   const sessionRows = scheduledRows.map((row) => row.session);
+  const recordingBySession = new Map(
+    scheduledRows.map((row) => [row.session.id, row.recording] as const),
+  );
 
   const trackName = new Map(tracks.map((row) => [row.id, row.name]));
   const roomName = new Map(rooms.map((row) => [row.id, row.name]));
@@ -220,6 +231,14 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
       trackId: row.trackId,
       format: row.formatId ? (formatName.get(row.formatId) ?? null) : null,
       ceuCredits: row.ceuCredits,
+      recordingUrl:
+        recordingPublicationIssue({
+          sessionStatus: row.status,
+          sessionEndsAt: row.endsAt,
+          eventEndsAt: new Date(event.endsAt ?? '1970-01-01T00:00:00.000Z'),
+        }) === null
+          ? publicRecordingPath(event.slug, recordingBySession.get(row.id) ?? null)
+          : null,
       tags: row.submissionId ? (tagsBySubmission.get(row.submissionId) ?? []) : [],
       speakers: linked.map((entry) => ({
         id: entry.person.id,
@@ -261,5 +280,15 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
     rooms: rooms
       .filter((row) => usedRoomNames.has(row.name))
       .map((row) => ({ id: row.id, name: row.name })),
+    sponsors: publicSponsors.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      name: row.name,
+      tier: row.tier,
+      websiteUrl: row.websiteUrl,
+      description: row.description,
+      boothLocation: row.boothLocation,
+      logoUrl: publicSponsorLogoUrl(event.slug, row.logoFileId),
+    })),
   };
 }

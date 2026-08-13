@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/app/api/v1/_lib/queries', () => ({ requireEvent: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn() }));
+vi.mock('@/lib/rate-limit', () => ({ enforcePublicApiRateLimit: vi.fn() }));
 vi.mock('@/lib/services/submissions', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/services/submissions')>();
   return { ...actual, loadPublicForm: vi.fn() };

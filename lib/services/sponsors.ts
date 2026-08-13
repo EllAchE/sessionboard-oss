@@ -28,8 +28,10 @@ import { positionDrift, positionsForReorder, type Positioned } from './settings'
  */
 
 export const SPONSOR_KINDS = ['sponsor', 'exhibitor'] as const;
+export const SPONSOR_STATUSES = ['draft', 'published'] as const;
 
 export type SponsorKind = (typeof SPONSOR_KINDS)[number];
+export type SponsorStatus = (typeof SPONSOR_STATUSES)[number];
 
 export function isSponsorKind(value: string): value is SponsorKind {
   return (SPONSOR_KINDS as readonly string[]).includes(value);
@@ -48,6 +50,7 @@ const NOUN: Record<SponsorKind, { one: string; article: string }> = {
 export type SponsorRecord = {
   id: string;
   kind: SponsorKind;
+  status: SponsorStatus;
   name: string;
   tier: string | null;
   websiteUrl: string | null;
@@ -67,6 +70,10 @@ const name = z.string().trim().min(1, 'Name is required').max(120);
 
 const kind = z.enum(SPONSOR_KINDS, {
   errorMap: () => ({ message: 'Choose sponsor or exhibitor' }),
+});
+
+export const sponsorStatusInput = z.enum(SPONSOR_STATUSES, {
+  errorMap: () => ({ message: 'Choose draft or published' }),
 });
 
 const optionalText = (max: number, message: string) =>
@@ -176,6 +183,7 @@ function toRecord(row: typeof sponsor.$inferSelect): SponsorRecord {
   return {
     id: row.id,
     kind: row.kind,
+    status: row.status,
     name: row.name,
     tier: row.tier,
     websiteUrl: row.websiteUrl,
@@ -209,12 +217,9 @@ export async function listSponsors(ctx: EventContext): Promise<SponsorRecord[]> 
  * no context to construct: an unauthenticated request has no membership, so the parameter has to be
  * the thing the route already proved from the slug in the path.
  *
- * **They have no visibility filter, because there is nothing to filter on.** A scheduled session has
- * `status`, a submission has `contentStatus`, a speaker profile has `workflowStatus` — every other
- * public surface in this app is gated by an explicit column. A sponsor row has none, so every row an
- * organizer creates is on the wall from the moment it is saved. That is stated on `/admin/sponsors`
- * so the organizer is told before they type, and it is the one thing here a `published` column would
- * change.
+ * All three predicates include `status = published`. Keeping that boundary in the service makes the
+ * wall, nav, API, embeds, and logo bytes fail closed together when an organizer returns a row to
+ * draft.
  */
 
 /** Both kinds, in the organizer's order, exactly as `listSponsors` returns them for the board. */
@@ -222,7 +227,7 @@ export async function listPublicSponsors(eventId: string): Promise<SponsorRecord
   const rows = await getDb()
     .select()
     .from(sponsor)
-    .where(eq(sponsor.eventId, eventId))
+    .where(and(eq(sponsor.eventId, eventId), eq(sponsor.status, 'published')))
     .orderBy(asc(sponsor.kind), asc(sponsor.position), asc(sponsor.createdAt));
   return rows.map(toRecord);
 }
@@ -235,7 +240,7 @@ export async function listPublicSponsors(eventId: string): Promise<SponsorRecord
 export async function eventHasSponsors(eventId: string): Promise<boolean> {
   const row = await getDb().query.sponsor.findFirst({
     columns: { id: true },
-    where: eq(sponsor.eventId, eventId),
+    where: and(eq(sponsor.eventId, eventId), eq(sponsor.status, 'published')),
   });
   return Boolean(row);
 }
@@ -256,7 +261,11 @@ export async function isPublicSponsorLogo(eventId: string, fileId: string): Prom
   if (!UUID.test(fileId)) return false;
   const row = await getDb().query.sponsor.findFirst({
     columns: { id: true },
-    where: and(eq(sponsor.eventId, eventId), eq(sponsor.logoFileId, fileId)),
+    where: and(
+      eq(sponsor.eventId, eventId),
+      eq(sponsor.status, 'published'),
+      eq(sponsor.logoFileId, fileId),
+    ),
   });
   return Boolean(row);
 }
@@ -357,6 +366,25 @@ export async function updateSponsor(
     .returning();
 
   if (moved) await compactPositions(ctx.eventId, existing.kind);
+  return toRecord(updated);
+}
+
+/** Publication is a deliberate organizer action, separate from editing descriptive fields. */
+export async function setSponsorStatus(
+  ctx: EventContext,
+  sponsorId: string,
+  status: SponsorStatus,
+): Promise<SponsorRecord> {
+  requireCapability(ctx, 'event:manage');
+  const existing = await requireSponsor(ctx, sponsorId);
+  const next = parse(sponsorStatusInput, status);
+  if (existing.status === next) return toRecord(existing);
+
+  const [updated] = await getDb()
+    .update(sponsor)
+    .set({ status: next })
+    .where(and(eq(sponsor.id, sponsorId), eq(sponsor.eventId, ctx.eventId)))
+    .returning();
   return toRecord(updated);
 }
 

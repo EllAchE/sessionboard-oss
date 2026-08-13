@@ -248,8 +248,8 @@ An organizer can:
   field library. All six are managed from the same settings surface.
 - Define room capacities and the values speakers or admins select on submissions and sessions.
 - Record sponsors and exhibitors with logos and a display order. Both appear on the public wall at
-  `/{slug}/sponsors`, grouped by tier in that order. A sponsor row has no draft state, so it is
-  public from the moment it is saved.
+  `/{slug}/sponsors`, grouped by tier in that order. New rows are drafts; an organizer explicitly
+  publishes or unpublishes each row from the sponsor board.
 - Switch between events when multi-event support is enabled.
 
 An organizer cannot currently set the speaker portal's own appearance — logo, accent colour, welcome
@@ -370,8 +370,9 @@ An organizer can:
 
 - Create and edit reusable email templates with merge fields.
 - Trigger submission confirmation, acceptance, waitlist, decline, task reminder, and draft-deadline
-  messages. Confirmation and decision notices fire from the action itself; the two reminder jobs run
-  on the scheduled-job route, which the deployment does not yet call on a timer.
+  messages. Confirmation and decision notices fire from the action itself; an hourly Cloudflare
+  Cron Trigger runs the two reminder jobs autonomously through the same scheduled-job route that a
+  self-hosted timer can call.
 - Send an ad hoc message to a filtered audience, such as all accepted speakers or everyone with an
   open task.
 - Reach speakers by SMS as well as email where a Twilio-style provider is configured. Templates

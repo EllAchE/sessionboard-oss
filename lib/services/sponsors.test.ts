@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { sponsor } from '../../db/schema';
 import type { AppError } from '../errors';
 import { isAppError } from '../errors';
 import type { EventContext } from '../context';
 import {
   createSponsor,
+  eventHasSponsors,
+  isPublicSponsorLogo,
   isSponsorKind,
+  listPublicSponsors,
   removeSponsor,
   reorderSponsors,
+  setSponsorStatus,
   sponsorInput,
   updateSponsor,
 } from './sponsors';
@@ -41,6 +46,8 @@ type Recorder = {
   updates: Array<{ table: unknown; values: Record<string, unknown> }>;
   inserts: Array<{ table: unknown; values: unknown }>;
   deletes: unknown[];
+  selectWheres: unknown[];
+  findFirstWheres: unknown[];
 };
 
 const state = vi.hoisted(() => ({ db: null as unknown }));
@@ -55,6 +62,8 @@ function recorder(): Recorder {
     updates: [],
     inserts: [],
     deletes: [],
+    selectWheres: [],
+    findFirstWheres: [],
   };
 }
 
@@ -68,7 +77,10 @@ function fakeDb(rec: Recorder) {
         table = next;
         return builder;
       },
-      where: () => builder,
+      where: (where: unknown) => {
+        rec.selectWheres.push(where);
+        return builder;
+      },
       orderBy: () => builder,
       then: (onOk: (value: unknown[]) => unknown, onErr?: (reason: unknown) => unknown) =>
         Promise.resolve(rec.rows.get(table) ?? []).then(onOk, onErr),
@@ -118,7 +130,8 @@ function fakeDb(rec: Recorder) {
     {},
     {
       get: (_target, name: string) => ({
-        findFirst: async () => {
+        findFirst: async (args?: { where?: unknown }) => {
+          if (args?.where) rec.findFirstWheres.push(args.where);
           const held = rec.findFirst.get(name);
           if (Array.isArray(held)) return held.shift() ?? null;
           return held ?? null;
@@ -155,7 +168,13 @@ async function rejection(work: Promise<unknown>): Promise<AppError> {
   throw new Error('expected the call to be refused');
 }
 
-const EXISTING = { id: 'sponsor-b', eventId: EVENT_ID, kind: 'sponsor', name: 'Fabrica Vitraria' };
+const EXISTING = {
+  id: 'sponsor-b',
+  eventId: EVENT_ID,
+  kind: 'sponsor',
+  status: 'draft',
+  name: 'Fabrica Vitraria',
+};
 
 const SPONSOR_ROWS = [
   { id: 'sponsor-a', position: 0 },
@@ -171,6 +190,12 @@ beforeEach(() => {
   rec.rows.set(sponsor, SPONSOR_ROWS);
   state.db = fakeDb(rec);
 });
+
+const dialect = new PgDialect();
+
+function compiled(where: unknown) {
+  return dialect.sqlToQuery(where as Parameters<PgDialect['sqlToQuery']>[0]);
+}
 
 describe('sponsorInput', () => {
   const valid = { kind: 'sponsor', name: 'Fabrica Vitraria' };
@@ -370,6 +395,72 @@ describe('updateSponsor', () => {
     );
     expect(error.code).toBe('forbidden');
     expect(rec.updates).toHaveLength(0);
+  });
+});
+
+describe('sponsor publication', () => {
+  it('creates rows as drafts unless an organizer explicitly publishes them', async () => {
+    rec.findFirst.set('sponsor', null);
+    rec.returning.set(sponsor, [
+      {
+        ...EXISTING,
+        id: 'sponsor-new',
+        name: 'Officina Ferraria',
+        status: 'draft',
+        position: 3,
+      },
+    ]);
+
+    const created = await createSponsor(context(), {
+      kind: 'sponsor',
+      name: 'Officina Ferraria',
+    });
+
+    expect(created.status).toBe('draft');
+    expect(rec.inserts[0].values).not.toHaveProperty('status');
+  });
+
+  it('lets an organizer publish and unpublish a row', async () => {
+    rec.findFirst.set('sponsor', [{ ...EXISTING, status: 'draft' }, { ...EXISTING, status: 'published' }]);
+    rec.returning.set(sponsor, [{ ...EXISTING, status: 'published', position: 1 }]);
+
+    const updated = await setSponsorStatus(context(), 'sponsor-b', 'published');
+
+    expect(updated.status).toBe('published');
+    expect(rec.updates).toContainEqual({ table: sponsor, values: { status: 'published' } });
+  });
+
+  it('does not let a reviewer change publication state', async () => {
+    const error = await rejection(setSponsorStatus(context(['reviewer']), 'sponsor-b', 'published'));
+    expect(error.code).toBe('forbidden');
+    expect(rec.updates).toHaveLength(0);
+  });
+
+  it('filters the public list and navigation presence check to published rows', async () => {
+    rec.rows.set(sponsor, []);
+    rec.findFirst.set('sponsor', null);
+
+    await listPublicSponsors(EVENT_ID);
+    await eventHasSponsors(EVENT_ID);
+
+    for (const where of [rec.selectWheres.at(-1), rec.findFirstWheres.at(-1)]) {
+      const query = compiled(where);
+      expect(query.sql).toMatch(/"sponsor"\."event_id" = \$\d+/);
+      expect(query.sql).toMatch(/"sponsor"\."status" = \$\d+/);
+      expect(query.params).toContain(EVENT_ID);
+      expect(query.params).toContain('published');
+    }
+  });
+
+  it('authorizes logo bytes only for a published row on the event', async () => {
+    rec.findFirst.set('sponsor', null);
+    const fileId = '3f1c9b52-7a4d-4e18-9c2b-5d6e8f0a1b23';
+
+    await isPublicSponsorLogo(EVENT_ID, fileId);
+
+    const query = compiled(rec.findFirstWheres.at(-1));
+    expect(query.sql).toMatch(/"sponsor"\."status" = \$\d+/);
+    expect(query.params).toEqual(expect.arrayContaining([EVENT_ID, 'published', fileId]));
   });
 });
 

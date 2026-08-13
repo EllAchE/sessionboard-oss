@@ -16,7 +16,7 @@ export default async function ProfilePage({
   const { eventSlug } = await params;
   const { me, ctx } = await portalSession(eventSlug);
   const [notifications, name] = await Promise.all([
-    getNotificationPrefs(ctx.actor.userId),
+    getNotificationPrefs(ctx.actor.userId, ctx.eventId),
     getProfileName(ctx.actor.userId),
   ]);
 

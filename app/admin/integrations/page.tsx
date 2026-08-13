@@ -5,7 +5,15 @@ import { env, features } from '@/lib/env';
 import { activeSmsTransportName } from '@/lib/sms';
 import { integrationContext } from './context';
 import { IntegrationsScreen } from './IntegrationsScreen';
-import type { AccelEventsPanel, AirtablePanel, ApiKeyRow, SmsPanel, SyncLogRow } from './types';
+import { listWebhookDeliveries, listWebhookEndpoints } from '@/lib/webhooks';
+import type {
+  AccelEventsPanel,
+  AirtablePanel,
+  ApiKeyRow,
+  SmsPanel,
+  SyncLogRow,
+  WebhookPanel,
+} from './types';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +28,19 @@ const ENTITY_LABEL: Record<airtable.AirtableEntityType, string> = {
 export default async function IntegrationsPage() {
   const ctx = await integrationContext();
 
-  const [keys, mode, speakers, accelLog, airtableStatus, airtableLog] = await Promise.all([
+  const [
+    keys,
+    webhookEndpoints,
+    webhookDeliveries,
+    mode,
+    speakers,
+    accelLog,
+    airtableStatus,
+    airtableLog,
+  ] = await Promise.all([
     listApiKeys(ctx.eventId),
+    listWebhookEndpoints(ctx.eventId),
+    listWebhookDeliveries(ctx.eventId),
     Promise.resolve(accelevents.accelEventsMode()),
     accelevents.listAcceptedSpeakers(ctx.eventId),
     accelevents.listSyncLog(ctx.eventId),
@@ -78,6 +97,7 @@ export default async function IntegrationsPage() {
     id: key.id,
     name: key.name,
     prefix: key.prefix,
+    scope: key.scope,
     lastUsedAt: key.lastUsedAt ? key.lastUsedAt.toISOString() : null,
     revokedAt: key.revokedAt ? key.revokedAt.toISOString() : null,
     createdAt: key.createdAt.toISOString(),
@@ -89,9 +109,21 @@ export default async function IntegrationsPage() {
     from: env('SMS_FROM') ?? null,
   };
 
+  const webhookPanel: WebhookPanel = {
+    endpoints: webhookEndpoints.map((endpoint) => ({
+      ...endpoint,
+      createdAt: endpoint.createdAt.toISOString(),
+    })),
+    deliveries: webhookDeliveries.map((delivery) => ({
+      ...delivery,
+      createdAt: delivery.createdAt.toISOString(),
+    })),
+  };
+
   return (
     <IntegrationsScreen
       keys={keyRows}
+      webhooks={webhookPanel}
       accelevents={accelPanel}
       airtable={airtablePanel}
       sms={smsPanel}

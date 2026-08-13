@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -25,6 +26,12 @@ const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull(
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
 
 export const membershipRole = pgEnum('membership_role', ['organizer', 'reviewer', 'speaker']);
+export const apiKeyScope = pgEnum('api_key_scope', ['read', 'write']);
+export const webhookDeliveryStatus = pgEnum('webhook_delivery_status', [
+  'queued',
+  'delivered',
+  'failed',
+]);
 export const formKind = pgEnum('form_kind', ['cfp', 'portal']);
 /**
  * `F-4`. Orthogonal to `kind`, which says what the form is *for*. This says what a completed
@@ -121,13 +128,21 @@ export const taskStatus = pgEnum('task_status', [
 ]);
 export const contentRevisionKind = pgEnum('content_revision_kind', ['session', 'participant']);
 export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
-export const smsStatus = pgEnum('sms_status', ['queued', 'sent', 'failed']);
+export const smsStatus = pgEnum('sms_status', [
+  'queued',
+  'sent',
+  'delivered',
+  'undelivered',
+  'failed',
+]);
+export const smsConsentStatus = pgEnum('sms_consent_status', ['opted_in', 'opted_out']);
 export const syncStatus = pgEnum('sync_status', ['pending', 'synced', 'failed']);
 export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
   'draft',
   'published',
   'cancelled',
 ]);
+export const sessionRecordingSource = pgEnum('session_recording_source', ['upload', 'external']);
 export const prospectStage = pgEnum('prospect_stage', [
   'researching',
   'identified',
@@ -169,6 +184,8 @@ export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
  * and link to buy nothing, and a company that is both would become two unrelated rows.
  */
 export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
+/** A sponsor is staged privately until an organizer explicitly puts it on public surfaces. */
+export const sponsorStatus = pgEnum('sponsor_status', ['draft', 'published']);
 
 // ---------------------------------------------------------------------------
 // Identity. Users are global; everything role-shaped is event-scoped through
@@ -176,25 +193,38 @@ export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
 // more — `E-8` (Sessionboard's permission grid) stays excluded.
 // ---------------------------------------------------------------------------
 
-export const user = pgTable('user', {
-  id: id(),
-  email: text('email').notNull().unique(),
-  /**
-   * The display name, kept as the single string every other surface already renders. `F-6` splits
-   * capture into `firstName` / `lastName`; this stays as their join so the roster, the agenda, the
-   * exports, the mail merge and the embeds keep reading one column instead of recomposing a name in
-   * a dozen places that would each get the edge cases wrong.
-   */
-  name: text('name'),
-  /** `F-6`. Nullable because a name imported as one string may have no surname to speak of. */
-  firstName: text('first_name'),
-  lastName: text('last_name'),
-  phone: text('phone'),
-  notifyEmail: boolean('notify_email').notNull().default(true),
-  notifySms: boolean('notify_sms').notNull().default(false),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const user = pgTable(
+  'user',
+  {
+    id: id(),
+    email: text('email').notNull().unique(),
+    /**
+     * The display name, kept as the single string every other surface already renders. `F-6` splits
+     * capture into `firstName` / `lastName`; this stays as their join so the roster, the agenda, the
+     * exports, the mail merge and the embeds keep reading one column instead of recomposing a name in
+     * a dozen places that would each get the edge cases wrong.
+     */
+    name: text('name'),
+    /** `F-6`. Nullable because a name imported as one string may have no surname to speak of. */
+    firstName: text('first_name'),
+    lastName: text('last_name'),
+    phone: text('phone'),
+    /** The current phone is not an SMS destination until an OTP bound to it has completed. */
+    phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
+    /** Log-mode proof is invalidated automatically if this deployment later enables Twilio. */
+    phoneVerificationTransport: text('phone_verification_transport'),
+    notifyEmail: boolean('notify_email').notNull().default(true),
+    notifySms: boolean('notify_sms').notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    phoneE164: check(
+      'user_phone_e164_check',
+      sql`${t.phone} is null or ${t.phone} ~ '^\\+[1-9][0-9]{7,14}$'`,
+    ),
+  }),
+);
 
 export const event = pgTable('event', {
   id: id(),
@@ -423,6 +453,7 @@ export const sponsor = pgTable(
       .notNull()
       .references(() => event.id, { onDelete: 'cascade' }),
     kind: sponsorKind('kind').notNull().default('sponsor'),
+    status: sponsorStatus('status').notNull().default('draft'),
     name: text('name').notNull(),
     /**
      * Free text rather than a second event-scoped list. Tiers are named differently at every
@@ -777,6 +808,8 @@ export const reviewRound = pgTable(
     name: text('name').notNull(),
     position: integer('position').notNull().default(0),
     status: reviewRoundStatus('status').notNull().default('draft'),
+    /** Tenths on the shared 1–5 scale; integer storage avoids floating-point boundary drift. */
+    decisionQueueBarTenths: integer('decision_queue_bar_tenths').notNull().default(30),
     /** Reviewers see each other's scores only once the round closes. */
     blindUntilClose: boolean('blind_until_close').notNull().default(true),
     /**
@@ -788,7 +821,13 @@ export const reviewRound = pgTable(
     closesAt: timestamp('closes_at', { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('review_round_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('review_round_event_idx').on(t.eventId),
+    decisionQueueBarRange: check(
+      'review_round_decision_queue_bar_range',
+      sql`${t.decisionQueueBarTenths} between 10 and 50`,
+    ),
+  }),
 );
 
 export const scorecardCriterion = pgTable(
@@ -987,6 +1026,40 @@ export const file = pgTable(
   (t) => ({
     byEvent: index('file_event_idx').on(t.eventId),
     byRoot: index('file_root_idx').on(t.rootFileId),
+  }),
+);
+
+/**
+ * A post-conference recording is deliberately separate from the agenda's publication state. An
+ * organizer may attach and review media while the programme remains public, then publish the
+ * recording only after the session has ended. Exactly one source is retained: either an
+ * event-scoped `file` row or a validated external HTTPS URL for recordings too large for the
+ * application's bounded upload path.
+ */
+export const sessionRecording = pgTable(
+  'session_recording',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => scheduledSession.id, { onDelete: 'cascade' }),
+    source: sessionRecordingSource('source').notNull(),
+    fileId: uuid('file_id').references(() => file.id, { onDelete: 'restrict' }),
+    externalUrl: text('external_url'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    onePerSession: unique('session_recording_session_unique').on(t.sessionId),
+    byEvent: index('session_recording_event_idx').on(t.eventId),
+    exactlyOneSource: check(
+      'session_recording_exactly_one_source',
+      sql`(${t.source} = 'upload' AND ${t.fileId} IS NOT NULL AND ${t.externalUrl} IS NULL) OR (${t.source} = 'external' AND ${t.fileId} IS NULL AND ${t.externalUrl} IS NOT NULL)`,
+    ),
   }),
 );
 
@@ -1263,9 +1336,124 @@ export const smsLog = pgTable(
     error: text('error'),
     providerMessageId: text('provider_message_id'),
     sentAt: timestamp('sent_at', { withTimezone: true }),
+    statusUpdatedAt: timestamp('status_updated_at', { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => ({ byEventCreated: index('sms_log_event_created_idx').on(t.eventId, t.createdAt) }),
+  (t) => ({
+    byEventCreated: index('sms_log_event_created_idx').on(t.eventId, t.createdAt),
+    byProviderMessage: index('sms_log_provider_message_idx').on(t.providerMessageId),
+  }),
+);
+
+/** Current permission for a destination. STOP may arrive before Cicero can resolve an account. */
+export const smsConsent = pgTable('sms_consent', {
+  phone: text('phone').primaryKey(),
+  status: smsConsentStatus('status').notNull(),
+  source: text('source').notNull(),
+  consentedAt: timestamp('consented_at', { withTimezone: true }),
+  optedOutAt: timestamp('opted_out_at', { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+/** Short-lived proof that the signed-in account controls one exact E.164 destination. */
+export const phoneVerificationChallenge = pgTable(
+  'phone_verification_challenge',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    phone: text('phone').notNull(),
+    codeHash: text('code_hash').notNull(),
+    deliveryTransport: text('delivery_transport').notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byUserCreated: index('phone_verification_user_created_idx').on(t.userId, t.createdAt),
+    validTransport: check(
+      'phone_verification_transport_check',
+      sql`${t.deliveryTransport} in ('log', 'twilio')`,
+    ),
+  }),
+);
+
+/**
+ * Recipient-owned delivery rules. `scopeKey` is either `global` or the event UUID and makes the
+ * global row unique even though PostgreSQL normally treats two null event ids as distinct.
+ * `templateKey` is `*` for channel/delivery defaults or a category (`submission`, `session`,
+ * `task`, `form`, `adhoc`) for the AR-16 opt-out.
+ */
+export const notificationPreference = pgTable(
+  'notification_preference',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'cascade' }),
+    scopeKey: text('scope_key').notNull(),
+    templateKey: text('template_key').notNull().default('*'),
+    notifyEmail: boolean('notify_email'),
+    notifySms: boolean('notify_sms'),
+    timezone: text('timezone'),
+    quietStartMinute: integer('quiet_start_minute'),
+    quietEndMinute: integer('quiet_end_minute'),
+    smsHourlyLimit: integer('sms_hourly_limit'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    uniqueRule: unique('notification_preference_user_scope_template').on(
+      t.userId,
+      t.scopeKey,
+      t.templateKey,
+    ),
+    byEvent: index('notification_preference_event_idx').on(t.eventId),
+    validScope: check(
+      'notification_preference_scope_check',
+      sql`(${t.scopeKey} = 'global' and ${t.eventId} is null) or ${t.scopeKey} = ${t.eventId}::text`,
+    ),
+    validQuietStart: check(
+      'notification_preference_quiet_start_check',
+      sql`${t.quietStartMinute} is null or (${t.quietStartMinute} between 0 and 1439)`,
+    ),
+    validQuietEnd: check(
+      'notification_preference_quiet_end_check',
+      sql`${t.quietEndMinute} is null or (${t.quietEndMinute} between 0 and 1439)`,
+    ),
+    completeQuietWindow: check(
+      'notification_preference_quiet_window_check',
+      sql`(${t.quietStartMinute} is null) = (${t.quietEndMinute} is null)`,
+    ),
+    validRate: check(
+      'notification_preference_sms_rate_check',
+      sql`${t.smsHourlyLimit} is null or (${t.smsHourlyLimit} between 1 and 100)`,
+    ),
+  }),
+);
+
+/** A one-click email action stores only the digest; the bearer token exists in the email alone. */
+export const unsubscribeToken = pgTable(
+  'unsubscribe_token',
+  {
+    id: id(),
+    tokenHash: text('token_hash').notNull().unique(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    templateKey: text('template_key').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byTokenHash: index('unsubscribe_token_hash_idx').on(t.tokenHash) }),
 );
 
 // ---------------------------------------------------------------------------
@@ -1280,6 +1468,8 @@ export const apiKey = pgTable(
       .notNull()
       .references(() => event.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    /** `write` includes reads. Existing unscoped keys migrate to `write` to avoid a silent outage. */
+    scope: apiKeyScope('scope').notNull().default('write'),
     prefix: text('prefix').notNull(),
     keyHash: text('key_hash').notNull(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
@@ -1287,6 +1477,75 @@ export const apiKey = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ byPrefix: index('api_key_prefix_idx').on(t.prefix) }),
+);
+
+/**
+ * One current fixed-window counter per caller identity. The row count is bounded per observed
+ * identity rather than per request, and the upsert in `lib/rate-limit.ts` makes increments atomic
+ * across Worker isolates and self-hosted processes. Operators may prune rows whose `updatedAt` is
+ * older than their longest policy window; deletion is safe because the next request recreates one.
+ */
+export const inboundRateLimit = pgTable('inbound_rate_limit', {
+  keyHash: text('key_hash').primaryKey(),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull(),
+  requestCount: integer('request_count').notNull().default(1),
+  updatedAt: updatedAt(),
+});
+
+export type WebhookEventType =
+  | 'submission.received'
+  | 'submission.decision_made'
+  | 'session.scheduled';
+
+export const webhookEndpoint = pgTable(
+  'webhook_endpoint',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    url: text('url').notNull(),
+    /** Required to sign deliveries, and never returned after the create response. */
+    signingSecret: text('signing_secret').notNull(),
+    secretPrefix: text('secret_prefix').notNull(),
+    eventTypes: jsonb('event_types').$type<WebhookEventType[]>().notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    byEvent: index('webhook_endpoint_event_idx').on(t.eventId),
+    uniqueUrl: unique('webhook_endpoint_event_url').on(t.eventId, t.url),
+  }),
+);
+
+export const webhookDelivery = pgTable(
+  'webhook_delivery',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    endpointId: uuid('endpoint_id')
+      .notNull()
+      .references(() => webhookEndpoint.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').$type<WebhookEventType>().notNull(),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    status: webhookDeliveryStatus('status').notNull().default('queued'),
+    attempts: integer('attempts').notNull().default(0),
+    responseStatus: integer('response_status'),
+    error: text('error'),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byEventCreated: index('webhook_delivery_event_created_idx').on(t.eventId, t.createdAt),
+    byEndpointCreated: index('webhook_delivery_endpoint_created_idx').on(
+      t.endpointId,
+      t.createdAt,
+    ),
+  }),
 );
 
 export const accelevantsSync = pgTable(

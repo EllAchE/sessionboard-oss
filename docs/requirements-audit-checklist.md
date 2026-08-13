@@ -14,11 +14,10 @@ the scrollable source of truth for what is complete and what still needs work.
 - What was checked this run: schema and all thirteen migrations, service layer, organizer and speaker
   UI, the public CFP flow, the `/api/v1` contract and generated OpenAPI, mail transports and ICS
   generation, `wrangler.jsonc`, and the full test suite.
-- **The live deployment was not reachable from the audit host.** `cicero.lhar8771.workers.dev` does
-  not resolve from this machine (`getent hosts` returns nothing; all five sampled paths fail to
-  connect), the same DNS gap [`performance-benchmark.md`](performance-benchmark.md) records. The
-  previous audit's HTTP 200 result on those five routes is therefore **not** re-verified here; where
-  a row depends on the deployment being reachable, it says so.
+- **The live deployment URL was corrected and re-verified on 2026-08-13.** Cloudflare reports the
+  account subdomain as `elehche`, not `lhar8771`; the Worker is live at
+  `cicero.elehche.workers.dev`. The home page, seeded demo agenda, and OpenAPI return HTTP 200. The
+  First Settlement routes remain unseeded and return 404, as the demo runbook records.
 - Uncommitted changes and unmerged branches were not credited.
 
 | Priority | Complete | Partial | Outstanding | Excluded | Total |
@@ -67,9 +66,8 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **D-2 · R · COMPLETE — Public open-source repository.** The source is public at
   `EllAchE/sessionboard-oss`.
 - [x] **D-3 · R · COMPLETE — Deployed, live, testable site.** Workers deployment and configuration
-  are present and were reachable at the 2026-08-12 audit. **Not re-verified on this run** — the
-  audit host has no DNS route to `cicero.lhar8771.workers.dev`, which is a limitation of this
-  machine and not evidence that the deployment is down.
+  are present. Re-verified on 2026-08-13 at the corrected hostname: the home page and public demo
+  agenda both return HTTP 200.
 - [ ] **D-4 · R · OUTSTANDING — Deliver by Wed Aug 12, 10:00 PM PT.** The stated deadline has passed
   as of this audit. The submission window is reported to still be open; that report is recorded here
   as a fact and not interpreted. No competition-delivery evidence is stored in the repository.
@@ -99,10 +97,10 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   with a `sponsor_kind` enum of `sponsor`/`exhibitor`, and organizer CRUD is complete: list, create,
   edit, remove, drag reorder, logo upload and serve, all capability-gated. The public wall at
   `/{slug}/sponsors` groups both kinds by tier in the organizer's order, behind a nav tab that only
-  appears for events that have rows, and serves logos from an unauthenticated route that proves
-  access structurally — the file id must currently occupy a sponsor logo slot on that event. There is
-  still no embed widget or `/api/v1` exposure, and **a sponsor row has no published column**, so it
-  is public as soon as it is saved; both are recorded under [Follow-ups](#follow-ups).
+  appears for events that have published rows. New rows are drafts until an organizer toggles them
+  published; returning one to draft removes it from the wall, navigation, sponsor embed,
+  `GET /api/v1/events/{slug}/sponsors`, and the structural logo-serving predicate. The migration
+  preserves already-public legacy rows while retaining a draft default for every new row.
 - [x] **E-8 · X · EXCLUDED — Event-team permission grid.** Explicitly outside the requested scope.
 
 ## 3. Call-for-speakers forms
@@ -119,12 +117,15 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **F-4 · R · COMPLETE — Abstract/session target and participant toggle.** Migration `0008` adds
   a `form_target_type` enum (`abstract`/`session`) and a `collects_participants` flag, both exposed
   in the builder. Turning participants off removes the participant stage from the public flow, and
-  the API rejects participants on a form that does not collect them.
+  the API rejects participants on a form that does not collect them. Turning the stage on now seeds
+  the permissive default role set when an existing form has none, including when the form is already
+  open; migration `0018` repairs any enabled empty role sets already stored.
 - [x] **F-5 · R · COMPLETE — Complete abstract field set and constraints.** The six built-ins carry
   the brief's exact constraints — Title 255, Description 5,000 markdown, Format/Track/Tags required,
   Level optional — as shared constants that are written onto the rows, enforced at submit time, and
-  clamped if an organizer tries to raise them. Fields remain drag-reorderable with an independent
-  required toggle.
+  clamped if an organizer tries to raise them. Migration `0018` fills missing caps and clamps only
+  over-limit legacy Title/Description rows while preserving any tighter organizer choice. Fields
+  remain drag-reorderable with an independent required toggle.
 - [x] **F-6 · R · COMPLETE — Complete participant field set.** First name, last name, and email are
   locked-required; mobile phone and a 5,000-character markdown biography are toggleable. `user.name`
   is split into `first_name`/`last_name` (migration `0008`, backfilled) and `name` is kept as the
@@ -242,8 +243,8 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **V-1 · R · COMPLETE — Exact submission status tabs.** All eight named tabs exist — All,
   Accepted, Accept Queue, Pending, Decline Queue, Declined, Withdrawn, Drafts — plus Waitlist. The
   two queues are **derived and staged**, in that order. By default a submission enters one once every
-  assigned reviewer has answered and its average score falls above or below a fixed midpoint bar, so
-  the queues fill without anyone curating them. On top of that an organizer stages by hand, and a
+  assigned reviewer has answered and its average score falls above or below that round's organizer-
+  configurable 1.0–5.0 bar, so the queues fill without anyone curating them. On top of that an organizer stages by hand, and a
   hand stage wins over the average: `submission.staged_decision` holds `accept`, `decline` or `hold`,
   event-wide rather than per-user so a co-chair reads the same batch. Clearing it returns the row to
   the derived reading rather than to nothing; `hold` is how a row leaves a queue the average put it
@@ -294,10 +295,9 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   action now sends notices: it notifies only rows that genuinely transitioned, skips a reset, and
   isolates failures per recipient, with acceptance, decline, and a new waitlist template all mapped.
   Confirmation, organizer notification, calendar invite and cancellation, task reminders, and
-  draft-deadline reminders are all wired and tested. One deployment caveat: the two *scheduled*
-  senders run through the cron job route, and `wrangler.jsonc` declares no `triggers`/`crons` block,
-  so on the deployed instance reminders fire only when that route is called or an organizer presses
-  the button. Everything else is event-driven and unaffected.
+  draft-deadline reminders are all wired and tested. The two scheduled senders run autonomously
+  from an hourly Cloudflare Cron Trigger through the same idempotent route available to self-hosted
+  timers. Everything else is event-driven and unaffected.
 - [ ] **C-3 · R · PARTIAL — Calendar invites delivered to speakers' calendars.** The ICS itself is now
   fully correct and pinned by golden-byte tests: `METHOD:REQUEST` with real organizer and attendees,
   a stable UID with a `SEQUENCE` that increments only when an invite was already sent, RFC 5545
@@ -417,49 +417,27 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 Discovered during this audit. None of these blocks a row above on its own, and none is a
 requirement the brief states — they are recorded here so they are not lost.
 
-**Security — highest priority of this list.** The reviewer-invite server action still returns the
-raw magic link to the organizer's UI when a send *fails*
-(`app/admin/submissions/rounds/actions.ts`, `activeTransportName() === 'log' || !invited.delivered`).
-This is the same class of bypass that was deliberately removed from the sign-in path, on a surface
-the removal did not touch. It is latent today because the deployed instance is on the log transport,
-but it becomes live the moment `T-6` is switched on — and with the current shared test sender,
-Resend rejects every non-owner recipient, so `delivered` would be `false` for *every* invite. The
-invite path creates an account for an arbitrary typed address, so the leaked link is a session as
-that address. **Not fixed here — this audit owns `docs/` only.**
+~~**Security — reviewer invite failure leaked a magic link.**~~ Fixed in `ad61df8`: the action now
+uses `magicLinkMayBeShown`, never treats provider failure as permission, and has focused action tests
+covering real recipients, the log transport, and seeded demo identities.
 
-- **`V-1` staging bar is still fixed.** Hand staging exists now — `submission.staged_decision`, and
-  it beats the score — so an organizer can put any undecided proposal in either queue, hold one out,
-  and commit the batch. What is still hardcoded is the *bar*: the derived reading uses the midpoint
-  of the 1–5 scale, and an organizer cannot tune it per event. Everything staged by hand routes
-  around that, so it is a convenience gap rather than a capability one.
-- **Per-session task reminders may be chattier than intended.** Reminders iterate per *assignment*,
-  and a submission-scoped task (`S-16`) creates one assignment per accepted session. A speaker with
-  three accepted sessions receives three reminder emails for one task. Correct by the data model,
-  probably not what an organizer expects.
-- **No `published` column on `sponsor` (`E-7`).** The public wall now exists, and every other public
-  surface in the app is gated by an explicit state column — `scheduled_session.status`,
-  `submission.content_status`, `participant.workflow_status`. A sponsor row has none, so saving one
-  publishes it, and an organizer who wants to stage a wall before an announcement cannot. The admin
-  page says so before they type, which is the honest interim answer, not a substitute for the column.
-  Adding it is a migration plus a filter in `listPublicSponsors`, the same filter in
-  `eventHasSponsors` and `isPublicSponsorLogo` so an unpublished sponsor's logo stops being servable,
-  and a toggle on the board.
-- **No sponsor embed widget or `/api/v1` exposure (`E-7`).** The wall is a microsite page only.
-  `app/embed/**` has no sponsor view, so a sponsor block cannot be iframed onto an organizer's own
-  site the way the agenda and speaker directory can.
+- ~~**`V-1` staging bar is still fixed.**~~ Closed: each review round now stores a 1.0–5.0 queue bar
+  in tenths and exposes it beside the round settings. Completed panel averages at or above that bar
+  enter the accept queue; lower averages enter decline, while hand staging continues to win.
+- ~~**Per-session task reminders may be chattier than intended.**~~ Resolved. Reminder assignments
+  are grouped by person and task, so one message names every session where the task remains
+  outstanding; every included assignment is stamped together to preserve the cadence.
 - ~~**`S-17` form-builder target.**~~ Withdrawn. Declaring the contact/group/submission triple on the
   form as well as on the task would make a reusable form single-use and create a disagreement with no
   correct resolution. See the `S-17` row.
-- **No `crons` trigger in `wrangler.jsonc`.** Task reminders and draft-deadline reminders are
-  implemented and correct but are only dispatched by an external call to the cron route or an
-  organizer pressing the button. A scheduled trigger would make them autonomous on the deployment.
-- **`F-5` caps are not backfilled onto pre-`0008` rows.** Migration `0008` inserts *missing* fields
-  but does not write the 255/5,000 limits onto title and description rows that already existed, so an
-  upgraded database keeps `max_length = NULL` on those two until an organizer edits the field. New
-  forms are correct.
-- **`F-4` participants toggle on a live form.** Turning `collectsParticipants` on for an already
-  published form does not seed the default roles, producing a participant stage where nobody can be
-  added until the form is republished.
+- ~~**No `crons` trigger in `wrangler.jsonc`.**~~ Resolved. `custom-worker.ts` preserves OpenNext's
+  generated fetch handler and adds a scheduled handler, while `wrangler.jsonc` runs it hourly. The
+  handler calls `/api/cron` in-process so Hyperdrive still receives OpenNext's request context.
+- ~~**`F-5` caps are not backfilled onto pre-`0008` rows.**~~ Resolved. Migration `0018` fills or
+  clamps only the legacy CFP title/description built-ins, preserving any tighter organizer limit.
+- ~~**`F-4` participants toggle on a live form.**~~ Resolved. Enabling participants seeds the
+  default roles only when the form has none, and the upgrade migration repairs already-enabled CFP
+  forms without replacing an organizer's configured role set.
 
 ## Verification evidence
 
@@ -474,8 +452,8 @@ that address. **Not fixed here — this audit owns `docs/` only.**
 - `bun run bench`: not re-run for this audit; the captured numbers in
   [`performance-benchmark.md`](performance-benchmark.md) are read as evidence for `Z-4` rather than
   reproduced.
-- **The live deployment was not health-checked.** `cicero.lhar8771.workers.dev` does not resolve from
-  the audit host, so all five sampled paths failed to connect. This is a limitation of the machine,
-  not a finding about the deployment; `D-3` and `T-2` rest on the previous audit's check and say so.
+- **The live deployment was health-checked again on 2026-08-13.** The corrected hostname resolves,
+  and the home page, public demo agenda, and generated OpenAPI return HTTP 200. The Roman demo is
+  still not seeded in production and its sampled public routes return 404.
 - Real outbound mail and a real Accelevents account were not available, so `T-6` and `N-1c` remain
   judged on configuration and code rather than inferred from interfaces or mocks.
