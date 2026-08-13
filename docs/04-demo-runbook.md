@@ -108,9 +108,19 @@ approving this runbook does not approve any of them.
 | Real Accelevents push | The named Accelevents event and the accepted speakers that will be created or treated as already present |
 
 Never run the full `npm run db:seed` against production. The full seed removes and recreates known
-demo identities and their events. A targeted First Settlement dry-run/apply command is being
-prepared in a separate PR; use it only after review, merge, and separate production approval.
-Database migrations remain a human-run operation and are not part of this demo.
+demo identities and their events. The targeted seed is proposed in
+[`PR #50`](https://github.com/EllAchE/sessionboard-oss/pull/50), which was open, ready, mergeable,
+and green when this runbook was written. After review and merge, its commands are:
+
+```bash
+bun run db:seed:first-settlement
+bun run db:seed:first-settlement --apply --confirm=first-settlement
+```
+
+The first command is a dry-run. The second creates or replaces only the named Roman fixture, but it
+still requires separate production approval and an explicit `DATABASE_URL`; the PR is not deployed
+merely because it is green. Database migrations remain a human-run operation and are not part of
+this demo.
 
 ## Run of show
 
@@ -613,8 +623,10 @@ The runbook remains honest while sibling work is landing. Before declaring the d
 - [ ] Confirm the official skill matches the final inbound contract and retains its missing-OpenAPI
       fallback.
 - [ ] Record the production revision and exact merge/deploy approvals.
-- [ ] Link the targeted, idempotent First Settlement seed PR and its reviewed dry-run/apply commands.
-      Never replace it with full `db:seed`.
+- [ ] Confirm [PR #50](https://github.com/EllAchE/sessionboard-oss/pull/50) is reviewed and merged,
+      then use its dry-run `bun run db:seed:first-settlement` and separately approved apply
+      `bun run db:seed:first-settlement --apply --confirm=first-settlement`. Never replace it with
+      full `db:seed`, and do not imply merge means deployment.
 - [ ] Obtain separate approval, run the targeted seed, and verify every First Settlement URL before
       changing “not live” to “live.”
 - [ ] Create/revoke the event-scoped demo key under separate approval and retest without printing it.
