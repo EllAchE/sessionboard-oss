@@ -7,8 +7,12 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
   return handle(async () => {
     const { slug } = await context.params;
     const event = await requireEvent(slug);
-    const sessions = await listSessions(event.id, { status: 'published' });
-    const { days, unscheduled } = groupByDay(sessions, event.timezone);
+    const sessions = await listSessions(
+      event.id,
+      { status: 'published' },
+      { paginate: false },
+    );
+    const { days, unscheduled } = groupByDay(sessions.data, event.timezone);
 
     return json({ event: toEventPayload(event), days, unscheduled }, { headers: PUBLIC_CACHE });
   });

@@ -116,12 +116,51 @@ export const submissionSchema = z
   .describe('A CFP submission. Requires an API key.');
 
 const queryFilter = z.string().trim().min(1).max(120);
+const listLimit = z
+  .preprocess(
+    (value) => (typeof value === 'string' && /^[1-9]\d{0,2}$/.test(value) ? Number(value) : value),
+    z.number().int().min(1).max(200),
+  )
+  .optional()
+  .describe('Defaults to 100; maximum 200');
+const listOffset = z
+  .preprocess(
+    (value) => (typeof value === 'string' && /^(?:0|[1-9]\d*)$/.test(value) ? Number(value) : value),
+    z.number().int().min(0).max(10_000),
+  )
+  .optional()
+  .describe('Zero-based result offset; defaults to 0');
 
 export const sessionListQuery = z
   .object({
     status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
+    q: queryFilter.optional().describe('Search title, description, taxonomy, and speaker names'),
     track: queryFilter.optional().describe('Track name or id'),
     room: queryFilter.optional().describe('Room name or id'),
+    format: queryFilter.optional().describe('Session format name'),
+    speaker: queryFilter.optional().describe('Speaker name or participant id'),
+    startsAfter: z
+      .string()
+      .datetime({ offset: true })
+      .optional()
+      .describe('Keep sessions starting at or after this ISO 8601 instant'),
+    startsBefore: z
+      .string()
+      .datetime({ offset: true })
+      .optional()
+      .describe('Keep sessions starting before this ISO 8601 instant'),
+    limit: listLimit,
+    offset: listOffset,
+  })
+  .strict();
+
+export const speakerListQuery = z
+  .object({
+    q: queryFilter.optional().describe('Search name, biography, company, role, links, and sessions'),
+    company: queryFilter.optional().describe('Company name'),
+    session: queryFilter.optional().describe('Session title or id'),
+    limit: listLimit,
+    offset: listOffset,
   })
   .strict();
 
@@ -130,14 +169,7 @@ export const submissionListQuery = z
     status: z
       .enum(['draft', 'submitted', 'under_review', 'accepted', 'declined', 'waitlisted', 'withdrawn'])
       .optional(),
-    limit: z
-      .preprocess(
-        (value) =>
-          typeof value === 'string' && /^[1-9]\d{0,2}$/.test(value) ? Number(value) : value,
-        z.number().int().min(1).max(200),
-      )
-      .optional()
-      .describe('Defaults to 100'),
+    limit: listLimit,
   })
   .strict();
 
@@ -172,8 +204,16 @@ const speakerNameInput = z.string().transform((value, context) => {
 
 export const createSubmissionBody = z
   .object({
-    email: z.string().email().describe('Submitter email; an account is created if none exists'),
+    email: z
+      .string()
+      .email()
+      .optional()
+      .describe('Optional consistency check; when present it must match the signed-in speaker'),
     name: speakerNameInput.optional().describe('Submitter display name'),
+    mode: z
+      .enum(['draft', 'submit'])
+      .default('submit')
+      .describe('Save a private draft or file the proposal for review'),
     answers: answers.describe(
       'Keyed by the form field key. Built-in keys are title, description, format, track, level, tags.',
     ),
@@ -187,6 +227,189 @@ export const createSubmissionResponse = z.object({
   status: z.enum(['draft', 'submitted']),
   title: z.string(),
 });
+
+const conditionSchema = z.object({
+  fieldId: z.string(),
+  op: z.enum(['eq', 'neq', 'includes', 'gt', 'lt', 'is_empty', 'not_empty']),
+  value: z.union([z.string(), z.number()]).optional(),
+});
+
+export const formFieldSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  builtinKey: z.enum(['title', 'description', 'format', 'track', 'level', 'tags']).nullable(),
+  type: z.enum([
+    'short_text',
+    'long_text',
+    'markdown',
+    'select',
+    'multi_select',
+    'radio',
+    'checkbox',
+    'number',
+    'email',
+    'url',
+    'date',
+    'file',
+    'section_break',
+  ]),
+  label: z.string(),
+  helpText: z.string().nullable(),
+  placeholder: z.string().nullable(),
+  position: z.number().int(),
+  step: z.number().int(),
+  required: z.boolean(),
+  options: z.array(z.string()).nullable(),
+  optionLabels: z.record(z.string()).nullable(),
+  showIf: conditionSchema.nullable(),
+  minLength: z.number().int().nullable(),
+  maxLength: z.number().int().nullable(),
+  charLimitGroup: z.string().nullable(),
+});
+
+export const openCallSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  closesAt: z.string().nullable().describe('ISO 8601'),
+});
+
+export const publicFormSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  introMarkdown: z.string().nullable(),
+  opensAt: z.string().nullable().describe('ISO 8601'),
+  closesAt: z.string().nullable().describe('ISO 8601'),
+  allowDrafts: z.boolean(),
+  maxSubmissionsPerUser: z.number().int().nullable(),
+  fields: z.array(formFieldSchema),
+});
+
+export const mySubmissionSchema = z.object({
+  id: z.string(),
+  ref: z.string(),
+  title: z.string(),
+  descriptionMarkdown: z.string().nullable(),
+  status: z.enum([
+    'draft',
+    'submitted',
+    'under_review',
+    'accepted',
+    'declined',
+    'waitlisted',
+    'withdrawn',
+  ]),
+  level: z.string().nullable(),
+  format: z.string().nullable(),
+  track: z.string().nullable(),
+  formId: z.string(),
+  formSlug: z.string(),
+  formName: z.string(),
+  editable: z.boolean(),
+  role: z.enum(['speaker', 'co_speaker', 'moderator', 'panelist']),
+  isPrimary: z.boolean(),
+  answers: answers,
+  submittedAt: z.string().nullable().describe('ISO 8601'),
+  scheduled: z
+    .object({
+      ref: z.string(),
+      title: z.string(),
+      startsAt: z.string().nullable().describe('ISO 8601'),
+      endsAt: z.string().nullable().describe('ISO 8601'),
+      room: z.string().nullable(),
+      published: z.boolean(),
+    })
+    .nullable(),
+});
+
+export const updateMySubmissionBody = z
+  .object({
+    title: z.string().trim().min(3).max(255),
+    descriptionMarkdown: z.string().max(5_000).optional(),
+    level: z.string().trim().max(60).optional(),
+    answers: answers.optional(),
+  })
+  .strict();
+
+const profileLinkSchema = z.object({
+  label: z.string().trim().min(1).max(60),
+  url: z.string().trim().min(1).max(2_000),
+});
+
+export const speakerProfileSchema = z.object({
+  displayName: z.string().nullable(),
+  pronouns: z.string().nullable(),
+  jobTitle: z.string().nullable(),
+  company: z.string().nullable(),
+  bioMarkdown: z.string().nullable(),
+  timezone: z.string().nullable(),
+  dietaryNotes: z.string().nullable(),
+  accessibilityNotes: z.string().nullable(),
+  links: z.array(profileLinkSchema),
+  email: z.string().email(),
+  phone: z.string().nullable(),
+  notifyEmail: z.boolean(),
+  notifySms: z.boolean(),
+});
+
+export const updateSpeakerProfileBody = z
+  .object({
+    displayName: z.string().max(200).optional(),
+    pronouns: z.string().max(40).optional(),
+    jobTitle: z.string().max(120).optional(),
+    company: z.string().max(120).optional(),
+    bioMarkdown: z.string().max(5_000).optional(),
+    timezone: z.string().max(64).optional(),
+    dietaryNotes: z.string().max(1_000).optional(),
+    accessibilityNotes: z.string().max(1_000).optional(),
+    links: z.array(profileLinkSchema).max(8).optional(),
+    phone: z.string().max(32).optional(),
+    notifyEmail: z.boolean().optional(),
+    notifySms: z.boolean().optional(),
+  })
+  .strict();
+
+export const speakerTaskSchema = z.object({
+  assignmentId: z.string(),
+  name: z.string(),
+  descriptionMarkdown: z.string().nullable(),
+  kind: z.enum(['form', 'file_upload', 'acknowledge', 'link']),
+  status: z.enum(['not_started', 'in_progress', 'completed', 'waived']),
+  required: z.boolean(),
+  dueAt: z.string().nullable().describe('ISO 8601'),
+  overdue: z.boolean(),
+  completedAt: z.string().nullable().describe('ISO 8601'),
+  linkUrl: z.string().nullable(),
+  submissionId: z.string().nullable(),
+  submissionTitle: z.string().nullable(),
+  answers: answers.nullable(),
+  form: z
+    .object({ id: z.string(), name: z.string(), fields: z.array(formFieldSchema) })
+    .nullable(),
+  fileRequest: z
+    .object({
+      id: z.string(),
+      label: z.string(),
+      helpText: z.string().nullable(),
+      acceptedTypes: z.array(z.string()),
+      maxSizeMb: z.number().int(),
+      allowMultiple: z.boolean(),
+    })
+    .nullable(),
+  files: z.array(
+    z.object({
+      id: z.string(),
+      filename: z.string(),
+      contentType: z.string(),
+      sizeBytes: z.number().int(),
+      createdAt: z.string().describe('ISO 8601'),
+    }),
+  ),
+});
+
+export const taskFormBody = z
+  .object({ answers, submit: z.boolean().default(true) })
+  .strict();
 
 export const programSessionInputSchema = z.object({
   externalId: z
