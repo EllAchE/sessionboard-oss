@@ -30,6 +30,10 @@ export type RuntimeForm = {
   maxSubmissionsPerUser: number | null;
 };
 
+export function submitFormStateKey(submissionId: string | null): string {
+  return submissionId ? `draft:${submissionId}` : 'new';
+}
+
 export function submitPath(eventSlug: string, formSlug: string): string {
   return `/submit/${eventSlug}/${formSlug}`;
 }
