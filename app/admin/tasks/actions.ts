@@ -18,6 +18,7 @@ export type TaskFormInput = {
   descriptionMarkdown: string;
   kind: tasks.TaskKind;
   audience: tasks.TaskAudience;
+  participantIds: string[];
   dueAt: string;
   required: boolean;
   linkUrl: string;
@@ -69,6 +70,7 @@ function toServiceInput(input: TaskFormInput): tasks.TaskInput {
     descriptionMarkdown: input.descriptionMarkdown,
     kind: input.kind,
     audience: input.audience,
+    participantIds: input.participantIds,
     dueAt: due,
     required: input.required,
     linkUrl: input.linkUrl,

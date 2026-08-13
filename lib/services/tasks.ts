@@ -716,6 +716,7 @@ export type TaskInput = {
   descriptionMarkdown?: string | null;
   kind: TaskKind;
   audience: TaskAudience;
+  participantIds?: string[];
   dueAt?: Date | null;
   required?: boolean;
   linkUrl?: string | null;
@@ -725,6 +726,7 @@ export type TaskInput = {
 
 function normalizeTaskInput(input: TaskInput): TaskInput {
   const name = input.name.trim();
+  const participantIds = [...new Set(input.participantIds?.filter(Boolean) ?? [])];
   if (!name) throw invalid('Give the task a name');
   if (input.kind === 'link' && !input.linkUrl?.trim()) {
     throw invalid('A link task needs the URL the speaker should open');
@@ -732,9 +734,13 @@ function normalizeTaskInput(input: TaskInput): TaskInput {
   if (input.kind === 'form' && !input.formId) {
     throw invalid('A form task needs a portal form to point at');
   }
+  if (input.audience === 'manual' && participantIds.length === 0) {
+    throw invalid('Choose at least one speaker for this task');
+  }
   return {
     ...input,
     name,
+    participantIds: input.audience === 'manual' ? participantIds : [],
     descriptionMarkdown: input.descriptionMarkdown?.trim() || null,
     linkUrl: input.kind === 'link' ? (input.linkUrl?.trim() ?? null) : null,
     formId: input.kind === 'form' ? (input.formId ?? null) : null,
@@ -757,6 +763,115 @@ async function fanOutAssignments(eventId: string): Promise<void> {
   await Promise.all(participants.map((row) => ensureAssignments(eventId, row.id)));
 }
 
+type AssignmentTarget = { participantId: string; submissionId: string | null };
+
+async function assignmentTargets(eventId: string, input: TaskInput): Promise<AssignmentTarget[]> {
+  const db = getDb();
+  const [participants, accepted] = await Promise.all([
+    db.select({ id: participant.id }).from(participant).where(eq(participant.eventId, eventId)),
+    db
+      .select({
+        participantId: participantRole.participantId,
+        submissionId: submission.id,
+      })
+      .from(participantRole)
+      .innerJoin(submission, eq(submission.id, participantRole.submissionId))
+      .where(and(eq(submission.eventId, eventId), eq(submission.status, 'accepted'))),
+  ]);
+
+  const eventParticipantIds = new Set(participants.map((row) => row.id));
+  const selectedIds = input.participantIds ?? [];
+  if (input.audience === 'manual' && selectedIds.some((id) => !eventParticipantIds.has(id))) {
+    throw invalid('Every selected speaker must belong to this event');
+  }
+
+  const acceptedSubmissionByParticipant = new Map<string, string>();
+  for (const row of accepted) {
+    if (
+      eventParticipantIds.has(row.participantId) &&
+      !acceptedSubmissionByParticipant.has(row.participantId)
+    ) {
+      acceptedSubmissionByParticipant.set(row.participantId, row.submissionId);
+    }
+  }
+
+  const targetIds =
+    input.audience === 'all_participants'
+      ? participants.map((row) => row.id)
+      : input.audience === 'accepted_participants'
+        ? [...acceptedSubmissionByParticipant.keys()]
+        : selectedIds;
+
+  return targetIds.map((participantId) => ({
+    participantId,
+    submissionId:
+      input.audience === 'manual'
+        ? null
+        : (acceptedSubmissionByParticipant.get(participantId) ?? null),
+  }));
+}
+
+function assignmentMembershipChanges(
+  existing: Array<{ id: string; participantId: string; submissionId: string | null }>,
+  targets: AssignmentTarget[],
+): {
+  removeIds: string[];
+  additions: AssignmentTarget[];
+  updates: Array<{ id: string; submissionId: string | null }>;
+} {
+  const targetByParticipant = new Map(targets.map((row) => [row.participantId, row]));
+  const targetIds = new Set(targets.map((row) => row.participantId));
+  const existingIds = new Set(existing.map((row) => row.participantId));
+  return {
+    removeIds: existing.filter((row) => !targetIds.has(row.participantId)).map((row) => row.id),
+    additions: targets.filter((row) => !existingIds.has(row.participantId)),
+    updates: existing.flatMap((row) => {
+      const target = targetByParticipant.get(row.participantId);
+      return target && target.submissionId !== row.submissionId
+        ? [{ id: row.id, submissionId: target.submissionId }]
+        : [];
+    }),
+  };
+}
+
+async function reconcileAssignments(taskId: string, targets: AssignmentTarget[]): Promise<void> {
+  const db = getDb();
+  const existing = await db
+    .select({
+      id: taskAssignment.id,
+      participantId: taskAssignment.participantId,
+      submissionId: taskAssignment.submissionId,
+    })
+    .from(taskAssignment)
+    .where(eq(taskAssignment.taskId, taskId));
+  const { removeIds, additions, updates } = assignmentMembershipChanges(existing, targets);
+
+  await Promise.all([
+    removeIds.length > 0
+      ? db.delete(taskAssignment).where(inArray(taskAssignment.id, removeIds))
+      : Promise.resolve(),
+    additions.length > 0
+      ? db
+          .insert(taskAssignment)
+          .values(
+            additions.map((row) => ({
+              taskId,
+              participantId: row.participantId,
+              submissionId: row.submissionId,
+              status: 'not_started' as const,
+            })),
+          )
+          .onConflictDoNothing()
+      : Promise.resolve(),
+    ...updates.map((row) =>
+      db
+        .update(taskAssignment)
+        .set({ submissionId: row.submissionId })
+        .where(eq(taskAssignment.id, row.id)),
+    ),
+  ]);
+}
+
 /**
  * A file-upload task without somewhere to put the file is a dead end in the portal, so the request
  * is created alongside it and named after it rather than being a second thing to configure. It
@@ -774,6 +889,7 @@ export async function createTask(ctx: EventContext, input: TaskInput): Promise<{
   if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can create tasks');
   const clean = normalizeTaskInput(input);
   const db = getDb();
+  const targets = await assignmentTargets(ctx.eventId, clean);
 
   const existing = await db
     .select({ position: task.position })
@@ -802,6 +918,7 @@ export async function createTask(ctx: EventContext, input: TaskInput): Promise<{
     .returning({ id: task.id });
 
   await fanOutAssignments(ctx.eventId);
+  await reconcileAssignments(created.id, targets);
   return { id: created.id };
 }
 
@@ -813,6 +930,7 @@ export async function updateTask(
   if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can edit tasks');
   const clean = normalizeTaskInput(input);
   const db = getDb();
+  const targets = await assignmentTargets(ctx.eventId, clean);
 
   const [row] = await db
     .select()
@@ -851,6 +969,7 @@ export async function updateTask(
       .where(eq(fileRequest.id, row.fileRequestId));
   }
   await fanOutAssignments(ctx.eventId);
+  await reconcileAssignments(taskId, targets);
 }
 
 export async function deleteTask(ctx: EventContext, taskId: string): Promise<void> {

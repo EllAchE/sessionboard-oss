@@ -107,6 +107,7 @@ export function TasksIndex({
   assignments,
   summary,
   speakerCount,
+  speakers,
   forms,
   copyableEvents,
   canManage,
@@ -115,6 +116,7 @@ export function TasksIndex({
   assignments: OutstandingTaskRow[];
   summary: TaskCompletionSummary;
   speakerCount: number;
+  speakers: Array<{ id: string; name: string; email: string }>;
   forms: Array<{ id: string; name: string }>;
   copyableEvents: Array<{ id: string; name: string }>;
   canManage: boolean;
@@ -310,6 +312,7 @@ export function TasksIndex({
         open={editorOpen}
         editing={editing}
         forms={forms}
+        speakers={speakers}
         onClose={() => setEditorOpen(false)}
       />
 

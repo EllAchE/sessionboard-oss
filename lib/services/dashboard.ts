@@ -669,6 +669,7 @@ export type AdminTaskRow = {
   linkUrl: string | null;
   formId: string | null;
   reminderDaysBefore: number[];
+  participantIds: string[];
   assigned: number;
   notStarted: number;
   inProgress: number;
@@ -707,6 +708,7 @@ export async function listTasksForAdmin(
         linkUrl: row.linkUrl,
         formId: row.formId,
         reminderDaysBefore: row.reminderDaysBefore ?? [],
+        participantIds: mine.map((entry) => entry.participantId),
         assigned: mine.length,
         notStarted: mine.filter((entry) => entry.status === 'not_started').length,
         inProgress: mine.filter((entry) => entry.status === 'in_progress').length,
