@@ -47,16 +47,10 @@
             "type": "string"
           },
           "tagline": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Markdown"
           },
           "timezone": {
@@ -64,36 +58,21 @@
             "description": "IANA timezone, e.g. America/Los_Angeles"
           },
           "startsOn": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ISO date"
           },
           "endsOn": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ISO date"
           },
           "websiteUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "venueName": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "venueAddress": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
         "required": [
@@ -125,57 +104,32 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Markdown"
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "published",
-              "cancelled"
-            ]
+            "enum": ["draft", "published", "cancelled"]
           },
           "startsAt": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ISO 8601"
           },
           "endsAt": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ISO 8601"
           },
           "room": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "track": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "format": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "ceuCredits": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "speakers": {
             "type": "array",
@@ -189,28 +143,16 @@
                   "type": "string"
                 },
                 "jobTitle": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "company": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "isPrimary": {
                   "type": "boolean"
                 }
               },
-              "required": [
-                "id",
-                "name",
-                "jobTitle",
-                "company",
-                "isPrimary"
-              ]
+              "required": ["id", "name", "jobTitle", "company", "isPrimary"]
             }
           }
         },
@@ -241,35 +183,20 @@
             "type": "string"
           },
           "pronouns": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "jobTitle": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "company": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "bio": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Markdown"
           },
           "headshotUrl": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "links": {
             "type": "array",
@@ -283,10 +210,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "label",
-                "url"
-              ]
+              "required": ["label", "url"]
             }
           },
           "sessions": {
@@ -301,10 +225,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "id",
-                "title"
-              ]
+              "required": ["id", "title"]
             }
           }
         },
@@ -335,16 +256,10 @@
                 "type": "string"
               },
               "tagline": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               },
               "description": {
-                "type": [
-                  "string",
-                  "null"
-                ],
+                "type": ["string", "null"],
                 "description": "Markdown"
               },
               "timezone": {
@@ -352,36 +267,21 @@
                 "description": "IANA timezone, e.g. America/Los_Angeles"
               },
               "startsOn": {
-                "type": [
-                  "string",
-                  "null"
-                ],
+                "type": ["string", "null"],
                 "description": "ISO date"
               },
               "endsOn": {
-                "type": [
-                  "string",
-                  "null"
-                ],
+                "type": ["string", "null"],
                 "description": "ISO date"
               },
               "websiteUrl": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               },
               "venueName": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               },
               "venueAddress": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               }
             },
             "required": [
@@ -424,57 +324,32 @@
                         "type": "string"
                       },
                       "description": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
+                        "type": ["string", "null"],
                         "description": "Markdown"
                       },
                       "status": {
                         "type": "string",
-                        "enum": [
-                          "draft",
-                          "published",
-                          "cancelled"
-                        ]
+                        "enum": ["draft", "published", "cancelled"]
                       },
                       "startsAt": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
+                        "type": ["string", "null"],
                         "description": "ISO 8601"
                       },
                       "endsAt": {
-                        "type": [
-                          "string",
-                          "null"
-                        ],
+                        "type": ["string", "null"],
                         "description": "ISO 8601"
                       },
                       "room": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       },
                       "track": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       },
                       "format": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       },
                       "ceuCredits": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       },
                       "speakers": {
                         "type": "array",
@@ -488,28 +363,16 @@
                               "type": "string"
                             },
                             "jobTitle": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "company": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
+                              "type": ["string", "null"]
                             },
                             "isPrimary": {
                               "type": "boolean"
                             }
                           },
-                          "required": [
-                            "id",
-                            "name",
-                            "jobTitle",
-                            "company",
-                            "isPrimary"
-                          ]
+                          "required": ["id", "name", "jobTitle", "company", "isPrimary"]
                         }
                       }
                     },
@@ -531,10 +394,7 @@
                   }
                 }
               },
-              "required": [
-                "date",
-                "sessions"
-              ]
+              "required": ["date", "sessions"]
             }
           },
           "unscheduled": {
@@ -554,57 +414,32 @@
                   "type": "string"
                 },
                 "description": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "description": "Markdown"
                 },
                 "status": {
                   "type": "string",
-                  "enum": [
-                    "draft",
-                    "published",
-                    "cancelled"
-                  ]
+                  "enum": ["draft", "published", "cancelled"]
                 },
                 "startsAt": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "description": "ISO 8601"
                 },
                 "endsAt": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
+                  "type": ["string", "null"],
                   "description": "ISO 8601"
                 },
                 "room": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "track": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "format": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "ceuCredits": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                  "type": ["string", "null"]
                 },
                 "speakers": {
                   "type": "array",
@@ -618,28 +453,16 @@
                         "type": "string"
                       },
                       "jobTitle": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       },
                       "company": {
-                        "type": [
-                          "string",
-                          "null"
-                        ]
+                        "type": ["string", "null"]
                       },
                       "isPrimary": {
                         "type": "boolean"
                       }
                     },
-                    "required": [
-                      "id",
-                      "name",
-                      "jobTitle",
-                      "company",
-                      "isPrimary"
-                    ]
+                    "required": ["id", "name", "jobTitle", "company", "isPrimary"]
                   }
                 }
               },
@@ -661,11 +484,7 @@
             }
           }
         },
-        "required": [
-          "event",
-          "days",
-          "unscheduled"
-        ],
+        "required": ["event", "days", "unscheduled"],
         "description": "The published agenda, grouped by day"
       },
       "Submission": {
@@ -683,10 +502,7 @@
             "type": "string"
           },
           "description": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "Markdown"
           },
           "status": {
@@ -702,22 +518,13 @@
             ]
           },
           "track": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "format": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "level": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "tags": {
             "type": "array",
@@ -729,19 +536,13 @@
             "type": "object",
             "properties": {
               "name": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "type": ["string", "null"]
               },
               "email": {
                 "type": "string"
               }
             },
-            "required": [
-              "name",
-              "email"
-            ]
+            "required": ["name", "email"]
           },
           "answers": {
             "type": "object",
@@ -749,17 +550,11 @@
             "description": "Custom form answers, keyed by field key"
           },
           "submittedAt": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ISO 8601"
           },
           "decidedAt": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "description": "ISO 8601"
           }
         },
@@ -797,7 +592,8 @@
             "additionalProperties": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 20000
                 },
                 {
                   "type": "number"
@@ -808,7 +604,8 @@
                 {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                   }
                 },
                 {
@@ -819,10 +616,8 @@
             "description": "Keyed by the form field key. Built-in keys are title, description, format, track, level, tags."
           }
         },
-        "required": [
-          "email",
-          "answers"
-        ],
+        "additionalProperties": false,
+        "required": ["email", "answers"],
         "description": "A submission to a published form"
       },
       "NewSubmissionResult": {
@@ -836,21 +631,13 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "draft",
-              "submitted"
-            ]
+            "enum": ["draft", "submitted"]
           },
           "title": {
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ref",
-          "status",
-          "title"
-        ]
+        "required": ["id", "ref", "status", "title"]
       },
       "Error": {
         "type": "object",
@@ -882,15 +669,10 @@
                 "description": "Field-keyed messages when code is invalid"
               }
             },
-            "required": [
-              "code",
-              "message"
-            ]
+            "required": ["code", "message"]
           }
         },
-        "required": [
-          "error"
-        ],
+        "required": ["error"],
         "description": "Every non-2xx response has this shape"
       }
     }
@@ -898,9 +680,7 @@
   "paths": {
     "/events/{slug}": {
       "get": {
-        "tags": [
-          "Events"
-        ],
+        "tags": ["Events"],
         "summary": "Fetch one event",
         "operationId": "getEvent",
         "parameters": [
@@ -940,9 +720,7 @@
     },
     "/events/{slug}/sessions": {
       "get": {
-        "tags": [
-          "Program"
-        ],
+        "tags": ["Program"],
         "summary": "List sessions",
         "description": "Published sessions only. Filters accept a track or room name, or its id.",
         "operationId": "listSessions",
@@ -963,11 +741,7 @@
             "description": "Defaults to published",
             "schema": {
               "type": "string",
-              "enum": [
-                "draft",
-                "published",
-                "cancelled"
-              ],
+              "enum": ["draft", "published", "cancelled"],
               "description": "Defaults to published"
             }
           },
@@ -978,6 +752,8 @@
             "description": "Track name or id",
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
               "description": "Track name or id"
             }
           },
@@ -988,6 +764,8 @@
             "description": "Room name or id",
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
               "description": "Room name or id"
             }
           }
@@ -1010,10 +788,7 @@
                       "type": "integer"
                     }
                   },
-                  "required": [
-                    "data",
-                    "total"
-                  ]
+                  "required": ["data", "total"]
                 }
               }
             }
@@ -1043,9 +818,7 @@
     },
     "/events/{slug}/speakers": {
       "get": {
-        "tags": [
-          "Program"
-        ],
+        "tags": ["Program"],
         "summary": "List speakers",
         "description": "Everyone on an accepted submission. Emails are not included.",
         "operationId": "listSpeakers",
@@ -1078,10 +851,7 @@
                       "type": "integer"
                     }
                   },
-                  "required": [
-                    "data",
-                    "total"
-                  ]
+                  "required": ["data", "total"]
                 }
               }
             }
@@ -1101,9 +871,7 @@
     },
     "/events/{slug}/agenda": {
       "get": {
-        "tags": [
-          "Program"
-        ],
+        "tags": ["Program"],
         "summary": "Fetch the agenda",
         "description": "Published sessions grouped by day in the event's timezone.",
         "operationId": "getAgenda",
@@ -1144,9 +912,7 @@
     },
     "/events/{slug}/submissions": {
       "get": {
-        "tags": [
-          "Submissions"
-        ],
+        "tags": ["Submissions"],
         "summary": "List submissions",
         "description": "Requires an API key issued for this event.",
         "operationId": "listSubmissions",
@@ -1213,10 +979,7 @@
                       "type": "integer"
                     }
                   },
-                  "required": [
-                    "data",
-                    "total"
-                  ]
+                  "required": ["data", "total"]
                 }
               }
             }
@@ -1256,11 +1019,9 @@
     },
     "/events/{slug}/forms/{formId}/submissions": {
       "post": {
-        "tags": [
-          "Submissions"
-        ],
+        "tags": ["Submissions"],
         "summary": "Submit to a call for speakers",
-        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed.",
+        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.",
         "operationId": "createSubmission",
         "parameters": [
           {
@@ -1338,9 +1099,7 @@
     },
     "/openapi.json": {
       "get": {
-        "tags": [
-          "Events"
-        ],
+        "tags": ["Events"],
         "summary": "This document",
         "operationId": "getOpenApi",
         "responses": {

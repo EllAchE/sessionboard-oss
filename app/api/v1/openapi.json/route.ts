@@ -181,7 +181,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           tags: ['Submissions'],
           summary: 'Submit to a call for speakers',
           description:
-            'No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed.',
+            'No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.',
           operationId: 'createSubmission',
           parameters: [
             slugParam,
