@@ -903,13 +903,56 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Event-scoped override of the account name"
+          },
+          "firstName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Given name on the account"
+          },
+          "lastName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Family name on the account"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Read-only join of firstName and lastName; edit the halves instead"
+          },
+          "salutation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "How a letter opens, e.g. Ada"
+          },
+          "honorific": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Title before the name on the programme, e.g. Dr"
           },
           "pronouns": {
             "type": [
               "string",
               "null"
             ]
+          },
+          "gender": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Free text; organizers report on it"
           },
           "jobTitle": {
             "type": [
@@ -988,7 +1031,13 @@
         },
         "required": [
           "displayName",
+          "firstName",
+          "lastName",
+          "name",
+          "salutation",
+          "honorific",
           "pronouns",
+          "gender",
           "jobTitle",
           "company",
           "bioMarkdown",
@@ -1009,9 +1058,29 @@
             "type": "string",
             "maxLength": 200
           },
+          "firstName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "salutation": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "honorific": {
+            "type": "string",
+            "maxLength": 40
+          },
           "pronouns": {
             "type": "string",
             "maxLength": 40
+          },
+          "gender": {
+            "type": "string",
+            "maxLength": 60
           },
           "jobTitle": {
             "type": "string",
