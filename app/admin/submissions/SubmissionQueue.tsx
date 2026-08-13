@@ -9,9 +9,11 @@ import {
   Clock,
   Columns3,
   Download,
+  Hand,
   Plus,
   Sparkles,
   Trash2,
+  Undo2,
   Upload,
   X,
 } from 'lucide-react';
@@ -26,8 +28,20 @@ import {
   Select,
   type DataTableColumn,
 } from '../../../components/ui';
-import { decideAction, deleteViewAction, listViewsAction, saveViewAction } from './actions';
+import {
+  decideAction,
+  deleteViewAction,
+  listViewsAction,
+  saveViewAction,
+  stageAction,
+} from './actions';
 import styles from './submissions.module.css';
+
+/**
+ * `V-1`. What an organizer put on a row by hand, mirroring `StagedDecision` in the service.
+ * `null` — the ordinary case — means the row sits wherever the panel's average puts it.
+ */
+export type StagedDecisionWire = 'accept' | 'decline' | 'hold' | null;
 
 export type QueueRowWire = {
   id: string;
@@ -45,6 +59,7 @@ export type QueueRowWire = {
   spread: number | null;
   assignedCount: number;
   completedCount: number;
+  stagedDecision: StagedDecisionWire;
   hasAiReview: boolean;
 };
 
@@ -88,6 +103,17 @@ const STATUS_LABEL: Record<string, string> = {
   waitlisted: 'Waitlist',
   declined: 'Declined',
   withdrawn: 'Withdrawn',
+};
+
+/**
+ * Only ever shown on an undecided row, because that is the only kind that stages. It reads as a
+ * note on the row rather than a status: the badge says who put the proposal where it is, and the
+ * status beside it still says what the submission actually *is*.
+ */
+const STAGE_LABEL: Record<'accept' | 'decline' | 'hold', string> = {
+  accept: 'Staged to accept',
+  decline: 'Staged to decline',
+  hold: 'Held back',
 };
 
 const SORTS: Array<{ id: string; label: string }> = [
@@ -135,10 +161,22 @@ export function viewColumns(value: unknown): string[] {
   return chosen.length > 0 ? chosen : DEFAULT_COLUMNS;
 }
 
+/** Which queue a tab commits to, or null for a tab that is not a staging queue. */
+function committedStage(tab: string): 'accept' | 'decline' | null {
+  if (tab === 'accept-queue') return 'accept';
+  if (tab === 'decline-queue') return 'decline';
+  return null;
+}
+
 /**
  * The queue is where an organizer spends the most time, so it is keyboard-first: `j`/`k` move,
  * `x` selects, `a`/`d`/`w` decide the row under the cursor or the whole selection, `Enter` opens.
  * The legend under the table is the discoverability half — a hidden shortcut is not a feature.
+ *
+ * Staging shares those letters with Shift held: `⇧a`/`⇧d` stage into a queue, `⇧h` holds a row
+ * back, `⇧c` clears the staging. Deliberately the same key as the decision it stages for, because
+ * the pair is "propose it" and "do it" and a second unrelated letter would have to be memorised
+ * separately. Nothing lowercase changed, so an organizer's existing muscle memory still decides.
  */
 export function SubmissionQueue(props: QueueProps) {
   const router = useRouter();
@@ -152,9 +190,11 @@ export function SubmissionQueue(props: QueueProps) {
   const [saveOpen, setSaveOpen] = useState(false);
   const [viewName, setViewName] = useState('');
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [commitOpen, setCommitOpen] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_COLUMNS);
 
   const rows = props.rows;
+  const queueStage = committedStage(props.tab);
 
   useEffect(() => setSavedViews(props.savedViews), [props.savedViews]);
 
@@ -317,6 +357,54 @@ export function SubmissionQueue(props: QueueProps) {
     [props.canDecide, router],
   );
 
+  /**
+   * Staging, in the same shape as `decide` and deliberately not sharing a code path with it: this
+   * one moves a proposal between queues and never writes a status, so the wording it reports back
+   * has to be free of the word "decided".
+   */
+  const stage = useCallback(
+    (ids: string[], next: 'accept' | 'decline' | 'hold' | null) => {
+      if (ids.length === 0 || !props.canDecide) return;
+      setMessage(null);
+      startTransition(async () => {
+        const result = await stageAction(ids, next);
+        if (!result.ok) {
+          setMessage(result.message);
+          return;
+        }
+        const { updated } = result.data;
+        const skipped = result.data.skipped.length;
+        const where =
+          next === null
+            ? 'back to the panel’s score'
+            : next === 'hold'
+              ? 'held in Pending'
+              : `staged to ${next}`;
+        const parts = [`${updated} ${where}`];
+        if (skipped > 0) parts.push(`${skipped} already decided`);
+        setMessage(`${parts.join(', ')}.`);
+        setSelected([]);
+        router.refresh();
+      });
+    },
+    [props.canDecide, router],
+  );
+
+  /**
+   * Committing the batch: every row the open queue is currently showing, in one decision. It takes
+   * exactly what is on screen rather than re-deriving the queue on the server, so a narrowed filter
+   * narrows the commit too — an organizer who filtered to one track commits that track, which is
+   * the only reading of the button that cannot surprise them.
+   */
+  const commitQueue = useCallback(() => {
+    if (!queueStage) return;
+    setCommitOpen(false);
+    decide(
+      rows.map((row) => row.id),
+      queueStage,
+    );
+  }, [decide, queueStage, rows]);
+
   // Shortcuts land on the window rather than the grid so they work whether or not the table has
   // focus; anything typed into a field is left alone.
   useEffect(() => {
@@ -333,10 +421,12 @@ export function SubmissionQueue(props: QueueProps) {
 
     const onKey = (event: KeyboardEvent) => {
       if (isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
-      // A dialog owns the keyboard while it is open; `a` in the columns panel must not accept.
-      if (saveOpen || columnsOpen) return;
+      // A dialog owns the keyboard while it is open; `a` in the columns panel must not accept, and
+      // `a` behind the commit confirmation must not accept the one row under the cursor either.
+      if (saveOpen || columnsOpen || commitOpen) return;
       if (rows.length === 0) return;
       const row = rows[Math.max(0, Math.min(rows.length - 1, active))];
+      const subjects = selected.length > 0 ? selected : [row.id];
 
       switch (event.key) {
         case 'j':
@@ -362,15 +452,32 @@ export function SubmissionQueue(props: QueueProps) {
           break;
         case 'a':
           event.preventDefault();
-          decide(selected.length > 0 ? selected : [row.id], 'accept');
+          decide(subjects, 'accept');
           break;
         case 'd':
           event.preventDefault();
-          decide(selected.length > 0 ? selected : [row.id], 'decline');
+          decide(subjects, 'decline');
           break;
         case 'w':
           event.preventDefault();
-          decide(selected.length > 0 ? selected : [row.id], 'waitlist');
+          decide(subjects, 'waitlist');
+          break;
+        // Shift is "propose it" to the same letter's "do it".
+        case 'A':
+          event.preventDefault();
+          stage(subjects, 'accept');
+          break;
+        case 'D':
+          event.preventDefault();
+          stage(subjects, 'decline');
+          break;
+        case 'H':
+          event.preventDefault();
+          stage(subjects, 'hold');
+          break;
+        case 'C':
+          event.preventDefault();
+          stage(subjects, null);
           break;
         case 'Escape':
           setSelected([]);
@@ -382,7 +489,7 @@ export function SubmissionQueue(props: QueueProps) {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [active, columnsOpen, decide, rows, router, saveOpen, selected]);
+  }, [active, columnsOpen, commitOpen, decide, rows, router, saveOpen, selected, stage]);
 
   const allColumns = useMemo<Array<DataTableColumn<QueueRowWire>>>(
     () => [
@@ -431,11 +538,19 @@ export function SubmissionQueue(props: QueueProps) {
       {
         id: 'status',
         header: 'Status',
-        width: '110px',
+        width: '140px',
+        // The staging note sits under the status rather than replacing it: staging is what an
+        // organizer proposes, the status is what the submission is, and they are never the same
+        // claim. A row nobody staged renders exactly the single badge it always did.
         render: (row) => (
-          <Badge tone={STATUS_TONE[row.status] ?? 'neutral'}>
-            {STATUS_LABEL[row.status] ?? row.status}
-          </Badge>
+          <span className={styles.statusCell}>
+            <Badge tone={STATUS_TONE[row.status] ?? 'neutral'}>
+              {STATUS_LABEL[row.status] ?? row.status}
+            </Badge>
+            {row.stagedDecision ? (
+              <Badge tone="info">{STAGE_LABEL[row.stagedDecision]}</Badge>
+            ) : null}
+          </span>
         ),
       },
       {
@@ -547,8 +662,25 @@ export function SubmissionQueue(props: QueueProps) {
         ))}
       </nav>
 
-      {/* A staging queue is derived, so it has to say what put a proposal in it. */}
-      {tabHint ? <p className={styles.tabHint}>{tabHint}</p> : null}
+      {/* A staging queue is a reading of the panel's work first, so it has to say what put a
+          proposal in it — and the commit for the whole batch belongs beside that sentence. */}
+      {tabHint || (queueStage && props.canDecide) ? (
+        <div className={styles.queueBar}>
+          {tabHint ? <p className={styles.tabHint}>{tabHint}</p> : null}
+          {queueStage && props.canDecide ? (
+            <Button
+              size="sm"
+              variant={queueStage === 'accept' ? 'primary' : 'danger'}
+              iconLeft={queueStage === 'accept' ? <Check size={14} /> : <X size={14} />}
+              loading={pending}
+              disabled={rows.length === 0}
+              onClick={() => setCommitOpen(true)}
+            >
+              {queueStage === 'accept' ? 'Accept' : 'Decline'} all {rows.length} shown
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className={styles.filters}>
         <Input
@@ -712,6 +844,50 @@ export function SubmissionQueue(props: QueueProps) {
         </div>
       ) : null}
 
+      {/* Staging is its own row: nothing on it decides anything, and mixing it into the bar above
+          would put "put this in the accept queue" one button away from "accept it". */}
+      {selected.length > 0 && props.canDecide ? (
+        <div className={styles.bulkBar}>
+          <span className={styles.bulkCount}>Stage {selected.length} without deciding</span>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<Check size={14} />}
+            loading={pending}
+            onClick={() => stage(selected, 'accept')}
+          >
+            To accept queue
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<X size={14} />}
+            loading={pending}
+            onClick={() => stage(selected, 'decline')}
+          >
+            To decline queue
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconLeft={<Hand size={14} />}
+            loading={pending}
+            onClick={() => stage(selected, 'hold')}
+          >
+            Hold in pending
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconLeft={<Undo2 size={14} />}
+            loading={pending}
+            onClick={() => stage(selected, null)}
+          >
+            Clear staging
+          </Button>
+        </div>
+      ) : null}
+
       <DataTable
         columns={columns}
         rows={rows}
@@ -748,6 +924,16 @@ export function SubmissionQueue(props: QueueProps) {
             <span className={styles.hint}>
               <Kbd>d</Kbd> decline
             </span>
+            <span className={styles.hint}>
+              <Kbd>⇧a</Kbd>
+              <Kbd>⇧d</Kbd> stage
+            </span>
+            <span className={styles.hint}>
+              <Kbd>⇧h</Kbd> hold
+            </span>
+            <span className={styles.hint}>
+              <Kbd>⇧c</Kbd> clear staging
+            </span>
           </>
         ) : null}
         <span className={styles.hint}>
@@ -782,6 +968,34 @@ export function SubmissionQueue(props: QueueProps) {
           }}
           aria-label="View name"
         />
+      </Dialog>
+
+      {/* The one place the queue leaves staging behind. Everything else on this screen is
+          reversible; this sends mail, so it asks first and says how many. */}
+      <Dialog
+        open={commitOpen}
+        onOpenChange={setCommitOpen}
+        title={queueStage === 'accept' ? 'Accept this batch' : 'Decline this batch'}
+        description={`${rows.length} submission${rows.length === 1 ? '' : 's'} — every row this queue is showing, filters included. Each speaker is notified, and the staging is cleared as the decision lands.`}
+        size="sm"
+        footer={
+          <>
+            <Button
+              variant={queueStage === 'accept' ? 'primary' : 'danger'}
+              loading={pending}
+              onClick={commitQueue}
+            >
+              {queueStage === 'accept' ? 'Accept' : 'Decline'} all {rows.length}
+            </Button>
+            <Button variant="ghost" onClick={() => setCommitOpen(false)}>
+              Cancel
+            </Button>
+          </>
+        }
+      >
+        <p className={styles.tabHint}>
+          Anything already decided is skipped rather than decided twice.
+        </p>
       </Dialog>
 
       <Dialog

@@ -7,6 +7,7 @@ import {
   aggregateScorecard,
   carriesIdentity,
   decisionStage,
+  derivedDecisionStage,
   filterQueue,
   filtersForTab,
   hidesAuthorship,
@@ -19,6 +20,7 @@ import {
   redactSubmitter,
   reminderBody,
   sortQueue,
+  stagedByHand,
   summarizeReviews,
   type AuthoredSubject,
   type CriterionSpec,
@@ -422,6 +424,96 @@ describe('planRoutedAssignments — the routing model `F-3` and `V-5` share', ()
     expect(plan.pairs).toEqual([{ submissionId: 's1', reviewerUserId: 'court-reader' }]);
     expect(plan.unroutable).toEqual([]);
   });
+
+  /**
+   * `ABS-12`. The bug this closes: a recusal lived only on the assignment row, so the moment an
+   * organizer freed that row to give the talk to somebody else, routing forgot the reviewer had
+   * ever said no — and handed it straight back to them.
+   */
+  it('never re-offers a talk to the reviewer who recused themselves from it', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: infra }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 2,
+      recusals: new Map([['s1', new Set(['aqueduct-reader'])]]),
+    });
+
+    expect(plan.pairs).toEqual([{ submissionId: 's1', reviewerUserId: 'generalist' }]);
+    expect(plan.unroutable).toEqual([]);
+  });
+
+  it('remembers a recusal for a submission whose assignment was already released', () => {
+    // No `existing` at all: the assignment is gone, and the recusal is the only thing left that
+    // knows this reviewer must not get it back.
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: law }],
+      pool,
+      coverage: new Map([[law, ['court-reader', 'generalist']]]),
+      reviewersPerSubmission: 1,
+      recusals: new Map([['s1', new Set(['court-reader'])]]),
+    });
+
+    expect(plan.pairs).toEqual([{ submissionId: 's1', reviewerUserId: 'generalist' }]);
+  });
+
+  it('surfaces a submission a recusal stranded, and names the recusal rather than a conflict', () => {
+    // The organizer can act on this one — clearing the recusal reopens the talk — so it must not
+    // arrive wearing the label of the thing they cannot change.
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 'sole-reader-talk', trackId: law }],
+      pool,
+      coverage: new Map([[law, ['court-reader']]]),
+      reviewersPerSubmission: 1,
+      recusals: new Map([['sole-reader-talk', new Set(['court-reader'])]]),
+    });
+
+    expect(plan.pairs).toEqual([]);
+    expect(plan.unroutable).toEqual([
+      { submissionId: 'sole-reader-talk', reason: 'all_recused' },
+    ]);
+  });
+
+  it('still calls it a conflict when every candidate was conflicted anyway', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 'own-talk', trackId: law }],
+      pool,
+      coverage: new Map([[law, ['court-reader']]]),
+      reviewersPerSubmission: 1,
+      conflicts: new Map([['own-talk', new Set(['court-reader'])]]),
+      recusals: new Map([['own-talk', new Set(['court-reader'])]]),
+    });
+
+    expect(plan.unroutable).toEqual([{ submissionId: 'own-talk', reason: 'all_conflicted' }]);
+  });
+
+  it('keeps a recused reviewer out of the fallback pool too', () => {
+    // "Send it to everyone" is an override of the *routing*, not of a reviewer's own decision.
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: null }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 3,
+      recusals: new Map([['s1', new Set(['generalist', 'court-reader'])]]),
+      fallbackToPool: true,
+    });
+
+    expect(plan.pairs).toEqual([{ submissionId: 's1', reviewerUserId: 'aqueduct-reader' }]);
+    expect(plan.unroutable).toEqual([]);
+  });
+
+  it('reports an unroutable submission on an unconfigured event as a recusal when it is one', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: null }],
+      pool: ['generalist'],
+      coverage: new Map(),
+      reviewersPerSubmission: 1,
+      recusals: new Map([['s1', new Set(['generalist'])]]),
+    });
+
+    expect(plan.pairs).toEqual([]);
+    expect(plan.unroutable).toEqual([{ submissionId: 's1', reason: 'all_recused' }]);
+  });
 });
 
 describe('queue filtering and sorting', () => {
@@ -444,6 +536,7 @@ describe('queue filtering and sorting', () => {
     assignedCount: 0,
     completedCount: 0,
     declinedCount: 0,
+    stagedDecision: null,
     hasAiReview: false,
     ...over,
   });
@@ -499,6 +592,7 @@ describe('accept and decline queues', () => {
     assignedCount: 2,
     completedCount: 2,
     declinedCount: 0,
+    stagedDecision: null,
     hasAiReview: false,
     ...over,
   });
@@ -559,6 +653,123 @@ describe('accept and decline queues', () => {
     for (const id of ['accept-queue', 'decline-queue']) {
       expect(STATUS_TABS.find((tab) => tab.id === id)?.hint).toBeTruthy();
     }
+  });
+});
+
+/**
+ * `V-1`. The half the queues did not have: an organizer's own hand, and what happens where it
+ * disagrees with the panel's average. The rule under all of these is one sentence — a hand stage
+ * wins, and clearing it hands the row back to the average rather than to nowhere.
+ */
+describe('organizer-staged decisions', () => {
+  const row = (over: Partial<QueueRow> & { id: string }): QueueRow => ({
+    ref: 1,
+    displayRef: 'ABS-1',
+    title: over.id,
+    status: 'under_review',
+    submittedAt: null,
+    decidedAt: null,
+    trackId: null,
+    trackName: null,
+    formatId: null,
+    formatName: null,
+    level: null,
+    tagIds: [],
+    submitterName: 'Someone',
+    submitterEmail: 'someone@example.test',
+    averageScore: 2.8,
+    spread: null,
+    assignedCount: 2,
+    completedCount: 2,
+    declinedCount: 0,
+    stagedDecision: null,
+    hasAiReview: false,
+    ...over,
+  });
+
+  it('lets a hand stage beat the score that would have placed it elsewhere', () => {
+    // The 2.8 the gap report named: derived it is a decline, and an organizer who wants it in the
+    // accept queue must not have to accept it outright to get it there.
+    const borderline = row({ id: 'borderline' });
+    expect(derivedDecisionStage(borderline)).toBe('decline');
+    expect(decisionStage({ ...borderline, stagedDecision: 'accept' })).toBe('accept');
+
+    const strong = row({ id: 'strong', averageScore: 4.6 });
+    expect(derivedDecisionStage(strong)).toBe('accept');
+    expect(decisionStage({ ...strong, stagedDecision: 'decline' })).toBe('decline');
+  });
+
+  it('stages a proposal the panel has not finished, which derivation never would', () => {
+    const unfinished = row({ id: 'mid-review', completedCount: 1 });
+    expect(derivedDecisionStage(unfinished)).toBeNull();
+    expect(decisionStage({ ...unfinished, stagedDecision: 'accept' })).toBe('accept');
+
+    // Including one nobody has been assigned to at all.
+    const untouched = row({ id: 'unassigned', assignedCount: 0, completedCount: 0, averageScore: null });
+    expect(decisionStage({ ...untouched, stagedDecision: 'decline' })).toBe('decline');
+  });
+
+  it('holds a proposal out of the queue its score put it in, without deciding it', () => {
+    const held = row({ id: 'held', averageScore: 4.6, stagedDecision: 'hold' });
+    expect(decisionStage(held)).toBeNull();
+    // Held means Pending, not decided: the status is untouched and the derived reading survives
+    // underneath, ready for the moment the hold is cleared.
+    expect(held.status).toBe('under_review');
+    expect(derivedDecisionStage(held)).toBe('accept');
+  });
+
+  it('falls back to the panel when the staging is cleared, not to nothing', () => {
+    const cleared = row({ id: 'cleared', averageScore: 4.6, stagedDecision: null });
+    expect(decisionStage(cleared)).toBe('accept');
+    expect(decisionStage(row({ id: 'cleared-low', stagedDecision: null }))).toBe('decline');
+  });
+
+  it('ignores staging on anything already decided', () => {
+    // `decideSubmissions` clears the staging as it commits, so this only ever guards a row written
+    // some other way — but the queues must not resurrect a batch either way.
+    for (const status of ['accepted', 'declined', 'waitlisted', 'withdrawn', 'draft'] as const) {
+      expect(decisionStage(row({ id: status, status, stagedDecision: 'accept' }))).toBeNull();
+    }
+    expect(stagedByHand(row({ id: 'decided', status: 'accepted', stagedDecision: 'accept' }))).toBe(
+      false,
+    );
+    expect(stagedByHand(row({ id: 'staged', stagedDecision: 'accept' }))).toBe(true);
+    expect(stagedByHand(row({ id: 'plain' }))).toBe(false);
+  });
+
+  it('keeps Pending, the accept queue and the decline queue a partition once hands are involved', () => {
+    const rows = [
+      // Derived accept, staged out of it.
+      row({ id: 'held-back', averageScore: 4.6, stagedDecision: 'hold' }),
+      // Derived decline, staged into accept.
+      row({ id: 'promoted', stagedDecision: 'accept' }),
+      // Derived accept, staged into decline.
+      row({ id: 'demoted', averageScore: 4.6, stagedDecision: 'decline' }),
+      // Untouched by anyone: still the panel's call.
+      row({ id: 'derived-accept', averageScore: 4.6 }),
+      row({ id: 'still-scoring', completedCount: 1 }),
+    ];
+    const idsForTab = (tab: string) =>
+      filterQueue(rows, filtersForTab(tab)).map((entry) => entry.id);
+
+    expect(idsForTab('accept-queue')).toEqual(['promoted', 'derived-accept']);
+    expect(idsForTab('decline-queue')).toEqual(['demoted']);
+    expect(idsForTab('pending')).toEqual(['held-back', 'still-scoring']);
+
+    // Every undecided row lands in exactly one of the three, which is the property the tabs sell.
+    const total =
+      idsForTab('accept-queue').length + idsForTab('decline-queue').length + idsForTab('pending').length;
+    expect(total).toBe(rows.length);
+  });
+
+  it('keeps the derived queues full for an event nobody has staged', () => {
+    // The regression that would matter most: shipping this must not empty the tabs.
+    const rows = [
+      row({ id: 'high', averageScore: 4.6 }),
+      row({ id: 'low', averageScore: 1.4 }),
+    ];
+    expect(filterQueue(rows, filtersForTab('accept-queue')).map((e) => e.id)).toEqual(['high']);
+    expect(filterQueue(rows, filtersForTab('decline-queue')).map((e) => e.id)).toEqual(['low']);
   });
 });
 

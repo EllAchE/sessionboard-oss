@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BellRing, ChevronLeft, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { BellRing, ChevronLeft, Plus, Trash2, Undo2, UserMinus, UserPlus } from 'lucide-react';
 import {
   describeRoundDates,
   fromRoundDateDraft,
@@ -35,6 +35,7 @@ import {
   updateRoundAction,
 } from '../actions';
 import {
+  clearRecusalAction,
   createRoundAction,
   inviteReviewerAction,
   releaseAssignmentAction,
@@ -65,12 +66,18 @@ export type RoundWire = {
   declinedCount: number;
 };
 
+/**
+ * `ABS-12`. Keyed on the recusal, not the assignment, because the recusal is the part that lasts:
+ * `assignmentId` is null once the organizer has freed the work, and the reviewer is still recused.
+ */
 export type RecusalWire = {
-  assignmentId: string;
+  id: string;
+  assignmentId: string | null;
   displayRef: string;
   title: string;
   reviewerName: string;
   reason: string | null;
+  status: 'active' | 'released';
 };
 
 export type CriterionWire = {
@@ -274,6 +281,8 @@ export function RoundsManager(props: RoundsManagerProps) {
   const gaps = coverageGaps(routingRules);
 
   const selectedRound = props.rounds.find((round) => round.id === props.selectedRoundId) ?? null;
+  const activeRecusals = props.recusals.filter((recusal) => recusal.status === 'active');
+  const releasedRecusals = props.recusals.filter((recusal) => recusal.status === 'released');
   const newRoundDateWire = fromRoundDateDraft(newRoundDates);
   const newRoundDateRangeIsInvalid = roundDatesAreOutOfOrder(
     newRoundDateWire.opensAt,
@@ -1018,35 +1027,74 @@ export function RoundsManager(props: RoundsManagerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recusals · {selectedRound.declinedCount}</CardTitle>
+              <CardTitle>Recusals · {activeRecusals.length}</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
-                {props.recusals.map((recusal) => (
-                  <div key={recusal.assignmentId} className={styles.criterionEditor}>
+                <p className={styles.aiNote}>
+                  A recusal outlives the assignment it was made on: releasing the work hands the
+                  talk to somebody else and still keeps this reviewer off it. Clearing the recusal
+                  is the separate decision that lets them be assigned it again.
+                </p>
+                {activeRecusals.map((recusal) => (
+                  <div key={recusal.id} className={styles.criterionEditor}>
                     <span>
                       <strong>{recusal.displayRef}</strong> {recusal.title}
                     </span>
                     <span className={styles.muted}>{recusal.reviewerName}</span>
                     <span className={styles.muted}>{recusal.reason ?? 'No reason given'}</span>
+                    {recusal.assignmentId ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        iconLeft={<UserMinus size={14} />}
+                        loading={pending}
+                        onClick={() =>
+                          run(
+                            () => releaseAssignmentAction(recusal.assignmentId as string),
+                            'Assignment released. Auto-assign will hand it to someone else.',
+                          )
+                        }
+                      >
+                        Release
+                      </Button>
+                    ) : (
+                      <span className={styles.muted}>Assignment already freed</span>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
-                      iconLeft={<UserMinus size={14} />}
+                      iconLeft={<Undo2 size={14} />}
                       loading={pending}
                       onClick={() =>
                         run(
-                          () => releaseAssignmentAction(recusal.assignmentId),
-                          'Assignment released. Auto-assign will hand it to someone else.',
+                          () => clearRecusalAction(recusal.id),
+                          'Recusal cleared. This reviewer can be assigned that submission again.',
                         )
                       }
                     >
-                      Release
+                      Clear recusal
                     </Button>
                   </div>
                 ))}
-                {props.recusals.length === 0 ? (
-                  <p className={styles.muted}>No reviewer has recused themselves in this round.</p>
+                {activeRecusals.length === 0 ? (
+                  <p className={styles.muted}>No reviewer has recused themselves on this event.</p>
+                ) : null}
+
+                {/* A cleared recusal is a decision an organizer made, so it stays visible. */}
+                {releasedRecusals.length > 0 ? (
+                  <>
+                    <p className={styles.aiLabel}>Cleared · {releasedRecusals.length}</p>
+                    {releasedRecusals.map((recusal) => (
+                      <div key={recusal.id} className={styles.criterionEditor}>
+                        <span className={styles.muted}>
+                          <strong>{recusal.displayRef}</strong> {recusal.title}
+                        </span>
+                        <span className={styles.muted}>{recusal.reviewerName}</span>
+                        <span className={styles.muted}>Can be assigned this again</span>
+                      </div>
+                    ))}
+                  </>
                 ) : null}
               </div>
             </CardBody>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { UnroutableReason } from '../../../../lib/services/review';
 import {
+  UNROUTED_REASON_LABEL,
   coverageGaps,
   coverageSummary,
   strandedCount,
@@ -25,6 +26,14 @@ const rule = (over: Partial<RoutingWire['rules'][number]> & { trackId: string })
 describe('routing coverage summary', () => {
   it('shares its reason vocabulary with the routing service', () => {
     expect(REASONS_MATCH).toBe(true);
+  });
+
+  it('points a recusal-stranded submission at the thing an organizer can actually undo', () => {
+    // The other three reasons describe a configuration; this one describes a decision, and saying
+    // so is the difference between an organizer clearing it and hunting through track coverage.
+    expect(UNROUTED_REASON_LABEL.all_recused).toContain('recused');
+    expect(UNROUTED_REASON_LABEL.all_recused).toContain('clear');
+    expect(UNROUTED_REASON_LABEL.all_recused).not.toBe(UNROUTED_REASON_LABEL.all_conflicted);
   });
 
   it('names an uncovered track even when nothing is waiting behind it', () => {

@@ -7,6 +7,7 @@ import {
   SubmissionQueue,
   viewColumns,
   type QueueProps,
+  type QueueRowWire,
 } from './SubmissionQueue';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -109,6 +110,99 @@ describe('SubmissionQueue staging queues', () => {
 
     const pending = renderToStaticMarkup(<SubmissionQueue {...props} tabs={tabs} />);
     expect(pending).not.toContain('Every review is in.');
+  });
+});
+
+/**
+ * `V-1`. The organizer-driven half: staging has to be reachable, has to read as something other
+ * than a decision, and the batch commit has to say how much it is about to decide.
+ */
+describe('SubmissionQueue staging controls', () => {
+  const row = (over: Partial<QueueRowWire> & { id: string }): QueueRowWire => ({
+    ref: 1,
+    displayRef: 'ABS-1',
+    title: over.id,
+    status: 'under_review',
+    trackId: null,
+    trackName: null,
+    formatId: null,
+    formatName: null,
+    tagIds: [],
+    submitterName: 'Someone',
+    averageScore: 2.8,
+    spread: null,
+    assignedCount: 2,
+    completedCount: 2,
+    stagedDecision: null,
+    hasAiReview: false,
+    ...over,
+  });
+
+  it('says on the row when a person, not a score, put it where it is', () => {
+    const html = renderToStaticMarkup(
+      <SubmissionQueue
+        {...props}
+        rows={[
+          row({ id: 'staged', stagedDecision: 'accept' }),
+          row({ id: 'held', stagedDecision: 'hold' }),
+          row({ id: 'plain' }),
+        ]}
+      />,
+    );
+
+    expect(html).toContain('Staged to accept');
+    expect(html).toContain('Held back');
+    // The status the submission actually has is still beside it; staging never replaces it.
+    expect(html).toContain('In review');
+  });
+
+  it('leaves an unstaged queue looking exactly as it did', () => {
+    const html = renderToStaticMarkup(<SubmissionQueue {...props} rows={[row({ id: 'plain' })]} />);
+
+    expect(html).not.toContain('Staged to');
+    expect(html).not.toContain('Held back');
+  });
+
+  it('offers the whole-queue commit only inside a staging queue, and counts what it would take', () => {
+    const tabs = [
+      { id: 'pending', label: 'Pending', hint: null },
+      { id: 'accept-queue', label: 'Accept queue', hint: 'Every review is in.' },
+    ];
+    const rows = [row({ id: 'one' }), row({ id: 'two' })];
+
+    const queue = renderToStaticMarkup(
+      <SubmissionQueue {...props} tabs={tabs} tab="accept-queue" rows={rows} />,
+    );
+    expect(queue).toContain('Accept all 2 shown');
+
+    const pending = renderToStaticMarkup(
+      <SubmissionQueue {...props} tabs={tabs} tab="pending" rows={rows} />,
+    );
+    expect(pending).not.toContain('all 2 shown');
+  });
+
+  it('keeps the batch commit away from a reviewer who cannot decide', () => {
+    const html = renderToStaticMarkup(
+      <SubmissionQueue
+        {...props}
+        canDecide={false}
+        tabs={[{ id: 'accept-queue', label: 'Accept queue', hint: null }]}
+        tab="accept-queue"
+        rows={[row({ id: 'one' })]}
+      />,
+    );
+
+    expect(html).not.toContain('Accept all');
+  });
+
+  it('advertises the staging shortcuts beside the decision ones it did not change', () => {
+    const html = renderToStaticMarkup(<SubmissionQueue {...props} rows={[row({ id: 'one' })]} />);
+
+    expect(html).toContain('accept');
+    expect(html).toContain('⇧a');
+    expect(html).toContain('⇧d');
+    expect(html).toContain('⇧h');
+    expect(html).toContain('⇧c');
   });
 });
 

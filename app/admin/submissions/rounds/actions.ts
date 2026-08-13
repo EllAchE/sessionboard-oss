@@ -89,11 +89,27 @@ export async function remindReviewersAction(
   });
 }
 
-/** Frees a declined or stale assignment so the round can be topped up by auto-assign. */
+/**
+ * Frees a declined or stale assignment so the round can be topped up by auto-assign. It does not
+ * touch the recusal — the reviewer who stepped back stays off that submission, and `ABS-12` is the
+ * whole reason those two are separate clicks now.
+ */
 export async function releaseAssignmentAction(assignmentId: string): Promise<ActionResult> {
   return run(async () => {
     const ctx = await decideContext();
     await review.unassignReviewer(ctx, assignmentId);
+    return null;
+  });
+}
+
+/**
+ * `ABS-12`. The deliberate undo: this reviewer may be handed this submission again. Recorded as a
+ * released recusal rather than a deleted one, so the decision sticks and is visible as a decision.
+ */
+export async function clearRecusalAction(recusalId: string): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await decideContext();
+    await review.clearRecusal(ctx, recusalId);
     return null;
   });
 }

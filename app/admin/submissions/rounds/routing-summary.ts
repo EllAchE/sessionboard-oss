@@ -16,12 +16,19 @@ export type RoutingWire = {
  * because this module is loaded by a client component and that one reaches the database; the test
  * beside this file asserts the two stay the same union.
  */
-export type UnroutedReason = 'no_track' | 'track_uncovered' | 'all_conflicted';
+export type UnroutedReason =
+  | 'no_track'
+  | 'track_uncovered'
+  | 'all_conflicted'
+  | 'all_recused';
 
 export const UNROUTED_REASON_LABEL: Record<UnroutedReason, string> = {
   no_track: 'No track on the submission',
   track_uncovered: 'No reviewer covers this track',
   all_conflicted: 'Everyone covering this track wrote it or speaks on it',
+  // The only reason on this list an organizer can undo, so it says so rather than making them
+  // hunt through coverage for a problem that is one click away in Recusals.
+  all_recused: 'Everyone else covering this track has recused themselves — clear one to reopen it',
 };
 
 export type UnroutedWire = {
