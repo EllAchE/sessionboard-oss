@@ -1,14 +1,25 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { ToastProvider } from '@/components/ui';
+import { appUrl } from '@/lib/env';
+import { createSiteMetadata } from '@/lib/site-metadata';
 import { fontVariables } from './fonts';
 import './tokens.css';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'Cicero',
-  description: 'Open-source speaker and content management for conferences.',
+export const dynamic = 'force-dynamic';
+
+export const viewport: Viewport = {
+  colorScheme: 'light dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F4EFE5' },
+    { media: '(prefers-color-scheme: dark)', color: '#292621' },
+  ],
 };
+
+export function generateMetadata(): Metadata {
+  return createSiteMetadata(appUrl());
+}
 
 /**
  * Runs before first paint so the stored theme is on the element the first time anything is styled.

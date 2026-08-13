@@ -9,6 +9,7 @@ import {
   zonedMinutes,
   zonedTimeToUtc,
   type Conflict,
+  type QueueItem,
   type ScheduleEntry,
 } from '@/lib/services/schedule';
 import type { NamedFormat, NamedRoom, NamedTrack } from './wire';
@@ -23,6 +24,7 @@ import styles from './agenda.module.css';
 
 export type SessionDraft = {
   sessionId: string | null;
+  sourceSubmissionId: string | null;
   title: string;
   descriptionMarkdown: string;
   roomId: string;
@@ -43,6 +45,7 @@ export function draftFor(
   if (!entry) {
     return {
       sessionId: null,
+      sourceSubmissionId: null,
       title: '',
       descriptionMarkdown: '',
       roomId: '',
@@ -58,6 +61,7 @@ export function draftFor(
 
   return {
     sessionId: entry.id,
+    sourceSubmissionId: null,
     title: entry.title,
     descriptionMarkdown: '',
     roomId: entry.roomId ?? '',
@@ -71,6 +75,26 @@ export function draftFor(
   };
 }
 
+export function draftForQueueItem(
+  item: QueueItem,
+  fallbackDayKey: string,
+): SessionDraft {
+  return {
+    sessionId: item.kind === 'session' ? item.id : null,
+    sourceSubmissionId: item.kind === 'submission' ? item.id : null,
+    title: item.title,
+    descriptionMarkdown: item.descriptionMarkdown ?? '',
+    roomId: '',
+    trackId: item.trackId ?? '',
+    formatId: item.formatId ?? '',
+    dayKey: fallbackDayKey,
+    startTime: '09:00',
+    endTime: '',
+    ceuCredits: '',
+    clientId: '',
+  };
+}
+
 function minutesFromInput(value: string): number | null {
   const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
   if (!match) return null;
@@ -80,6 +104,7 @@ function minutesFromInput(value: string): number | null {
 
 export type SavePayload = {
   sessionId: string | null;
+  sourceSubmissionId: string | null;
   title: string;
   descriptionMarkdown: string | null;
   roomId: string | null;
@@ -170,6 +195,7 @@ export function SessionDialog({
     startTransition(async () => {
       await onSave({
         sessionId: form.sessionId,
+        sourceSubmissionId: form.sourceSubmissionId,
         title: form.title.trim(),
         descriptionMarkdown: form.descriptionMarkdown.trim() || null,
         roomId: form.roomId || null,
@@ -191,6 +217,8 @@ export function SessionDialog({
       description={
         form.sessionId
           ? 'Times are in the event timezone.'
+          : form.sourceSubmissionId
+            ? 'Schedule this accepted proposal. Its speakers and submission stay linked.'
           : 'For anything without a submission behind it — a keynote, a break, lunch.'
       }
       size="lg"

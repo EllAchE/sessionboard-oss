@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_TEMPLATES,
+  renderMessage,
   renderTemplateText,
   templateVariablesUsed,
   unknownVariables,
@@ -44,6 +45,27 @@ describe('merge fields', () => {
 
   it('flags a typo against the documented catalog', () => {
     expect(unknownVariables('{{speaker.nmae}} {{speaker.name}}')).toEqual(['speaker.nmae']);
+  });
+});
+
+describe('message rendering', () => {
+  it('keeps speaker-controlled merge values inert in markdown bodies', () => {
+    const message = renderMessage(
+      {
+        eventName: 'Cicero Conf',
+        accent: '#123456',
+        supportEmail: null,
+        eventUrl: 'https://cicero.test/event',
+      },
+      'Hello {{speaker.name}}',
+      'Hello {{speaker.name}}',
+      { 'speaker.name': '[click](https://evil.test) ![pixel](https://evil.test/pixel)' },
+    );
+
+    expect(message.subject).toContain('[click](https://evil.test)');
+    expect(message.text).toContain('[click](https://evil.test)');
+    expect(message.html).not.toContain('href="https://evil.test"');
+    expect(message.html).not.toContain('src="https://evil.test/pixel"');
   });
 });
 
