@@ -1,0 +1,72 @@
+{
+  "data": {
+    "source": "accelevents",
+    "mode": "replace",
+    "applied": false,
+    "canApply": true,
+    "requiresDeleteConfirmation": false,
+    "summary": {
+      "create": 3,
+      "update": 0,
+      "delete": 0,
+      "noop": 0,
+      "error": 0
+    },
+    "operations": [
+      {
+        "externalId": "ae-first-settlement-101",
+        "action": "create",
+        "sessionId": null,
+        "changes": [
+          "clientId",
+          "title",
+          "descriptionMarkdown",
+          "status",
+          "startsAt",
+          "endsAt",
+          "roomId",
+          "trackId",
+          "formatId",
+          "ceuCredits"
+        ],
+        "message": null
+      },
+      {
+        "externalId": "ae-first-settlement-102",
+        "action": "create",
+        "sessionId": null,
+        "changes": [
+          "clientId",
+          "title",
+          "descriptionMarkdown",
+          "status",
+          "startsAt",
+          "endsAt",
+          "roomId",
+          "trackId",
+          "formatId",
+          "ceuCredits"
+        ],
+        "message": null
+      },
+      {
+        "externalId": "ae-first-settlement-103",
+        "action": "create",
+        "sessionId": null,
+        "changes": [
+          "clientId",
+          "title",
+          "descriptionMarkdown",
+          "status",
+          "startsAt",
+          "endsAt",
+          "roomId",
+          "trackId",
+          "formatId",
+          "ceuCredits"
+        ],
+        "message": null
+      }
+    ]
+  }
+}

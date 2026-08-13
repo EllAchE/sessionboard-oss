@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { toJsonSchema, toParameters } from './openapi';
 import {
   agendaSchema,
+  programReconcileBody,
   sessionListQuery,
   sessionSchema,
   submissionListQuery,
@@ -43,6 +44,13 @@ describe('toJsonSchema', () => {
     expect(props.status.enum).toEqual(['draft', 'published']);
     expect(props.status.description).toBe('Publication state');
     expect(props.tags.type).toBe('array');
+  });
+
+  it('carries ISO instants through as date-time strings', () => {
+    const generated = toJsonSchema(programReconcileBody) as {
+      properties: { sessions: { items: { properties: { startsAt: { format: string } } } } };
+    };
+    expect(generated.properties.sessions.items.properties.startsAt.format).toBe('date-time');
   });
 
   it('generates a non-empty schema for every published payload', () => {

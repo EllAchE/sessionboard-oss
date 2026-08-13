@@ -9,6 +9,8 @@ import {
   createSubmissionResponse,
   errorResponse,
   eventSchema,
+  programReconcileBody,
+  programReconcileResponse,
   sessionListQuery,
   sessionSchema,
   speakerSchema,
@@ -84,6 +86,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         'Public reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key',
         'issued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.',
         'Keys are hashed at rest and shown once, at creation.',
+        'Program reconciliation writes use the same event-scoped Bearer keys and preview by default.',
       ].join('\n'),
       license: { name: 'MIT' },
     },
@@ -111,6 +114,8 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         Submission: toJsonSchema(submissionSchema),
         NewSubmission: toJsonSchema(createSubmissionBody),
         NewSubmissionResult: toJsonSchema(createSubmissionResponse),
+        ProgramReconcileRequest: toJsonSchema(programReconcileBody),
+        ProgramReconcileResult: toJsonSchema(programReconcileResponse),
         Error: toJsonSchema(errorResponse),
       },
     },
@@ -163,6 +168,29 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           responses: {
             '200': okResponse('The agenda', ref('Agenda')),
             ...errors([404]),
+          },
+        },
+      },
+      '/events/{slug}/program/reconcile': {
+        post: {
+          tags: ['Program'],
+          summary: 'Preview or apply an Accelevents program collection',
+          description:
+            'Requires an API key issued for this event. `apply: false` is a side-effect-free preview. `merge` upserts listed sessions and honors explicit `deleteExternalIds`. `replace` also reports source-managed sessions missing from the collection; applying those deletes requires `confirmDeleteMissing: "DELETE_MISSING_SESSIONS"`. Any per-record error prevents the entire request from being applied.',
+          operationId: 'reconcileProgram',
+          security: [{ bearerAuth: [] }],
+          parameters: [slugParam],
+          requestBody: {
+            required: true,
+            content: jsonContent(ref('ProgramReconcileRequest')),
+          },
+          responses: {
+            '200': okResponse('The preview or apply report', {
+              type: 'object',
+              properties: { data: ref('ProgramReconcileResult') },
+              required: ['data'],
+            }),
+            ...errors([401, 422]),
           },
         },
       },

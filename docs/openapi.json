@@ -3,7 +3,7 @@
   "info": {
     "title": "Cicero API",
     "version": "1.0.0",
-    "description": "Read the public program of a Cicero event, and submit to an open call for speakers.\n\nPublic reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key\nissued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and shown once, at creation.",
+    "description": "Read the public program of a Cicero event, and submit to an open call for speakers.\n\nPublic reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key\nissued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and shown once, at creation.\nProgram reconciliation writes use the same event-scoped Bearer keys and preview by default.",
     "license": {
       "name": "MIT"
     }
@@ -993,6 +993,244 @@
           "title"
         ]
       },
+      "ProgramReconcileRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "accelevents"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "replace"
+            ],
+            "description": "merge upserts listed records; replace also deletes managed records that are absent"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "False previews the exact operations without writing"
+          },
+          "confirmDeleteMissing": {
+            "const": "DELETE_MISSING_SESSIONS",
+            "description": "Required to apply replace mode when missing managed sessions would be deleted"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "externalId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Stable Accelevents session id; unique within this event"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 50000,
+                  "description": "Required Markdown field; null or blank clears the description"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "cancelled"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "room": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Event room id or exact name (case-insensitive)"
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Event track id or exact name (case-insensitive)"
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Event format id or exact name (case-insensitive)"
+                },
+                "ceuCredits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 50
+                }
+              },
+              "required": [
+                "externalId",
+                "title",
+                "description",
+                "status",
+                "startsAt",
+                "endsAt",
+                "room",
+                "track",
+                "format",
+                "ceuCredits"
+              ]
+            }
+          },
+          "deleteExternalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Explicit source-managed sessions to delete in merge mode"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "description": "An Accelevents-shaped program snapshot or patch"
+      },
+      "ProgramReconcileResult": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "accelevents"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "replace"
+            ]
+          },
+          "applied": {
+            "type": "boolean"
+          },
+          "canApply": {
+            "type": "boolean"
+          },
+          "requiresDeleteConfirmation": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "integer"
+              },
+              "update": {
+                "type": "integer"
+              },
+              "delete": {
+                "type": "integer"
+              },
+              "noop": {
+                "type": "integer"
+              },
+              "error": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "create",
+              "update",
+              "delete",
+              "noop",
+              "error"
+            ]
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "externalId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete",
+                    "noop",
+                    "error"
+                  ]
+                },
+                "sessionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "externalId",
+                "action",
+                "sessionId",
+                "changes",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "source",
+          "mode",
+          "applied",
+          "canApply",
+          "requiresDeleteConfirmation",
+          "summary",
+          "operations"
+        ]
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -1276,6 +1514,82 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/program/reconcile": {
+      "post": {
+        "tags": [
+          "Program"
+        ],
+        "summary": "Preview or apply an Accelevents program collection",
+        "description": "Requires an API key issued for this event. `apply: false` is a side-effect-free preview. `merge` upserts listed sessions and honors explicit `deleteExternalIds`. `replace` also reports source-managed sessions missing from the collection; applying those deletes requires `confirmDeleteMissing: \"DELETE_MISSING_SESSIONS\"`. Any per-record error prevents the entire request from being applied.",
+        "operationId": "reconcileProgram",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramReconcileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview or apply report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProgramReconcileResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
             "content": {
               "application/json": {
                 "schema": {
