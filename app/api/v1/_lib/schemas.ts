@@ -148,6 +148,96 @@ export const createSubmissionResponse = z.object({
   title: z.string(),
 });
 
+export const programSessionInputSchema = z.object({
+  externalId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe('Stable Accelevents session id; unique within this event'),
+  title: z.string().trim().min(1).max(300),
+  description: z
+    .string()
+    .max(50_000)
+    .nullable()
+    .describe('Required Markdown field; null or blank clears the description'),
+  status: z.enum(['draft', 'published', 'cancelled']),
+  startsAt: z.string().datetime({ offset: true }).nullable(),
+  endsAt: z.string().datetime({ offset: true }).nullable(),
+  room: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .nullable()
+    .describe('Event room id or exact name (case-insensitive)'),
+  track: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .nullable()
+    .describe('Event track id or exact name (case-insensitive)'),
+  format: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .nullable()
+    .describe('Event format id or exact name (case-insensitive)'),
+  ceuCredits: z.string().trim().max(50).nullable(),
+});
+
+export const programReconcileBody = z
+  .object({
+    source: z.literal('accelevents'),
+    mode: z
+      .enum(['merge', 'replace'])
+      .default('merge')
+      .describe(
+        'merge upserts listed records; replace also deletes managed records that are absent',
+      ),
+    apply: z
+      .boolean()
+      .default(false)
+      .describe('False previews the exact operations without writing'),
+    confirmDeleteMissing: z
+      .literal('DELETE_MISSING_SESSIONS')
+      .optional()
+      .describe('Required to apply replace mode when missing managed sessions would be deleted'),
+    sessions: z.array(programSessionInputSchema).max(1_000).default([]),
+    deleteExternalIds: z
+      .array(z.string().trim().min(1).max(200))
+      .max(1_000)
+      .default([])
+      .describe('Explicit source-managed sessions to delete in merge mode'),
+  })
+  .describe('An Accelevents-shaped program snapshot or patch');
+
+export const programOperationSchema = z.object({
+  externalId: z.string(),
+  action: z.enum(['create', 'update', 'delete', 'noop', 'error']),
+  sessionId: z.string().nullable(),
+  changes: z.array(z.string()),
+  message: z.string().nullable(),
+});
+
+export const programReconcileResponse = z.object({
+  source: z.literal('accelevents'),
+  mode: z.enum(['merge', 'replace']),
+  applied: z.boolean(),
+  canApply: z.boolean(),
+  requiresDeleteConfirmation: z.boolean(),
+  summary: z.object({
+    create: z.number().int(),
+    update: z.number().int(),
+    delete: z.number().int(),
+    noop: z.number().int(),
+    error: z.number().int(),
+  }),
+  operations: z.array(programOperationSchema),
+});
+
 export const acceleventsProgramSyncBody = z
   .object({
     mode: z.enum(['preview', 'apply']).default('preview'),
