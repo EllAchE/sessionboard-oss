@@ -1,5 +1,10 @@
 import { unavailable } from '../errors';
-import type { MailTransport, OutgoingMail, SendResult } from './transport';
+import {
+  calendarMimeMethod,
+  type MailTransport,
+  type OutgoingMail,
+  type SendResult,
+} from './transport';
 
 /**
  * HTTP rather than the `resend` SDK: Workers cannot open an SMTP socket, and one `fetch` has no
@@ -26,11 +31,14 @@ export function resendTransport(apiKey: string): MailTransport {
       };
       if (mail.replyTo) body.reply_to = mail.replyTo;
       if (mail.ics) {
+        // The method parameter is the message's own, never a constant: a `CANCEL` body shipped as
+        // `method=REQUEST` leaves the withdrawn session sitting on the speaker's calendar.
+        const method = calendarMimeMethod(mail.ics);
         body.attachments = [
           {
-            filename: 'invite.ics',
-            content: base64Utf8(mail.ics),
-            content_type: 'text/calendar; method=REQUEST; charset=utf-8',
+            filename: method === 'CANCEL' ? 'cancel.ics' : 'invite.ics',
+            content: base64Utf8(mail.ics.body),
+            content_type: `text/calendar; method=${method}; charset=utf-8`,
           },
         ];
       }

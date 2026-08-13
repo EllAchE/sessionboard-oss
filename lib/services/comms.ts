@@ -27,9 +27,10 @@ import {
   buildInvite,
   icsFilename,
   type CalendarAttendee,
+  type CalendarMethod,
 } from '../ics';
 import { formatRef, hashToken, randomToken } from '../ids';
-import { sendMail } from '../mail';
+import { sendMail, type OutgoingIcs } from '../mail';
 import { escapeMarkdownText, markdownToText, renderMarkdown } from '../markdown';
 import { sendSms } from '../sms';
 import { listEventsForUser, pickDefaultEvent } from './events';
@@ -677,6 +678,22 @@ export const DEFAULT_TEMPLATES: Array<{
     ].join('\n'),
   },
   {
+    key: 'submission.waitlisted',
+    name: 'Submission waitlisted',
+    subject: 'Your {{event.name}} submission is on the waitlist',
+    bodyMarkdown: [
+      'Hi {{speaker.firstName|there}},',
+      '',
+      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}. The programme committee rated it highly, and we would like to include it if a slot opens up.',
+      '',
+      '{{submission.decisionNote}}',
+      '',
+      'There is nothing you need to do now. We will email you as soon as we know either way, and your submission stays visible in your speaker portal in the meantime:',
+      '',
+      '[Open your speaker portal]({{portal.link}})',
+    ].join('\n'),
+  },
+  {
     key: 'submission.declined',
     name: 'Submission declined',
     subject: 'An update on your {{event.name}} submission',
@@ -1035,11 +1052,13 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
     // PUBLISH, not REQUEST. An ad-hoc send does not know whether it is a revision, and a REQUEST at
     // a sequence the speaker's calendar already holds is discarded as a duplicate — silently
     // undoing the invite. Real invitations go through `sendSessionInvites`, which owns the bump.
-    const ics =
+    const calendar =
       input.attachIcs && recipient.sessionId
-        ? ((await buildSessionCalendar(recipient.sessionId, { method: 'PUBLISH' }))?.body ??
-          undefined)
-        : undefined;
+        ? await buildSessionCalendar(recipient.sessionId, { method: 'PUBLISH' })
+        : null;
+    const ics: OutgoingIcs | undefined = calendar
+      ? { body: calendar.body, method: calendar.method }
+      : undefined;
 
     let emailId: string | null = null;
     let emailSent = false;
@@ -1142,7 +1161,7 @@ async function sendTemplated(input: {
   key: string;
   recipient: Recipient;
   extraVars?: TemplateVars;
-  ics?: string;
+  ics?: OutgoingIcs;
 }): Promise<DispatchResult> {
   const { branding, event } = await loadCommsContext(input.eventId);
   const stored = await getTemplate(input.eventId, input.key);
@@ -1233,13 +1252,24 @@ export async function sendSubmissionConfirmation(submissionId: string): Promise<
   return fanOutSubmissionTemplate(row.eventId, submissionId, 'submission.confirmation');
 }
 
-/** `V-2` decisions. Picks the accept or decline template from the submission's own status. */
+/**
+ * Every submission status that is a *decision* the speaker is owed an email about, and the template
+ * that carries it. A waitlist is a decision too: it is the one a speaker is most likely to be left
+ * guessing about, since nothing else in the product tells them their proposal is still alive.
+ */
+export const DECISION_TEMPLATES: Record<string, string> = {
+  accepted: 'submission.accepted',
+  waitlisted: 'submission.waitlisted',
+  declined: 'submission.declined',
+};
+
+/** `V-2` decisions. Picks the template from the submission's own status. */
 export async function sendDecisionNotice(submissionId: string): Promise<SendOutcome> {
   const row = await loadSubmission(submissionId);
-  if (row.status !== 'accepted' && row.status !== 'declined') {
-    throw invalid('Only an accepted or declined submission has a decision to send');
+  const key = DECISION_TEMPLATES[row.status];
+  if (!key) {
+    throw invalid('Only an accepted, waitlisted or declined submission has a decision to send');
   }
-  const key = row.status === 'accepted' ? 'submission.accepted' : 'submission.declined';
   return fanOutSubmissionTemplate(row.eventId, submissionId, key);
 }
 
@@ -1278,6 +1308,12 @@ export function calendarDownloadUrl(sessionId: string): string {
 
 type SessionCalendar = {
   body: string;
+  /**
+   * Travels with the body all the way to the MIME part. The transports stamp
+   * `text/calendar; method=…` from it, and a cancellation delivered under `REQUEST` re-invites the
+   * speaker to the session it was meant to withdraw.
+   */
+  method: CalendarMethod;
   filename: string;
   uid: string;
   sequence: number;
@@ -1373,6 +1409,7 @@ export async function buildSessionCalendar(
 
   return {
     body,
+    method,
     filename: icsFilename(session.title),
     uid: session.icsUid,
     sequence,
@@ -1493,7 +1530,7 @@ export async function sendSessionInvites(
         key,
         recipient,
         extraVars: { 'session.calendarUrl': calendarDownloadUrl(sessionId) },
-        ics: calendar.body,
+        ics: { body: calendar.body, method: calendar.method },
       }),
     );
   }

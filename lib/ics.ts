@@ -210,6 +210,24 @@ export function newIcsUid(): string {
   return `${crypto.randomUUID()}@cicero.events`;
 }
 
+/**
+ * Reads the `METHOD` a VCALENDAR body declares. The mail transports repeat that method on the MIME
+ * part (`text/calendar; method=…`), and a strict client — Outlook above all — believes the MIME
+ * parameter over the body: a `METHOD:CANCEL` body delivered as `method=REQUEST` re-invites the
+ * speaker to the talk it was meant to withdraw. This is how the two are kept honest with each other.
+ *
+ * Returns `null` for a body with no recognisable METHOD line rather than guessing one.
+ */
+export function readCalendarMethod(body: string): CalendarMethod | null {
+  // Unfold first. A continuation line begins with a space or tab, and folding may in principle land
+  // anywhere — including inside the word `METHOD`.
+  const unfolded = body.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  const match = /^METHOD:(.+)$/m.exec(unfolded);
+  if (!match) return null;
+  const value = match[1].trim().toUpperCase();
+  return value === 'REQUEST' || value === 'CANCEL' || value === 'PUBLISH' ? value : null;
+}
+
 /** Attachment / download filename. Safe for Content-Disposition without further quoting. */
 export function icsFilename(title: string): string {
   const stem =
