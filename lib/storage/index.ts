@@ -1,6 +1,12 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { sum } from 'drizzle-orm';
 import { env, envFlag, requireEnv } from '../env';
 import { notFound } from '../errors';
+import {
+  POSTGRES_FILE_PRACTICAL_CEILING_BYTES,
+  POSTGRES_FILE_WARNING_BYTES,
+  type StorageUsage,
+} from './status';
 
 export type StoredObject = {
   body: ReadableStream<Uint8Array>;
@@ -174,6 +180,26 @@ export function getStorage(): Storage {
   const bucket = r2Binding();
   if (bucket) return r2Storage(bucket);
   return env('S3_BUCKET') ? s3Storage() : postgresStorage();
+}
+
+/** Returns deployment-wide object usage without exposing any other event's file metadata. */
+export async function getStorageUsage(): Promise<StorageUsage> {
+  const backend = getStorage().name;
+  if (backend !== 'postgres') {
+    return { backend, usedBytes: null, warningBytes: null, practicalCeilingBytes: null };
+  }
+
+  const [{ getDb }, { fileBlob }] = await Promise.all([
+    import('../../db/client'),
+    import('../../db/schema'),
+  ]);
+  const [row] = await getDb().select({ sizeBytes: sum(fileBlob.sizeBytes) }).from(fileBlob);
+  return {
+    backend,
+    usedBytes: Number(row?.sizeBytes ?? 0),
+    warningBytes: POSTGRES_FILE_WARNING_BYTES,
+    practicalCeilingBytes: POSTGRES_FILE_PRACTICAL_CEILING_BYTES,
+  };
 }
 
 /**

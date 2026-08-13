@@ -22,6 +22,11 @@ vi.mock('@aws-sdk/client-s3', () => ({
 }));
 
 import { getStorage } from './index';
+import {
+  POSTGRES_FILE_PRACTICAL_CEILING_BYTES,
+  POSTGRES_FILE_WARNING_BYTES,
+  postgresStoragePressure,
+} from './status';
 
 /** Drive the S3 branch far enough to build a client, and hand back the config it was built with. */
 async function s3ClientConfig(): Promise<Record<string, unknown>> {
@@ -62,5 +67,13 @@ describe('s3 storage configuration', () => {
   it('addresses virtual-hosted when S3_FORCE_PATH_STYLE is false', async () => {
     vi.stubEnv('S3_FORCE_PATH_STYLE', 'false');
     expect(await s3ClientConfig()).toMatchObject({ forcePathStyle: false });
+  });
+});
+
+describe('postgres storage pressure', () => {
+  it('warns before the documented handoff point and marks the ceiling separately', () => {
+    expect(postgresStoragePressure(POSTGRES_FILE_WARNING_BYTES - 1)).toBe('normal');
+    expect(postgresStoragePressure(POSTGRES_FILE_WARNING_BYTES)).toBe('warning');
+    expect(postgresStoragePressure(POSTGRES_FILE_PRACTICAL_CEILING_BYTES)).toBe('over');
   });
 });

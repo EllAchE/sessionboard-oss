@@ -86,6 +86,22 @@ function isEmail(value: string): boolean {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
 }
 
+/** A CRM image is a source reference only, but it is still rendered in the organizer's browser. */
+export function normalizeHeadshotSource(value: string | null | undefined): string | null {
+  const raw = trimmed(value);
+  if (!raw) return null;
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('bad scheme');
+    return parsed.toString();
+  } catch {
+    throw invalid('Headshot source must be an http or https URL', {
+      headshotUrl: 'Enter an http or https URL',
+    });
+  }
+}
+
 /* ------------------------------------------------------------------ filters */
 
 export type DirectoryFilters = {
@@ -369,7 +385,7 @@ export async function createContact(actor: Actor, input: ContactInput): Promise<
       jobTitle: trimmed(input.jobTitle),
       company: trimmed(input.company),
       bioMarkdown: trimmed(input.bioMarkdown),
-      headshotUrl: trimmed(input.headshotUrl),
+      headshotUrl: normalizeHeadshotSource(input.headshotUrl),
       location: trimmed(input.location),
       source: trimmed(input.source) ?? 'manual',
       tags: normalizeTags(input.tags),
@@ -417,7 +433,6 @@ export async function updateContact(
     'jobTitle',
     'company',
     'bioMarkdown',
-    'headshotUrl',
     'location',
     'source',
   ] as const;
@@ -426,6 +441,11 @@ export async function updateContact(
     const value = trimmed(input[key]);
     if (value !== current[key]) changed.push(key);
     next[key] = value;
+  }
+  if (input.headshotUrl !== undefined) {
+    const value = normalizeHeadshotSource(input.headshotUrl);
+    if (value !== current.headshotUrl) changed.push('headshotUrl');
+    next.headshotUrl = value;
   }
   if (input.tags !== undefined) {
     next.tags = normalizeTags(input.tags);
@@ -1117,6 +1137,9 @@ export async function pushContactToEvent(
         jobTitle: existing.jobTitle ?? person.jobTitle,
         company: existing.company ?? person.company,
         bioMarkdown: existing.bioMarkdown ?? person.bioMarkdown,
+        // `AR-5`: `contact.headshotUrl` is a discovery/source URL, not an event asset. Event
+        // profiles deliberately keep their stored `headshotFileId`; an organizer promotes the
+        // source through the speaker photo picker, which normalizes and stores controlled bytes.
         updatedAt: new Date(),
       })
       .where(eq(participant.id, existing.id));
@@ -1130,6 +1153,7 @@ export async function pushContactToEvent(
         jobTitle: person.jobTitle,
         company: person.company,
         bioMarkdown: person.bioMarkdown,
+        // See the existing-row branch above: external CRM images are never hotlinked as profiles.
       })
       .returning({ id: participant.id });
     participantId = row.id;

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { UploadCloud } from 'lucide-react';
 import { Button, cn } from '@/components/ui';
+import { normalizeProfileImage } from '@/lib/profile-image';
 import styles from '../portal.module.css';
 
 /**
@@ -50,15 +51,19 @@ export function Uploader({
       return;
     }
 
-    const body = new FormData();
-    body.set('intent', intent);
-    if (assignmentId) body.set('assignmentId', assignmentId);
-    if (fileId) body.set('fileId', fileId);
-    for (const entry of Array.from(files)) body.append('files', entry);
-
     setPending(true);
     setNotice(null);
     try {
+      const uploads =
+        intent === 'headshot'
+          ? [await normalizeProfileImage(files[0])]
+          : Array.from(files);
+      const body = new FormData();
+      body.set('intent', intent);
+      if (assignmentId) body.set('assignmentId', assignmentId);
+      if (fileId) body.set('fileId', fileId);
+      for (const entry of uploads) body.append('files', entry);
+
       const response = await fetch(`/portal/${eventSlug}/upload`, { method: 'POST', body });
       const result = (await response.json()) as { ok: boolean; message?: string };
       if (!response.ok || !result.ok) {
@@ -69,8 +74,14 @@ export function Uploader({
       setChosen([]);
       if (inputRef.current) inputRef.current.value = '';
       router.refresh();
-    } catch {
-      setNotice({ ok: false, message: 'That upload did not go through. Check your connection.' });
+    } catch (error) {
+      setNotice({
+        ok: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'That upload did not go through. Check your connection.',
+      });
     } finally {
       setPending(false);
     }

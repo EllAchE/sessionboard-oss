@@ -37,6 +37,44 @@
   display: none;
 }
 
+.storageStatus {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.storageStatus > svg {
+  flex: 0 0 auto;
+  margin-top: var(--space-05);
+}
+
+.storageStatus strong {
+  display: block;
+  color: var(--text-strong);
+  font: var(--type-label);
+}
+
+.storageStatus p {
+  margin-top: var(--space-05);
+  font: var(--type-body);
+}
+
+.storageStatus[data-pressure='warning'],
+.storageStatus[data-pressure='over'] {
+  color: var(--status-warning-fg);
+  background: var(--status-warning-bg);
+}
+
+.storageStatus[data-pressure='warning'] strong,
+.storageStatus[data-pressure='over'] strong {
+  color: var(--status-warning-fg);
+}
+
 .nav {
   display: flex;
   gap: var(--space-1);

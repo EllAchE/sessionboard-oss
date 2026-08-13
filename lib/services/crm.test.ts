@@ -5,6 +5,7 @@ import {
   duplicateGroups,
   mergeContactValues,
   mergeValuesFor,
+  normalizeHeadshotSource,
   normalizeName,
   parseTagList,
   previewCampaign,
@@ -171,6 +172,15 @@ describe('directory filters', () => {
   it('matches a custom field value exactly', () => {
     expect(contactMatches(AMARA_A, { custom: { 'speaker-type': 'External' } })).toBe(true);
     expect(contactMatches(AMARA_A, { custom: { 'speaker-type': 'Internal' } })).toBe(false);
+  });
+});
+
+describe('headshot sources', () => {
+  it('normalizes a bare host and permits only http(s)', () => {
+    expect(normalizeHeadshotSource('images.example/ada.jpg')).toBe(
+      'https://images.example/ada.jpg',
+    );
+    expect(() => normalizeHeadshotSource('data:image/png;base64,AAAA')).toThrow(/http or https/i);
   });
 });
 

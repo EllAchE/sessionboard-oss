@@ -264,7 +264,12 @@ redeploy and nothing else.
 
 R2 is off by default, because enabling it requires a payment method on the Cloudflare account and
 that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
-database until you turn it on; `wrangler.jsonc` says exactly how.
+database until you turn it on; `wrangler.jsonc` says exactly how. Treat that database backend as a
+small-deployment convenience, not an object store: individual uploads are capped at 25 MiB, every
+byte inflates the primary database and every full backup, and files are served through the Worker
+and Hyperdrive rather than a storage CDN. The Files screen warns at 250 MiB of database blobs and
+uses 500 MiB as the practical handoff point to R2/S3. Those are operating limits, not Postgres hard
+limits; configure a bucket earlier for frequent decks, video, or a multi-event archive.
 
 Two things to know before you deploy this yourself. The free plan's 10ms CPU limit is real and you
 will notice it — see the last section. And **`next build` reads `.env` and inlines what it finds
