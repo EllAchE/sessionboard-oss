@@ -6,11 +6,12 @@ the scrollable source of truth for what is complete and what still needs work.
 
 ## Audit snapshot
 
-- Audited source revision: `58d4c941d1e12ae1f41ec9ed5e89834dbd6a3d56` on `main`
-- Audited at: 2026-08-13 07:00 EDT / 04:00 PT
+- Audited source revision: `416101e` on `main`
+- Audited at: 2026-08-13 11:00 EDT / 08:00 PT
 - Previous audit: `a52c87c20fd049fa56db0c6b6011fbc741d1309e`, 2026-08-12 23:26 EDT. Every row below
-  was re-checked against source on the new revision rather than carried forward.
-- What was checked this run: schema and all eleven migrations, service layer, organizer and speaker
+  was re-checked against source at `58d4c94` rather than carried forward; the rows that moved after
+  that revision (`F-9`, `S-11`, `S-17`, `V-1`) were each re-checked again as they landed.
+- What was checked this run: schema and all thirteen migrations, service layer, organizer and speaker
   UI, the public CFP flow, the `/api/v1` contract and generated OpenAPI, mail transports and ICS
   generation, `wrangler.jsonc`, and the full test suite.
 - **The live deployment was not reachable from the audit host.** `cicero.lhar8771.workers.dev` does
@@ -23,11 +24,14 @@ the scrollable source of truth for what is complete and what still needs work.
 | Priority | Complete | Partial | Outstanding | Excluded | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Required | 54 | 2 | 2 | — | 58 |
-| Important | 25 | 2 | 0 | — | 27 |
-| Optional / nice-to-have | 28 | 1 | 2 | — | 31 |
+| Important | 27 | 0 | 0 | — | 27 |
+| Optional / nice-to-have | 29 | 0 | 2 | — | 31 |
 | Bonus | 3 | 1 | 1 | — | 5 |
 | Explicitly excluded | — | — | — | 3 | 3 |
-| **Total** | **110** | **6** | **5** | **3** | **124** |
+| **Total** | **113** | **3** | **5** | **3** | **124** |
+
+Counted from the rows below, not estimated. The three remaining PARTIAL rows are `T-6` and `C-3`
+(one deployment switch, see the next section) and the `Z-4` bonus.
 
 Legend:
 
