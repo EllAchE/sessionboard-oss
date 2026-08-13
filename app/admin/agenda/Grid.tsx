@@ -46,7 +46,15 @@ export function parseCellId(
   return { roomId: parts[1], minute, dayKey: parts[3] ?? null };
 }
 
-function QueueCard({ item, conflictCount }: { item: QueueItem; conflictCount?: number }) {
+function QueueCard({
+  item,
+  conflictCount,
+  onSchedule,
+}: {
+  item: QueueItem;
+  conflictCount?: number;
+  onSchedule: (item: QueueItem) => void;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `queue:${item.kind}:${item.id}`,
     data: { source: 'queue', item } satisfies DragPayload,
@@ -70,11 +78,28 @@ function QueueCard({ item, conflictCount }: { item: QueueItem; conflictCount?: n
         )}
         {conflictCount ? <span>{conflictCount} clash</span> : null}
       </span>
+      <button
+        type="button"
+        className={styles.cardAction}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSchedule(item);
+        }}
+      >
+        Schedule
+      </button>
     </div>
   );
 }
 
-export function UnscheduledRail({ queue }: { queue: QueueItem[] }) {
+export function UnscheduledRail({
+  queue,
+  onSchedule,
+}: {
+  queue: QueueItem[];
+  onSchedule: (item: QueueItem) => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: 'rail' });
 
   return (
@@ -89,7 +114,9 @@ export function UnscheduledRail({ queue }: { queue: QueueItem[] }) {
       {queue.length === 0 ? (
         <p className={styles.railEmpty}>Everything accepted has a slot.</p>
       ) : (
-        queue.map((item) => <QueueCard key={`${item.kind}:${item.id}`} item={item} />)
+        queue.map((item) => (
+          <QueueCard key={`${item.kind}:${item.id}`} item={item} onSchedule={onSchedule} />
+        ))
       )}
     </aside>
   );
