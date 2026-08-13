@@ -10,13 +10,20 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  Checkbox,
   Kbd,
   ScoreStars,
   Tag,
   Textarea,
 } from '../../../../components/ui';
 import { AI_KEY_MISSING_NOTE } from '@/lib/ai/notice';
-import { decideAction, generateAiReviewAction, saveScorecardAction } from '../actions';
+import {
+  assignOneAction,
+  decideAction,
+  generateAiReviewAction,
+  saveScorecardAction,
+  unassignAction,
+} from '../actions';
 import type { AiReviewWire, ScoreWire } from '../types';
 import styles from '../submissions.module.css';
 
@@ -30,6 +37,7 @@ export type DetailCriterion = {
 
 export type DetailReviewer = {
   assignmentId: string;
+  reviewerUserId: string;
   reviewerName: string;
   status: string;
   comment: string | null;
@@ -72,6 +80,7 @@ export type ReviewDetailProps = {
   mySubmitted: boolean;
   myAverage: number | null;
   reviewers: DetailReviewer[];
+  availableReviewers: Array<{ userId: string; name: string; email: string }>;
   summary: {
     average: number | null;
     spread: number | null;
@@ -143,6 +152,10 @@ export function ReviewDetail(props: ReviewDetailProps) {
 
   const criteria = props.criteria;
   const roundId = props.round?.id ?? null;
+  const assignmentByReviewer = useMemo(
+    () => new Map(props.reviewers.map((reviewer) => [reviewer.reviewerUserId, reviewer])),
+    [props.reviewers],
+  );
 
   const scoreList = useMemo<ScoreWire[]>(
     () =>
@@ -223,6 +236,36 @@ export function ReviewDetail(props: ReviewDetailProps) {
       setMessage('AI suggestion generated. It is advisory — nothing was decided.');
     });
   }, [props.submissionId, roundId]);
+
+  const setReviewerAssignment = useCallback(
+    (reviewerUserId: string, assigned: boolean) => {
+      if (!roundId || !props.canDecide) return;
+      const current = assignmentByReviewer.get(reviewerUserId);
+      if (!assigned && current?.status === 'completed') {
+        const confirmed = window.confirm(
+          `Remove ${current.reviewerName}'s completed review and its scores?`,
+        );
+        if (!confirmed) return;
+      }
+
+      setError(null);
+      setMessage(null);
+      startTransition(async () => {
+        const result = assigned
+          ? await assignOneAction(roundId, props.submissionId, reviewerUserId)
+          : current
+            ? await unassignAction(current.assignmentId)
+            : { ok: true as const, data: null };
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        setMessage(assigned ? 'Reviewer assigned.' : 'Reviewer unassigned.');
+        router.refresh();
+      });
+    },
+    [assignmentByReviewer, props.canDecide, props.submissionId, roundId, router],
+  );
 
   const go = useCallback(
     (href: string | null) => {
@@ -450,6 +493,44 @@ export function ReviewDetail(props: ReviewDetailProps) {
         </div>
 
         <aside className={styles.detailSide}>
+          {props.canDecide && props.round ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Reviewer assignments</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <div className={styles.stack}>
+                  {props.availableReviewers.map((reviewer) => {
+                    const assignment = assignmentByReviewer.get(reviewer.userId);
+                    return (
+                      <label key={reviewer.userId} className={styles.keyRow}>
+                        <Checkbox
+                          checked={Boolean(assignment)}
+                          disabled={pending}
+                          onChange={(event) =>
+                            setReviewerAssignment(reviewer.userId, event.target.checked)
+                          }
+                        />
+                        <span>
+                          {reviewer.name} · {reviewer.email}
+                          {assignment?.status === 'completed' ? ' · completed' : ''}
+                        </span>
+                      </label>
+                    );
+                  })}
+                  {props.availableReviewers.length === 0 ? (
+                    <p className={styles.muted}>
+                      Invite reviewers from the Rounds page before assigning this submission.
+                    </p>
+                  ) : null}
+                  <p className={styles.aiNote}>
+                    Checked reviewers see this submission in their queue for {props.round.name}.
+                  </p>
+                </div>
+              </CardBody>
+            </Card>
+          ) : null}
+
           <Card>
             <CardHeader>
               <CardTitle>Your scorecard</CardTitle>

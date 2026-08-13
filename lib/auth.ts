@@ -36,7 +36,10 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-async function findOrCreateUser(email: string, name?: string | null): Promise<{ id: string; email: string; name: string | null }> {
+export async function ensureUserAccount(
+  email: string,
+  name?: string | null,
+): Promise<{ id: string; email: string; name: string | null }> {
   const db = getDb();
   const normalized = normalizeEmail(email);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
@@ -75,7 +78,7 @@ export async function requestMagicLink(
   request: MagicLinkRequest,
 ): Promise<{ email: string; link: string; delivered: boolean }> {
   const db = getDb();
-  const account = await findOrCreateUser(request.email, request.name);
+  const account = await ensureUserAccount(request.email, request.name);
   const token = randomToken();
 
   await db.insert(magicToken).values({

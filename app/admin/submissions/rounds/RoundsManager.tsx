@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BellRing, ChevronLeft, Plus, Trash2, UserMinus } from 'lucide-react';
+import { BellRing, ChevronLeft, Plus, Trash2, UserMinus, UserPlus } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -25,7 +25,12 @@ import {
   updateCriterionAction,
   updateRoundAction,
 } from '../actions';
-import { createRoundAction, releaseAssignmentAction, remindReviewersAction } from './actions';
+import {
+  createRoundAction,
+  inviteReviewerAction,
+  releaseAssignmentAction,
+  remindReviewersAction,
+} from './actions';
 import styles from '../submissions.module.css';
 
 export type RoundWire = {
@@ -99,6 +104,9 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [newRoundBlind, setNewRoundBlind] = useState(true);
   const [newRoundAnonymized, setNewRoundAnonymized] = useState(false);
   const [reminderNote, setReminderNote] = useState('');
+  const [reviewerName, setReviewerName] = useState('');
+  const [reviewerEmail, setReviewerEmail] = useState('');
+  const [reviewerAccessLink, setReviewerAccessLink] = useState<string | null>(null);
 
   const [criterionLabel, setCriterionLabel] = useState('');
   const [criterionWeight, setCriterionWeight] = useState('1');
@@ -129,6 +137,31 @@ export function RoundsManager(props: RoundsManagerProps) {
   );
 
   const selectRound = (roundId: string) => router.push(`/admin/submissions/rounds?round=${roundId}`);
+
+  const inviteReviewer = () => {
+    setError(null);
+    setMessage(null);
+    setReviewerAccessLink(null);
+    startTransition(async () => {
+      const result = await inviteReviewerAction({
+        email: reviewerEmail,
+        name: reviewerName || null,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setReviewerName('');
+      setReviewerEmail('');
+      setReviewerAccessLink(result.data.accessLink);
+      setMessage(
+        result.data.accessLink
+          ? `${result.data.reviewer.name} can review this event. Copy their access link below.`
+          : `Invitation sent to ${result.data.reviewer.email}.`,
+      );
+      router.refresh();
+    });
+  };
 
   const plannedTotal = useMemo(() => {
     const per = Math.max(1, Number(perSubmission) || 1);
@@ -470,6 +503,49 @@ export function RoundsManager(props: RoundsManagerProps) {
             <CardBody>
               <div className={styles.stack}>
                 <div className={styles.inlineStack}>
+                  <Input
+                    inputSize="sm"
+                    placeholder="Reviewer name (optional)"
+                    aria-label="Reviewer name"
+                    value={reviewerName}
+                    onChange={(event) => setReviewerName(event.target.value)}
+                  />
+                  <Input
+                    inputSize="sm"
+                    type="email"
+                    placeholder="reviewer@example.com"
+                    aria-label="Reviewer email"
+                    value={reviewerEmail}
+                    onChange={(event) => setReviewerEmail(event.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    iconLeft={<UserPlus size={14} />}
+                    loading={pending}
+                    disabled={!reviewerEmail.trim()}
+                    onClick={inviteReviewer}
+                  >
+                    Invite reviewer
+                  </Button>
+                </div>
+                <p className={styles.aiNote}>
+                  Invited reviewers receive a passwordless link to their event-scoped review queue.
+                  Inviting the same address again sends a fresh link without duplicating access.
+                </p>
+                {reviewerAccessLink ? (
+                  <div className={styles.inlineStack}>
+                    <span className={styles.aiNote}>Email is logged in this environment.</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigator.clipboard.writeText(reviewerAccessLink)}
+                    >
+                      Copy reviewer access link
+                    </Button>
+                  </div>
+                ) : null}
+
+                <div className={styles.inlineStack}>
                   {props.reviewers.map((reviewer) => (
                     <label key={reviewer.userId} className={styles.keyRow}>
                       <Checkbox
@@ -482,13 +558,11 @@ export function RoundsManager(props: RoundsManagerProps) {
                           )
                         }
                       />
-                      {reviewer.name}
+                      {reviewer.name} · {reviewer.email}
                     </label>
                   ))}
                   {props.reviewers.length === 0 ? (
-                    <p className={styles.muted}>
-                      No organizers or reviewers on this event yet. Invite them from the team page.
-                    </p>
+                    <p className={styles.muted}>Invite the first reviewer above.</p>
                   ) : null}
                 </div>
 
