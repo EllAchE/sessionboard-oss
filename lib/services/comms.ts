@@ -105,6 +105,10 @@ export const TEMPLATE_VARIABLES: TemplateVariable[] = [
   { path: 'tasks.next', description: 'Name of the next task due' },
   { path: 'task.name', description: 'Task name (reminder sends only)' },
   { path: 'task.dueAt', description: 'Task due date (reminder sends only)' },
+  {
+    path: 'task.sessions',
+    description: 'Sessions this task is still outstanding on, as a markdown list (empty otherwise)',
+  },
   { path: 'portal.url', description: 'Speaker portal URL' },
   { path: 'portal.link', description: 'One-click sign-in link into the portal' },
   { path: 'form.name', description: 'Form name (deadline reminders only)' },
@@ -316,6 +320,13 @@ export type RecipientTask = {
   taskId: string;
   name: string;
   dueAt: Date | null;
+  /**
+   * `S-16`. One row per assignment, and a `submission`-scoped task has one assignment per accepted
+   * session — so a speaker with three talks holds this task three times over. The session each
+   * outstanding copy is about, so the difference between them can be said out loud instead of
+   * printing the same line three times.
+   */
+  submissionTitle: string | null;
 };
 
 export type Recipient = {
@@ -398,6 +409,7 @@ export async function loadRecipientGraph(eventId: string) {
       taskId: task.id,
       name: task.name,
       dueAt: task.dueAt,
+      submissionId: taskAssignment.submissionId,
     })
     .from(taskAssignment)
     .innerJoin(task, eq(task.id, taskAssignment.taskId))
@@ -435,11 +447,19 @@ export async function resolveRecipients(
     if (row.submissionId) sessionBySubmission.set(row.submissionId, row);
   }
 
+  const titleBySubmission = new Map<string, string>();
+  for (const row of submissionRows) titleBySubmission.set(row.id, row.title);
+
   const tasksByParticipant = new Map<string, RecipientTask[]>();
   for (const row of taskRows) {
     if (spec.kind === 'outstanding_tasks' && spec.taskId && row.taskId !== spec.taskId) continue;
     const list = tasksByParticipant.get(row.participantId) ?? [];
-    list.push({ taskId: row.taskId, name: row.name, dueAt: row.dueAt });
+    list.push({
+      taskId: row.taskId,
+      name: row.name,
+      dueAt: row.dueAt,
+      submissionTitle: row.submissionId ? (titleBySubmission.get(row.submissionId) ?? null) : null,
+    });
     tasksByParticipant.set(row.participantId, list);
   }
 
@@ -630,24 +650,59 @@ function buildVars(input: {
     'session.calendarUrl': session ? calendarDownloadUrl(session.id) : '',
 
     'tasks.count': String(openTasks.length),
+    /**
+     * One line per assignment, and on a `submission`-scoped task that is one line per session. The
+     * session has to be named or the list reads as the same task repeated — which is what the
+     * reader would be looking at, with no way to tell which slides are still missing.
+     */
     'tasks.list': sortedTasks
-      .map((t) => `- ${t.name}${t.dueAt ? ` — due ${formatInZone(t.dueAt, zone, false)}` : ''}`)
+      .map(
+        (t) =>
+          `- ${t.name}${t.submissionTitle ? ` (${t.submissionTitle})` : ''}` +
+          `${t.dueAt ? ` — due ${formatInZone(t.dueAt, zone, false)}` : ''}`,
+      )
       .join('\n'),
     'tasks.next': sortedTasks[0]?.name ?? '',
 
-    ...taskReminderVars(selectedTask),
+    ...taskReminderVars(selectedTask, outstandingSessions(openTasks, selectedTask?.taskId ?? null)),
 
     'portal.url': `${appUrl()}/portal`,
   };
 }
 
+/**
+ * Every session this person still owes `taskId` on, in the order the assignments came back. Empty on
+ * a `contact`-scoped task, which is about the person rather than about any session.
+ */
+export function outstandingSessions(
+  openTasks: readonly RecipientTask[],
+  taskId: string | null,
+): string[] {
+  if (!taskId) return [];
+  const titles = new Set<string>();
+  for (const entry of openTasks) {
+    if (entry.taskId !== taskId || !entry.submissionTitle) continue;
+    titles.add(entry.submissionTitle);
+  }
+  return [...titles];
+}
+
 function taskReminderVars(
   selectedTask: Pick<RecipientTask, 'name' | 'dueAt'> | null,
+  sessions: readonly string[] = [],
 ): TemplateVars {
   return {
     'task.name': selectedTask?.name ?? '',
     'task.dueAt': selectedTask?.dueAt
       ? ` and due ${new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(selectedTask.dueAt)}`
+      : '',
+    /**
+     * Carries its own connective prose and is empty when there is nothing to say, the same shape as
+     * `task.dueAt` — so one template reads correctly whether the task is owed once by a person or
+     * once per session. This is what lets a `submission`-scoped reminder be *one* email.
+     */
+    'task.sessions': sessions.length
+      ? `\n\nIt applies to:\n\n${sessions.map((title) => `- ${title}`).join('\n')}`
       : '',
   };
 }
@@ -774,7 +829,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'A quick reminder that **{{task.name}}** is still outstanding{{task.dueAt| }}.',
+      'A quick reminder that **{{task.name}}** is still outstanding{{task.dueAt| }}.{{task.sessions}}',
       '',
       'Everything still open on your list:',
       '',
@@ -1585,11 +1640,30 @@ export type ReminderRun = {
 /**
  * `C-7`. Each task carries `reminder_days_before` — say `[14, 7, 1]` — which is a cadence, not a
  * schedule: the fire time is `due_at` minus each offset. A run sends at most one reminder per
- * assignment, for the most recent offset that has passed and has not already been covered by
- * `last_reminded_at`.
+ * **person per task**, for the most recent offset that has passed and has not already been covered
+ * by `last_reminded_at`.
  *
  * That comparison is what makes the route re-entrant. Cron Triggers guarantee at-least-once
  * delivery, so "run this hourly" must mean "send once per offset", not "send once per run".
+ *
+ * ## Per person, not per assignment
+ *
+ * `S-16` made one task able to hold several assignment rows for the same person — a
+ * `submission`-scoped task is owed once per accepted session, which is the whole point of the scope.
+ * Fanning the reminder out over those rows, which is what this did, put three emails in a
+ * three-talk speaker's inbox on the same morning, and every var in `task.reminder` is a fact about
+ * the *person* — `task.name`, `task.dueAt`, `tasks.list`, `portal.link` — so the three were
+ * byte-identical. Nothing in them said which session each was about, because nothing in them could.
+ *
+ * So the rows are grouped by participant and one reminder goes out naming every session still
+ * outstanding, through `{{task.sessions}}`. Nothing is lost: the speaker learns about all three
+ * talks in one email instead of one talk in none of three. Every row in the group is stamped, so the
+ * cadence stays per-assignment even though the mail is per-person, and a row completed between runs
+ * simply drops out of the next group.
+ *
+ * The campaign path already worked this way — `resolveRecipients` returns one recipient per person —
+ * which is the other reason this was a defect rather than a design: the same task reminded twice by
+ * two routes did not send the same number of emails.
  */
 export async function runTaskReminders(
   options: { eventId?: string; now?: Date } = {},
@@ -1634,26 +1708,36 @@ export async function runTaskReminders(
         ),
       );
 
+    const dueByParticipant = new Map<string, string[]>();
     for (const assignment of assignments) {
       if (assignment.lastRemindedAt && assignment.lastRemindedAt.getTime() >= fireAt.getTime()) {
         continue;
       }
-      const recipient = await recipientForParticipant(row.eventId, assignment.participantId);
+      const group = dueByParticipant.get(assignment.participantId) ?? [];
+      group.push(assignment.id);
+      dueByParticipant.set(assignment.participantId, group);
+    }
+
+    for (const [participantId, assignmentIds] of dueByParticipant) {
+      const recipient = await recipientForParticipant(row.eventId, participantId);
       if (!recipient) continue;
 
       const result = await sendTemplated({
         eventId: row.eventId,
         key: 'task.reminder',
         recipient,
-        extraVars: taskReminderVars(row),
+        // Named off the recipient's own open assignments, which are already loaded — so the one
+        // email says which sessions it is about without a query per session.
+        extraVars: taskReminderVars(row, outstandingSessions(recipient.openTasks, row.id)),
       });
 
       // Stamped even when the template is disabled, so turning reminders back on does not
-      // immediately fire the whole backlog at everyone.
+      // immediately fire the whole backlog at everyone. Every row the one email covered is
+      // stamped, or the next run would send it again for the ones that were not.
       await db
         .update(taskAssignment)
         .set({ lastRemindedAt: now, updatedAt: now })
-        .where(eq(taskAssignment.id, assignment.id));
+        .where(inArray(taskAssignment.id, assignmentIds));
 
       if (result?.emailSent || result?.smsSent) sent += 1;
     }

@@ -1,4 +1,5 @@
 import type { LinkVisibility } from '@/lib/demo-access';
+import { hasMagicLink, isRedacted, redactMagicLinks, REDACTED } from '@/lib/mail/redact';
 
 /**
  * `T-6` versus `T-7a`, one surface further in than `lib/demo-access.ts` — read that module first.
@@ -66,34 +67,24 @@ import type { LinkVisibility } from '@/lib/demo-access';
  * retroactively, and only a check at read time can do that. A write-time rule would also leave every
  * row already in the table exposed.
  *
- * The honest cost: the token stays at rest in `email_log`, so anyone with database access reads it
- * without going through this page. This gate is not a substitute for treating that table as
- * credential-bearing. Narrowing it at write time — keeping the token only where the log transport
- * handled the send, since a real transport already delivered the only copy the recipient needs —
- * would remove that residue for real recipients and is worth doing, but it belongs in `lib/mail`
- * (W5) alongside a decision about the existing rows, not here.
+ * `sendMail` now does the other half of this at write time — a token is only stored at all where the
+ * **log** transport handled that recipient, because a real transport has already delivered the
+ * recipient's own copy and a second live credential in `email_log` buys nothing (`lib/mail/index.ts`,
+ * `loggedCopy`). That is defence in depth underneath this gate, not a replacement for it: the two
+ * reasons above still hold, so rows written under the log transport — the demo, and every fresh
+ * clone — arrive here with their tokens intact and are gated here or nowhere. Rows written before
+ * that shipped hold their tokens too. The pattern both ends match lives in `lib/mail/redact.ts`, once.
+ *
+ * The residue that is left: on an instance whose transport is `log`, the tokens are in the table by
+ * design, and this page is the only thing standing between them and a reader. That table is
+ * credential-bearing there, and should be treated as such.
  */
 
-/** What a redacted token reads as. Not a valid token, and visibly not one. */
-export const REDACTED = 'redacted';
-
-/**
- * A sign-in token in a URL, wherever it appears — an `href`, an anchor's text, the plain-text body.
- * The character classes stop at a quote, a tag boundary, whitespace or `&`, so a match never runs
- * past the end of one URL and `&amp;`-encoded query strings terminate cleanly.
- */
-const MAGIC_LINK_TOKEN = /(\/auth\/verify\?[^"'<>\s]*?\btoken=)([^"'<>\s&]+)/gi;
-
-/** The same pattern without `g`, because a global regex carries `lastIndex` between `test` calls. */
-const HAS_MAGIC_LINK = new RegExp(MAGIC_LINK_TOKEN.source, 'i');
+export { REDACTED };
 
 /** Whether this row carries a credential at all — the cheap check that decides if a query is worth it. */
 export function carriesMagicLink(entry: { bodyHtml: string; bodyText: string }): boolean {
-  return HAS_MAGIC_LINK.test(entry.bodyHtml) || HAS_MAGIC_LINK.test(entry.bodyText);
-}
-
-function redact(source: string): string {
-  return source.replace(MAGIC_LINK_TOKEN, `$1${REDACTED}`);
+  return hasMagicLink(entry.bodyHtml) || hasMagicLink(entry.bodyText);
 }
 
 /**
@@ -118,7 +109,13 @@ export type MailboxBody = {
   bodyHtml: string;
   bodyText: string;
   links: string[];
-  /** True when a credential was withheld, so the page can say so instead of silently losing a link. */
+  /**
+   * True when the rendered body has no live sign-in token where one belongs, so the page can say so
+   * instead of silently losing a link. Read off the *result* rather than off what this function
+   * changed, because there are now two places a token can go missing: withheld here, or never
+   * stored in the first place because a real transport delivered it. Both leave the reader looking
+   * at a message with a hole in it, and both want the same sentence.
+   */
   redacted: boolean;
 };
 
@@ -131,21 +128,13 @@ export function mailboxBody(
   entry: { bodyHtml: string; bodyText: string },
   visibility: LinkVisibility,
 ): MailboxBody {
-  if (visibility !== null) {
-    return {
-      bodyHtml: entry.bodyHtml,
-      bodyText: entry.bodyText,
-      links: linksIn(entry.bodyHtml),
-      redacted: false,
-    };
-  }
+  const bodyHtml = visibility === null ? redactMagicLinks(entry.bodyHtml) : entry.bodyHtml;
+  const bodyText = visibility === null ? redactMagicLinks(entry.bodyText) : entry.bodyText;
 
-  const bodyHtml = redact(entry.bodyHtml);
-  const bodyText = redact(entry.bodyText);
   return {
     bodyHtml,
     bodyText,
     links: linksIn(bodyHtml),
-    redacted: bodyHtml !== entry.bodyHtml || bodyText !== entry.bodyText,
+    redacted: isRedacted(bodyHtml) || isRedacted(bodyText),
   };
 }
