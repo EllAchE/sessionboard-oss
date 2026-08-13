@@ -6,7 +6,8 @@ import { getDb } from '@/db/client';
 import { event, scheduledSession, sessionFormat, submission } from '@/db/schema';
 import { requireCapability } from '@/lib/context';
 import { appUrl } from '@/lib/env';
-import { toPublicError } from '@/lib/errors';
+import { conflict, invalid, toPublicError } from '@/lib/errors';
+import { mutateAgendaAtomically, type AgendaTransaction } from '@/lib/services/agenda-guard';
 import { loadRecipientGraph, sendSessionInvites, type RecipientGraph } from '@/lib/services/comms';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_SESSION_MINUTES } from '@/lib/services/schedule';
@@ -41,8 +42,11 @@ async function authorize() {
 }
 
 /** `S-5`: the per-event counter is read and bumped in one statement so two drops cannot share a ref. */
-async function allocateSessionRef(eventId: string): Promise<number> {
-  const [row] = await getDb()
+async function allocateSessionRef(
+  transaction: AgendaTransaction,
+  eventId: string,
+): Promise<number> {
+  const [row] = await transaction
     .update(event)
     .set({ sessionSeq: sql`${event.sessionSeq} + 1`, updatedAt: new Date() })
     .where(eq(event.id, eventId))
@@ -56,7 +60,10 @@ async function allocateSessionRef(eventId: string): Promise<number> {
  * a brand-new event, leaving the old one stranded on the speaker's calendar — the `C-3` failure.
  */
 function mintIcsUid(): string {
-  const host = appUrl().replace(/^https?:\/\//, '').split('/')[0] || 'cicero.local';
+  const host =
+    appUrl()
+      .replace(/^https?:\/\//, '')
+      .split('/')[0] || 'cicero.local';
   return `${crypto.randomUUID()}@${host}`;
 }
 
@@ -86,6 +93,77 @@ export type PlacementInput = {
   endsAt: string;
 };
 
+function placementTimes(input: PlacementInput): {
+  startsAt: Date;
+  endsAt: Date;
+} {
+  const startsAt = new Date(input.startsAt);
+  const endsAt = new Date(input.endsAt);
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    throw invalid('That slot is not a valid time');
+  }
+  if (endsAt.getTime() <= startsAt.getTime()) {
+    throw invalid('A session has to end after it starts');
+  }
+  return { startsAt, endsAt };
+}
+
+async function placeSession(
+  transaction: AgendaTransaction,
+  eventId: string,
+  input: PlacementInput,
+): Promise<string> {
+  const { startsAt, endsAt } = placementTimes(input);
+
+  if (input.kind === 'session') {
+    const existing = await transaction.query.scheduledSession.findFirst({
+      where: and(eq(scheduledSession.id, input.targetId), eq(scheduledSession.eventId, eventId)),
+    });
+    if (!existing) throw conflict('That session is no longer on this agenda');
+
+    await transaction
+      .update(scheduledSession)
+      .set({ roomId: input.roomId, startsAt, endsAt, updatedAt: new Date() })
+      .where(and(eq(scheduledSession.id, existing.id), eq(scheduledSession.eventId, eventId)));
+    return existing.id;
+  }
+
+  const source = await transaction.query.submission.findFirst({
+    where: and(eq(submission.id, input.targetId), eq(submission.eventId, eventId)),
+  });
+  if (!source) throw conflict('That submission is no longer available');
+
+  const already = await transaction.query.scheduledSession.findFirst({
+    where: and(eq(scheduledSession.eventId, eventId), eq(scheduledSession.submissionId, source.id)),
+  });
+  if (already) {
+    await transaction
+      .update(scheduledSession)
+      .set({ roomId: input.roomId, startsAt, endsAt, updatedAt: new Date() })
+      .where(and(eq(scheduledSession.id, already.id), eq(scheduledSession.eventId, eventId)));
+    return already.id;
+  }
+
+  const [created] = await transaction
+    .insert(scheduledSession)
+    .values({
+      eventId,
+      submissionId: source.id,
+      ref: await allocateSessionRef(transaction, eventId),
+      title: source.title,
+      descriptionMarkdown: source.descriptionMarkdown,
+      roomId: input.roomId,
+      trackId: source.trackId,
+      formatId: source.formatId,
+      startsAt,
+      endsAt,
+      status: 'draft',
+      icsUid: mintIcsUid(),
+    })
+    .returning();
+  return created.id;
+}
+
 /**
  * The drop. A rail card becomes a real row here; a block already on the grid is moved in place. The
  * same action serves both because the organizer performed one gesture and should get one outcome.
@@ -95,77 +173,17 @@ export async function placeSessionAction(
 ): Promise<ActionResult<{ sessionId: string }>> {
   try {
     const ctx = await authorize();
-    const db = getDb();
-    const startsAt = new Date(input.startsAt);
-    const endsAt = new Date(input.endsAt);
-
-    if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
-      return { ok: false, error: 'That slot is not a valid time' };
-    }
-    if (endsAt.getTime() <= startsAt.getTime()) {
-      return { ok: false, error: 'A session has to end after it starts' };
-    }
-
-    if (input.kind === 'session') {
-      const existing = await db.query.scheduledSession.findFirst({
-        where: and(
-          eq(scheduledSession.id, input.targetId),
-          eq(scheduledSession.eventId, ctx.eventId),
-        ),
-      });
-      if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
-
-      await db
-        .update(scheduledSession)
-        .set({ roomId: input.roomId, startsAt, endsAt, updatedAt: new Date() })
-        .where(eq(scheduledSession.id, existing.id));
-
-      await notifyIfPublished(existing.id);
-      revalidate();
-      return { ok: true, data: { sessionId: existing.id } };
-    }
-
-    const source = await db.query.submission.findFirst({
-      where: and(eq(submission.id, input.targetId), eq(submission.eventId, ctx.eventId)),
+    const sessionId = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+      const changedSessionId = await placeSession(transaction, ctx.eventId, input);
+      return {
+        data: changedSessionId,
+        changedSessionIds: [changedSessionId],
+      };
     });
-    if (!source) return { ok: false, error: 'That submission is no longer available' };
 
-    const already = await db.query.scheduledSession.findFirst({
-      where: and(
-        eq(scheduledSession.eventId, ctx.eventId),
-        eq(scheduledSession.submissionId, source.id),
-      ),
-    });
-    if (already) {
-      await db
-        .update(scheduledSession)
-        .set({ roomId: input.roomId, startsAt, endsAt, updatedAt: new Date() })
-        .where(eq(scheduledSession.id, already.id));
-      await notifyIfPublished(already.id);
-      revalidate();
-      return { ok: true, data: { sessionId: already.id } };
-    }
-
-    const [created] = await db
-      .insert(scheduledSession)
-      .values({
-        eventId: ctx.eventId,
-        submissionId: source.id,
-        ref: await allocateSessionRef(ctx.eventId),
-        title: source.title,
-        descriptionMarkdown: source.descriptionMarkdown,
-        roomId: input.roomId,
-        trackId: source.trackId,
-        formatId: source.formatId,
-        startsAt,
-        endsAt,
-        status: 'draft',
-        icsUid: mintIcsUid(),
-      })
-      .returning();
-
+    await notifyIfPublished(sessionId);
     revalidate();
-    return { ok: true, data: { sessionId: created.id } };
+    return { ok: true, data: { sessionId } };
   } catch (error) {
     return fail(error);
   }
@@ -190,7 +208,13 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
 
     await db
       .update(scheduledSession)
-      .set({ roomId: null, startsAt: null, endsAt: null, status: 'draft', updatedAt: new Date() })
+      .set({
+        roomId: null,
+        startsAt: null,
+        endsAt: null,
+        status: 'draft',
+        updatedAt: new Date(),
+      })
       .where(eq(scheduledSession.id, sessionId));
 
     revalidate();
@@ -224,72 +248,88 @@ export async function saveManualSessionAction(
 ): Promise<ActionResult<{ sessionId: string }>> {
   try {
     const ctx = await authorize();
-    const db = getDb();
 
     const title = input.title.trim();
     if (!title) return { ok: false, error: 'A session needs a title' };
 
     const startsAt = input.startsAt ? new Date(input.startsAt) : null;
-    let endsAt = input.endsAt ? new Date(input.endsAt) : null;
-
-    if (startsAt && !endsAt) {
-      const minutes = input.formatId
-        ? ((
-            await db.query.sessionFormat.findFirst({ where: eq(sessionFormat.id, input.formatId) })
-          )?.durationMinutes ?? DEFAULT_SESSION_MINUTES)
-        : DEFAULT_SESSION_MINUTES;
-      endsAt = new Date(startsAt.getTime() + minutes * 60_000);
+    const endsAt = input.endsAt ? new Date(input.endsAt) : null;
+    if (
+      (startsAt && Number.isNaN(startsAt.getTime())) ||
+      (endsAt && Number.isNaN(endsAt.getTime()))
+    ) {
+      return { ok: false, error: 'That slot is not a valid time' };
     }
+
+    if (!startsAt && endsAt) return { ok: false, error: 'Give the session a start time' };
     if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) {
       return { ok: false, error: 'A session has to end after it starts' };
     }
 
-    const patch = {
-      title,
-      descriptionMarkdown: input.descriptionMarkdown?.trim() || null,
-      roomId: input.roomId,
-      trackId: input.trackId,
-      formatId: input.formatId,
-      startsAt,
-      endsAt,
-      ceuCredits: input.ceuCredits?.trim() || null,
-      clientId: input.clientId?.trim() || null,
-      updatedAt: new Date(),
-    };
+    const sessionId = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+      let resolvedEndsAt = endsAt;
+      if (startsAt && !resolvedEndsAt) {
+        const minutes = input.formatId
+          ? ((
+              await transaction.query.sessionFormat.findFirst({
+                where: and(
+                  eq(sessionFormat.id, input.formatId),
+                  eq(sessionFormat.eventId, ctx.eventId),
+                ),
+              })
+            )?.durationMinutes ?? DEFAULT_SESSION_MINUTES)
+          : DEFAULT_SESSION_MINUTES;
+        resolvedEndsAt = new Date(startsAt.getTime() + minutes * 60_000);
+      }
 
-    if (input.sessionId) {
-      const existing = await db.query.scheduledSession.findFirst({
-        where: and(
-          eq(scheduledSession.id, input.sessionId),
-          eq(scheduledSession.eventId, ctx.eventId),
-        ),
-      });
-      if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
+      const patch = {
+        title,
+        descriptionMarkdown: input.descriptionMarkdown?.trim() || null,
+        roomId: input.roomId,
+        trackId: input.trackId,
+        formatId: input.formatId,
+        startsAt,
+        endsAt: resolvedEndsAt,
+        ceuCredits: input.ceuCredits?.trim() || null,
+        clientId: input.clientId?.trim() || null,
+        updatedAt: new Date(),
+      };
 
-      await db
-        .update(scheduledSession)
-        .set(patch)
-        .where(eq(scheduledSession.id, existing.id));
+      if (input.sessionId) {
+        const existing = await transaction.query.scheduledSession.findFirst({
+          where: and(
+            eq(scheduledSession.id, input.sessionId),
+            eq(scheduledSession.eventId, ctx.eventId),
+          ),
+        });
+        if (!existing) throw conflict('That session is no longer on this agenda');
 
-      await notifyIfPublished(existing.id);
-      revalidate();
-      return { ok: true, data: { sessionId: existing.id } };
-    }
+        await transaction
+          .update(scheduledSession)
+          .set(patch)
+          .where(
+            and(eq(scheduledSession.id, existing.id), eq(scheduledSession.eventId, ctx.eventId)),
+          );
+        return { data: existing.id, changedSessionIds: [existing.id] };
+      }
 
-    const [created] = await db
-      .insert(scheduledSession)
-      .values({
-        eventId: ctx.eventId,
-        submissionId: null,
-        ref: await allocateSessionRef(ctx.eventId),
-        status: 'draft',
-        icsUid: mintIcsUid(),
-        ...patch,
-      })
-      .returning();
+      const [created] = await transaction
+        .insert(scheduledSession)
+        .values({
+          eventId: ctx.eventId,
+          submissionId: null,
+          ref: await allocateSessionRef(transaction, ctx.eventId),
+          status: 'draft',
+          icsUid: mintIcsUid(),
+          ...patch,
+        })
+        .returning();
+      return { data: created.id, changedSessionIds: [created.id] };
+    });
 
+    await notifyIfPublished(sessionId);
     revalidate();
-    return { ok: true, data: { sessionId: created.id } };
+    return { ok: true, data: { sessionId } };
   } catch (error) {
     return fail(error);
   }
@@ -303,26 +343,39 @@ export async function setSessionStatusAction(
 ): Promise<ActionResult> {
   try {
     const ctx = await authorize();
-    const db = getDb();
-    const existing = await db.query.scheduledSession.findFirst({
-      where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
+    const outcome = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+      const existing = await transaction.query.scheduledSession.findFirst({
+        where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
+      });
+      if (!existing) throw conflict('That session is no longer on this agenda');
+      if (existing.status === status) {
+        return {
+          data: {
+            changed: false,
+            wasVisible: existing.status === 'published',
+          },
+          changedSessionIds: [],
+        };
+      }
+
+      if (status === 'published' && (!existing.startsAt || !existing.endsAt || !existing.roomId)) {
+        throw invalid('Give it a room and a time before publishing it');
+      }
+
+      await transaction
+        .update(scheduledSession)
+        .set({ status, updatedAt: new Date() })
+        .where(and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)));
+      return {
+        data: { changed: true, wasVisible: existing.status === 'published' },
+        changedSessionIds: [sessionId],
+      };
     });
-    if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
-    if (existing.status === status) return { ok: true, data: null };
 
-    if (status === 'published' && (!existing.startsAt || !existing.endsAt || !existing.roomId)) {
-      return { ok: false, error: 'Give it a room and a time before publishing it' };
+    if (outcome.changed && status === 'published') await notifyIfPublished(sessionId, {}, graph);
+    else if (outcome.changed && outcome.wasVisible) {
+      await notifyIfPublished(sessionId, { cancel: true }, graph);
     }
-
-    const wasVisible = existing.status === 'published';
-
-    await db
-      .update(scheduledSession)
-      .set({ status, updatedAt: new Date() })
-      .where(eq(scheduledSession.id, sessionId));
-
-    if (status === 'published') await notifyIfPublished(sessionId, {}, graph);
-    else if (wasVisible) await notifyIfPublished(sessionId, { cancel: true }, graph);
 
     revalidate();
     return { ok: true, data: null };
@@ -331,8 +384,9 @@ export async function setSessionStatusAction(
   }
 }
 
-/** Batched so one publish click can't hand the worker an unbounded, isolate-killing loop. */
+/** Batched so notification delivery does not fan out without a bound. */
 const PUBLISH_BATCH_SIZE = 25;
+const MAX_PUBLISH_SESSION_COUNT = 250;
 
 /** `A-6` in bulk: the organizer finishes rearranging and releases the whole day at once. */
 export async function publishAllAction(
@@ -340,22 +394,45 @@ export async function publishAllAction(
 ): Promise<ActionResult<{ published: number; skipped: number }>> {
   try {
     const ctx = await authorize();
-    // Loaded once and reused for every session below — resolving recipients per-session here
-    // instead of per-participant is what keeps a whole-day publish from re-scanning the event
-    // graph hundreds of times in one request.
-    const graph = await loadRecipientGraph(ctx.eventId);
-    let published = 0;
-    let skipped = 0;
-    for (let i = 0; i < sessionIds.length; i += PUBLISH_BATCH_SIZE) {
-      const batch = sessionIds.slice(i, i + PUBLISH_BATCH_SIZE);
-      for (const sessionId of batch) {
-        const result = await setSessionStatusAction(sessionId, 'published', graph);
-        if (result.ok) published += 1;
-        else skipped += 1;
+    const uniqueSessionIds = [...new Set(sessionIds)];
+    if (uniqueSessionIds.length > MAX_PUBLISH_SESSION_COUNT) {
+      throw invalid(`Publish at most ${MAX_PUBLISH_SESSION_COUNT} sessions at once`);
+    }
+
+    const publishedSessionIds = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+      for (const sessionId of uniqueSessionIds) {
+        const existing = await transaction.query.scheduledSession.findFirst({
+          where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
+        });
+        if (!existing || existing.status !== 'draft') {
+          throw conflict(
+            'The agenda changed while this day was being published; refresh and try again',
+          );
+        }
+        if (!existing.startsAt || !existing.endsAt || !existing.roomId) {
+          throw invalid('Every session needs a room and a time before publishing the day');
+        }
+
+        await transaction
+          .update(scheduledSession)
+          .set({ status: 'published', updatedAt: new Date() })
+          .where(
+            and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
+          );
       }
+      return { data: uniqueSessionIds, changedSessionIds: uniqueSessionIds };
+    });
+
+    const graph = await loadRecipientGraph(ctx.eventId);
+    for (let i = 0; i < publishedSessionIds.length; i += PUBLISH_BATCH_SIZE) {
+      const batch = publishedSessionIds.slice(i, i + PUBLISH_BATCH_SIZE);
+      await Promise.all(batch.map((sessionId) => notifyIfPublished(sessionId, {}, graph)));
     }
     revalidate();
-    return { ok: true, data: { published, skipped } };
+    return {
+      ok: true,
+      data: { published: publishedSessionIds.length, skipped: 0 },
+    };
   } catch (error) {
     return fail(error);
   }
@@ -387,16 +464,18 @@ export async function applyProposalAction(
   placements: PlacementInput[],
 ): Promise<ActionResult<{ applied: number; failed: number }>> {
   try {
-    await authorize();
-    let applied = 0;
-    let failed = 0;
-    for (const placement of placements) {
-      const result = await placeSessionAction(placement);
-      if (result.ok) applied += 1;
-      else failed += 1;
-    }
+    const ctx = await authorize();
+    const sessionIds = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+      const changedSessionIds: string[] = [];
+      for (const placement of placements) {
+        changedSessionIds.push(await placeSession(transaction, ctx.eventId, placement));
+      }
+      return { data: changedSessionIds, changedSessionIds };
+    });
+
+    for (const sessionId of new Set(sessionIds)) await notifyIfPublished(sessionId);
     revalidate();
-    return { ok: true, data: { applied, failed } };
+    return { ok: true, data: { applied: placements.length, failed: 0 } };
   } catch (error) {
     return fail(error);
   }

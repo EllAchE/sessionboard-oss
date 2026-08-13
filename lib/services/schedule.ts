@@ -57,10 +57,7 @@ function participatesInConflicts(entry: ScheduleEntry): entry is PlacedEntry {
 
 export type ConflictKind = 'room' | 'track' | 'speaker';
 
-/**
- * `error` is a clash that fails on the day; `warning` is a programming judgement the organizer may
- * well want. Neither ever blocks a drop — the board warns and lets the organizer decide.
- */
+/** `warning` remains a presentation level for non-conflict diagnostics; agenda overlaps are errors. */
 export type ConflictSeverity = 'error' | 'warning';
 
 export type Conflict = {
@@ -122,11 +119,11 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
         const name = labels.tracks?.[a.trackId] ?? 'the same track';
         add({
           kind: 'track',
-          severity: 'warning',
+          severity: 'error',
           sessionIds: pair(a, b),
           subjectId: a.trackId,
           subjectName: labels.tracks?.[a.trackId] ?? null,
-          message: `${a.title} and ${b.title} run at once on ${name} — attendees following it must choose`,
+          message: `${a.title} and ${b.title} run at once on ${name}`,
         });
       }
 
@@ -168,7 +165,12 @@ export function worstSeverity(conflicts: Conflict[]): ConflictSeverity | null {
   return null;
 }
 
-export type ConflictSummary = { total: number; room: number; track: number; speaker: number };
+export type ConflictSummary = {
+  total: number;
+  room: number;
+  track: number;
+  speaker: number;
+};
 
 export function summarizeConflicts(conflicts: Conflict[]): ConflictSummary {
   return {
@@ -192,7 +194,10 @@ export type Placement = {
 };
 
 /** Non-destructive: returns a new array so a drag preview never mutates the board's state. */
-export function applyPlacements(entries: ScheduleEntry[], placements: Placement[]): ScheduleEntry[] {
+export function applyPlacements(
+  entries: ScheduleEntry[],
+  placements: Placement[],
+): ScheduleEntry[] {
   if (placements.length === 0) return entries;
   const byId = new Map(placements.map((placement) => [placement.sessionId, placement]));
   const seen = new Set<string>();
@@ -332,7 +337,11 @@ export function zonedMinutes(instant: Date, timeZone: string): number {
  * depends on the answer — one pass is wrong on the two days a year a zone changes offset, which is
  * exactly the bug nobody finds until the conference is in October.
  */
-export function zonedTimeToUtc(dayKey: string, minutesFromMidnight: number, timeZone: string): Date {
+export function zonedTimeToUtc(
+  dayKey: string,
+  minutesFromMidnight: number,
+  timeZone: string,
+): Date {
   const [year, month, day] = dayKey.split('-').map(Number);
   const naive = Date.UTC(year, (month ?? 1) - 1, day ?? 1, 0, minutesFromMidnight);
   const firstGuess = naive - zoneOffsetMs(new Date(naive), timeZone);
@@ -444,7 +453,11 @@ export function buildSlots(options: GridOptions = DEFAULT_GRID): TimeSlot[] {
     minute < options.dayEndMinute;
     minute += options.slotMinutes
   ) {
-    slots.push({ minute, label: formatMinutes(minute), major: minute % 60 === 0 });
+    slots.push({
+      minute,
+      label: formatMinutes(minute),
+      major: minute % 60 === 0,
+    });
   }
   return slots;
 }
@@ -504,7 +517,10 @@ export function blockGeometry(
 }
 
 /** `A-9` month view: six weeks of day keys, Monday-first, covering the month `anchorKey` sits in. */
-export function monthGrid(anchorKey: string): { weeks: string[][]; monthKey: string } {
+export function monthGrid(anchorKey: string): {
+  weeks: string[][];
+  monthKey: string;
+} {
   const [year, month] = anchorKey.split('-').map(Number);
   const first = new Date(Date.UTC(year, (month ?? 1) - 1, 1));
   const weekday = (first.getUTCDay() + 6) % 7;
@@ -587,7 +603,11 @@ export function snapMinute(minute: number, grid: GridOptions = DEFAULT_GRID): nu
 // Publish state — `A-6`
 // ---------------------------------------------------------------------------
 
-export type PublishCounts = { draft: number; published: number; cancelled: number };
+export type PublishCounts = {
+  draft: number;
+  published: number;
+  cancelled: number;
+};
 
 export function publishCounts(entries: ScheduleEntry[]): PublishCounts {
   return {
