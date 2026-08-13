@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { getDb } from '@/db/client';
 import { event, membership } from '@/db/schema';

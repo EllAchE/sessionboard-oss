@@ -19,7 +19,7 @@
   var ORIGIN = (function () {
     try {
       return new URL(SCRIPT.src).origin;
-    } catch (error) {
+    } catch {
       return '';
     }
   })();

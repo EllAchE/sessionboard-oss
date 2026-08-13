@@ -23,9 +23,10 @@ import {
 import { ensureUserAccount, grantRole, requestMagicLink } from '../auth';
 import type { EventContext } from '../context';
 import { can, requireCapability } from '../context';
+import { toCsv } from '../csv';
 import { appUrl } from '../env';
 import { conflict, forbidden, invalid, notFound } from '../errors';
-import { formatRef } from '../ids';
+import { formatRef, slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
 import { assertRoundDateOrder } from '../review-round-dates';
@@ -1101,6 +1102,242 @@ export function sortQueue(rows: QueueRow[], sort: QueueSort = 'score_desc'): Que
     default:
       return copy.sort((a, b) => byScore(a, b, 1));
   }
+}
+
+export type ReviewResultsExportSpeaker = {
+  name: string;
+  email: string;
+  kind: string;
+};
+
+export type ReviewResultsExportSubmission = {
+  ref: number;
+  title: string;
+  status: SubmissionStatus;
+  speakers: ReviewResultsExportSpeaker[];
+  reviewers: ReviewerScorecard[];
+};
+
+function exportIdentity(person: { name: string; email: string }): string {
+  return person.name === person.email ? person.email : `${person.name} <${person.email}>`;
+}
+
+function exportScore(value: number | null): string {
+  return value === null ? '' : value.toFixed(2);
+}
+
+/** One row per assignment preserves disagreement; the blank row keeps an unassigned proposal visible. */
+export function reviewResultsCsv(
+  round: Pick<ReviewRoundRecord, 'name'>,
+  criteria: CriterionSpec[],
+  submissions: ReviewResultsExportSubmission[],
+): string {
+  const orderedCriteria = [...criteria].sort((a, b) => a.position - b.position);
+  const header = [
+    'Submission ref',
+    'Title',
+    'Submission status',
+    'Round',
+    'Aggregate score (1-5)',
+    'Reviews completed',
+    'Reviews assigned',
+    'Speakers',
+    'Co-speakers',
+    'Reviewer',
+    'Reviewer email',
+    'Review status',
+    'Reviewer score (1-5)',
+    ...orderedCriteria.map(
+      (criterion) =>
+        `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
+    ),
+    'Reviewer comment',
+    'Review completed at',
+  ];
+
+  const rows = [...submissions]
+    .sort((a, b) => a.ref - b.ref)
+    .flatMap((submission) => {
+      const summary = summarizeReviews(criteria, submission.reviewers);
+      const speakers = submission.speakers
+        .filter((speaker) => speaker.kind === 'speaker')
+        .map(exportIdentity)
+        .join(' | ');
+      const coSpeakers = submission.speakers
+        .filter((speaker) => speaker.kind === 'co_speaker')
+        .map(exportIdentity)
+        .join(' | ');
+      const reviewers =
+        submission.reviewers.length > 0
+          ? [...submission.reviewers].sort(
+              (a, b) =>
+                a.reviewerName.localeCompare(b.reviewerName) ||
+                a.reviewerEmail.localeCompare(b.reviewerEmail),
+            )
+          : [null];
+
+      return reviewers.map((reviewer) => {
+        const reviewerAggregate = reviewer
+          ? aggregateScorecard(criteria, reviewer.scores)
+          : null;
+        const scoreByCriterion = new Map(
+          reviewer?.scores.map((entry) => [entry.criterionId, entry.value]) ?? [],
+        );
+        return [
+          formatRef('submission', submission.ref),
+          submission.title,
+          submission.status,
+          round.name,
+          exportScore(summary.average),
+          summary.completedCount,
+          summary.assignedCount,
+          speakers,
+          coSpeakers,
+          reviewer?.reviewerName ?? '',
+          reviewer?.reviewerEmail ?? '',
+          reviewer?.status ?? '',
+          exportScore(reviewerAggregate?.average ?? null),
+          ...orderedCriteria.map((criterion) => scoreByCriterion.get(criterion.id) ?? ''),
+          reviewer?.comment ?? '',
+          reviewer?.completedAt?.toISOString() ?? '',
+        ];
+      });
+    });
+
+  return toCsv([header, ...rows]);
+}
+
+export type ReviewResultsExport = {
+  csv: string;
+  filename: string;
+};
+
+export async function buildReviewResultsExport(
+  ctx: EventContext,
+  roundId: string,
+): Promise<ReviewResultsExport> {
+  requireCapability(ctx, 'submission:decide');
+  const round = await requireRound(ctx, roundId);
+  const db = getDb();
+  const [criteria, allSubmissions] = await Promise.all([
+    listCriteria(round.id),
+    db
+      .select({
+        id: submission.id,
+        ref: submission.ref,
+        title: submission.title,
+        status: submission.status,
+      })
+      .from(submission)
+      .where(eq(submission.eventId, ctx.eventId))
+      .orderBy(asc(submission.ref)),
+  ]);
+  const submissions = allSubmissions.filter((row) => row.status !== 'draft');
+  const submissionIds = submissions.map((row) => row.id);
+
+  const [assignments, speakers] = submissionIds.length
+    ? await Promise.all([
+        db
+          .select({
+            id: reviewAssignment.id,
+            submissionId: reviewAssignment.submissionId,
+            reviewerUserId: reviewAssignment.reviewerUserId,
+            reviewerName: user.name,
+            reviewerEmail: user.email,
+            status: reviewAssignment.status,
+            comment: reviewAssignment.comment,
+            completedAt: reviewAssignment.completedAt,
+          })
+          .from(reviewAssignment)
+          .innerJoin(user, eq(user.id, reviewAssignment.reviewerUserId))
+          .where(
+            and(
+              eq(reviewAssignment.reviewRoundId, round.id),
+              inArray(reviewAssignment.submissionId, submissionIds),
+            ),
+          ),
+        db
+          .select({
+            submissionId: participantRole.submissionId,
+            displayName: participant.displayName,
+            accountName: user.name,
+            email: user.email,
+            kind: participantRole.kind,
+            isPrimary: participantRole.isPrimary,
+            position: participantRole.position,
+          })
+          .from(participantRole)
+          .innerJoin(participant, eq(participant.id, participantRole.participantId))
+          .innerJoin(user, eq(user.id, participant.userId))
+          .where(
+            and(
+              inArray(participantRole.submissionId, submissionIds),
+              eq(participant.eventId, ctx.eventId),
+            ),
+          )
+          .orderBy(desc(participantRole.isPrimary), asc(participantRole.position)),
+      ])
+    : [[], []];
+
+  const scores = assignments.length
+    ? await db
+        .select({
+          assignmentId: scoreTable.reviewAssignmentId,
+          criterionId: scoreTable.criterionId,
+          value: scoreTable.value,
+        })
+        .from(scoreTable)
+        .where(
+          inArray(
+            scoreTable.reviewAssignmentId,
+            assignments.map((row) => row.id),
+          ),
+        )
+    : [];
+
+  const scoresByAssignment = groupBy(
+    scores,
+    (row) => row.assignmentId,
+    (row) => ({ criterionId: row.criterionId, value: row.value }),
+  );
+  const assignmentsBySubmission = groupBy(
+    assignments,
+    (row) => row.submissionId,
+    (row): ReviewerScorecard => ({
+      assignmentId: row.id,
+      reviewerUserId: row.reviewerUserId,
+      reviewerName: row.reviewerName ?? row.reviewerEmail,
+      reviewerEmail: row.reviewerEmail,
+      status: row.status,
+      comment: row.comment,
+      completedAt: row.completedAt,
+      scores: scoresByAssignment.get(row.id) ?? [],
+    }),
+  );
+  const speakersBySubmission = groupBy(
+    speakers,
+    (row) => row.submissionId,
+    (row): ReviewResultsExportSpeaker => ({
+      name: row.displayName ?? row.accountName ?? row.email,
+      email: row.email,
+      kind: row.kind,
+    }),
+  );
+
+  return {
+    csv: reviewResultsCsv(
+      round,
+      criteria,
+      submissions.map((row) => ({
+        ref: row.ref,
+        title: row.title,
+        status: row.status,
+        speakers: speakersBySubmission.get(row.id) ?? [],
+        reviewers: assignmentsBySubmission.get(row.id) ?? [],
+      })),
+    ),
+    filename: `review-results-${slugify(round.name) || round.id}.csv`,
+  };
 }
 
 export async function loadQueue(

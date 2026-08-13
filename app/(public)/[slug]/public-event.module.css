@@ -216,6 +216,42 @@
   color: var(--text-link);
 }
 
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.viewToggle {
+  display: inline-flex;
+  padding: 2px;
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+}
+
+.viewToggleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--text-muted);
+  font: var(--type-label);
+  text-decoration: none;
+}
+
+.viewToggleLink:hover {
+  color: var(--text-strong);
+  background: var(--surface-hover);
+}
+
+.viewToggleLink[data-active='true'] {
+  color: var(--text-accent);
+  background: var(--surface-selected);
+}
+
 .statRow {
   display: flex;
   gap: var(--space-8);
