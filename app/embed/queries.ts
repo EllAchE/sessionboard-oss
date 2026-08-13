@@ -15,6 +15,7 @@ import {
 } from '@/db/schema';
 import { eventBrandingUrl } from '@/lib/event-branding';
 import { excerpt, markdownToText, renderMarkdown } from '@/lib/markdown';
+import { speakerHeadshotPath } from '@/lib/speaker-headshot';
 import {
   sortSpeakers,
   speakerSlug,
@@ -69,9 +70,7 @@ export function publicSpeakerFromConfirmedParticipant(
     bioHtml: renderMarkdown(source.bioMarkdown),
     bioText: markdownToText(source.bioMarkdown).replace(/\s+/g, ' ').trim(),
     bioExcerpt: excerpt(source.bioMarkdown, 240),
-    headshotUrl: source.headshotFileId
-      ? `/embed/${eventSlug}/headshot/${source.headshotFileId}`
-      : null,
+    headshotUrl: speakerHeadshotPath(eventSlug, source.headshotFileId),
     links: source.links.filter((link) => SAFE_LINK.test(link.url)),
     sessionIds: [],
   };

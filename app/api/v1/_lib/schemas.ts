@@ -69,7 +69,12 @@ export const speakerSchema = z
     jobTitle: z.string().nullable(),
     company: z.string().nullable(),
     bio: z.string().nullable().describe('Markdown'),
-    headshotUrl: z.string().nullable(),
+    headshotUrl: z
+      .string()
+      .nullable()
+      .describe(
+        'Absolute URL of the public headshot. Null when the speaker has not uploaded one or has not confirmed their profile yet, since nothing is served publicly until they do.',
+      ),
     links: z.array(z.object({ label: z.string(), url: z.string() })),
     sessions: z.array(z.object({ id: z.string(), title: z.string() })),
   })

@@ -9,7 +9,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
     const { slug } = await context.params;
     const filters = parseQuery(speakerListQuery, new URL(request.url));
     const event = await requireEvent(slug);
-    const result = await listSpeakers(event.id, filters);
+    const result = await listSpeakers(event, filters);
     return json(result, { headers: PUBLIC_CACHE });
   });
 }
