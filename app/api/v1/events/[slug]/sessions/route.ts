@@ -9,7 +9,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
     const { slug } = await context.params;
     const filters = parseQuery(sessionListQuery, new URL(request.url));
     const event = await requireEvent(slug);
-    const data = await listSessions(event.id, filters);
-    return json({ data, total: data.length }, { headers: PUBLIC_CACHE });
+    const result = await listSessions(event.id, filters);
+    return json(result, { headers: PUBLIC_CACHE });
   });
 }

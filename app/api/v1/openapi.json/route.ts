@@ -9,13 +9,23 @@ import {
   createSubmissionResponse,
   errorResponse,
   eventSchema,
+  formFieldSchema,
+  mySubmissionSchema,
+  openCallSchema,
   programReconcileBody,
   programReconcileResponse,
+  publicFormSchema,
   sessionListQuery,
   sessionSchema,
+  speakerListQuery,
+  speakerProfileSchema,
   speakerSchema,
+  speakerTaskSchema,
   submissionListQuery,
   submissionSchema,
+  taskFormBody,
+  updateMySubmissionBody,
+  updateSpeakerProfileBody,
 } from '../_lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +43,32 @@ const slugParam: JsonSchema = {
   schema: { type: 'string' },
 };
 
+const formParam: JsonSchema = {
+  name: 'formId',
+  in: 'path',
+  required: true,
+  description: "The open CFP form's id or slug",
+  schema: { type: 'string' },
+};
+
+const submissionParam: JsonSchema = {
+  name: 'submissionId',
+  in: 'path',
+  required: true,
+  description: "One of the signed-in speaker's proposal ids",
+  schema: { type: 'string' },
+};
+
+const assignmentParam: JsonSchema = {
+  name: 'assignmentId',
+  in: 'path',
+  required: true,
+  description: "One of the signed-in speaker's task assignment ids",
+  schema: { type: 'string' },
+};
+
+const speakerSecurity = [{ speakerBearerAuth: [] }, { speakerCookieAuth: [] }];
+
 function ref(name: string): JsonSchema {
   return { $ref: `#/components/schemas/${name}` };
 }
@@ -43,7 +79,7 @@ function jsonContent(schema: JsonSchema): JsonSchema {
 
 function errors(codes: number[]): Record<string, JsonSchema> {
   const descriptions: Record<number, string> = {
-    401: 'Missing or invalid API key',
+    401: 'Missing or invalid credential',
     404: 'No such event, form or resource',
     409: 'Conflicts with an existing record',
     422: 'The request failed validation',
@@ -81,12 +117,11 @@ export function buildSpec(origin = appUrl()): JsonSchema {
       title: 'Cicero API',
       version: '1.0.0',
       description: [
-        'Read the public program of a Cicero event, and submit to an open call for speakers.',
+        'Read and search the public program of a Cicero event without credentials.',
         '',
-        'Public reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key',
-        'issued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.',
-        'Keys are hashed at rest and shown once, at creation.',
-        'Program reconciliation writes use the same event-scoped Bearer keys and preview by default.',
+        'Organizer integration writes use an event-scoped API key. Speaker proposal, profile, and',
+        "task operations use that speaker's signed-in session as a cookie or Bearer secret. Every",
+        'mutation is authenticated; public event, program, speaker, agenda, and CFP reads are not.',
       ].join('\n'),
       license: { name: 'MIT' },
     },
@@ -95,6 +130,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
       { name: 'Events', description: 'Event metadata' },
       { name: 'Program', description: 'Sessions, speakers and the agenda' },
       { name: 'Submissions', description: 'The call for speakers' },
+      { name: 'Speaker', description: "The signed-in speaker's own work" },
     ],
     components: {
       securitySchemes: {
@@ -103,13 +139,33 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           scheme: 'bearer',
           description: 'A per-event API key. Public read endpoints do not require it.',
         },
+        speakerBearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          description: "The signed-in speaker's opaque Cicero session token.",
+        },
+        speakerCookieAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'cicero_session',
+          description: 'The HttpOnly session cookie used by the Cicero speaker portal.',
+        },
       },
       schemas: {
         AcceleventsProgramSync: toJsonSchema(acceleventsProgramSyncBody),
         AcceleventsProgramSyncResult: toJsonSchema(acceleventsProgramSyncResult),
         Event: toJsonSchema(eventSchema),
+        FormField: toJsonSchema(formFieldSchema),
+        OpenCall: toJsonSchema(openCallSchema),
+        PublicForm: toJsonSchema(publicFormSchema),
         Session: toJsonSchema(sessionSchema),
         Speaker: toJsonSchema(speakerSchema),
+        SpeakerProfile: toJsonSchema(speakerProfileSchema),
+        SpeakerProfileUpdate: toJsonSchema(updateSpeakerProfileBody),
+        SpeakerSubmission: toJsonSchema(mySubmissionSchema),
+        SpeakerSubmissionUpdate: toJsonSchema(updateMySubmissionBody),
+        SpeakerTask: toJsonSchema(speakerTaskSchema),
+        SpeakerTaskForm: toJsonSchema(taskFormBody),
         Agenda: toJsonSchema(agendaSchema),
         Submission: toJsonSchema(submissionSchema),
         NewSubmission: toJsonSchema(createSubmissionBody),
@@ -136,7 +192,8 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         get: {
           tags: ['Program'],
           summary: 'List sessions',
-          description: 'Published sessions only. Filters accept a track or room name, or its id.',
+          description:
+            'Published sessions only. Full-text matching covers titles, descriptions, taxonomy, and speaker names; structured filters can be combined.',
           operationId: 'listSessions',
           parameters: [slugParam, ...toParameters(sessionListQuery, 'query')],
           responses: {
@@ -151,9 +208,39 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           summary: 'List speakers',
           description: 'Everyone on an accepted submission. Emails are not included.',
           operationId: 'listSpeakers',
-          parameters: [slugParam],
+          parameters: [slugParam, ...toParameters(speakerListQuery, 'query')],
           responses: {
             '200': okResponse('The speakers', listOf('Speaker')),
+            ...errors([404]),
+          },
+        },
+      },
+      '/events/{slug}/forms': {
+        get: {
+          tags: ['Submissions'],
+          summary: 'List open calls for speakers',
+          description: 'Public discovery. Draft, closed, and out-of-window forms are omitted.',
+          operationId: 'listOpenCalls',
+          parameters: [slugParam],
+          responses: {
+            '200': okResponse('Open CFP forms', listOf('OpenCall')),
+            ...errors([404]),
+          },
+        },
+      },
+      '/events/{slug}/forms/{formId}': {
+        get: {
+          tags: ['Submissions'],
+          summary: 'Read an open call for speakers',
+          description: 'Public field, conditional-logic, and taxonomy contract for one open CFP.',
+          operationId: 'getOpenCall',
+          parameters: [slugParam, formParam],
+          responses: {
+            '200': okResponse('The open CFP form', {
+              type: 'object',
+              properties: { data: ref('PublicForm') },
+              required: ['data'],
+            }),
             ...errors([404]),
           },
         },
@@ -213,25 +300,172 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           tags: ['Submissions'],
           summary: 'Submit to a call for speakers',
           description:
-            'No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.',
+            "Requires the signed-in speaker's session. The public web CFP remains the cold account-creation flow; this agent-facing POST never creates or acts as another email address. Every request creates a new proposal or draft, so a retry may create another record when the form permits more than one.",
           operationId: 'createSubmission',
-          parameters: [
-            slugParam,
-            {
-              name: 'formId',
-              in: 'path',
-              required: true,
-              description: "The form's id or slug",
-              schema: { type: 'string' },
-            },
-          ],
+          security: speakerSecurity,
+          parameters: [slugParam, formParam],
           requestBody: {
             required: true,
             content: jsonContent(ref('NewSubmission')),
           },
           responses: {
             '201': okResponse('The submission', ref('NewSubmissionResult')),
-            ...errors([404, 409, 422]),
+            ...errors([401, 404, 409, 422]),
+          },
+        },
+      },
+      '/events/{slug}/me/profile': {
+        get: {
+          tags: ['Speaker'],
+          summary: 'Read my event-scoped speaker profile',
+          operationId: 'getMySpeakerProfile',
+          security: speakerSecurity,
+          parameters: [slugParam],
+          responses: {
+            '200': okResponse('The signed-in speaker profile', {
+              type: 'object',
+              properties: { data: ref('SpeakerProfile') },
+              required: ['data'],
+            }),
+            ...errors([401, 404]),
+          },
+        },
+        patch: {
+          tags: ['Speaker'],
+          summary: 'Update my event-scoped speaker profile',
+          operationId: 'updateMySpeakerProfile',
+          security: speakerSecurity,
+          parameters: [slugParam],
+          requestBody: {
+            required: true,
+            content: jsonContent(ref('SpeakerProfileUpdate')),
+          },
+          responses: {
+            '200': okResponse('The updated speaker profile', {
+              type: 'object',
+              properties: { data: ref('SpeakerProfile') },
+              required: ['data'],
+            }),
+            ...errors([401, 404, 422]),
+          },
+        },
+      },
+      '/events/{slug}/me/submissions': {
+        get: {
+          tags: ['Speaker'],
+          summary: 'List my proposals',
+          operationId: 'listMySubmissions',
+          security: speakerSecurity,
+          parameters: [slugParam],
+          responses: {
+            '200': okResponse('The signed-in speaker proposals', listOf('SpeakerSubmission')),
+            ...errors([401, 404]),
+          },
+        },
+      },
+      '/events/{slug}/me/submissions/{submissionId}': {
+        get: {
+          tags: ['Speaker'],
+          summary: 'Read one of my proposals',
+          operationId: 'getMySubmission',
+          security: speakerSecurity,
+          parameters: [slugParam, submissionParam],
+          responses: {
+            '200': okResponse('The signed-in speaker proposal', {
+              type: 'object',
+              properties: { data: ref('SpeakerSubmission') },
+              required: ['data'],
+            }),
+            ...errors([401, 404]),
+          },
+        },
+        put: {
+          tags: ['Speaker'],
+          summary: 'Replace editable content on one of my proposals',
+          operationId: 'updateMySubmission',
+          security: speakerSecurity,
+          parameters: [slugParam, submissionParam],
+          requestBody: {
+            required: true,
+            content: jsonContent(ref('SpeakerSubmissionUpdate')),
+          },
+          responses: {
+            '200': okResponse('The updated proposal', {
+              type: 'object',
+              properties: { data: ref('SpeakerSubmission') },
+              required: ['data'],
+            }),
+            ...errors([401, 404, 409, 422]),
+          },
+        },
+      },
+      '/events/{slug}/me/submissions/{submissionId}/withdraw': {
+        post: {
+          tags: ['Speaker'],
+          summary: 'Withdraw one of my proposals',
+          operationId: 'withdrawMySubmission',
+          security: speakerSecurity,
+          parameters: [slugParam, submissionParam],
+          responses: {
+            '200': okResponse('The withdrawn proposal', {
+              type: 'object',
+              properties: { data: ref('SpeakerSubmission') },
+              required: ['data'],
+            }),
+            ...errors([401, 404, 409]),
+          },
+        },
+      },
+      '/events/{slug}/me/tasks': {
+        get: {
+          tags: ['Speaker'],
+          summary: 'List my speaker tasks',
+          operationId: 'listMySpeakerTasks',
+          security: speakerSecurity,
+          parameters: [slugParam],
+          responses: {
+            '200': okResponse('The signed-in speaker tasks', listOf('SpeakerTask')),
+            ...errors([401, 404]),
+          },
+        },
+      },
+      '/events/{slug}/me/tasks/{assignmentId}/complete': {
+        post: {
+          tags: ['Speaker'],
+          summary: 'Complete an acknowledgement or link task',
+          operationId: 'completeMySimpleTask',
+          security: speakerSecurity,
+          parameters: [slugParam, assignmentParam],
+          responses: {
+            '200': okResponse('The changed task state', { type: 'object' }),
+            ...errors([401, 404, 409, 422]),
+          },
+        },
+      },
+      '/events/{slug}/me/tasks/{assignmentId}/reopen': {
+        post: {
+          tags: ['Speaker'],
+          summary: 'Reopen one of my completed tasks',
+          operationId: 'reopenMyTask',
+          security: speakerSecurity,
+          parameters: [slugParam, assignmentParam],
+          responses: {
+            '200': okResponse('The changed task state', { type: 'object' }),
+            ...errors([401, 404, 409]),
+          },
+        },
+      },
+      '/events/{slug}/me/tasks/{assignmentId}/form': {
+        put: {
+          tags: ['Speaker'],
+          summary: 'Save or submit one of my form tasks',
+          operationId: 'saveMyTaskForm',
+          security: speakerSecurity,
+          parameters: [slugParam, assignmentParam],
+          requestBody: { required: true, content: jsonContent(ref('SpeakerTaskForm')) },
+          responses: {
+            '200': okResponse('The changed task state', { type: 'object' }),
+            ...errors([401, 404, 409, 422]),
           },
         },
       },

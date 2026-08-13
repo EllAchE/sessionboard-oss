@@ -90,6 +90,9 @@ Read the current public sessions and agenda, then send the normalized request wi
 (`apply: false`). Save only non-secret before-state data needed to explain the diff and construct an
 inverse request. Do not treat a local diff calculation as the authoritative preview.
 
+Public session reads are paginated on newer deployments. Follow `total`, `limit`, and `offset` until
+the complete current program has been read; never reconcile against the first page alone.
+
 ## 5. Review the preview
 
 Require a successful response with `applied: false`. Present:

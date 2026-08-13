@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
-import { form as formTable, user as userTable } from '@/db/schema';
-import { grantRole, normalizeEmail, requestMagicLink } from '@/lib/auth';
-import { invalid, notFound } from '@/lib/errors';
+import { form as formTable } from '@/db/schema';
+import { normalizeEmail } from '@/lib/auth';
+import { forbidden, invalid, notFound } from '@/lib/errors';
 import type { AnswerMap } from '@/lib/forms/contract';
 import {
   ensureParticipant,
@@ -11,6 +11,7 @@ import {
   loadPublicForm,
   saveSubmission,
 } from '@/lib/services/submissions';
+import { requireSpeakerSession } from '../../../../../_lib/auth';
 import { requireEvent } from '../../../../../_lib/queries';
 import { PRIVATE_CACHE, handle, json, parseBody } from '../../../../../_lib/respond';
 import { createSubmissionBody } from '../../../../../_lib/schemas';
@@ -18,10 +19,9 @@ import { createSubmissionBody } from '../../../../../_lib/schemas';
 export const dynamic = 'force-dynamic';
 
 /**
- * The one write on the public surface, and the only endpoint that needs no API key: a CFP is open
- * by definition, and requiring a key to submit to it would defeat the point. Every rule — the open
- * window, the per-user limit, field validation, the built-in/answers split — lives in
- * `lib/services/submissions.ts` and is the same code the web form runs, so the two cannot drift.
+ * The web CFP remains a cold, public flow that creates an account and sends a magic link. This API
+ * write requires the speaker's session, so an agent action is attributable and cannot create or act
+ * as an arbitrary email address.
  *
  * `formId` in the path accepts either the form's UUID or its slug, because a caller reading
  * `/api/v1/events/:slug` sees neither and will try whichever they were given.
@@ -33,6 +33,10 @@ export async function POST(
   return handle(async () => {
     const { slug, formId } = await context.params;
     const body = await parseBody(createSubmissionBody, request);
+    const ctx = await requireSpeakerSession(request, slug);
+    if (body.email && normalizeEmail(body.email) !== ctx.actor.email) {
+      throw forbidden('The proposal email must match the signed-in speaker');
+    }
 
     const event = await requireEvent(slug);
     const formSlug = await resolveFormSlug(event.id, formId);
@@ -43,34 +47,23 @@ export async function POST(
       throw invalid('This form is not accepting submissions right now');
     }
 
-    // No session on an API call, so the submitter is identified by email. The magic link this
-    // sends is how they reach the portal afterwards, which is the same path the web form takes.
-    const requested = await requestMagicLink({
-      email: body.email,
-      name: body.name ?? null,
-      eventId: event.id,
-      redirectTo: `/events/${slug}/portal`,
-    });
-
-    const account = await getDb().query.user.findFirst({
-      where: eq(userTable.email, normalizeEmail(requested.email)),
-    });
-    if (!account) throw invalid('We could not create an account for that email address');
-
-    await grantRole(account.id, event.id, 'speaker');
-    const participantId = await ensureParticipant(event.id, account.id, body.name ?? null);
+    const participantId = await ensureParticipant(
+      event.id,
+      ctx.actor.userId,
+      body.name ?? ctx.actor.name,
+    );
 
     const saved = await saveSubmission({
       eventId: event.id,
       formId: bundle.form.id,
-      userId: account.id,
+      userId: ctx.actor.userId,
       fields: bundle.fields,
       values: body.answers as AnswerMap,
       limits: {
         allowDrafts: bundle.form.allowDrafts,
         maxSubmissionsPerUser: bundle.form.maxSubmissionsPerUser,
       },
-      mode: 'submit',
+      mode: body.mode,
     });
 
     await linkPrimarySpeaker(saved.id, participantId);

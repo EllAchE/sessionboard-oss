@@ -1,13 +1,38 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { parseBody, parseQuery } from './respond';
-import { createSubmissionBody, sessionListQuery, submissionListQuery } from './schemas';
+import {
+  createSubmissionBody,
+  sessionListQuery,
+  speakerListQuery,
+  submissionListQuery,
+} from './schemas';
 
 describe('parseQuery', () => {
   it('accepts a single bounded value', () => {
     expect(parseQuery(sessionListQuery, new URL('https://example.test?track=Security'))).toEqual({
       track: 'Security',
     });
+  });
+
+  it('combines bounded public search filters and pagination', () => {
+    expect(
+      parseQuery(
+        sessionListQuery,
+        new URL(
+          'https://example.test?q=security&speaker=Ada&startsAfter=2026-09-01T09%3A00%3A00-04%3A00&limit=25&offset=50',
+        ),
+      ),
+    ).toEqual({
+      q: 'security',
+      speaker: 'Ada',
+      startsAfter: '2026-09-01T09:00:00-04:00',
+      limit: 25,
+      offset: 50,
+    });
+    expect(
+      parseQuery(speakerListQuery, new URL('https://example.test?company=Analytical&limit=10')),
+    ).toEqual({ company: 'Analytical', limit: 10 });
   });
 
   it.each([

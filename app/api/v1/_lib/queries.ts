@@ -51,9 +51,48 @@ export function toEventPayload(row: EventRow): EventPayload {
 
 export type SessionFilters = {
   status?: 'draft' | 'published' | 'cancelled';
+  q?: string;
   track?: string;
   room?: string;
+  format?: string;
+  speaker?: string;
+  startsAfter?: string;
+  startsBefore?: string;
+  limit?: number;
+  offset?: number;
 };
+
+export type ListResult<T> = { data: T[]; total: number };
+
+function includesText(value: string | null | undefined, query: string): boolean {
+  return value?.toLocaleLowerCase().includes(query.toLocaleLowerCase()) ?? false;
+}
+
+export function sessionMatchesSearch(row: SessionPayload, filters: SessionFilters): boolean {
+  if (
+    filters.speaker &&
+    !row.speakers.some(
+      (speaker) =>
+        speaker.id === filters.speaker || includesText(speaker.name, filters.speaker as string),
+    )
+  ) {
+    return false;
+  }
+  if (!filters.q) return true;
+  return (
+    includesText(row.title, filters.q) ||
+    includesText(row.description, filters.q) ||
+    includesText(row.room, filters.q) ||
+    includesText(row.track, filters.q) ||
+    includesText(row.format, filters.q) ||
+    row.speakers.some(
+      (speaker) =>
+        includesText(speaker.name, filters.q as string) ||
+        includesText(speaker.jobTitle, filters.q as string) ||
+        includesText(speaker.company, filters.q as string),
+    )
+  );
+}
 
 /**
  * Defaults to published. An unauthenticated caller asking for drafts is asking to see an unfinished
@@ -63,14 +102,14 @@ export type SessionFilters = {
 export async function listSessions(
   eventId: string,
   filters: SessionFilters = {},
-  options: { includeUnpublished?: boolean } = {},
-): Promise<SessionPayload[]> {
+  options: { includeUnpublished?: boolean; paginate?: boolean } = {},
+): Promise<ListResult<SessionPayload>> {
   const db = getDb();
 
   const conditions = [eq(scheduledSession.eventId, eventId)];
   const status = filters.status ?? 'published';
   if (status !== 'published' && !options.includeUnpublished) {
-    return [];
+    return { data: [], total: 0 };
   }
   conditions.push(eq(scheduledSession.status, status));
 
@@ -104,6 +143,13 @@ export async function listSessions(
     if (filters.track && row.trackName !== filters.track && row.trackId !== filters.track)
       return false;
     if (filters.room && row.roomName !== filters.room && row.roomId !== filters.room) return false;
+    if (filters.format && row.formatName !== filters.format) return false;
+    if (filters.startsAfter && (!row.startsAt || row.startsAt < new Date(filters.startsAfter))) {
+      return false;
+    }
+    if (filters.startsBefore && (!row.startsAt || row.startsAt >= new Date(filters.startsBefore))) {
+      return false;
+    }
     return true;
   });
 
@@ -111,7 +157,7 @@ export async function listSessions(
     filtered.map((row) => row.submissionId).filter((id): id is string => Boolean(id)),
   );
 
-  return filtered.map((row) => ({
+  const payload = filtered.map((row) => ({
     id: row.id,
     ref: formatRef('session', row.ref),
     title: row.title,
@@ -125,6 +171,11 @@ export async function listSessions(
     ceuCredits: row.ceuCredits,
     speakers: row.submissionId ? (speakersBySubmission.get(row.submissionId) ?? []) : [],
   }));
+
+  const searched = payload.filter((row) => sessionMatchesSearch(row, filters));
+  const offset = options.paginate === false ? 0 : (filters.offset ?? 0);
+  const end = options.paginate === false ? undefined : offset + (filters.limit ?? 100);
+  return { data: searched.slice(offset, end), total: searched.length };
 }
 
 type SessionSpeaker = SessionPayload['speakers'][number];
@@ -171,7 +222,45 @@ async function loadSessionSpeakers(
  * Public speakers are people on an accepted submission. Email is deliberately absent from this
  * payload — the endpoint is unauthenticated and a speaker list is exactly the shape a scraper wants.
  */
-export async function listSpeakers(eventId: string): Promise<SpeakerPayload[]> {
+export type SpeakerFilters = {
+  q?: string;
+  company?: string;
+  session?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export function speakerMatchesSearch(row: SpeakerPayload, filters: SpeakerFilters): boolean {
+  if (filters.company && !includesText(row.company, filters.company)) return false;
+  if (
+    filters.session &&
+    !row.sessions.some(
+      (session) =>
+        session.id === filters.session || includesText(session.title, filters.session as string),
+    )
+  ) {
+    return false;
+  }
+  if (!filters.q) return true;
+  return (
+    includesText(row.name, filters.q) ||
+    includesText(row.pronouns, filters.q) ||
+    includesText(row.jobTitle, filters.q) ||
+    includesText(row.company, filters.q) ||
+    includesText(row.bio, filters.q) ||
+    row.links.some(
+      (link) =>
+        includesText(link.label, filters.q as string) ||
+        includesText(link.url, filters.q as string),
+    ) ||
+    row.sessions.some((session) => includesText(session.title, filters.q as string))
+  );
+}
+
+export async function listSpeakers(
+  eventId: string,
+  filters: SpeakerFilters = {},
+): Promise<ListResult<SpeakerPayload>> {
   const db = getDb();
 
   const accepted = await db
@@ -186,7 +275,7 @@ export async function listSpeakers(eventId: string): Promise<SpeakerPayload[]> {
     .where(and(eq(submission.eventId, eventId), eq(submission.status, 'accepted')))
     .orderBy(asc(participantRole.position));
 
-  if (accepted.length === 0) return [];
+  if (accepted.length === 0) return { data: [], total: 0 };
 
   const participantIds = [...new Set(accepted.map((row) => row.participantId))];
   const people = await db
@@ -213,7 +302,7 @@ export async function listSpeakers(eventId: string): Promise<SpeakerPayload[]> {
     sessionsByParticipant.set(row.participantId, list);
   }
 
-  return people
+  const payload = people
     .map((person) => ({
       id: person.id,
       name: person.displayName ?? person.userName ?? person.email,
@@ -226,6 +315,13 @@ export async function listSpeakers(eventId: string): Promise<SpeakerPayload[]> {
       sessions: sessionsByParticipant.get(person.id) ?? [],
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  const searched = payload.filter((row) => speakerMatchesSearch(row, filters));
+  const offset = filters.offset ?? 0;
+  return {
+    data: searched.slice(offset, offset + (filters.limit ?? 100)),
+    total: searched.length,
+  };
 }
 
 export async function listSubmissions(

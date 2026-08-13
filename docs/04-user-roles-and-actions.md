@@ -419,12 +419,13 @@ It does not:
 - Push the full agenda as part of the accepted-speaker operation.
 - Allow a speaker to initiate the push.
 
-The repository also contains a bonus `manage-cicero-event` agent skill that can normalize an
-Accelevents-shaped program payload and send it to a Cicero program-reconcile endpoint. That is a
-separate inbound import workflow through Cicero's own API, not readback from the Accelevents vendor
-API and not part of the required accepted-speaker push. The skill first checks the deployed OpenAPI
-for that operation and stops if it is absent; the operation is not present in the current repository
-OpenAPI.
+The repository contains three role-scoped agent skills. `explore-cicero-event` uses only public GET
+operations. `manage-cicero-speaker-work` uses the signed-in speaker's own session for private reads
+and every proposal/profile/task mutation. `manage-cicero-event` uses an event-scoped integration key
+to normalize an Accelevents-shaped program payload and call Cicero's program-reconcile endpoint.
+That organizer workflow is a separate inbound import through Cicero's own API, not readback from the
+Accelevents vendor API and not part of the required accepted-speaker push. Each skill checks the
+deployed OpenAPI first and stops if its operation is absent.
 
 ### Discount codes and speaker registration
 

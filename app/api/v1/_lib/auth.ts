@@ -1,6 +1,13 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import { getDb } from '@/db/client';
-import { apiKey, event as eventTable } from '@/db/schema';
+import {
+  apiKey,
+  event as eventTable,
+  membership,
+  sessionCookie,
+  user,
+} from '@/db/schema';
+import type { EventContext, MembershipRole } from '@/lib/context';
 import { unauthorized } from '@/lib/errors';
 import { hashToken, randomToken } from '@/lib/ids';
 
@@ -36,6 +43,71 @@ export function bearerToken(request: Request): string | null {
   if (!header) return null;
   const match = /^Bearer\s+(.+)$/i.exec(header.trim());
   return match ? match[1].trim() : null;
+}
+
+function cookieToken(request: Request, name: string): string | null {
+  const header = request.headers.get('cookie');
+  if (!header) return null;
+  for (const part of header.split(';')) {
+    const separator = part.indexOf('=');
+    if (separator < 0 || part.slice(0, separator).trim() !== name) continue;
+    return part.slice(separator + 1).trim() || null;
+  }
+  return null;
+}
+
+/**
+ * Speaker operations accept the same opaque token as the signed-in portal, either through the
+ * HttpOnly cookie on a same-origin request or as a Bearer secret held by an API client. It remains
+ * a user session—not an event-wide integration key—so every downstream service still sees the
+ * speaker's identity and can enforce ownership.
+ */
+export async function requireSpeakerSession(
+  request: Request,
+  eventSlug: string,
+): Promise<EventContext> {
+  const token = bearerToken(request) ?? cookieToken(request, 'cicero_session');
+  if (!token) throw unauthorized('Sign in as a speaker before changing this event');
+
+  const db = getDb();
+  const session = await db.query.sessionCookie.findFirst({
+    where: and(
+      eq(sessionCookie.tokenHash, await hashToken(token)),
+      gt(sessionCookie.expiresAt, new Date()),
+    ),
+  });
+  if (!session) throw unauthorized('That speaker session is not valid');
+
+  const [eventRow, account] = await Promise.all([
+    db.query.event.findFirst({ where: eq(eventTable.slug, eventSlug) }),
+    db.query.user.findFirst({ where: eq(user.id, session.userId) }),
+  ]);
+  if (!eventRow || !account) throw unauthorized('That speaker session is not valid');
+
+  const rows = await db.query.membership.findMany({
+    where: and(eq(membership.userId, account.id), eq(membership.eventId, eventRow.id)),
+  });
+  const roles = rows.map((row) => row.role as MembershipRole);
+  if (!roles.includes('speaker')) {
+    throw unauthorized('That session is not a speaker on this event');
+  }
+
+  await db
+    .update(sessionCookie)
+    .set({ lastSeenAt: new Date() })
+    .where(eq(sessionCookie.id, session.id))
+    .catch(() => undefined);
+
+  return {
+    actor: {
+      userId: account.id,
+      email: account.email,
+      name: account.name,
+      impersonatedByUserId: session.impersonatedByUserId,
+    },
+    eventId: eventRow.id,
+    roles,
+  };
 }
 
 /**

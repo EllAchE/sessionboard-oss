@@ -1,0 +1,4 @@
+interface:
+  display_name: "Explore a Cicero Event"
+  short_description: "Search public event programs and speakers"
+  default_prompt: "Use $explore-cicero-event to search this public Cicero event."

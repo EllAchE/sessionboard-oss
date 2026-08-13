@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage Cicero Speaker Work"
+  short_description: "Manage your proposals, profile, and tasks"
+  default_prompt: "Use $manage-cicero-speaker-work to review and update my work for this Cicero event."

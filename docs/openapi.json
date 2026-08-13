@@ -3,7 +3,7 @@
   "info": {
     "title": "Cicero API",
     "version": "1.0.0",
-    "description": "Read the public program of a Cicero event, and submit to an open call for speakers.\n\nPublic reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key\nissued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and shown once, at creation.\nProgram reconciliation writes use the same event-scoped Bearer keys and preview by default.",
+    "description": "Read and search the public program of a Cicero event without credentials.\n\nOrganizer integration writes use an event-scoped API key. Speaker proposal, profile, and\ntask operations use that speaker's signed-in session as a cookie or Bearer secret. Every\nmutation is authenticated; public event, program, speaker, agenda, and CFP reads are not.",
     "license": {
       "name": "MIT"
     }
@@ -25,6 +25,10 @@
     {
       "name": "Submissions",
       "description": "The call for speakers"
+    },
+    {
+      "name": "Speaker",
+      "description": "The signed-in speaker's own work"
     }
   ],
   "components": {
@@ -33,6 +37,17 @@
         "type": "http",
         "scheme": "bearer",
         "description": "A per-event API key. Public read endpoints do not require it."
+      },
+      "speakerBearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The signed-in speaker's opaque Cicero session token."
+      },
+      "speakerCookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cicero_session",
+        "description": "The HttpOnly session cookie used by the Cicero speaker portal."
       }
     },
     "schemas": {
@@ -248,6 +263,402 @@
         ],
         "description": "A conference or event"
       },
+      "FormField": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "builtinKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "title",
+              "description",
+              "format",
+              "track",
+              "level",
+              "tags"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "short_text",
+              "long_text",
+              "markdown",
+              "select",
+              "multi_select",
+              "radio",
+              "checkbox",
+              "number",
+              "email",
+              "url",
+              "date",
+              "file",
+              "section_break"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "helpText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "placeholder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position": {
+            "type": "integer"
+          },
+          "step": {
+            "type": "integer"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionLabels": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "showIf": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "fieldId": {
+                "type": "string"
+              },
+              "op": {
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "neq",
+                  "includes",
+                  "gt",
+                  "lt",
+                  "is_empty",
+                  "not_empty"
+                ]
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "fieldId",
+              "op"
+            ]
+          },
+          "minLength": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "maxLength": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "charLimitGroup": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "builtinKey",
+          "type",
+          "label",
+          "helpText",
+          "placeholder",
+          "position",
+          "step",
+          "required",
+          "options",
+          "optionLabels",
+          "showIf",
+          "minLength",
+          "maxLength",
+          "charLimitGroup"
+        ]
+      },
+      "OpenCall": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "closesAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "closesAt"
+        ]
+      },
+      "PublicForm": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "introMarkdown": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "opensAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "closesAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "allowDrafts": {
+            "type": "boolean"
+          },
+          "maxSubmissionsPerUser": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "builtinKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "title",
+                    "description",
+                    "format",
+                    "track",
+                    "level",
+                    "tags"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "short_text",
+                    "long_text",
+                    "markdown",
+                    "select",
+                    "multi_select",
+                    "radio",
+                    "checkbox",
+                    "number",
+                    "email",
+                    "url",
+                    "date",
+                    "file",
+                    "section_break"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "helpText": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "placeholder": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "position": {
+                  "type": "integer"
+                },
+                "step": {
+                  "type": "integer"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "optionLabels": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "showIf": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "fieldId": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "eq",
+                        "neq",
+                        "includes",
+                        "gt",
+                        "lt",
+                        "is_empty",
+                        "not_empty"
+                      ]
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "fieldId",
+                    "op"
+                  ]
+                },
+                "minLength": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "maxLength": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "charLimitGroup": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "builtinKey",
+                "type",
+                "label",
+                "helpText",
+                "placeholder",
+                "position",
+                "step",
+                "required",
+                "options",
+                "optionLabels",
+                "showIf",
+                "minLength",
+                "maxLength",
+                "charLimitGroup"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "introMarkdown",
+          "opensAt",
+          "closesAt",
+          "allowDrafts",
+          "maxSubmissionsPerUser",
+          "fields"
+        ]
+      },
       "Session": {
         "type": "object",
         "properties": {
@@ -458,6 +869,814 @@
           "sessions"
         ],
         "description": "A speaker with at least one accepted session"
+      },
+      "SpeakerProfile": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pronouns": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "jobTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "company": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bioMarkdown": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timezone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dietaryNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accessibilityNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ]
+            }
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notifyEmail": {
+            "type": "boolean"
+          },
+          "notifySms": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "displayName",
+          "pronouns",
+          "jobTitle",
+          "company",
+          "bioMarkdown",
+          "timezone",
+          "dietaryNotes",
+          "accessibilityNotes",
+          "links",
+          "email",
+          "phone",
+          "notifyEmail",
+          "notifySms"
+        ]
+      },
+      "SpeakerProfileUpdate": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "pronouns": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "jobTitle": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "bioMarkdown": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "dietaryNotes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "accessibilityNotes": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "url": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "label",
+                "url"
+              ]
+            }
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "notifyEmail": {
+            "type": "boolean"
+          },
+          "notifySms": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SpeakerSubmission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "descriptionMarkdown": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "submitted",
+              "under_review",
+              "accepted",
+              "declined",
+              "waitlisted",
+              "withdrawn"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "format": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "track": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "formId": {
+            "type": "string"
+          },
+          "formSlug": {
+            "type": "string"
+          },
+          "formName": {
+            "type": "string"
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "speaker",
+              "co_speaker",
+              "moderator",
+              "panelist"
+            ]
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "submittedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "scheduled": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "startsAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO 8601"
+              },
+              "endsAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO 8601"
+              },
+              "room": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "published": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ref",
+              "title",
+              "startsAt",
+              "endsAt",
+              "room",
+              "published"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "ref",
+          "title",
+          "descriptionMarkdown",
+          "status",
+          "level",
+          "format",
+          "track",
+          "formId",
+          "formSlug",
+          "formName",
+          "editable",
+          "role",
+          "isPrimary",
+          "answers",
+          "submittedAt",
+          "scheduled"
+        ]
+      },
+      "SpeakerSubmissionUpdate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 255
+          },
+          "descriptionMarkdown": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "level": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "title"
+        ]
+      },
+      "SpeakerTask": {
+        "type": "object",
+        "properties": {
+          "assignmentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "descriptionMarkdown": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "form",
+              "file_upload",
+              "acknowledge",
+              "link"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "completed",
+              "waived"
+            ]
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "dueAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "overdue": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601"
+          },
+          "linkUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submissionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submissionTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "answers": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "form": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    },
+                    "builtinKey": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "title",
+                        "description",
+                        "format",
+                        "track",
+                        "level",
+                        "tags"
+                      ]
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "short_text",
+                        "long_text",
+                        "markdown",
+                        "select",
+                        "multi_select",
+                        "radio",
+                        "checkbox",
+                        "number",
+                        "email",
+                        "url",
+                        "date",
+                        "file",
+                        "section_break"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "helpText": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "placeholder": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "position": {
+                      "type": "integer"
+                    },
+                    "step": {
+                      "type": "integer"
+                    },
+                    "required": {
+                      "type": "boolean"
+                    },
+                    "options": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "optionLabels": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "showIf": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "fieldId": {
+                          "type": "string"
+                        },
+                        "op": {
+                          "type": "string",
+                          "enum": [
+                            "eq",
+                            "neq",
+                            "includes",
+                            "gt",
+                            "lt",
+                            "is_empty",
+                            "not_empty"
+                          ]
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "fieldId",
+                        "op"
+                      ]
+                    },
+                    "minLength": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "maxLength": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "charLimitGroup": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "key",
+                    "builtinKey",
+                    "type",
+                    "label",
+                    "helpText",
+                    "placeholder",
+                    "position",
+                    "step",
+                    "required",
+                    "options",
+                    "optionLabels",
+                    "showIf",
+                    "minLength",
+                    "maxLength",
+                    "charLimitGroup"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "fields"
+            ]
+          },
+          "fileRequest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "helpText": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "acceptedTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "maxSizeMb": {
+                "type": "integer"
+              },
+              "allowMultiple": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "helpText",
+              "acceptedTypes",
+              "maxSizeMb",
+              "allowMultiple"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "contentType": {
+                  "type": "string"
+                },
+                "sizeBytes": {
+                  "type": "integer"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "description": "ISO 8601"
+                }
+              },
+              "required": [
+                "id",
+                "filename",
+                "contentType",
+                "sizeBytes",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "assignmentId",
+          "name",
+          "descriptionMarkdown",
+          "kind",
+          "status",
+          "required",
+          "dueAt",
+          "overdue",
+          "completedAt",
+          "linkUrl",
+          "submissionId",
+          "submissionTitle",
+          "answers",
+          "form",
+          "fileRequest",
+          "files"
+        ]
+      },
+      "SpeakerTaskForm": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20000
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "submit": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "answers"
+        ]
       },
       "Agenda": {
         "type": "object",
@@ -924,11 +2143,19 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Submitter email; an account is created if none exists"
+            "description": "Optional consistency check; when present it must match the signed-in speaker"
           },
           "name": {
             "type": "string",
             "description": "Submitter display name"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "submit"
+            ],
+            "description": "Save a private draft or file the proposal for review"
           },
           "answers": {
             "type": "object",
@@ -961,7 +2188,6 @@
         },
         "additionalProperties": false,
         "required": [
-          "email",
           "answers"
         ],
         "description": "A submission to a published form"
@@ -1323,7 +2549,7 @@
           "Program"
         ],
         "summary": "List sessions",
-        "description": "Published sessions only. Filters accept a track or room name, or its id.",
+        "description": "Published sessions only. Full-text matching covers titles, descriptions, taxonomy, and speaker names; structured filters can be combined.",
         "operationId": "listSessions",
         "parameters": [
           {
@@ -1351,6 +2577,18 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search title, description, taxonomy, and speaker names",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Search title, description, taxonomy, and speaker names"
+            }
+          },
+          {
             "name": "track",
             "in": "query",
             "required": false,
@@ -1372,6 +2610,76 @@
               "minLength": 1,
               "maxLength": 120,
               "description": "Room name or id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "description": "Session format name",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Session format name"
+            }
+          },
+          {
+            "name": "speaker",
+            "in": "query",
+            "required": false,
+            "description": "Speaker name or participant id",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Speaker name or participant id"
+            }
+          },
+          {
+            "name": "startsAfter",
+            "in": "query",
+            "required": false,
+            "description": "Keep sessions starting at or after this ISO 8601 instant",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Keep sessions starting at or after this ISO 8601 instant"
+            }
+          },
+          {
+            "name": "startsBefore",
+            "in": "query",
+            "required": false,
+            "description": "Keep sessions starting before this ISO 8601 instant",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Keep sessions starting before this ISO 8601 instant"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to 100; maximum 200",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Defaults to 100; maximum 200"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Zero-based result offset; defaults to 0",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000,
+              "description": "Zero-based result offset; defaults to 0"
             }
           }
         ],
@@ -1441,6 +2749,66 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search name, biography, company, role, links, and sessions",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Search name, biography, company, role, links, and sessions"
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "description": "Company name",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Company name"
+            }
+          },
+          {
+            "name": "session",
+            "in": "query",
+            "required": false,
+            "description": "Session title or id",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Session title or id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to 100; maximum 200",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Defaults to 100; maximum 200"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Zero-based result offset; defaults to 0",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000,
+              "description": "Zero-based result offset; defaults to 0"
+            }
           }
         ],
         "responses": {
@@ -1464,6 +2832,124 @@
                   "required": [
                     "data",
                     "total"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/forms": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "List open calls for speakers",
+        "description": "Public discovery. Draft, closed, and out-of-window forms are omitted.",
+        "operationId": "listOpenCalls",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open CFP forms",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OpenCall"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/forms/{formId}": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Read an open call for speakers",
+        "description": "Public field, conditional-logic, and taxonomy contract for one open CFP.",
+        "operationId": "getOpenCall",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formId",
+            "in": "path",
+            "required": true,
+            "description": "The open CFP form's id or slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The open CFP form",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PublicForm"
+                    }
+                  },
+                  "required": [
+                    "data"
                   ]
                 }
               }
@@ -1579,7 +3065,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid credential",
             "content": {
               "application/json": {
                 "schema": {
@@ -1645,12 +3131,12 @@
             "name": "limit",
             "in": "query",
             "required": false,
-            "description": "Defaults to 100",
+            "description": "Defaults to 100; maximum 200",
             "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 200,
-              "description": "Defaults to 100"
+              "description": "Defaults to 100; maximum 200"
             }
           }
         ],
@@ -1681,7 +3167,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid credential",
             "content": {
               "application/json": {
                 "schema": {
@@ -1719,8 +3205,16 @@
           "Submissions"
         ],
         "summary": "Submit to a call for speakers",
-        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.",
+        "description": "Requires the signed-in speaker's session. The public web CFP remains the cold account-creation flow; this agent-facing POST never creates or acts as another email address. Every request creates a new proposal or draft, so a retry may create another record when the form permits more than one.",
         "operationId": "createSubmission",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "slug",
@@ -1735,7 +3229,7 @@
             "name": "formId",
             "in": "path",
             "required": true,
-            "description": "The form's id or slug",
+            "description": "The open CFP form's id or slug",
             "schema": {
               "type": "string"
             }
@@ -1758,6 +3252,856 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NewSubmissionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/profile": {
+      "get": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Read my event-scoped speaker profile",
+        "operationId": "getMySpeakerProfile",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed-in speaker profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpeakerProfile"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Update my event-scoped speaker profile",
+        "operationId": "updateMySpeakerProfile",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakerProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated speaker profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpeakerProfile"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/submissions": {
+      "get": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "List my proposals",
+        "operationId": "listMySubmissions",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed-in speaker proposals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SpeakerSubmission"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/submissions/{submissionId}": {
+      "get": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Read one of my proposals",
+        "operationId": "getMySubmission",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "One of the signed-in speaker's proposal ids",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed-in speaker proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpeakerSubmission"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Replace editable content on one of my proposals",
+        "operationId": "updateMySubmission",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "One of the signed-in speaker's proposal ids",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakerSubmissionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpeakerSubmission"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/submissions/{submissionId}/withdraw": {
+      "post": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Withdraw one of my proposals",
+        "operationId": "withdrawMySubmission",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "description": "One of the signed-in speaker's proposal ids",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The withdrawn proposal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpeakerSubmission"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/tasks": {
+      "get": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "List my speaker tasks",
+        "operationId": "listMySpeakerTasks",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The signed-in speaker tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SpeakerTask"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/tasks/{assignmentId}/complete": {
+      "post": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Complete an acknowledgement or link task",
+        "operationId": "completeMySimpleTask",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "description": "One of the signed-in speaker's task assignment ids",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The changed task state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/tasks/{assignmentId}/reopen": {
+      "post": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Reopen one of my completed tasks",
+        "operationId": "reopenMyTask",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "description": "One of the signed-in speaker's task assignment ids",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The changed task state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/me/tasks/{assignmentId}/form": {
+      "put": {
+        "tags": [
+          "Speaker"
+        ],
+        "summary": "Save or submit one of my form tasks",
+        "operationId": "saveMyTaskForm",
+        "security": [
+          {
+            "speakerBearerAuth": []
+          },
+          {
+            "speakerCookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "description": "One of the signed-in speaker's task assignment ids",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakerTaskForm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The changed task state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -1841,7 +4185,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid credential",
             "content": {
               "application/json": {
                 "schema": {
