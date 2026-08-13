@@ -314,6 +314,7 @@
 
 .grid {
   display: grid;
+  width: max-content;
   min-width: 100%;
   position: relative;
 }
