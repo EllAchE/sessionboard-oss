@@ -14,7 +14,7 @@ import { renderMarkdown } from '@/lib/markdown';
 import type { RuntimeField } from '@/lib/services/submissions';
 import { submitPublicForm } from './actions';
 import { FieldControl } from './FieldControl';
-import { submitPath, uploadPath, type RuntimeForm } from './shared';
+import { submitFormStateKey, submitPath, uploadPath, type RuntimeForm } from './shared';
 import styles from './submit.module.css';
 
 /**
@@ -43,7 +43,11 @@ function stepTitle(step: Step, position: number, total: number): string {
   return total > 3 ? `Your talk · part ${position}` : 'Your talk';
 }
 
-export function SubmitForm({
+export function SubmitForm(props: Props) {
+  return <SubmitFormSession key={submitFormStateKey(props.submissionId)} {...props} />;
+}
+
+function SubmitFormSession({
   form,
   initialValues,
   initialFileNames,

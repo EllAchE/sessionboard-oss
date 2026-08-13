@@ -423,22 +423,21 @@ export type LoadedDraft = {
   fileNames: Record<string, string>;
 };
 
-/** Rehydrates a draft into the shape the runtime renders, built-in columns folded back in. */
-export async function loadDraftValues(
-  submissionId: string,
-  userId: string,
+export type DraftValueSource = {
+  title: string;
+  descriptionMarkdown: string | null;
+  formatId: string | null;
+  trackId: string | null;
+  level: string | null;
+  answers: AnswerMap;
+};
+
+export function rehydrateDraftValues(
+  row: DraftValueSource,
+  tagIds: string[],
   fields: RuntimeField[],
-): Promise<LoadedDraft | null> {
-  const db = getDb();
-  const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
-  if (!row || row.submitterUserId !== userId) return null;
-
-  const tagRows = await db
-    .select({ tagId: submissionTag.tagId })
-    .from(submissionTag)
-    .where(eq(submissionTag.submissionId, row.id));
-
-  const values: AnswerMap = { ...(row.answers as AnswerMap) };
+): AnswerMap {
+  const values: AnswerMap = { ...row.answers };
   for (const field of fields) {
     switch (field.builtinKey) {
       case 'title':
@@ -457,12 +456,35 @@ export async function loadDraftValues(
         values[field.key] = row.level ?? '';
         break;
       case 'tags':
-        values[field.key] = tagRows.map((tagRow) => tagRow.tagId);
+        values[field.key] = tagIds;
         break;
       default:
         break;
     }
   }
+  return values;
+}
+
+/** Rehydrates a draft into the shape the runtime renders, built-in columns folded back in. */
+export async function loadDraftValues(
+  submissionId: string,
+  userId: string,
+  fields: RuntimeField[],
+): Promise<LoadedDraft | null> {
+  const db = getDb();
+  const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
+  if (!row || row.submitterUserId !== userId) return null;
+
+  const tagRows = await db
+    .select({ tagId: submissionTag.tagId })
+    .from(submissionTag)
+    .where(eq(submissionTag.submissionId, row.id));
+
+  const values = rehydrateDraftValues(
+    { ...row, answers: row.answers as AnswerMap },
+    tagRows.map((tagRow) => tagRow.tagId),
+    fields,
+  );
 
   return { id: row.id, values, fileNames: await resolveFileNames(fields, values) };
 }
