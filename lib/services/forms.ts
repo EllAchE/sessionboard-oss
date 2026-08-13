@@ -1,8 +1,15 @@
 import { and, asc, count, eq, ne } from 'drizzle-orm';
 import { getDb } from '../../db/client';
-import { fieldLibraryEntry, form, formField, submission } from '../../db/schema';
+import {
+  fieldLibraryEntry,
+  form,
+  formField,
+  formParticipantRole,
+  submission,
+} from '../../db/schema';
 import {
   canChangeFieldType,
+  canChangeRequired,
   canDeleteField,
   collectsAnswer,
   eligibleConditionTargets,
@@ -15,12 +22,25 @@ import { conflict, invalid, notFound } from '../errors';
 import {
   BUILTIN_FIELDS,
   BUILTIN_META,
+  PAGE_HEADING_MAX_LENGTH,
+  PARTICIPANT_BUILTIN_FIELDS,
+  PARTICIPANT_BUILTIN_META,
+  PARTICIPANT_ROLE_DEFAULT_LABELS,
+  builtinMaxLength,
   isBuiltinKey,
+  isParticipantBuiltinKey,
+  isParticipantRoleKind,
   validateConditions,
+  validateParticipantCounts,
+  validateRoleConfiguration,
   type BuiltinKey,
   type Condition,
+  type FieldEntity,
   type FieldType,
   type FormFieldSpec,
+  type ParticipantBuiltinKey,
+  type ParticipantRoleKind,
+  type ParticipantRoleSpec,
 } from '../forms/contract';
 import { slugify } from '../ids';
 
@@ -31,11 +51,14 @@ import { slugify } from '../ids';
 
 export type FormRecord = typeof form.$inferSelect;
 export type FormKind = FormRecord['kind'];
+export type FormTargetType = FormRecord['targetType'];
 export type FormStatus = FormRecord['status'];
 export type FieldLibraryEntry = typeof fieldLibraryEntry.$inferSelect;
 
-/** `FormFieldSpec` plus the columns only the builder cares about. */
+/** `FormFieldSpec` plus the columns only the builder cares about, with both keys resolved. */
 export type BuilderField = FormFieldSpec & {
+  entity: FieldEntity;
+  participantKey: ParticipantBuiltinKey | null;
   helpText: string | null;
   placeholder: string | null;
   libraryEntryId: string | null;
@@ -48,16 +71,25 @@ export type FormSummary = FormRecord & {
 
 export type FormDetail = {
   form: FormRecord;
+  /** `F-5`. The abstract questions, in running order. */
   fields: BuilderField[];
+  /** `F-6`. The participant questions, in their own running order. */
+  participantFields: BuilderField[];
+  /** `F-7`. */
+  roles: ParticipantRoleSpec[];
 };
 
 type FieldRow = typeof formField.$inferSelect;
 
 function toBuilderField(row: FieldRow): BuilderField {
+  const entity: FieldEntity = row.entity;
   return {
     id: row.id,
     key: row.key,
-    builtinKey: isBuiltinKey(row.builtinKey) ? row.builtinKey : null,
+    entity,
+    builtinKey: entity === 'abstract' && isBuiltinKey(row.builtinKey) ? row.builtinKey : null,
+    participantKey:
+      entity === 'participant' && isParticipantBuiltinKey(row.builtinKey) ? row.builtinKey : null,
     type: row.type,
     label: row.label,
     position: row.position,
@@ -74,6 +106,17 @@ function toBuilderField(row: FieldRow): BuilderField {
   };
 }
 
+function toRoleSpec(row: typeof formParticipantRole.$inferSelect): ParticipantRoleSpec {
+  return {
+    id: row.id,
+    kind: row.kind,
+    label: row.label,
+    position: row.position,
+    minCount: row.minCount,
+    maxCount: row.maxCount,
+  };
+}
+
 async function loadForm(ctx: EventContext, formId: string): Promise<FormRecord> {
   const row = await getDb().query.form.findFirst({
     where: and(eq(form.id, formId), eq(form.eventId, ctx.eventId)),
@@ -82,12 +125,42 @@ async function loadForm(ctx: EventContext, formId: string): Promise<FormRecord> 
   return row;
 }
 
+/**
+ * The abstract questions only. Every existing caller means these — the runtime's field renderer, the
+ * condition validator, the CSV column set — and none of them wants a person's surname in the middle
+ * of the running order.
+ */
 async function loadFields(formId: string): Promise<BuilderField[]> {
+  const rows = await getDb().query.formField.findMany({
+    where: and(eq(formField.formId, formId), eq(formField.entity, 'abstract')),
+    orderBy: [asc(formField.position)],
+  });
+  return rows.map(toBuilderField);
+}
+
+async function loadParticipantFields(formId: string): Promise<BuilderField[]> {
+  const rows = await getDb().query.formField.findMany({
+    where: and(eq(formField.formId, formId), eq(formField.entity, 'participant')),
+    orderBy: [asc(formField.position)],
+  });
+  return rows.map(toBuilderField);
+}
+
+/** Both entities at once. Only the places that care about per-form uniqueness need this. */
+async function loadAllFields(formId: string): Promise<BuilderField[]> {
   const rows = await getDb().query.formField.findMany({
     where: eq(formField.formId, formId),
     orderBy: [asc(formField.position)],
   });
   return rows.map(toBuilderField);
+}
+
+export async function loadFormRoles(formId: string): Promise<ParticipantRoleSpec[]> {
+  const rows = await getDb().query.formParticipantRole.findMany({
+    where: eq(formParticipantRole.formId, formId),
+    orderBy: [asc(formParticipantRole.position)],
+  });
+  return rows.map(toRoleSpec);
 }
 
 async function uniqueFormSlug(eventId: string, desired: string, exceptFormId?: string): Promise<string> {
@@ -146,7 +219,12 @@ export async function listForms(ctx: EventContext): Promise<FormSummary[]> {
 export async function getForm(ctx: EventContext, formId: string): Promise<FormDetail> {
   requireCapability(ctx, 'form:manage');
   const record = await loadForm(ctx, formId);
-  return { form: record, fields: await loadFields(formId) };
+  const [fields, participantFields, roles] = await Promise.all([
+    loadFields(formId),
+    loadParticipantFields(formId),
+    loadFormRoles(formId),
+  ]);
+  return { form: record, fields, participantFields, roles };
 }
 
 /**
@@ -156,7 +234,13 @@ export async function getForm(ctx: EventContext, formId: string): Promise<FormDe
  */
 export async function createForm(
   ctx: EventContext,
-  input: { name: string; kind: FormKind; slug?: string | null },
+  input: {
+    name: string;
+    kind: FormKind;
+    slug?: string | null;
+    targetType?: FormTargetType;
+    collectsParticipants?: boolean;
+  },
 ): Promise<FormRecord> {
   requireCapability(ctx, 'form:manage');
   const name = input.name.trim();
@@ -164,33 +248,102 @@ export async function createForm(
 
   const db = getDb();
   const slug = await uniqueFormSlug(ctx.eventId, input.slug?.trim() || name);
+  const collectsParticipants = input.collectsParticipants ?? true;
   const [created] = await db
     .insert(form)
-    .values({ eventId: ctx.eventId, name, kind: input.kind, slug })
+    .values({
+      eventId: ctx.eventId,
+      name,
+      kind: input.kind,
+      slug,
+      targetType: input.targetType ?? 'abstract',
+      collectsParticipants,
+    })
     .returning();
 
   if (input.kind === 'cfp') {
-    await db.insert(formField).values(
-      BUILTIN_FIELDS.map((key, index) => ({
-        formId: created.id,
-        position: index,
-        step: 0,
-        type: BUILTIN_META[key].type,
-        key,
-        builtinKey: key,
-        label: BUILTIN_META[key].label,
-        required: BUILTIN_META[key].required,
-      })),
-    );
+    await db.insert(formField).values(seedBuiltinFields(created.id));
+    if (collectsParticipants) await db.insert(formParticipantRole).values(seedRoles(created.id));
   }
 
   return created;
+}
+
+/**
+ * `F-5` and `F-6`. Both built-in sets land with the brief's constants already on them: the starred
+ * Required toggles, and the 255 / 5,000 character caps that were previously NULL — which is to say
+ * unlimited — on every form this product had ever created.
+ */
+export function seedBuiltinFields(formId: string): Array<typeof formField.$inferInsert> {
+  return [
+    ...BUILTIN_FIELDS.map((key, index) => ({
+      formId,
+      position: index,
+      step: 0,
+      entity: 'abstract' as const,
+      type: BUILTIN_META[key].type,
+      key,
+      builtinKey: key,
+      label: BUILTIN_META[key].label,
+      required: BUILTIN_META[key].required,
+      maxLength: BUILTIN_META[key].maxLength,
+    })),
+    ...PARTICIPANT_BUILTIN_FIELDS.map((key, index) => ({
+      formId,
+      position: index,
+      step: 0,
+      entity: 'participant' as const,
+      type: PARTICIPANT_BUILTIN_META[key].type,
+      key,
+      builtinKey: key,
+      label: PARTICIPANT_BUILTIN_META[key].label,
+      required: PARTICIPANT_BUILTIN_META[key].required,
+      maxLength: PARTICIPANT_BUILTIN_META[key].maxLength,
+    })),
+  ];
+}
+
+/**
+ * `F-7`. Deliberately permissive out of the box — one speaker required, co-speakers allowed, no
+ * ceiling anywhere. A default that blocked a submission would be a limit the organizer never chose.
+ */
+export function seedRoles(formId: string): Array<typeof formParticipantRole.$inferInsert> {
+  return [
+    {
+      formId,
+      kind: 'speaker' as const,
+      label: PARTICIPANT_ROLE_DEFAULT_LABELS.speaker,
+      position: 0,
+      minCount: 1,
+      maxCount: 1,
+    },
+    {
+      formId,
+      kind: 'co_speaker' as const,
+      label: PARTICIPANT_ROLE_DEFAULT_LABELS.co_speaker,
+      position: 1,
+      minCount: 0,
+      maxCount: null,
+    },
+  ];
 }
 
 export type FormSettingsPatch = {
   name?: string;
   slug?: string;
   kind?: FormKind;
+  /** `F-4` */
+  targetType?: FormTargetType;
+  /** `F-4` */
+  collectsParticipants?: boolean;
+  /** `F-9` */
+  externalTitle?: string | null;
+  /** `F-9` */
+  pageHeading?: string | null;
+  /** `F-9` */
+  showWelcome?: boolean;
+  /** `F-7` */
+  maxParticipants?: number | null;
   introMarkdown?: string | null;
   opensAt?: Date | null;
   closesAt?: Date | null;
@@ -223,6 +376,32 @@ export async function updateForm(
     values.slug = await uniqueFormSlug(ctx.eventId, patch.slug, formId);
   }
   if (patch.kind !== undefined) values.kind = patch.kind;
+  if (patch.targetType !== undefined) values.targetType = patch.targetType;
+  if (patch.collectsParticipants !== undefined) {
+    values.collectsParticipants = patch.collectsParticipants;
+  }
+  if (patch.externalTitle !== undefined) values.externalTitle = patch.externalTitle?.trim() || null;
+  if (patch.pageHeading !== undefined) {
+    const heading = patch.pageHeading?.trim() || null;
+    if (heading && heading.length > PAGE_HEADING_MAX_LENGTH) {
+      throw invalid(`The page heading is limited to ${PAGE_HEADING_MAX_LENGTH} characters`, {
+        pageHeading: `${heading.length} characters — the limit is ${PAGE_HEADING_MAX_LENGTH}`,
+      });
+    }
+    values.pageHeading = heading;
+  }
+  if (patch.showWelcome !== undefined) values.showWelcome = patch.showWelcome;
+  if (patch.maxParticipants !== undefined) {
+    if (patch.maxParticipants !== null && patch.maxParticipants < 1) {
+      throw invalid('A participant cap has to be at least 1', {
+        maxParticipants: 'Use 1 or more, or leave it blank for no cap',
+      });
+    }
+    // `F-7`: the cap and the per-role minimums have to be satisfiable together, and the organizer
+    // finds that out here rather than from a speaker stuck on the participant stage.
+    validateRoleConfiguration(await loadFormRoles(formId), patch.maxParticipants);
+    values.maxParticipants = patch.maxParticipants;
+  }
   if (patch.introMarkdown !== undefined) values.introMarkdown = patch.introMarkdown;
   if (patch.opensAt !== undefined) values.opensAt = patch.opensAt;
   if (patch.closesAt !== undefined) values.closesAt = patch.closesAt;
@@ -278,7 +457,11 @@ export async function duplicateForm(
 ): Promise<FormRecord> {
   requireCapability(ctx, 'form:manage');
   const source = await loadForm(ctx, formId);
-  const fields = await loadFields(formId);
+  const [fields, participantFields, roles] = await Promise.all([
+    loadFields(formId),
+    loadParticipantFields(formId),
+    loadFormRoles(formId),
+  ]);
   const db = getDb();
 
   const copyName = (name ?? `${source.name} (copy)`).trim();
@@ -287,9 +470,15 @@ export async function duplicateForm(
     .values({
       eventId: ctx.eventId,
       kind: source.kind,
+      targetType: source.targetType,
+      collectsParticipants: source.collectsParticipants,
       name: copyName,
       slug: await uniqueFormSlug(ctx.eventId, copyName),
       status: 'draft',
+      externalTitle: source.externalTitle,
+      pageHeading: source.pageHeading,
+      showWelcome: source.showWelcome,
+      maxParticipants: source.maxParticipants,
       introMarkdown: source.introMarkdown,
       opensAt: source.opensAt,
       closesAt: source.closesAt,
@@ -309,6 +498,7 @@ export async function duplicateForm(
           formId: created.id,
           position: field.position,
           step: field.step,
+          entity: 'abstract' as const,
           type: field.type,
           key: field.key,
           builtinKey: field.builtinKey,
@@ -342,6 +532,41 @@ export async function duplicateForm(
     );
   }
 
+  if (participantFields.length > 0) {
+    await db.insert(formField).values(
+      participantFields.map((field) => ({
+        formId: created.id,
+        position: field.position,
+        step: field.step,
+        entity: 'participant' as const,
+        type: field.type,
+        key: field.key,
+        builtinKey: field.participantKey,
+        label: field.label,
+        helpText: field.helpText,
+        placeholder: field.placeholder,
+        required: field.required,
+        options: field.options,
+        minLength: field.minLength,
+        maxLength: field.maxLength,
+        charLimitGroup: field.charLimitGroup,
+      })),
+    );
+  }
+
+  if (roles.length > 0) {
+    await db.insert(formParticipantRole).values(
+      roles.map((role) => ({
+        formId: created.id,
+        kind: role.kind,
+        label: role.label,
+        position: role.position,
+        minCount: role.minCount,
+        maxCount: role.maxCount,
+      })),
+    );
+  }
+
   return created;
 }
 
@@ -358,12 +583,62 @@ export async function deleteForm(ctx: EventContext, formId: string): Promise<voi
 }
 
 /**
+ * The locked built-ins are an invariant of a `cfp` form, not a question about one — and an invariant
+ * belongs with the engine rather than with each writer.
+ *
+ * `publishForm` used to *reject* a form that was missing one. That check could only ever fire on a
+ * form some other writer had created, because `createForm` always inserts the full set — and it fired
+ * on exactly the wrong one: `db/seed.ts` and `db/seeds/first-settlement.ts` each wrote five of the
+ * six built-ins and set `status: 'open'` directly, so the seeded demo call worked until an organizer
+ * opened it in the builder and pressed Publish, at which point it hard-failed with "missing built-in
+ * field: tags". The organizer could not act on that message either, because the builder deliberately
+ * offers no way to add a built-in — they are not in the palette.
+ *
+ * So the invariant is repaired instead of reported. The seeds are fixed too, at their source; this is
+ * the belt to that pair of braces, and it is what upgrades every form already sitting in a database.
+ */
+export async function ensureFormBuiltins(formId: string, kind: FormKind): Promise<void> {
+  if (kind !== 'cfp') return;
+  const db = getDb();
+
+  const rows = await db.query.formField.findMany({ where: eq(formField.formId, formId) });
+  const taken = new Set(rows.map((row) => row.key));
+  const present = new Set(rows.map((row) => `${row.entity}:${row.builtinKey}`));
+
+  const missing = seedBuiltinFields(formId).filter(
+    (field) => !present.has(`${field.entity}:${field.builtinKey}`) && !taken.has(field.key),
+  );
+  if (missing.length > 0) {
+    // Appended after whatever the organizer already arranged, per entity, rather than inserted into
+    // the middle of a running order they chose.
+    const lastOf = new Map<string, number>();
+    for (const row of rows) {
+      lastOf.set(row.entity, Math.max(lastOf.get(row.entity) ?? -1, row.position));
+    }
+    const nextOf = new Map(lastOf);
+    await db.insert(formField).values(
+      missing.map((field) => {
+        const position = (nextOf.get(field.entity!) ?? -1) + 1;
+        nextOf.set(field.entity!, position);
+        return { ...field, position };
+      }),
+    );
+  }
+
+  const roles = await db.query.formParticipantRole.findMany({
+    where: eq(formParticipantRole.formId, formId),
+  });
+  if (roles.length === 0) await db.insert(formParticipantRole).values(seedRoles(formId));
+}
+
+/**
  * `validateConditions` is the last gate before a form goes live: a one-hop violation that reaches
  * the runtime is a question that renders for nobody, and nothing on screen says so.
  */
 export async function publishForm(ctx: EventContext, formId: string): Promise<FormRecord> {
   requireCapability(ctx, 'form:manage');
   const record = await loadForm(ctx, formId);
+  await ensureFormBuiltins(formId, record.kind);
   const fields = await loadFields(formId);
 
   if (!fields.some((field) => collectsAnswer(field.type))) {
@@ -377,14 +652,9 @@ export async function publishForm(ctx: EventContext, formId: string): Promise<Fo
     throw invalid(`“${missingOptions.label}” needs at least one choice before the form can open`);
   }
 
-  if (record.kind === 'cfp') {
-    const present = new Set(fields.map((field) => field.builtinKey).filter(Boolean));
-    const missing = BUILTIN_FIELDS.filter((key) => !present.has(key));
-    if (missing.length > 0) {
-      throw invalid(
-        `This call for speakers is missing built-in field${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}`,
-      );
-    }
+  // `F-7`: a form whose minimums cannot fit under its own cap would take nobody's submission.
+  if (record.collectsParticipants) {
+    validateRoleConfiguration(await loadFormRoles(formId), record.maxParticipants);
   }
 
   validateConditions(fields);
@@ -450,8 +720,10 @@ export async function addField(
   const label = input.label.trim();
   if (!label) throw invalid('Give the question a label', { label: 'A label is required' });
 
+  // Keys are unique per form across both entities, because that is what the database enforces —
+  // narrowing this to the abstract fields would hand the insert a duplicate-key error to raise.
   const key = uniqueFieldKey(
-    fields.map((field) => field.key),
+    (await loadAllFields(formId)).map((field) => field.key),
     label,
   );
   const position = fields.reduce((max, field) => Math.max(max, field.position), -1) + 1;
@@ -515,9 +787,12 @@ export async function updateField(
 ): Promise<BuilderField> {
   requireCapability(ctx, 'form:manage');
   await loadForm(ctx, formId);
-  const fields = await loadFields(formId);
-  const existing = fields.find((field) => field.id === fieldId);
+  const all = await loadAllFields(formId);
+  const existing = all.find((field) => field.id === fieldId);
   if (!existing) throw notFound('That question');
+  // Conditions only ever reach across one entity, so the sibling set a condition may name is the
+  // set this field belongs to.
+  const fields = all.filter((field) => field.entity === existing.entity);
 
   const values: Partial<typeof formField.$inferInsert> = {};
 
@@ -540,7 +815,16 @@ export async function updateField(
 
   if (patch.helpText !== undefined) values.helpText = patch.helpText;
   if (patch.placeholder !== undefined) values.placeholder = patch.placeholder;
-  if (patch.required !== undefined) values.required = patch.required;
+  if (patch.required !== undefined) {
+    // `F-6`: First Name, Last Name and Email are locked required. A participant nobody can name or
+    // contact is a row that costs the organizer a support thread and gains them nothing.
+    if (patch.required !== existing.required && !canChangeRequired(existing)) {
+      throw invalid(
+        `“${existing.label}” is always required on a participant. It is what identifies the person.`,
+      );
+    }
+    values.required = patch.required;
+  }
   if (patch.step !== undefined) values.step = Math.max(0, patch.step);
   if (patch.charLimitGroup !== undefined) {
     values.charLimitGroup = patch.charLimitGroup?.trim() || null;
@@ -555,8 +839,18 @@ export async function updateField(
 
   if (patch.minLength !== undefined) values.minLength = patch.minLength;
   if (patch.maxLength !== undefined) values.maxLength = patch.maxLength;
+
+  // `F-5`/`F-6`: a built-in's cap is a ceiling, not just a starting value. An organizer may tighten
+  // Title below 255 or Description below 5,000; raising it past what the rest of the product is built
+  // around is a change whose cost only shows up much later, on somebody else's screen.
+  const ceiling = builtinMaxLength(existing.entity, existing.builtinKey ?? existing.participantKey);
+  if (ceiling !== null && patch.maxLength !== undefined) {
+    values.maxLength =
+      patch.maxLength === null || patch.maxLength > ceiling ? ceiling : patch.maxLength;
+  }
+
   const minLength = patch.minLength !== undefined ? patch.minLength : existing.minLength;
-  const maxLength = patch.maxLength !== undefined ? patch.maxLength : existing.maxLength;
+  const maxLength = values.maxLength !== undefined ? values.maxLength : existing.maxLength;
   if (minLength !== null && maxLength !== null && minLength > maxLength) {
     throw invalid('The minimum length is above the maximum', {
       minLength: 'Has to be at or below the maximum',
@@ -615,9 +909,10 @@ export async function deleteField(
 ): Promise<void> {
   requireCapability(ctx, 'form:manage');
   await loadForm(ctx, formId);
-  const fields = await loadFields(formId);
-  const existing = fields.find((field) => field.id === fieldId);
+  const all = await loadAllFields(formId);
+  const existing = all.find((field) => field.id === fieldId);
   if (!existing) throw notFound('That question');
+  const fields = all.filter((field) => field.entity === existing.entity);
 
   if (!canDeleteField(existing)) {
     throw invalid(
@@ -645,10 +940,12 @@ export async function reorderFields(
   ctx: EventContext,
   formId: string,
   order: FieldOrderItem[],
+  entity: FieldEntity = 'abstract',
 ): Promise<BuilderField[]> {
   requireCapability(ctx, 'form:manage');
   await loadForm(ctx, formId);
-  const fields = await loadFields(formId);
+  const fields =
+    entity === 'participant' ? await loadParticipantFields(formId) : await loadFields(formId);
 
   if (order.length !== fields.length) {
     throw invalid('That ordering does not cover every question on the form');
@@ -761,6 +1058,118 @@ export async function deleteFieldLibraryEntry(ctx: EventContext, entryId: string
   await getDb().delete(fieldLibraryEntry).where(eq(fieldLibraryEntry.id, entryId));
 }
 
+// ---------------------------------------------------------------------------
+// `F-7` — participant roles
+// ---------------------------------------------------------------------------
+
+export type RoleInput = {
+  kind: ParticipantRoleKind;
+  label?: string;
+  minCount?: number;
+  maxCount?: number | null;
+};
+
+export async function listFormRoles(
+  ctx: EventContext,
+  formId: string,
+): Promise<ParticipantRoleSpec[]> {
+  requireCapability(ctx, 'form:manage');
+  await loadForm(ctx, formId);
+  return loadFormRoles(formId);
+}
+
+/**
+ * The whole role set at once, and the overall cap with it, because the rule that matters — the
+ * minimums against the cap — is a property of the set rather than of any row in it. Saving a role at
+ * a time, or the cap separately, means either refusing a legal end state because an intermediate one
+ * was not, or checking nothing at all.
+ */
+export async function setFormRoles(
+  ctx: EventContext,
+  formId: string,
+  input: RoleInput[],
+  maxParticipants?: number | null,
+): Promise<ParticipantRoleSpec[]> {
+  requireCapability(ctx, 'form:manage');
+  const stored = await loadForm(ctx, formId);
+  // Omitting the cap means "leave it where it is"; passing null means "no cap". Both have to reach
+  // `validateRoleConfiguration` as the value the form will actually end up with.
+  const cap = maxParticipants === undefined ? stored.maxParticipants : maxParticipants;
+
+  const seen = new Set<string>();
+  const cleaned = input.map((role, index) => {
+    if (!isParticipantRoleKind(role.kind)) throw invalid(`“${role.kind}” is not a participant role`);
+    if (seen.has(role.kind)) {
+      throw invalid(`${PARTICIPANT_ROLE_DEFAULT_LABELS[role.kind]} is listed twice`);
+    }
+    seen.add(role.kind);
+    return {
+      id: role.kind,
+      kind: role.kind,
+      label: role.label?.trim() || PARTICIPANT_ROLE_DEFAULT_LABELS[role.kind],
+      position: index,
+      minCount: Math.trunc(role.minCount ?? 0),
+      maxCount: role.maxCount === null || role.maxCount === undefined ? null : Math.trunc(role.maxCount),
+    };
+  });
+
+  if (cleaned.length === 0) {
+    throw invalid('A form that collects participants needs at least one role', {
+      roles: 'Keep at least one role, or turn participants off in the form settings',
+    });
+  }
+  if (cap !== null && cap < 1) {
+    throw invalid('A participant cap has to be at least 1', {
+      maxParticipants: 'Use 1 or more, or leave it blank for no cap',
+    });
+  }
+  validateRoleConfiguration(cleaned, cap);
+
+  const db = getDb();
+  if (maxParticipants !== undefined) {
+    await db
+      .update(form)
+      .set({ maxParticipants: cap, updatedAt: new Date() })
+      .where(eq(form.id, formId));
+  }
+  await db.delete(formParticipantRole).where(eq(formParticipantRole.formId, formId));
+  await db.insert(formParticipantRole).values(
+    cleaned.map((role) => ({
+      formId,
+      kind: role.kind,
+      label: role.label,
+      position: role.position,
+      minCount: role.minCount,
+      maxCount: role.maxCount,
+    })),
+  );
+  return loadFormRoles(formId);
+}
+
+/**
+ * `F-7`'s enforcement seam. Both writers that can put a person on a submission call this — the public
+ * submit path in `lib/services/submissions.ts` and the portal's share flow — so a co-speaker added
+ * from the portal is counted against exactly the limits the form was configured with. Configuration
+ * that only the submit path honoured would be a limit anyone could walk around in two clicks.
+ *
+ * A submission whose form predates the roles it is checked against passes: the counts describe what a
+ * form asks for now, and retroactively invalidating a talk somebody already had accepted is not a
+ * validation, it is a bug report against the organizer.
+ */
+export async function assertParticipantLimits(
+  formId: string,
+  assigned: ParticipantRoleKind[],
+  mode: 'all' | 'ceilings' = 'all',
+): Promise<void> {
+  const record = await getDb().query.form.findFirst({ where: eq(form.id, formId) });
+  if (!record || !record.collectsParticipants) return;
+
+  const roles = await loadFormRoles(formId);
+  if (roles.length === 0) return;
+
+  validateParticipantCounts(roles, assigned, record.maxParticipants, mode);
+}
+
 /** Used by the public runtime: the fields of an open form, in running order. */
 export async function getPublishedForm(
   eventId: string,
@@ -770,7 +1179,12 @@ export async function getPublishedForm(
     where: and(eq(form.eventId, eventId), eq(form.slug, slug), ne(form.status, 'draft')),
   });
   if (!record) return null;
-  return { form: record, fields: await loadFields(record.id) };
+  const [fields, participantFields, roles] = await Promise.all([
+    loadFields(record.id),
+    loadParticipantFields(record.id),
+    loadFormRoles(record.id),
+  ]);
+  return { form: record, fields, participantFields, roles };
 }
 
-export type { BuiltinKey };
+export type { BuiltinKey, ParticipantRoleKind, ParticipantRoleSpec };

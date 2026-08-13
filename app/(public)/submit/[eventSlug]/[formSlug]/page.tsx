@@ -43,7 +43,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return createSocialMetadata({
     origin: appUrl(),
     path: `/submit/${bundle.event.slug}/${bundle.form.slug}`,
-    title: `${bundle.form.name} · ${bundle.event.name}`,
+    // `F-9`: the external title, never the internal name. The internal one is a label organizers pick
+    // for their own filing, and "CFP v3 FINAL" is not what belongs in a shared link's preview.
+    title: `${bundle.form.externalTitle} · ${bundle.event.name}`,
     description: bundle.event.tagline ?? `Submit a talk to ${bundle.event.name}.`,
   });
 }
@@ -76,8 +78,20 @@ export default async function SubmitFormPage({ params, searchParams }: PageProps
     eventSlug: bundle.event.slug,
     eventName: bundle.event.name,
     formSlug: bundle.form.slug,
-    formName: bundle.form.name,
+    formName: bundle.form.externalTitle,
+    pageHeading: bundle.form.pageHeading,
+    // `F-9`: the toggle hides the copy without the organizer having to delete it, and getting it
+    // back is one switch rather than rewriting a paragraph they threw away.
+    welcomeHtml:
+      bundle.form.showWelcome && bundle.form.introMarkdown
+        ? renderTrustedMarkdown(bundle.form.introMarkdown)
+        : null,
     fields: bundle.fields,
+    participantFields: bundle.participantFields,
+    roles: bundle.roles,
+    collectsParticipants: bundle.form.collectsParticipants,
+    maxParticipants: bundle.form.maxParticipants,
+    targetType: bundle.form.targetType,
     allowDrafts: bundle.form.allowDrafts,
     closesAt: bundle.form.closesAt ? bundle.form.closesAt.toISOString() : null,
     remaining,
@@ -91,7 +105,8 @@ export default async function SubmitFormPage({ params, searchParams }: PageProps
       <div className={styles.shell}>
         <header className={styles.masthead}>
           <p className={styles.eyebrow}>{bundle.event.name} · call for speakers</p>
-          <h1 className={styles.title}>{bundle.form.name}</h1>
+          {/* `F-9`: the external title. The internal name is an organizer's filing label. */}
+          <h1 className={styles.title}>{bundle.form.externalTitle}</h1>
           {bundle.event.tagline && <p className={styles.tagline}>{bundle.event.tagline}</p>}
         </header>
 
@@ -122,7 +137,12 @@ export default async function SubmitFormPage({ params, searchParams }: PageProps
           )}
         </div>
 
-        {bundle.form.introMarkdown && (
+        {/*
+          `P-2`: the welcome copy is a stage inside the flow now, not a block above it, so it is not
+          rendered twice. It stays here only for a form nobody can answer — closed, or at its limit —
+          because that visitor never reaches the stage machine at all.
+        */}
+        {(!open || atLimit) && bundle.form.showWelcome && bundle.form.introMarkdown && (
           <div
             className={styles.intro}
             dangerouslySetInnerHTML={{ __html: renderTrustedMarkdown(bundle.form.introMarkdown) }}

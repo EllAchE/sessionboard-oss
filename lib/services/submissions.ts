@@ -5,8 +5,11 @@ import {
   file,
   form,
   formField,
+  formParticipantRole,
+  membership,
   participant,
   participantRole,
+  scheduledSession,
   sessionFormat,
   submission,
   submissionTag,
@@ -14,22 +17,31 @@ import {
   track as trackTable,
   user,
 } from '../../db/schema';
-import { conflict, forbidden, invalid, notFound } from '../errors';
+import { conflict, forbidden, invalid, isAppError, notFound } from '../errors';
 import { spreadsheetSafeCellText } from '../csv';
 import {
   BUILTIN_META,
+  PARTICIPANT_BUILTIN_META,
   clearHiddenAnswers,
+  emptyParticipant,
+  participantValues,
   splitAnswers,
   validateAnswers,
+  validateParticipantCounts,
   type AnswerMap,
   type AnswerValue,
   type BuiltinKey,
   type Condition,
   type FieldType,
   type FormFieldSpec,
+  type ParticipantBuiltinKey,
+  type ParticipantInput,
+  type ParticipantRoleKind,
+  type ParticipantRoleSpec,
 } from '../forms/contract';
 import { formatRef } from '../ids';
 import { markdownToText } from '../markdown';
+import { personNameColumns } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 
 /**
@@ -148,6 +160,116 @@ export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeFi
     ...field,
     showIf: normalizeConditionValue(field.showIf, byId.get(field.showIf?.fieldId ?? '')),
   }));
+}
+
+// ---------------------------------------------------------------------------
+// `F-6` / `F-7` — the participant model
+// ---------------------------------------------------------------------------
+
+/** A participant question as the runtime renders it. Same engine, its own built-in namespace. */
+export type ParticipantField = RuntimeField & { participantKey: ParticipantBuiltinKey };
+
+export function buildParticipantSpecs(rows: FieldRow[]): ParticipantField[] {
+  return [...rows]
+    .filter((row) => isParticipantKey(row.builtinKey))
+    .sort((a, b) => a.position - b.position)
+    .map((row) => {
+      const participantKey = row.builtinKey as ParticipantBuiltinKey;
+      const meta = PARTICIPANT_BUILTIN_META[participantKey];
+      const ceiling = meta.maxLength;
+      return {
+        id: row.id,
+        key: row.key,
+        entity: 'participant' as const,
+        builtinKey: null,
+        participantKey,
+        type: meta.type,
+        label: row.label,
+        position: row.position,
+        step: row.step,
+        // The three identity fields ignore whatever is stored: `F-6` locks them required, and a row
+        // written before that lock existed must not be able to unlock itself.
+        required: meta.requiredLocked ? true : row.required,
+        options: null,
+        showIf: null,
+        minLength: row.minLength,
+        // Same reasoning as the abstract built-ins: the constant is the ceiling, not a suggestion.
+        maxLength: ceiling === null ? row.maxLength : Math.min(row.maxLength ?? ceiling, ceiling),
+        charLimitGroup: null,
+        helpText: row.helpText,
+        placeholder: row.placeholder,
+        optionLabels: null,
+      };
+    });
+}
+
+function isParticipantKey(key: string | null): key is ParticipantBuiltinKey {
+  return key !== null && key in PARTICIPANT_BUILTIN_META;
+}
+
+/**
+ * `ParticipantInput` and its two helpers live in `lib/forms/contract.ts`, not here. The participant
+ * stage is a client island, and a client component that value-imports this module pulls `pg` into the
+ * browser bundle — and, since the session-target path reaches the agenda, a mail transport with it.
+ * Re-exported so server callers still have one import for the whole participant model.
+ */
+export { emptyParticipant, participantValues, type ParticipantInput };
+
+/**
+ * `F-6` and `F-7` together, and the only place either is decided. Field-level rules come from
+ * `validateAnswers` — the same required flags and character caps the builder configured — and the
+ * count rules from `validateParticipantCounts`.
+ *
+ * Errors are keyed `participants.<index>.<field>` so the client can put a message under the right box
+ * on a stage that renders several people at once; a flat key would land every error on the first one.
+ */
+export function validateParticipants(
+  fields: ParticipantField[],
+  people: ParticipantInput[],
+  roles: ParticipantRoleSpec[],
+  maxParticipants: number | null,
+): void {
+  const errors: Record<string, string> = {};
+
+  const seen = new Map<string, number>();
+  people.forEach((person, index) => {
+    try {
+      validateAnswers(
+        fields.map((field) => ({ ...field, key: field.participantKey })),
+        participantValues(person),
+      );
+    } catch (error) {
+      if (!isAppError(error) || !error.details) throw error;
+      for (const [key, message] of Object.entries(error.details)) {
+        errors[`participants.${index}.${key}`] = message;
+      }
+    }
+
+    const email = person.email.trim().toLowerCase();
+    if (email) {
+      const first = seen.get(email);
+      if (first !== undefined) {
+        errors[`participants.${index}.email`] = 'This person is already on the submission';
+      } else {
+        seen.set(email, index);
+      }
+    }
+  });
+
+  try {
+    validateParticipantCounts(
+      roles,
+      people.map((person) => person.role),
+      maxParticipants,
+    );
+  } catch (error) {
+    if (!isAppError(error) || !error.details) throw error;
+    Object.assign(errors, error.details);
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw invalid('Some of the people on this submission need attention', errors);
+  }
 }
 
 export type SubmissionColumns = {
@@ -289,15 +411,32 @@ export type PublicFormBundle = {
   form: {
     id: string;
     slug: string;
+    /** `F-9`: the internal name. Never rendered on the public page. */
     name: string;
+    /** `F-9`: what the submitter sees. Falls back to `name` until the organizer sets one. */
+    externalTitle: string;
+    /** `F-9`: the welcome screen's heading, at most 15 characters. */
+    pageHeading: string | null;
+    /** `F-9`: false hides the welcome copy without the organizer having to delete it. */
+    showWelcome: boolean;
     status: 'draft' | 'open' | 'closed';
+    /** `F-4` */
+    targetType: 'abstract' | 'session';
+    /** `F-4` */
+    collectsParticipants: boolean;
     introMarkdown: string | null;
     opensAt: Date | null;
     closesAt: Date | null;
     allowDrafts: boolean;
     maxSubmissionsPerUser: number | null;
+    /** `F-7` */
+    maxParticipants: number | null;
   };
   fields: RuntimeField[];
+  /** `F-6` */
+  participantFields: ParticipantField[];
+  /** `F-7` */
+  roles: ParticipantRoleSpec[];
   taxonomy: Taxonomy;
 };
 
@@ -315,10 +454,14 @@ export async function loadPublicForm(
   });
   if (!formRow) return null;
 
-  const [fieldRows, formats, tracks, tags] = await Promise.all([
+  const [fieldRows, roleRows, formats, tracks, tags] = await Promise.all([
     db.query.formField.findMany({
       where: eq(formField.formId, formRow.id),
       orderBy: [asc(formField.step), asc(formField.position)],
+    }),
+    db.query.formParticipantRole.findMany({
+      where: eq(formParticipantRole.formId, formRow.id),
+      orderBy: [asc(formParticipantRole.position)],
     }),
     db.query.sessionFormat.findMany({
       where: eq(sessionFormat.eventId, eventRow.id),
@@ -349,35 +492,53 @@ export async function loadPublicForm(
       id: formRow.id,
       slug: formRow.slug,
       name: formRow.name,
+      externalTitle: formRow.externalTitle?.trim() || formRow.name,
+      pageHeading: formRow.pageHeading,
+      showWelcome: formRow.showWelcome,
       status: formRow.status,
+      targetType: formRow.targetType,
+      collectsParticipants: formRow.collectsParticipants,
       introMarkdown: formRow.introMarkdown,
       opensAt: formRow.opensAt,
       closesAt: formRow.closesAt,
       allowDrafts: formRow.allowDrafts,
       maxSubmissionsPerUser: formRow.maxSubmissionsPerUser,
+      maxParticipants: formRow.maxParticipants,
     },
-    fields: buildFieldSpecs(
-      fieldRows.map((row) => ({
-        id: row.id,
-        position: row.position,
-        step: row.step,
-        type: row.type,
-        key: row.key,
-        builtinKey: row.builtinKey,
-        label: row.label,
-        helpText: row.helpText,
-        placeholder: row.placeholder,
-        required: row.required,
-        options: row.options ?? null,
-        showIf: row.showIf ?? null,
-        minLength: row.minLength,
-        maxLength: row.maxLength,
-        charLimitGroup: row.charLimitGroup,
-      })),
-      taxonomy,
+    fields: buildFieldSpecs(toFieldRows(fieldRows.filter((row) => row.entity === 'abstract')), taxonomy),
+    participantFields: buildParticipantSpecs(
+      toFieldRows(fieldRows.filter((row) => row.entity === 'participant')),
     ),
+    roles: roleRows.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      label: row.label,
+      position: row.position,
+      minCount: row.minCount,
+      maxCount: row.maxCount,
+    })),
     taxonomy,
   };
+}
+
+function toFieldRows(rows: Array<typeof formField.$inferSelect>): FieldRow[] {
+  return rows.map((row) => ({
+    id: row.id,
+    position: row.position,
+    step: row.step,
+    type: row.type,
+    key: row.key,
+    builtinKey: row.builtinKey,
+    label: row.label,
+    helpText: row.helpText,
+    placeholder: row.placeholder,
+    required: row.required,
+    options: row.options ?? null,
+    showIf: row.showIf ?? null,
+    minLength: row.minLength,
+    maxLength: row.maxLength,
+    charLimitGroup: row.charLimitGroup,
+  }));
 }
 
 export async function countSubmissionsForUser(formId: string, userId: string): Promise<number> {  const db = getDb();
@@ -523,13 +684,15 @@ export type SaveSubmissionInput = {
   mode: 'draft' | 'submit';
   /** Present when resuming; the row is updated in place rather than a second draft created. */
   submissionId?: string | null;
+  /** `F-4`: what the completed submission becomes. Absent means an abstract, as it always did. */
+  targetType?: 'abstract' | 'session';
 };
 
 export type SavedSubmission = {
   id: string;
   ref: number;
   displayRef: string;
-  status: 'draft' | 'submitted';
+  status: 'draft' | 'submitted' | 'accepted';
   title: string;
 };
 
@@ -577,7 +740,17 @@ export async function saveSubmission(input: SaveSubmissionInput): Promise<SavedS
     assertWithinSubmissionLimit(input.limits, count, true);
   }
 
-  const status = input.mode === 'submit' ? ('submitted' as const) : ('draft' as const);
+  /**
+   * `F-4`. A form that targets Sessions is collecting the programme itself — an invited keynote, a
+   * sponsor slot, a track chair's own panel — rather than a proposal somebody has to decide on. So it
+   * lands accepted and mints its `scheduled_session` immediately, which puts it in the agenda's
+   * unscheduled queue instead of in a review round nobody intends to run on it.
+   *
+   * A draft is a draft on either target; nothing is decided until it is sent.
+   */
+  const targetsSession = input.targetType === 'session';
+  const status =
+    input.mode !== 'submit' ? ('draft' as const) : targetsSession ? ('accepted' as const) : ('submitted' as const);
   const now = new Date();
 
   const row = existing
@@ -589,6 +762,7 @@ export async function saveSubmission(input: SaveSubmissionInput): Promise<SavedS
             answers: prepared.answers,
             status,
             submittedAt: input.mode === 'submit' ? now : null,
+            decidedAt: input.mode === 'submit' && targetsSession ? now : null,
             updatedAt: now,
           })
           .where(eq(submission.id, existing.id))
@@ -606,6 +780,7 @@ export async function saveSubmission(input: SaveSubmissionInput): Promise<SavedS
             answers: prepared.answers,
             status,
             submittedAt: input.mode === 'submit' ? now : null,
+            decidedAt: input.mode === 'submit' && targetsSession ? now : null,
           })
           .returning()
       )[0];
@@ -617,6 +792,8 @@ export async function saveSubmission(input: SaveSubmissionInput): Promise<SavedS
       .values(prepared.tagIds.map((tagId) => ({ submissionId: row.id, tagId })))
       .onConflictDoNothing();
   }
+
+  if (input.mode === 'submit' && targetsSession) await ensureScheduledSession(input.eventId, row.id);
 
   return {
     id: row.id,
@@ -685,11 +862,160 @@ export async function ensureParticipant(
 export async function linkPrimarySpeaker(
   submissionId: string,
   participantId: string,
+  kind: ParticipantRoleKind = 'speaker',
 ): Promise<void> {
   await getDb()
     .insert(participantRole)
-    .values({ submissionId, participantId, kind: 'speaker', isPrimary: true, position: 0 })
+    .values({ submissionId, participantId, kind, isPrimary: true, position: 0 })
     .onConflictDoNothing();
+}
+
+/**
+ * `F-6`. One person, resolved to an account and a participant row.
+ *
+ * `user.name` is written from the two halves rather than left alone: it is what the roster, the
+ * agenda, the exports and every merge field render, and a display name that disagrees with the first
+ * and last name somebody just typed is the failure this whole split has to avoid. An account that
+ * already exists keeps its email — the address is identity here, not a field to overwrite.
+ */
+async function upsertPerson(
+  eventId: string,
+  person: ParticipantInput,
+): Promise<{ userId: string; participantId: string }> {
+  const db = getDb();
+  const email = person.email.trim().toLowerCase();
+  const columns = personNameColumns(person);
+  const phone = person.phone?.trim() || null;
+
+  const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
+  const userId = existing
+    ? existing.id
+    : ((
+        await db
+          .insert(user)
+          .values({ email, ...columns, phone })
+          .onConflictDoNothing()
+          .returning()
+      )[0]?.id ??
+      (await db.query.user.findFirst({ where: eq(user.email, email) }))?.id);
+  if (!userId) throw notFound('That account');
+
+  if (existing) {
+    await db
+      .update(user)
+      .set({
+        ...columns,
+        // A blank phone box does not erase a number the speaker gave the portal earlier.
+        phone: phone ?? existing.phone,
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, userId));
+  }
+
+  // `P-3`: everyone named on a submission gets their own speaker portal, not a share of somebody
+  // else's. That is the difference between a co-speaker whose bio is right and one whose is not.
+  await db
+    .insert(membership)
+    .values({ userId, eventId, role: 'speaker' })
+    .onConflictDoNothing();
+
+  const participantId = await ensureParticipant(eventId, userId, columns.name);
+
+  const biography = person.biography?.trim() || null;
+  if (biography) {
+    await db
+      .update(participant)
+      .set({ bioMarkdown: biography, updatedAt: new Date() })
+      .where(eq(participant.id, participantId));
+  }
+
+  return { userId, participantId };
+}
+
+/**
+ * `F-6` and `F-7`'s write half. The whole cast is replaced rather than merged, because the
+ * participant stage shows the submitter the complete list and what they see is what they meant.
+ * The submitter is always first and always primary — they are who the confirmation goes to and who
+ * may later withdraw the talk.
+ */
+export async function saveParticipants(input: {
+  eventId: string;
+  formId: string;
+  submissionId: string;
+  submitterUserId: string;
+  people: ParticipantInput[];
+}): Promise<string[]> {
+  const db = getDb();
+  const participantIds: string[] = [];
+
+  for (const [position, person] of input.people.entries()) {
+    const { participantId } = await upsertPerson(input.eventId, person);
+    participantIds.push(participantId);
+
+    await db
+      .insert(participantRole)
+      .values({
+        submissionId: input.submissionId,
+        participantId,
+        kind: person.role,
+        isPrimary: position === 0,
+        position,
+      })
+      .onConflictDoUpdate({
+        target: [participantRole.submissionId, participantRole.participantId],
+        set: { kind: person.role, isPrimary: position === 0, position },
+      });
+  }
+
+  // Anyone the submitter took off the list loses their role on this submission. Their participant
+  // row and their portal survive — they may still be on somebody else's talk.
+  const stale = await db
+    .select({ id: participantRole.id, participantId: participantRole.participantId })
+    .from(participantRole)
+    .where(eq(participantRole.submissionId, input.submissionId));
+  const keep = new Set(participantIds);
+  for (const role of stale) {
+    if (!keep.has(role.participantId)) {
+      await db.delete(participantRole).where(eq(participantRole.id, role.id));
+    }
+  }
+
+  return participantIds;
+}
+
+/**
+ * `F-4`, the session-target half. The row is `draft` and unscheduled, which is exactly what the
+ * agenda's unscheduled queue is for: the organizer decides the room and the slot, not the submitter.
+ *
+ * The ref and the calendar UID come from `agenda-mutations` rather than being minted again here: two
+ * ways to allocate a session ref is how two sessions end up sharing one, and a second UID format is
+ * how a rescheduled invite stops updating in place instead of updating. The import is deferred
+ * because that module reaches into the mail path, and every other caller of this file — the CSV
+ * exporter, the draft loader, the public page — has no business dragging a mail transport in with it.
+ */
+async function ensureScheduledSession(eventId: string, submissionId: string): Promise<void> {
+  const db = getDb();
+  const existing = await db.query.scheduledSession.findFirst({
+    where: eq(scheduledSession.submissionId, submissionId),
+  });
+  if (existing) return;
+
+  const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
+  if (!row) throw notFound('That submission');
+
+  const { allocateSessionRef, mintIcsUid } = await import('./agenda-mutations');
+
+  await db.insert(scheduledSession).values({
+    eventId,
+    submissionId,
+    ref: await allocateSessionRef(eventId),
+    title: row.title,
+    descriptionMarkdown: row.descriptionMarkdown,
+    trackId: row.trackId,
+    formatId: row.formatId,
+    status: 'draft',
+    icsUid: mintIcsUid(),
+  });
 }
 
 /** `S-9`. A speaker withdraws their own talk; the row stays for the organizer's record. */

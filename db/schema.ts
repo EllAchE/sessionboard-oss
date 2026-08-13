@@ -24,7 +24,20 @@ const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull(
 
 export const membershipRole = pgEnum('membership_role', ['organizer', 'reviewer', 'speaker']);
 export const formKind = pgEnum('form_kind', ['cfp', 'portal']);
+/**
+ * `F-4`. Orthogonal to `kind`, which says what the form is *for*. This says what a completed
+ * submission *becomes*: an abstract that goes to the review queue, or a session that is already part
+ * of the programme. Both write a `submission` row — the hybrid table is the only home the built-ins
+ * have — but a session-target form lands it accepted and mints the `scheduled_session` alongside it,
+ * so an invited talk reaches the agenda's unscheduled queue without a reviewer ever touching it.
+ */
+export const formTargetType = pgEnum('form_target_type', ['abstract', 'session']);
 export const formStatus = pgEnum('form_status', ['draft', 'open', 'closed']);
+/**
+ * `F-6`. Which entity a question belongs to. Without it `builtin_key` is a single flat namespace and
+ * `title` on the abstract and `firstName` on the person are indistinguishable to every consumer.
+ */
+export const formFieldEntity = pgEnum('form_field_entity', ['abstract', 'participant']);
 export const fieldType = pgEnum('field_type', [
   'short_text',
   'long_text',
@@ -126,7 +139,16 @@ export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
 export const user = pgTable('user', {
   id: id(),
   email: text('email').notNull().unique(),
+  /**
+   * The display name, kept as the single string every other surface already renders. `F-6` splits
+   * capture into `firstName` / `lastName`; this stays as their join so the roster, the agenda, the
+   * exports, the mail merge and the embeds keep reading one column instead of recomposing a name in
+   * a dozen places that would each get the edge cases wrong.
+   */
   name: text('name'),
+  /** `F-6`. Nullable because a name imported as one string may have no surname to speak of. */
+  firstName: text('first_name'),
+  lastName: text('last_name'),
   phone: text('phone'),
   notifyEmail: boolean('notify_email').notNull().default(true),
   notifySms: boolean('notify_sms').notNull().default(false),
@@ -352,10 +374,23 @@ export const form = pgTable(
       .notNull()
       .references(() => event.id, { onDelete: 'cascade' }),
     kind: formKind('kind').notNull().default('cfp'),
+    /** `F-4` */
+    targetType: formTargetType('target_type').notNull().default('abstract'),
+    /** `F-4`: the participant block is a whole stage on the public flow, switched on or off here. */
+    collectsParticipants: boolean('collects_participants').notNull().default(true),
+    /** `F-9`: the internal name. Organizers only — it is never rendered publicly. */
     name: text('name').notNull(),
     slug: text('slug').notNull(),
+    /** `F-9`: what a submitter sees as the page title. Falls back to `name` while it is unset. */
+    externalTitle: text('external_title'),
+    /** `F-9`: the welcome screen's heading, capped at 15 characters by the brief. */
+    pageHeading: text('page_heading'),
+    /** `F-9`: hide the welcome copy without deleting it. */
+    showWelcome: boolean('show_welcome').notNull().default(true),
     status: formStatus('status').notNull().default('draft'),
     introMarkdown: text('intro_markdown'),
+    /** `F-7`: the overall participant cap, across every role. Null means no cap. */
+    maxParticipants: integer('max_participants'),
     opensAt: timestamp('opens_at', { withTimezone: true }),
     closesAt: timestamp('closes_at', { withTimezone: true }),
     /** `F-13` */
@@ -396,6 +431,12 @@ export const formField = pgTable(
     helpText: text('help_text'),
     placeholder: text('placeholder'),
     required: boolean('required').notNull().default(false),
+    /**
+     * `F-6`. `builtin_key` is scoped by this: `title` is an abstract built-in and `firstName` is a
+     * participant one, and the two sets never collide because they are read through different
+     * metadata tables.
+     */
+    entity: formFieldEntity('entity').notNull().default('abstract'),
     options: jsonb('options').$type<string[]>(),
     showIf: jsonb('show_if').$type<{
       fieldId: string;
@@ -414,6 +455,41 @@ export const formField = pgTable(
   (t) => ({
     byForm: index('form_field_form_idx').on(t.formId),
     uniqueKey: unique('form_field_form_key').on(t.formId, t.key),
+  }),
+);
+
+/**
+ * `F-7`. Which roles a given form offers, what the organizer calls each one, and how many people may
+ * hold it. The row is per form rather than per event because two calls on the same event genuinely
+ * differ — a panel form wants a moderator and three panelists, a lightning-talk form wants one
+ * speaker and nothing else.
+ *
+ * `kind` stays the global `participant_role_kind` enum rather than becoming free text. Every other
+ * surface in the app — the portal's group view, the review queue's speaker column, the agenda's
+ * double-booking guard, the Accelevents push and the public embeds — reads `participant_role.kind`,
+ * and an organizer-typed string there would mean each of them either renders an unknown token or
+ * needs its own vocabulary map. What the organizer *does* own is which of the four a form offers,
+ * what it is called on screen, its order, and its counts.
+ */
+export const formParticipantRole = pgTable(
+  'form_participant_role',
+  {
+    id: id(),
+    formId: uuid('form_id')
+      .notNull()
+      .references(() => form.id, { onDelete: 'cascade' }),
+    kind: participantRoleKind('kind').notNull(),
+    label: text('label').notNull(),
+    position: integer('position').notNull().default(0),
+    /** How many people must hold this role for a submission to be complete. 0 means optional. */
+    minCount: integer('min_count').notNull().default(0),
+    /** Null means no ceiling on this role, subject only to `form.maxParticipants`. */
+    maxCount: integer('max_count'),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byForm: index('form_participant_role_form_idx').on(t.formId),
+    uniqueKind: unique('form_participant_role_form_kind').on(t.formId, t.kind),
   }),
 );
 

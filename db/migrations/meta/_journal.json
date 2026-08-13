@@ -57,6 +57,13 @@
       "when": 1786604771140,
       "tag": "0007_charming_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786609052455,
+      "tag": "0008_tiny_maximus",
+      "breakpoints": true
     }
   ]
 }

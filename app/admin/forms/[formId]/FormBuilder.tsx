@@ -41,17 +41,19 @@ import {
   deleteLibraryEntryAction,
   reorderFieldsAction,
   saveFieldToLibraryAction,
+  setFormRolesAction,
   setFormStatusAction,
   updateFieldAction,
   updateFormAction,
 } from '../actions';
 import { fieldTypeLabel, stepsOf } from '../field-rules';
-import type { ActionResult, FieldPatchWire, FormSettingsInput } from '../types';
+import type { ActionResult, FieldPatchWire, FormSettingsInput, RoleInputWire } from '../types';
 import { BuilderSidebar } from './BuilderSidebar';
 import { FieldCard } from './FieldCard';
 import { FieldEditor } from './FieldEditor';
 import { FormPreview } from './FormPreview';
 import { FormSettingsPanel } from './FormSettingsPanel';
+import { ParticipantsPanel } from './ParticipantsPanel';
 import {
   parseStepDroppableId,
   stepDroppableId,
@@ -59,6 +61,8 @@ import {
   type BuilderFieldView,
   type FormView,
   type LibraryEntryView,
+  type ParticipantFieldView,
+  type RoleView,
 } from './builder-types';
 import styles from './builder.module.css';
 
@@ -85,11 +89,15 @@ function StepDropzone({
 export function FormBuilder({
   form,
   fields: serverFields,
+  participantFields,
+  roles,
   library,
   eventSlug,
 }: {
   form: FormView;
   fields: BuilderFieldView[];
+  participantFields: ParticipantFieldView[];
+  roles: RoleView[];
   library: LibraryEntryView[];
   eventSlug: string;
 }) {
@@ -271,6 +279,22 @@ export function FormBuilder({
     });
   };
 
+  /** `F-6`: a participant question has no editor sheet, so it never closes one. */
+  const saveParticipantField = (fieldId: string, patch: FieldPatchWire) => {
+    startTransition(async () => {
+      handle(await updateFieldAction(form.id, fieldId, patch));
+    });
+  };
+
+  /** `F-7` */
+  const saveRoles = (roles: RoleInputWire[], maxParticipants: number | null) => {
+    startTransition(async () => {
+      handle(await setFormRolesAction(form.id, roles, maxParticipants), () =>
+        setNotice('Participant roles saved.'),
+      );
+    });
+  };
+
   const deleteField = (fieldId: string) => {
     startTransition(async () => {
       const result = await deleteFieldAction(form.id, fieldId);
@@ -380,6 +404,7 @@ export function FormBuilder({
       <Tabs defaultValue="build">
         <TabsList>
           <TabsTrigger value="build">Questions</TabsTrigger>
+          <TabsTrigger value="participants">Participants</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
         </TabsList>
@@ -496,6 +521,17 @@ export function FormBuilder({
               ) : null}
             </DragOverlay>
           </DndContext>
+        </TabsPanel>
+
+        <TabsPanel value="participants" className={styles.tabPanel}>
+          <ParticipantsPanel
+            form={form}
+            fields={participantFields}
+            roles={roles}
+            busy={pending}
+            onSaveRoles={saveRoles}
+            onPatchField={saveParticipantField}
+          />
         </TabsPanel>
 
         <TabsPanel value="settings" className={styles.tabPanel}>

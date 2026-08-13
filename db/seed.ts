@@ -2,6 +2,11 @@ import { eq, inArray } from 'drizzle-orm';
 import { requireEventWindow } from '../lib/event-dates';
 import { newIcsUid } from '../lib/ics';
 import { ensureDefaultTemplates } from '../lib/services/comms';
+import {
+  PARTICIPANT_BUILTIN_FIELDS,
+  PARTICIPANT_BUILTIN_META,
+} from '../lib/forms/contract';
+import { splitPersonName } from '../lib/person-name';
 import { getDb } from './client';
 import { seedFirstSettlement } from './seeds/first-settlement';
 import {
@@ -10,6 +15,7 @@ import {
   fileRequest,
   form,
   formField,
+  formParticipantRole,
   membership,
   participant,
   participantRole,
@@ -141,7 +147,15 @@ await db.delete(user).where(
 
 const users = await db
   .insert(user)
-  .values(PEOPLE.map((person) => ({ email: person.email, name: person.name })))
+  // `F-6`: both halves stored, `name` still the join. A seed that only wrote `name` would leave every
+  // demo speaker with an empty First Name on the very screen the requirement is about.
+  .values(
+    PEOPLE.map((person) => ({
+      email: person.email,
+      name: person.name,
+      ...splitPersonName(person.name),
+    })),
+  )
   .returning();
 
 const byEmail = new Map(users.map((row) => [row.email, row]));
@@ -268,9 +282,19 @@ const [cfp] = await db
   .values({
     eventId: demo.id,
     kind: 'cfp',
-    name: 'Cicero Forum 2026 call for speakers',
+    // `F-4`
+    targetType: 'abstract',
+    collectsParticipants: true,
+    // `F-9`: the internal name is the organizer's filing label and the external title is what a
+    // speaker reads. They differ here deliberately — a demo where they are identical proves nothing.
+    name: 'CFP 2026 — main call',
+    externalTitle: 'Cicero Forum 2026 call for speakers',
+    pageHeading: 'Speak in 2026',
+    showWelcome: true,
     slug: 'speak',
     status: 'open',
+    // `F-7`: four people at the outside, however the roles are shared out.
+    maxParticipants: 4,
     introMarkdown:
       'We are looking for practical talks rooted in Roman infrastructure, governance, knowledge, ' +
       'or logistics. Show the work rather than the legend. Sessions are 30 minutes unless you ' +
@@ -338,9 +362,21 @@ const cfpFields = await db
       options: ['Introductory', 'Intermediate', 'Advanced'],
       required: true,
     },
+    // `F-5`: the sixth built-in. It was missing here, and `publishForm` requires all six — so this
+    // seeded form worked until an organizer opened it in the builder and pressed Publish.
     {
       formId: cfp.id,
       position: 5,
+      type: 'multi_select' as const,
+      key: 'tags',
+      builtinKey: 'tags',
+      label: 'Tags',
+      helpText: 'Pick the ones a browsing attendee would search for.',
+      required: true,
+    },
+    {
+      formId: cfp.id,
+      position: 6,
       type: 'long_text' as const,
       key: 'takeaways',
       label: 'Three takeaways',
@@ -350,14 +386,14 @@ const cfpFields = await db
     },
     {
       formId: cfp.id,
-      position: 6,
+      position: 7,
       type: 'checkbox' as const,
       key: 'given_before',
       label: 'I have given this talk before',
     },
     {
       formId: cfp.id,
-      position: 7,
+      position: 8,
       type: 'url' as const,
       key: 'prior_recording',
       label: 'Link to the recording',
@@ -365,7 +401,7 @@ const cfpFields = await db
     },
     {
       formId: cfp.id,
-      position: 8,
+      position: 9,
       type: 'long_text' as const,
       key: 'accommodations',
       label: 'Anything we should know to make speaking here work for you?',
@@ -380,6 +416,50 @@ await db
   .update(formField)
   .set({ showIf: { fieldId: givenBefore.id, op: 'eq', value: 'true' } })
   .where(eq(formField.key, 'prior_recording'));
+
+// `F-6`: the participant question set, with the two optional ones both switched on so the demo
+// actually shows a mobile number and a biography being collected at submission time.
+await db.insert(formField).values(
+  PARTICIPANT_BUILTIN_FIELDS.map((key, index) => ({
+    formId: cfp.id,
+    position: index,
+    entity: 'participant' as const,
+    type: PARTICIPANT_BUILTIN_META[key].type,
+    key,
+    builtinKey: key,
+    label: PARTICIPANT_BUILTIN_META[key].label,
+    required: key === 'biography' ? true : PARTICIPANT_BUILTIN_META[key].required,
+    maxLength: PARTICIPANT_BUILTIN_META[key].maxLength,
+    helpText:
+      key === 'biography'
+        ? 'Two or three sentences. This is what appears beside you in the programme.'
+        : key === 'phone'
+          ? 'Only used for day-of logistics.'
+          : null,
+  })),
+);
+
+// `F-7`: exactly one speaker, up to two co-speakers, four people overall. Real limits rather than
+// the permissive defaults, because a demo of an unenforced limit demonstrates nothing.
+await db.insert(formParticipantRole).values([
+  { formId: cfp.id, kind: 'speaker' as const, label: 'Speaker', position: 0, minCount: 1, maxCount: 1 },
+  {
+    formId: cfp.id,
+    kind: 'co_speaker' as const,
+    label: 'Co-speaker',
+    position: 1,
+    minCount: 0,
+    maxCount: 2,
+  },
+  {
+    formId: cfp.id,
+    kind: 'moderator' as const,
+    label: 'Moderator',
+    position: 2,
+    minCount: 0,
+    maxCount: 1,
+  },
+]);
 
 // ---------------------------------------------------------------------------
 // Submissions
