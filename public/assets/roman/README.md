@@ -78,16 +78,18 @@ for onboarding, empty states, and editorial feature panels rather than historica
 
 ## Logo
 
-The Cicero mark is an open C built from two amphitheatre tiers, with a vermilion stage at the open
-edge. Product UI should use `CiceroBrand` so the stone/ink color follows the current theme and the
-stage follows `--accent`.
+The default Cicero mark restores the original three-column symbol inside a bordered square. It was
+first used in the product UI as Lucide's `Columns3` icon before the standalone logo assets were
+introduced. Product UI should use `CiceroBrand` so the tile surface, border, and symbol follow the
+current theme.
 
 - `cicero-mark.svg` — default mark on light surfaces;
 - `cicero-mark-reversed.svg` — light mark for charcoal or photography;
 - `cicero-lockup.svg` — mark and wordmark for external materials;
-- `app/icon.svg` — product icon with the required bounded favicon surface.
+- `cicero-amphitheatre-*.svg` — retained alternate assets from the newer open-C direction;
+- `app/icon.svg` — product icon and favicon using the default columns mark.
 
-Keep clear space equal to the stage width around the mark. Do not add a circle, microphone, eagle,
-gradient, or drop shadow. The open right edge and vermilion stage are the identifying features.
+Keep clear space around the bordered tile and preserve all three columns at small sizes. Do not add
+a circle, microphone, eagle, gradient, or drop shadow.
 
 See `GENERATION.md` for the prompt set and alpha-production workflow used for the generated assets.

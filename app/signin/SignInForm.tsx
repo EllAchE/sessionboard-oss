@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Columns3 } from 'lucide-react';
+import { CiceroMark } from '@/components/CiceroBrand';
 import { Button, Card, CardBody, CardHeader, CardDescription, CardTitle, Input } from '@/components/ui';
 import { requestLinkAction, type SignInState } from './actions';
 import { authCopy, deliveryCopy, type AuthIntent } from './copy';
@@ -27,9 +27,7 @@ export function SignInForm({
   return (
     <div className={styles.shell}>
       <a className={styles.brand} href="/" aria-label="Cicero home">
-        <span className={styles.brandMark} aria-hidden="true">
-          <Columns3 size={19} />
-        </span>
+        <CiceroMark size={36} />
         <span>Cicero</span>
       </a>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState, useTransition, type ReactNode } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ImagePlus, Save } from 'lucide-react';
 import {
@@ -274,7 +275,14 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
         <CardBody>
           <div className={styles.photoRow}>
             {previewSrc ? (
-              <img className={styles.photoPreview} src={previewSrc} alt="" />
+              <Image
+                className={styles.photoPreview}
+                src={previewSrc}
+                alt=""
+                width={64}
+                height={64}
+                unoptimized
+              />
             ) : (
               <Avatar name={values.name || values.email || '?'} size="lg" />
             )}

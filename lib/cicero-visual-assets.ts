@@ -95,14 +95,14 @@ export const CICERO_TRANSPARENT_ASSETS = [
 export const CICERO_LOGO_ASSETS = [
   {
     id: 'cicero-mark',
-    name: 'Cicero mark',
+    name: 'Cicero columns mark (default)',
     path: '/brand/cicero-mark.svg',
     preview: 'light',
     recommendedFor: ['product chrome', 'light surfaces', 'small square placements'],
   },
   {
     id: 'cicero-mark-reversed',
-    name: 'Cicero mark, reversed',
+    name: 'Cicero columns mark, reversed',
     path: '/brand/cicero-mark-reversed.svg',
     preview: 'dark',
     recommendedFor: ['dark surfaces', 'photo overlays', 'footer marks'],
@@ -113,5 +113,26 @@ export const CICERO_LOGO_ASSETS = [
     path: '/brand/cicero-lockup.svg',
     preview: 'light',
     recommendedFor: ['external materials', 'wide headers', 'partner listings'],
+  },
+  {
+    id: 'cicero-amphitheatre-mark',
+    name: 'Cicero amphitheatre mark (alternate)',
+    path: '/brand/cicero-amphitheatre-mark.svg',
+    preview: 'light',
+    recommendedFor: ['archived direction', 'light surfaces'],
+  },
+  {
+    id: 'cicero-amphitheatre-mark-reversed',
+    name: 'Cicero amphitheatre mark, reversed (alternate)',
+    path: '/brand/cicero-amphitheatre-mark-reversed.svg',
+    preview: 'dark',
+    recommendedFor: ['archived direction', 'dark surfaces'],
+  },
+  {
+    id: 'cicero-amphitheatre-lockup',
+    name: 'Cicero amphitheatre lockup (alternate)',
+    path: '/brand/cicero-amphitheatre-lockup.svg',
+    preview: 'light',
+    recommendedFor: ['archived direction', 'wide placements'],
   },
 ] as const satisfies readonly CiceroLogoAsset[];

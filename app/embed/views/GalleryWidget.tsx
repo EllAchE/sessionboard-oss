@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { Dialog } from '@/components/ui';
 import {
   initialsOf,
@@ -69,11 +70,13 @@ export function GalleryWidget({
             >
               {options.showPhoto ? (
                 speaker.headshotUrl ? (
-                  <img
+                  <Image
                     className={styles.headshot}
                     src={speaker.headshotUrl}
                     alt=""
-                    loading="lazy"
+                    width={640}
+                    height={640}
+                    unoptimized
                   />
                 ) : (
                   <span className={styles.headshotFallback} aria-hidden>
