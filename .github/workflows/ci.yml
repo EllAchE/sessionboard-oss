@@ -45,3 +45,34 @@ jobs:
           bun-version: 1.3.10
       - run: bun install --frozen-lockfile
       - run: bun run test
+
+  # Kept as its own job rather than folded into `test`: this one needs a database, and the fast
+  # suite staying database-free is what lets it run anywhere. A failure here is a failure of a rule
+  # the service enforces — authorization, anonymity, blind review — not of a route's plumbing.
+  integration:
+    name: Integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cicero
+          POSTGRES_PASSWORD: cicero
+          POSTGRES_DB: cicero_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cicero -d cicero_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://cicero:cicero@localhost:5432/cicero_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run db:migrate
+      - run: bun run test:integration
