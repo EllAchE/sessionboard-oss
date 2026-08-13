@@ -1128,6 +1128,38 @@ const tasks = await db
   ])
   .returning();
 
+/**
+ * `S-16`. The two scopes the audience enum on its own could never express, seeded so `B-1` shows
+ * what they do rather than leaving them to be described. A speaker on two accepted talks owes the
+ * per-session one twice; a session's whole cast shares a single answer to the per-group one.
+ */
+const scopedTasks = await db
+  .insert(task)
+  .values([
+    {
+      eventId: demo.id,
+      name: 'Describe this session for the programme',
+      descriptionMarkdown: 'Once for each talk you are on — they are printed separately.',
+      kind: 'acknowledge' as const,
+      audience: 'accepted_participants' as const,
+      scope: 'submission' as const,
+      dueAt: new Date(now.getTime() + 7 * DAY),
+      position: 5,
+      reminderDaysBefore: [3],
+    },
+    {
+      eventId: demo.id,
+      name: 'Agree your running order',
+      descriptionMarkdown: 'One answer per session. Whoever gets there first answers for the rest.',
+      kind: 'acknowledge' as const,
+      audience: 'accepted_participants' as const,
+      scope: 'group' as const,
+      dueAt: new Date(now.getTime() + 12 * DAY),
+      position: 6,
+    },
+  ])
+  .returning();
+
 const acceptedParticipants = accepted.map((row) => participantByUser.get(row.submitterUserId)!);
 const uniqueAccepted = [...new Map(acceptedParticipants.map((row) => [row.id, row])).values()];
 
@@ -1157,6 +1189,44 @@ await db.insert(taskAssignment).values(
     }),
   ),
 );
+
+/**
+ * The scoped tasks are fanned out from the speaking roles rather than from the participant list,
+ * because that is the whole difference between them: one row per person-and-session for the first,
+ * one row per session for the second, held by that session's primary speaker.
+ */
+const acceptedRoles = accepted.flatMap((row) => {
+  const primary = participantByUser.get(row.submitterUserId)!;
+  const co =
+    row.id === submissions[5].id
+      ? [participantByUser.get(byEmail.get('vitruvius@example.com')!.id)!]
+      : [];
+  return [{ submissionId: row.id, participant: primary, isPrimary: true }].concat(
+    co.map((person) => ({ submissionId: row.id, participant: person, isPrimary: false })),
+  );
+});
+
+const [perSession, perGroup] = scopedTasks;
+await db.insert(taskAssignment).values([
+  ...acceptedRoles.map((role, index) => ({
+    taskId: perSession.id,
+    participantId: role.participant.id,
+    submissionId: role.submissionId,
+    scope: 'submission' as const,
+    status: index % 3 === 0 ? ('completed' as const) : ('not_started' as const),
+    completedAt: index % 3 === 0 ? ago(2) : null,
+  })),
+  ...acceptedRoles
+    .filter((role) => role.isPrimary)
+    .map((role, index) => ({
+      taskId: perGroup.id,
+      participantId: role.participant.id,
+      submissionId: role.submissionId,
+      scope: 'group' as const,
+      status: index % 4 === 0 ? ('completed' as const) : ('in_progress' as const),
+      completedAt: index % 4 === 0 ? ago(1) : null,
+    })),
+]);
 
 // ---------------------------------------------------------------------------
 // Portal content and comms
@@ -1247,7 +1317,7 @@ const firstSettlement = await seedFirstSettlement(db, organizer.id, now);
 
 console.log(
   `Seeded /${SLUG}: ${submissions.length} submissions, ${uniqueAccepted.length} speakers, ` +
-    `${scheduled.length} scheduled sessions, ${tasks.length} tasks. ` +
+    `${scheduled.length} scheduled sessions, ${tasks.length + scopedTasks.length} tasks. ` +
     `Sign in as ${organizer.email} and read the link at /admin/mail.`,
 );
 console.log(

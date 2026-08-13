@@ -27,11 +27,35 @@ const AUDIENCES: Array<{ value: AdminTaskRow['audience']; label: string }> = [
   { value: 'manual', label: 'Selected speakers' },
 ];
 
+/**
+ * `S-16`. The second axis. "Assign to" says which people; this says what each of them owes — one
+ * answer as a person, one for each of their sessions, or one shared answer per speaking team.
+ */
+const SCOPES: Array<{ value: AdminTaskRow['scope']; label: string; hint: string }> = [
+  {
+    value: 'contact',
+    label: 'Per contact',
+    hint: 'One answer per person, however many sessions they are on.',
+  },
+  {
+    value: 'submission',
+    label: 'Per session',
+    hint: 'A separate answer for each of their accepted sessions.',
+  },
+  {
+    value: 'group',
+    label: 'Per group',
+    hint: 'One answer shared by a session’s whole speaking team. Any of them can complete it.',
+  },
+];
+
 const BLANK: TaskFormInput = {
   name: '',
   descriptionMarkdown: '',
   kind: 'acknowledge',
   audience: 'accepted_participants',
+  scope: 'contact',
+  submissionId: '',
   participantIds: [],
   dueAt: '',
   required: true,
@@ -51,6 +75,8 @@ export function draftFrom(row: AdminTaskRow): TaskFormInput {
     descriptionMarkdown: row.descriptionMarkdown ?? '',
     kind: row.kind,
     audience: row.audience,
+    scope: row.scope,
+    submissionId: row.submissionId ?? '',
     participantIds: row.participantIds,
     dueAt: toDateInput(row.dueAt),
     required: row.required,
@@ -67,9 +93,10 @@ type Props = {
   editing: AdminTaskRow | null;
   forms: Array<{ id: string; name: string }>;
   speakers: Array<{ id: string; name: string; email: string }>;
+  submissions: Array<{ id: string; ref: string; title: string; accepted: boolean }>;
 };
 
-export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
+export function TaskEditor({ open, onClose, editing, forms, speakers, submissions }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
@@ -109,6 +136,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
   };
 
   const kindHint = KINDS.find((entry) => entry.value === draft.kind)?.hint;
+  const scopeHint = SCOPES.find((entry) => entry.value === draft.scope)?.hint;
   const visibleSpeakers = useMemo(() => {
     const query = speakerQuery.trim().toLocaleLowerCase();
     if (!query) return speakers;
@@ -190,6 +218,44 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
               ))}
             </Select>
           </label>
+        </div>
+
+        <div className={styles.row}>
+          <label className={styles.field}>
+            <span className={styles.label}>One answer per</span>
+            <Select
+              value={draft.scope}
+              onChange={(event) => set('scope', event.target.value as AdminTaskRow['scope'])}
+            >
+              {SCOPES.map((entry) => (
+                <option key={entry.value} value={entry.value}>
+                  {entry.label}
+                </option>
+              ))}
+            </Select>
+            {scopeHint ? <span className={styles.hint}>{scopeHint}</span> : null}
+          </label>
+
+          {draft.scope === 'contact' ? null : (
+            <label className={styles.field}>
+              <span className={styles.label}>Session</span>
+              <Select
+                value={draft.submissionId}
+                onChange={(event) => set('submissionId', event.target.value)}
+              >
+                <option value="">Every accepted session</option>
+                {submissions.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.ref} — {entry.title}
+                    {entry.accepted ? '' : ' (not accepted)'}
+                  </option>
+                ))}
+              </Select>
+              <span className={styles.hint}>
+                Pick one to make this about a single talk. Only its speakers will see it.
+              </span>
+            </label>
+          )}
         </div>
 
         {draft.audience === 'manual' ? (

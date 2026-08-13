@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Switch, Textarea } from '@/components/ui';
 import { renderMarkdown } from '@/lib/markdown';
-import type { Participant } from '@/lib/services/portal';
+import type { Participant, ProfileName } from '@/lib/services/portal';
 import type { NotificationPrefs } from '@/lib/services/settings';
 import { IDLE_STATE } from '../../form-state';
 import styles from '../../portal.module.css';
@@ -24,10 +24,12 @@ const BIO_LIMIT = 5000;
 export function ProfileForm({
   eventSlug,
   me,
+  name,
   notifications,
 }: {
   eventSlug: string;
   me: Participant;
+  name: ProfileName;
   notifications: NotificationPrefs;
 }) {
   const [state, action] = useActionState(saveProfileAction, IDLE_STATE);
@@ -53,6 +55,32 @@ export function ProfileForm({
         <CardBody>
           <div className={styles.fieldGrid}>
             <div className={styles.field}>
+              <label className={styles.label} htmlFor="firstName">
+                First name
+              </label>
+              <Input
+                id="firstName"
+                name="firstName"
+                defaultValue={name.firstName}
+                placeholder="Ada"
+                invalid={Boolean(state.details?.firstName)}
+              />
+              <FieldError state={state} field="firstName" />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="lastName">
+                Last name
+              </label>
+              <Input
+                id="lastName"
+                name="lastName"
+                defaultValue={name.lastName}
+                placeholder="Lovelace"
+                invalid={Boolean(state.details?.lastName)}
+              />
+              <FieldError state={state} field="lastName" />
+            </div>
+            <div className={styles.field}>
               <label className={styles.label} htmlFor="displayName">
                 Name as it should appear
               </label>
@@ -63,7 +91,36 @@ export function ProfileForm({
                 placeholder="Ada Lovelace"
                 invalid={Boolean(state.details?.displayName)}
               />
+              <span className={styles.hint}>
+                Leave it blank and we use your first and last name.
+              </span>
               <FieldError state={state} field="displayName" />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="salutation">
+                Salutation
+              </label>
+              <Input
+                id="salutation"
+                name="salutation"
+                defaultValue={me.salutation ?? ''}
+                placeholder="Ada"
+              />
+              <span className={styles.hint}>How an email to you should open.</span>
+              <FieldError state={state} field="salutation" />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="honorific">
+                Honorific
+              </label>
+              <Input
+                id="honorific"
+                name="honorific"
+                defaultValue={me.honorific ?? ''}
+                placeholder="Dr"
+              />
+              <span className={styles.hint}>Printed before your name on the programme.</span>
+              <FieldError state={state} field="honorific" />
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="pronouns">
@@ -71,6 +128,14 @@ export function ProfileForm({
               </label>
               <Input id="pronouns" name="pronouns" defaultValue={me.pronouns ?? ''} placeholder="she/her" />
               <FieldError state={state} field="pronouns" />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="gender">
+                Gender
+              </label>
+              <Input id="gender" name="gender" defaultValue={me.gender ?? ''} placeholder="Woman" />
+              <span className={styles.hint}>Optional, and yours to word however you like.</span>
+              <FieldError state={state} field="gender" />
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="jobTitle">

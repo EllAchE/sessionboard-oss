@@ -58,6 +58,12 @@ export function TaskCard({
               <span className={styles.dot}>Done {formatDateTime(task.completedAt, timezone)}</span>
             )}
             {task.submissionTitle && <span className={styles.dot}>{task.submissionTitle}</span>}
+            {/*
+              `S-16`. A shared task has one answer for the whole speaking team, so a co-speaker
+              needs to know that before they start — and needs to know why the box is already
+              filled in when somebody else got there first.
+            */}
+            {task.shared && <span className={styles.dot}>Shared with your co-speakers</span>}
             {!task.required && <span className={styles.dot}>Optional</span>}
           </div>
         </div>

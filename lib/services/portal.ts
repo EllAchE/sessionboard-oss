@@ -26,7 +26,7 @@ import { clearHiddenAnswers, validateAnswers } from '../forms/contract';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
-import { splitPersonName } from '../person-name';
+import { personNameColumns, splitPersonName } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
@@ -141,6 +141,18 @@ const speakerNameInput = z.string().transform((value, ctx) => {
 export const profileSchema = z
   .object({
     displayName: speakerNameInput.optional(),
+    /**
+     * `F-6` split capture into these two and kept `user.name` as their join, but left the portal
+     * editing only `participant.displayName` — so the halves the CFP had just collected were the
+     * one thing on the profile a speaker could not correct. They validate through the same rules a
+     * single speaker name gets, so a name cannot get past the guard by arriving in two pieces.
+     */
+    firstName: speakerNameInput.optional(),
+    lastName: speakerNameInput.optional(),
+    /** `S-2`. */
+    salutation: z.string().trim().max(40).optional(),
+    honorific: z.string().trim().max(40).optional(),
+    gender: z.string().trim().max(60).optional(),
     pronouns: z.string().trim().max(40).optional(),
     jobTitle: z.string().trim().max(120).optional(),
     company: z.string().trim().max(120).optional(),
@@ -186,18 +198,32 @@ export async function updateProfile(
 
   const data = parsed.data;
   const db = getDb();
+
+  /**
+   * A key the caller left out is left alone rather than blanked. It used to be blanked, which is
+   * why `lib/services/participants.ts` and the `/api/v1` profile route both re-send the entire
+   * profile on every write — a discipline that silently breaks the moment a column is added to the
+   * schema and one of them is not updated to carry it. Omission meaning "no opinion" makes adding
+   * `salutation`, `honorific` and `gender` safe for callers that have never heard of them.
+   */
+  const column = <K extends string>(key: K, value: string | null | undefined) =>
+    value === undefined ? {} : ({ [key]: blankToNull(value) } as Record<K, string | null>);
+
   const [row] = await db
     .update(participant)
     .set({
-      displayName: blankToNull(data.displayName),
-      pronouns: blankToNull(data.pronouns),
-      jobTitle: blankToNull(data.jobTitle),
-      company: blankToNull(data.company),
-      bioMarkdown: blankToNull(data.bioMarkdown),
-      timezone: blankToNull(data.timezone),
-      dietaryNotes: blankToNull(data.dietaryNotes),
-      accessibilityNotes: blankToNull(data.accessibilityNotes),
-      links: data.links,
+      ...column('displayName', data.displayName),
+      ...column('salutation', data.salutation),
+      ...column('honorific', data.honorific),
+      ...column('pronouns', data.pronouns),
+      ...column('gender', data.gender),
+      ...column('jobTitle', data.jobTitle),
+      ...column('company', data.company),
+      ...column('bioMarkdown', data.bioMarkdown),
+      ...column('timezone', data.timezone),
+      ...column('dietaryNotes', data.dietaryNotes),
+      ...column('accessibilityNotes', data.accessibilityNotes),
+      ...(data.links === undefined ? {} : { links: data.links }),
       updatedAt: new Date(),
     })
     .where(and(eq(participant.id, participantId), eq(participant.eventId, ctx.eventId)))
@@ -205,21 +231,60 @@ export async function updateProfile(
 
   if (!row) throw notFound('Your profile');
 
-  // Phone and channel preference live on `user`, not `participant` — they are global to the
-  // person, not per-event, which is what lets an organizer (no `participant` row) set the same
-  // preference from `/admin/settings`.
-  if (data.phone !== undefined || data.notifyEmail !== undefined || data.notifySms !== undefined) {
+  // Phone, channel preference and the name halves live on `user`, not `participant` — they are
+  // global to the person, not per-event, which is what lets an organizer (no `participant` row)
+  // set the same preference from `/admin/settings`.
+  const namesChanged = data.firstName !== undefined || data.lastName !== undefined;
+  if (
+    namesChanged ||
+    data.phone !== undefined ||
+    data.notifyEmail !== undefined ||
+    data.notifySms !== undefined
+  ) {
+    /**
+     * `name` is recomputed from the halves rather than edited beside them. Writing all three
+     * through one helper is what keeps the join honest: forty read sites still read `user.name`,
+     * and a display name that disagreed with the halves the speaker had just typed would be the
+     * exact bug `F-6` set out to avoid.
+     */
+    const names = namesChanged
+      ? personNameColumns({ firstName: data.firstName, lastName: data.lastName })
+      : null;
     await db
       .update(user)
       .set({
+        ...(names ?? {}),
         ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
         ...(data.notifyEmail !== undefined ? { notifyEmail: data.notifyEmail } : {}),
         ...(data.notifySms !== undefined ? { notifySms: data.notifySms } : {}),
       })
-      .where(eq(user.id, ctx.actor.userId));
+      // The account behind *this participant*, not behind whoever is holding the session. They are
+      // the same person on the portal's own path, and are not when an organizer edits the roster.
+      .where(eq(user.id, row.userId));
   }
 
   return row;
+}
+
+export type ProfileName = { firstName: string; lastName: string };
+
+/**
+ * `S-2`. What the profile form seeds its two name boxes with. A user imported before `F-6` has
+ * `name` but neither half, so the halves are derived on read with the same rule the migration used
+ * — the speaker then sees a filled-in guess they can correct, rather than two empty boxes that
+ * would blank their name the first time they saved anything else.
+ */
+export async function getProfileName(userId: string): Promise<ProfileName> {
+  const row = await getDb().query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { name: true, firstName: true, lastName: true },
+  });
+  if (!row) throw notFound('Your account');
+  const fallback = splitPersonName(row.name);
+  return {
+    firstName: row.firstName ?? fallback.firstName ?? '',
+    lastName: row.lastName ?? fallback.lastName ?? '',
+  };
 }
 
 export async function setHeadshot(

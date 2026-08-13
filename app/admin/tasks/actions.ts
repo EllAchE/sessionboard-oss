@@ -18,6 +18,8 @@ export type TaskFormInput = {
   descriptionMarkdown: string;
   kind: tasks.TaskKind;
   audience: tasks.TaskAudience;
+  scope: tasks.TaskScope;
+  submissionId: string;
   participantIds: string[];
   dueAt: string;
   required: boolean;
@@ -70,6 +72,10 @@ function toServiceInput(input: TaskFormInput): tasks.TaskInput {
     descriptionMarkdown: input.descriptionMarkdown,
     kind: input.kind,
     audience: input.audience,
+    scope: input.scope,
+    // A contact-scoped task has no session to be about, and the panel keeps the picker's last
+    // value when the organizer changes their mind — so it is dropped here rather than refused.
+    submissionId: input.scope === 'contact' ? null : input.submissionId || null,
     participantIds: input.participantIds,
     dueAt: due,
     required: input.required,
