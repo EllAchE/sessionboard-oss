@@ -1,18 +1,17 @@
 import { activeTransportName } from '@/lib/mail';
-import { SignInForm } from './SignInForm';
-import { authRedirect } from './redirect';
-import styles from './signin.module.css';
+import { SignInForm } from '../signin/SignInForm';
+import { authRedirect } from '../signin/redirect';
+import styles from '../signin/signin.module.css';
 
-export const metadata = { title: 'Sign in · Cicero' };
+export const metadata = { title: 'Sign up · Cicero' };
 
-export default async function SignInPage({
+export default async function SignUpPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string; email?: string }>;
 }) {
   const { next, email } = await searchParams;
-
-  const safeNext = authRedirect(next, '/admin');
+  const safeNext = authRedirect(next, '/events/new');
 
   return (
     <main className={styles.root}>
@@ -20,6 +19,7 @@ export default async function SignInPage({
         next={safeNext}
         defaultEmail={email ?? ''}
         mailboxHint={activeTransportName() === 'log'}
+        intent="sign-up"
       />
     </main>
   );
