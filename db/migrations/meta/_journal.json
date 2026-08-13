@@ -43,6 +43,13 @@
       "when": 1786588565129,
       "tag": "0005_burly_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786594323438,
+      "tag": "0006_simple_switch",
+      "breakpoints": true
     }
   ]
 }

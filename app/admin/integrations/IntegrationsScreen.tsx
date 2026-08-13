@@ -28,7 +28,14 @@ import {
   testAccelEventsAction,
   testAirtableAction,
 } from './actions';
-import type { AccelEventsPanel, AirtablePanel, ApiKeyRow, SyncLogRow, TestResult } from './types';
+import type {
+  AccelEventsPanel,
+  AirtablePanel,
+  ApiKeyRow,
+  SmsPanel,
+  SyncLogRow,
+  TestResult,
+} from './types';
 import styles from './integrations.module.css';
 
 /**
@@ -505,14 +512,63 @@ function AirtableSection({ panel }: { panel: AirtablePanel }) {
   );
 }
 
+function SmsSection({ panel }: { panel: SmsPanel }) {
+  if (!panel.configured) {
+    return (
+      <div className={styles.section}>
+        <div className={styles.disabled}>
+          <strong className={styles.disabledTitle}>SMS is not configured</strong>
+          <p className={styles.note}>
+            Anyone who chooses text alerts over email falls back to the dev mailbox at{' '}
+            <code>/admin/sms</code> until Twilio is configured. Set these and reload:
+          </p>
+          <ul className={styles.envList}>
+            <li className={styles.env}>TWILIO_ACCOUNT_SID</li>
+            <li className={styles.env}>TWILIO_AUTH_TOKEN</li>
+            <li className={styles.env}>SMS_FROM</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.section}>
+      <div className={styles.sectionHead}>
+        <div className={styles.headings}>
+          <h2 className={styles.sectionTitle}>SMS</h2>
+          <p className={styles.note}>
+            Alerts to anyone who prefers text over email — the same triggers as email, and the
+            manual composer&apos;s channel selector. Every send is logged at{' '}
+            <code>/admin/sms</code>, the way email is at <code>/admin/mail</code>.
+          </p>
+        </div>
+        <div className={styles.actions}>
+          {panel.transport === 'twilio' ? (
+            <Badge tone="success">Live — Twilio</Badge>
+          ) : (
+            <Badge tone="warning">Dev mailbox — SMS_TRANSPORT=log</Badge>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.status}>
+        <span className={styles.mono}>from: {panel.from ?? 'unset'}</span>
+      </div>
+    </div>
+  );
+}
+
 export function IntegrationsScreen({
   keys,
   accelevents,
   airtable,
+  sms,
 }: {
   keys: ApiKeyRow[];
   accelevents: AccelEventsPanel;
   airtable: AirtablePanel;
+  sms: SmsPanel;
 }) {
   return (
     <div className={styles.page}>
@@ -546,6 +602,7 @@ export function IntegrationsScreen({
             <TabsList>
               <TabsTrigger value="accelevents">Accelevents</TabsTrigger>
               <TabsTrigger value="airtable">Airtable</TabsTrigger>
+              <TabsTrigger value="sms">SMS</TabsTrigger>
             </TabsList>
             <TabsPanel value="accelevents">
               <div className={styles.panel}>
@@ -555,6 +612,11 @@ export function IntegrationsScreen({
             <TabsPanel value="airtable">
               <div className={styles.panel}>
                 <AirtableSection panel={airtable} />
+              </div>
+            </TabsPanel>
+            <TabsPanel value="sms">
+              <div className={styles.panel}>
+                <SmsSection panel={sms} />
               </div>
             </TabsPanel>
           </Tabs>

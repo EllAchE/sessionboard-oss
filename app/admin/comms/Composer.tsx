@@ -17,6 +17,7 @@ import {
 import type {
   AudienceKind,
   AudienceSpec,
+  ChannelSelection,
   PreviewResult,
   SendOutcome,
   TemplateVariable,
@@ -33,8 +34,16 @@ export type ComposerProps = {
   tracks: Option[];
   formats: Option[];
   tasks: Option[];
-  templates: Array<{ key: string; name: string; subject: string; bodyMarkdown: string; attachIcs: boolean }>;
+  templates: Array<{
+    key: string;
+    name: string;
+    subject: string;
+    bodyMarkdown: string;
+    attachIcs: boolean;
+    smsBody: string | null;
+  }>;
   transport: string;
+  smsTransport: string;
 };
 
 const NEEDS_TRACK: AudienceKind[] = ['track'];
@@ -48,6 +57,8 @@ const NEEDS_TASK: AudienceKind[] = ['outstanding_tasks'];
 export function Composer(props: ComposerProps) {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [channel, setChannel] = useState<ChannelSelection>('auto');
+  const [smsBody, setSmsBody] = useState('');
   const [audienceKind, setAudienceKind] = useState<AudienceKind>('accepted_speakers');
   const [trackId, setTrackId] = useState('');
   const [formatId, setFormatId] = useState('');
@@ -81,6 +92,8 @@ export function Composer(props: ComposerProps) {
     if (audience.taskId) data.set('taskId', audience.taskId);
     if (templateKey) data.set('templateKey', templateKey);
     data.set('attachIcs', attachIcs ? 'on' : 'off');
+    data.set('channel', channel);
+    data.set('smsBody', smsBody);
     return data;
   }
 
@@ -114,6 +127,7 @@ export function Composer(props: ComposerProps) {
     setSubject(template.subject);
     setBody(template.bodyMarkdown);
     setAttachIcs(template.attachIcs);
+    setSmsBody(template.smsBody ?? '');
     setPreview(null);
   }
 
@@ -245,6 +259,24 @@ export function Composer(props: ComposerProps) {
               </div>
 
               <div className={styles.field}>
+                <label className={styles.label} htmlFor="channel">
+                  Channel
+                </label>
+                <Select
+                  id="channel"
+                  value={channel}
+                  onChange={(e) => {
+                    setChannel(e.target.value as ChannelSelection);
+                    setPreview(null);
+                  }}
+                >
+                  <option value="auto">Auto — each recipient&rsquo;s own preference</option>
+                  <option value="email">Force email, for everyone with an address</option>
+                  <option value="sms">Force SMS, for everyone with a phone number</option>
+                </Select>
+              </div>
+
+              <div className={styles.field}>
                 <label className={styles.label} htmlFor="subject">
                   Subject
                 </label>
@@ -274,6 +306,25 @@ export function Composer(props: ComposerProps) {
                   }}
                   placeholder={'Hi {{speaker.firstName|there}},\n\n…'}
                 />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="smsBody">
+                  SMS body — plain text
+                </label>
+                <Textarea
+                  id="smsBody"
+                  value={smsBody}
+                  onChange={(e) => {
+                    setSmsBody(e.target.value);
+                    setPreview(null);
+                  }}
+                  placeholder="Leave blank to fall back to a trimmed version of the body above."
+                />
+                <span className={styles.hint}>
+                  Sent to anyone this message reaches by text. Empty falls back to the markdown
+                  body, stripped and truncated.
+                </span>
               </div>
 
               <div className={styles.field}>
@@ -349,7 +400,8 @@ export function Composer(props: ComposerProps) {
 
               {outcome && (
                 <p className={`${styles.notice} ${styles.success}`}>
-                  Sent to {outcome.sent} of {outcome.recipients} recipients
+                  Sent to {outcome.sent} of {outcome.recipients} recipients ({outcome.sentEmail}{' '}
+                  email, {outcome.sentSms} SMS)
                   {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Every message is readable
                   in the mailbox.
                 </p>
@@ -359,6 +411,23 @@ export function Composer(props: ComposerProps) {
                 <p className={styles.notice}>
                   <CalendarCheck size={16} /> MAIL_TRANSPORT is <code>log</code>: nothing leaves the
                   server. Messages appear in the mailbox with their calendar attachment intact.
+                </p>
+              )}
+
+              {props.smsTransport === 'log' && (
+                <p className={styles.notice}>
+                  <CalendarCheck size={16} /> SMS_TRANSPORT is <code>log</code>: text messages land
+                  in the SMS mailbox instead of a phone.
+                </p>
+              )}
+
+              {preview && (
+                <p className={styles.subtle}>
+                  {preview.channelCounts.email} by email, {preview.channelCounts.sms} by SMS
+                  {preview.channelCounts.none > 0
+                    ? `, ${preview.channelCounts.none} reach nobody (no address or phone on file)`
+                    : ''}
+                  .
                 </p>
               )}
 
@@ -397,6 +466,13 @@ export function Composer(props: ComposerProps) {
                     className={styles.previewFrame}
                     dangerouslySetInnerHTML={{ __html: preview.message.html }}
                   />
+
+                  {preview.smsPreview && (
+                    <>
+                      <span className={styles.label}>SMS</span>
+                      <p className={styles.mono}>{preview.smsPreview}</p>
+                    </>
+                  )}
                 </>
               )}
             </div>

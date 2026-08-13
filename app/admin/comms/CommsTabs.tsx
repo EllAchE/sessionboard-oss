@@ -5,12 +5,13 @@ import styles from './comms.module.css';
  * `/admin/comms` and `/admin/mail` carry the current event in a query parameter rather than a path
  * segment, so every internal link has to preserve it. This is the one place that knows that.
  */
-export type CommsTab = 'compose' | 'templates' | 'mail';
+export type CommsTab = 'compose' | 'templates' | 'mail' | 'sms';
 
 const TABS: Array<{ id: CommsTab; label: string; href: string }> = [
   { id: 'compose', label: 'Compose', href: '/admin/comms' },
   { id: 'templates', label: 'Templates', href: '/admin/comms/templates' },
   { id: 'mail', label: 'Mailbox', href: '/admin/mail' },
+  { id: 'sms', label: 'SMS', href: '/admin/sms' },
 ];
 
 export function CommsTabs({ active, eventSlug }: { active: CommsTab; eventSlug?: string | null }) {

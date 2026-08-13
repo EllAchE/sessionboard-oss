@@ -30,6 +30,7 @@ export type TemplateRow = {
   bodyMarkdown: string;
   enabled: boolean;
   attachIcs: boolean;
+  smsBody: string | null;
 };
 
 type Draft = TemplateRow & { isNew: boolean };
@@ -42,6 +43,7 @@ const BLANK: Draft = {
   bodyMarkdown: '',
   enabled: true,
   attachIcs: false,
+  smsBody: null,
   isNew: true,
 };
 
@@ -72,6 +74,7 @@ export function TemplateManager({
     data.set('bodyMarkdown', draft.bodyMarkdown);
     data.set('enabled', draft.enabled ? 'on' : 'off');
     data.set('attachIcs', draft.attachIcs ? 'on' : 'off');
+    data.set('smsBody', draft.smsBody ?? '');
     startTransition(async () => {
       const result = await saveTemplateAction(data);
       if (result.ok) {
@@ -223,6 +226,22 @@ export function TemplateManager({
                 value={draft.bodyMarkdown}
                 onChange={(e) => setDraft({ ...draft, bodyMarkdown: e.target.value })}
               />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="templateSmsBody">
+                SMS body — plain text
+              </label>
+              <Textarea
+                id="templateSmsBody"
+                value={draft.smsBody ?? ''}
+                onChange={(e) => setDraft({ ...draft, smsBody: e.target.value })}
+                placeholder="Leave blank to fall back to a trimmed version of the email body above."
+              />
+              <span className={styles.subtle}>
+                Sent to anyone who prefers text over email. Empty falls back to the email body,
+                stripped of markdown and truncated.
+              </span>
             </div>
 
             <div className={styles.row}>

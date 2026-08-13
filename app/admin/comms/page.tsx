@@ -1,6 +1,7 @@
 import { requireCurrentActor } from '@/lib/auth';
 import { currentEventIdHint } from '@/lib/services/events';
 import { activeTransportName } from '@/lib/mail';
+import { activeSmsTransportName } from '@/lib/sms';
 import {
   AUDIENCE_LABELS,
   TEMPLATE_VARIABLES,
@@ -97,8 +98,10 @@ export default async function CommsPage({
           subject: template.subject,
           bodyMarkdown: template.bodyMarkdown,
           attachIcs: template.attachIcs,
+          smsBody: template.smsBody,
         }))}
         transport={activeTransportName()}
+        smsTransport={activeSmsTransportName()}
       />
     </div>
   );

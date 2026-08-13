@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_TEMPLATES,
   renderMessage,
+  renderSmsText,
   renderTemplateText,
   templateVariablesUsed,
   unknownVariables,
@@ -85,6 +86,32 @@ describe('shipped templates', () => {
   it('attach the calendar only where an invite makes sense', () => {
     const attaching = DEFAULT_TEMPLATES.filter((t) => t.attachIcs).map((t) => t.key);
     expect(attaching.sort()).toEqual(['session.cancelled', 'session.invite']);
+  });
+});
+
+describe('SMS body rendering', () => {
+  it('renders merge fields against an explicit smsBody override', () => {
+    expect(renderSmsText('Hi {{speaker.name}}, your talk is confirmed.', 'ignored', VARS)).toBe(
+      'Hi Marcus Tullius, your talk is confirmed.',
+    );
+  });
+
+  it('falls back to a stripped read of the markdown body when smsBody is unset', () => {
+    const markdown = '# Hi {{speaker.name}}\n\nYour talk **{{event.name}}** is confirmed.';
+    expect(renderSmsText(null, markdown, VARS)).toBe(
+      'Hi Marcus Tullius Your talk Cicero Conf is confirmed.',
+    );
+  });
+
+  it('falls back when smsBody is blank, not just missing', () => {
+    expect(renderSmsText('   ', 'Hi {{speaker.name}}.', VARS)).toBe('Hi Marcus Tullius.');
+  });
+
+  it('truncates a rendered message past the SMS length cap', () => {
+    const long = 'x'.repeat(400);
+    const rendered = renderSmsText(long, 'ignored', VARS);
+    expect(rendered).toHaveLength(300);
+    expect(rendered.endsWith('…')).toBe(true);
   });
 });
 
