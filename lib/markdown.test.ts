@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { excerpt, markdownLength, markdownToText, renderMarkdown, renderTrustedMarkdown } from './markdown';
+import {
+  escapeMarkdownText,
+  excerpt,
+  markdownLength,
+  markdownToText,
+  renderMarkdown,
+  renderTrustedMarkdown,
+} from './markdown';
 
 describe('renderMarkdown (untrusted)', () => {
   it('renders ordinary markdown', () => {
@@ -63,6 +70,19 @@ describe('renderMarkdown (untrusted)', () => {
   it('escapes a title attribute rather than letting it close the tag', () => {
     const html = renderMarkdown('[a](https://example.com "x\\" onmouseover=\\"evil()")');
     expect(html).not.toContain('onmouseover="evil()"');
+  });
+});
+
+describe('escapeMarkdownText', () => {
+  it('preserves text without letting it create links, images, emphasis, or raw HTML', () => {
+    const source = '[click](https://evil.test) ![pixel](https://evil.test/pixel) **bold** <b>raw</b>';
+    const html = renderTrustedMarkdown(escapeMarkdownText(source));
+
+    expect(markdownToText(escapeMarkdownText(source))).toBe(source);
+    expect(html).not.toContain('<a ');
+    expect(html).not.toContain('<img ');
+    expect(html).not.toContain('<strong>');
+    expect(html).not.toContain('<b>');
   });
 });
 
