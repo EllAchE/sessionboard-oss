@@ -1,5 +1,7 @@
 export { AccelEventsClient, liveClientConfig, type LiveClientConfig } from './client';
 export { FakeAccelEventsGateway, type FakeOptions } from './fake';
+export { FakeAccelEventsProgramGateway } from './fake-program';
+export { PersistentFakeAccelEventsProgramGateway } from './persistent-fake-program';
 export {
   dedupeByEmail,
   flattenMarkdown,
@@ -20,6 +22,24 @@ export {
   type SpeakerCandidate,
   type SyncLogEntry,
 } from './sync';
+export {
+  planProgramSync,
+  reconcileProgram,
+  reconcilePublishedProgram,
+  type ProgramSyncOptions,
+} from './program';
+export {
+  PROGRAM_RESOURCE_TYPES,
+  type AccelEventsProgramGateway,
+  type ProgramRecord,
+  type ProgramResourceType,
+  type ProgramSyncAction,
+  type ProgramSyncMode,
+  type ProgramSyncResult,
+  type ProgramSyncStatus,
+  type ProgramSyncSummary,
+  type RemoteProgramRecord,
+} from './program-types';
 export {
   ACCELEVENTS_ERROR,
   speakerDtoSchema,

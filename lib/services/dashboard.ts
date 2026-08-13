@@ -19,6 +19,7 @@ import {
 } from '@/db/schema';
 import type { EventContext } from '@/lib/context';
 import { requireCapability } from '@/lib/context';
+import { spreadsheetSafeCellText } from '@/lib/csv';
 import type { ReportId } from './dashboard-catalog';
 
 /**
@@ -722,7 +723,7 @@ export async function listTasksForAdmin(
 }
 
 function csvCell(value: unknown): string {
-  const text = value === null || value === undefined ? '' : String(value);
+  const text = spreadsheetSafeCellText(value);
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

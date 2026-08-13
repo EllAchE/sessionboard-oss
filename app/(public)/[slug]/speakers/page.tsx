@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../../embed/queries';
 import { PublicChrome, publicStyles as styles } from '../PublicChrome';
@@ -15,7 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Event not found' };
-  return { title: `Speakers · ${bundle.event.name}` };
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}/speakers`,
+    title: `Speakers · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Meet the speakers at ${bundle.event.name}.`,
+  });
 }
 
 /** `G-4`, `EMB-04`, `EMB-05`, and `G-8`: `?sb-speaker-id=` still narrows to one person. */

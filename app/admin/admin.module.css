@@ -1,8 +1,11 @@
 .root {
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   background: var(--surface-page);
+  overflow-x: clip;
 }
 
 .sidebar {
@@ -18,6 +21,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  max-width: 100%;
 }
 
 .topbar {
@@ -32,22 +36,31 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbarRight {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .actor {
   font: var(--type-label);
   color: var(--text-muted);
+  min-width: 0;
+  max-width: min(34vw, 28ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .content {
   padding: var(--space-5);
   min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -57,5 +70,28 @@
 
   .sidebar {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 var(--space-3);
+  }
+
+  .topbar > :first-child {
+    min-width: 0;
+    max-width: 58%;
+  }
+
+  .topbarRight {
+    max-width: 42%;
+  }
+
+  .actor {
+    max-width: 22ch;
+  }
+
+  .content {
+    padding: var(--space-4);
   }
 }
