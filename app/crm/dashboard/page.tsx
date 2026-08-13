@@ -1,8 +1,8 @@
 import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { Card, CardBody, CardHeader, CardDescription, CardTitle } from '@/components/ui';
-import { requireCurrentActor } from '@/lib/auth';
 import { getCrmDashboard, type Breakdown } from '@/lib/services/crm';
+import { requireCrmOrganizer } from '../context';
 import styles from '../crm.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -66,7 +66,7 @@ function Bars({
 }
 
 export default async function CrmDashboardPage() {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const data = await getCrmDashboard(actor);
   const query = (key: string, value: string) => `/crm?${key}=${encodeURIComponent(value)}`;
 

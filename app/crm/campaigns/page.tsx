@@ -1,5 +1,5 @@
-import { requireCurrentActor } from '@/lib/auth';
 import { listCampaigns, listDirectory, listOrganizerEvents } from '@/lib/services/crm';
+import { requireCrmOrganizer } from '../context';
 import { Composer } from './Composer';
 import { toContactWire } from '../serialize';
 
@@ -12,7 +12,7 @@ export default async function CampaignsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const params = await searchParams;
   const raw = params.ids;
   const ids = (Array.isArray(raw) ? raw.join(',') : (raw ?? ''))

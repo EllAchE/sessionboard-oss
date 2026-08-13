@@ -1,5 +1,5 @@
-import { requireCurrentActor } from '@/lib/auth';
 import { MERGEABLE_FIELDS, listDuplicateGroups } from '@/lib/services/crm';
+import { requireCrmOrganizer } from '../context';
 import { MergePanel } from './MergePanel';
 import { toContactWire } from '../serialize';
 
@@ -19,7 +19,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 export default async function DuplicatesPage() {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const groups = await listDuplicateGroups(actor);
 
   return (

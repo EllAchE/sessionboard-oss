@@ -1,5 +1,5 @@
-import { requireCurrentActor } from '@/lib/auth';
 import { listSegments, toFilters } from '@/lib/services/crm';
+import { requireCrmOrganizer } from '../context';
 import { SegmentList } from './SegmentList';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ function describe(raw: Record<string, unknown>): string {
 }
 
 export default async function SegmentsPage() {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const segments = await listSegments(actor);
 
   return (
