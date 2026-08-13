@@ -20,15 +20,26 @@ export function CiceroMark({
       aria-hidden={title ? undefined : true}
     >
       {title ? <title>{title}</title> : null}
-      <path
-        d="M50 9H34C19.6 9 8 19.3 8 32s11.6 23 26 23h16v-6H35c-10.9 0-20-7.6-20-17s9.1-17 20-17h15V9Z"
-        fill="currentColor"
+      <rect
+        x="3"
+        y="3"
+        width="58"
+        height="58"
+        rx="7"
+        fill="var(--border-strong)"
+      />
+      <rect
+        x="5"
+        y="5"
+        width="54"
+        height="54"
+        rx="5"
+        fill="var(--surface-raised)"
       />
       <path
-        d="M45 21H35c-7.2 0-13 4.9-13 11s5.8 11 13 11h10v-5H35c-4.2 0-7-2.7-7-6s2.8-6 7-6h10v-5Z"
-        fill="currentColor"
+        fill="var(--accent)"
+        d="M15.5 15.5h33v3h-33zM15.5 45.5h33v3h-33zM15.5 15.5h3v33h-3zM25.5 15.5h3v33h-3zM35.5 15.5h3v33h-3zM45.5 15.5h3v33h-3z"
       />
-      <path d="M43 27h11v10H43z" fill="var(--accent)" />
     </svg>
   );
 }
