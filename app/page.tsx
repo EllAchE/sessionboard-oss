@@ -2,10 +2,10 @@ import Image from 'next/image';
 import {
   ArrowRight,
   CalendarCheck,
+  Columns3,
   FileCheck,
   Github,
   ListChecks,
-  Mic,
   UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -43,7 +43,7 @@ export default function Home() {
       <nav className={styles.nav} aria-label="Primary navigation">
         <a className={styles.brand} href="/" aria-label="Cicero home">
           <span className={styles.brandMark} aria-hidden="true">
-            <Mic size={18} />
+            <Columns3 size={19} />
           </span>
           <span>Cicero</span>
         </a>
@@ -126,6 +126,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <div className={styles.mosaicRule} aria-hidden="true" />
 
       <section className={styles.product} id="product">
         <div className={styles.sectionHeading}>
