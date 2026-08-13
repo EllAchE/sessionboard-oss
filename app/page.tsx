@@ -1,17 +1,30 @@
 import Image from 'next/image';
 import {
   ArrowRight,
+  Bot,
   CalendarCheck,
+  ExternalLink,
   FileCheck,
   Github,
   ListChecks,
+  ShieldCheck,
   UserPlus,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
+import { CopyAgentPromptButton } from './CopyAgentPromptButton';
 import styles from './home.module.css';
+
+const AGENT_STARTER_PROMPT = `$manage-cicero-event
+
+Use the live Cicero OpenAPI to manage exactly this event:
+- Base URL: <CICERO_BASE_URL>
+- Event slug: <EVENT_SLUG>
+- Event spec: <PASTE OR ATTACH SPEC>
+
+Read the current public programme, normalize the spec, and show me a preview with operation-level diffs and validation errors. Do not apply anything yet.`;
 
 const FEATURES = [
   {
@@ -44,6 +57,9 @@ export default function Home() {
           </a>
           <a className={styles.demoLink} href="/demo">
             Tour the empire
+          </a>
+          <a className={styles.agentLink} href="#agent-quick-start">
+            Agent quick start
           </a>
           <a
             className={styles.githubLink}
@@ -201,6 +217,91 @@ export default function Home() {
           <a className={styles.textLink} href="/demo/agenda">
             Consult the demo programme <ArrowRight size={16} aria-hidden="true" />
           </a>
+        </div>
+      </section>
+
+      <section
+        className={styles.agentQuickStart}
+        id="agent-quick-start"
+        aria-labelledby="agent-quick-start-title"
+      >
+        <div className={styles.agentQuickIntro}>
+          <p className={styles.eyebrow}>Agent quick start</p>
+          <h2 id="agent-quick-start-title">
+            Give your agent a brief. Keep every decree reviewable.
+          </h2>
+          <p>
+            Cicero ships with a repo-local agent skill that can turn an event spec into a safe,
+            reviewable programme update. It discovers the live API, previews every change, and
+            waits for your approval before applying anything.
+          </p>
+
+          <ol className={styles.agentSteps}>
+            <li>
+              <span className={styles.agentStepNumber}>1</span>
+              <div className={styles.agentStepCopy}>
+                <h3>Clone the repository</h3>
+                <p>Open the repository root in Codex so it discovers the bundled skill.</p>
+                <code>git clone https://github.com/EllAchE/sessionboard-oss.git</code>
+              </div>
+            </li>
+            <li>
+              <span className={styles.agentStepNumber}>2</span>
+              <div className={styles.agentStepCopy}>
+                <h3>Issue one event key</h3>
+                <p>
+                  Create a key under{' '}
+                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a> and expose it
+                  to the agent as <code>CICERO_API_KEY</code>. Never paste the key into a prompt.
+                </p>
+              </div>
+            </li>
+            <li>
+              <span className={styles.agentStepNumber}>3</span>
+              <div className={styles.agentStepCopy}>
+                <h3>Paste a preview-first brief</h3>
+                <p>
+                  Replace the placeholders, attach your event spec, and review the proposed diff.
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <div className={styles.agentLinks}>
+            <a
+              className={styles.textLink}
+              href="https://github.com/EllAchE/sessionboard-oss/tree/main/.agents/skills/manage-cicero-event"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Read the skill source <ExternalLink size={16} aria-hidden="true" />
+            </a>
+            <a
+              className={styles.textLink}
+              href="https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/manage-cicero-event/references/first-settlement-demo.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              See the full walkthrough <ExternalLink size={16} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+
+        <div className={styles.agentPrompt}>
+          <div className={styles.agentPromptHeader}>
+            <span className={styles.agentPromptLabel}>
+              <Bot size={17} aria-hidden="true" />
+              Preview-first prompt
+            </span>
+            <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+          </div>
+          <pre>
+            <code>{AGENT_STARTER_PROMPT}</code>
+          </pre>
+          <p className={styles.agentPromptSafety}>
+            <ShieldCheck size={17} aria-hidden="true" />
+            Applying changes and deleting records always require separate confirmation.
+          </p>
         </div>
       </section>
 
