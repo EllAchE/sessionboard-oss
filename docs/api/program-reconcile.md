@@ -10,6 +10,13 @@ upserts listed records and can delete explicit ids in `deleteExternalIds`. `repl
 source-managed sessions missing from the supplied collection. Sessions created by organizers, CFP
 scheduling, or another integration are never inferred as missing.
 
+Planning, validation, and database row writes are atomic: any row error prevents every write, and
+an apply runs in one transaction. Outbound calendar email follows the existing organizer workflow.
+A published session must send its `CANCEL` while the old row can still render the prior VEVENT, so
+that send occurs before clearing or deleting the row and cannot be rolled back if a later database
+write fails. Operators should treat a reported infrastructure failure after cancellation as an
+unknown outcome, inspect the event, and safely retry the idempotent collection.
+
 Room, track, and format accept an event-local id or a trimmed exact name, matched case-insensitively.
 The `description` field is required but nullable: `null`, an empty string, or whitespace clears it;
 other values are trimmed and stored as Markdown.
