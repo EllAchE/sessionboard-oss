@@ -92,6 +92,7 @@ from it.
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:seed` | Seed both demo conferences (idempotent) |
+| `npm run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `npm run cf:deploy` | Build and deploy to Cloudflare Workers |
 
 ## What's in it
@@ -131,7 +132,9 @@ snippet, per-embed filters and styling. The embed is an auto-resizing iframe ove
 
 **Integrations.** A public REST API with a generated
 [`docs/openapi.json`](docs/openapi.json) schema, an Accelevents speaker-push client, and a one-way
-Airtable mirror.
+Airtable mirror. The [Accelevents demo](docs/accelevents-demo.md) also includes a deterministic
+fixture adapter that previews and applies a full published-program create/update/delete/no-op sync
+without claiming undocumented live Accelevents capabilities.
 
 ### Bonus: operate an event with an agent
 
@@ -241,7 +244,9 @@ coexist without either seeing the other.
 3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
    API layers, and the form-engine and integration decisions
 4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
-5. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+5. **[`docs/04-demo-runbook.md`](docs/04-demo-runbook.md)** — the presenter-ready walkthrough,
+   requirement traceability, API bonus, fallbacks, resets, and go/no-go checks
+6. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 
 ### Reference material
 

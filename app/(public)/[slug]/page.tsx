@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { listOpenCalls } from '@/lib/services/submissions';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../embed/queries';
 import { ConferenceCountdown } from './ConferenceCountdown';
@@ -15,10 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Event not found' };
-  return {
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}`,
     title: bundle.event.name,
     description: bundle.event.tagline ?? `The programme for ${bundle.event.name}.`,
-  };
+  });
 }
 
 /** `G-4`. The public front door: the same published-only data the embeds serve. */
