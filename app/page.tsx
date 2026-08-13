@@ -13,12 +13,6 @@ import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import styles from './home.module.css';
 
-export const metadata = {
-  title: 'Cicero · Conference operations, without the chaos',
-  description:
-    'Manage proposals, reviews, speakers, schedules, and conference communications in one calm workspace.',
-};
-
 const FEATURES = [
   {
     icon: <FileCheck size={20} aria-hidden="true" />,

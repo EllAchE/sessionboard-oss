@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../../embed/queries';
 import { PublicChrome, publicStyles as styles } from '../PublicChrome';
@@ -13,7 +15,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Event not found' };
-  return { title: `Agenda · ${bundle.event.name}` };
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}/agenda`,
+    title: `Agenda · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Browse the published agenda for ${bundle.event.name}.`,
+  });
 }
 
 /** `G-4`. The room-by-time grid, over the same read model as `/embed/[slug]/agenda`. */
