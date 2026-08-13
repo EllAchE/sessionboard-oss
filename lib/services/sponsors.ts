@@ -199,6 +199,68 @@ export async function listSponsors(ctx: EventContext): Promise<SponsorRecord[]> 
   return rows.map(toRecord);
 }
 
+// ---------------------------------------------------------------------------
+// The public reads
+// ---------------------------------------------------------------------------
+
+/**
+ * The three functions below back the public sponsor wall, and are the only ones in this file a
+ * stranger can reach. They take an event id rather than an `EventContext` precisely because there is
+ * no context to construct: an unauthenticated request has no membership, so the parameter has to be
+ * the thing the route already proved from the slug in the path.
+ *
+ * **They have no visibility filter, because there is nothing to filter on.** A scheduled session has
+ * `status`, a submission has `contentStatus`, a speaker profile has `workflowStatus` — every other
+ * public surface in this app is gated by an explicit column. A sponsor row has none, so every row an
+ * organizer creates is on the wall from the moment it is saved. That is stated on `/admin/sponsors`
+ * so the organizer is told before they type, and it is the one thing here a `published` column would
+ * change.
+ */
+
+/** Both kinds, in the organizer's order, exactly as `listSponsors` returns them for the board. */
+export async function listPublicSponsors(eventId: string): Promise<SponsorRecord[]> {
+  const rows = await getDb()
+    .select()
+    .from(sponsor)
+    .where(eq(sponsor.eventId, eventId))
+    .orderBy(asc(sponsor.kind), asc(sponsor.position), asc(sponsor.createdAt));
+  return rows.map(toRecord);
+}
+
+/**
+ * Whether the microsite should carry a Sponsors tab at all. Existence rather than a count, because
+ * the chrome runs this on every public page render and the answer it needs is a boolean — an event
+ * with no sponsors must not grow a tab onto an empty page.
+ */
+export async function eventHasSponsors(eventId: string): Promise<boolean> {
+  const row = await getDb().query.sponsor.findFirst({
+    columns: { id: true },
+    where: eq(sponsor.eventId, eventId),
+  });
+  return Boolean(row);
+}
+
+/**
+ * The access boundary behind `/[slug]/sponsors/logo/[fileId]`, kept here rather than inlined in the
+ * route so there is exactly one definition of what that route may serve.
+ *
+ * This is a structural proof in the sense `app/(public)/[slug]/branding/[fileId]` means it: the
+ * answer is true only when `fileId` is *currently* sitting in the `logo_file_id` slot of a sponsor
+ * row on this event. Nothing about the caller is consulted and nothing about the file is trusted —
+ * a file id from another event fails the `eventId` half, and a file id on this event that is a
+ * headshot, a slide deck or a signed contract fails because no sponsor row points at it. Replacing a
+ * logo writes a new file id into the slot, so the id this returns true for stops being servable the
+ * moment it stops being the logo.
+ */
+export async function isPublicSponsorLogo(eventId: string, fileId: string): Promise<boolean> {
+  if (!UUID.test(fileId)) return false;
+  const row = await getDb().query.sponsor.findFirst({
+    columns: { id: true },
+    where: and(eq(sponsor.eventId, eventId), eq(sponsor.logoFileId, fileId)),
+  });
+  return Boolean(row);
+}
+
 async function requireSponsor(ctx: EventContext, sponsorId: string) {
   const row = await getDb().query.sponsor.findFirst({
     where: and(eq(sponsor.id, sponsorId), eq(sponsor.eventId, ctx.eventId)),

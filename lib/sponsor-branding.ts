@@ -24,3 +24,19 @@ export const SPONSOR_LOGO: SponsorLogoSpec = {
   acceptedTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif'],
   maxSizeMb: 5,
 };
+
+/**
+ * Where the public wall reads a logo from — the unauthenticated twin of
+ * `app/admin/sponsors/types.ts`'s `sponsorLogoUrl`, which stays behind the organizer gate.
+ *
+ * Content-addressed and event-scoped for the same reason `eventBrandingUrl` is: the id in the path
+ * changes when the image does, so the response can be cached hard and a replacement still shows
+ * immediately, and the slug in the path is what the route resolves the owning event from. The route
+ * refuses any file id that is not currently a sponsor logo on that event.
+ */
+export function publicSponsorLogoUrl(
+  slug: string,
+  fileId: string | null | undefined,
+): string | null {
+  return fileId ? `/${encodeURIComponent(slug)}/sponsors/logo/${fileId}` : null;
+}

@@ -335,6 +335,105 @@
   background: var(--accent-subtle);
 }
 
+/* E-7 — the public sponsor wall. A tier block, then a grid of marks. */
+.sponsorLede {
+  font: var(--type-prose);
+  color: var(--text-muted);
+  max-width: var(--prose-max);
+  margin-bottom: var(--space-6);
+}
+
+.sponsorTier {
+  margin-bottom: var(--space-8);
+}
+
+.sponsorTier:last-child {
+  margin-bottom: 0;
+}
+
+.sponsorTierLabel {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--text-faint);
+  margin-bottom: var(--space-4);
+}
+
+/*
+ * `auto-fill` rather than a fixed column count: a wall is however many logos the organizer sold, and
+ * a headline tier of two should not be stretched across three columns to match the tier below it.
+ */
+.sponsorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+}
+
+.sponsorCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.sponsorLink {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+a.sponsorLink:hover .sponsorName {
+  color: var(--text-accent);
+}
+
+/*
+ * A fixed box so a tall mark and a wide one line up on the same row, and a white ground because a
+ * sponsor supplies a logo drawn for paper and `object-fit: contain` would otherwise leave it
+ * invisible on a dark surface.
+ */
+.sponsorLogoFrame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--space-16);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.sponsorLogo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.sponsorName {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+
+.sponsorBooth {
+  font: var(--type-label);
+  color: var(--text-accent);
+}
+
+.sponsorBlurb {
+  font: var(--type-label);
+  color: var(--text-muted);
+  line-height: var(--leading-normal);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .prose {
   font: var(--type-prose);
   color: var(--text-body);
@@ -406,5 +505,10 @@
 
   .countdownUnits {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* 14rem overflows a 320px viewport once the section padding is taken off. */
+  .sponsorGrid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
   }
 }
