@@ -717,6 +717,29 @@ export type EmailTemplateRow = typeof emailTemplate.$inferSelect;
  * Every automatic send in the product is one of these keys. They are seeded per event so an
  * organizer can rewrite the acceptance email without touching code, and `sendTemplated` falls back
  * to the shipped copy if a row was deleted.
+ *
+ * **Every template carries its own `smsBody`.** Without one, SMS falls back to the email body with
+ * markdown stripped and a hard cut at `SMS_MAX_LENGTH` — which reads as a mangled email, not as a
+ * text message. Three rules apply to that copy, and `comms.test.ts` enforces all three:
+ *
+ * 1. **GSM-7 characters only.** One curly quote, en dash or ellipsis flips the whole message to
+ *    UCS-2, which takes the segment size from 153 characters to 67 — a 300-character message goes
+ *    from two segments to five, so a single character costs 2.5x on every send. Straight quotes,
+ *    plain hyphens, three periods.
+ * 2. **Comfortably under the 300-character cap**, which is itself exactly two GSM-7 segments. The
+ *    copy below stays under 285 even with a 51-character event name, a 63-character title and a
+ *    91-character URL, so nothing truncates and nothing spills into a third segment.
+ * 3. **Only merge fields the template is actually given.** An SMS has no subject and no thread, so
+ *    each one names the event, says what happened, and points at the same destination as its email.
+ *    `form.deadline` is built from its own narrow `vars` map in `runDraftDeadlineReminders`, not
+ *    from `buildVars`, so it may only use the event, speaker and form fields.
+ *
+ * The one place the SMS deliberately differs from its email is `{{portal.url}}` where the email
+ * writes `{{portal.link}}`. `portal.link` is a fourteen-day sign-in credential, and `sendSms` writes
+ * the body to `sms_log` *before* dispatch, where `/admin/sms` renders it verbatim to any organizer
+ * on the event — the same escalation `/admin/mail` closed in #88, which `/admin/sms` has no
+ * equivalent gate for. `portal.url` is the plain `/portal` address: one sign-in away rather than
+ * one tap, and not a credential sitting in a readable archive. See the note in `magic-links.ts`.
  */
 export const DEFAULT_TEMPLATES: Array<{
   key: string;
@@ -730,6 +753,8 @@ export const DEFAULT_TEMPLATES: Array<{
     key: 'submission.confirmation',
     name: 'Submission received',
     subject: 'We received "{{submission.title}}"',
+    smsBody:
+      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). We will be in touch once the programme committee has reviewed it. Your portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -746,6 +771,8 @@ export const DEFAULT_TEMPLATES: Array<{
     key: 'submission.accepted',
     name: 'Submission accepted',
     subject: 'Your talk was accepted for {{event.name}}',
+    smsBody:
+      '{{event.name}}: good news, "{{submission.title}}" is accepted. Your speaker onboarding tasks are waiting in your portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -764,6 +791,8 @@ export const DEFAULT_TEMPLATES: Array<{
     key: 'submission.waitlisted',
     name: 'Submission waitlisted',
     subject: 'Your {{event.name}} submission is on the waitlist',
+    smsBody:
+      '{{event.name}}: "{{submission.title}}" is on the waitlist. Nothing to do for now; we will let you know either way. Your portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -780,6 +809,9 @@ export const DEFAULT_TEMPLATES: Array<{
     key: 'submission.declined',
     name: 'Submission declined',
     subject: 'An update on your {{event.name}} submission',
+    // No link: the decline email has none either, and there is nothing for the speaker to do.
+    smsBody:
+      '{{event.name}}: thank you for submitting "{{submission.title}}". We had more strong proposals than slots and cannot include it this year. We hope you will submit again next time.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -795,6 +827,9 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Calendar invitation',
     subject: '{{session.title}} — {{session.startsAt}}',
     attachIcs: true,
+    // An SMS cannot carry the .ics part, so the add-to-calendar download (`C-3a`) is the link here.
+    smsBody:
+      '{{event.name}}: "{{session.title}}" is scheduled for {{session.startsAt}}. Calendar: {{session.calendarUrl}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -814,6 +849,10 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Session cancelled',
     subject: 'Cancelled: {{session.title}}',
     attachIcs: true,
+    // "Reply to this email" does not translate: an SMS reply lands at the provider, not the
+    // organizer, so the cancellation names the support address instead.
+    smsBody:
+      '{{event.name}}: "{{session.title}}" ({{session.ref}}) has been cancelled and the calendar entry withdrawn. If this is unexpected, please contact {{event.supportEmail|the programme team}}.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -826,6 +865,10 @@ export const DEFAULT_TEMPLATES: Array<{
     key: 'task.reminder',
     name: 'Task reminder',
     subject: 'Reminder: {{task.name}} for {{event.name}}',
+    // `{{tasks.list}}` is a multi-line markdown list, so it is deliberately not here: over SMS it
+    // collapses to one run-on line of unbounded length. One task and one link is the whole message.
+    smsBody:
+      '{{event.name}} reminder: {{task.name}} is still outstanding{{task.dueAt}}. Finish it in your portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -842,6 +885,9 @@ export const DEFAULT_TEMPLATES: Array<{
     key: 'form.deadline',
     name: 'Draft deadline reminder',
     subject: 'Your {{event.name}} draft closes {{form.closesAt}}',
+    // `runDraftDeadlineReminders` builds its own `vars`: event, speaker and form fields only.
+    smsBody:
+      '{{event.name}}: your draft is not submitted yet, and {{form.name}} closes {{form.closesAt}}. Finish it: {{form.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
@@ -1004,6 +1050,14 @@ async function mintPortalLink(
   return `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
 }
 
+/**
+ * Matched against the subject and the *email* body only, deliberately. A `smsBody` that asks for
+ * `{{portal.link}}` renders it as nothing rather than minting one: `sendSms` writes the body to
+ * `sms_log` before dispatch, and `/admin/sms` renders that verbatim to any organizer on the event,
+ * with none of the gating `/admin/mail` grew in #88. A fourteen-day sign-in credential does not
+ * belong in that archive, so the shipped SMS copy uses `{{portal.url}}` instead; widening this
+ * needs the SMS mailbox gated first.
+ */
 const PORTAL_LINK_PATTERN = /\{\{\s*portal\.link/;
 
 async function withPortalLink(
@@ -1028,7 +1082,17 @@ function stripMarkdownForSms(markdown: string): string {
     .trim();
 }
 
-const SMS_MAX_LENGTH = 300;
+/**
+ * Two GSM-7 segments (153 characters each once concatenated). The shipped `smsBody` copy sits well
+ * inside it; the truncation below only ever bites a hand-written body or the markdown fallback.
+ */
+export const SMS_MAX_LENGTH = 300;
+
+/**
+ * Three periods, not `…`. The ellipsis character is outside GSM-7, so appending it would re-encode
+ * the whole message as UCS-2 and turn a two-segment text into five.
+ */
+const SMS_TRUNCATION_MARKER = '...';
 
 /**
  * `smsBody` renders like the email body (merge fields, no markdown); with no override, SMS falls
@@ -1045,7 +1109,7 @@ export function renderSmsText(
     : stripMarkdownForSms(fallbackBodyMarkdown);
   const rendered = renderTemplateText(source, vars).replace(/\s+/g, ' ').trim();
   return rendered.length > SMS_MAX_LENGTH
-    ? `${rendered.slice(0, SMS_MAX_LENGTH - 1)}…`
+    ? `${rendered.slice(0, SMS_MAX_LENGTH - SMS_TRUNCATION_MARKER.length)}${SMS_TRUNCATION_MARKER}`
     : rendered;
 }
 

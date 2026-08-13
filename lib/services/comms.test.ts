@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DECISION_TEMPLATES,
   DEFAULT_TEMPLATES,
+  SMS_MAX_LENGTH,
   renderMessage,
   renderSmsText,
   renderTemplateText,
@@ -9,6 +10,7 @@ import {
   templateVariablesUsed,
   unknownVariables,
   wrapInBranding,
+  type TemplateVars,
 } from './comms';
 
 /**
@@ -22,6 +24,19 @@ const VARS = {
   'speaker.company': '',
   'event.name': 'Cicero Conf',
 };
+
+/**
+ * The GSM-7 basic character set (3GPP TS 23.038). The nine extension characters — `^{}\[~]|€` — are
+ * deliberately excluded: they are encodable, but each one costs two of the 160 characters in a
+ * segment, and none of the shipped copy needs them.
+ */
+const GSM7 = new Set(
+  '@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !"#¤%&\'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà',
+);
+
+function isGsm7(text: string): boolean {
+  return [...text].every((char) => GSM7.has(char));
+}
 
 describe('merge fields', () => {
   it('substitutes a dotted path', () => {
@@ -80,6 +95,7 @@ describe('shipped templates', () => {
         unknown: [
           ...unknownVariables(template.subject),
           ...unknownVariables(template.bodyMarkdown),
+          ...unknownVariables(template.smsBody ?? ''),
         ],
       }).toEqual({ key: template.key, unknown: [] });
     }
@@ -149,8 +165,243 @@ describe('SMS body rendering', () => {
   it('truncates a rendered message past the SMS length cap', () => {
     const long = 'x'.repeat(400);
     const rendered = renderSmsText(long, 'ignored', VARS);
-    expect(rendered).toHaveLength(300);
-    expect(rendered.endsWith('…')).toBe(true);
+    expect(rendered).toHaveLength(SMS_MAX_LENGTH);
+    // Three periods, not `…`: the ellipsis character alone would re-encode the message as UCS-2.
+    expect(rendered.endsWith('...')).toBe(true);
+    expect(isGsm7(rendered)).toBe(true);
+  });
+});
+
+/**
+ * The shipped SMS copy, checked the way it is actually delivered: rendered against one recipient's
+ * variables, no subject line, no thread.
+ *
+ * Two of these assertions are cost guards rather than style preferences.
+ *
+ * Twilio segments at 160 GSM-7 characters, or 153 each once a message is concatenated. A single
+ * character outside GSM-7 - a curly quote, an en dash, an ellipsis - re-encodes the whole message
+ * as UCS-2, where a segment holds 67 characters. A 300-character message is two segments in GSM-7
+ * and five in UCS-2, so one pasted character costs 2.5x on every send from then on. The template
+ * editor makes it easy to reintroduce, which is why the default copy is pinned here.
+ *
+ * The length ceiling is the same constraint from the other side: `SMS_MAX_LENGTH` is exactly two
+ * GSM-7 segments, and copy that renders near it truncates as soon as an event has a long name.
+ */
+describe('shipped SMS bodies', () => {
+  /**
+   * What each template's send path actually populates. `form.deadline` is the one that matters:
+   * `runDraftDeadlineReminders` builds its own `vars` map rather than going through `buildVars`, so
+   * a body that reaches for `{{submission.title}}` or `{{portal.link}}` would deliver a hole.
+   */
+  const EVENT_FIELDS = [
+    'event.name',
+    'event.dates',
+    'event.timezone',
+    'event.venue',
+    'event.website',
+    'event.url',
+    'event.supportEmail',
+  ];
+  const SPEAKER_FIELDS = [
+    'speaker.name',
+    'speaker.firstName',
+    'speaker.email',
+    'speaker.company',
+    'speaker.jobTitle',
+    'speaker.pronouns',
+  ];
+  const PORTAL_FIELDS = ['portal.url', 'portal.link'];
+  const SUBMISSION_FIELDS = [
+    'submission.title',
+    'submission.ref',
+    'submission.status',
+    'submission.decisionNote',
+  ];
+  const SESSION_FIELDS = [
+    'session.title',
+    'session.ref',
+    'session.track',
+    'session.room',
+    'session.format',
+    'session.startsAt',
+    'session.endsAt',
+    'session.calendarUrl',
+  ];
+  const TASK_FIELDS = ['tasks.count', 'tasks.list', 'tasks.next', 'task.name', 'task.dueAt'];
+
+  const AVAILABLE: Record<string, string[]> = {
+    'submission.confirmation': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...SUBMISSION_FIELDS, ...PORTAL_FIELDS],
+    'submission.accepted': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...SUBMISSION_FIELDS, ...TASK_FIELDS, ...PORTAL_FIELDS],
+    'submission.waitlisted': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...SUBMISSION_FIELDS, ...PORTAL_FIELDS],
+    'submission.declined': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...SUBMISSION_FIELDS, ...PORTAL_FIELDS],
+    'session.invite': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...SESSION_FIELDS, ...PORTAL_FIELDS],
+    'session.cancelled': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...SESSION_FIELDS, ...PORTAL_FIELDS],
+    'task.reminder': [...EVENT_FIELDS, ...SPEAKER_FIELDS, ...TASK_FIELDS, ...PORTAL_FIELDS],
+    // The narrow one: `runDraftDeadlineReminders` supplies exactly these and nothing else.
+    'form.deadline': [
+      'event.name',
+      'event.url',
+      'speaker.name',
+      'speaker.firstName',
+      'speaker.email',
+      'form.name',
+      'form.closesAt',
+      'form.url',
+    ],
+  };
+
+  /**
+   * Deliberately unkind: a 51-character event name, a 63-character title, a full 43-byte signed
+   * portal token and a real-length form URL. If the copy fits here it fits anywhere.
+   */
+  const LONG_VARS: TemplateVars = {
+    'event.name': 'International Conference on Distributed Systems 2026',
+    'event.url': 'https://speakers.distsys-conf.example.org/e/distsys-2026',
+    'event.supportEmail': 'programme-committee@distsys-conf.example.org',
+    'speaker.name': 'Maximiliana Featherstonehaugh',
+    'speaker.firstName': 'Maximiliana',
+    'speaker.email': 'maximiliana@a-rather-long-company-name.example.com',
+    'submission.title': 'Rebuilding the Control Plane Without Taking the Data Plane Down',
+    'submission.ref': 'ABS-1284',
+    'submission.status': 'accepted',
+    'session.title': 'Rebuilding the Control Plane Without Taking the Data Plane Down',
+    'session.ref': 'SESS-1284',
+    'session.room': 'Auditorium 2 (Lower Concourse)',
+    'session.track': 'Platform Engineering',
+    'session.startsAt': 'Wednesday 16 September 2026 at 14:30',
+    'session.endsAt': 'Wednesday 16 September 2026 at 15:15',
+    'session.calendarUrl':
+      'https://speakers.distsys-conf.example.org/api/calendar/6f1c4a8e-2b3d-4f5a-9c7e-8d0a1b2c3d4e',
+    'portal.url': 'https://speakers.distsys-conf.example.org/portal',
+    'portal.link': `https://speakers.distsys-conf.example.org/auth/verify?token=${'A'.repeat(43)}`,
+    'task.name': 'Upload your final slide deck and speaker bio',
+    'task.dueAt': ' and due 12 September 2026',
+    'tasks.count': '4',
+    'tasks.next': 'Upload your final slide deck and speaker bio',
+    'form.name': 'Call for Proposals: Main Track',
+    'form.closesAt': 'Friday 4 September 2026',
+    'form.url':
+      'https://speakers.distsys-conf.example.org/submit/distsys-2026/call-for-proposals-main-track',
+  };
+
+  it('ships a purpose-written body for every template', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      expect({ key: template.key, hasSms: Boolean(template.smsBody?.trim()) }).toEqual({
+        key: template.key,
+        hasSms: true,
+      });
+    }
+  });
+
+  it('only uses merge fields that template is actually given', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      const allowed = new Set(AVAILABLE[template.key] ?? []);
+      const used = templateVariablesUsed(template.smsBody ?? '');
+      expect({ key: template.key, unavailable: used.filter((path) => !allowed.has(path)) }).toEqual({
+        key: template.key,
+        unavailable: [],
+      });
+    }
+  });
+
+  it('renders inside the length cap with room to spare, and expands every field', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      const rendered = renderSmsText(template.smsBody, template.bodyMarkdown, LONG_VARS);
+      expect({ key: template.key, over: rendered.length > SMS_MAX_LENGTH - 15 }).toEqual({
+        key: template.key,
+        over: false,
+      });
+      expect({ key: template.key, tail: rendered.slice(-3) }).not.toEqual({
+        key: template.key,
+        tail: '...',
+      });
+      expect({ key: template.key, leftover: /\{\{|\}\}/.test(rendered) }).toEqual({
+        key: template.key,
+        leftover: false,
+      });
+    }
+  });
+
+  it('names the event and reads as a message rather than a clipped email', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      const rendered = renderSmsText(template.smsBody, template.bodyMarkdown, LONG_VARS);
+      expect({ key: template.key, names: rendered.includes(LONG_VARS['event.name']) }).toEqual({
+        key: template.key,
+        names: true,
+      });
+      // Markdown is delivered literally over SMS: an override is not stripped the way the fallback is.
+      expect({ key: template.key, markdown: /[*_#`]|\]\(/.test(rendered) }).toEqual({
+        key: template.key,
+        markdown: false,
+      });
+    }
+  });
+
+  it('stays inside GSM-7 so a message never doubles its segment count', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      const rendered = renderSmsText(template.smsBody, template.bodyMarkdown, LONG_VARS);
+      const offenders = [...rendered].filter((char) => !GSM7.has(char));
+      expect({ key: template.key, offenders }).toEqual({ key: template.key, offenders: [] });
+    }
+  });
+
+  it('points somewhere exactly where its email does', () => {
+    const linked = DEFAULT_TEMPLATES.filter((t) => /\{\{[^}]*(link|Url|url)/.test(t.smsBody ?? ''))
+      .map((t) => t.key)
+      .sort();
+    expect(linked).toEqual([
+      'form.deadline',
+      'session.invite',
+      'submission.accepted',
+      'submission.confirmation',
+      'submission.waitlisted',
+      'task.reminder',
+    ]);
+    // The two with nothing to click: a decline asks nothing of the speaker, and a cancellation
+    // names the support address rather than a page.
+    for (const key of ['submission.declined', 'session.cancelled']) {
+      const template = DEFAULT_TEMPLATES.find((t) => t.key === key);
+      expect({ key, linked: /\{\{[^}]*(link|Url|url)/.test(template?.smsBody ?? '') }).toEqual({
+        key,
+        linked: false,
+      });
+    }
+  });
+
+  /**
+   * The one deliberate divergence from the email copy, and a security boundary rather than a style
+   * choice. `{{portal.link}}` is a fourteen-day sign-in credential; `sendSms` writes the body to
+   * `sms_log` before dispatch and `/admin/sms` renders it verbatim to any organizer on the event,
+   * with none of the redaction `/admin/mail` grew in #88. So the text messages use the plain
+   * `{{portal.url}}` instead, and none of them may carry the signed link.
+   */
+  it('never puts a sign-in credential in a body that lands in sms_log', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      const body = template.smsBody ?? '';
+      expect({ key: template.key, credential: body.includes('{{portal.link}}') }).toEqual({
+        key: template.key,
+        credential: false,
+      });
+      expect({ key: template.key, verify: body.includes('/auth/verify') }).toEqual({
+        key: template.key,
+        verify: false,
+      });
+    }
+
+    // Where the email offers one-click sign-in, the text offers the portal address.
+    for (const key of [
+      'submission.confirmation',
+      'submission.accepted',
+      'submission.waitlisted',
+      'task.reminder',
+    ]) {
+      const template = DEFAULT_TEMPLATES.find((t) => t.key === key);
+      expect({ key, email: template?.bodyMarkdown.includes('{{portal.link}}') }).toEqual({
+        key,
+        email: true,
+      });
+      expect({ key, sms: template?.smsBody?.includes('{{portal.url}}') }).toEqual({ key, sms: true });
+    }
   });
 });
 
