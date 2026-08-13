@@ -214,7 +214,7 @@ docker compose up      # must reach a working first-run setup screen with no oth
 `T-3` is only satisfied if that is true on a machine that has never built this repo. Verifying it on
 a developer machine with a warm cache proves nothing.
 
-## 6. Left on the table for v1 — to-do
+## 6. v1 follow-ups — current status
 
 Three items the brief could plausibly want were tracked here rather than declared permanent
 non-goals. Shipped rows remain in the table as the decision record; outstanding rows stay the v1
@@ -222,7 +222,7 @@ to-do.
 
 | Item | Status | Notes |
 | --- | --- | --- |
-| Agent mail | Not started | No agent (reviewer, scheduler) sends or manages mail on its own. `lib/mail` and `lib/services/comms.ts` are template-driven transactional email triggered by organizer actions, consistent with the advisory-only AI stance in §2 — an agent that owns its own mailbox is a bigger commitment than "propose, never decide." |
+| Agent mail | **Shipped — bounded MCP slice** | The event MCP server can list effective templates and redacted delivery metadata, preview one recipient-resolved email, and send it through the existing audited mail boundary. It is deliberately not an agent-owned arbitrary mailbox: the target must be an existing participant on the API key's event, SMS and calendar sends stay out, email preference is rechecked at dispatch, and a write key must echo the preview's literal target confirmation plus its content-bound digest. Template, recipient or copy changes invalidate the preview. See `lib/services/agent-mail.ts` and `lib/mcp/server.ts`. |
 | Video uploads / post-conference assets | **Shipped** | `session_recording` holds one deliberately draft/published source per scheduled session. **Admin → Recordings** can upload a bounded 25 MB video through the existing event-scoped storage path, associate an existing event video, or validate an external HTTPS streaming URL. A recording cannot publish before its public session ends (the past event end is the fallback for historical imports), and changing its source returns it to draft. Published recordings alone add **Watch recording** to the public session list, home/program cards, agenda detail, itinerary, speaker-session lists, and embeds; stored bytes are streamed through a publication-gated route. |
 | Full agent guide | Not started; quick start is the v1 slice | The home page should offer a copyable **Agent quick start** prompt. The full version resumes a stateful onboarding conversation; the version worth building now only *describes* what an agent can do. See §6.1. |
 
@@ -265,10 +265,10 @@ and the guide is not a second front end. It gets you set up and then hands off t
 one skill that already exists. Anything beyond that is a separate decision, not an implied part of
 this item.
 
-The agent-mail row was re-checked against `main` on 2026-08-13 and remains accurate. Nothing an
-agent owns sends or manages its own mail — the `.agents/skills/*` surfaces drive the public API and
-never reach `lib/mail`. The recording row closed the same day with the scoped source, publication
-gate, organizer workflow, and public playback affordance described above.
+The agent-mail and recording rows closed on 2026-08-13. The MCP mail slice reaches the ordinary
+`lib/mail` boundary only through an event-scoped preview → literal confirmation → send flow; it does
+not create a general mailbox or relax the advisory stance in §2. Recordings have a scoped source,
+publication gate, organizer workflow, and public playback affordance.
 
 Not on this list: Speaker CRM. It shipped — a full CRM at `app/crm/*` above the event layer, as
 `docs/decisions-long-form.md` records ("The largest functional expansion is the speaker CRM"). The
