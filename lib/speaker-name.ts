@@ -6,7 +6,7 @@ const MAX_SPEAKER_NAME_CODE_UNITS = 1024;
 const FORBIDDEN_NAME_CHARACTERS = /[\p{Cc}\p{Bidi_Control}\u200b\u2028\u2029\u2060\ufeff]/u;
 const DEFAULT_IGNORABLE_CHARACTER = /\p{Default_Ignorable_Code_Point}/u;
 const ALLOWED_NAME_JOINER_OR_VARIANT =
-  /[\u180b-\u180d\u200c\u200d\ufe00-\ufe0f\u{e0100}-\u{e01ef}]/u;
+  /[\u180b-\u180d\u200c\u200d\ufe00-\ufe0f\u{e0020}-\u{e007f}\u{e0100}-\u{e01ef}]/u;
 
 function graphemes(value: string): string[] {
   if (typeof Intl.Segmenter === 'function') {

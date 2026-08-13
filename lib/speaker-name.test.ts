@@ -9,7 +9,7 @@ describe('speaker names', () => {
   });
 
   it('preserves international, decomposed, right-to-left, and emoji names', () => {
-    const names = ['李 小龍', 'ليلى الأحمد', 'می\u200cرزا', 'Jose\u0301', '👩‍💻 🧑🏽‍🚀'];
+    const names = ['李 小龍', 'ليلى الأحمد', 'می\u200cرزا', 'Jose\u0301', '👩‍💻 🧑🏽‍🚀', '🏴󠁧󠁢󠁳󠁣󠁴󠁿'];
     for (const name of names) expect(parseSpeakerName(name)).toBe(name);
   });
 
