@@ -17,14 +17,9 @@ import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
 import styles from './home.module.css';
 
-const AGENT_STARTER_PROMPT = `$manage-cicero-event
+const AGENT_STARTER_PROMPT = `$onboard-cicero
 
-Use the live Cicero OpenAPI to manage exactly this event:
-- Base URL: <CICERO_BASE_URL>
-- Event slug: <EVENT_SLUG>
-- Event spec: <PASTE OR ATTACH SPEC>
-
-Read the current public programme, normalize the spec, and show me a preview with operation-level diffs and validation errors. Do not apply anything yet.`;
+Resume Cicero onboarding from this working directory. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
 
 const FEATURES = [
   {
@@ -231,9 +226,9 @@ export default function Home() {
             Give your agent a brief. Keep every decree reviewable.
           </h2>
           <p>
-            Cicero ships with a repo-local agent skill that can turn an event spec into a safe,
-            reviewable programme update. It discovers the live API, previews every change, and
-            waits for your approval before applying anything.
+            Cicero ships with a stateful repo-local guide. It discovers how far you have already
+            reached, records only non-secret progress in your working directory, walks the next
+            missing step, and hands ongoing programme work to a preview-first agent.
           </p>
 
           <ol className={styles.agentSteps}>
@@ -241,27 +236,29 @@ export default function Home() {
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
                 <h3>Clone the repository</h3>
-                <p>Open the repository root in Codex so it discovers the bundled skill.</p>
+                <p>Open the repository root in Codex so it discovers both bundled skills.</p>
                 <code>git clone https://github.com/EllAchE/sessionboard-oss.git</code>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>2</span>
               <div className={styles.agentStepCopy}>
-                <h3>Issue one event key</h3>
+                <h3>Paste the resumable brief</h3>
                 <p>
-                  Create a key under{' '}
-                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a> and expose it
-                  to the agent as <code>CICERO_API_KEY</code>. Never paste the key into a prompt.
+                  The guide establishes <code>.cicero/onboarding.json</code>, asks only what it
+                  cannot discover, and resumes from the same point next time.
                 </p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>3</span>
               <div className={styles.agentStepCopy}>
-                <h3>Paste a preview-first brief</h3>
+                <h3>Hand off when ready</h3>
                 <p>
-                  Replace the placeholders, attach your event spec, and review the proposed diff.
+                  When you reach{' '}
+                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a>, expose the
+                  event key as <code>CICERO_API_KEY</code>. The guide never stores its value and
+                  the programme agent still previews before every apply.
                 </p>
               </div>
             </li>
@@ -270,11 +267,11 @@ export default function Home() {
           <div className={styles.agentLinks}>
             <a
               className={styles.textLink}
-              href="https://github.com/EllAchE/sessionboard-oss/tree/main/.agents/skills/manage-cicero-event"
+              href="https://github.com/EllAchE/sessionboard-oss/tree/main/.agents/skills/onboard-cicero"
               target="_blank"
               rel="noreferrer"
             >
-              Read the skill source <ExternalLink size={16} aria-hidden="true" />
+              Read the onboarding guide <ExternalLink size={16} aria-hidden="true" />
             </a>
             <a
               className={styles.textLink}

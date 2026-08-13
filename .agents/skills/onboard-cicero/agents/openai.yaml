@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cicero Onboarding"
+  short_description: "Resume setup for any Cicero instance"
+  default_prompt: "Use $onboard-cicero to resume setting up my Cicero event from this working directory."
