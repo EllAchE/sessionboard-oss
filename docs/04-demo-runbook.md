@@ -187,9 +187,12 @@ prepared scenario, and state exactly which approval remains.
 
 ## Bonus API segment: Accelevents-shaped program reconciliation
 
-This contract is **provisional until its implementation PR lands and the deployed OpenAPI contains
-the path**. The endpoint accepts Accelevents-shaped program records as JSON so field validation,
-identifiers, and preview output are explicit and reproducible.
+This contract is implemented in
+[`PR #53`](https://github.com/EllAchE/sessionboard-oss/pull/53) but remains **unavailable live until
+that PR is reviewed, merged, and deployed and the deployed OpenAPI contains the path**. The endpoint
+accepts Accelevents-shaped program records as JSON so field validation, identifiers, and preview
+output are explicit and reproducible. Treat this as a provisional deployment segment until those
+gates pass.
 
 ### Proposed contract
 
@@ -244,9 +247,11 @@ operation matches the intended source record rather than memorizing the illustra
 
 ### First Settlement demonstration input
 
-The implementation PR is expected to add
-`docs/fixtures/first-settlement-accelevents-program.json`. Its initial full-collection preview uses
-three fixed demonstration records. The base fixture deliberately omits `confirmDeleteMissing`:
+PR #53 includes the safe request fixture
+`docs/fixtures/first-settlement-accelevents-program.json` and its preview-only response fixture
+`docs/fixtures/first-settlement-accelevents-program-preview-response.json`. Its initial
+full-collection preview uses three fixed demonstration records. The base request deliberately omits
+`confirmDeleteMissing`:
 
 ```json
 {
@@ -612,9 +617,10 @@ Proceed with the live 25-minute plan only if every required box is true:
 
 The runbook remains honest while sibling work is landing. Before declaring the demo final:
 
-- [ ] Replace “provisional” only after inbound reconcile is merged and present in deployed OpenAPI.
-- [ ] Link landed inbound docs/fixture; copy exact examples and re-check fields, defaults, errors,
-      null semantics, and confirmation behavior.
+- [ ] Confirm [PR #53](https://github.com/EllAchE/sessionboard-oss/pull/53) is reviewed, merged, and
+      deployed and the inbound reconcile path is present in live OpenAPI before calling it live.
+- [ ] Re-check PR #53's request and preview-response fixtures against the deployed fields, defaults,
+      errors, null semantics, and confirmation behavior.
 - [ ] Replace illustrative inbound counts with captured approved preview/apply/replay results while
       retaining the state-dependent warning.
 - [ ] Link landed Accelevents fixture docs; verify fields and the 7/3/1/2, blocked-delete, delete, and
