@@ -38,9 +38,9 @@ type Step = { kind: 'account' } | { kind: 'fields'; step: number } | { kind: 're
 const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function stepTitle(step: Step, position: number, total: number): string {
-  if (step.kind === 'account') return 'Your name on the rolls';
-  if (step.kind === 'review') return 'Read and file';
-  return total > 3 ? `Your oration · tablet ${position}` : 'Your oration';
+  if (step.kind === 'account') return 'About you';
+  if (step.kind === 'review') return 'Review and submit';
+  return total > 3 ? `Your talk · part ${position}` : 'Your talk';
 }
 
 export function SubmitForm(props: Props) {
@@ -103,8 +103,8 @@ function SubmitFormSession({
 
   function validateAccount(): Record<string, string> {
     const found: Record<string, string> = {};
-    if (!name.trim()) found.submitterName = 'Enter your name in the rolls';
-    if (!EMAIL_PATTERN.test(email.trim())) found.submitterEmail = 'Give the courier a valid email address';
+    if (!name.trim()) found.submitterName = 'Tell us your name';
+    if (!EMAIL_PATTERN.test(email.trim())) found.submitterEmail = 'Enter a valid email address';
     return found;
   }
 
@@ -186,7 +186,7 @@ function SubmitFormSession({
 
       if (result.mode === 'draft') {
         setSubmissionId(result.submissionId);
-        setSavedNote(`Sealed as ${result.displayRef}. Leave now and this scroll will await your return.`);
+        setSavedNote(`Saved as ${result.displayRef}. You can close this tab and come back to it.`);
         // Keeps the resume link in the address bar without losing what is typed on screen.
         router.replace(
           `${submitPath(form.eventSlug, form.formSlug)}?draft=${result.submissionId}`,
@@ -219,10 +219,7 @@ function SubmitFormSession({
       setFileNames((previous) => ({ ...previous, [payload.fileId]: payload.filename }));
       setValue(field.key, payload.fileId);
     } catch {
-      setErrors((previous) => ({
-        ...previous,
-        [field.key]: 'That record did not reach the archive',
-      }));
+      setErrors((previous) => ({ ...previous, [field.key]: 'That upload did not go through' }));
     } finally {
       setUploading((previous) => ({ ...previous, [field.key]: false }));
     }
@@ -231,7 +228,7 @@ function SubmitFormSession({
   function reviewValue(field: RuntimeField) {
     const value = values[field.key];
     if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
-      return <span className={styles.reviewEmpty}>Left blank on the tablet</span>;
+      return <span className={styles.reviewEmpty}>Not answered</span>;
     }
     if (field.type === 'markdown') {
       return (
@@ -245,7 +242,7 @@ function SubmitFormSession({
       return <span>{value.map((entry) => field.optionLabels?.[String(entry)] ?? String(entry)).join(', ')}</span>;
     }
     if (typeof value === 'boolean') return <span>{value ? 'Yes' : 'No'}</span>;
-    if (field.type === 'file') return <span>{fileNames[String(value)] ?? 'Lodged scroll'}</span>;
+    if (field.type === 'file') return <span>{fileNames[String(value)] ?? 'Uploaded file'}</span>;
     return <span>{field.optionLabels?.[String(value)] ?? String(value)}</span>;
   }
 
@@ -290,7 +287,7 @@ function SubmitFormSession({
         <div className={styles.fields}>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="submitter-name">
-              Your name for the rolls
+              Your name
               <span className={styles.required} aria-hidden>
                 *
               </span>
@@ -310,14 +307,14 @@ function SubmitFormSession({
           </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="submitter-email">
-              Dispatch address
+              Email
               <span className={styles.required} aria-hidden>
                 *
               </span>
             </label>
             <p className={styles.help}>
-              No password to choose. We enter your name among the orators and admit you with a
-              sealed email link.
+              No password to pick. We create your speaker account with this address and sign you
+              straight in.
             </p>
             <Input
               id="submitter-email"
@@ -358,7 +355,7 @@ function SubmitFormSession({
         <div className={styles.review}>
           {!signedIn && (
             <div className={styles.reviewRow}>
-              <span className={styles.reviewLabel}>Petition filed by</span>
+              <span className={styles.reviewLabel}>Submitting as</span>
               <span className={styles.reviewValue}>
                 {name} · {email}
               </span>
@@ -380,7 +377,7 @@ function SubmitFormSession({
       <div className={styles.actions}>
         {safeIndex > 0 && (
           <Button type="button" variant="ghost" onClick={goBack} disabled={pending}>
-            Previous tablet
+            Back
           </Button>
         )}
         <div className={styles.actionsRight}>
@@ -391,12 +388,12 @@ function SubmitFormSession({
               onClick={() => send('draft')}
               disabled={pending || (!signedIn && !EMAIL_PATTERN.test(email.trim()))}
             >
-              Seal for later
+              Save draft
             </Button>
           )}
           {!isLast && (
             <Button type="button" variant="primary" onClick={goNext} disabled={pending}>
-              Next tablet
+              Continue
             </Button>
           )}
           {isLast && (
@@ -406,7 +403,7 @@ function SubmitFormSession({
               loading={pending}
               onClick={() => send('submit')}
             >
-              File the oration
+              Submit talk
             </Button>
           )}
         </div>

@@ -166,7 +166,7 @@ export function Directory({
     },
     {
       id: 'email',
-      header: 'Dispatch address',
+      header: 'Email',
       width: '22%',
       mono: true,
       render: (row) => row.email,
@@ -242,7 +242,7 @@ export function Directory({
       }
       setCreating(false);
       setDraft(BLANK_CONTACT);
-      toast({ title: 'Name entered in the census', tone: 'success' });
+      toast({ title: 'Contact added', tone: 'success' });
       router.refresh();
     });
   };
@@ -273,8 +273,8 @@ export function Directory({
       setSavingSegment(false);
       setSegmentName('');
       toast({
-        title: `Cohort inscribed`,
-        description: `${rows.length} names from the rolls`,
+        title: `Saved segment`,
+        description: `${rows.length} contacts`,
         tone: 'success',
       });
       router.push(`/crm/segments/${result.data.id}`);
@@ -297,7 +297,7 @@ export function Directory({
         return;
       }
       setEnrolling(null);
-      toast({ title: 'Summons prepared for the campaign', tone: 'success' });
+      toast({ title: 'Added to the sourcing pipeline', tone: 'success' });
       router.push('/crm/pipeline');
     });
   };
@@ -310,7 +310,7 @@ export function Directory({
         return;
       }
       toast({
-        title: `Entered ${result.data.created} sample citizens in the census`,
+        title: `Added ${result.data.created} sample contacts`,
         tone: 'success',
       });
       router.refresh();
@@ -321,19 +321,19 @@ export function Directory({
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>{heading?.eyebrow ?? 'The census house'}</p>
-          <h1 className={styles.title}>{heading?.title ?? 'Empire-wide census'}</h1>
+          <p className={styles.eyebrow}>{heading?.eyebrow ?? 'Organization'}</p>
+          <h1 className={styles.title}>{heading?.title ?? 'Speaker directory'}</h1>
           <p className={styles.subtitle}>
             {heading?.subtitle ??
-              'Every orator and citizen known to your house, across all assemblies.'}
+              'Every speaker and contact your organization has worked with, across all events.'}
           </p>
         </div>
         <div className={styles.headActions}>
           <Button variant="secondary" size="sm" href="/crm/import" iconLeft={<FileUp size={14} />}>
-            Import census tablet
+            Import CSV
           </Button>
           <Button size="sm" iconLeft={<Plus size={14} />} onClick={() => setCreating(true)}>
-            Inscribe a name
+            New contact
           </Button>
         </div>
       </div>
@@ -343,8 +343,8 @@ export function Directory({
           <Input
             inputSize="sm"
             type="search"
-            placeholder="Search by name, dispatch address, house, or mark"
-            aria-label="Search the census"
+            placeholder="Search contacts by name, email, company or tag"
+            aria-label="Search contacts"
             value={filters.search}
             onChange={(entry) => set({ search: entry.currentTarget.value })}
           />
@@ -355,7 +355,7 @@ export function Directory({
           iconLeft={<Bookmark size={14} />}
           onClick={() => setSavingSegment(true)}
         >
-          Inscribe as a cohort
+          Save as segment
         </Button>
         <Button
           variant="secondary"
@@ -364,37 +364,37 @@ export function Directory({
           disabled={selected.length < 2}
           onClick={() => router.push(`/crm/campaigns?ids=${selected.join(',')}`)}
         >
-          Dispatch selected ({selected.length})
+          Email selected ({selected.length})
         </Button>
       </div>
 
       <div className={styles.filterBar}>
         <FilterSelect
-          label="House or company"
+          label="Company"
           value={filters.company}
           options={facets.companies}
           onChange={(value) => set({ company: value })}
         />
         <FilterSelect
-          label="Office or title"
+          label="Job title"
           value={filters.jobTitle}
           options={facets.jobTitles}
           onChange={(value) => set({ jobTitle: value })}
         />
         <FilterSelect
-          label="Mark"
+          label="Tag"
           value={filters.tag}
           options={facets.tags}
           onChange={(value) => set({ tag: value })}
         />
         <FilterSelect
-          label="Province or location"
+          label="Location"
           value={filters.location}
           options={facets.locations}
           onChange={(value) => set({ location: value })}
         />
         <FilterSelect
-          label="Source roll"
+          label="Source"
           value={filters.source}
           options={facets.sources}
           onChange={(value) => set({ source: value })}
@@ -412,9 +412,9 @@ export function Directory({
 
       <div className={styles.resultLine}>
         <span>
-          Showing {rows.length} of {contacts.length} names
+          Showing {rows.length} of {contacts.length} contacts
         </span>
-        {filterCount > 0 ? <Badge tone="accent">{filterCount} decrees</Badge> : null}
+        {filterCount > 0 ? <Badge tone="accent">{filterCount} filters</Badge> : null}
         {filterCount > 0 || searching ? (
           <Button
             variant="ghost"
@@ -422,7 +422,7 @@ export function Directory({
             iconLeft={<X size={14} />}
             onClick={() => setFilters(EMPTY_FILTERS)}
           >
-            Clear decrees
+            Clear filters
           </Button>
         ) : null}
       </div>
@@ -433,20 +433,20 @@ export function Directory({
         <Card>
           <CardBody>
             <div className={styles.empty}>
-              <p className={styles.emptyTitle}>The census of orators is empty</p>
+              <p className={styles.emptyTitle}>Your speaker database is empty</p>
               <p className={styles.emptyBody}>
-                Import a tablet of former orators, inscribe a citizen by hand, or enter sample names
-                to see how the census, cohorts, and summoning campaign work together.
+                Import a CSV of past speakers, add someone by hand, or drop in a set of sample
+                contacts to see how the directory, segments and sourcing pipeline fit together.
               </p>
               <div className={styles.row}>
                 <Button iconLeft={<Sparkles size={14} />} loading={pending} onClick={loadSamples}>
-                  Enter sample citizens
+                  Load sample contacts
                 </Button>
                 <Button variant="secondary" href="/crm/import" iconLeft={<FileUp size={14} />}>
-                  Import census tablet
+                  Import CSV
                 </Button>
                 <Button variant="secondary" onClick={() => setCreating(true)}>
-                  Inscribe by hand
+                  Add manually
                 </Button>
               </div>
             </div>
@@ -460,8 +460,8 @@ export function Directory({
           selectionMode="multiple"
           selectedIds={selected}
           onSelectionChange={setSelected}
-          label="Census of orators"
-          emptyState="No name on the rolls answers those filters."
+          label="Speaker directory"
+          emptyState="No contact matches those filters."
           onRowActivate={(row) => router.push(`/crm/${row.id}`)}
         />
       )}
@@ -469,15 +469,15 @@ export function Directory({
       <Dialog
         open={creating}
         onOpenChange={setCreating}
-        title="Enter a name in the census"
-        description="This name enters the empire-wide rolls without appointment to an assembly."
+        title="New contact"
+        description="Added to the organization-level database, not to any one event."
         footer={
           <>
             <Button variant="ghost" onClick={() => setCreating(false)}>
-              Leave the rolls unchanged
+              Cancel
             </Button>
             <Button loading={pending} onClick={submitContact}>
-              Enter in the census
+              Add contact
             </Button>
           </>
         }
@@ -491,7 +491,7 @@ export function Directory({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Dispatch address</span>
+            <span className={styles.label}>Email</span>
             <Input
               type="email"
               value={draft.email}
@@ -499,28 +499,28 @@ export function Directory({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>House or company</span>
+            <span className={styles.label}>Company</span>
             <Input
               value={draft.company}
               onChange={(entry) => setDraft({ ...draft, company: entry.currentTarget.value })}
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Office or title</span>
+            <span className={styles.label}>Job title</span>
             <Input
               value={draft.jobTitle}
               onChange={(entry) => setDraft({ ...draft, jobTitle: entry.currentTarget.value })}
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Province or location</span>
+            <span className={styles.label}>Location</span>
             <Input
               value={draft.location}
               onChange={(entry) => setDraft({ ...draft, location: entry.currentTarget.value })}
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Marks</span>
+            <span className={styles.label}>Tags</span>
             <Input
               placeholder="AI, Leadership"
               value={draft.tags}
@@ -528,7 +528,7 @@ export function Directory({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Biography</span>
+            <span className={styles.label}>Bio</span>
             <Textarea
               rows={4}
               value={draft.bioMarkdown}
@@ -541,22 +541,22 @@ export function Directory({
       <Dialog
         open={savingSegment}
         onOpenChange={setSavingSegment}
-        title="Inscribe this view as a cohort"
-        description={`${rows.length} names answer the decree right now.`}
+        title="Save this view as a segment"
+        description={`${rows.length} contacts match right now.`}
         footer={
           <>
             <Button variant="ghost" onClick={() => setSavingSegment(false)}>
-              Leave the view unrecorded
+              Cancel
             </Button>
             <Button loading={pending} onClick={submitSegment}>
-              Seal cohort
+              Save segment
             </Button>
           </>
         }
       >
         <div className={styles.stack}>
           <label className={styles.field}>
-            <span className={styles.label}>Cohort name</span>
+            <span className={styles.label}>Segment name</span>
             <Input
               placeholder="AI Experts"
               value={segmentName}
@@ -564,7 +564,7 @@ export function Directory({
             />
           </label>
           <fieldset className={styles.stack}>
-            <span className={styles.label}>How shall membership be decreed?</span>
+            <span className={styles.label}>How should membership be decided?</span>
             <label className={styles.row}>
               <Radio
                 name="segment-kind"
@@ -573,7 +573,7 @@ export function Directory({
                 onChange={() => setSegmentKind('dynamic')}
               />
               <span className={styles.value}>
-                Living cohort—reapplies these decrees, so later names may join on their own
+                Dynamic — re-runs these filters, so contacts added later join on their own
               </span>
             </label>
             <label className={styles.row}>
@@ -584,7 +584,7 @@ export function Directory({
                 onChange={() => setSegmentKind('curated')}
               />
               <span className={styles.value}>
-                Sealed cohort—fixes today&rsquo;s {rows.length} names as the complete roll
+                Curated — freezes today&rsquo;s {rows.length} contacts as the member list
               </span>
             </label>
           </fieldset>
@@ -594,22 +594,22 @@ export function Directory({
       <Dialog
         open={enrolling !== null}
         onOpenChange={(open) => !open && setEnrolling(null)}
-        title={`Summon ${enrolling?.name ?? ''} to the campaign`}
-        description="Ranking a prospective orator now keeps the campaign in useful order."
+        title={`Add ${enrolling?.name ?? ''} to the sourcing pipeline`}
+        description="Scoring a prospect at enrollment is what makes the board sortable later."
         footer={
           <>
             <Button variant="ghost" onClick={() => setEnrolling(null)}>
-              Withhold the summons
+              Cancel
             </Button>
             <Button loading={pending} onClick={submitEnroll}>
-              Issue summons
+              Add to pipeline
             </Button>
           </>
         }
       >
         <div className={styles.stack}>
           <label className={styles.field}>
-            <span className={styles.label}>Standing</span>
+            <span className={styles.label}>Stage</span>
             <Select
               value={enrollStage}
               onChange={(entry) => setEnrollStage(entry.currentTarget.value)}
@@ -622,7 +622,7 @@ export function Directory({
             </Select>
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Rank</span>
+            <span className={styles.label}>Score</span>
             <Input
               type="number"
               min={0}
@@ -633,7 +633,7 @@ export function Directory({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Reason for the summons</span>
+            <span className={styles.label}>Rationale</span>
             <Textarea
               rows={3}
               placeholder="Why this person, in one line."
@@ -642,12 +642,12 @@ export function Directory({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Target assembly (optional)</span>
+            <span className={styles.label}>Target event (optional)</span>
             <Select
               value={enrollEventId}
               onChange={(entry) => setEnrollEventId(entry.currentTarget.value)}
             >
-              <option value="">No assembly yet</option>
+              <option value="">No event yet</option>
               {events.map((entry) => (
                 <option key={entry.id} value={entry.id}>
                   {entry.name}

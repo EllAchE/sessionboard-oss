@@ -43,9 +43,7 @@ export async function ensureUserAccount(
   const db = getDb();
   const normalized = normalizeEmail(email);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
-    throw invalid('That dispatch address is not valid', {
-      email: 'Enter a valid dispatch address',
-    });
+    throw invalid('That does not look like an email address', { email: 'Enter a valid email address' });
   }
 
   const existing = await db.query.user.findFirst({ where: eq(user.email, normalized) });
@@ -93,25 +91,25 @@ export async function requestMagicLink(
 
   const link = `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
   const body = [
-    `Salve${account.name ? ` ${escapeMarkdownText(account.name)}` : ''},`,
+    `Hi${account.name ? ` ${escapeMarkdownText(account.name)}` : ''},`,
     '',
-    `[Break the seal and enter Cicero](${link})`,
+    `[Sign in to Cicero](${link})`,
     '',
-    `This seal breaks once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
-    'If you did not summon it, leave this dispatch unanswered.',
+    `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+    'If you did not ask for it, you can ignore this email.',
   ].join('\n');
 
   const { sent } = await sendMail({
     to: account.email,
-    subject: 'Your sealed entry link to Cicero',
+    subject: 'Your sign-in link',
     html: renderMarkdown(body),
     text: [
-      `Salve${account.name ? ` ${account.name}` : ''},`,
+      `Hi${account.name ? ` ${account.name}` : ''},`,
       '',
       link,
       '',
-      `This seal breaks once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
-      'If you did not summon it, leave this dispatch unanswered.',
+      `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+      'If you did not ask for it, you can ignore this email.',
     ].join('\n'),
     eventId: request.eventId ?? null,
     templateKey: 'auth.magic_link',

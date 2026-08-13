@@ -134,13 +134,13 @@ export async function listPublicEvents(limit = 8): Promise<EventSummary[]> {
 
 export async function getEvent(eventId: string) {
   const row = await getDb().query.event.findFirst({ where: eq(event.id, eventId) });
-  if (!row) throw notFound('Assembly');
+  if (!row) throw notFound('Event');
   return row;
 }
 
 export async function getEventBySlug(slug: string) {
   const row = await getDb().query.event.findFirst({ where: eq(event.slug, slug) });
-  if (!row) throw notFound('Assembly');
+  if (!row) throw notFound('Event');
   return row;
 }
 
@@ -163,7 +163,7 @@ export async function createEvent(userId: string, input: CreateEventInput) {
   if (!name) throw invalid('An event needs a name', { name: 'Name is required' });
 
   const slug = slugify(input.slug?.trim() || name);
-  if (!slug) throw invalid('That name cannot be inscribed in a usable URL', { slug: 'Choose a different assembly name' });
+  if (!slug) throw invalid('That name does not make a usable URL', { slug: 'Choose a different name' });
 
   const taken = await db.query.event.findFirst({ where: eq(event.slug, slug) });
   if (taken) throw conflict(`The URL /${slug} is already taken`, { slug: 'Already in use' });

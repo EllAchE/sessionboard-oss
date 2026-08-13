@@ -42,7 +42,7 @@ async function run(work: () => Promise<unknown>): Promise<TaskActionResult> {
   } catch (error) {
     if (isAppError(error)) return { ok: false, message: error.message };
     console.error(`task action failed: ${String(error)}`);
-    return { ok: false, message: 'The Forum hit a snag. Try once more.' };
+    return { ok: false, message: 'Something went wrong. Try again.' };
   }
 }
 

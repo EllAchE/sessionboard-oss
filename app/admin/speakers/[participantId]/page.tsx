@@ -13,7 +13,7 @@ import styles from '../speakers.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Orator · Cicero' };
+export const metadata = { title: 'Speaker · Cicero' };
 
 function Definition({ term, value }: { term: string; value: string | null }) {
   return (
@@ -56,11 +56,11 @@ export default async function SpeakerDetailPage({
       <div>
         <Link className={styles.backLink} href="/admin/speakers">
           <ChevronLeft size={14} />
-          Orators
+          Speakers
         </Link>
         <div className={styles.pageHead}>
           <div>
-            <p className={styles.eyebrow}>Orator</p>
+            <p className={styles.eyebrow}>Speaker</p>
             <h1 className={styles.title}>{speaker.name}</h1>
             <p className={styles.subtitle}>
               {[speaker.jobTitle, speaker.company].filter(Boolean).join(', ') || speaker.email}
@@ -80,13 +80,13 @@ export default async function SpeakerDetailPage({
               />
             </span>
             <Badge tone={speaker.hasBio ? 'success' : 'warning'}>
-              {speaker.hasBio ? 'Biography in the annals' : 'No biography'}
+              {speaker.hasBio ? 'Bio on file' : 'No bio'}
             </Badge>
             <Badge tone={speaker.hasHeadshot ? 'success' : 'warning'}>
-              {speaker.hasHeadshot ? 'Portrait in the gallery' : 'No portrait'}
+              {speaker.hasHeadshot ? 'Photo on file' : 'No photo'}
             </Badge>
             <Badge tone={speaker.hasTravelDetail ? 'success' : 'warning'}>
-              {speaker.hasTravelDetail ? 'Journey recorded' : 'No journey recorded'}
+              {speaker.hasTravelDetail ? 'Travel details' : 'No travel details'}
             </Badge>
           </div>
         </div>
@@ -107,17 +107,17 @@ export default async function SpeakerDetailPage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Orations &amp; programme</CardTitle>
+            <CardTitle>Program</CardTitle>
           </CardHeader>
           <CardBody>
             <dl className={styles.definition}>
               <Definition
                 term="Accepted"
-                value={speaker.acceptedSessions.join('\n') || 'No oration has been proclaimed yet'}
+                value={speaker.acceptedSessions.join('\n') || 'No accepted sessions yet'}
               />
-              <Definition term="Petitions" value={String(speaker.submissions)} />
+              <Definition term="Submissions" value={String(speaker.submissions)} />
               <Definition
-                term="Duties"
+                term="Tasks"
                 value={`${speaker.tasksDone} of ${speaker.tasksTotal} done${
                   speaker.tasksOverdue > 0 ? `, ${speaker.tasksOverdue} overdue` : ''
                 }`}

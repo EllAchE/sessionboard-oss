@@ -257,25 +257,25 @@ export async function chaseDeliverables(
     }
 
     const rules = row.request
-      ? `Scrolls accepted: ${row.request.acceptedTypes.length > 0 ? row.request.acceptedTypes.join(', ') : 'any kind'}, up to ${row.request.maxSizeMb} MB.`
+      ? `Accepted: ${row.request.acceptedTypes.length > 0 ? row.request.acceptedTypes.join(', ') : 'any file type'}, up to ${row.request.maxSizeMb} MB.`
       : '';
     const due = row.dueAt ? ` It was due ${row.dueAt.toISOString().slice(0, 10)}.` : '';
     const body = [
-      `Salve ${row.speakerName},`,
+      `Hi ${row.speakerName},`,
       '',
-      `The archive still awaits **${row.taskName}** for ${eventRow.name}.${due}`,
+      `We are still missing **${row.taskName}** for ${eventRow.name}.${due}`,
       rules,
       '',
-      `[Lodge it in your orator atrium](${portalLink})`,
+      `[Upload it in your speaker portal](${portalLink})`,
     ]
       .filter((line) => line !== '')
       .join('\n');
 
     await sendMail({
       to: row.speakerEmail,
-      subject: `The archive still awaits: ${row.taskName}`,
+      subject: `Still needed: ${row.taskName}`,
       html: renderMarkdown(body),
-      text: markdownToText(body).replace('Lodge it in your orator atrium', portalLink),
+      text: markdownToText(body).replace('Upload it in your speaker portal', portalLink),
       eventId: ctx.eventId,
       templateKey: 'deliverable.chase',
     });
@@ -449,9 +449,9 @@ const SESSION_FIELDS: Record<string, string> = {
   descriptionMarkdown: 'Description',
   level: 'Level',
   contentStatus: 'Approval',
-  formatId: 'Oration format',
+  formatId: 'Format',
   trackId: 'Track',
-  answers: 'Scroll answers',
+  answers: 'Form answers',
 };
 
 const PARTICIPANT_FIELDS: Record<string, string> = {
@@ -490,15 +490,15 @@ async function readEntity(
     const row = await db.query.submission.findFirst({
       where: and(eq(submission.id, entityId), eq(submission.eventId, eventId)),
     });
-    if (!row) throw notFound('That oration');
+    if (!row) throw notFound('That session');
     return { snapshot: pick(row, kind), label: `${formatRef('submission', row.ref)} ${row.title}` };
   }
 
   const row = await db.query.participant.findFirst({
     where: and(eq(participant.id, entityId), eq(participant.eventId, eventId)),
   });
-  if (!row) throw notFound('That orator');
-  return { snapshot: pick(row, kind), label: row.displayName ?? 'Orator likeness' };
+  if (!row) throw notFound('That speaker');
+  return { snapshot: pick(row, kind), label: row.displayName ?? 'Speaker profile' };
 }
 
 /**
@@ -569,9 +569,9 @@ export const CONTENT_APPROVAL_STATUSES = ['in_review', 'approved', 'changes_requ
 export type ContentApprovalStatus = (typeof CONTENT_APPROVAL_STATUSES)[number];
 
 export const CONTENT_APPROVAL_LABEL: Record<ContentApprovalStatus, string> = {
-  in_review: 'Before the censors',
-  approved: 'Proclaimed',
-  changes_requested: 'Amendments requested',
+  in_review: 'In review',
+  approved: 'Approved',
+  changes_requested: 'Changes requested',
 };
 
 function asContentStatus(value: unknown): ContentApprovalStatus {
@@ -789,7 +789,7 @@ export async function updateSessionContent(
 ): Promise<void> {
   requireCapability(ctx, 'submission:decide');
   const title = patch.title.trim();
-  if (title.length < 3) throw invalid('An oration needs a title', { title: 'Give it a title' });
+  if (title.length < 3) throw invalid('A session needs a title', { title: 'Give it a title' });
 
   const { label } = await readEntity(ctx.eventId, 'session', submissionId);
   await recordRevision(ctx, 'session', submissionId, `Edited ${label}`);

@@ -25,7 +25,8 @@ import styles from './agenda.module.css';
  */
 
 export type DragPayload =
-  { source: 'queue'; item: QueueItem } | { source: 'grid'; entry: ScheduleEntry };
+  | { source: 'queue'; item: QueueItem }
+  | { source: 'grid'; entry: ScheduleEntry };
 
 export function cellId(roomId: string, minute: number, dayKey?: string): string {
   return dayKey ? `cell:${roomId}:${minute}:${dayKey}` : `cell:${roomId}:${minute}`;
@@ -86,7 +87,7 @@ function QueueCard({
           onSchedule(item);
         }}
       >
-        Inscribe
+        Schedule
       </button>
     </div>
   );
@@ -104,15 +105,14 @@ export function UnscheduledRail({
   return (
     <aside ref={setNodeRef} className={`${styles.rail} ${isOver ? styles.railActive : ''}`}>
       <div className={styles.railHeader}>
-        <h2 className={styles.railTitle}>Awaiting the fasti</h2>
+        <h2 className={styles.railTitle}>Unscheduled</h2>
         <span className={styles.railHint}>{queue.length}</span>
       </div>
       <p className={styles.railHint}>
-        Accepted orations with no hour. Drag one into the fasti; drag a block back here to withdraw
-        its time.
+        Accepted talks with no slot yet. Drag one onto the grid; drag a block back here to unschedule it.
       </p>
       {queue.length === 0 ? (
-        <p className={styles.railEmpty}>Every accepted oration has its appointed hour.</p>
+        <p className={styles.railEmpty}>Everything accepted has a slot.</p>
       ) : (
         queue.map((item) => (
           <QueueCard key={`${item.kind}:${item.id}`} item={item} onSchedule={onSchedule} />
@@ -187,7 +187,7 @@ function Block({
       {severity && (
         <span className={styles.blockFlag}>
           <AlertTriangle size={11} aria-hidden />
-          {speakerClash ? 'Orator clash' : `${conflicts.length} conflict`}
+          {speakerClash ? 'Speaker clash' : `${conflicts.length} conflict`}
         </span>
       )}
     </div>
@@ -209,9 +209,7 @@ function Cell({
   row: number;
   major: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: cellId(roomId, minute, dayKey),
-  });
+  const { setNodeRef, isOver } = useDroppable({ id: cellId(roomId, minute, dayKey) });
 
   return (
     <div
@@ -255,7 +253,7 @@ export function DayGrid({
     return (
       <div className={styles.gridWrap}>
         <p className={styles.noRooms}>
-          Name a chamber under Edicts before building the fasti—an oration needs somewhere to be.
+          Add a room under Settings before building the agenda — a session needs somewhere to be.
         </p>
       </div>
     );
@@ -370,9 +368,8 @@ export function OrphanedNotice({
       <AlertTriangle size={15} aria-hidden />
       <span>
         {orphans.length} session{orphans.length === 1 ? '' : 's'} on this day{' '}
-        {orphans.length === 1 ? 'has' : 'have'} a time but no room, so{' '}
-        {orphans.length === 1 ? 'it is' : 'they are'} not on the grid. Open the list view to give{' '}
-        {orphans.length === 1 ? 'it' : 'them'} one.
+        {orphans.length === 1 ? 'has' : 'have'} a time but no room, so {orphans.length === 1 ? 'it is' : 'they are'} not on
+        the grid. Open the list view to give {orphans.length === 1 ? 'it' : 'them'} one.
       </span>
       <button type="button" className={styles.viewButton} onClick={() => setDismissed(true)}>
         Dismiss

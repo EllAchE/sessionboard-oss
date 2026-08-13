@@ -93,7 +93,7 @@ export function ItineraryWidget({
 
   return (
     <div>
-      <div className={styles.dayTabs} role="tablist" aria-label="Days in the fasti">
+      <div className={styles.dayTabs} role="tablist" aria-label="Schedule days">
         {days.map((day) => (
           <button
             key={day.date}
@@ -104,7 +104,7 @@ export function ItineraryWidget({
             onClick={() => setTab(day.date)}
           >
             {day.date === 'tbd'
-              ? 'Awaiting proclamation'
+              ? 'To be announced'
               : formatShortDay(
                   day.sessions.find((session) => session.startsAt)?.startsAt ?? day.date,
                   bundle.event.timezone,
@@ -118,15 +118,15 @@ export function ItineraryWidget({
           aria-selected={tab === MINE}
           onClick={() => setTab(MINE)}
         >
-          ★ My route ({chosen.length})
+          ★ My schedule ({chosen.length})
         </button>
       </div>
 
       <div className={styles.exportBar}>
         <span>
           {chosen.length === 0
-            ? 'Mark an oration to begin tracing your route through the Forum.'
-            : `${chosen.length} oration${chosen.length === 1 ? '' : 's'} on your route.`}
+            ? 'Star a session to start building your personal schedule.'
+            : `${chosen.length} session${chosen.length === 1 ? '' : 's'} in your schedule.`}
         </span>
         <button
           type="button"
@@ -135,15 +135,15 @@ export function ItineraryWidget({
           onClick={exportSelection}
         >
           <CalendarPlus size={14} aria-hidden />
-          Add to personal fasti (.ics)
+          Add to calendar (.ics)
         </button>
       </div>
 
       {visible.length === 0 ? (
         <p className={styles.empty}>
           {tab === MINE
-            ? 'Your route is empty. Mark an oration on any day to add it.'
-            : 'No oration has been proclaimed for this day.'}
+            ? 'Your schedule is empty. Star a session on any day tab to add it.'
+            : 'Nothing is scheduled for this day yet.'}
         </p>
       ) : (
         <div className={styles.itineraryList}>
@@ -194,7 +194,7 @@ export function ItineraryWidget({
                   onClick={() => toggleStar(session.id)}
                 >
                   <Star size={14} aria-hidden fill={isStarred ? 'currentColor' : 'none'} />
-                  {isStarred ? 'On my route' : 'Add to my route'}
+                  {isStarred ? 'In my schedule' : 'Add to my schedule'}
                 </button>
               </article>
             );

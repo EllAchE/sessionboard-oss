@@ -22,10 +22,8 @@ export default function PortalError({
   return (
     <main className={styles.main}>
       <div className={styles.empty}>
-        <div className={styles.emptyTitle}>The road was briefly blocked</div>
-        <p>Nothing you inscribed was lost. Try again, and dispatch the organizers if the road stays
-          closed.
-        </p>
+        <div className={styles.emptyTitle}>Something went wrong</div>
+        <p>Nothing you had entered was lost. Try again, and tell the organizers if it keeps happening.</p>
         <div className={styles.taskActions} style={{ justifyContent: 'center', marginTop: 'var(--space-6)' }}>
           <Button variant="primary" onClick={reset}>
             Try again

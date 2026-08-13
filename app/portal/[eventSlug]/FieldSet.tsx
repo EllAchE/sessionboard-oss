@@ -111,7 +111,7 @@ function Field({
             invalid={Boolean(error)}
             onChange={(untrusted) => onChange(untrusted.target.value)}
           >
-            <option value="">Choose from the list</option>
+            <option value="">Choose one</option>
             {(field.options ?? []).map((option) => (
               <option key={option} value={option}>
                 {option}
@@ -171,11 +171,11 @@ function Field({
               checked={value === true}
               onChange={(untrusted) => onChange(untrusted.target.checked)}
             />
-            I affirm
+            Yes
           </label>
         );
       case 'file':
-        return <p className={styles.hint}>Scrolls for this assembly are lodged in the Archive tab.</p>;
+        return <p className={styles.hint}>Files for this event are collected on the Files tab.</p>;
       default:
         return (
           <Input

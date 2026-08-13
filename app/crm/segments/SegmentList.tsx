@@ -32,7 +32,7 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
         setError(result.error);
         return;
       }
-      toast({ title: 'Cohort erased from the tablet', tone: 'success' });
+      toast({ title: 'Segment deleted', tone: 'success' });
       router.refresh();
     });
   };
@@ -41,8 +41,8 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>The census</p>
-          <h1 className={styles.title}>Cohorts</h1>
+          <p className={styles.eyebrow}>Organization</p>
+          <h1 className={styles.title}>Segments</h1>
           <p className={styles.subtitle}>
             A saved slice of the directory. Dynamic segments re-run their filters; curated ones keep
             the list they were saved with.
@@ -61,12 +61,13 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
         <Card>
           <CardBody>
             <div className={styles.empty}>
-              <p className={styles.emptyTitle}>No cohorts have been inscribed</p>
+              <p className={styles.emptyTitle}>No segments yet</p>
               <p className={styles.emptyBody}>
-                Narrow the census to the citizens you return to, then preserve them as a cohort.
+                Filter the directory down to the people you keep coming back to, then choose Save as
+                segment.
               </p>
               <Button variant="primary" href="/crm">
-                Go to the census
+                Go to the directory
               </Button>
             </div>
           </CardBody>
@@ -85,7 +86,7 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
                       {segment.kind}
                     </Badge>
                   </div>
-                  <span className={styles.value}>{segment.memberCount} citizens</span>
+                  <span className={styles.value}>{segment.memberCount} contacts</span>
                   <span className={styles.hint}>{segment.criteria}</span>
                   <div className={styles.spread}>
                     <span className={styles.timelineMeta}>
@@ -98,7 +99,7 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
                       loading={pending}
                       onClick={() => remove(segment.id)}
                     >
-                      Disband
+                      Delete
                     </Button>
                   </div>
                 </div>

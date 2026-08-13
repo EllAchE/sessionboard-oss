@@ -146,7 +146,7 @@ function planLocally(context: ProposalContext): RawPlacement[] {
 
 function describeExisting(context: ProposalContext): string {
   const placed = context.entries.filter((entry) => entry.startsAt && entry.endsAt);
-  if (placed.length === 0) return 'Nothing is inscribed in the fasti yet.';
+  if (placed.length === 0) return 'Nothing is scheduled yet — the grid is empty.';
 
   const roomNames = new Map(context.rooms.map((row) => [row.id, row.name]));
   return placed
@@ -154,8 +154,8 @@ function describeExisting(context: ProposalContext): string {
       const day = zonedDayKey(entry.startsAt!, context.timezone);
       const start = formatMinutes(zonedMinutes(entry.startsAt!, context.timezone));
       const end = formatMinutes(zonedMinutes(entry.endsAt!, context.timezone));
-      const room = entry.roomId ? (roomNames.get(entry.roomId) ?? 'unnamed chamber') : 'no chamber';
-      const speakers = entry.speakers.map((speaker) => speaker.name).join(', ') || 'no orators';
+      const room = entry.roomId ? (roomNames.get(entry.roomId) ?? 'unassigned room') : 'no room';
+      const speakers = entry.speakers.map((speaker) => speaker.name).join(', ') || 'no speakers';
       return `- ${day} ${start}-${end} | ${room} | "${entry.title}" | ${speakers}`;
     })
     .join('\n');
@@ -165,7 +165,7 @@ function describeQueue(context: ProposalContext): string {
   return context.queue
     .map((item) => {
       const track = context.tracks.find((row) => row.id === item.trackId)?.name ?? 'no track';
-      const speakers = item.speakers.map((speaker) => speaker.name).join(', ') || 'no orators';
+      const speakers = item.speakers.map((speaker) => speaker.name).join(', ') || 'no speakers';
       return `- id=${item.id} kind=${item.kind} | "${item.title}" | ${item.durationMinutes} min | track: ${track} | speakers: ${speakers}`;
     })
     .join('\n');
@@ -173,11 +173,11 @@ function describeQueue(context: ProposalContext): string {
 
 function buildPrompt(context: ProposalContext): string {
   return [
-    `Assembly: ${context.eventName} (all hours ${context.timezone}).`,
-    `Days in the fasti: ${context.dayKeys.join(', ')}.`,
+    `Event: ${context.eventName} (all times ${context.timezone}).`,
+    `Programme days: ${context.dayKeys.join(', ')}.`,
     `Usable hours each day: ${formatMinutes(context.dayStartMinute)} to ${formatMinutes(context.dayEndMinute)}.`,
     '',
-    'Chambers:',
+    'Rooms:',
     context.rooms
       .map(
         (room) =>
@@ -185,21 +185,21 @@ function buildPrompt(context: ProposalContext): string {
       )
       .join('\n'),
     '',
-    'Already inscribed in the fasti—these hours are taken:',
+    'Already scheduled — these slots are taken:',
     describeExisting(context),
     '',
-    'Orations still awaiting an hour:',
+    'Sessions still needing a slot:',
     describeQueue(context),
-    context.guidance ? `\nThe magistrates’ guidance: ${context.guidance}` : '',
+    context.guidance ? `\nOrganizer's guidance: ${context.guidance}` : '',
     '',
-    'Place every waiting oration. Laws that must not be broken:',
-    '1. Never put two orations in one chamber at the same hour. An oration ending at 10:00 and one starting at 10:00 do NOT clash.',
-    '2. Never place the same orator in two overlapping orations.',
-    '3. Avoid running two orations on the same theme at once; citizens following a theme should not have to choose.',
+    'Place every queued session. Hard rules:',
+    '1. Never put two sessions in one room at the same time. A session ending at 10:00 and one starting at 10:00 do NOT clash — that is fine and encouraged.',
+    '2. Never schedule the same speaker in two overlapping sessions.',
+    '3. Avoid running two sessions on the same track at once; attendees following a track should not have to choose.',
     '4. Start times must fall on a 15-minute boundary, inside the usable hours, on one of the listed days.',
-    '5. Use each oration\'s stated duration exactly.',
+    '5. Use each session\'s stated duration exactly.',
     '',
-    'Prefer leaving a short interval between orations in the same chamber, and spread one orator\'s appearances across different days where possible.',
+    'Prefer leaving a short gap between sessions in the same room for turnover, and spreading one speaker\'s talks across different days where possible.',
     '',
     'Reply with JSON only, no prose and no code fence:',
     '{"placements":[{"id":"<queue id>","dayKey":"YYYY-MM-DD","startMinute":<minutes from local midnight>,"roomId":"<room id>","rationale":"<one short sentence>"}],"notes":"<one or two sentences on the overall shape>"}',
@@ -316,9 +316,9 @@ export function validateProposal(
 
 function reasonFor(conflicts: Conflict[]): string {
   const summary = summarizeConflicts(conflicts);
-  if (summary.speaker > 0) return 'The suggested hour double-booked an orator';
+  if (summary.speaker > 0) return 'The suggested slot double-booked a speaker';
   if (summary.room > 0) return 'The suggested slot was already occupied';
-  return 'The suggested hour clashed with the existing fasti';
+  return 'The suggested slot clashed with the existing agenda';
 }
 
 export async function proposeAgenda(context: ProposalContext): Promise<AgendaProposal> {
@@ -329,7 +329,7 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       unplaced: [],
       notes: null,
       model: AGENDA_MODEL,
-      message: 'No oration awaits an hour in the fasti.',
+      message: 'Nothing is waiting for a slot.',
     };
   }
   if (context.rooms.length === 0) {
@@ -339,7 +339,7 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       unplaced: [],
       notes: null,
       model: AGENDA_MODEL,
-      message: 'Name a chamber before consulting the scheduling augur.',
+      message: 'Add a room before asking for a draft agenda.',
     };
   }
 
@@ -361,7 +361,7 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       model: AGENDA_MODEL,
       max_tokens: MAX_OUTPUT_TOKENS,
       system:
-        'You are the scheduling augur for a conference. Produce conflict-free draft fasti for a human magistrate to inspect and amend. Never claim an hour is confirmed. Reply with JSON only.',
+        'You are a conference programme planner. You produce a conflict-free draft schedule for a human organizer to review and edit. You never claim a slot is confirmed. Reply with JSON only.',
       messages: [{ role: 'user', content: buildPrompt(context) }],
     });
 
@@ -383,7 +383,7 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       unplaced: [],
       notes: null,
       model: AGENDA_MODEL,
-      message: 'The scheduling augur could not be reached. The fasti remain untouched.',
+      message: 'The agenda assistant could not be reached. The board is unaffected.',
     };
   }
 }

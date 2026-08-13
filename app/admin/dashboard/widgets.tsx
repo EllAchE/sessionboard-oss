@@ -56,30 +56,30 @@ export function CountersWidget({
   return (
     <Card className={styles.wide}>
       <CardHeader>
-        <CardTitle>Census of the province</CardTitle>
-        <CardDescription>Live counts across petitions, orators, and their duties.</CardDescription>
+        <CardTitle>Where the event stands</CardTitle>
+        <CardDescription>Live counts across submissions, speakers and onboarding.</CardDescription>
       </CardHeader>
       <CardBody>
         <div className={styles.counterGrid}>
           <Counter
             value={tasks.overdue}
-            label="Overdue duties"
+            label="Overdue tasks"
             tone={tasks.overdue > 0 ? 'danger' : 'success'}
-            hint={`${tasks.blockedSpeakers} orators blocked`}
+            hint={`${tasks.blockedSpeakers} speakers blocked`}
           />
           <Counter
             value={`${tasks.completionPct}%`}
-            label="Duties settled"
+            label="Task completion"
             tone={tasks.completionPct === 100 ? 'success' : undefined}
             hint={`${tasks.completed + tasks.waived} of ${tasks.assignments} settled`}
           />
-          <Counter value={counters.submissions} label="Petitions" />
+          <Counter value={counters.submissions} label="Submissions" />
           <Counter value={counters.byStatus.accepted} label="Accepted" tone="success" />
-          <Counter value={counters.acceptedSpeakers} label="Accepted orators" />
+          <Counter value={counters.acceptedSpeakers} label="Accepted speakers" />
           <Counter
             value={counters.sessions}
-            label="Orations"
-            hint={`${counters.publishedSessions} proclaimed`}
+            label="Sessions"
+            hint={`${counters.publishedSessions} published`}
           />
         </div>
       </CardBody>
@@ -106,7 +106,7 @@ export function StatusBreakdownWidget({ counters }: { counters: Counters }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Verdicts on the petitions</CardTitle>
+        <CardTitle>Submission status</CardTitle>
       </CardHeader>
       <CardBody>
         <div className={styles.bars}>
@@ -134,12 +134,12 @@ export function NudgesWidget({ nudges }: { nudges: Nudge[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Next commands</CardTitle>
-        <CardDescription>Every road leads directly to the matter at hand.</CardDescription>
+        <CardTitle>Next actions</CardTitle>
+        <CardDescription>Each one links straight to the fix.</CardDescription>
       </CardHeader>
       <CardBody>
         {nudges.length === 0 ? (
-          <p className={styles.counterHint}>The Forum is in order. Nothing demands attention.</p>
+          <p className={styles.counterHint}>Nothing needs attention right now.</p>
         ) : (
           <div className={styles.nudgeList}>
             {nudges.map((nudge) => (
@@ -185,14 +185,14 @@ export function PacingWidget({
   return (
     <Card className={styles.wide}>
       <CardHeader>
-        <CardTitle>Petitions entering the Forum</CardTitle>
+        <CardTitle>Submission pacing</CardTitle>
         <CardDescription>
-          Cumulative arrivals by day since the first petition of each edition.
+          Cumulative arrivals by day since the first submission of each edition.
         </CardDescription>
       </CardHeader>
       <CardBody>
         {current.points.length === 0 ? (
-          <p className={styles.chartEmpty}>No petitions have reached the Forum.</p>
+          <p className={styles.chartEmpty}>No submissions yet.</p>
         ) : (
           <>
             <svg
@@ -200,7 +200,7 @@ export function PacingWidget({
               viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
               preserveAspectRatio="none"
               role="img"
-              aria-label={`Cumulative petitions reaching ${current.total} over ${maxDay} days`}
+              aria-label={`Cumulative submissions reaching ${current.total} over ${maxDay} days`}
             >
               <line
                 className={styles.chartAxis}
@@ -250,7 +250,7 @@ export function BreakdownWidget({ title, rows }: { title: string; rows: Breakdow
       </CardHeader>
       <CardBody>
         {rows.length === 0 ? (
-          <p className={styles.counterHint}>The ledger is still blank.</p>
+          <p className={styles.counterHint}>Nothing to break down yet.</p>
         ) : (
           <>
             <div className={styles.bars}>
@@ -299,11 +299,11 @@ export function ReviewProgressWidget({ rounds }: { rounds: ReviewRoundProgress[]
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Council progress</CardTitle>
+        <CardTitle>Review progress</CardTitle>
       </CardHeader>
       <CardBody>
         {rounds.length === 0 ? (
-          <p className={styles.counterHint}>No council has yet been convened.</p>
+          <p className={styles.counterHint}>No review rounds have been created.</p>
         ) : (
           rounds.map((round) => (
             <div key={round.id} className={styles.statRow}>
@@ -311,7 +311,7 @@ export function ReviewProgressWidget({ rounds }: { rounds: ReviewRoundProgress[]
                 {round.name} <Badge tone="neutral">{round.status}</Badge>
               </span>
               <span className={styles.statValue}>
-                {round.completed}/{round.assigned} scored · {round.reviewers} councillors ·{' '}
+                {round.completed}/{round.assigned} scored · {round.reviewers} reviewers ·{' '}
                 {round.completionPct}%
               </span>
             </div>
@@ -324,13 +324,13 @@ export function ReviewProgressWidget({ rounds }: { rounds: ReviewRoundProgress[]
 
 export function ScheduleHealthWidget({ health }: { health: ScheduleHealth }) {
   const rows: { label: string; value: number; danger?: boolean }[] = [
-    { label: 'Orations', value: health.total },
-    { label: 'Proclaimed', value: health.published },
+    { label: 'Sessions', value: health.total },
+    { label: 'Published', value: health.published },
     { label: 'Still draft', value: health.draft },
-    { label: 'Outside the fasti', value: health.unscheduled, danger: health.unscheduled > 0 },
+    { label: 'Without a time slot', value: health.unscheduled, danger: health.unscheduled > 0 },
     { label: 'Without a room', value: health.missingRoom, danger: health.missingRoom > 0 },
     {
-      label: 'Accepted orations absent from the fasti',
+      label: 'Accepted talks not on the agenda',
       value: health.acceptedWithoutSession,
       danger: health.acceptedWithoutSession > 0,
     },
@@ -340,7 +340,7 @@ export function ScheduleHealthWidget({ health }: { health: ScheduleHealth }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Health of the fasti</CardTitle>
+        <CardTitle>Schedule health</CardTitle>
       </CardHeader>
       <CardBody>
         {rows.map((row) => (
@@ -370,8 +370,8 @@ export function ReportsWidget() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>State tablets</CardTitle>
-        <CardDescription>Carry the current imperial record away as CSV.</CardDescription>
+        <CardTitle>Reports</CardTitle>
+        <CardDescription>Download the current state as CSV.</CardDescription>
       </CardHeader>
       <CardBody>
         <div className={styles.reportList}>

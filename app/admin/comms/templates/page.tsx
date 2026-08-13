@@ -31,11 +31,10 @@ export default async function TemplatesPage({
   if (!event) {
     return (
       <div className={styles.page}>
-        <h1 className={styles.title}>Dispatch patterns</h1>
+        <h1 className={styles.title}>Email templates</h1>
         <Card>
           <CardBody>
-            <p className={styles.empty}>Convene an event first—each dispatch pattern belongs to one.
-            </p>
+            <p className={styles.empty}>Create an event first — templates are scoped to one.</p>
           </CardBody>
         </Card>
       </div>
@@ -49,11 +48,11 @@ export default async function TemplatesPage({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>The courier house</p>
-          <h1 className={styles.title}>Dispatch patterns</h1>
+          <p className={styles.eyebrow}>Communications</p>
+          <h1 className={styles.title}>Email templates</h1>
           <p className={styles.lede}>
-            Petition receipts, verdicts, calendar summonses, and reminders all take their words from
-            here. Revise one and every later courier carries the new text.
+            Submission confirmations, decisions, calendar invitations and reminders all read from
+            here. Editing one changes what the product sends without a deploy.
           </p>
         </div>
         <EventPicker current={event.slug} options={options} basePath="/admin/comms/templates" />

@@ -70,9 +70,9 @@ export function nextTaskStatus(current: TaskStatus, action: TaskAction): TaskSta
   const next = TRANSITIONS[current][action];
   if (next === null) {
     if (current === 'waived') {
-      throw conflict('The magistrates waived this duty, so nothing remains to be done');
+      throw conflict('An organizer waived this task, so there is nothing left to do');
     }
-    throw conflict(`A duty that is ${current.replace('_', ' ')} cannot be reopened`);
+    throw conflict(`A task that is ${current.replace('_', ' ')} cannot be reopened`);
   }
   return next;
 }
@@ -100,14 +100,14 @@ export type CompletionEvidence = {
 export function assertCompletable(evidence: CompletionEvidence): void {
   switch (evidence.kind) {
     case 'file_upload':
-      if (evidence.fileCount < 1) throw invalid('Lodge at least one scroll to fulfill this duty');
+      if (evidence.fileCount < 1) throw invalid('Upload at least one file to finish this task');
       return;
     case 'form':
-      if (!evidence.answers) throw invalid('Answer the scroll before lodging it');
+      if (!evidence.answers) throw invalid('Answer the form before submitting it');
       return;
     case 'acknowledge':
     case 'link':
-      if (!evidence.acknowledged) throw invalid('Affirm this duty before marking it fulfilled');
+      if (!evidence.acknowledged) throw invalid('Confirm this task before marking it done');
       return;
   }
 }
@@ -389,9 +389,9 @@ async function loadAssignment(
     .innerJoin(task, eq(task.id, taskAssignment.taskId))
     .where(and(eq(taskAssignment.id, assignmentId), eq(task.eventId, ctx.eventId)));
 
-  if (!row) throw notFound('That duty');
+  if (!row) throw notFound('That task');
   if (row.assignment.participantId !== participantId && !can(ctx, 'task:manage')) {
-    throw forbidden('That duty belongs to another orator');
+    throw forbidden('That task belongs to someone else');
   }
   return row;
 }
@@ -422,7 +422,7 @@ export async function completeSimpleTask(
 ): Promise<TaskStatus> {
   const { assignment, task: row } = await loadAssignment(ctx, participantId, assignmentId);
   if (row.kind !== 'acknowledge' && row.kind !== 'link') {
-    throw invalid('That duty calls for a record or a scroll, not an oath');
+    throw invalid('That task needs a file or a form, not a confirmation');
   }
   assertCompletable({ kind: row.kind, fileCount: 0, answers: null, acknowledged: true });
   return applyStatus(assignment, 'complete');
@@ -444,9 +444,9 @@ export async function attachTaskFiles(
   uploads: UploadInput[],
 ): Promise<TaskStatus> {
   const { assignment, task: row } = await loadAssignment(ctx, participantId, assignmentId);
-  if (row.kind !== 'file_upload') throw invalid('That duty does not collect records');
+  if (row.kind !== 'file_upload') throw invalid('That task does not collect files');
   if (assignment.status === 'waived') {
-    throw conflict('An organizer waived this duty, so nothing remains to be done');
+    throw conflict('An organizer waived this task, so there is nothing left to do');
   }
 
   const spec = row.fileRequestId
@@ -495,7 +495,7 @@ async function requestSpec(eventId: string, fileRequestId: string): Promise<File
   const row = await getDb().query.fileRequest.findFirst({
     where: and(eq(fileRequest.id, fileRequestId), eq(fileRequest.eventId, eventId)),
   });
-  if (!row) throw notFound('That request for records');
+  if (!row) throw notFound('That file request');
   return {
     id: row.id,
     label: row.label,
@@ -541,7 +541,7 @@ export async function saveTaskForm(
   submit: boolean,
 ): Promise<TaskStatus> {
   const { assignment, task: row } = await loadAssignment(ctx, participantId, assignmentId);
-  if (row.kind !== 'form' || !row.formId) throw invalid('That duty is not a scroll');
+  if (row.kind !== 'form' || !row.formId) throw invalid('That task is not a form');
 
   const fields = await fieldsFor(row.formId);
   const cleaned = clearHiddenAnswers(fields, values);
@@ -587,19 +587,19 @@ async function sendFormConfirmation(ctx: EventContext, participantId: string, ro
     : undefined;
 
   const body = [
-    `Salve${recipient.name ? ` ${recipient.name}` : ''},`,
+    `Hi${recipient.name ? ` ${recipient.name}` : ''},`,
     '',
     configured?.confirmationBodyMarkdown?.trim() ||
-      `Your answers for **${row.name}** have entered the archive. You may inspect or amend them at any time.`,
+      `Thanks — we have your answers for **${row.name}**. You can review or change them any time.`,
     '',
-    `[Enter your ${eventRow.name} atrium](${portalLink})`,
+    `[Open your ${eventRow.name} portal](${portalLink})`,
   ].join('\n');
 
   await sendMail({
     to: recipient.email,
     subject: configured?.confirmationSubject?.trim() || `${row.name} — received`,
     html: renderMarkdown(body),
-    text: markdownToText(body).replace(`Enter your ${eventRow.name} atrium`, portalLink),
+    text: markdownToText(body).replace(`Open your ${eventRow.name} portal`, portalLink),
     eventId: ctx.eventId,
     templateKey: 'portal.form_confirmation',
   });
@@ -616,7 +616,7 @@ export async function copyTasksFromEvent(
   ctx: EventContext,
   sourceEventId: string,
 ): Promise<CopyTasksResult> {
-  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can carry duties between events');
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can copy tasks');
   if (sourceEventId === ctx.eventId) throw invalid('Pick a different event to copy from');
 
   const db = getDb();
@@ -726,15 +726,15 @@ export type TaskInput = {
 function normalizeTaskInput(input: TaskInput): TaskInput {
   const name = input.name.trim();
   const participantIds = [...new Set(input.participantIds?.filter(Boolean) ?? [])];
-  if (!name) throw invalid('Give the duty a name');
+  if (!name) throw invalid('Give the task a name');
   if (input.kind === 'link' && !input.linkUrl?.trim()) {
-    throw invalid('A road duty needs the address the orator should follow');
+    throw invalid('A link task needs the URL the speaker should open');
   }
   if (input.kind === 'form' && !input.formId) {
-    throw invalid('A scroll duty needs an atrium scroll to point at');
+    throw invalid('A form task needs a portal form to point at');
   }
   if (input.audience === 'manual' && participantIds.length === 0) {
-    throw invalid('Choose at least one orator for this duty');
+    throw invalid('Choose at least one speaker for this task');
   }
   return {
     ...input,
@@ -781,7 +781,7 @@ async function assignmentTargets(eventId: string, input: TaskInput): Promise<Ass
   const eventParticipantIds = new Set(participants.map((row) => row.id));
   const selectedIds = input.participantIds ?? [];
   if (input.audience === 'manual' && selectedIds.some((id) => !eventParticipantIds.has(id))) {
-    throw invalid('Every selected orator must belong to this event');
+    throw invalid('Every selected speaker must belong to this event');
   }
 
   const acceptedSubmissionByParticipant = new Map<string, string>();
@@ -885,7 +885,7 @@ async function createRequestFor(eventId: string, clean: TaskInput): Promise<stri
 }
 
 export async function createTask(ctx: EventContext, input: TaskInput): Promise<{ id: string }> {
-  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can decree duties');
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can create tasks');
   const clean = normalizeTaskInput(input);
   const db = getDb();
   const targets = await assignmentTargets(ctx.eventId, clean);
@@ -926,7 +926,7 @@ export async function updateTask(
   taskId: string,
   input: TaskInput,
 ): Promise<void> {
-  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can amend duties');
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can edit tasks');
   const clean = normalizeTaskInput(input);
   const db = getDb();
   const targets = await assignmentTargets(ctx.eventId, clean);
@@ -936,7 +936,7 @@ export async function updateTask(
     .from(task)
     .where(and(eq(task.id, taskId), eq(task.eventId, ctx.eventId)))
     .limit(1);
-  if (!row) throw notFound('That duty');
+  if (!row) throw notFound('That task');
 
   // Switching an existing task over to file upload has to grow it an upload target too, or the
   // portal renders a task the speaker cannot act on.
@@ -972,14 +972,14 @@ export async function updateTask(
 }
 
 export async function deleteTask(ctx: EventContext, taskId: string): Promise<void> {
-  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can strike duties from the rolls');
+  if (!can(ctx, 'task:manage')) throw forbidden('Only organizers can delete tasks');
   const db = getDb();
   const [row] = await db
     .select({ id: task.id, fileRequestId: task.fileRequestId })
     .from(task)
     .where(and(eq(task.id, taskId), eq(task.eventId, ctx.eventId)))
     .limit(1);
-  if (!row) throw notFound('That duty');
+  if (!row) throw notFound('That task');
   await db.delete(task).where(eq(task.id, taskId));
   // The request only ever existed to serve this task; already-uploaded files hang off the
   // assignment, not the request, so they survive it.

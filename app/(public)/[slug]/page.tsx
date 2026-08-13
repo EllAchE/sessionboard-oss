@@ -16,12 +16,12 @@ type Params = { slug: string };
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Assembly absent from the annals' };
+  if (!bundle) return { title: 'Event not found' };
   return createSocialMetadata({
     origin: appUrl(),
     path: `/${bundle.event.slug}`,
     title: bundle.event.name,
-    description: bundle.event.tagline ?? `The public fasti for ${bundle.event.name}.`,
+    description: bundle.event.tagline ?? `The programme for ${bundle.event.name}.`,
   });
 }
 
@@ -61,7 +61,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
               className={styles.action}
               data-primary="true"
             >
-              Propose an oration
+              Submit a talk
             </Link>
           ) : null}
           <Link
@@ -69,30 +69,30 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             className={styles.action}
             data-primary={call ? undefined : 'true'}
           >
-            Consult the fasti
+            See the agenda
           </Link>
           <Link href={`/${event.slug}/speakers`} className={styles.action}>
-            Meet the orators
+            Meet the speakers
           </Link>
           {event.websiteUrl ? (
             <a href={event.websiteUrl} className={styles.action} rel="noreferrer" target="_blank">
-              Official event scroll
+              Event website
             </a>
           ) : null}
         </div>
         <div className={styles.statRow}>
           <span className={styles.stat}>
             <span className={styles.statValue}>{bundle.sessions.length}</span>
-            <span className={styles.statLabel}>Orations</span>
+            <span className={styles.statLabel}>Sessions</span>
           </span>
           <span className={styles.stat}>
             <span className={styles.statValue}>{bundle.speakers.length}</span>
-            <span className={styles.statLabel}>Orators</span>
+            <span className={styles.statLabel}>Speakers</span>
           </span>
           {bundle.tracks.length > 0 ? (
             <span className={styles.stat}>
               <span className={styles.statValue}>{bundle.tracks.length}</span>
-              <span className={styles.statLabel}>Themes</span>
+              <span className={styles.statLabel}>Tracks</span>
             </span>
           ) : null}
         </div>
@@ -101,9 +101,9 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
       {bundle.speakers.length > 0 ? (
         <section className={styles.section}>
           <div className={styles.sectionHead}>
-            <h2 className={styles.sectionTitle}>Orators of distinction</h2>
+            <h2 className={styles.sectionTitle}>Featured speakers</h2>
             <Link href={`/${event.slug}/speakers`} className={styles.sectionLink}>
-              All {bundle.speakers.length} orators →
+              All {bundle.speakers.length} speakers →
             </Link>
           </div>
           <EmbedBody
@@ -119,9 +119,9 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
       {bundle.sessions.length > 0 ? (
         <section className={styles.section}>
           <div className={styles.sectionHead}>
-            <h2 className={styles.sectionTitle}>Before the assembly</h2>
+            <h2 className={styles.sectionTitle}>What is on</h2>
             <Link href={`/${event.slug}/agenda`} className={styles.sectionLink}>
-              Consult the full fasti →
+              Full agenda →
             </Link>
           </div>
           <EmbedBody
@@ -133,8 +133,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
           />
         </section>
       ) : (
-        <p className={styles.empty}>The programme remains under seal. Return when the heralds have spoken.
-        </p>
+        <p className={styles.empty}>The programme has not been published yet. Check back soon.</p>
       )}
     </PublicChrome>
   );

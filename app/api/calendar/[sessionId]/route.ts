@@ -16,7 +16,7 @@ export async function GET(
   const { sessionId } = await params;
   const calendar = await sessionCalendarDownload(sessionId);
   if (!calendar) {
-    return new Response('That oration has no proclaimed hour yet.', { status: 404 });
+    return new Response('That session has no confirmed time yet.', { status: 404 });
   }
 
   return new Response(calendar.body, {

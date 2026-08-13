@@ -12,7 +12,7 @@ import { TasksIndex } from './TasksIndex';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Duties · Cicero' };
+export const metadata = { title: 'Tasks · Cicero' };
 
 export default async function AdminTasksPage() {
   const ctx = await currentEventContext();

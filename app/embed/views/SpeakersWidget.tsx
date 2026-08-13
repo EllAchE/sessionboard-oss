@@ -43,7 +43,7 @@ export function SpeakersWidget({
         <div className={styles.backRow}>
           <button type="button" className={styles.controlButton} onClick={() => setOpenId(null)}>
             <ArrowLeft size={14} aria-hidden />
-            Back to orators
+            Back to speakers
           </button>
           <a className={styles.speakerLink} href={`${speakerBase}/${open.slug}`}>
             Open this profile on its own page
@@ -68,19 +68,19 @@ export function SpeakersWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search orators, houses, or orations"
-          placeholder="Search orators, houses, or orations…"
+          label="Search speakers, companies, or talks"
+          placeholder="Search speakers, companies, or talks…"
         />
         <span className={styles.resultCount} role="status">
-          {visible.length} of {ordered.length} orators
+          {visible.length} of {ordered.length} speakers
         </span>
       </div>
 
       {visible.length === 0 ? (
         <p className={styles.empty}>
           {ordered.length === 0
-            ? 'No orator has been proclaimed yet.'
-            : 'No orator answers that search.'}
+            ? 'No speakers have been announced yet.'
+            : 'No speaker matches that search.'}
         </p>
       ) : (
         <div className={styles.directory}>

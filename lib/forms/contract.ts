@@ -38,13 +38,13 @@ export const BUILTIN_META: Record<
   BuiltinKey,
   { label: string; type: FieldType; required: boolean; column: string }
 > = {
-  title: { label: 'Oration title', type: 'short_text', required: true, column: 'title' },
-  description: { label: 'Argument', type: 'markdown', required: true, column: 'descriptionMarkdown' },
-  format: { label: 'Oration format', type: 'select', required: false, column: 'formatId' },
-  track: { label: 'Theme', type: 'select', required: false, column: 'trackId' },
-  level: { label: 'Audience rank', type: 'select', required: false, column: 'level' },
+  title: { label: 'Title', type: 'short_text', required: true, column: 'title' },
+  description: { label: 'Description', type: 'markdown', required: true, column: 'descriptionMarkdown' },
+  format: { label: 'Session format', type: 'select', required: false, column: 'formatId' },
+  track: { label: 'Track', type: 'select', required: false, column: 'trackId' },
+  level: { label: 'Audience level', type: 'select', required: false, column: 'level' },
   /** Many-to-many through `submission_tag`, so it has no column of its own on `submission`. */
-  tags: { label: 'Marks', type: 'multi_select', required: false, column: '' },
+  tags: { label: 'Tags', type: 'multi_select', required: false, column: '' },
 };
 
 export function isBuiltinKey(key: string | null | undefined): key is BuiltinKey {

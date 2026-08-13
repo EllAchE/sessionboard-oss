@@ -50,11 +50,11 @@ export default async function CommsPage({
   if (!event) {
     return (
       <div className={styles.page}>
-        <h1 className={styles.title}>Dispatches</h1>
+        <h1 className={styles.title}>Communications</h1>
         <Card>
           <CardBody>
             <p className={styles.empty}>
-              Convene an event first—every dispatch and audience belongs to one province.
+              Create an event first — templates and audiences are scoped to one.
             </p>
           </CardBody>
         </Card>
@@ -73,11 +73,11 @@ export default async function CommsPage({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>The courier house</p>
-          <h1 className={styles.title}>Write a dispatch</h1>
+          <p className={styles.eyebrow}>Communications</p>
+          <h1 className={styles.title}>Compose</h1>
           <p className={styles.lede}>
-            One sealed message per recipient, with every field resolved for that person. Inspect a
-            real recipient’s copy before any courier departs.
+            One message per recipient, with merge fields resolved against that person. Preview
+            renders against a real recipient before anything is sent.
           </p>
         </div>
         <EventPicker current={event.slug} options={options} basePath="/admin/comms" />

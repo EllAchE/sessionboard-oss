@@ -1,7 +1,7 @@
 import { IMPORT_FIELDS, SAMPLE_CSV } from '@/lib/services/crm';
 import { ImportWizard } from './ImportWizard';
 
-export const metadata = { title: 'Import the census · Cicero' };
+export const metadata = { title: 'Import contacts · Cicero' };
 
 export default function ImportPage() {
   return (

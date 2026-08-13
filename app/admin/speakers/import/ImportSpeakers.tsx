@@ -72,7 +72,7 @@ function previewColumns(
       width: '18%',
       render: (row) =>
         row.action === 'create' ? (
-          <Badge tone="success">New orator</Badge>
+          <Badge tone="success">New speaker</Badge>
         ) : (
           <Badge tone="info">
             {row.changes.length === 0 ? 'Matched, no change' : 'Matched, updates'}
@@ -86,7 +86,7 @@ function previewColumns(
       strong: true,
       render: (row) => row.name,
     },
-    { id: 'email', header: 'Dispatch address', width: '26%', mono: true, render: (row) => row.email },
+    { id: 'email', header: 'Email', width: '26%', mono: true, render: (row) => row.email },
     {
       id: 'detail',
       header: 'Fields',
@@ -97,7 +97,7 @@ function previewColumns(
             ? Object.keys(row.values)
                 .filter((key) => key !== 'email')
                 .map((key) => label(key as SpeakerFieldKey))
-                .join(', ') || 'Dispatch address only'
+                .join(', ') || 'Email only'
             : row.changes.map(label).join(', ') || 'Nothing to change'}
         </span>
       ),
@@ -155,7 +155,7 @@ export function ImportSpeakers({
         runPreview(text);
       };
       reader.onerror = () =>
-        toast({ title: 'The scribe could not read that tablet', tone: 'danger', description: file.name });
+        toast({ title: 'Could not read that file', tone: 'danger', description: file.name });
       reader.readAsText(file);
     },
     [runPreview, toast],
@@ -191,7 +191,7 @@ export function ImportSpeakers({
     const url = URL.createObjectURL(new Blob([template], { type: 'text/csv' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'cicero-orators-tablet.csv';
+    anchor.download = 'cicero-speakers-template.csv';
     anchor.click();
     URL.revokeObjectURL(url);
   }, [template]);
@@ -206,8 +206,8 @@ export function ImportSpeakers({
 
       <Step
         number={1}
-        title="Choose a census scroll"
-        note="Quoted cells, commas, line breaks, and a spreadsheet's byte-order mark all survive the journey."
+        title="Choose a CSV"
+        note="Quoted cells, commas and newlines inside quotes, and a spreadsheet's byte-order mark all read correctly."
       >
         <input
           ref={picker}
@@ -247,8 +247,7 @@ export function ImportSpeakers({
             }}
           >
             <Upload size={20} />
-            <span className={styles.dropzoneTitle}>Lay down a CSV scroll, or browse the archive
-            </span>
+            <span className={styles.dropzoneTitle}>Drop a CSV here, or click to browse</span>
             <span className={styles.dropzoneHint}>
               Any column order. You map the columns in the next step.
             </span>
@@ -261,7 +260,7 @@ export function ImportSpeakers({
             iconLeft={<Download size={14} />}
             onClick={downloadTemplate}
           >
-            Download tablet
+            Download template
           </Button>
         </div>
       </Step>
@@ -269,13 +268,13 @@ export function ImportSpeakers({
       {plan && plan.headers.length > 0 ? (
         <Step
           number={2}
-          title="Match the census columns"
-          note="Cicero reads familiar headings automatically. Correct any inscription that landed amiss."
+          title="Map the columns"
+          note="Matched by header name where we recognise one. Change anything that landed wrong."
         >
           <div className={styles.mapTable}>
             <div className={`${styles.mapRow} ${styles.mapHeadRow}`}>
               <span>CSV column</span>
-              <span>Orator field</span>
+              <span>Speaker field</span>
               <span>First value</span>
             </div>
             {plan.headers.map((header, column) => (
@@ -310,22 +309,22 @@ export function ImportSpeakers({
       {plan && plan.problems.length === 0 ? (
         <Step
           number={3}
-          title="Inspect the rolls"
-          note="Orators are matched by email, so presenting the same scroll again revises rather than duplicates."
+          title="Preview"
+          note="Speakers are matched on email, so re-importing the same file updates rather than duplicates."
         >
           <div className={styles.summaryRow}>
             <Badge tone="success">{creating} to add</Badge>
-            <Badge tone="info">{updating} matched to an existing orator</Badge>
+            <Badge tone="info">{updating} matched to an existing speaker</Badge>
             <Badge tone={plan.skipped.length > 0 ? 'warning' : 'neutral'}>
               {plan.skipped.length} skipped
             </Badge>
           </div>
           <DataTable
-            label="Census preview"
+            label="Import preview"
             columns={previewColumns(fields)}
             rows={plan.rows.slice(0, PREVIEW_ROWS)}
             getRowId={(row) => String(row.line)}
-            emptyState="No name on this scroll can enter the census."
+            emptyState="No importable rows in that file."
           />
           {plan.rows.length > PREVIEW_ROWS ? (
             <p className={styles.skipItem}>
@@ -349,18 +348,16 @@ export function ImportSpeakers({
       {ready && !result ? (
         <div className={styles.formActions}>
           <Button variant="primary" loading={pending} onClick={runImport}>
-            Enter {creating + updating} orator
-            {creating + updating === 1 ? '' : 's'}
-          in the census
+            Import {creating + updating} speaker{creating + updating === 1 ? '' : 's'}
           </Button>
-          <span className={styles.fieldHint}>Nothing enters the annals until you press this.</span>
+          <span className={styles.fieldHint}>Nothing is written until you press this.</span>
         </div>
       ) : null}
 
       {result ? (
         <Card>
           <CardHeader>
-            <CardTitle>Entered in the census</CardTitle>
+            <CardTitle>Imported</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.summaryRow}>
@@ -380,7 +377,7 @@ export function ImportSpeakers({
             ))}
             <div className={`${styles.formActions} ${styles.spaced}`}>
               <Button variant="primary" href="/admin/speakers">
-                View the roll of orators
+                View the speaker list
               </Button>
             </div>
           </CardBody>

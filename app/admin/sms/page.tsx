@@ -22,12 +22,6 @@ const STATUS_TONE = {
   failed: 'danger',
 } as const;
 
-const STATUS_LABEL = {
-  queued: 'awaiting courier',
-  sent: 'dispatched',
-  failed: 'failed',
-} as const;
-
 function when(date: Date): string {
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
@@ -70,10 +64,10 @@ export default async function SmsMailboxPage({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Dispatches</p>
-          <h1 className={styles.title}>SMS courier archive</h1>
+          <p className={styles.eyebrow}>Communications</p>
+          <h1 className={styles.title}>SMS</h1>
           <p className={styles.lede}>
-            Every brief dispatch this assembly has sent or attempted for citizens who chose SMS.
+            Every text this event has sent or tried to send, to anyone who chose SMS over email.
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -84,10 +78,11 @@ export default async function SmsMailboxPage({
       <CommsTabs active="sms" eventSlug={event?.slug} />
 
       <div className={styles.row}>
-        <Badge tone={transport === 'log' ? 'info' : 'success'}>courier: {transport}</Badge>
+        <Badge tone={transport === 'log' ? 'info' : 'success'}>transport: {transport}</Badge>
         {transport === 'log' && (
           <span className={styles.subtle}>
-            No swift courier leaves the server. Every SMS a citizen would have received rests here.
+            Nothing leaves the server. Everything a recipient would have received as a text is
+            readable here.
           </span>
         )}
       </div>
@@ -98,8 +93,7 @@ export default async function SmsMailboxPage({
           {messages.length === 0 && (
             <p className={styles.empty}>
               <Inbox size={20} />
-              No SMS dispatches yet. Grant an orator SMS summons, or choose that courier route when
-              writing a dispatch.
+              No texts yet. Turn on SMS alerts for a speaker, or force the channel from Compose.
             </p>
           )}
           {messages.map((message) => (
@@ -114,7 +108,7 @@ export default async function SmsMailboxPage({
               </span>
               <span className={styles.mailSubject}>{message.body}</span>
               <span className={styles.mailBadges}>
-                <Badge tone={STATUS_TONE[message.status]}>{STATUS_LABEL[message.status]}</Badge>
+                <Badge tone={STATUS_TONE[message.status]}>{message.status}</Badge>
                 {message.templateKey && <Badge>{message.templateKey}</Badge>}
               </span>
             </Link>
@@ -125,7 +119,7 @@ export default async function SmsMailboxPage({
           {!selected && (
             <p className={styles.empty}>
               <Inbox size={20} />
-              Choose a dispatch.
+              Choose a message.
             </p>
           )}
 
@@ -138,17 +132,15 @@ export default async function SmsMailboxPage({
                   <span className={styles.mailHeaderValue}>{selected.toPhone}</span>
                   <span className={styles.mailHeaderKey}>From</span>
                   <span className={styles.mailHeaderValue}>{selected.fromPhone}</span>
-                  <span className={styles.mailHeaderKey}>Dispatched</span>
+                  <span className={styles.mailHeaderKey}>Sent</span>
                   <span className={styles.mailHeaderValue}>
                     {selected.sentAt ? when(selected.sentAt) : 'not dispatched'}
                   </span>
-                  <span className={styles.mailHeaderKey}>Dispatch pattern</span>
+                  <span className={styles.mailHeaderKey}>Template</span>
                   <span className={styles.mailHeaderValue}>{selected.templateKey ?? '—'}</span>
-                  <span className={styles.mailHeaderKey}>Standing</span>
+                  <span className={styles.mailHeaderKey}>Status</span>
                   <span className={styles.mailHeaderValue}>
-                    <Badge tone={STATUS_TONE[selected.status]}>
-                      {STATUS_LABEL[selected.status]}
-                    </Badge>
+                    <Badge tone={STATUS_TONE[selected.status]}>{selected.status}</Badge>
                   </span>
                 </div>
               </div>

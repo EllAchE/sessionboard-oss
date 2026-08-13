@@ -8,7 +8,7 @@ import { DeliverablesBoard, type DeliverableWire } from './DeliverablesBoard';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Required scrolls · Cicero' };
+export const metadata = { title: 'Deliverables · Cicero' };
 
 /**
  * `CNT-03`. The outstanding half is the point: a list of what arrived answers no question an
@@ -31,7 +31,7 @@ export default async function DeliverablesPage() {
     submissionId: row.submissionId,
     submissionRef: row.submissionRef,
     submissionTitle: row.submissionTitle,
-    accepts: row.request ? describeAcceptedTypes(row.request) : 'Any kind of record',
+    accepts: row.request ? describeAcceptedTypes(row.request) : 'Any file type',
     maxSizeMb: row.request?.maxSizeMb ?? null,
     lastRemindedAt: row.lastRemindedAt ? row.lastRemindedAt.toISOString() : null,
     files: row.files.map((entry) => ({

@@ -15,24 +15,24 @@ import {
 import styles from './crm.module.css';
 
 const ITEMS = [
-  { href: '/crm', label: 'Census rolls', icon: <Contact size={14} /> },
-  { href: '/crm/pipeline', label: 'Summoning', icon: <Kanban size={14} /> },
-  { href: '/crm/segments', label: 'Cohorts', icon: <Bookmark size={14} /> },
+  { href: '/crm', label: 'Directory', icon: <Contact size={14} /> },
+  { href: '/crm/pipeline', label: 'Pipeline', icon: <Kanban size={14} /> },
+  { href: '/crm/segments', label: 'Segments', icon: <Bookmark size={14} /> },
   {
     href: '/crm/duplicates',
-    label: 'Reconcile rolls',
+    label: 'Duplicates',
     icon: <GitMerge size={14} />,
   },
-  { href: '/crm/campaigns', label: 'Dispatches', icon: <Mail size={14} /> },
+  { href: '/crm/campaigns', label: 'Email', icon: <Mail size={14} /> },
   {
     href: '/crm/dashboard',
-    label: 'Census forum',
+    label: 'CRM dashboard',
     icon: <LayoutDashboard size={14} />,
   },
-  { href: '/crm/import', label: 'Import rolls', icon: <FileUp size={14} /> },
+  { href: '/crm/import', label: 'Import CSV', icon: <FileUp size={14} /> },
   {
     href: '/crm/fields',
-    label: 'Custom inscriptions',
+    label: 'Custom fields',
     icon: <SlidersHorizontal size={14} />,
   },
 ];
@@ -44,7 +44,7 @@ export function CrmNav() {
   ).sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   return (
-    <nav className={styles.nav} aria-label="Orator census">
+    <nav className={styles.nav} aria-label="Speaker CRM">
       {ITEMS.map((item) => (
         <Link
           key={item.href}

@@ -84,7 +84,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     items: [
       { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={16} /> },
       { id: 'sessions', label: 'Sessions', icon: <FileText size={16} />, badge: <Badge tone="accent">8</Badge> },
-      { id: 'speakers', label: 'Orators', icon: <Mic2 size={16} /> },
+      { id: 'speakers', label: 'Speakers', icon: <Mic2 size={16} /> },
       { id: 'schedule', label: 'Schedule', icon: <CalendarDays size={16} /> },
     ],
   },
@@ -93,7 +93,7 @@ const NAV_SECTIONS: SidebarNavSection[] = [
     title: 'Administration',
     items: [
       { id: 'people', label: 'People', icon: <Users size={16} /> },
-      { id: 'settings', label: 'Edicts', icon: <Settings size={16} /> },
+      { id: 'settings', label: 'Settings', icon: <Settings size={16} /> },
       { id: 'archive', label: 'Archive', icon: <Archive size={16} />, disabled: true },
     ],
   },
@@ -147,7 +147,7 @@ function FoundationsSection() {
           </div>
           <div className={styles.typeRow}>
             <span className={styles.typeMeta}>title / 31</span>
-            <span className={styles.title}>Council deliberation</span>
+            <span className={styles.title}>Programme committee review</span>
           </div>
           <div className={styles.typeRow}>
             <span className={styles.typeMeta}>heading / 16</span>
@@ -198,7 +198,7 @@ function CoreSection() {
       <Block title="Button — variants">
         <div className={styles.row}>
           <Button variant="primary">Publish schedule</Button>
-          <Button variant="secondary">Seal draft</Button>
+          <Button variant="secondary">Save draft</Button>
           <Button variant="ghost">Cancel</Button>
           <Button variant="danger">Withdraw</Button>
         </div>
@@ -232,10 +232,10 @@ function CoreSection() {
           <IconButton label="Search">
             <Search size={16} />
           </IconButton>
-          <IconButton label="Edicts" variant="secondary">
+          <IconButton label="Settings" variant="secondary">
             <Settings size={16} />
           </IconButton>
-          <IconButton label="Erase oration" variant="danger">
+          <IconButton label="Delete session" variant="danger">
             <Trash2 size={16} />
           </IconButton>
           <IconButton label="Disabled" disabled>
@@ -284,7 +284,7 @@ function CoreSection() {
       <Block title="Badge">
         <div className={styles.row}>
           <Badge>Neutral</Badge>
-          <Badge tone="info">Before the council</Badge>
+          <Badge tone="info">In review</Badge>
           <Badge tone="success">Accepted</Badge>
           <Badge tone="warning">Awaiting bio</Badge>
           <Badge tone="danger">Declined</Badge>
@@ -322,7 +322,7 @@ function FormsSection() {
   const [notify, setNotify] = useState(true);
 
   return (
-    <Section id="forms" title="Scrolls">
+    <Section id="forms" title="Forms">
       <Block title="Input, Textarea, Select">
         <div className={styles.stateGrid}>
           <div className={styles.field}>
@@ -349,7 +349,7 @@ function FormsSection() {
             <label className={styles.label} htmlFor="ks-small">
               Small
             </label>
-            <Input id="ks-small" inputSize="sm" placeholder="Filter orations…" />
+            <Input id="ks-small" inputSize="sm" placeholder="Filter sessions…" />
           </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="ks-large">
@@ -424,7 +424,7 @@ function FormsSection() {
             Disabled, checked
           </label>
         </div>
-        <div className={styles.row} role="radiogroup" aria-label="Council verdict">
+        <div className={styles.row} role="radiogroup" aria-label="Review decision">
           {(['accepted', 'review', 'declined'] as const).map((option) => (
             <label key={option} className={styles.choice}>
               <Radio
@@ -473,7 +473,7 @@ function NavigationSection({ onOpenCommandMenu }: { onOpenCommandMenu: () => voi
         <Tabs defaultValue="detail">
           <TabsList>
             <TabsTrigger value="detail">Detail</TabsTrigger>
-            <TabsTrigger value="reviews">Judgments</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="locked" disabled>
               Locked
@@ -485,7 +485,7 @@ function NavigationSection({ onOpenCommandMenu }: { onOpenCommandMenu: () => voi
             </p>
           </TabsPanel>
           <TabsPanel value="reviews">
-            <p className={styles.note}>Three judgments, council score 4.2.</p>
+            <p className={styles.note}>Three reviews, average 4.2.</p>
           </TabsPanel>
           <TabsPanel value="history">
             <p className={styles.note}>Submitted, revised twice, accepted.</p>
@@ -533,7 +533,7 @@ function FeedbackSection() {
       <Block title="Dialog">
         <div className={styles.row}>
           <Button variant="secondary" onClick={() => setDialogOpen(true)}>
-            Revise oration
+            Edit session
           </Button>
           <Button variant="danger" onClick={() => setConfirmOpen(true)}>
             Withdraw session
@@ -542,15 +542,15 @@ function FeedbackSection() {
         <Dialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
-          title="Revise oration"
-          description="Changes are proclaimed to the orator immediately."
+          title="Edit session"
+          description="Changes are visible to the speaker immediately."
           footer={
             <>
               <Button variant="ghost" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
               <Button variant="primary" onClick={() => setDialogOpen(false)}>
-                Seal changes
+                Save changes
               </Button>
             </>
           }
@@ -567,7 +567,7 @@ function FeedbackSection() {
           onOpenChange={setConfirmOpen}
           size="sm"
           title="Withdraw this session?"
-          description="A courier informs the orator and the hour returns to the fasti."
+          description="The speaker is notified and the slot returns to the pool."
           footer={
             <>
               <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
@@ -599,7 +599,7 @@ function FeedbackSection() {
           </Button>
           <Button
             onClick={() =>
-              toast({ tone: 'warning', title: 'Orator biography missing', description: 'Three orators have no biography.' })
+              toast({ tone: 'warning', title: 'Speaker bio missing', description: 'Three speakers have no bio.' })
             }
           >
             Warning toast
@@ -619,9 +619,9 @@ function FeedbackSection() {
           </Button>
         </div>
         <div className={styles.stateGrid}>
-          <Toast title="Fasti inscribed" description="Ten orations revised." />
+          <Toast title="Schedule saved" description="Ten sessions updated." />
           <Toast tone="success" title="Session accepted" />
-          <Toast tone="warning" title="Orator biography missing" description="Three orators have no biography." />
+          <Toast tone="warning" title="Speaker bio missing" description="Three speakers have no bio." />
           <Toast
             tone="danger"
             title="Publish failed"
@@ -721,11 +721,11 @@ function DataSection() {
 
       <Block title="DataTable — empty">
         <DataTable
-          label="No orations"
+          label="No sessions"
           columns={columns.slice(0, 3)}
           rows={[]}
           getRowId={(row: SessionRow) => row.id}
-          emptyState="No oration answers this filter."
+          emptyState="No sessions match this filter."
         />
       </Block>
 
@@ -740,7 +740,7 @@ function DataSection() {
             value={score}
             readOnly={false}
             onChange={setScore}
-            label="Your judgment"
+            label="Your review score"
             size="lg"
           />
           <span className={styles.note}>Interactive — arrow keys, Home and End all work. ({score}/5)</span>
@@ -756,11 +756,11 @@ function KitchenSink() {
 
   const commands: CommandMenuItem[] = [
     { id: 'new-session', group: 'Create', label: 'New session', icon: <Plus size={14} />, shortcut: ['⌘', 'N'], onSelect: () => toast({ title: 'New session' }) },
-    { id: 'new-speaker', group: 'Command', label: 'Summon an orator', icon: <Mic2 size={14} />, keywords: ['add', 'person'], onSelect: () => toast({ title: 'Summon an orator' }) },
-    { id: 'go-sessions', group: 'Navigate', label: 'Open the orations', icon: <FileText size={14} />, hint: 'Programme', onSelect: () => toast({ title: 'Orations' }) },
-    { id: 'go-speakers', group: 'Navigate', label: 'Open the census', icon: <Users size={14} />, hint: 'Programme', onSelect: () => toast({ title: 'Orators' }) },
+    { id: 'new-speaker', group: 'Create', label: 'Invite speaker', icon: <Mic2 size={14} />, keywords: ['add', 'person'], onSelect: () => toast({ title: 'Invite speaker' }) },
+    { id: 'go-sessions', group: 'Navigate', label: 'Go to sessions', icon: <FileText size={14} />, hint: 'Programme', onSelect: () => toast({ title: 'Sessions' }) },
+    { id: 'go-speakers', group: 'Navigate', label: 'Go to speakers', icon: <Users size={14} />, hint: 'Programme', onSelect: () => toast({ title: 'Speakers' }) },
     { id: 'go-schedule', group: 'Navigate', label: 'Go to schedule', icon: <CalendarDays size={14} />, hint: 'Programme', onSelect: () => toast({ title: 'Schedule' }) },
-    { id: 'settings', group: 'Navigate', label: 'Read the edicts', icon: <Settings size={14} />, onSelect: () => toast({ title: 'Edicts' }) },
+    { id: 'settings', group: 'Navigate', label: 'Open settings', icon: <Settings size={14} />, onSelect: () => toast({ title: 'Settings' }) },
     { id: 'publish', group: 'Actions', label: 'Publish schedule', keywords: ['release', 'live'], shortcut: ['⌘', '⏎'], onSelect: () => toast({ tone: 'success', title: 'Schedule published' }) },
     { id: 'archive', group: 'Actions', label: 'Archive conference', icon: <Archive size={14} />, disabled: true, onSelect: () => undefined },
   ];

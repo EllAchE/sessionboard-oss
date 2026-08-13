@@ -62,10 +62,10 @@ function Row({
         )}
       </span>
       <span className={styles.listMuted}>
-        {entry.roomId ? (labels.rooms[entry.roomId] ?? 'Unknown chamber') : 'No chamber'}
+        {entry.roomId ? (labels.rooms[entry.roomId] ?? 'Unknown room') : 'No room'}
       </span>
       <span className={styles.listMuted}>
-        {entry.trackId ? (labels.tracks[entry.trackId] ?? 'Unknown theme') : 'No theme'}
+        {entry.trackId ? (labels.tracks[entry.trackId] ?? 'Unknown track') : 'No track'}
       </span>
       <Badge tone={statusTone(entry.status)}>{entry.status}</Badge>
     </div>
@@ -97,7 +97,7 @@ export function ListView({
   }, [entries, timeZone]);
 
   if (entries.length === 0) {
-    return <p className={styles.railEmpty}>No orations have entered the fasti.</p>;
+    return <p className={styles.railEmpty}>No sessions yet.</p>;
   }
 
   return (
@@ -209,7 +209,7 @@ export function GroupedView({
             {group.name} <span className={styles.listMuted}>({group.rows.length})</span>
           </h3>
           {group.rows.length === 0 ? (
-            <p className={styles.listMuted}>This hour of the fasti is empty.</p>
+            <p className={styles.listMuted}>Nothing scheduled here.</p>
           ) : (
             group.rows.map((entry) => (
               <Row
@@ -229,7 +229,7 @@ export function GroupedView({
           className={styles.groupSection}
           data-mobile-active={!showMobilePicker || activeGroupId === 'unassigned'}
         >
-          <h3 className={styles.groupTitle}>Without {groupBy}</h3>
+          <h3 className={styles.groupTitle}>No {groupBy}</h3>
           {unassigned.map((entry) => (
             <Row
               key={entry.id}
@@ -267,8 +267,7 @@ export function ConflictsView({
     return (
       <div className={styles.panel}>
         <p className={styles.railEmpty}>
-          No chamber, theme, or orator clashes trouble these fasti. Back-to-back orations are
-          lawful.
+          No room, track or speaker clashes on this agenda. Back-to-back sessions are not clashes.
         </p>
       </div>
     );
@@ -294,7 +293,7 @@ export function ConflictsView({
               <span className={styles.conflictMessage}>{conflict.message}</span>
               <span className={styles.conflictMeta}>
                 {conflict.kind === 'speaker'
-                  ? 'Orator double-booking'
+                  ? 'Speaker double-booking'
                   : conflict.kind === 'room'
                     ? 'Room double-booking'
                     : 'Track collision'}

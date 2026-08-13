@@ -25,14 +25,14 @@ export function SmsSearch({ initial, eventSlug }: { initial: string; eventSlug?:
       <Input
         inputSize="sm"
         value={value}
-        placeholder="Courier number or dispatch"
-        aria-label="Search the SMS courier archive"
+        placeholder="Phone number or message"
+        aria-label="Search the SMS mailbox"
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') apply();
         }}
       />
-      <button type="button" className={styles.variableChip} aria-label="Search archive" onClick={apply}>
+      <button type="button" className={styles.variableChip} aria-label="Search" onClick={apply}>
         <Search size={14} />
       </button>
     </div>

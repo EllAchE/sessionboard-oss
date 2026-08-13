@@ -5,11 +5,11 @@ import { toContactWire } from '../serialize';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Reconcile the rolls · Cicero' };
+export const metadata = { title: 'Duplicates · Cicero' };
 
 const FIELD_LABELS: Record<string, string> = {
   name: 'Name',
-  email: 'Dispatch address',
+  email: 'Email',
   jobTitle: 'Job title',
   company: 'Company',
   bioMarkdown: 'Bio',

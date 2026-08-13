@@ -6,7 +6,7 @@ import { toContactWire, toFieldWire } from '../serialize';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Census record · Cicero' };
+export const metadata = { title: 'Contact · Cicero' };
 
 export default async function ContactPage({ params }: { params: Promise<{ contactId: string }> }) {
   const actor = await requireCurrentActor();

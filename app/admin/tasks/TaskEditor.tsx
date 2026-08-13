@@ -15,16 +15,16 @@ import styles from './editor.module.css';
  */
 
 const KINDS: Array<{ value: AdminTaskRow['kind']; label: string; hint: string }> = [
-  { value: 'form', label: 'Scroll', hint: 'The orator answers a scroll you have already inscribed.' },
-  { value: 'file_upload', label: 'Archive record', hint: 'The orator files one or more records.' },
-  { value: 'acknowledge', label: 'Oath', hint: 'The orator affirms it. No artifact is lodged.' },
-  { value: 'link', label: 'Road elsewhere', hint: 'The orator visits a page you decree.' },
+  { value: 'form', label: 'Form', hint: 'The speaker answers a form you have already built.' },
+  { value: 'file_upload', label: 'File upload', hint: 'The speaker uploads one or more files.' },
+  { value: 'acknowledge', label: 'Acknowledgement', hint: 'The speaker ticks it off. No artifact.' },
+  { value: 'link', label: 'External link', hint: 'The speaker visits a page you link to.' },
 ];
 
 const AUDIENCES: Array<{ value: AdminTaskRow['audience']; label: string }> = [
-  { value: 'all_participants', label: 'Everyone on the rolls' },
-  { value: 'accepted_participants', label: 'Proclaimed orators only' },
-  { value: 'manual', label: 'Personally appointed orators' },
+  { value: 'all_participants', label: 'Everyone in the event' },
+  { value: 'accepted_participants', label: 'Accepted speakers only' },
+  { value: 'manual', label: 'Selected speakers' },
 ];
 
 const BLANK: TaskFormInput = {
@@ -91,7 +91,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
 
   const save = () => {
     if (!draft.name.trim()) {
-      toast({ title: 'Every duty needs a name', tone: 'warning' });
+      toast({ title: 'A task needs a name', tone: 'warning' });
       return;
     }
     startTransition(async () => {
@@ -102,7 +102,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
         toast({ title: result.message, tone: 'danger' });
         return;
       }
-      toast({ title: editing ? 'Duty sealed in the ledger' : `${draft.name} entered in the ledger`, tone: 'success' });
+      toast({ title: editing ? 'Task saved' : `${draft.name} added`, tone: 'success' });
       onClose();
       router.refresh();
     });
@@ -129,13 +129,13 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
     <Dialog
       open={open}
       onOpenChange={(next) => (next ? undefined : onClose())}
-      title={editing ? `Revise ${editing.name}` : 'Decree a duty'}
-      description="Duties appear in each appointed orator’s atrium and feed the unsettled-work ledger."
+      title={editing ? `Edit ${editing.name}` : 'New task'}
+      description="Tasks appear in every assigned speaker's portal and drive the outstanding-work report."
       footer={
         <>
-          <Button onClick={onClose}>Leave unchanged</Button>
+          <Button onClick={onClose}>Cancel</Button>
           <Button variant="primary" loading={pending} onClick={save}>
-            {editing ? 'Seal revisions' : 'Enter in the ledger'}
+            {editing ? 'Save task' : 'Add task'}
           </Button>
         </>
       }
@@ -146,7 +146,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
           <Input
             autoFocus
             value={draft.name}
-            placeholder="File your presentation scrolls"
+            placeholder="Upload your slides"
             onChange={(event) => set('name', event.target.value)}
           />
         </label>
@@ -156,7 +156,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
           <Textarea
             rows={3}
             value={draft.descriptionMarkdown}
-            placeholder="Markdown. Proclaimed above the duty in the atrium."
+            placeholder="Markdown. Shown above the task in the portal."
             onChange={(event) => set('descriptionMarkdown', event.target.value)}
           />
         </label>
@@ -194,21 +194,21 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
 
         {draft.audience === 'manual' ? (
           <fieldset className={styles.speakerPicker}>
-            <legend className={styles.label}>Selected orators</legend>
+            <legend className={styles.label}>Selected speakers</legend>
             <Input
               type="search"
               value={speakerQuery}
-              aria-label="Search orators"
-              placeholder="Search by name or dispatch address"
+              aria-label="Search speakers"
+              placeholder="Search by name or email"
               onChange={(event) => setSpeakerQuery(event.target.value)}
             />
             <span className={styles.hint}>
-              {draft.participantIds.length} of {speakers.length} orators appointed
+              {draft.participantIds.length} of {speakers.length} speakers selected
             </span>
             <div
               className={styles.speakerList}
               role="group"
-              aria-label="Orators appointed to this duty"
+              aria-label="Speakers assigned this task"
             >
               {visibleSpeakers.map((speaker) => (
                 <label className={styles.speakerOption} key={speaker.id}>
@@ -223,7 +223,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
                 </label>
               ))}
               {visibleSpeakers.length === 0 ? (
-                <span className={styles.speakerEmpty}>No orator answers that search.</span>
+                <span className={styles.speakerEmpty}>No speakers match that search.</span>
               ) : null}
             </div>
           </fieldset>
@@ -231,9 +231,9 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
 
         {draft.kind === 'form' ? (
           <label className={styles.field}>
-            <span className={styles.label}>Scroll</span>
+            <span className={styles.label}>Form</span>
             <Select value={draft.formId} onChange={(event) => set('formId', event.target.value)}>
-              <option value="">Choose a scroll…</option>
+              <option value="">Pick a form…</option>
               {forms.map((entry) => (
                 <option key={entry.id} value={entry.id}>
                   {entry.name}
@@ -242,7 +242,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
             </Select>
             {forms.length === 0 ? (
               <span className={styles.hint}>
-                No scrolls have been inscribed. Visit Scrolls, then return.
+                No forms yet. Build one under Forms, then come back.
               </span>
             ) : null}
           </label>
@@ -250,7 +250,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
 
         {draft.kind === 'link' ? (
           <label className={styles.field}>
-            <span className={styles.label}>Road</span>
+            <span className={styles.label}>Link</span>
             <Input
               type="url"
               value={draft.linkUrl}
@@ -262,7 +262,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
 
         <div className={styles.row}>
           <label className={styles.field}>
-            <span className={styles.label}>Appointed day</span>
+            <span className={styles.label}>Deadline</span>
             <Input
               type="date"
               value={draft.dueAt}
@@ -271,14 +271,13 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>Dispatch reminders this many days before</span>
+            <span className={styles.label}>Remind days before</span>
             <Input
               value={draft.reminderDaysBefore}
               placeholder="7, 1"
               onChange={(event) => set('reminderDaysBefore', event.target.value)}
             />
-            <span className={styles.hint}>Separate days with commas. Leave blank to send no couriers.
-            </span>
+            <span className={styles.hint}>Comma separated. Blank sends no reminders.</span>
           </label>
         </div>
 
@@ -287,7 +286,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
             checked={draft.required}
             onChange={(event) => set('required', event.target.checked)}
           />
-          <span>Required—remains on the orator’s ledger until settled</span>
+          <span>Required — counts against the speaker until it is done</span>
         </label>
       </div>
     </Dialog>

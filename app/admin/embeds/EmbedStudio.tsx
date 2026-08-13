@@ -220,11 +220,11 @@ export function EmbedStudio({
     <div className={dashboard.page}>
       <div className={dashboard.pageHead}>
         <div>
-          <p className={dashboard.eyebrow}>Proclaim beyond the walls</p>
-          <h1 className={dashboard.title}>Public inscriptions</h1>
+          <p className={dashboard.eyebrow}>Reach</p>
+          <h1 className={dashboard.title}>Embeds</h1>
           <p className={dashboard.subtitle}>
-            Carve one inscription into your event website. It reads the living record on every
-            visit, so an amended hour or a new orator appears without carving it again.
+            Paste one snippet into your event website. It renders live data on every visit, so a
+            schedule change or a new speaker appears without re-pasting anything.
           </p>
         </div>
       </div>
@@ -233,9 +233,9 @@ export function EmbedStudio({
         <div className={styles.panel}>
           <Card>
             <CardHeader>
-              <CardTitle>Inscriptions</CardTitle>
+              <CardTitle>Embeds</CardTitle>
               <CardDescription>
-                {publishedSessions} proclaimed orations · {publishedSpeakers} orators visible.
+                {publishedSessions} published sessions · {publishedSpeakers} speakers visible.
               </CardDescription>
             </CardHeader>
             <CardBody>
@@ -273,7 +273,7 @@ export function EmbedStudio({
 
           <Card>
             <CardHeader>
-              <CardTitle>Inscription decree</CardTitle>
+              <CardTitle>Configuration</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.panel}>
@@ -287,7 +287,7 @@ export function EmbedStudio({
                 </label>
 
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>What it proclaims</span>
+                  <span className={styles.fieldLabel}>What it shows</span>
                   <Select
                     selectSize="sm"
                     value={active.view}
@@ -349,13 +349,13 @@ export function EmbedStudio({
                 ) : null}
 
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Road to one orator</span>
+                  <span className={styles.fieldLabel}>Deep-link to one speaker</span>
                   <Select
                     selectSize="sm"
                     value={active.speaker ?? ''}
                     onChange={(e) => update({ speaker: e.target.value || null })}
                   >
-                    <option value="">Proclaim every orator</option>
+                    <option value="">Show everyone</option>
                     {speakers.map((speaker) => (
                       <option key={speaker.id} value={speaker.id}>
                         {speaker.name}
@@ -373,8 +373,8 @@ export function EmbedStudio({
                   {(
                     [
                       ['showPhoto', 'Headshots'],
-                      ['showBio', 'Orator biographies'],
-                      ['showDescription', 'Oration arguments'],
+                      ['showBio', 'Speaker bios'],
+                      ['showDescription', 'Session descriptions'],
                       ['showTrack', 'Track labels'],
                       ['showRoom', 'Room labels'],
                     ] as const
@@ -430,7 +430,7 @@ export function EmbedStudio({
                     </Select>
                   </label>
                   <label className={styles.field}>
-                    <span className={styles.fieldLabel}>Maximum orations</span>
+                    <span className={styles.fieldLabel}>Maximum sessions</span>
                     <Input
                       inputSize="sm"
                       value={active.limit}
@@ -450,9 +450,8 @@ export function EmbedStudio({
             <CardBody>
               <div className={styles.previewHead}>
                 <div>
-                  <CardTitle>Wax preview</CardTitle>
-                  <CardDescription>Exactly what visitors beyond the walls will see.
-                  </CardDescription>
+                  <CardTitle>Live preview</CardTitle>
+                  <CardDescription>Exactly what your visitors will see.</CardDescription>
                 </div>
                 <div className={styles.deviceToggle}>
                   <Button
@@ -479,7 +478,7 @@ export function EmbedStudio({
                   className={styles.frame}
                   data-device={device}
                   src={previewUrl}
-                  title="Inscription preview"
+                  title="Embed preview"
                 />
               </div>
             </CardBody>
@@ -487,7 +486,7 @@ export function EmbedStudio({
 
           <Card>
             <CardHeader>
-              <CardTitle>Set this inscription into your site</CardTitle>
+              <CardTitle>Paste this into your site</CardTitle>
               <CardDescription>
                 Works in any CMS that accepts an HTML block — WordPress, Webflow, Squarespace, a
                 hand-written page.
@@ -495,8 +494,9 @@ export function EmbedStudio({
             </CardHeader>
             <CardBody>
               <p className={styles.note}>
-                This inscription renews itself. Its frame reads the living record on every visit,
-                so an amended oration or newly proclaimed orator appears at once.
+                This embed auto-updates. The iframe renders live data on every page load, so a
+                rescheduled talk or a newly published speaker appears immediately — you never re-paste
+                the snippet.
               </p>
 
               <p className={styles.fieldLabel} style={{ marginTop: 'var(--space-4)' }}>
@@ -543,7 +543,7 @@ export function EmbedStudio({
 
           <Card>
             <CardHeader>
-              <CardTitle>Every form of inscription</CardTitle>
+              <CardTitle>Every widget type</CardTitle>
               <CardDescription>
                 The same filters, styling, and field choices applied to each of the five widgets.
                 Copy the snippet or the shareable URL for whichever ones your site needs.
@@ -585,7 +585,7 @@ export function EmbedStudio({
 
           <Card>
             <CardHeader>
-              <CardTitle>Public Forum pages</CardTitle>
+              <CardTitle>Public pages</CardTitle>
               <CardDescription>
                 The same data as a full page, for organizers without a website to embed into.
               </CardDescription>
@@ -593,7 +593,7 @@ export function EmbedStudio({
             <CardBody>
               <div className={styles.savedList}>
                 {[
-                  ['', 'Assembly forum'],
+                  ['', 'Event home'],
                   ...EMBED_VIEWS.map((view) => [`/${view}`, EMBED_VIEW_LABEL[view]] as const),
                 ].map(([path, label]) => (
                   <div key={label} className={styles.savedRow}>

@@ -29,7 +29,7 @@ const slugParam: JsonSchema = {
   name: 'slug',
   in: 'path',
   required: true,
-  description: "The assembly's URL slug",
+  description: "The event's URL slug",
   schema: { type: 'string' },
 };
 
@@ -43,11 +43,11 @@ function jsonContent(schema: JsonSchema): JsonSchema {
 
 function errors(codes: number[]): Record<string, JsonSchema> {
   const descriptions: Record<number, string> = {
-    401: 'Missing or invalid aqueduct seal',
-    404: 'No such assembly, scroll, or record',
-    409: 'Conflicts with a record already on the rolls',
-    422: 'The petition failed validation',
-    429: 'Too many petitions at once',
+    401: 'Missing or invalid API key',
+    404: 'No such event, form or resource',
+    409: 'Conflicts with an existing record',
+    422: 'The request failed validation',
+    429: 'Rate limited',
   };
 
   return Object.fromEntries(
@@ -78,30 +78,30 @@ export function buildSpec(origin = appUrl()): JsonSchema {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'Cicero Public Aqueduct',
+      title: 'Cicero API',
       version: '1.0.0',
       description: [
-        'Read the public programme of a Cicero assembly and answer an open proclamation for orators.',
+        'Read the public program of a Cicero event, and submit to an open call for speakers.',
         '',
-        'Public reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key',
-        'issued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.',
-        'Keys are hashed at rest and revealed only once, when forged.',
-        'Programme reconciliation writes use the same assembly-scoped Bearer seals and preview by default.',
+        'Public reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key',
+        'issued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.',
+        'Keys are hashed at rest and shown once, at creation.',
+        'Program reconciliation writes use the same event-scoped Bearer keys and preview by default.',
       ].join('\n'),
       license: { name: 'MIT' },
     },
     servers: [{ url: `${origin.replace(/\/+$/, '')}/api/v1` }],
     tags: [
-      { name: 'Assemblies', description: 'Founding charters and public records' },
-      { name: 'Programme', description: 'Orations, orators, and the fasti' },
-      { name: 'Petitions', description: 'The proclamation for orators' },
+      { name: 'Events', description: 'Event metadata' },
+      { name: 'Program', description: 'Sessions, speakers and the agenda' },
+      { name: 'Submissions', description: 'The call for speakers' },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          description: 'An aqueduct key for one assembly. Public reads do not require it.',
+          description: 'A per-event API key. Public read endpoints do not require it.',
         },
       },
       schemas: {
@@ -122,61 +122,61 @@ export function buildSpec(origin = appUrl()): JsonSchema {
     paths: {
       '/events/{slug}': {
         get: {
-          tags: ['Assemblies'],
-          summary: 'Read one assembly charter',
+          tags: ['Events'],
+          summary: 'Fetch one event',
           operationId: 'getEvent',
           parameters: [slugParam],
           responses: {
-            '200': okResponse('The assembly', ref('Event')),
+            '200': okResponse('The event', ref('Event')),
             ...errors([404]),
           },
         },
       },
       '/events/{slug}/sessions': {
         get: {
-          tags: ['Programme'],
-          summary: 'List proclaimed orations',
-          description: 'Proclaimed orations only. Filters accept a theme or chamber name, or its id.',
+          tags: ['Program'],
+          summary: 'List sessions',
+          description: 'Published sessions only. Filters accept a track or room name, or its id.',
           operationId: 'listSessions',
           parameters: [slugParam, ...toParameters(sessionListQuery, 'query')],
           responses: {
-            '200': okResponse('Matching orations', listOf('Session')),
+            '200': okResponse('Matching sessions', listOf('Session')),
             ...errors([404, 422]),
           },
         },
       },
       '/events/{slug}/speakers': {
         get: {
-          tags: ['Programme'],
-          summary: 'List orators',
-          description: 'Every orator named on an accepted petition. Dispatch addresses are withheld.',
+          tags: ['Program'],
+          summary: 'List speakers',
+          description: 'Everyone on an accepted submission. Emails are not included.',
           operationId: 'listSpeakers',
           parameters: [slugParam],
           responses: {
-            '200': okResponse('The orators', listOf('Speaker')),
+            '200': okResponse('The speakers', listOf('Speaker')),
             ...errors([404]),
           },
         },
       },
       '/events/{slug}/agenda': {
         get: {
-          tags: ['Programme'],
-          summary: 'Read the fasti',
-          description: "The proclaimed fasti grouped by day in the event's timezone.",
+          tags: ['Program'],
+          summary: 'Fetch the agenda',
+          description: "Published sessions grouped by day in the event's timezone.",
           operationId: 'getAgenda',
           parameters: [slugParam],
           responses: {
-            '200': okResponse('The fasti', ref('Agenda')),
+            '200': okResponse('The agenda', ref('Agenda')),
             ...errors([404]),
           },
         },
       },
       '/events/{slug}/program/reconcile': {
         post: {
-          tags: ['Programme'],
-          summary: 'Preview or apply an Accelevents programme collection',
+          tags: ['Program'],
+          summary: 'Preview or apply an Accelevents program collection',
           description:
-            'Requires an aqueduct key issued for this assembly. `apply: false` previews without altering the rolls. `merge` inscribes or updates the listed orations and honors explicit `deleteExternalIds`. `replace` also reports source-managed orations missing from the collection; erasing those inscriptions requires `confirmDeleteMissing: "DELETE_MISSING_SESSIONS"`. Any error in one record prevents the entire petition from being enacted.',
+            'Requires an API key issued for this event. `apply: false` is a side-effect-free preview. `merge` upserts listed sessions and honors explicit `deleteExternalIds`. `replace` also reports source-managed sessions missing from the collection; applying those deletes requires `confirmDeleteMissing: "DELETE_MISSING_SESSIONS"`. Any per-record error prevents the entire request from being applied.',
           operationId: 'reconcileProgram',
           security: [{ bearerAuth: [] }],
           parameters: [slugParam],
@@ -185,7 +185,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
             content: jsonContent(ref('ProgramReconcileRequest')),
           },
           responses: {
-            '200': okResponse('The preview or enacted report', {
+            '200': okResponse('The preview or apply report', {
               type: 'object',
               properties: { data: ref('ProgramReconcileResult') },
               required: ['data'],
@@ -196,24 +196,24 @@ export function buildSpec(origin = appUrl()): JsonSchema {
       },
       '/events/{slug}/submissions': {
         get: {
-          tags: ['Petitions'],
-          summary: 'List petitions',
-          description: 'Requires an aqueduct key issued for this assembly.',
+          tags: ['Submissions'],
+          summary: 'List submissions',
+          description: 'Requires an API key issued for this event.',
           operationId: 'listSubmissions',
           security: [{ bearerAuth: [] }],
           parameters: [slugParam, ...toParameters(submissionListQuery, 'query')],
           responses: {
-            '200': okResponse('Matching petitions', listOf('Submission')),
+            '200': okResponse('Matching submissions', listOf('Submission')),
             ...errors([401, 404, 422]),
           },
         },
       },
       '/events/{slug}/forms/{formId}/submissions': {
         post: {
-          tags: ['Petitions'],
-          summary: 'Answer a proclamation for orators',
+          tags: ['Submissions'],
+          summary: 'Submit to a call for speakers',
           description:
-            'No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link. This POST is non-idempotent: a retry may create another petition when the scroll allows multiple petitions per citizen.',
+            'No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.',
           operationId: 'createSubmission',
           parameters: [
             slugParam,
@@ -221,7 +221,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               name: 'formId',
               in: 'path',
               required: true,
-              description: "The scroll's id or slug",
+              description: "The form's id or slug",
               schema: { type: 'string' },
             },
           ],
@@ -230,17 +230,17 @@ export function buildSpec(origin = appUrl()): JsonSchema {
             content: jsonContent(ref('NewSubmission')),
           },
           responses: {
-            '201': okResponse('The petition', ref('NewSubmissionResult')),
+            '201': okResponse('The submission', ref('NewSubmissionResult')),
             ...errors([404, 409, 422]),
           },
         },
       },
       '/events/{slug}/integrations/accelevents/program': {
         post: {
-          tags: ['Programme'],
-          summary: 'Preview or command the fixture Accelevents programme crossing',
+          tags: ['Program'],
+          summary: 'Preview or apply the fixture Accelevents program sync',
           description:
-            'A fixture-province capability for deterministic demonstrations. It reconciles the proclaimed assembly, orations, and accepted orators with inscribe, revise, erase, and unchanged results. Live Accelevents remains limited to the documented accepted-orator crossing.',
+            'Bonus fixture capability for deterministic demos. It reconciles the published event, sessions and accepted speakers with create, update, delete and no-op results. Live Accelevents remains limited to the documented accepted-speaker push.',
           operationId: 'syncAcceleventsProgramFixture',
           security: [{ bearerAuth: [] }],
           parameters: [slugParam],
@@ -250,7 +250,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           },
           responses: {
             '200': okResponse(
-              'The reconciliation plan or commanded result',
+              'The reconciliation plan or applied result',
               ref('AcceleventsProgramSyncResult'),
             ),
             ...errors([401, 409, 422]),
@@ -259,7 +259,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
       },
       '/openapi.json': {
         get: {
-          tags: ['Assemblies'],
+          tags: ['Events'],
           summary: 'This document',
           operationId: 'getOpenApi',
           responses: {

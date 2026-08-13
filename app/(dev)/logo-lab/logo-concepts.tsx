@@ -160,3 +160,4 @@ export const LOGO_CONCEPTS = [
     Mark: AssemblyMark,
   },
 ] as const;
+

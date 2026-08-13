@@ -10,13 +10,13 @@
 export type FileKind = 'slides' | 'document' | 'image' | 'video' | 'audio' | 'archive' | 'other';
 
 export const FILE_KINDS: Array<{ id: FileKind; label: string }> = [
-  { id: 'slides', label: 'Presentation scrolls' },
-  { id: 'document', label: 'Written scrolls' },
-  { id: 'image', label: 'Portraits and images' },
-  { id: 'video', label: 'Moving pictures' },
-  { id: 'audio', label: 'Recorded voices' },
-  { id: 'archive', label: 'Bound archives' },
-  { id: 'other', label: 'Other records' },
+  { id: 'slides', label: 'Slides' },
+  { id: 'document', label: 'Documents' },
+  { id: 'image', label: 'Images' },
+  { id: 'video', label: 'Video' },
+  { id: 'audio', label: 'Audio' },
+  { id: 'archive', label: 'Archives' },
+  { id: 'other', label: 'Other' },
 ];
 
 const KIND_LABEL = new Map(FILE_KINDS.map((entry) => [entry.id, entry.label]));

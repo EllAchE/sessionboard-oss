@@ -10,8 +10,8 @@ const VIEWS: Array<{
   label: string;
   icon: typeof List;
 }> = [
-  { id: 'list', label: 'Roll', icon: List },
-  { id: 'gallery', label: 'Portraits', icon: LayoutGrid },
+  { id: 'list', label: 'List', icon: List },
+  { id: 'gallery', label: 'Gallery', icon: LayoutGrid },
 ];
 
 export function SpeakerViewToggle({
@@ -24,7 +24,7 @@ export function SpeakerViewToggle({
   search: Search;
 }) {
   return (
-    <nav className={styles.viewToggle} aria-label="Orator view">
+    <nav className={styles.viewToggle} aria-label="Speaker view">
       {VIEWS.map((view) => {
         const Icon = view.icon;
         return (

@@ -4,7 +4,7 @@ import { currentActor } from '@/lib/auth';
 import { createEventAction } from '@/app/admin/shell-actions';
 import styles from './new-event.module.css';
 
-export const metadata = { title: 'Convene an event · Cicero' };
+export const metadata = { title: 'New event · Cicero' };
 
 export default async function NewEventPage() {
   const actor = await currentActor();
@@ -14,23 +14,22 @@ export default async function NewEventPage() {
     <main className={styles.root}>
       <Card className={styles.card}>
         <CardHeader>
-          <CardTitle>Convene a new event</CardTitle>
+          <CardTitle>Create an event</CardTitle>
         </CardHeader>
         <CardBody>
           <form action={createEventAction} className={styles.form}>
             <label className={styles.field}>
               <span className={styles.label}>Name</span>
-              <Input name="name" required placeholder="Nova Roma Systems Assembly" />
+              <Input name="name" required placeholder="Cascadia Systems Conf 2026" />
             </label>
             <label className={styles.field}>
               <span className={styles.label}>URL</span>
-              <Input name="slug" placeholder="nova-roma-2026" />
-              <span className={styles.hint}>Leave blank and Cicero will inscribe one from the name.
-              </span>
+              <Input name="slug" placeholder="cascadia-2026" />
+              <span className={styles.hint}>Leave blank to derive it from the name.</span>
             </label>
             <label className={styles.field}>
               <span className={styles.label}>Tagline</span>
-              <Input name="tagline" placeholder="Two days of argument, craft, and engineering" />
+              <Input name="tagline" placeholder="Two days on the systems we actually run" />
             </label>
             <div className={styles.row}>
               <label className={styles.field}>
@@ -47,7 +46,7 @@ export default async function NewEventPage() {
               <Input name="timezone" defaultValue="America/Los_Angeles" />
             </label>
             <Button type="submit" variant="primary">
-              Convene event
+              Create event
             </Button>
           </form>
         </CardBody>

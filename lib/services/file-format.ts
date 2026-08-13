@@ -16,7 +16,7 @@ export function acceptAttribute(spec: AcceptedTypesSpec): string | undefined {
 
 export function describeAcceptedTypes(spec: AcceptedTypesSpec): string {
   const types = spec.acceptedTypes.filter((entry) => entry.trim().length > 0);
-  return types.length === 0 ? 'Any kind of record' : types.join(', ');
+  return types.length === 0 ? 'Any file type' : types.join(', ');
 }
 
 export function formatBytes(bytes: number): string {

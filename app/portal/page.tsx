@@ -4,7 +4,7 @@ import { currentActor } from '@/lib/auth';
 import { listEventsForUser } from '@/lib/services/events';
 import styles from './portal.module.css';
 
-export const metadata = { title: 'Orator atrium · Cicero' };
+export const metadata = { title: 'Speaker portal · Cicero' };
 
 /**
  * The portal lives under an event slug, so this exists for the speaker who bookmarks `/portal` or
@@ -20,11 +20,11 @@ export default async function PortalIndexPage() {
   return (
     <main className={styles.main}>
       <div className={styles.pageHead}>
-        <h1 className={styles.pageTitle}>Your private atria</h1>
+        <h1 className={styles.pageTitle}>Your speaker portals</h1>
         <p className={styles.pageLead}>
           {events.length === 0
-            ? 'No assembly has entered your name in its rolls. Open a magistrate’s sealed link or ask to be summoned.'
-            : 'Choose the assembly before which you will speak.'}
+            ? 'You are not on any events yet. Open the link an organizer sent you, or ask them to add you.'
+            : 'Pick the event you are speaking at.'}
         </p>
       </div>
 
@@ -32,7 +32,7 @@ export default async function PortalIndexPage() {
         {events.map((event) => (
           <Link key={event.id} href={`/portal/${event.slug}`} className={styles.typeCard}>
             <div className={styles.typeLabel}>{event.name}</div>
-            <div className={styles.typeDescription}>{event.tagline ?? 'Enter your atrium'}</div>
+            <div className={styles.typeDescription}>{event.tagline ?? 'Open your portal'}</div>
           </Link>
         ))}
       </div>

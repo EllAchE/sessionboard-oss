@@ -112,10 +112,10 @@ const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | '
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
-  submitted: 'Before the council',
-  under_review: 'Under deliberation',
-  accepted: 'Proclaimed',
-  waitlisted: 'Held in reserve',
+  submitted: 'Submitted',
+  under_review: 'In review',
+  accepted: 'Accepted',
+  waitlisted: 'Waitlist',
   declined: 'Declined',
   withdrawn: 'Withdrawn',
 };
@@ -176,7 +176,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
   const save = useCallback(
     (complete: boolean) => {
       if (!roundId) {
-        setError('This assembly has no council yet. Convene one under Councils.');
+        setError('This event has no review round yet. Create one under Rounds.');
         return;
       }
       setError(null);
@@ -262,7 +262,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
           setError(result.message);
           return;
         }
-        setMessage(assigned ? 'Councillor summoned.' : 'Councillor released.');
+        setMessage(assigned ? 'Reviewer assigned.' : 'Reviewer unassigned.');
         router.refresh();
       });
     },
@@ -431,7 +431,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Argument</CardTitle>
+              <CardTitle>Abstract</CardTitle>
             </CardHeader>
             <CardBody>
               {props.descriptionHtml ? (
@@ -440,7 +440,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
                   dangerouslySetInnerHTML={{ __html: props.descriptionHtml }}
                 />
               ) : (
-                <p className={styles.muted}>No written argument was provided.</p>
+                <p className={styles.muted}>No description was provided.</p>
               )}
             </CardBody>
           </Card>
@@ -448,7 +448,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
           {props.answers.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>Answers on the scroll</CardTitle>
+                <CardTitle>Form answers</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className={styles.answerList}>
@@ -466,7 +466,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
           {props.speakers.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>Orators</CardTitle>
+                <CardTitle>Speakers</CardTitle>
               </CardHeader>
               <CardBody>
                 {props.speakers.map((speaker) => (
@@ -498,7 +498,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
           {props.canDecide && props.round ? (
             <Card>
               <CardHeader>
-                <CardTitle>Councillor assignments</CardTitle>
+                <CardTitle>Reviewer assignments</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className={styles.stack}>
@@ -522,11 +522,11 @@ export function ReviewDetail(props: ReviewDetailProps) {
                   })}
                   {props.availableReviewers.length === 0 ? (
                     <p className={styles.muted}>
-                      Summon councillors from the Councils page before entrusting this petition.
+                      Invite reviewers from the Rounds page before assigning this submission.
                     </p>
                   ) : null}
                   <p className={styles.aiNote}>
-                    Appointed councillors see this petition in {props.round.name}.
+                    Checked reviewers see this submission in their queue for {props.round.name}.
                   </p>
                 </div>
               </CardBody>
@@ -535,7 +535,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Your judgment</CardTitle>
+              <CardTitle>Your scorecard</CardTitle>
             </CardHeader>
             <CardBody>
               {props.round ? (
@@ -544,7 +544,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
                   {props.round.blindUntilClose ? ' · blind' : ''}
                 </p>
               ) : (
-                <p className={styles.muted}>No council has yet been convened.</p>
+                <p className={styles.muted}>No review round exists yet.</p>
               )}
 
               {criteria.map((criterion, index) => (
@@ -581,13 +581,13 @@ export function ReviewDetail(props: ReviewDetailProps) {
 
               <div className={styles.field}>
                 <label className={styles.fieldLabel} htmlFor="review-comment">
-                  Counsel to the council
+                  Comment
                 </label>
                 <Textarea
                   id="review-comment"
                   rows={4}
                   value={comment}
-                  placeholder="What the council should weigh before its verdict."
+                  placeholder="What the committee should know."
                   onChange={(event) => {
                     setComment(event.target.value);
                     setDirty(true);
@@ -597,26 +597,26 @@ export function ReviewDetail(props: ReviewDetailProps) {
 
               <div className={styles.inlineStack}>
                 <Button size="sm" loading={pending} onClick={() => save(false)}>
-                  Set judgment aside
+                  Save draft
                 </Button>
                 <Button size="sm" variant="primary" loading={pending} onClick={() => save(true)}>
-                  {submitted ? 'Revise judgment' : 'Cast judgment'}
+                  {submitted ? 'Update review' : 'Submit review'}
                 </Button>
-                {dirty ? <span className={styles.aiNote}>Unrecorded revisions</span> : null}
+                {dirty ? <span className={styles.aiNote}>Unsaved changes</span> : null}
               </div>
 
               <div className={styles.scoreSummary}>
                 <span className={styles.bigScore}>
                   {savedAverage === null ? '—' : savedAverage.toFixed(1)}
                 </span>
-                <span className={styles.scoreOutOf}>your recorded judgment, out of 5</span>
+                <span className={styles.scoreOutOf}>your saved average, out of 5</span>
               </div>
             </CardBody>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Voice of the council</CardTitle>
+              <CardTitle>Aggregate</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.scoreSummary}>
@@ -624,16 +624,14 @@ export function ReviewDetail(props: ReviewDetailProps) {
                   {props.summary.average === null ? '—' : props.summary.average.toFixed(1)}
                 </span>
                 <span className={styles.scoreOutOf}>
-                  out of 5 · {props.summary.completedCount}/{props.summary.assignedCount} judgments
-                  cast
+                  out of 5 · {props.summary.completedCount}/{props.summary.assignedCount} reviews in
                 </span>
               </div>
               {props.summary.average !== null ? (
-                <ScoreStars value={props.summary.average} max={5} label="Council score" />
+                <ScoreStars value={props.summary.average} max={5} label="Aggregate score" />
               ) : null}
               {props.summary.spread !== null ? (
-                <p className={styles.aiNote}>Spread {props.summary.spread.toFixed(1)} across councillors
-                </p>
+                <p className={styles.aiNote}>Spread {props.summary.spread.toFixed(1)} across reviewers</p>
               ) : null}
 
               {peersVisible ? (
@@ -655,19 +653,17 @@ export function ReviewDetail(props: ReviewDetailProps) {
                     </div>
                   ))
                 ) : (
-                  <p className={styles.muted}>No other councillors are assigned to this petition.
-                  </p>
+                  <p className={styles.muted}>No other reviewers on this submission.</p>
                 )
               ) : (
                 <p className={styles.notice}>
                   {peers.length > 0
-                    ? `${peers.length} other councillor${peers.length === 1 ? '' : 's'} appointed. Cast your judgment to unseal theirs.`
-                    : 'Cast your judgment to see the other councillors.'}
+                    ? `${peers.length} other reviewer${peers.length === 1 ? '' : 's'} assigned. Submit your review to see their scores.`
+                    : 'Submit your review to see other reviewers.'}
                 </p>
               )}
               {props.blinded ? (
-                <p className={styles.aiNote}>The other ballots remain sealed until this council closes.
-                </p>
+                <p className={styles.aiNote}>This round is blind until it closes.</p>
               ) : null}
             </CardBody>
           </Card>
@@ -716,7 +712,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
                           return next;
                         });
                         setDirty(true);
-                        setMessage('Copied into your tablet. Nothing enters the annals until you lodge it.');
+                        setMessage('Copied into your scorecard. Nothing is saved until you submit.');
                       }}
                     >
                       Copy into my scorecard
@@ -735,7 +731,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
           {props.canDecide ? (
             <Card>
               <CardHeader>
-                <CardTitle>Final decree</CardTitle>
+                <CardTitle>Decision</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className={styles.inlineStack}>
@@ -792,10 +788,10 @@ export function ReviewDetail(props: ReviewDetailProps) {
             <CardBody>
               <div className={styles.keyLegend}>
                 <span className={styles.keyRow}>
-                  <Kbd>j</Kbd> next petition
+                  <Kbd>j</Kbd> next submission
                 </span>
                 <span className={styles.keyRow}>
-                  <Kbd>k</Kbd> previous petition
+                  <Kbd>k</Kbd> previous submission
                 </span>
                 <span className={styles.keyRow}>
                   <Kbd>1</Kbd>–<Kbd>9</Kbd> score, then advance
@@ -805,10 +801,10 @@ export function ReviewDetail(props: ReviewDetailProps) {
                   <Kbd>↓</Kbd> pick criterion
                 </span>
                 <span className={styles.keyRow}>
-                  <Kbd>s</Kbd> set judgment aside
+                  <Kbd>s</Kbd> save draft
                 </span>
                 <span className={styles.keyRow}>
-                  <Kbd>c</Kbd> cast judgment
+                  <Kbd>c</Kbd> submit review
                 </span>
                 {props.canDecide ? (
                   <>
@@ -824,7 +820,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
                   </>
                 ) : null}
                 <span className={styles.keyRow}>
-                  <Kbd>u</Kbd> back to the rolls
+                  <Kbd>u</Kbd> back to queue
                 </span>
               </div>
             </CardBody>

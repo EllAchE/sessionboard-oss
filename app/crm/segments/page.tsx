@@ -4,7 +4,7 @@ import { SegmentList } from './SegmentList';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Cohorts · Cicero' };
+export const metadata = { title: 'Segments · Cicero' };
 
 const CRITERIA_LABELS: Record<string, string> = {
   search: 'matching',
@@ -24,7 +24,7 @@ function describe(raw: Record<string, unknown>): string {
     })
     .filter((part): part is string => part !== null);
   for (const [key, value] of Object.entries(filters.custom ?? {})) parts.push(`${key} ${value}`);
-  return parts.length === 0 ? 'No census criteria' : parts.join(' · ');
+  return parts.length === 0 ? 'No filter criteria' : parts.join(' · ');
 }
 
 export default async function SegmentsPage() {

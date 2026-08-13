@@ -110,10 +110,10 @@ export function TemplateManager({
     <>
       <div className={styles.row}>
         <Button iconLeft={<Plus size={15} />} onClick={() => setDraft({ ...BLANK })}>
-          New dispatch pattern
+          New template
         </Button>
         <Button variant="ghost" iconLeft={<RotateCcw size={15} />} onClick={restore} loading={pending}>
-          Restore the house patterns
+          Restore missing defaults
         </Button>
       </div>
 
@@ -135,7 +135,7 @@ export function TemplateManager({
                 <Badge tone={template.enabled ? 'success' : 'neutral'}>
                   {template.enabled ? 'Active' : 'Off'}
                 </Badge>
-                {template.attachIcs && <Badge tone="info">Calendar summons</Badge>}
+                {template.attachIcs && <Badge tone="info">Calendar invite</Badge>}
               </div>
               <p className={styles.subtle} style={{ marginTop: 'var(--space-3)' }}>
                 {template.subject}
@@ -143,7 +143,7 @@ export function TemplateManager({
               <p className={styles.templateBody}>{template.bodyMarkdown}</p>
               <div className={styles.row} style={{ marginTop: 'var(--space-4)' }}>
                 <Button size="sm" onClick={() => setDraft({ ...template, isNew: false })}>
-                  Revise
+                  Edit
                 </Button>
                 <Button
                   size="sm"
@@ -151,7 +151,7 @@ export function TemplateManager({
                   iconLeft={<Trash2 size={14} />}
                   onClick={() => remove(template.id)}
                 >
-                  Erase
+                  Delete
                 </Button>
               </div>
             </CardBody>
@@ -165,15 +165,15 @@ export function TemplateManager({
           if (!open) setDraft(null);
         }}
         size="lg"
-        title={draft?.isNew ? 'Inscribe a dispatch template' : `Revise ${draft?.name ?? ''}`}
-        description="Bodies are markdown. Living inscriptions resolve for each recipient at dispatch."
+        title={draft?.isNew ? 'New template' : `Edit ${draft?.name ?? ''}`}
+        description="Bodies are markdown. Merge fields resolve per recipient at send time."
         footer={
           <>
             <Button variant="ghost" onClick={() => setDraft(null)}>
               Cancel
             </Button>
             <Button variant="primary" iconLeft={<Save size={15} />} onClick={submit} loading={pending}>
-              Seal pattern
+              Save
             </Button>
           </>
         }
@@ -230,17 +230,17 @@ export function TemplateManager({
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="templateSmsBody">
-                SMS dispatch — plain text
+                SMS body — plain text
               </label>
               <Textarea
                 id="templateSmsBody"
                 value={draft.smsBody ?? ''}
                 onChange={(e) => setDraft({ ...draft, smsBody: e.target.value })}
-                placeholder="Leave blank to derive a shortened tablet from the email dispatch above."
+                placeholder="Leave blank to fall back to a trimmed version of the email body above."
               />
               <span className={styles.subtle}>
-                Sent to every citizen who prefers SMS. If empty, Cicero strips and shortens the
-                email dispatch above.
+                Sent to anyone who prefers text over email. Empty falls back to the email body,
+                stripped of markdown and truncated.
               </span>
             </div>
 
@@ -248,22 +248,22 @@ export function TemplateManager({
               <Switch
                 checked={draft.enabled}
                 onCheckedChange={(enabled) => setDraft({ ...draft, enabled })}
-                aria-label="Dispatch template is in circulation"
+                aria-label="Template is active"
               />
-              <span className={styles.subtle}>Active—automatic couriers use this pattern</span>
+              <span className={styles.subtle}>Active — triggered sends use this template</span>
             </div>
 
             <div className={styles.row}>
               <Switch
                 checked={draft.attachIcs}
                 onCheckedChange={(attachIcs) => setDraft({ ...draft, attachIcs })}
-                aria-label="Attach a summons for the personal fasti"
+                aria-label="Attach a calendar invitation"
               />
-              <span className={styles.subtle}>Carries a calendar summons</span>
+              <span className={styles.subtle}>Carries the calendar invitation</span>
             </div>
 
             <div className={styles.field}>
-              <span className={styles.label}>Available living inscriptions</span>
+              <span className={styles.label}>Available merge fields</span>
               <div className={styles.variables}>
                 {variables.map((variable) => (
                   <span

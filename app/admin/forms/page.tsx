@@ -4,7 +4,7 @@ import { FormsIndex } from './FormsIndex';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Scrolls · Cicero' };
+export const metadata = { title: 'Forms · Cicero' };
 
 export default async function FormsPage() {
   const ctx = await formManageContext();

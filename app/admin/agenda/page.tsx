@@ -11,7 +11,7 @@ import { loadAgenda, toWire } from './data';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Fasti · Cicero' };
+export const metadata = { title: 'Agenda · Cicero' };
 
 export default async function AgendaPage() {
   const ctx = await currentEventContext();

@@ -50,9 +50,9 @@ export type RevisionWire = {
  * the database, and a value import from a client component drags `pg` into the browser bundle.
  */
 const APPROVAL_OPTIONS: Array<{ value: ContentApprovalStatus; label: string }> = [
-  { value: 'in_review', label: 'Before the censors' },
-  { value: 'approved', label: 'Cleared for proclamation' },
-  { value: 'changes_requested', label: 'Revision decreed' },
+  { value: 'in_review', label: 'In review' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'changes_requested', label: 'Changes requested' },
 ];
 
 const APPROVAL_TONE: Record<ContentApprovalStatus, 'info' | 'success' | 'warning'> = {
@@ -112,12 +112,12 @@ export function ContentHistory({
     start(async () => {
       const result = await saveContentAction(selected.kind, selected.id, draft);
       if (!result.ok) {
-        toast({ title: 'Not entered in the annals', description: result.message, tone: 'danger' });
+        toast({ title: 'Not saved', description: result.message, tone: 'danger' });
         return;
       }
       toast({
-        title: 'Entered in the annals',
-        description: 'The earlier wording remains in the annals below.',
+        title: 'Saved',
+        description: 'The previous wording is in the history below.',
         tone: 'success',
       });
       router.refresh();
@@ -135,8 +135,8 @@ export function ContentHistory({
         title: `${entity.label} is ${approvalLabel(status).toLowerCase()}`,
         description:
           status === 'approved'
-            ? 'It appears in the public fasti.'
-            : 'It remains outside the public fasti until approved.',
+            ? 'It appears on the public agenda.'
+            : 'It is held back from the public agenda until it is approved.',
         tone: status === 'approved' ? 'success' : 'info',
       });
       router.refresh();
@@ -152,7 +152,7 @@ export function ContentHistory({
       }
       toast({
         title: 'Restored',
-        description: 'This restoration enters the annals too, so it may be reversed.',
+        description: 'The restore is itself in the history, so it can be undone.',
         tone: 'success',
       });
       router.refresh();
@@ -165,11 +165,11 @@ export function ContentHistory({
 
       <header className={queue.header}>
         <div className={queue.headings}>
-          <span className={queue.eyebrow}>The annals</span>
-          <h1 className={queue.title}>Orations &amp; orators</h1>
+          <span className={queue.eyebrow}>Content</span>
+          <h1 className={queue.title}>Sessions and speakers</h1>
           <p className={queue.subtitle}>
-            Revise the inscriptions, decree what may enter the public fasti, and restore any earlier
-            wording from the annals.
+            Edit the copy, set what is cleared for the public agenda, and roll back anything that
+            went wrong.
           </p>
         </div>
       </header>
@@ -178,7 +178,7 @@ export function ContentHistory({
         <div className={styles.stack}>
           <Card>
             <CardHeader>
-              <CardTitle>Decree &amp; inscription</CardTitle>
+              <CardTitle>Approval and content</CardTitle>
             </CardHeader>
             <CardBody>
               <ul className={styles.entityList}>
@@ -194,7 +194,7 @@ export function ContentHistory({
                       onClick={() => setSelectedId(entity.id)}
                     >
                       <span className={styles.entityName}>{entity.label}</span>
-                      <span className={styles.faint}>{entity.secondary ?? 'Orator'}</span>
+                      <span className={styles.faint}>{entity.secondary ?? 'Speaker'}</span>
                     </button>
                     {entity.contentStatus ? (
                       <>
@@ -222,8 +222,8 @@ export function ContentHistory({
                 ))}
               </ul>
               <p className={queue.hint}>
-                Only approved orations reach the public fasti and inscriptions. Every decree is
-                attributed in the annals.
+                Only approved sessions reach the public agenda and embeds. Every change to this
+                control is attributed in the history.
               </p>
             </CardBody>
           </Card>
@@ -231,7 +231,7 @@ export function ContentHistory({
           {selected && (
             <Card>
               <CardHeader>
-                <CardTitle>Revise {selected.label}</CardTitle>
+                <CardTitle>Edit {selected.label}</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className={styles.stack}>
@@ -263,10 +263,10 @@ export function ContentHistory({
                   ))}
                   <div className={styles.inlineRow}>
                     <Button variant="primary" size="sm" disabled={pending} onClick={save}>
-                      {pending ? 'Inscribing…' : 'Enter revisions'}
+                      {pending ? 'Saving…' : 'Save changes'}
                     </Button>
                     <span className={styles.faint}>
-                      The earlier wording remains restorable from the annals.
+                      The version before this save stays restorable.
                     </span>
                   </div>
                 </div>
@@ -279,14 +279,14 @@ export function ContentHistory({
           <CardHeader>
             <CardTitle>
               <History size={15} aria-hidden />{' '}
-              {selected ? `Annals of ${selected.label}` : 'Annals of revision'}
+              {selected ? `History of ${selected.label}` : 'Change history'}
             </CardTitle>
           </CardHeader>
           <CardBody>
             {shown.length === 0 ? (
               <p className={queue.muted}>
-                No revision has entered the annals. Every inscription, decree, and restoration will
-                appear here with its author and hour.
+                Nothing has been edited yet. Every save, approval change and restore is recorded here
+                with who made it and when.
               </p>
             ) : (
               <ul className={styles.rowList}>

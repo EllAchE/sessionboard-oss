@@ -4,7 +4,7 @@ import styles from '../../portal.module.css';
 import { portalSession } from '../context';
 import { TaskCard } from './TaskCard';
 
-export const metadata = { title: 'Duties · Orator atrium' };
+export const metadata = { title: 'Tasks · Speaker portal' };
 
 /** `S-6`, `S-7`, `S-14`–`S-19`. Outstanding first, overdue at the very top. */
 export default async function TasksPage({ params }: { params: Promise<{ eventSlug: string }> }) {
@@ -19,10 +19,10 @@ export default async function TasksPage({ params }: { params: Promise<{ eventSlu
   return (
     <div className={styles.stack}>
       <div className={styles.pageHead}>
-        <h1 className={styles.pageTitle}>Duties</h1>
+        <h1 className={styles.pageTitle}>Tasks</h1>
         <p className={styles.pageLead}>
           {summary.outstanding === 0
-            ? 'The ledger is clear. Any later decree from the organizers will appear here.'
+            ? 'Nothing outstanding. Anything the organizers add later will appear here.'
             : `${summary.outstanding} outstanding${summary.overdue > 0 ? `, ${summary.overdue} overdue` : ''}${
                 summary.nextDueAt ? ` · next deadline ${formatDate(summary.nextDueAt, event.timezone)}` : ''
               }.`}
@@ -31,14 +31,14 @@ export default async function TasksPage({ params }: { params: Promise<{ eventSlu
 
       {tasks.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>No duties decreed</div>
-          <p>The {event.name} organizers have not placed any duty before you.</p>
+          <div className={styles.emptyTitle}>No tasks yet</div>
+          <p>The {event.name} organizers have not asked you for anything yet.</p>
         </div>
       ) : (
         <>
           {outstanding.length > 0 && (
             <section className={styles.stackTight}>
-              <h2 className={styles.sectionTitle}>To be settled</h2>
+              <h2 className={styles.sectionTitle}>To do</h2>
               {outstanding.map((task) => (
                 <TaskCard
                   key={task.assignmentId}
@@ -52,7 +52,7 @@ export default async function TasksPage({ params }: { params: Promise<{ eventSlu
 
           {finished.length > 0 && (
             <section className={styles.stackTight}>
-              <h2 className={styles.sectionTitle}>Entered in the annals</h2>
+              <h2 className={styles.sectionTitle}>Finished</h2>
               {finished.map((task) => (
                 <TaskCard
                   key={task.assignmentId}

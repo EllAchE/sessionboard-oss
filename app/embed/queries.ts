@@ -166,10 +166,10 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
       tags: row.submissionId ? (tagsBySubmission.get(row.submissionId) ?? []) : [],
       speakers: linked.map((entry) => ({
         id: entry.person.id,
-        name: entry.person.displayName?.trim() || entry.account.name?.trim() || 'Unnamed orator',
+        name: entry.person.displayName?.trim() || entry.account.name?.trim() || 'Speaker',
         slug: speakerSlug(
           entry.person.id,
-          entry.person.displayName?.trim() || entry.account.name?.trim() || 'Unnamed orator',
+          entry.person.displayName?.trim() || entry.account.name?.trim() || 'Speaker',
         ),
         jobTitle: entry.person.jobTitle,
         company: entry.person.company,

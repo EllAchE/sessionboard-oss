@@ -30,20 +30,20 @@ import styles from '../dashboard/dashboard.module.css';
 import editor from './editor.module.css';
 
 const KIND_LABEL: Record<AdminTaskRow['kind'], string> = {
-  form: 'Scroll',
-  file_upload: 'Archive scroll',
-  acknowledge: 'Oath',
-  link: 'Road elsewhere',
+  form: 'Form',
+  file_upload: 'File upload',
+  acknowledge: 'Acknowledgement',
+  link: 'External link',
 };
 
 const AUDIENCE_LABEL: Record<AdminTaskRow['audience'], string> = {
-  all_participants: 'Everyone on the rolls',
-  accepted_participants: 'Proclaimed orators',
-  manual: 'Personally appointed',
+  all_participants: 'All participants',
+  accepted_participants: 'Accepted speakers',
+  manual: 'Manually assigned',
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return 'No appointed day';
+  if (!iso) return 'No deadline';
   // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
   return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 }
@@ -51,7 +51,7 @@ function formatDate(iso: string | null): string {
 const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
   {
     id: 'name',
-    header: 'Duty',
+    header: 'Task',
     width: '30%',
     render: (row) => (
       <div className={styles.taskCell}>
@@ -65,13 +65,13 @@ const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
   },
   {
     id: 'due',
-    header: 'Appointed day',
+    header: 'Deadline',
     width: '14%',
     render: (row) => <span className={styles.dueDate}>{formatDate(row.dueAt)}</span>,
   },
   {
     id: 'progress',
-    header: 'Fulfillment',
+    header: 'Progress',
     width: '26%',
     render: (row) => (
       <span className={styles.barTrack} title={`${row.completionPct}% complete`}>
@@ -89,7 +89,7 @@ const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
     width: '18%',
     render: (row) => (
       <span className={styles.personMeta}>
-        {row.completed + row.waived}/{row.assigned} fulfilled · {row.inProgress} in hand
+        {row.completed + row.waived}/{row.assigned} done · {row.inProgress} in progress
       </span>
     ),
   },
@@ -151,7 +151,7 @@ export function TasksIndex({
         toast({ title: result.message, tone: 'danger' });
         return;
       }
-      toast({ title: `${row.name} erased from the ledger`, tone: 'success' });
+      toast({ title: `${row.name} deleted`, tone: 'success' });
       router.refresh();
     });
   };
@@ -165,7 +165,7 @@ export function TasksIndex({
         return;
       }
       setCopySource('');
-      toast({ title: 'Duties copied to the ledger', tone: 'success' });
+      toast({ title: 'Tasks copied', tone: 'success' });
       router.refresh();
     });
   };
@@ -175,13 +175,13 @@ export function TasksIndex({
         ...COLUMNS,
         {
           id: 'actions',
-          header: <span className={editor.visuallyHidden}>Edicts</span>,
+          header: <span className={editor.visuallyHidden}>Actions</span>,
           width: 'calc(var(--control-md) * 2.4)',
           align: 'right',
           render: (row) => (
             <span className={editor.rowActions}>
               <IconButton
-                label={`Revise ${row.name}`}
+                label={`Edit ${row.name}`}
                 size="xs"
                 disabled={pending}
                 onKeyDown={(event) => event.stopPropagation()}
@@ -190,7 +190,7 @@ export function TasksIndex({
                 <Pencil size={14} />
               </IconButton>
               <IconButton
-                label={`Erase ${row.name}`}
+                label={`Delete ${row.name}`}
                 size="xs"
                 variant="danger"
                 disabled={pending}
@@ -209,24 +209,24 @@ export function TasksIndex({
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>The ledger</p>
-          <h1 className={styles.title}>Orator duties</h1>
+          <p className={styles.eyebrow}>Collect</p>
+          <h1 className={styles.title}>Tasks</h1>
           <p className={styles.subtitle}>
-            {tasks.length} duties across {speakerCount} orators.
+            {tasks.length} tasks across {speakerCount} participants.
           </p>
         </div>
         {canManage ? (
           <div className={editor.headActions}>
             {copyableEvents.length > 0 ? (
               <label className={editor.copy}>
-                <span className={editor.label}>Copy duties from</span>
+                <span className={editor.label}>Copy tasks from</span>
                 <Select
                   selectSize="sm"
                   value={copySource}
                   disabled={pending}
                   onChange={(event) => setCopySource(event.target.value)}
                 >
-                  <option value="">Another assembly…</option>
+                  <option value="">Another event…</option>
                   {copyableEvents.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.name}
@@ -237,11 +237,11 @@ export function TasksIndex({
             ) : null}
             {copySource ? (
               <Button size="sm" loading={pending} onClick={copyFrom}>
-                Copy to the ledger
+                Copy
               </Button>
             ) : null}
             <Button variant="primary" size="sm" iconLeft={<Plus size={14} />} onClick={openNew}>
-              Decree a duty
+              New task
             </Button>
           </div>
         ) : null}
@@ -266,7 +266,7 @@ export function TasksIndex({
             data-active={view === 'assignments'}
             onClick={() => setView('assignments')}
           >
-            By orator
+            By person
           </button>
           <button
             type="button"
@@ -274,7 +274,7 @@ export function TasksIndex({
             data-active={view === 'tasks'}
             onClick={() => setView('tasks')}
           >
-            By duty
+            By task
           </button>
         </div>
       </div>
@@ -282,7 +282,7 @@ export function TasksIndex({
       {view === 'assignments' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Who owes what to the Forum</CardTitle>
+            <CardTitle>Who owes what</CardTitle>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={assignments} />
@@ -291,18 +291,18 @@ export function TasksIndex({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Duty ledger</CardTitle>
+            <CardTitle>Tasks</CardTitle>
           </CardHeader>
           <CardBody>
             <DataTable
-              label="Duties"
+              label="Tasks"
               columns={columns}
               rows={tasks}
               getRowId={(row) => row.id}
               emptyState={
                 canManage
-                  ? 'No duties have been decreed. Begin with “Decree a duty.”'
-                  : 'No duties have been decreed for this assembly.'
+                  ? 'No tasks yet. "New task" adds the first one.'
+                  : 'No tasks defined for this event yet.'
               }
             />
           </CardBody>
@@ -320,15 +320,15 @@ export function TasksIndex({
       <Dialog
         open={confirming !== null}
         onOpenChange={(open) => (open ? undefined : setConfirming(null))}
-        title={`Erase ${confirming?.name ?? ''}?`}
-        description={`Every orator's copy of this duty goes with it, including ${
+        title={`Delete ${confirming?.name ?? ''}?`}
+        description={`Every speaker's copy of this task goes with it, including ${
           confirming ? confirming.completed + confirming.waived : 0
         } already finished.`}
         footer={
           <>
-            <Button onClick={() => setConfirming(null)}>Keep the duty</Button>
+            <Button onClick={() => setConfirming(null)}>Keep it</Button>
             <Button variant="danger" onClick={confirmDelete}>
-              Erase duty
+              Delete task
             </Button>
           </>
         }

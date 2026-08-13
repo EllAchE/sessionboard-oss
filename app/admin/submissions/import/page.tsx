@@ -4,7 +4,7 @@ import { ImportSubmissions, type ImportFormWire } from './ImportSubmissions';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Import petitions · Cicero' };
+export const metadata = { title: 'Import submissions · Cicero' };
 
 /**
  * `V-10`. The spreadsheet an organizer is migrating from is the reason this exists, so a closed

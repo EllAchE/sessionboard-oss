@@ -19,13 +19,13 @@ async function run<T>(work: () => Promise<T>, path = '/review'): Promise<ActionR
   } catch (error) {
     if (isAppError(error)) return { ok: false, message: error.message };
     console.error(`reviewer action failed: ${String(error)}`);
-    return { ok: false, message: 'The Forum hit a snag. Try once more.' };
+    return { ok: false, message: 'Something went wrong. Try again.' };
   }
 }
 
 async function requireSession() {
   const session = await reviewerSession();
-  if (!session) throw unauthorized('Enter as an appointed councillor to continue');
+  if (!session) throw unauthorized('Sign in as a reviewer to continue');
   return session;
 }
 

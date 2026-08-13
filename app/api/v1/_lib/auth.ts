@@ -44,7 +44,7 @@ export function bearerToken(request: Request): string | null {
  */
 export async function requireApiKey(request: Request, eventSlug: string): Promise<ApiKeyContext> {
   const token = bearerToken(request);
-  if (!token) throw unauthorized('Send an aqueduct key as `Authorization: Bearer <key>`');
+  if (!token) throw unauthorized('Send an API key as `Authorization: Bearer <key>`');
 
   const db = getDb();
   const prefix = token.slice(0, PREFIX_LENGTH);

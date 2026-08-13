@@ -524,7 +524,7 @@ describe('selected-speaker assignments', () => {
     );
 
     expect(error.code).toBe('invalid');
-    expect(error.message).toBe('Every selected orator must belong to this event');
+    expect(error.message).toBe('Every selected speaker must belong to this event');
     expect(rec.inserted.some((entry) => entry.table === task)).toBe(false);
   });
 });

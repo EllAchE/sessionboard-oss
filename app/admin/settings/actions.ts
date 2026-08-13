@@ -33,7 +33,7 @@ async function run<T>(work: () => Promise<T>): Promise<ActionResult<T>> {
   } catch (error) {
     if (isAppError(error)) return { ok: false, message: error.message, details: error.details };
     console.error(`settings action failed: ${String(error)}`);
-    return { ok: false, message: 'The Forum hit a snag. Try once more.' };
+    return { ok: false, message: 'Something went wrong. Try again.' };
   }
 }
 

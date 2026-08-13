@@ -155,13 +155,13 @@ export function Composer(props: ComposerProps) {
       <div className={styles.stack}>
         <Card>
           <CardHeader>
-            <CardTitle>The assembly</CardTitle>
+            <CardTitle>Audience</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="audienceKind">
-                  Who receives this dispatch
+                  Who receives this
                 </label>
                 <Select
                   id="audienceKind"
@@ -185,7 +185,7 @@ export function Composer(props: ComposerProps) {
                     Track
                   </label>
                   <Select id="trackId" value={trackId} onChange={(e) => setTrackId(e.target.value)}>
-                    <option value="">Choose a programme theme…</option>
+                    <option value="">Choose a track…</option>
                     {props.tracks.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
@@ -205,7 +205,7 @@ export function Composer(props: ComposerProps) {
                     value={formatId}
                     onChange={(e) => setFormatId(e.target.value)}
                   >
-                    <option value="">Choose an oration format…</option>
+                    <option value="">Choose a format…</option>
                     {props.formats.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
@@ -218,10 +218,10 @@ export function Composer(props: ComposerProps) {
               {NEEDS_TASK.includes(audienceKind) && (
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="taskId">
-                    Limit to one duty
+                    Limit to one task
                   </label>
                   <Select id="taskId" value={taskId} onChange={(e) => setTaskId(e.target.value)}>
-                    <option value="">Any unsettled duty</option>
+                    <option value="">Any outstanding task</option>
                     {props.tasks.map((option) => (
                       <option key={option.id} value={option.id}>
                         {option.name}
@@ -236,20 +236,20 @@ export function Composer(props: ComposerProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Dispatch</CardTitle>
+            <CardTitle>Message</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="templateKey">
-                  Begin from a dispatch pattern
+                  Start from a template
                 </label>
                 <Select
                   id="templateKey"
                   value={templateKey}
                   onChange={(e) => applyTemplate(e.target.value)}
                 >
-                  <option value="">Begin with a blank scroll</option>
+                  <option value="">Write from scratch</option>
                   {props.templates.map((template) => (
                     <option key={template.key} value={template.key}>
                       {template.name}
@@ -260,7 +260,7 @@ export function Composer(props: ComposerProps) {
 
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="channel">
-                  Courier route
+                  Channel
                 </label>
                 <Select
                   id="channel"
@@ -270,9 +270,9 @@ export function Composer(props: ComposerProps) {
                     setPreview(null);
                   }}
                 >
-                  <option value="auto">Honor each recipient&rsquo;s chosen courier</option>
-                  <option value="email">Email every known address</option>
-                  <option value="sms">SMS every known phone</option>
+                  <option value="auto">Auto — each recipient&rsquo;s own preference</option>
+                  <option value="email">Force email, for everyone with an address</option>
+                  <option value="sms">Force SMS, for everyone with a phone number</option>
                 </Select>
               </div>
 
@@ -287,7 +287,7 @@ export function Composer(props: ComposerProps) {
                     setSubject(e.target.value);
                     setPreview(null);
                   }}
-                  placeholder="Your oration before {{event.name}}"
+                  placeholder="Your talk at {{event.name}}"
                 />
               </div>
 
@@ -304,13 +304,13 @@ export function Composer(props: ComposerProps) {
                     setBody(e.target.value);
                     setPreview(null);
                   }}
-                  placeholder={'Salve {{speaker.firstName|friend}},\n\n…'}
+                  placeholder={'Hi {{speaker.firstName|there}},\n\n…'}
                 />
               </div>
 
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="smsBody">
-                  SMS dispatch — plain text
+                  SMS body — plain text
                 </label>
                 <Textarea
                   id="smsBody"
@@ -319,16 +319,16 @@ export function Composer(props: ComposerProps) {
                     setSmsBody(e.target.value);
                     setPreview(null);
                   }}
-                  placeholder="Leave blank to derive a shortened tablet from the dispatch above."
+                  placeholder="Leave blank to fall back to a trimmed version of the body above."
                 />
                 <span className={styles.hint}>
-                  Sent to every citizen this dispatch reaches by text. If empty, Cicero strips and
-                  shortens the markdown dispatch above.
+                  Sent to anyone this message reaches by text. Empty falls back to the markdown
+                  body, stripped and truncated.
                 </span>
               </div>
 
               <div className={styles.field}>
-                <span className={styles.label}>Living inscriptions—click to insert</span>
+                <span className={styles.label}>Merge fields — click to insert</span>
                 <div className={styles.variables}>
                   {props.variables.map((variable) => (
                     <button
@@ -355,8 +355,8 @@ export function Composer(props: ComposerProps) {
                   aria-label="Attach the calendar invitation"
                 />
                 <span className={styles.subtle}>
-                  Attach a personal fasti copy of each recipient&rsquo;s oration. Summons that amend
-                  themselves are dispatched from the imperial fasti.
+                  Attach an add-to-calendar copy of each recipient&rsquo;s session. Invitations that
+                  update in place are sent from the agenda.
                 </span>
               </div>
             </div>
@@ -367,7 +367,7 @@ export function Composer(props: ComposerProps) {
       <div className={styles.stack}>
         <Card>
           <CardHeader>
-            <CardTitle>Inspect the sealed copy</CardTitle>
+            <CardTitle>Preview</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>
@@ -378,7 +378,7 @@ export function Composer(props: ComposerProps) {
                   onClick={runPreview}
                   loading={pending}
                 >
-                  Preview for a real recipient
+                  Preview against a real recipient
                 </Button>
                 <span className={styles.spacer} />
                 <Button
@@ -388,7 +388,7 @@ export function Composer(props: ComposerProps) {
                   onClick={runSend}
                   loading={pending}
                 >
-                  Dispatch
+                  Send
                 </Button>
               </div>
 
@@ -400,33 +400,32 @@ export function Composer(props: ComposerProps) {
 
               {outcome && (
                 <p className={`${styles.notice} ${styles.success}`}>
-                  Dispatched to {outcome.sent} of {outcome.recipients} recipients (
-                  {outcome.sentEmail} by courier, {outcome.sentSms} by SMS)
-                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Every dispatch is
-                  readable in its courier archive.
+                  Sent to {outcome.sent} of {outcome.recipients} recipients ({outcome.sentEmail}{' '}
+                  email, {outcome.sentSms} SMS)
+                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Every message is readable
+                  in the mailbox.
                 </p>
               )}
 
               {props.transport === 'log' && (
                 <p className={styles.notice}>
-                  <CalendarCheck size={16} /> MAIL_TRANSPORT is <code>log</code>: no courier leaves
-                  the server. Dispatches appear in the archive with their calendar attachment
-                  intact.
+                  <CalendarCheck size={16} /> MAIL_TRANSPORT is <code>log</code>: nothing leaves the
+                  server. Messages appear in the mailbox with their calendar attachment intact.
                 </p>
               )}
 
               {props.smsTransport === 'log' && (
                 <p className={styles.notice}>
-                  <CalendarCheck size={16} /> SMS_TRANSPORT is <code>log</code>: no swift courier
-                  leaves the server. Dispatches rest in the SMS courier archive.
+                  <CalendarCheck size={16} /> SMS_TRANSPORT is <code>log</code>: text messages land
+                  in the SMS mailbox instead of a phone.
                 </p>
               )}
 
               {preview && (
                 <p className={styles.subtle}>
-                  {preview.channelCounts.email} by email courier, {preview.channelCounts.sms} by SMS
+                  {preview.channelCounts.email} by email, {preview.channelCounts.sms} by SMS
                   {preview.channelCounts.none > 0
-                    ? `, ${preview.channelCounts.none} citizens are unreachable (no address or phone on the rolls)`
+                    ? `, ${preview.channelCounts.none} reach nobody (no address or phone on file)`
                     : ''}
                   .
                 </p>
@@ -441,7 +440,7 @@ export function Composer(props: ComposerProps) {
 
               {preview && !preview.recipient && (
                 <p className={styles.warning}>
-                  <Users size={16} /> This assembly is empty.
+                  <Users size={16} /> Nobody matches this audience yet.
                 </p>
               )}
 
@@ -470,7 +469,7 @@ export function Composer(props: ComposerProps) {
 
                   {preview.smsPreview && (
                     <>
-                      <span className={styles.label}>SMS tablet</span>
+                      <span className={styles.label}>SMS</span>
                       <p className={styles.mono}>{preview.smsPreview}</p>
                     </>
                   )}
