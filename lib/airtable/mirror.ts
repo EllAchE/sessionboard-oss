@@ -14,7 +14,7 @@ import {
 import { features } from '../env';
 import { isAppError } from '../errors';
 import { formatRef } from '../ids';
-import { getAirtableClient, type AirtableClient } from './client';
+import { getAirtableClient } from './client';
 import {
   configuredTables,
   fieldsFor,

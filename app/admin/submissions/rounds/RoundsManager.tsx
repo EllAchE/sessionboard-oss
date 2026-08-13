@@ -150,6 +150,7 @@ function RoundDateEditor({
 }) {
   const [draft, setDraft] = useState<RoundDateDraft>(EMPTY_DATES);
   const [hydrated, setHydrated] = useState(false);
+  const { opensAt, closesAt } = round;
 
   /**
    * Both the inputs and the summary read the browser's timezone, which the server does not know. A
@@ -157,9 +158,9 @@ function RoundDateEditor({
    * date, so they stay empty until mount rather than hydrating into a contradiction.
    */
   useEffect(() => {
-    setDraft(toRoundDateDraft(round));
+    setDraft(toRoundDateDraft({ opensAt, closesAt }));
     setHydrated(true);
-  }, [round.opensAt, round.closesAt]);
+  }, [opensAt, closesAt]);
 
   const dates = fromRoundDateDraft(draft);
   const invalidRange = roundDatesAreOutOfOrder(dates.opensAt, dates.closesAt);

@@ -192,11 +192,6 @@ const description = z
   .nullable()
   .optional();
 
-function clean(value: string | null | undefined): string | null {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : null;
-}
-
 /** Zod's field-keyed issues become `AppError.details`, which the Server Action shows inline. */
 function parse<T extends z.ZodTypeAny>(schema: T, input: unknown): z.output<T> {
   const result = schema.safeParse(input);
