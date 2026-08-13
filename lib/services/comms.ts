@@ -479,7 +479,7 @@ function matchesAudience(
     case 'pending_speakers':
       return has(['submitted', 'under_review', 'waitlisted']);
     case 'declined_speakers':
-      return has(['declined']) && !has(['accepted']);
+      return has(['declined']);
     case 'scheduled_speakers':
       return candidate.session !== null;
     case 'track':
