@@ -135,6 +135,47 @@ export const createSubmissionResponse = z.object({
   title: z.string(),
 });
 
+export const acceleventsProgramSyncBody = z
+  .object({
+    mode: z.enum(['preview', 'apply']).default('preview'),
+    allowDeletes: z
+      .boolean()
+      .default(false)
+      .describe('Must be true with apply mode before remote-only fixture records are deleted'),
+    resetFixture: z
+      .literal('drifted')
+      .optional()
+      .describe(
+        'Fixture mode only: reset the remote collection to a repeatable drifted demo state',
+      ),
+  })
+  .describe('Controls a one-way published-program sync to the fixture Accelevents adapter');
+
+export const acceleventsProgramSyncResult = z.object({
+  mode: z.enum(['preview', 'apply']),
+  adapter: z.literal('fake'),
+  eventUrl: z.string(),
+  allowDeletes: z.boolean(),
+  fixtureReset: z.boolean(),
+  counts: z.object({
+    create: z.number().int(),
+    update: z.number().int(),
+    delete: z.number().int(),
+    noop: z.number().int(),
+    blockedDeletes: z.number().int(),
+  }),
+  results: z.array(
+    z.object({
+      resourceType: z.enum(['event', 'session', 'speaker']),
+      sourceId: z.string(),
+      remoteId: z.string().nullable(),
+      action: z.enum(['create', 'update', 'delete', 'noop']),
+      status: z.enum(['planned', 'applied', 'blocked', 'unchanged']),
+      message: z.string().nullable(),
+    }),
+  ),
+});
+
 export const errorResponse = z
   .object({
     error: z.object({

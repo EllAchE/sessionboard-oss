@@ -131,7 +131,9 @@ snippet, per-embed filters and styling. The embed is an auto-resizing iframe ove
 
 **Integrations.** A public REST API with a generated
 [`docs/openapi.json`](docs/openapi.json) schema, an Accelevents speaker-push client, and a one-way
-Airtable mirror.
+Airtable mirror. The [Accelevents demo](docs/accelevents-demo.md) also includes a deterministic
+fixture adapter that previews and applies a full published-program create/update/delete/no-op sync
+without claiming undocumented live Accelevents capabilities.
 
 ### Bonus: operate an event with an agent
 
