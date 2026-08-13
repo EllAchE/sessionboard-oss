@@ -92,6 +92,7 @@ from it.
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |
 | `npm run db:seed` | Seed both demo conferences (idempotent) |
+| `npm run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `npm run cf:deploy` | Build and deploy to Cloudflare Workers |
 
 ## What's in it
