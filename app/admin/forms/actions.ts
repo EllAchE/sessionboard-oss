@@ -4,7 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { isAppError } from '../../../lib/errors';
 import * as forms from '../../../lib/services/forms';
 import { formManageContext } from './context';
-import type { ActionResult, FieldPatchWire, FormSettingsInput, NewFieldInputWire } from './types';
+import type {
+  ActionResult,
+  FieldPatchWire,
+  FormSettingsInput,
+  NewFieldInputWire,
+  RoleInputWire,
+} from './types';
 
 /**
  * Thin by construction: resolve the event, call the service, translate a thrown `AppError` into
@@ -122,10 +128,24 @@ export async function deleteFieldAction(formId: string, fieldId: string): Promis
 export async function reorderFieldsAction(
   formId: string,
   order: Array<{ id: string; step: number }>,
+  entity: 'abstract' | 'participant' = 'abstract',
 ): Promise<ActionResult> {
   return run(`/admin/forms/${formId}`, async () => {
     const ctx = await formManageContext();
-    await forms.reorderFields(ctx, formId, order);
+    await forms.reorderFields(ctx, formId, order, entity);
+    return null;
+  });
+}
+
+/** `F-7`. The whole set at once — see `setFormRoles` for why one at a time cannot be checked. */
+export async function setFormRolesAction(
+  formId: string,
+  roles: RoleInputWire[],
+  maxParticipants: number | null,
+): Promise<ActionResult> {
+  return run(`/admin/forms/${formId}`, async () => {
+    const ctx = await formManageContext();
+    await forms.setFormRoles(ctx, formId, roles, maxParticipants);
     return null;
   });
 }

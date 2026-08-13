@@ -161,8 +161,10 @@ export function FormPreview({
     <div className={styles.preview}>
       <Card padding="lg">
         <div className={styles.stack}>
-          <h2 className={styles.title}>{form.name}</h2>
-          {form.introMarkdown ? (
+          {/* `F-9`: the preview shows what a speaker sees, which is the external title. */}
+          {form.pageHeading ? <p className={styles.stepTitle}>{form.pageHeading}</p> : null}
+          <h2 className={styles.title}>{form.externalTitle || form.name}</h2>
+          {form.showWelcome && form.introMarkdown ? (
             <div
               className={styles.previewProse}
               dangerouslySetInnerHTML={{ __html: renderTrustedMarkdown(form.introMarkdown) }}

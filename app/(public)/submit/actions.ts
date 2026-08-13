@@ -12,12 +12,16 @@ import { hashToken, randomToken } from '@/lib/ids';
 import { sendMail } from '@/lib/mail';
 import { escapeMarkdownText, renderTrustedMarkdown, markdownToText } from '@/lib/markdown';
 import { parseSpeakerName } from '@/lib/speaker-name';
+import { assertParticipantLimits } from '@/lib/services/forms';
 import {
   ensureParticipant,
   isAcceptingSubmissions,
   linkPrimarySpeaker,
   loadPublicForm,
+  saveParticipants,
   saveSubmission,
+  validateParticipants,
+  type ParticipantInput,
 } from '@/lib/services/submissions';
 import { donePath, portalPath, type SubmitPayload, type SubmitResult } from './shared';
 
@@ -139,9 +143,34 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
     }
 
     const actor = await currentActor();
+
+    /**
+     * `F-4` / `F-6`. With the participant block on, the person's name arrives split across the
+     * participant stage and the submitter is whoever sits first in that list. With it off there is no
+     * participant stage at all, and the Account stage's single name box is the only name there is.
+     */
+    const collectsParticipants = bundle.form.collectsParticipants;
+    const accountEmail = actor?.email ?? payload.submitterEmail;
+    const people: ParticipantInput[] = (collectsParticipants ? (payload.participants ?? []) : []).map(
+      // The first person *is* the account. Taking the address from the session rather than the
+      // payload is what stops a submitter from filing a talk under somebody else's email.
+      (person, index) => (index === 0 ? { ...person, email: accountEmail } : person),
+    );
+
+    if (collectsParticipants && payload.mode === 'submit') {
+      validateParticipants(
+        bundle.participantFields,
+        people,
+        bundle.roles,
+        bundle.form.maxParticipants,
+      );
+    }
+
     let name: string | null;
     try {
-      name = parseSpeakerName(payload.submitterName);
+      name = collectsParticipants
+        ? [people[0]?.firstName, people[0]?.lastName].filter(Boolean).join(' ').trim() || null
+        : parseSpeakerName(payload.submitterName);
     } catch (error) {
       throw invalid('Some of your details need attention', {
         submitterName: error instanceof Error ? error.message : 'That name is not valid',
@@ -182,9 +211,26 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
       },
       mode: payload.mode,
       submissionId: payload.submissionId,
+      targetType: bundle.form.targetType,
     });
 
-    await linkPrimarySpeaker(saved.id, participantId);
+    if (collectsParticipants && payload.mode === 'submit') {
+      const ids = await saveParticipants({
+        eventId: bundle.event.id,
+        formId: bundle.form.id,
+        submissionId: saved.id,
+        submitterUserId: userId,
+        people,
+      });
+      // `F-7`, enforced against what actually landed rather than against what was posted — the same
+      // guard the portal's share flow runs, reading the same configuration.
+      await assertParticipantLimits(
+        bundle.form.id,
+        people.slice(0, ids.length).map((person) => person.role),
+      );
+    } else {
+      await linkPrimarySpeaker(saved.id, participantId);
+    }
 
     // Last, so a failure here cannot cost someone their submission.
     if (openedSession) await openSessionFor(userId);

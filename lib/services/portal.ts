@@ -26,8 +26,10 @@ import { clearHiddenAnswers, validateAnswers } from '../forms/contract';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
+import { splitPersonName } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 import { mutateAgendaAtomically } from './agenda-guard';
+import { assertParticipantLimits } from './forms';
 
 /**
  * `S-1`–`S-13`. Everything the speaker-facing surface reads or writes. The organizer side never
@@ -573,6 +575,34 @@ export const shareSchema = z.object({
 });
 
 /**
+ * `F-7` at share time. The cast this submission would have *after* the invite is what gets checked,
+ * so the answer is about the end state rather than about the person being added in isolation.
+ *
+ * Minimums are deliberately not enforced here: a share can only ever add somebody, so a submission
+ * that already satisfies the form still does, and one that does not is not made worse by this. Only
+ * the ceilings — the per-role maximum and the overall cap — can be crossed by adding a person.
+ */
+async function assertShareWithinFormLimits(
+  submissionId: string,
+  kind: (typeof participantRole.$inferSelect)['kind'],
+): Promise<void> {
+  const db = getDb();
+  const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
+  if (!row) throw notFound('That submission');
+
+  const existing = await db
+    .select({ kind: participantRole.kind })
+    .from(participantRole)
+    .where(eq(participantRole.submissionId, submissionId));
+
+  await assertParticipantLimits(
+    row.formId,
+    [...existing.map((entry) => entry.kind), kind],
+    'ceilings',
+  );
+}
+
+/**
  * `S-13`. Sharing grants a real speaker membership on the event, so the invitee gets their own
  * portal with their own tasks rather than a link into someone else's — a shared login is how
  * co-speaker details end up wrong on the programme.
@@ -596,12 +626,20 @@ export async function shareSubmissionAccess(
   }
   const { email, name, kind } = parsed.data;
 
+  /**
+   * `F-7`. The same guard the public submit path runs, reading the same per-form configuration — a
+   * limit enforced only at submission is a limit anyone can walk around by adding the fourth panelist
+   * from their portal instead. It runs before the transaction because it only reads, and because a
+   * rejection here should cost nothing.
+   */
+  await assertShareWithinFormLimits(submissionId, kind);
+
   const { account, invitee } = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
     let account = await transaction.query.user.findFirst({ where: eq(user.email, email) });
     if (!account) {
       [account] = await transaction
         .insert(user)
-        .values({ email, name: name ?? null })
+        .values({ email, name: name ?? null, ...splitPersonName(name ?? null) })
         .returning();
     }
 

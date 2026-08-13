@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button, Input, Select, Switch, Textarea } from '../../../../components/ui';
-import type { FormSettingsInput, FormKind } from '../types';
+import { PAGE_HEADING_MAX_LENGTH } from '../../../../lib/forms/contract';
+import type { FormSettingsInput, FormKind, FormTargetType } from '../types';
 import type { FormView } from './builder-types';
 import styles from './builder.module.css';
 
@@ -30,6 +31,12 @@ type Draft = {
   name: string;
   slug: string;
   kind: FormKind;
+  targetType: FormTargetType;
+  collectsParticipants: boolean;
+  externalTitle: string;
+  pageHeading: string;
+  showWelcome: boolean;
+  maxParticipants: string;
   introMarkdown: string;
   opensAt: string;
   closesAt: string;
@@ -45,6 +52,12 @@ function toDraft(form: FormView): Draft {
     name: form.name,
     slug: form.slug,
     kind: form.kind,
+    targetType: form.targetType,
+    collectsParticipants: form.collectsParticipants,
+    externalTitle: form.externalTitle ?? '',
+    pageHeading: form.pageHeading ?? '',
+    showWelcome: form.showWelcome,
+    maxParticipants: form.maxParticipants === null ? '' : String(form.maxParticipants),
     introMarkdown: form.introMarkdown ?? '',
     opensAt: toLocalInput(form.opensAt),
     closesAt: toLocalInput(form.closesAt),
@@ -76,10 +89,17 @@ export function FormSettingsPanel({
 
   const save = () => {
     const limit = draft.maxSubmissionsPerUser.trim();
+    const cap = draft.maxParticipants.trim();
     onSave({
       name: draft.name,
       slug: draft.slug,
       kind: draft.kind,
+      targetType: draft.targetType,
+      collectsParticipants: draft.collectsParticipants,
+      externalTitle: draft.externalTitle.trim() || null,
+      pageHeading: draft.pageHeading.trim() || null,
+      showWelcome: draft.showWelcome,
+      maxParticipants: cap ? Number(cap) : null,
       introMarkdown: draft.introMarkdown.trim() || null,
       opensAt: fromLocalInput(draft.opensAt),
       closesAt: fromLocalInput(draft.closesAt),
@@ -102,14 +122,16 @@ export function FormSettingsPanel({
           <div className={styles.stack}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-name">
-                Internal name
+                Internal form name *
               </label>
               <Input
                 id="settings-name"
                 value={draft.name}
                 onChange={(event) => update({ name: event.target.value })}
               />
-              <span className={styles.help}>Only organizers see this.</span>
+              <span className={styles.help}>
+                Only organizers see this. It is how the form is listed here, not what a speaker reads.
+              </span>
             </div>
 
             <div className={styles.field}>
@@ -138,6 +160,84 @@ export function FormSettingsPanel({
                 <option value="cfp">Call for speakers</option>
                 <option value="portal">Portal form</option>
               </Select>
+              <span className={styles.help}>What the form is for. What it produces is below.</span>
+            </div>
+
+            {/* `F-4` */}
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="settings-target">
+                This form collects
+              </label>
+              <Select
+                id="settings-target"
+                value={draft.targetType}
+                onChange={(event) =>
+                  update({ targetType: event.target.value as FormTargetType })
+                }
+              >
+                <option value="abstract">Abstracts — proposals that go to review</option>
+                <option value="session">Sessions — entries straight onto the programme</option>
+              </Select>
+              <span className={styles.help}>
+                {draft.targetType === 'session'
+                  ? 'A submission arrives accepted and appears in the agenda’s unscheduled queue. Use this for invited talks and sponsor slots.'
+                  : 'A submission arrives pending and joins the review queue.'}
+              </span>
+            </div>
+
+            {/* `F-4` */}
+            <div className={styles.switchRow}>
+              <span className={styles.switchText}>
+                <span className={styles.switchLabel}>Collect participants</span>
+                <span className={styles.help}>
+                  Adds the participant step to the public form, where speakers give their details and
+                  name anyone presenting with them. Off, only the submitter is recorded.
+                </span>
+              </span>
+              <Switch
+                checked={draft.collectsParticipants}
+                aria-label="Collect participants"
+                onCheckedChange={(next) => update({ collectsParticipants: next })}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* `F-9` */}
+        <Card padding="md">
+          <p className={styles.panelTitle}>Welcome screen</p>
+          <div className={styles.stack}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="settings-external-title">
+                External form title *
+              </label>
+              <Input
+                id="settings-external-title"
+                value={draft.externalTitle}
+                placeholder={draft.name}
+                onChange={(event) => update({ externalTitle: event.target.value })}
+              />
+              <span className={styles.help}>
+                What a speaker reads at the top of the page and what a shared link previews as. Blank
+                falls back to the internal name.
+              </span>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="settings-page-heading">
+                Page heading
+              </label>
+              <Input
+                id="settings-page-heading"
+                value={draft.pageHeading}
+                maxLength={PAGE_HEADING_MAX_LENGTH}
+                placeholder="Speak with us"
+                onChange={(event) => update({ pageHeading: event.target.value })}
+              />
+              <span className={styles.help}>
+                {draft.pageHeading.length} of {PAGE_HEADING_MAX_LENGTH} characters. A short line above
+                the title on the welcome step.
+              </span>
             </div>
 
             <div className={styles.field}>
@@ -150,9 +250,22 @@ export function FormSettingsPanel({
                 value={draft.introMarkdown}
                 onChange={(event) => update({ introMarkdown: event.target.value })}
               />
-              <span className={styles.help}>
-                Markdown, shown above the first question. Leave it empty to hide it entirely.
+              <span className={styles.help}>Markdown, shown on the welcome step.</span>
+            </div>
+
+            <div className={styles.switchRow}>
+              <span className={styles.switchText}>
+                <span className={styles.switchLabel}>Show the welcome message</span>
+                <span className={styles.help}>
+                  Turn it off to hide the welcome step while keeping the copy. Getting it back is this
+                  switch, not rewriting the paragraph.
+                </span>
               </span>
+              <Switch
+                checked={draft.showWelcome}
+                aria-label="Show the welcome message"
+                onCheckedChange={(next) => update({ showWelcome: next })}
+              />
             </div>
           </div>
         </Card>

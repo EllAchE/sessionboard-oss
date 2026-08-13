@@ -3,6 +3,11 @@ import { requireEventWindow } from '../../lib/event-dates';
 import { newIcsUid } from '../../lib/ics';
 import { ensureDefaultTemplates } from '../../lib/services/comms';
 import { getStorage, storageKey } from '../../lib/storage';
+import {
+  PARTICIPANT_BUILTIN_FIELDS,
+  PARTICIPANT_BUILTIN_META,
+} from '../../lib/forms/contract';
+import { splitPersonName } from '../../lib/person-name';
 import type { Database } from '../client';
 import {
   emailLog,
@@ -11,6 +16,7 @@ import {
   fileRequest,
   form,
   formField,
+  formParticipantRole,
   membership,
   participant,
   participantRole,
@@ -175,7 +181,8 @@ export async function seedFirstSettlement(
     createSenatePeople: (people) =>
       db
         .insert(user)
-        .values([...people])
+        // `F-6`: both halves stored, `name` still the join of the two.
+        .values(people.map((person) => ({ ...person, ...splitPersonName(person.name) })))
         .returning({ id: user.id, email: user.email, name: user.name }),
   });
   const reviewers = REVIEWER_EMAILS.map((email) => userByEmail.get(email)!);
@@ -350,9 +357,18 @@ export async function seedFirstSettlement(
     .values({
       eventId: senate.id,
       kind: 'cfp',
+      // `F-4`
+      targetType: 'abstract',
+      collectsParticipants: true,
       name: 'Order of Debate',
       slug: 'motions',
+      // `F-9`
+      externalTitle: 'The Order of Debate',
+      pageHeading: 'Move a motion',
+      showWelcome: true,
       status: 'open',
+      // `F-7`: a mover and at most one seconder.
+      maxParticipants: 2,
       introMarkdown:
         'Submit a motion, oration, or counsel for the January settlement. State the power at ' +
         'issue, the public benefit, and the limit that keeps the proposal compatible with a ' +
@@ -432,6 +448,52 @@ export async function seedFirstSettlement(
       type: 'checkbox' as const,
       key: 'requires_division',
       label: 'This motion requires a recorded division',
+    },
+    // `F-5`: the sixth built-in, missing here for the same reason it was missing from `db/seed.ts` —
+    // and with the same consequence, that republishing this seeded form from the builder failed.
+    {
+      formId: callForMotions.id,
+      position: 7,
+      type: 'multi_select' as const,
+      key: 'tags',
+      builtinKey: 'tags',
+      label: 'Matters touched',
+      required: true,
+    },
+  ]);
+
+  // `F-6`
+  await db.insert(formField).values(
+    PARTICIPANT_BUILTIN_FIELDS.map((key, index) => ({
+      formId: callForMotions.id,
+      position: index,
+      entity: 'participant' as const,
+      type: PARTICIPANT_BUILTIN_META[key].type,
+      key,
+      builtinKey: key,
+      label: PARTICIPANT_BUILTIN_META[key].label,
+      required: PARTICIPANT_BUILTIN_META[key].required,
+      maxLength: PARTICIPANT_BUILTIN_META[key].maxLength,
+    })),
+  );
+
+  // `F-7`: a motion is moved by one senator and may be seconded by one more.
+  await db.insert(formParticipantRole).values([
+    {
+      formId: callForMotions.id,
+      kind: 'speaker' as const,
+      label: 'Mover',
+      position: 0,
+      minCount: 1,
+      maxCount: 1,
+    },
+    {
+      formId: callForMotions.id,
+      kind: 'co_speaker' as const,
+      label: 'Seconder',
+      position: 1,
+      minCount: 0,
+      maxCount: 1,
     },
   ]);
 

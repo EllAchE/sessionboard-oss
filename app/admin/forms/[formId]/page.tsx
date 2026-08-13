@@ -1,10 +1,17 @@
 import { notFound } from 'next/navigation';
 import { isAppError } from '../../../../lib/errors';
 import { getEvent } from '../../../../lib/services/events';
+import { PARTICIPANT_BUILTIN_META, isParticipantBuiltinKey } from '../../../../lib/forms/contract';
 import { getForm, listFieldLibrary } from '../../../../lib/services/forms';
 import { formManageContext } from '../context';
 import { FormBuilder } from './FormBuilder';
-import type { BuilderFieldView, FormView, LibraryEntryView } from './builder-types';
+import type {
+  BuilderFieldView,
+  FormView,
+  LibraryEntryView,
+  ParticipantFieldView,
+  RoleView,
+} from './builder-types';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +44,12 @@ export default async function FormBuilderPage({
     name: detail.form.name,
     slug: detail.form.slug,
     kind: detail.form.kind,
+    targetType: detail.form.targetType,
+    collectsParticipants: detail.form.collectsParticipants,
+    externalTitle: detail.form.externalTitle,
+    pageHeading: detail.form.pageHeading,
+    showWelcome: detail.form.showWelcome,
+    maxParticipants: detail.form.maxParticipants,
     status: detail.form.status,
     introMarkdown: detail.form.introMarkdown,
     opensAt: iso(detail.form.opensAt),
@@ -48,10 +61,12 @@ export default async function FormBuilderPage({
     confirmationBodyMarkdown: detail.form.confirmationBodyMarkdown,
   };
 
-  const fields: BuilderFieldView[] = detail.fields.map((field) => ({
+  const toView = (field: (typeof detail.fields)[number]): BuilderFieldView => ({
     id: field.id,
     key: field.key,
+    entity: field.entity,
     builtinKey: field.builtinKey,
+    participantKey: field.participantKey,
     type: field.type,
     label: field.label,
     position: field.position,
@@ -65,7 +80,19 @@ export default async function FormBuilderPage({
     helpText: field.helpText,
     placeholder: field.placeholder,
     libraryEntryId: field.libraryEntryId,
+  });
+
+  const fields: BuilderFieldView[] = detail.fields.map(toView);
+
+  const participantFields: ParticipantFieldView[] = detail.participantFields.map((field) => ({
+    ...toView(field),
+    participantKey: field.participantKey,
+    requiredLocked:
+      isParticipantBuiltinKey(field.participantKey) &&
+      PARTICIPANT_BUILTIN_META[field.participantKey].requiredLocked,
   }));
+
+  const roles: RoleView[] = detail.roles;
 
   const libraryEntries: LibraryEntryView[] = library.map((entry) => ({
     id: entry.id,
@@ -80,6 +107,8 @@ export default async function FormBuilderPage({
     <FormBuilder
       form={form}
       fields={fields}
+      participantFields={participantFields}
+      roles={roles}
       library={libraryEntries}
       eventSlug={event.slug}
     />

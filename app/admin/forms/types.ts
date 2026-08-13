@@ -1,5 +1,5 @@
-import type { Condition, FieldType } from '../../../lib/forms/contract';
-import type { FormKind, FormStatus } from '../../../lib/services/forms';
+import type { Condition, FieldType, ParticipantRoleKind } from '../../../lib/forms/contract';
+import type { FormKind, FormStatus, FormTargetType } from '../../../lib/services/forms';
 
 /**
  * The wire shapes between the builder's client components and its Server Actions. Dates cross as
@@ -15,6 +15,18 @@ export type FormSettingsInput = {
   name?: string;
   slug?: string;
   kind?: FormKind;
+  /** `F-4` */
+  targetType?: FormTargetType;
+  /** `F-4` */
+  collectsParticipants?: boolean;
+  /** `F-9` */
+  externalTitle?: string | null;
+  /** `F-9` */
+  pageHeading?: string | null;
+  /** `F-9` */
+  showWelcome?: boolean;
+  /** `F-7` */
+  maxParticipants?: number | null;
   introMarkdown?: string | null;
   opensAt?: string | null;
   closesAt?: string | null;
@@ -23,6 +35,14 @@ export type FormSettingsInput = {
   notifyEmails?: string[];
   confirmationSubject?: string | null;
   confirmationBodyMarkdown?: string | null;
+};
+
+/** `F-7`: one configured role as the builder posts it back. */
+export type RoleInputWire = {
+  kind: ParticipantRoleKind;
+  label: string;
+  minCount: number;
+  maxCount: number | null;
 };
 
 export type NewFieldInputWire = {
@@ -53,4 +73,4 @@ export type FieldPatchWire = {
   step?: number;
 };
 
-export type { FormKind, FormStatus };
+export type { FormKind, FormStatus, FormTargetType, ParticipantRoleKind };

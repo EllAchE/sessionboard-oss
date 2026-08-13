@@ -1,5 +1,10 @@
-import type { FieldType, FormFieldSpec } from '../../../../lib/forms/contract';
-import type { FormKind, FormStatus } from '../types';
+import type {
+  FieldType,
+  FormFieldSpec,
+  ParticipantBuiltinKey,
+  ParticipantRoleSpec,
+} from '../../../../lib/forms/contract';
+import type { FormKind, FormStatus, FormTargetType } from '../types';
 
 /**
  * What the server page hands the client builder. Declared here rather than reused from
@@ -13,11 +18,33 @@ export type BuilderFieldView = FormFieldSpec & {
   libraryEntryId: string | null;
 };
 
+/** `F-6`: a participant question. Same row shape, its own built-in namespace and its own locks. */
+export type ParticipantFieldView = BuilderFieldView & {
+  participantKey: ParticipantBuiltinKey | null;
+  /** `F-6`: true for First Name, Last Name and Email — their Required toggle is not offered. */
+  requiredLocked: boolean;
+};
+
+export type RoleView = ParticipantRoleSpec;
+
 export type FormView = {
   id: string;
+  /** `F-9`: organizers only. */
   name: string;
   slug: string;
   kind: FormKind;
+  /** `F-4` */
+  targetType: FormTargetType;
+  /** `F-4` */
+  collectsParticipants: boolean;
+  /** `F-9` */
+  externalTitle: string | null;
+  /** `F-9` */
+  pageHeading: string | null;
+  /** `F-9` */
+  showWelcome: boolean;
+  /** `F-7` */
+  maxParticipants: number | null;
   status: FormStatus;
   introMarkdown: string | null;
   opensAt: string | null;

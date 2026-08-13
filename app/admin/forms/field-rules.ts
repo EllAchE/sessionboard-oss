@@ -1,6 +1,8 @@
 import {
   BUILTIN_META,
+  PARTICIPANT_BUILTIN_META,
   isBuiltinKey,
+  isParticipantBuiltinKey,
   type Condition,
   type ConditionOp,
   type FieldType,
@@ -48,12 +50,21 @@ export function collectsAnswer(type: FieldType): boolean {
   return type !== 'section_break';
 }
 
+/** Enough of a field to answer every lock question below, from either built-in namespace. */
+type LockableField = Pick<FormFieldSpec, 'builtinKey'> & Partial<Pick<FormFieldSpec, 'participantKey'>>;
+
 /** A locked builtin. Reorderable, relabelable, optional-able — never deletable or retypeable. */
-export function isLockedField(field: Pick<FormFieldSpec, 'builtinKey'>): boolean {
-  return isBuiltinKey(field.builtinKey);
+export function isLockedField(field: LockableField): boolean {
+  return isBuiltinKey(field.builtinKey) || isParticipantBuiltinKey(field.participantKey);
 }
 
-export function lockReason(field: Pick<FormFieldSpec, 'builtinKey'>): string | null {
+export function lockReason(field: LockableField): string | null {
+  if (isParticipantBuiltinKey(field.participantKey)) {
+    const meta = PARTICIPANT_BUILTIN_META[field.participantKey];
+    return meta.requiredLocked
+      ? `Built-in participant field. Its answer is stored on ${meta.column}, and it is what identifies the person, so it cannot be removed, retyped or made optional. You can rename it and reorder it.`
+      : `Built-in participant field. Its answer is stored on ${meta.column}, which the roster, the speaker gallery and the reminders all read, so it cannot be removed or given a different type. You can rename it, reorder it or make it optional.`;
+  }
   if (!isBuiltinKey(field.builtinKey)) return null;
   const meta = BUILTIN_META[field.builtinKey];
   return meta.column
@@ -61,16 +72,27 @@ export function lockReason(field: Pick<FormFieldSpec, 'builtinKey'>): string | n
     : 'Built-in field. Its answers are stored as real submission tags, which the review queue and embeds filter on, so it cannot be removed or given a different type. You can rename it, reorder it or make it optional.';
 }
 
-export function canDeleteField(field: Pick<FormFieldSpec, 'builtinKey'>): boolean {
+export function canDeleteField(field: LockableField): boolean {
   return !isLockedField(field);
 }
 
-export function canChangeFieldType(field: Pick<FormFieldSpec, 'builtinKey'>): boolean {
+export function canChangeFieldType(field: LockableField): boolean {
   return !isLockedField(field);
 }
 
-export function canChangeFieldKey(field: Pick<FormFieldSpec, 'builtinKey'>): boolean {
+export function canChangeFieldKey(field: LockableField): boolean {
   return !isLockedField(field);
+}
+
+/**
+ * `F-6`'s "(all locked)". Only three fields in the product cannot have their Required toggle turned
+ * off, and all three are the participant's identity — first name, last name, email.
+ */
+export function canChangeRequired(field: LockableField): boolean {
+  return !(
+    isParticipantBuiltinKey(field.participantKey) &&
+    PARTICIPANT_BUILTIN_META[field.participantKey].requiredLocked
+  );
 }
 
 export function canAddOptions(field: Pick<FormFieldSpec, 'builtinKey' | 'type'>): boolean {

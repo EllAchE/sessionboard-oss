@@ -2,14 +2,22 @@ import { describe, expect, it } from 'vitest';
 import { AppError } from '../errors';
 import {
   BUILTIN_FIELDS,
+  BUILTIN_META,
+  PAGE_HEADING_MAX_LENGTH,
+  PARTICIPANT_BUILTIN_FIELDS,
+  PARTICIPANT_BUILTIN_META,
+  builtinMaxLength,
   charLimitUsage,
   clearHiddenAnswers,
   evaluateCondition,
   splitAnswers,
   validateAnswers,
   validateConditions,
+  validateParticipantCounts,
+  validateRoleConfiguration,
   visibleFields,
   type FormFieldSpec,
+  type ParticipantRoleSpec,
 } from './contract';
 
 function field(overrides: Partial<FormFieldSpec> & Pick<FormFieldSpec, 'id' | 'key'>): FormFieldSpec {
@@ -206,5 +214,189 @@ describe('charLimitUsage', () => {
       field({ id: '3', key: 'c', maxLength: 100 }),
     ];
     expect(charLimitUsage(fields, { a: 'xxx', b: 'yy', c: 'zzzzz' }, 'g')).toEqual({ used: 5, limit: 100 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `F-5` / `F-6` — the constants the brief actually names
+// ---------------------------------------------------------------------------
+
+describe('built-in field constants', () => {
+  /**
+   * These are not style preferences. The brief stars five of the six abstract fields and caps Title
+   * at 255 and Description at 5,000, and before this test existed `BUILTIN_META` carried no cap at
+   * all — so every form ever created had an unlimited Title, and four of the five starred fields
+   * arrived optional.
+   */
+  it('stars the five fields `F-5` stars, and only those', () => {
+    const starred = BUILTIN_FIELDS.filter((key) => BUILTIN_META[key].required);
+    expect(starred).toEqual(['title', 'description', 'format', 'track', 'tags']);
+    expect(BUILTIN_META.level.required).toBe(false);
+  });
+
+  it('carries the two character caps `F-5` names', () => {
+    expect(BUILTIN_META.title.maxLength).toBe(255);
+    expect(BUILTIN_META.description.maxLength).toBe(5000);
+  });
+
+  it('locks the three participant fields `F-6` calls locked, and no others', () => {
+    const locked = PARTICIPANT_BUILTIN_FIELDS.filter(
+      (key) => PARTICIPANT_BUILTIN_META[key].requiredLocked,
+    );
+    expect(locked).toEqual(['firstName', 'lastName', 'email']);
+  });
+
+  it('caps the biography at 5,000 characters, as `F-6` asks', () => {
+    expect(PARTICIPANT_BUILTIN_META.biography.maxLength).toBe(5000);
+    expect(PARTICIPANT_BUILTIN_META.biography.type).toBe('markdown');
+  });
+
+  it('treats a built-in cap as a ceiling on whichever entity it belongs to', () => {
+    expect(builtinMaxLength('abstract', 'title')).toBe(255);
+    expect(builtinMaxLength('participant', 'biography')).toBe(5000);
+    // A custom question has no ceiling — only the built-ins are load-bearing elsewhere.
+    expect(builtinMaxLength('abstract', 'takeaways')).toBeNull();
+    expect(builtinMaxLength('participant', 'title')).toBeNull();
+  });
+
+  it('caps the welcome screen heading where `F-9` caps it', () => {
+    expect(PAGE_HEADING_MAX_LENGTH).toBe(15);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `F-7` — participant roles and counts
+// ---------------------------------------------------------------------------
+
+function role(overrides: Partial<ParticipantRoleSpec> & Pick<ParticipantRoleSpec, 'kind'>): ParticipantRoleSpec {
+  return {
+    id: overrides.kind,
+    label: overrides.kind,
+    position: 0,
+    minCount: 0,
+    maxCount: null,
+    ...overrides,
+  };
+}
+
+describe('validateRoleConfiguration', () => {
+  it('accepts limits that can all be met at once', () => {
+    expect(() =>
+      validateRoleConfiguration(
+        [role({ kind: 'speaker', minCount: 1, maxCount: 1 }), role({ kind: 'panelist', maxCount: 3 })],
+        4,
+      ),
+    ).not.toThrow();
+  });
+
+  /**
+   * The failure this exists to catch: minimums that sum past the cap. Every submission to such a form
+   * is rejected, and the organizer would otherwise learn that from a speaker who cannot get past the
+   * participant stage rather than from the screen they configured it on.
+   */
+  it('rejects minimums that cannot fit under the overall cap', () => {
+    expect(() =>
+      validateRoleConfiguration(
+        [role({ kind: 'speaker', minCount: 2 }), role({ kind: 'moderator', minCount: 2 })],
+        3,
+      ),
+    ).toThrow(AppError);
+  });
+
+  it('rejects a minimum above its own maximum', () => {
+    expect(() =>
+      validateRoleConfiguration([role({ kind: 'speaker', minCount: 3, maxCount: 2 })], null),
+    ).toThrow(AppError);
+  });
+
+  it('rejects a maximum of zero, which is a role nobody could ever hold', () => {
+    expect(() => validateRoleConfiguration([role({ kind: 'speaker', maxCount: 0 })], null)).toThrow(
+      AppError,
+    );
+  });
+});
+
+describe('validateParticipantCounts', () => {
+  const roles = [
+    role({ kind: 'speaker', label: 'Speaker', minCount: 1, maxCount: 1 }),
+    role({ kind: 'co_speaker', label: 'Co-speaker', minCount: 0, maxCount: 2 }),
+  ];
+
+  it('accepts a cast that satisfies every rule', () => {
+    expect(() =>
+      validateParticipantCounts(roles, ['speaker', 'co_speaker', 'co_speaker'], 4),
+    ).not.toThrow();
+  });
+
+  it('rejects a second speaker when the form allows one', () => {
+    try {
+      validateParticipantCounts(roles, ['speaker', 'speaker'], null);
+      expect.unreachable();
+    } catch (error) {
+      expect((error as AppError).details?.speaker).toBe('Only one person can be the speaker');
+      // The headline names the actual problem rather than summarising that there is one.
+      expect((error as AppError).message).toBe('Only one person can be the speaker');
+    }
+  });
+
+  it('rejects a submission missing a required role entirely', () => {
+    try {
+      validateParticipantCounts(roles, ['co_speaker'], null);
+      expect.unreachable();
+    } catch (error) {
+      expect((error as AppError).details?.speaker).toBe('This form needs a speaker');
+    }
+  });
+
+  it('rejects more people than the overall cap, whatever their roles', () => {
+    try {
+      validateParticipantCounts(roles, ['speaker', 'co_speaker'], 1);
+      expect.unreachable();
+    } catch (error) {
+      expect((error as AppError).details?.participants).toContain('at most 1 person');
+    }
+  });
+
+  it('rejects a role the form does not offer', () => {
+    expect(() => validateParticipantCounts(roles, ['speaker', 'moderator'], null)).toThrow(AppError);
+  });
+
+  /**
+   * With no roles configured there is nothing to check against, and this function can only say so by
+   * rejecting every role as unoffered. That is the wrong answer for a form built before roles
+   * existed, which is exactly why `assertParticipantLimits` short-circuits on an empty set before
+   * reaching here. The boundary is pinned in both directions so a refactor cannot move it silently.
+   */
+  it('rejects every role when no role set is configured', () => {
+    expect(() => validateParticipantCounts([], ['speaker'], null)).toThrow(AppError);
+  });
+
+  it('says nothing about a submission with nobody on it and nothing required', () => {
+    expect(() => validateParticipantCounts([role({ kind: 'speaker' })], [], null)).not.toThrow();
+  });
+
+  /**
+   * The portal's share flow checks ceilings only. Adding a person can cross a maximum but can never
+   * be the reason a minimum is unmet, and telling a speaker "this form needs a speaker" while they
+   * are adding a panelist is a true statement about a problem they cannot fix from that screen.
+   */
+  describe('in ceilings mode', () => {
+    it('still refuses a person who would cross a maximum', () => {
+      expect(() =>
+        validateParticipantCounts(roles, ['speaker', 'speaker'], null, 'ceilings'),
+      ).toThrow(AppError);
+    });
+
+    it('still refuses a person who would cross the overall cap', () => {
+      expect(() =>
+        validateParticipantCounts(roles, ['speaker', 'co_speaker'], 1, 'ceilings'),
+      ).toThrow(AppError);
+    });
+
+    it('does not refuse a share onto a submission that is short of a minimum', () => {
+      expect(() =>
+        validateParticipantCounts(roles, ['co_speaker'], null, 'ceilings'),
+      ).not.toThrow();
+    });
   });
 });
