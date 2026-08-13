@@ -1,4 +1,3 @@
-import { requireCurrentActor } from '@/lib/auth';
 import {
   PROSPECT_STAGES,
   STAGE_LABELS,
@@ -6,6 +5,7 @@ import {
   listOrganizerEvents,
 } from '@/lib/services/crm';
 import { Directory } from './Directory';
+import { requireCrmOrganizer } from './context';
 import { filtersFromSearchParams, toContactWire, toFieldWire } from './serialize';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +22,7 @@ export default async function CrmDirectoryPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const actor = await requireCurrentActor();
+  const actor = await requireCrmOrganizer();
   const params = await searchParams;
 
   const [directory, events] = await Promise.all([listDirectory(actor), listOrganizerEvents(actor)]);
