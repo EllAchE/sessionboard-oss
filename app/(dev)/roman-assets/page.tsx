@@ -1,6 +1,11 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
+  CICERO_LOGO_ASSETS,
+  CICERO_TRANSPARENT_ASSETS,
+  type CiceroTransparentAsset,
+} from "@/lib/cicero-visual-assets";
+import {
   ROMAN_ASSETS,
   type RomanAsset,
   type RomanAssetCategory,
@@ -98,6 +103,48 @@ function AssetCard({ asset }: { asset: RomanAsset }) {
   );
 }
 
+function TransparentAssetCard({ asset }: { asset: CiceroTransparentAsset }) {
+  return (
+    <article className={styles.card}>
+      <div className={styles.alphaFrame} data-orientation={asset.orientation}>
+        <Image
+          src={asset.path}
+          alt={asset.alt}
+          fill
+          unoptimized
+          sizes="(max-width: 720px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+        <span className={styles.orientation}>transparent PNG</span>
+      </div>
+      <div className={styles.cardBody}>
+        <div>
+          <p className={styles.assetId}>{asset.id}</p>
+          <h3 className={styles.assetName}>{asset.name}</h3>
+        </div>
+        <p className={styles.altText}>{asset.alt}</p>
+        <div className={styles.tags} aria-label="Recommended uses">
+          {asset.recommendedFor.map((use) => (
+            <span className={styles.tag} key={use}>
+              {use}
+            </span>
+          ))}
+        </div>
+        <dl className={styles.metadata}>
+          <div>
+            <dt>Type</dt>
+            <dd>{asset.kind}</dd>
+          </div>
+          <div>
+            <dt>Provenance</dt>
+            <dd>{asset.provenance}</dd>
+          </div>
+        </dl>
+        <code className={styles.path}>{asset.path}</code>
+      </div>
+    </article>
+  );
+}
+
 export default function RomanAssetsPage() {
   if (process.env.NODE_ENV !== "development") {
     notFound();
@@ -125,9 +172,9 @@ export default function RomanAssetsPage() {
             its source.
           </p>
           <div className={styles.summary}>
-            <span>{ROMAN_ASSETS.length} assets</span>
-            <span>3 collections</span>
-            <span>WebP masters</span>
+            <span>{ROMAN_ASSETS.length} photographs</span>
+            <span>{CICERO_TRANSPARENT_ASSETS.length} alpha assets</span>
+            <span>{CICERO_LOGO_ASSETS.length} logo files</span>
           </div>
         </div>
       </header>
@@ -137,8 +184,9 @@ export default function RomanAssetsPage() {
           <p className={styles.guidanceLabel}>Art direction</p>
           <p>
             Favor warm stone, deep shadow, restrained vermilion, and crops with
-            one clear subject. For text overlays, use a dark gradient at 70–88%
-            opacity rather than flattening the image itself.
+            one clear subject. Keep transparent assets unboxed when possible;
+            use photographs as fields and generated illustrations as editorial
+            punctuation.
           </p>
         </aside>
 
@@ -167,6 +215,92 @@ export default function RomanAssetsPage() {
             );
           },
         )}
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.sectionEyebrow}>IV · Figurae</p>
+              <h2>Transparent cutouts</h2>
+            </div>
+            <p>
+              Faithful extractions of the strongest sculptural subjects in the
+              photo library. They can overlap panels, anchor empty states, and
+              cross light or dark surfaces without carrying a museum backdrop.
+            </p>
+          </div>
+          <div className={styles.grid}>
+            {CICERO_TRANSPARENT_ASSETS.filter(
+              (asset) => asset.kind === "photo cutout",
+            ).map((asset) => (
+              <TransparentAssetCard asset={asset} key={asset.id} />
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.sectionEyebrow}>V · Instrumenta</p>
+              <h2>Original illustrations</h2>
+            </div>
+            <p>
+              Backgroundless editorial objects for Cicero&apos;s three core
+              motions: invite the speaker, decide the programme, and publish the
+              agenda. These are intentionally illustrated rather than synthetic
+              photographs.
+            </p>
+          </div>
+          <div className={styles.grid}>
+            {CICERO_TRANSPARENT_ASSETS.filter(
+              (asset) => asset.kind === "original illustration",
+            ).map((asset) => (
+              <TransparentAssetCard asset={asset} key={asset.id} />
+            ))}
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <p className={styles.sectionEyebrow}>VI · Signum</p>
+              <h2>Logo system</h2>
+            </div>
+            <p>
+              An open C formed from amphitheatre tiers, ending at a vermilion
+              stage. Use the mark without a container; use the reversed version
+              on charcoal or photography.
+            </p>
+          </div>
+          <div className={styles.logoGrid}>
+            {CICERO_LOGO_ASSETS.map((asset) => (
+              <article className={styles.logoCard} key={asset.id}>
+                <div className={styles.logoPreview} data-preview={asset.preview}>
+                  <Image
+                    src={asset.path}
+                    alt={asset.name}
+                    width={300}
+                    height={96}
+                    unoptimized
+                  />
+                </div>
+                <div className={styles.cardBody}>
+                  <div>
+                    <p className={styles.assetId}>{asset.id}</p>
+                    <h3 className={styles.assetName}>{asset.name}</h3>
+                  </div>
+                  <div className={styles.tags} aria-label="Recommended uses">
+                    {asset.recommendedFor.map((use) => (
+                      <span className={styles.tag} key={use}>
+                        {use}
+                      </span>
+                    ))}
+                  </div>
+                  <code className={styles.path}>{asset.path}</code>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
