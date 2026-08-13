@@ -149,6 +149,7 @@ A speaker can:
 - Correct their own first and last name, which the call for speakers captures as two fields and
   which the name every other surface renders is recomposed from.
 - Add LinkedIn, X, Facebook, personal website, and other profile links.
+- Record a phone number and choose whether to receive notifications by email, by SMS, or both.
 - Upload or replace their headshot.
 
 ### Proposals and sessions
@@ -189,7 +190,8 @@ whether the task is required, and reminder timing.
 
 Speakers can save progress on form tasks before submitting them. A file or form task cannot be
 marked complete without its required evidence, while acknowledgement and external-link tasks
-complete only after an explicit speaker confirmation.
+complete only after an explicit speaker confirmation. A speaker can reopen a task they completed,
+and an organizer can waive one that no longer applies rather than leaving it owed forever.
 
 The current implementation supports four task shapes:
 
@@ -238,12 +240,19 @@ Organizers control the program from event setup through publication.
 
 An organizer can:
 
-- Create an event with a name, public slug, start and end dates, and timezone.
+- Create an event with a name, public slug, a start and end instant, and timezone. Start and end are
+  required and carry a time of day, not only a date.
 - Add website, location, event-type, and theme metadata.
 - Upload a logo and banner or background image.
-- Configure event-scoped tracks, rooms, tags, and session formats.
+- Configure event-scoped tracks, rooms, tags, session formats, personas, and the reusable custom
+  field library. All six are managed from the same settings surface.
 - Define room capacities and the values speakers or admins select on submissions and sessions.
+- Record sponsors and exhibitors with logos and a display order. These are organizer-facing only;
+  there is no public sponsor listing.
 - Switch between events when multi-event support is enabled.
+
+An organizer cannot currently set the speaker portal's own appearance — logo, accent colour, welcome
+copy, and support address exist per event but are written by the seeds alone.
 
 ### Build and publish the CFP
 
@@ -252,12 +261,21 @@ An organizer can:
 - Create multiple independent forms for an event.
 - Target a form at abstracts or sessions.
 - Enable or disable participant collection.
-- Choose, order, and require built-in proposal and participant fields.
-- Add custom fields with field types and character limits.
+- Rename, reorder, and toggle Required on the built-in proposal and participant fields. Built-ins
+  are seeded on every form rather than chosen, and cannot be deleted or retyped, because their
+  answers are stored on real columns the roster, queue, agenda, and embeds read. First name, last
+  name, and email cannot be made optional either — they are what identify the person.
+- Add custom fields with field types and per-field character limits, and drag questions out of a
+  reusable per-event field library.
+- Apply a shared character limit across a group of fields, not only per field.
 - Add conditional show/hide rules based on earlier answers.
 - Define participant roles, minimums, maximums, and overall participant limits.
-- Configure welcome and success content.
-- Set a close date.
+- Configure the welcome screen: internal name, external title, a page heading capped at 15
+  characters, and a rich welcome message with a show/hide toggle. There is no configurable success
+  page — after submitting, a speaker sees a fixed confirmation and is redirected into the portal.
+- Set an open and a close date.
+- Cap submissions per submitter, allow or forbid drafts, and name the addresses notified on each new
+  submission.
 - Publish the form at a public URL.
 - Configure submission confirmation behavior.
 
@@ -267,17 +285,22 @@ Payments, fees, and invoices are explicitly excluded from the CFP.
 
 An organizer can:
 
-- Browse proposals by pending, accept queue, accepted, decline queue, declined, withdrawn, or draft
-  state.
-- Search, sort, filter, and configure the submission list.
+- Browse proposals by all, pending, accept queue, accepted, waitlist, decline queue, declined,
+  withdrawn, or draft state.
+- Search, sort, and filter the submission list, choose which columns it shows, and save a tab,
+  filter, sort, and column selection together as a named view.
 - Define evaluation plans that route categories or tracks to reviewer pools.
 - Create multiple independent review rounds.
 - Define weighted or otherwise structured scorecard criteria.
 - Inspect scores and reviewer progress.
-- Stage and commit accept or decline decisions.
+- Commit accept, waitlist, or decline decisions, individually or in bulk. The accept and decline
+  queues are derived from review completeness and score rather than staged by hand; an organizer
+  cannot currently place a submission in a queue manually.
 - Manually add invited talks that did not enter through the public CFP.
-- Import sessions and export submission data when the corresponding optional tools are enabled.
-- Download submitted files in bulk when the optional tool is enabled.
+- Import sessions, export submission data, and download submitted files in bulk. These are always
+  available; none of them is behind a feature switch.
+- Read an advisory AI assessment of a proposal alongside the human scores. It never decides, and
+  where no model key is configured the surface says so rather than disappearing.
 
 ### Manage speakers and onboarding
 
@@ -322,6 +345,10 @@ An organizer can:
 - Keep sessions in draft while rearranging them.
 - Publish individual sessions or a day of sessions.
 - Return published sessions to draft or cancel them.
+- Ask for an AI-proposed placement for the unscheduled queue. The proposal is advisory and writes
+  nothing: every placement it suggests is re-checked through the same conflict detector the board
+  uses and dropped if it clashes, and with no model key a local planner produces the same shape of
+  suggestion.
 
 Therefore, for the concrete question "Can an organizer look at a particular speaker's time and move
 them?": the organizer can locate that speaker's session and move the session to another time or room.
@@ -341,13 +368,20 @@ Those would be additional product features rather than required interpretations 
 An organizer can:
 
 - Create and edit reusable email templates with merge fields.
-- Trigger submission confirmation, acceptance, decline, task reminder, and draft-deadline messages.
+- Trigger submission confirmation, acceptance, waitlist, decline, task reminder, and draft-deadline
+  messages. Confirmation and decision notices fire from the action itself; the two reminder jobs run
+  on the scheduled-job route, which the deployment does not yet call on a timer.
 - Send an ad hoc message to a filtered audience, such as all accepted speakers or everyone with an
   open task.
+- Reach speakers by SMS as well as email where a Twilio-style provider is configured. Templates
+  carry a separate short-message body, speakers opt in per person, and the composer can address a
+  channel deliberately. SMS has its own delivery log alongside the email one.
 - Inspect the send log to determine what was sent to whom and when.
 - Send real `.ics` calendar invitations.
 - Resend an invitation with a higher sequence so a rescheduled session updates the existing calendar
   entry rather than creating a duplicate.
+- Withdraw an invitation: cancelling or unpublishing a scheduled session automatically sends a
+  cancellation that removes the entry from the speaker's calendar rather than leaving a stale one.
 
 ### Monitor readiness
 
@@ -396,6 +430,10 @@ For content-management systems that reject custom JavaScript, the organizer can 
 fixed-height iframe instead.
 
 ### Integrate with Accelevents
+
+Accelevents is the required integration, but it is not the only one on that screen: where an
+Airtable base is configured, speaker, submission, and session rows are mirrored one way into it,
+with a backfill control and its own sync log. Everything below concerns Accelevents.
 
 The required attendee-registration integration has one direction:
 
@@ -462,7 +500,7 @@ mechanism used for speaker registration.
 | Upload speaker deliverables            |             No |     Yes |       No | Through attributable impersonation |
 | Complete assigned speaker tasks        |             No |     Yes |       No | Through attributable impersonation |
 | Score assigned proposals               |             No |      No |      Yes |                                Yes |
-| Accept or decline proposals            |             No |      No |       No |                                Yes |
+| Accept, waitlist, or decline proposals |             No |      No |       No |                                Yes |
 | Configure forms and review rounds      |             No |      No |       No |                                Yes |
 | Assign speaker tasks                   |             No |      No |       No |                                Yes |
 | Move sessions on the agenda            |             No |      No |       No |                                Yes |
@@ -478,11 +516,17 @@ The requirements deliberately exclude:
 - Ticket sales, payments, fees, and invoicing.
 - Full attendee registration and check-in.
 - Design fidelity to Sessionboard.
-- Full speaker CRM.
 - Awards, studio, and marketing modules.
-- Exhibitor and sponsor management.
 - Sessionboard-style autonomous AI agents.
 - Complex event-team role and permission administration.
+
+Two items this list previously carried were later built on purpose, and are called out rather than
+quietly deleted:
+
+- **Speaker CRM.** Excluded by the first requirements pass, then reversed — a full contact database
+  lives above the event layer at `app/crm/*`. See [`decisions-long-form.md`](decisions-long-form.md).
+- **Sponsor and exhibitor entities.** Organizer-facing CRUD exists; only the public-facing half was
+  scoped out. `E-7` in [`01-requirements.md`](01-requirements.md) is the governing row.
 
 Optional capabilities should not displace the required end-to-end journey. A plain workflow that
 gets an organizer and speaker from CFP through publication without a dead end is more important than
