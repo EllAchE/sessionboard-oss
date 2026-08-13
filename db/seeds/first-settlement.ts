@@ -1,10 +1,12 @@
 import { eq, inArray } from 'drizzle-orm';
 import { newIcsUid } from '../../lib/ics';
 import { ensureDefaultTemplates } from '../../lib/services/comms';
+import { getStorage, storageKey } from '../../lib/storage';
 import type { Database } from '../client';
 import {
   emailLog,
   event,
+  file,
   fileRequest,
   form,
   formField,
@@ -29,6 +31,7 @@ import {
   track,
   user,
 } from '../schema';
+import { loadRomanProfileArt, ROMAN_PROFILE_ART } from './roman-profile-art';
 
 const SLUG = 'first-settlement';
 const DAY = 86_400_000;
@@ -61,14 +64,43 @@ const SENATE_PEOPLE = [
 
 const REVIEWER_EMAILS = ['calvisius@first-settlement.example', 'arruntius@first-settlement.example'] as const;
 
-const SPEAKER_EMAILS = [
-  'octavian@first-settlement.example',
-  'agrippa@first-settlement.example',
-  'plancus@first-settlement.example',
-  'messalla@first-settlement.example',
-  'maecenas@first-settlement.example',
-  'taurus@first-settlement.example',
-] as const;
+const SPEAKER_EMAILS = ROMAN_PROFILE_ART.map((entry) => entry.email);
+
+async function removeEventFiles(db: Database, eventId: string): Promise<void> {
+  const records = await db.select({ storageKey: file.storageKey }).from(file).where(eq(file.eventId, eventId));
+  const storage = getStorage();
+  await Promise.all(records.map((record) => storage.delete(record.storageKey)));
+}
+
+async function seedProfileArt(
+  db: Database,
+  eventId: string,
+  uploadedByUserId: string,
+): Promise<Map<(typeof SPEAKER_EMAILS)[number], string>> {
+  const storage = getStorage();
+  const assignments = await Promise.all(
+    ROMAN_PROFILE_ART.map(async ({ email, assetPath }) => {
+      const filename = `${email.slice(0, email.indexOf('@'))}.webp`;
+      const bytes = await loadRomanProfileArt(assetPath);
+      const key = storageKey(eventId, filename);
+      await storage.put(key, bytes, 'image/webp');
+      const [record] = await db
+        .insert(file)
+        .values({
+          eventId,
+          storageKey: key,
+          filename,
+          contentType: 'image/webp',
+          sizeBytes: bytes.byteLength,
+          uploadedByUserId,
+        })
+        .returning({ id: file.id });
+      return [email, record.id] as const;
+    }),
+  );
+
+  return new Map(assignments);
+}
 
 function currentOrNextAnniversary(now: Date): Date {
   const thisYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 13));
@@ -96,7 +128,10 @@ export async function seedFirstSettlement(
   tasks: number;
 }> {
   const [existingEvent] = await db.select().from(event).where(eq(event.slug, SLUG));
-  if (existingEvent) await db.delete(event).where(eq(event.id, existingEvent.id));
+  if (existingEvent) {
+    await removeEventFiles(db, existingEvent.id);
+    await db.delete(event).where(eq(event.id, existingEvent.id));
+  }
 
   const senateEmails = SENATE_PEOPLE.map((person) => person.email);
   const existingPeople = await db.select({ id: user.id }).from(user).where(inArray(user.email, senateEmails));
@@ -568,6 +603,8 @@ export async function seedFirstSettlement(
     { submissionId: submissions[7].id, tagId: tags[0].id },
   ]);
 
+  const profileArt = await seedProfileArt(db, senate.id, organizerUserId);
+
   const profiles: Record<(typeof SPEAKER_EMAILS)[number], { title: string; house: string; bio: string }> = {
     'octavian@first-settlement.example': {
       title: 'Consul for the seventh time',
@@ -611,6 +648,7 @@ export async function seedFirstSettlement(
         jobTitle: profiles[email].title,
         company: profiles[email].house,
         bioMarkdown: profiles[email].bio,
+        headshotFileId: profileArt.get(email),
         timezone: 'Europe/Rome',
         workflowStatus: 'confirmed' as const,
         links: [

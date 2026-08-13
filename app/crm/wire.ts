@@ -148,7 +148,9 @@ export function filtersToQuery(filters: FiltersWire): URLSearchParams {
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(iso).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -156,7 +158,9 @@ export function formatDate(iso: string): string {
 }
 
 export function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(iso).toLocaleString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
     day: 'numeric',

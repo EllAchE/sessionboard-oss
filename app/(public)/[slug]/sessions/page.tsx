@@ -37,7 +37,13 @@ export default async function PublicSessionsPage({
           <h2 className={styles.sectionTitle}>Sessions</h2>
           <span className={styles.sectionLink}>{bundle.sessions.length} published</span>
         </div>
-        <EmbedBody view="sessions" bundle={bundle} options={{ ...options, columns: 2 }} />
+        <EmbedBody
+          view="sessions"
+          bundle={bundle}
+          options={{ ...options, columns: 2 }}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
+        />
       </section>
     </PublicChrome>
   );

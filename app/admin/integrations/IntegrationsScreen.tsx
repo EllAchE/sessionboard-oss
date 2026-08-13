@@ -45,7 +45,9 @@ const SYNC_TONE: Record<SyncLogRow['status'], 'neutral' | 'success' | 'danger'> 
 
 function formatWhen(value: string | null): string {
   if (!value) return '—';
-  return new Date(value).toLocaleString(undefined, {
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(value).toLocaleString('en-US', {
+    timeZone: 'UTC',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',

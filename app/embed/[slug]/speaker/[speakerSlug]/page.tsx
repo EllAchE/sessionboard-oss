@@ -9,11 +9,7 @@ export const dynamic = 'force-dynamic';
 type Params = { slug: string; speakerSlug: string };
 type Search = Record<string, string | string[] | undefined>;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug, speakerSlug } = await params;
   const bundle = await loadPublicBundle(slug);
   const speaker = bundle?.speakers.find((entry) => entry.slug === speakerSlug);
@@ -52,6 +48,7 @@ export default async function EmbedSpeakerPage({
           sessions={sessionsForSpeaker(bundle.sessions, speaker)}
           timezone={bundle.event.timezone}
           showPhoto={options.showPhoto}
+          sessionBase={`/embed/${bundle.event.slug}/sessions`}
         />
       </div>
     </div>

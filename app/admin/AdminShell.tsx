@@ -13,6 +13,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
+import { CiceroBrand } from '@/components/CiceroBrand';
 import { CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import type { EventSummary } from '@/lib/services/events';
 import { EventSwitcher } from './EventSwitcher';
@@ -113,7 +114,7 @@ export function AdminShell({
         <SidebarNav
           sections={NAV}
           activeId={activeId}
-          header={<span className={styles.wordmark}>Cicero</span>}
+          header={<CiceroBrand markSize={22} />}
         />
       </aside>
       <div className={styles.main}>

@@ -2,12 +2,12 @@ import Image from 'next/image';
 import {
   ArrowRight,
   CalendarCheck,
-  Columns3,
   FileCheck,
   Github,
   ListChecks,
   UserPlus,
 } from 'lucide-react';
+import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
@@ -42,10 +42,7 @@ export default function Home() {
     <main className={styles.root}>
       <nav className={styles.nav} aria-label="Primary navigation">
         <a className={styles.brand} href="/" aria-label="Cicero home">
-          <span className={styles.brandMark} aria-hidden="true">
-            <Columns3 size={19} />
-          </span>
-          <span>Cicero</span>
+          <CiceroBrand markSize={34} />
         </a>
         <div className={styles.navLinks}>
           <a className={styles.productLink} href="#product">
@@ -187,13 +184,6 @@ export default function Home() {
         </Button>
       </section>
 
-      <footer className={styles.footer}>
-        <span>© 2026 Cicero</span>
-        <a href="https://github.com/EllAchE/sessionboard-oss" aria-label="Cicero on GitHub">
-          <Github size={17} aria-hidden="true" />
-          <span>GitHub</span>
-        </a>
-      </footer>
     </main>
   );
 }

@@ -2,11 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { embedStyles } from '../../../../embed/EmbedBody';
-import {
-  loadPublicBundle,
-  parseEmbedOptions,
-  sessionsForSpeaker,
-} from '../../../../embed/queries';
+import { loadPublicBundle, parseEmbedOptions, sessionsForSpeaker } from '../../../../embed/queries';
 import { SpeakerProfile } from '../../../../embed/views/parts';
 import { PublicChrome, publicStyles as styles } from '../../PublicChrome';
 
@@ -61,6 +57,7 @@ export default async function PublicSpeakerPage({
             timezone={bundle.event.timezone}
             showPhoto={options.showPhoto}
             showName={false}
+            sessionBase={`/${bundle.event.slug}/sessions`}
           />
         </div>
       </section>

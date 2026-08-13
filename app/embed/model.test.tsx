@@ -1,0 +1,123 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it } from 'vitest';
+import {
+  EMPTY_SESSION_FACETS,
+  facetValues,
+  sessionMatches,
+  sessionMatchesFacets,
+  speakerMatches,
+  speakerSlug,
+  type PublicSession,
+  type PublicSpeaker,
+} from './model';
+import { SpeakerProfile, SpeakerRoster } from './views/parts';
+
+(globalThis as typeof globalThis & { React: typeof React }).React = React;
+
+const speaker: PublicSpeaker = {
+  id: 'speaker-12345678',
+  slug: 'cicero-speaker',
+  name: 'Marcus Tullius Cicero',
+  pronouns: null,
+  jobTitle: 'Consul',
+  company: 'Roman Republic',
+  bioHtml: '<p>Roman statesman and philosopher.</p>',
+  bioText: 'Roman statesman and philosopher.',
+  bioExcerpt: 'Roman statesman and philosopher.',
+  headshotUrl: null,
+  links: [],
+  sessionIds: ['session-1'],
+};
+
+const session: PublicSession = {
+  id: 'session-1',
+  ref: 12,
+  title: 'On duties in public life',
+  descriptionHtml: '<p>Practical ethics for civic leaders.</p>',
+  descriptionText: 'Practical ethics for civic leaders.',
+  descriptionExcerpt: 'Practical ethics for civic leaders.',
+  startsAt: '2026-09-08T14:00:00.000Z',
+  endsAt: '2026-09-08T15:00:00.000Z',
+  room: 'Forum',
+  track: 'Leadership',
+  trackId: 'track-1',
+  format: 'Talk',
+  ceuCredits: null,
+  tags: [{ id: 'tag-1', name: 'Stoicism' }],
+  speakers: [
+    {
+      id: speaker.id,
+      slug: speakerSlug(speaker.id, speaker.name),
+      name: speaker.name,
+      jobTitle: speaker.jobTitle,
+      company: speaker.company,
+    },
+  ],
+};
+
+describe('public programme discovery', () => {
+  it('searches talks through topic and speaker relations', () => {
+    expect(sessionMatches(session, 'Stoicism')).toBe(true);
+    expect(sessionMatches(session, 'Roman Republic')).toBe(true);
+    expect(sessionMatches(session, 'civic leaders')).toBe(true);
+  });
+
+  it('searches speakers through profiles and their related talks', () => {
+    expect(speakerMatches(speaker, 'philosopher', [session])).toBe(true);
+    expect(speakerMatches(speaker, 'public life', [session])).toBe(true);
+    expect(speakerMatches(speaker, 'Stoicism', [session])).toBe(true);
+  });
+
+  it('filters talks by event-local day and topic', () => {
+    const facets = {
+      ...EMPTY_SESSION_FACETS,
+      days: ['2026-09-08'],
+      topics: ['Stoicism'],
+    };
+
+    expect(sessionMatchesFacets(session, facets, 'UTC')).toBe(true);
+    expect(sessionMatchesFacets(session, { ...facets, days: ['2026-09-09'] }, 'UTC')).toBe(false);
+    expect(sessionMatchesFacets(session, { ...facets, topics: ['Rhetoric'] }, 'UTC')).toBe(false);
+  });
+
+  it('counts each topic once per talk', () => {
+    const repeated = {
+      ...session,
+      id: 'session-2',
+      tags: [
+        { id: 'tag-1', name: 'Stoicism' },
+        { id: 'tag-duplicate', name: 'Stoicism' },
+      ],
+    };
+
+    expect(facetValues([session, repeated], (entry) => entry.tags.map((tag) => tag.name))).toEqual([
+      { value: 'Stoicism', count: 2 },
+    ]);
+  });
+});
+
+describe('public programme relation links', () => {
+  it('links a talk speaker to the standalone profile', () => {
+    const html = renderToStaticMarkup(
+      <SpeakerRoster session={session} speakerBase="/republic/speakers" />,
+    );
+
+    expect(html).toContain(`href="/republic/speakers/${session.speakers[0].slug}"`);
+    expect(html).toContain(speaker.name);
+  });
+
+  it('links a profile session back to the talks browser', () => {
+    const html = renderToStaticMarkup(
+      <SpeakerProfile
+        speaker={speaker}
+        sessions={[session]}
+        timezone="UTC"
+        sessionBase="/republic/sessions"
+      />,
+    );
+
+    expect(html).toContain('href="/republic/sessions#session-12"');
+    expect(html).toContain(session.title);
+  });
+});
