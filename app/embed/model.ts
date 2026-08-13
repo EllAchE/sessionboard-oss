@@ -45,7 +45,14 @@ export type PublicSession = {
   trackId: string | null;
   format: string | null;
   ceuCredits: string | null;
-  speakers: { id: string; name: string; jobTitle: string | null; company: string | null }[];
+  tags: { id: string; name: string }[];
+  speakers: {
+    id: string;
+    slug: string;
+    name: string;
+    jobTitle: string | null;
+    company: string | null;
+  }[];
 };
 
 export type PublicBundle = {
@@ -98,7 +105,10 @@ const SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv', 'phd', 'm
 
 export function surnameOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
-  while (words.length > 1 && SUFFIXES.has(words[words.length - 1].toLowerCase().replace(/,$/, ''))) {
+  while (
+    words.length > 1 &&
+    SUFFIXES.has(words[words.length - 1].toLowerCase().replace(/,$/, ''))
+  ) {
     words.pop();
   }
   return (words[words.length - 1] ?? name).toLowerCase();
@@ -230,10 +240,7 @@ export function formatClock(minutes: number): string {
   return `${display}:${String(minute).padStart(2, '0')} ${suffix}`;
 }
 
-export function speakerLine(speaker: {
-  jobTitle: string | null;
-  company: string | null;
-}): string {
+export function speakerLine(speaker: { jobTitle: string | null; company: string | null }): string {
   return [speaker.jobTitle, speaker.company].filter(Boolean).join(', ');
 }
 
@@ -241,7 +248,7 @@ function normalize(value: string): string {
   return value.toLowerCase().normalize('NFKD');
 }
 
-/** `EMB-02`: one query matches a title or any of the people on stage for it. */
+/** `EMB-02`: one query follows the talk's searchable programme relationships. */
 export function sessionMatches(session: PublicSession, query: string): boolean {
   const needle = normalize(query.trim());
   if (!needle) return true;
@@ -251,15 +258,38 @@ export function sessionMatches(session: PublicSession, query: string): boolean {
     session.format ?? '',
     session.room ?? '',
     session.descriptionText,
-    ...session.speakers.flatMap((person) => [person.name, person.jobTitle ?? '', person.company ?? '']),
+    ...session.tags.map((tag) => tag.name),
+    ...session.speakers.flatMap((person) => [
+      person.name,
+      person.jobTitle ?? '',
+      person.company ?? '',
+    ]),
   ].join(' ');
   return normalize(haystack).includes(needle);
 }
 
-export function speakerMatches(speaker: PublicSpeaker, query: string): boolean {
+export function speakerMatches(
+  speaker: PublicSpeaker,
+  query: string,
+  sessions: PublicSession[] = [],
+): boolean {
   const needle = normalize(query.trim());
   if (!needle) return true;
-  const haystack = [speaker.name, speaker.jobTitle ?? '', speaker.company ?? ''].join(' ');
+  const related = sessionsForSpeaker(sessions, speaker);
+  const haystack = [
+    speaker.name,
+    speaker.pronouns ?? '',
+    speaker.jobTitle ?? '',
+    speaker.company ?? '',
+    speaker.bioText,
+    ...related.flatMap((session) => [
+      session.title,
+      session.descriptionText,
+      session.track ?? '',
+      session.format ?? '',
+      ...session.tags.map((tag) => tag.name),
+    ]),
+  ].join(' ');
   return normalize(haystack).includes(needle);
 }
 
@@ -269,7 +299,8 @@ export function sessionsForSpeaker(
 ): PublicSession[] {
   const owned = new Set(speaker.sessionIds);
   return sessions.filter(
-    (session) => owned.has(session.id) || session.speakers.some((person) => person.id === speaker.id),
+    (session) =>
+      owned.has(session.id) || session.speakers.some((person) => person.id === speaker.id),
   );
 }
 
@@ -353,7 +384,8 @@ export function applyFilters(bundle: PublicBundle, options: EmbedOptions): Publi
       if (!trackFilter.has(name) && !trackFilter.has(session.trackId ?? '')) return false;
     }
     if (roomFilter.size > 0 && !roomFilter.has(session.room?.toLowerCase() ?? '')) return false;
-    if (formatFilter.size > 0 && !formatFilter.has(session.format?.toLowerCase() ?? '')) return false;
+    if (formatFilter.size > 0 && !formatFilter.has(session.format?.toLowerCase() ?? ''))
+      return false;
     return true;
   });
 
@@ -376,15 +408,54 @@ export function applyFilters(bundle: PublicBundle, options: EmbedOptions): Publi
 /** The distinct values actually present, which is what a facet list may offer. */
 export function facetValues(
   sessions: PublicSession[],
-  pick: (session: PublicSession) => string | null,
+  pick: (session: PublicSession) => string | string[] | null,
 ): { value: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const session of sessions) {
-    const value = pick(session);
-    if (!value) continue;
-    counts.set(value, (counts.get(value) ?? 0) + 1);
+    const picked = pick(session);
+    const values = Array.isArray(picked) ? [...new Set(picked)] : picked ? [picked] : [];
+    for (const value of values) {
+      if (!value) continue;
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
   }
   return [...counts.entries()]
     .map(([value, count]) => ({ value, count }))
     .sort((a, b) => a.value.localeCompare(b.value));
+}
+
+export type SessionFacets = {
+  days: string[];
+  topics: string[];
+  tracks: string[];
+  formats: string[];
+  rooms: string[];
+};
+
+export const EMPTY_SESSION_FACETS: SessionFacets = {
+  days: [],
+  topics: [],
+  tracks: [],
+  formats: [],
+  rooms: [],
+};
+
+export function countSessionFacets(facets: SessionFacets): number {
+  return Object.values(facets).reduce((total, values) => total + values.length, 0);
+}
+
+export function sessionMatchesFacets(
+  session: PublicSession,
+  facets: SessionFacets,
+  timezone: string,
+): boolean {
+  const day = session.startsAt ? dayKeyOf(session.startsAt, timezone) : 'tbd';
+  if (facets.days.length > 0 && !facets.days.includes(day)) return false;
+  if (facets.topics.length > 0 && !session.tags.some((tag) => facets.topics.includes(tag.name))) {
+    return false;
+  }
+  if (facets.tracks.length > 0 && !facets.tracks.includes(session.track ?? '')) return false;
+  if (facets.formats.length > 0 && !facets.formats.includes(session.format ?? '')) return false;
+  if (facets.rooms.length > 0 && !facets.rooms.includes(session.room ?? '')) return false;
+  return true;
 }

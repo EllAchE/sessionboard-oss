@@ -97,6 +97,8 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             view="gallery"
             bundle={{ ...bundle, speakers: bundle.speakers.slice(0, 6) }}
             options={{ ...options, showBio: false }}
+            speakerBase={`/${event.slug}/speakers`}
+            sessionBase={`/${event.slug}/sessions`}
           />
         </section>
       ) : null}
@@ -113,6 +115,8 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             view="sessions"
             bundle={{ ...bundle, sessions: bundle.sessions.slice(0, 6) }}
             options={{ ...options, columns: 2, showDescription: false }}
+            speakerBase={`/${event.slug}/speakers`}
+            sessionBase={`/${event.slug}/sessions`}
           />
         </section>
       ) : (

@@ -35,7 +35,13 @@ export default async function PublicGalleryPage({
           <h2 className={styles.sectionTitle}>Speaker gallery</h2>
           <span className={styles.sectionLink}>{bundle.speakers.length} announced</span>
         </div>
-        <EmbedBody view="gallery" bundle={bundle} options={parseEmbedOptions(search)} />
+        <EmbedBody
+          view="gallery"
+          bundle={bundle}
+          options={parseEmbedOptions(search)}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
+        />
       </section>
     </PublicChrome>
   );

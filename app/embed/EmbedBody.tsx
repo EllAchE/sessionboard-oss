@@ -35,6 +35,7 @@ export function EmbedBody({
   options,
   showHeader = false,
   speakerBase,
+  sessionBase,
 }: {
   view: EmbedView;
   bundle: PublicBundle;
@@ -42,9 +43,11 @@ export function EmbedBody({
   showHeader?: boolean;
   /** Where a speaker permalink points, which differs between the iframe and the public site. */
   speakerBase?: string;
+  sessionBase?: string;
 }) {
   const filtered = applyFilters(bundle, options);
   const speakerHref = speakerBase ?? `/embed/${bundle.event.slug}/speaker`;
+  const sessionHref = sessionBase ?? `/embed/${bundle.event.slug}/sessions`;
 
   return (
     <div
@@ -61,13 +64,26 @@ export function EmbedBody({
           ) : null}
         </header>
       ) : null}
-      {view === 'agenda' ? <AgendaWidget bundle={filtered} options={options} /> : null}
-      {view === 'itinerary' ? <ItineraryWidget bundle={filtered} options={options} /> : null}
-      {view === 'sessions' ? <SessionsWidget bundle={filtered} options={options} /> : null}
-      {view === 'speakers' ? (
-        <SpeakersWidget bundle={filtered} options={options} speakerBase={speakerHref} />
+      {view === 'agenda' ? (
+        <AgendaWidget bundle={filtered} options={options} speakerBase={speakerHref} />
       ) : null}
-      {view === 'gallery' ? <GalleryWidget bundle={filtered} options={options} /> : null}
+      {view === 'itinerary' ? (
+        <ItineraryWidget bundle={filtered} options={options} speakerBase={speakerHref} />
+      ) : null}
+      {view === 'sessions' ? (
+        <SessionsWidget bundle={filtered} options={options} speakerBase={speakerHref} />
+      ) : null}
+      {view === 'speakers' ? (
+        <SpeakersWidget
+          bundle={filtered}
+          options={options}
+          speakerBase={speakerHref}
+          sessionBase={sessionHref}
+        />
+      ) : null}
+      {view === 'gallery' ? (
+        <GalleryWidget bundle={filtered} options={options} sessionBase={sessionHref} />
+      ) : null}
     </div>
   );
 }
