@@ -351,6 +351,26 @@ export function seedRoles(formId: string): Array<typeof formParticipantRole.$inf
   ];
 }
 
+/**
+ * A participant stage without a role cannot add anybody. Keep the repair in one helper because it
+ * is needed at both invariant boundaries: publishing an older form and turning participants on for
+ * a form that is already live. Existing role sets are organizer configuration and stay untouched.
+ */
+async function ensureFormRoles(formId: string): Promise<void> {
+  const db = getDb();
+  const roles = await db.query.formParticipantRole.findMany({
+    where: eq(formParticipantRole.formId, formId),
+  });
+  if (roles.length > 0) return;
+
+  await db
+    .insert(formParticipantRole)
+    .values(seedRoles(formId))
+    .onConflictDoNothing({
+      target: [formParticipantRole.formId, formParticipantRole.kind],
+    });
+}
+
 export type FormSettingsPatch = {
   name?: string;
   slug?: string;
@@ -481,6 +501,16 @@ export async function updateForm(
         closesAt: 'Pick a date after the open date',
       });
     }
+  }
+
+  // `F-4` / `F-7`. Publishing repairs old rows too, but changing this flag on an already-open form
+  // does not pass through `publishForm`. Seed in this write path so the newly visible participant
+  // stage is usable immediately. The helper deliberately also repairs an already-true empty row if
+  // a caller resaves it, and leaves every non-empty organizer-configured role set alone. Repair
+  // before flipping the flag: if either query fails the stage stays hidden, while roles on a still-
+  // hidden stage are harmless if the subsequent update itself fails.
+  if (patch.collectsParticipants === true && (patch.kind ?? existing.kind) === 'cfp') {
+    await ensureFormRoles(formId);
   }
 
   const [updated] = await getDb().update(form).set(values).where(eq(form.id, formId)).returning();
@@ -668,10 +698,7 @@ export async function ensureFormBuiltins(formId: string, kind: FormKind): Promis
     );
   }
 
-  const roles = await db.query.formParticipantRole.findMany({
-    where: eq(formParticipantRole.formId, formId),
-  });
-  if (roles.length === 0) await db.insert(formParticipantRole).values(seedRoles(formId));
+  await ensureFormRoles(formId);
 }
 
 /**

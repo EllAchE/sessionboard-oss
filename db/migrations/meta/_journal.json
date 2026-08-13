@@ -127,6 +127,13 @@
       "when": 1786650161677,
       "tag": "0017_smart_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786650500000,
+      "tag": "0018_form_invariant_repairs",
+      "breakpoints": true
     }
   ]
 }
