@@ -60,10 +60,7 @@ async function allocateSessionRef(
  * a brand-new event, leaving the old one stranded on the speaker's calendar — the `C-3` failure.
  */
 function mintIcsUid(): string {
-  const host =
-    appUrl()
-      .replace(/^https?:\/\//, '')
-      .split('/')[0] || 'cicero.local';
+  const host = appUrl().replace(/^https?:\/\//, '').split('/')[0] || 'cicero.local';
   return `${crypto.randomUUID()}@${host}`;
 }
 
@@ -93,10 +90,7 @@ export type PlacementInput = {
   endsAt: string;
 };
 
-function placementTimes(input: PlacementInput): {
-  startsAt: Date;
-  endsAt: Date;
-} {
+function placementTimes(input: PlacementInput): { startsAt: Date; endsAt: Date } {
   const startsAt = new Date(input.startsAt);
   const endsAt = new Date(input.endsAt);
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
@@ -134,7 +128,10 @@ async function placeSession(
   if (!source) throw conflict('That submission is no longer available');
 
   const already = await transaction.query.scheduledSession.findFirst({
-    where: and(eq(scheduledSession.eventId, eventId), eq(scheduledSession.submissionId, source.id)),
+    where: and(
+      eq(scheduledSession.eventId, eventId),
+      eq(scheduledSession.submissionId, source.id),
+    ),
   });
   if (already) {
     await transaction
@@ -175,10 +172,7 @@ export async function placeSessionAction(
     const ctx = await authorize();
     const sessionId = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
       const changedSessionId = await placeSession(transaction, ctx.eventId, input);
-      return {
-        data: changedSessionId,
-        changedSessionIds: [changedSessionId],
-      };
+      return { data: changedSessionId, changedSessionIds: [changedSessionId] };
     });
 
     await notifyIfPublished(sessionId);
@@ -208,13 +202,7 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
 
     await db
       .update(scheduledSession)
-      .set({
-        roomId: null,
-        startsAt: null,
-        endsAt: null,
-        status: 'draft',
-        updatedAt: new Date(),
-      })
+      .set({ roomId: null, startsAt: null, endsAt: null, status: 'draft', updatedAt: new Date() })
       .where(eq(scheduledSession.id, sessionId));
 
     revalidate();
@@ -262,7 +250,6 @@ export async function saveManualSessionAction(
     ) {
       return { ok: false, error: 'That slot is not a valid time' };
     }
-
     if (!startsAt && endsAt) return { ok: false, error: 'Give the session a start time' };
     if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) {
       return { ok: false, error: 'A session has to end after it starts' };
@@ -375,10 +362,7 @@ export async function setSessionStatusAction(
       if (!existing) throw conflict('That session is no longer on this agenda');
       if (existing.status === status) {
         return {
-          data: {
-            changed: false,
-            wasVisible: existing.status === 'published',
-          },
+          data: { changed: false, wasVisible: existing.status === 'published' },
           changedSessionIds: [],
         };
       }
@@ -454,10 +438,7 @@ export async function publishAllAction(
       await Promise.all(batch.map((sessionId) => notifyIfPublished(sessionId, {}, graph)));
     }
     revalidate();
-    return {
-      ok: true,
-      data: { published: publishedSessionIds.length, skipped: 0 },
-    };
+    return { ok: true, data: { published: publishedSessionIds.length, skipped: 0 } };
   } catch (error) {
     return fail(error);
   }

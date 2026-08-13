@@ -65,56 +65,29 @@ const TRACK_B = 'track-b';
 
 describe('overlaps', () => {
   it('treats back-to-back sessions as free of conflict', () => {
-    const first = {
-      startsAt: at('2026-10-12T16:00:00Z'),
-      endsAt: at('2026-10-12T17:00:00Z'),
-    };
-    const second = {
-      startsAt: at('2026-10-12T17:00:00Z'),
-      endsAt: at('2026-10-12T18:00:00Z'),
-    };
+    const first = { startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T17:00:00Z') };
+    const second = { startsAt: at('2026-10-12T17:00:00Z'), endsAt: at('2026-10-12T18:00:00Z') };
     expect(overlaps(first, second)).toBe(false);
     expect(overlaps(second, first)).toBe(false);
   });
 
   it('flags a one-minute encroachment in either direction', () => {
-    const first = {
-      startsAt: at('2026-10-12T16:00:00Z'),
-      endsAt: at('2026-10-12T17:00:00Z'),
-    };
-    const second = {
-      startsAt: at('2026-10-12T16:59:00Z'),
-      endsAt: at('2026-10-12T18:00:00Z'),
-    };
+    const first = { startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T17:00:00Z') };
+    const second = { startsAt: at('2026-10-12T16:59:00Z'), endsAt: at('2026-10-12T18:00:00Z') };
     expect(overlaps(first, second)).toBe(true);
     expect(overlaps(second, first)).toBe(true);
   });
 
   it('flags full containment', () => {
-    const outer = {
-      startsAt: at('2026-10-12T16:00:00Z'),
-      endsAt: at('2026-10-12T18:00:00Z'),
-    };
-    const inner = {
-      startsAt: at('2026-10-12T16:30:00Z'),
-      endsAt: at('2026-10-12T17:00:00Z'),
-    };
+    const outer = { startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T18:00:00Z') };
+    const inner = { startsAt: at('2026-10-12T16:30:00Z'), endsAt: at('2026-10-12T17:00:00Z') };
     expect(overlaps(outer, inner)).toBe(true);
   });
 
   it('keeps a zero-length marker at either boundary free of conflict', () => {
-    const block = {
-      startsAt: at('2026-10-12T16:00:00Z'),
-      endsAt: at('2026-10-12T17:00:00Z'),
-    };
-    const atEnd = {
-      startsAt: at('2026-10-12T17:00:00Z'),
-      endsAt: at('2026-10-12T17:00:00Z'),
-    };
-    const atStart = {
-      startsAt: at('2026-10-12T16:00:00Z'),
-      endsAt: at('2026-10-12T16:00:00Z'),
-    };
+    const block = { startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T17:00:00Z') };
+    const atEnd = { startsAt: at('2026-10-12T17:00:00Z'), endsAt: at('2026-10-12T17:00:00Z') };
+    const atStart = { startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T16:00:00Z') };
     expect(overlaps(atEnd, block)).toBe(false);
     expect(overlaps(atStart, block)).toBe(false);
   });
@@ -348,12 +321,7 @@ describe('detectConflicts', () => {
       }),
     ]);
 
-    expect(summarizeConflicts(conflicts)).toEqual({
-      total: 3,
-      room: 1,
-      track: 1,
-      speaker: 1,
-    });
+    expect(summarizeConflicts(conflicts)).toEqual({ total: 3, room: 1, track: 1, speaker: 1 });
   });
 
   it('ignores unscheduled and cancelled sessions', () => {
@@ -402,16 +370,8 @@ describe('detectConflicts', () => {
 
   it('treats a null room or track as unset rather than as a shared value', () => {
     const conflicts = detectConflicts([
-      entry({
-        id: 'a',
-        startsAt: at('2026-10-12T16:00:00Z'),
-        endsAt: at('2026-10-12T17:00:00Z'),
-      }),
-      entry({
-        id: 'b',
-        startsAt: at('2026-10-12T16:00:00Z'),
-        endsAt: at('2026-10-12T17:00:00Z'),
-      }),
+      entry({ id: 'a', startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T17:00:00Z') }),
+      entry({ id: 'b', startsAt: at('2026-10-12T16:00:00Z'), endsAt: at('2026-10-12T17:00:00Z') }),
     ]);
 
     expect(conflicts).toEqual([]);
@@ -525,9 +485,9 @@ describe('event-timezone arithmetic', () => {
   });
 
   it('formats a range in the event zone', () => {
-    expect(formatZonedRange(at('2026-10-12T16:00:00Z'), at('2026-10-12T16:45:00Z'), TZ)).toBe(
-      '09:00–09:45',
-    );
+    expect(
+      formatZonedRange(at('2026-10-12T16:00:00Z'), at('2026-10-12T16:45:00Z'), TZ),
+    ).toBe('09:00–09:45');
   });
 
   it('falls back to UTC for an unknown zone rather than throwing', () => {
@@ -571,16 +531,9 @@ describe('grid geometry', () => {
   });
 
   it('places a block at the right offset and span', () => {
-    const grid = {
-      dayStartMinute: 8 * 60,
-      dayEndMinute: 19 * 60,
-      slotMinutes: 15,
-    };
+    const grid = { dayStartMinute: 8 * 60, dayEndMinute: 19 * 60, slotMinutes: 15 };
     const placed = entriesForDay(rows, '2026-10-12', TZ)[0];
-    expect(blockGeometry(placed, TZ, grid)).toEqual({
-      offsetSlots: 4,
-      spanSlots: 4,
-    });
+    expect(blockGeometry(placed, TZ, grid)).toEqual({ offsetSlots: 4, spanSlots: 4 });
   });
 
   it('snaps a dropped minute to the slot size', () => {
@@ -589,13 +542,16 @@ describe('grid geometry', () => {
   });
 
   it('widens the day tabs to cover anything scheduled outside the declared run', () => {
-    const keys = agendaDayKeys({ startsOn: '2026-10-12', endsOn: '2026-10-13', timezone: TZ }, [
-      entry({
-        id: 'stray',
-        startsAt: at('2026-10-15T16:00:00Z'),
-        endsAt: at('2026-10-15T17:00:00Z'),
-      }),
-    ]);
+    const keys = agendaDayKeys(
+      { startsOn: '2026-10-12', endsOn: '2026-10-13', timezone: TZ },
+      [
+        entry({
+          id: 'stray',
+          startsAt: at('2026-10-15T16:00:00Z'),
+          endsAt: at('2026-10-15T17:00:00Z'),
+        }),
+      ],
+    );
     expect(keys).toEqual(['2026-10-12', '2026-10-13', '2026-10-15']);
   });
 
@@ -632,11 +588,7 @@ describe('publish state (A-6)', () => {
   });
 
   it('counts the states', () => {
-    expect(publishCounts(rows)).toEqual({
-      draft: 2,
-      published: 1,
-      cancelled: 0,
-    });
+    expect(publishCounts(rows)).toEqual({ draft: 2, published: 1, cancelled: 0 });
   });
 
   it('refuses to publish a session with no slot or no room', () => {

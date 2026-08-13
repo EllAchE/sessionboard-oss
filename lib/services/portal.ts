@@ -47,9 +47,7 @@ export type PortalEvent = {
 };
 
 export async function getEventBySlug(slug: string): Promise<PortalEvent | null> {
-  const row = await getDb().query.event.findFirst({
-    where: eq(event.slug, slug),
-  });
+  const row = await getDb().query.event.findFirst({ where: eq(event.slug, slug) });
   return row ?? null;
 }
 
@@ -95,9 +93,7 @@ export type PortalBranding = {
  * written into a stylesheet — the only route by which a color reaches this surface without a token.
  */
 export async function getBranding(eventId: string): Promise<PortalBranding> {
-  const row = await getDb().query.portalTheme.findFirst({
-    where: eq(portalTheme.eventId, eventId),
-  });
+  const row = await getDb().query.portalTheme.findFirst({ where: eq(portalTheme.eventId, eventId) });
   return {
     accentColor: safeColor(row?.accentColor),
     logoFileId: row?.logoFileId ?? null,
@@ -213,12 +209,7 @@ export function profileGaps(row: Participant): ProfileGap[] {
 // Wiki pages — `S-6`, `S-7`
 // ---------------------------------------------------------------------------
 
-export type PortalPageSummary = {
-  id: string;
-  slug: string;
-  title: string;
-  published: boolean;
-};
+export type PortalPageSummary = { id: string; slug: string; title: string; published: boolean };
 
 export async function listPortalPages(
   eventId: string,
@@ -238,10 +229,7 @@ export async function listPortalPages(
   return rows.filter((row) => includeUnpublished || row.published);
 }
 
-export type PortalPageView = PortalPageSummary & {
-  html: string;
-  updatedAt: Date;
-};
+export type PortalPageView = PortalPageSummary & { html: string; updatedAt: Date };
 
 /**
  * `S-7`. `allowRawHtml` selects the trusted renderer, which is the brief's HTML-embed requirement.
@@ -263,9 +251,7 @@ export async function getPortalPage(
     title: row.title,
     published: row.published,
     updatedAt: row.updatedAt,
-    html: row.allowRawHtml
-      ? renderTrustedMarkdown(row.bodyMarkdown)
-      : renderMarkdown(row.bodyMarkdown),
+    html: row.allowRawHtml ? renderTrustedMarkdown(row.bodyMarkdown) : renderMarkdown(row.bodyMarkdown),
   };
 }
 
@@ -424,16 +410,11 @@ export async function submissionFields(formId: string): Promise<FormFieldSpec[]>
 
 export const submissionEditSchema = z.object({
   title: z.string().trim().min(3, 'Give the session a title').max(255),
-  descriptionMarkdown: z
-    .string()
-    .max(5000, 'Description is limited to 5,000 characters')
-    .optional(),
+  descriptionMarkdown: z.string().max(5000, 'Description is limited to 5,000 characters').optional(),
   level: z.string().trim().max(60).optional(),
 });
 
-export type SubmissionEditInput = z.infer<typeof submissionEditSchema> & {
-  answers?: AnswerMap;
-};
+export type SubmissionEditInput = z.infer<typeof submissionEditSchema> & { answers?: AnswerMap };
 
 async function requireMyRole(participantId: string, submissionId: string) {
   const row = await getDb().query.participantRole.findFirst({
@@ -465,8 +446,7 @@ export async function updateMySubmission(
   const parsed = submissionEditSchema.safeParse(input);
   if (!parsed.success) {
     const details: Record<string, string> = {};
-    for (const issue of parsed.error.issues)
-      details[issue.path.join('.') || 'form'] = issue.message;
+    for (const issue of parsed.error.issues) details[issue.path.join('.') || 'form'] = issue.message;
     throw invalid('Some details need attention', details);
   }
 
@@ -575,9 +555,7 @@ export async function shareSubmissionAccess(
   const { email, name, kind } = parsed.data;
 
   const { account, invitee } = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
-    let account = await transaction.query.user.findFirst({
-      where: eq(user.email, email),
-    });
+    let account = await transaction.query.user.findFirst({ where: eq(user.email, email) });
     if (!account) {
       [account] = await transaction
         .insert(user)
@@ -592,11 +570,7 @@ export async function shareSubmissionAccess(
 
     await transaction
       .insert(participant)
-      .values({
-        eventId: ctx.eventId,
-        userId: account.id,
-        displayName: name ?? account.name,
-      })
+      .values({ eventId: ctx.eventId, userId: account.id, displayName: name ?? account.name })
       .onConflictDoNothing();
 
     const invitee = await transaction.query.participant.findFirst({

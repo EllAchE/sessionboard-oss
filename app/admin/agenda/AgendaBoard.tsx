@@ -49,13 +49,7 @@ import {
 } from './actions';
 import { AiProposalDialog } from './AiProposalDialog';
 import type { AgendaData } from './data';
-import {
-  fromWire,
-  type NamedFormat,
-  type NamedRoom,
-  type NamedTrack,
-  type WireEntry,
-} from './wire';
+import { fromWire, type NamedFormat, type NamedRoom, type NamedTrack, type WireEntry } from './wire';
 import { DayGrid, OrphanedNotice, UnscheduledRail, parseCellId, type DragPayload } from './Grid';
 import {
   SessionDialog,
@@ -108,11 +102,7 @@ function weekDayKeys(anchor: string, available: string[]): string[] {
   return inWeek.length > 0 ? inWeek : [anchor];
 }
 
-type Hover = {
-  placement: Placement;
-  additions: ScheduleEntry[];
-  dayKey: string;
-};
+type Hover = { placement: Placement; additions: ScheduleEntry[]; dayKey: string };
 
 type DragState = { payload: DragPayload; hover: Hover | null };
 
@@ -272,11 +262,7 @@ export function AgendaBoard({
     if (!overId) return;
 
     if (!canManage) {
-      toast({
-        title: 'Read only',
-        description: 'You cannot change this agenda.',
-        tone: 'warning',
-      });
+      toast({ title: 'Read only', description: 'You cannot change this agenda.', tone: 'warning' });
       return;
     }
 
@@ -371,11 +357,7 @@ export function AgendaBoard({
   const handleSave = async (payload: SavePayload) => {
     const result = await saveManualSessionAction(payload);
     if (!result.ok) {
-      toast({
-        title: 'Could not save that session',
-        description: result.error,
-        tone: 'danger',
-      });
+      toast({ title: 'Could not save that session', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -385,11 +367,7 @@ export function AgendaBoard({
   const handleDelete = async (sessionId: string) => {
     const result = await deleteSessionAction(sessionId);
     if (!result.ok) {
-      toast({
-        title: 'Could not delete that session',
-        description: result.error,
-        tone: 'danger',
-      });
+      toast({ title: 'Could not delete that session', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -399,25 +377,20 @@ export function AgendaBoard({
   const handleUnschedule = async (sessionId: string) => {
     const result = await unscheduleSessionAction(sessionId);
     if (!result.ok) {
-      toast({
-        title: 'Could not unschedule it',
-        description: result.error,
-        tone: 'danger',
-      });
+      toast({ title: 'Could not unschedule it', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
     router.refresh();
   };
 
-  const handleStatus = async (sessionId: string, next: 'draft' | 'published' | 'cancelled') => {
+  const handleStatus = async (
+    sessionId: string,
+    next: 'draft' | 'published' | 'cancelled',
+  ) => {
     const result = await setSessionStatusAction(sessionId, next);
     if (!result.ok) {
-      toast({
-        title: 'Could not change the status',
-        description: result.error,
-        tone: 'danger',
-      });
+      toast({ title: 'Could not change the status', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -427,11 +400,7 @@ export function AgendaBoard({
   const handleProposal = async (placements: PlacementInput[]) => {
     const result = await applyProposalAction(placements);
     if (!result.ok) {
-      toast({
-        title: 'Could not apply the proposal',
-        description: result.error,
-        tone: 'danger',
-      });
+      toast({ title: 'Could not apply the proposal', description: result.error, tone: 'danger' });
       return;
     }
     toast({
@@ -485,8 +454,8 @@ export function AgendaBoard({
           </p>
         </div>
         <div className={styles.headerActions}>
-          <Badge tone='neutral'>{counts.draft} draft</Badge>
-          <Badge tone='success'>{counts.published} published</Badge>
+          <Badge tone="neutral">{counts.draft} draft</Badge>
+          <Badge tone="success">{counts.published} published</Badge>
           <Button iconLeft={<Plus size={14} />} onClick={openNew} disabled={!canManage}>
             Add session
           </Button>
@@ -498,7 +467,7 @@ export function AgendaBoard({
             Draft with AI
           </Button>
           <Button
-            variant='primary'
+            variant="primary"
             iconLeft={<Send size={14} />}
             onClick={publishDay}
             loading={pending}
@@ -514,7 +483,7 @@ export function AgendaBoard({
           {VIEWS.map((option) => (
             <button
               key={option.id}
-              type='button'
+              type="button"
               className={`${styles.viewButton} ${view === option.id ? styles.viewButtonActive : ''}`}
               aria-pressed={view === option.id}
               onClick={() => setView(option.id)}
@@ -528,7 +497,7 @@ export function AgendaBoard({
             {dayKeys.map((key) => (
               <button
                 key={key}
-                type='button'
+                type="button"
                 className={`${styles.dayTab} ${key === dayKey ? styles.dayTabActive : ''}`}
                 aria-pressed={key === dayKey}
                 onClick={() => setDayKey(key)}
@@ -565,11 +534,7 @@ export function AgendaBoard({
             <span>{summary.room} room</span>
             <span>{summary.speaker} speaker</span>
             <span>{summary.track} track</span>
-            <button
-              type='button'
-              className={styles.viewButton}
-              onClick={() => setView('conflicts')}
-            >
+            <button type="button" className={styles.viewButton} onClick={() => setView('conflicts')}>
               Review
             </button>
           </span>
@@ -588,7 +553,12 @@ export function AgendaBoard({
           <div className={styles.workspace}>
             <UnscheduledRail queue={queue} onSchedule={openQueued} />
             <div className={styles.boardMain}>
-              <OrphanedNotice entries={entries} rooms={rooms} dayKey={dayKey} timeZone={timeZone} />
+              <OrphanedNotice
+                entries={entries}
+                rooms={rooms}
+                dayKey={dayKey}
+                timeZone={timeZone}
+              />
               {visibleDays.map((key) => (
                 <div key={key} className={styles.weekDay}>
                   {view === 'week' && (
