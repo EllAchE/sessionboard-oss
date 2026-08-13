@@ -35,6 +35,7 @@ import {
   task,
   taskAssignment,
   track,
+  trackReviewer,
   user,
 } from './schema';
 
@@ -270,6 +271,28 @@ const personas = await db
 const [keynote, talk, workshop] = formats;
 const [infrastructure, governance, knowledge, logistics] = tracks;
 const [outerPeristyle, basilicaGallery, villaWorkshop] = rooms;
+
+/**
+ * `F-3` / `V-5`: which reviewer reads which track. The split overlaps deliberately — two tracks
+ * both of them read, one each that only one of them does — so the demo shows routing narrowing a
+ * pool without reducing every talk to a single opinion.
+ */
+const routing = new Map<string, (typeof reviewers)[number][]>([
+  [infrastructure.id, [reviewers[0]]],
+  [governance.id, reviewers],
+  [knowledge.id, reviewers],
+  [logistics.id, [reviewers[1]]],
+]);
+
+await db.insert(trackReviewer).values(
+  [...routing].flatMap(([trackId, covering]) =>
+    covering.map((reviewer) => ({ trackId, reviewerUserId: reviewer.id })),
+  ),
+);
+
+/** Who may read a given talk. Everything the seed assigns below goes through this. */
+const routedReviewers = (trackId: string | null) =>
+  trackId ? (routing.get(trackId) ?? []) : [];
 
 // ---------------------------------------------------------------------------
 // The call for speakers. Four of the six built-ins are placed explicitly so the
@@ -862,13 +885,17 @@ const criteriaByRound = new Map(
   rounds.map((round) => [round.id, criteria.filter((row) => row.reviewRoundId === round.id)]),
 );
 
-/** Round one covered everything that had been submitted by then and is fully scored. */
+/**
+ * Round one covered everything that had been submitted by then and is fully scored. Who scored
+ * what follows the track routing above rather than handing every talk to everyone — the seeded
+ * assignments are what auto-assign would have produced.
+ */
 const firstPassSubjects = submissions.filter((row) => row.status !== 'draft').slice(0, 12);
 const firstAssignments = await db
   .insert(reviewAssignment)
   .values(
     firstPassSubjects.flatMap((row) =>
-      reviewers.map((reviewer) => ({
+      routedReviewers(row.trackId).map((reviewer) => ({
         reviewRoundId: rounds[0].id,
         submissionId: row.id,
         reviewerUserId: reviewer.id,
@@ -899,27 +926,32 @@ await db.insert(score).values(
   ),
 );
 
-/** Round two is live: one reviewer is done, the other has not started. */
+/** Round two is live: the first reviewer routed to a talk is done, anyone after them is not. */
 const secondPassSubjects = submissions.filter((row) => row.status === 'under_review');
 const secondAssignments = await db
   .insert(reviewAssignment)
   .values(
-    secondPassSubjects.flatMap((row) => [
-      {
-        reviewRoundId: rounds[1].id,
-        submissionId: row.id,
-        reviewerUserId: reviewers[0].id,
-        status: 'completed' as const,
-        comment: 'Worth a slot if the schedule allows a third knowledge talk.',
-        completedAt: ago(1),
-      },
-      {
-        reviewRoundId: rounds[1].id,
-        submissionId: row.id,
-        reviewerUserId: reviewers[1].id,
-        status: 'pending' as const,
-      },
-    ]),
+    secondPassSubjects.flatMap((row) =>
+      routedReviewers(row.trackId).map((reviewer, index) =>
+        index === 0
+          ? {
+              reviewRoundId: rounds[1].id,
+              submissionId: row.id,
+              reviewerUserId: reviewer.id,
+              status: 'completed' as const,
+              comment: 'Worth a slot if the schedule allows a third knowledge talk.',
+              completedAt: ago(1),
+            }
+          : {
+              reviewRoundId: rounds[1].id,
+              submissionId: row.id,
+              reviewerUserId: reviewer.id,
+              status: 'pending' as const,
+              comment: null,
+              completedAt: null,
+            },
+      ),
+    ),
   )
   .returning();
 

@@ -81,6 +81,9 @@ export type ReviewDetailProps = {
   myAverage: number | null;
   reviewers: DetailReviewer[];
   availableReviewers: Array<{ userId: string; name: string; email: string }>;
+  /** `F-3` on this one talk: who its track routes to, and who can never have it. */
+  routedReviewerUserIds: string[];
+  conflictedReviewerUserIds: string[];
   summary: {
     average: number | null;
     spread: number | null;
@@ -511,6 +514,8 @@ export function ReviewDetail(props: ReviewDetailProps) {
                 <div className={styles.stack}>
                   {props.availableReviewers.map((reviewer) => {
                     const assignment = assignmentByReviewer.get(reviewer.userId);
+                    const routed = props.routedReviewerUserIds.includes(reviewer.userId);
+                    const conflicted = props.conflictedReviewerUserIds.includes(reviewer.userId);
                     return (
                       <label key={reviewer.userId} className={styles.keyRow}>
                         <Checkbox
@@ -524,6 +529,11 @@ export function ReviewDetail(props: ReviewDetailProps) {
                           {reviewer.name} · {reviewer.email}
                           {assignment?.status === 'completed' ? ' · completed' : ''}
                         </span>
+                        {conflicted ? (
+                          <Badge tone="danger">Speaks on this talk</Badge>
+                        ) : routed ? (
+                          <Badge tone="info">Covers this track</Badge>
+                        ) : null}
                       </label>
                     );
                   })}
@@ -533,7 +543,14 @@ export function ReviewDetail(props: ReviewDetailProps) {
                     </p>
                   ) : null}
                   <p className={styles.aiNote}>
-                    Checked reviewers see this submission in their queue for {props.round.name}.
+                    Checked reviewers see this submission in their queue for {props.round.name}.{' '}
+                    {props.trackName
+                      ? props.routedReviewerUserIds.length > 0
+                        ? `Auto-assign draws on the ${props.routedReviewerUserIds.length} reviewer${
+                            props.routedReviewerUserIds.length === 1 ? '' : 's'
+                          } covering ${props.trackName}; checking anyone else here is a deliberate override.`
+                        : `Nobody covers ${props.trackName} yet, so auto-assign will report this submission rather than place it.`
+                      : 'This submission has no track, so auto-assign has nothing to route on.'}
                   </p>
                 </div>
               </CardBody>

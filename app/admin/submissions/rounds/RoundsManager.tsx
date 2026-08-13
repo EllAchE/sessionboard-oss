@@ -30,6 +30,7 @@ import {
   autoAssignAction,
   deleteCriterionAction,
   deleteRoundAction,
+  setTrackReviewersAction,
   updateCriterionAction,
   updateRoundAction,
 } from '../actions';
@@ -40,6 +41,13 @@ import {
   remindReviewersAction,
 } from './actions';
 import { assignedReviewerIds } from './reviewer-pool';
+import {
+  UNROUTED_REASON_LABEL,
+  coverageGaps,
+  coverageSummary,
+  type RoutingWire,
+  type UnroutedWire,
+} from './routing-summary';
 import styles from '../submissions.module.css';
 
 export type RoundWire = {
@@ -87,6 +95,8 @@ export type RoundsManagerProps = {
   criteria: CriterionWire[];
   reviewers: Array<{ userId: string; name: string; email: string; roles: string[] }>;
   workload: WorkloadWire[];
+  /** `F-3`/`V-5`: which reviewers cover which track. Auto-assign below reads exactly this. */
+  routing: RoutingWire;
   /** Submissions eligible for assignment in this round — everything still awaiting a verdict. */
   pendingSubmissionIds: string[];
   recusals: RecusalWire[];
@@ -219,10 +229,47 @@ export function RoundsManager(props: RoundsManagerProps) {
   const assignedReviewers = useMemo(() => assignedReviewerIds(props.workload), [props.workload]);
   const [selectedReviewers, setSelectedReviewers] = useState<string[]>(assignedReviewers);
   const [perSubmission, setPerSubmission] = useState('2');
+  const [unrouted, setUnrouted] = useState<UnroutedWire[]>([]);
 
   useEffect(() => {
     setSelectedReviewers(assignedReviewers);
   }, [assignedReviewers, props.selectedRoundId]);
+
+  /**
+   * Coverage is edited a checkbox at a time but saved as a set, so the screen keeps its own copy
+   * and lets the refresh confirm it. The key is what the server last said; re-deriving from the
+   * prop object itself would loop, because it is a new object on every render.
+   */
+  const coverageKey = props.routing.rules
+    .map((rule) => `${rule.trackId}:${rule.reviewerUserIds.join(',')}`)
+    .join('|');
+  const [coverage, setCoverage] = useState<Record<string, string[]>>(() =>
+    Object.fromEntries(props.routing.rules.map((rule) => [rule.trackId, rule.reviewerUserIds])),
+  );
+  useEffect(() => {
+    setCoverage(
+      Object.fromEntries(
+        coverageKey
+          .split('|')
+          .filter(Boolean)
+          .map((entry) => {
+            const [trackId, joined] = entry.split(':');
+            return [trackId, joined ? joined.split(',') : []];
+          }),
+      ),
+    );
+  }, [coverageKey]);
+
+  const routingRules = props.routing.rules.map((rule) => ({
+    ...rule,
+    reviewerUserIds: coverage[rule.trackId] ?? rule.reviewerUserIds,
+  }));
+  const liveRouting: RoutingWire = {
+    configured: routingRules.some((rule) => rule.reviewerUserIds.length > 0),
+    rules: routingRules,
+    untrackedPending: props.routing.untrackedPending,
+  };
+  const gaps = coverageGaps(routingRules);
 
   const selectedRound = props.rounds.find((round) => round.id === props.selectedRoundId) ?? null;
   const newRoundDateWire = fromRoundDateDraft(newRoundDates);
@@ -270,6 +317,54 @@ export function RoundsManager(props: RoundsManagerProps) {
         result.data.accessLink
           ? `${result.data.reviewer.name} can review this event. Copy their access link below.`
           : `Invitation sent to ${result.data.reviewer.email}.`,
+      );
+      router.refresh();
+    });
+  };
+
+  const toggleCoverage = (trackId: string, reviewerUserId: string, covered: boolean) => {
+    const current = coverage[trackId] ?? [];
+    const next = covered
+      ? [...current, reviewerUserId]
+      : current.filter((userId) => userId !== reviewerUserId);
+    setCoverage((state) => ({ ...state, [trackId]: next }));
+    const track = props.routing.rules.find((rule) => rule.trackId === trackId);
+    run(
+      () => setTrackReviewersAction(trackId, next),
+      next.length === 0
+        ? `${track?.trackName ?? 'That track'} now has no reviewer. Its submissions will not route.`
+        : `Routing saved for ${track?.trackName ?? 'that track'}.`,
+    );
+  };
+
+  /**
+   * Routing decides the pool, the balancing spreads the work inside it, and anything it cannot
+   * place comes back named. `fallbackToPool` is the organizer's second, deliberate click — it is
+   * never the default, because quietly handing an uncovered track to whoever is free is exactly
+   * the drift `F-3` and `V-5` were written to prevent.
+   */
+  const autoAssign = (fallbackToPool: boolean, submissionIds?: string[]) => {
+    if (!selectedRound) return;
+    setError(null);
+    setMessage(null);
+    startTransition(async () => {
+      const result = await autoAssignAction(selectedRound.id, {
+        submissionIds: submissionIds ?? props.pendingSubmissionIds,
+        reviewerUserIds: selectedReviewers,
+        reviewersPerSubmission: Number(perSubmission) || 1,
+        fallbackToPool,
+      });
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setUnrouted(result.data.unrouted);
+      setMessage(
+        `${result.data.created} assignment${result.data.created === 1 ? '' : 's'} across ` +
+          `${result.data.routed} submission${result.data.routed === 1 ? '' : 's'}` +
+          (result.data.unrouted.length > 0
+            ? `. ${result.data.unrouted.length} could not be routed — listed below.`
+            : '. Nothing was left unrouted.'),
       );
       router.refresh();
     });
@@ -511,6 +606,76 @@ export function RoundsManager(props: RoundsManagerProps) {
         </CardBody>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Track routing</CardTitle>
+        </CardHeader>
+        <CardBody>
+          <div className={styles.stack}>
+            <p className={styles.aiNote}>
+              The track a submitter picks is what decides who reads the talk. Auto-assign draws
+              each submission&rsquo;s reviewers from the track it was filed under, and the same
+              rows are what a reviewer sees as their own queue.
+            </p>
+            <p className={styles.aiNote}>{coverageSummary(liveRouting)}</p>
+
+            {routingRules.map((rule) => (
+              <div key={rule.trackId} className={styles.routingRow}>
+                <span className={styles.routingTrack}>
+                  <strong>{rule.trackName}</strong>
+                  <Badge tone={rule.reviewerUserIds.length === 0 ? 'warning' : 'neutral'}>
+                    {rule.reviewerUserIds.length === 0
+                      ? 'No reviewer'
+                      : `${rule.reviewerUserIds.length} reviewer${
+                          rule.reviewerUserIds.length === 1 ? '' : 's'
+                        }`}
+                  </Badge>
+                  <span className={styles.muted}>{rule.pendingCount} waiting</span>
+                </span>
+                <span className={styles.keyLegend}>
+                  {props.reviewers.map((reviewer) => (
+                    <label key={reviewer.userId} className={styles.keyRow}>
+                      <Checkbox
+                        checked={rule.reviewerUserIds.includes(reviewer.userId)}
+                        aria-label={`${reviewer.name} covers ${rule.trackName}`}
+                        onChange={(event) =>
+                          toggleCoverage(rule.trackId, reviewer.userId, event.target.checked)
+                        }
+                      />
+                      {reviewer.name}
+                    </label>
+                  ))}
+                </span>
+              </div>
+            ))}
+
+            {routingRules.length === 0 ? (
+              <p className={styles.muted}>
+                This event has no tracks yet. Add them under Settings and they will appear here
+                for routing.
+              </p>
+            ) : null}
+
+            {gaps.length > 0 ? (
+              <p className={styles.notice}>
+                {gaps.map((gap) => gap.trackName).join(', ')}{' '}
+                {gaps.length === 1 ? 'has' : 'have'} nobody assigned. Submissions filed there
+                are reported below rather than handed to whoever happens to be free.
+              </p>
+            ) : null}
+
+            {props.routing.untrackedPending > 0 ? (
+              <p className={styles.notice}>
+                {props.routing.untrackedPending} waiting submission
+                {props.routing.untrackedPending === 1 ? '' : 's'} arrived without a track, so
+                routing has nothing to key on. Set a track on the submission, or send them to
+                the whole pool from the unrouted list.
+              </p>
+            ) : null}
+          </div>
+        </CardBody>
+      </Card>
+
       {selectedRound ? (
         <>
           <Card>
@@ -728,17 +893,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                     variant="primary"
                     loading={pending}
                     disabled={selectedReviewers.length === 0}
-                    onClick={() =>
-                      run(
-                        () =>
-                          autoAssignAction(selectedRound.id, {
-                            submissionIds: props.pendingSubmissionIds,
-                            reviewerUserIds: selectedReviewers,
-                            reviewersPerSubmission: Number(perSubmission) || 1,
-                          }),
-                        'Assignments balanced across the selected reviewers.',
-                      )
-                    }
+                    onClick={() => autoAssign(false)}
                   >
                     Auto-assign
                   </Button>
@@ -746,9 +901,50 @@ export function RoundsManager(props: RoundsManagerProps) {
                     Up to {plannedTotal} assignment{plannedTotal === 1 ? '' : 's'} across{' '}
                     {selectedReviewers.length} reviewer
                     {selectedReviewers.length === 1 ? '' : 's'}; existing ones are kept and topped
-                    up.
+                    up.{' '}
+                    {liveRouting.configured
+                      ? 'Each submission draws only on the reviewers covering its track.'
+                      : 'No track is routed yet, so every selected reviewer is eligible for everything.'}
                   </span>
                 </div>
+
+                {unrouted.length > 0 ? (
+                  <div className={styles.stack}>
+                    <p className={styles.error}>
+                      {unrouted.length} submission{unrouted.length === 1 ? '' : 's'} could not be
+                      routed. Nothing here has a reviewer.
+                    </p>
+                    {unrouted.map((row) => (
+                      <div key={row.submissionId} className={styles.routingRow}>
+                        <span className={styles.routingTrack}>
+                          <strong>{row.displayRef}</strong> {row.title}
+                        </span>
+                        <span className={styles.muted}>
+                          {row.trackName ?? 'No track'} · {UNROUTED_REASON_LABEL[row.reason]}
+                        </span>
+                      </div>
+                    ))}
+                    <div className={styles.inlineStack}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={pending}
+                        onClick={() =>
+                          autoAssign(
+                            true,
+                            unrouted.map((row) => row.submissionId),
+                          )
+                        }
+                      >
+                        Assign these across every selected reviewer
+                      </Button>
+                      <span className={styles.aiNote}>
+                        A deliberate override: it ignores track coverage for these submissions only,
+                        and still keeps a reviewer off their own talk.
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className={styles.tableWrap}>
                   <DataTable

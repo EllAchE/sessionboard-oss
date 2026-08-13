@@ -185,6 +185,8 @@ export default async function SubmissionReviewPage({
         name: reviewer.name,
         email: reviewer.email,
       }))}
+      routedReviewerUserIds={detail.routedReviewerUserIds}
+      conflictedReviewerUserIds={detail.conflictedReviewerUserIds}
       summary={{
         average: detail.summary.average,
         spread: detail.summary.spread,

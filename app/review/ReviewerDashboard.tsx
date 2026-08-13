@@ -31,6 +31,8 @@ export type ReviewerDashboardProps = {
   recused: AssignmentWire[];
   pendingCount: number;
   completedCount: number;
+  /** `V-5`: the tracks routed to this reviewer, which is why the list above says what it says. */
+  coveredTracks: string[];
 };
 
 /**
@@ -230,6 +232,14 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
               <Badge tone="danger">This round has no criteria yet</Badge>
             ) : null}
           </div>
+          {/* `V-5`: the queue above is the organizer's track routing, seen from this side. */}
+          <p className={styles.muted}>
+            {props.coveredTracks.length > 0
+              ? `You cover ${props.coveredTracks.join(', ')}. Submissions filed under ${
+                  props.coveredTracks.length === 1 ? 'that track' : 'those tracks'
+                } are routed to you.`
+              : 'No track is routed to you yet, so anything below was assigned by hand.'}
+          </p>
         </CardBody>
       </Card>
 

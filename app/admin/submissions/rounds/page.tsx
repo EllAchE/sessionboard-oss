@@ -29,12 +29,13 @@ export default async function ReviewRoundsPage({
     })),
   );
 
-  const [reviewers, queue] = await Promise.all([
+  const [reviewers, queue, routing] = await Promise.all([
     review.listReviewers(ctx),
     review.loadQueue(ctx, {
       statuses: review.statusesForTab('pending'),
       roundId: selected?.id ?? null,
     }),
+    review.loadRouting(ctx),
   ]);
 
   const [criteria, declined, outstanding] = await Promise.all([
@@ -89,6 +90,16 @@ export default async function ReviewRoundsPage({
         pending: row.pending,
         averageGiven: row.averageGiven,
       }))}
+      routing={{
+        configured: routing.configured,
+        rules: routing.rules.map((rule) => ({
+          trackId: rule.trackId,
+          trackName: rule.trackName,
+          reviewerUserIds: rule.reviewerUserIds,
+          pendingCount: rule.pendingCount,
+        })),
+        untrackedPending: routing.untrackedPending,
+      }}
       pendingSubmissionIds={queue.rows.map((row) => row.id)}
       recusals={declined.map((row) => ({
         assignmentId: row.assignmentId,

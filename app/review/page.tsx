@@ -58,6 +58,7 @@ export default async function ReviewQueuePage({
       recused={queue.recused.map(toWire)}
       pendingCount={queue.pendingCount}
       completedCount={queue.completedCount}
+      coveredTracks={queue.coveredTracks}
     />
   );
 }

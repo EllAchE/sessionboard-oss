@@ -616,6 +616,37 @@ export const participantRole = pgTable(
 // Review
 // ---------------------------------------------------------------------------
 
+/**
+ * `F-3` and `V-5` are one model, not two: the track a submitter picks on the form is what decides
+ * who reviews the talk, and the same rows are what fill a reviewer's queue. This table is that
+ * model — a track, and the reviewers who cover it. Auto-assignment reads it to narrow the candidate
+ * pool before the existing load balancing runs inside that pool; the reviewer surface reads it to
+ * name the tracks a reviewer is responsible for.
+ *
+ * It is deliberately event-scoped rather than round-scoped. Coverage is a standing fact about a
+ * panel ("Cicero reads the aqueduct talks"), and re-declaring it for every round is how the two
+ * halves of the requirement would drift apart. `track` already carries the event, so the event is
+ * not repeated here — `track.eventId` is the only place it can be wrong.
+ */
+export const trackReviewer = pgTable(
+  'track_reviewer',
+  {
+    id: id(),
+    trackId: uuid('track_id')
+      .notNull()
+      .references(() => track.id, { onDelete: 'cascade' }),
+    reviewerUserId: uuid('reviewer_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    uniquePair: unique('track_reviewer_pair').on(t.trackId, t.reviewerUserId),
+    byTrack: index('track_reviewer_track_idx').on(t.trackId),
+    byReviewer: index('track_reviewer_reviewer_idx').on(t.reviewerUserId),
+  }),
+);
+
 export const reviewRound = pgTable(
   'review_round',
   {
