@@ -32,7 +32,7 @@ import { markdownToText, renderMarkdown } from '../markdown';
 import { parseSpeakerName } from '../speaker-name';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
-import { loadCommsContext, sendDecisionNotice, wrapInBranding } from './comms';
+import { DECISION_TEMPLATES, loadCommsContext, sendDecisionNotice, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 
 /**
@@ -1017,6 +1017,8 @@ export function redactAuthorship<T extends AuthoredSubject>(
 export type QueueFilters = {
   /** Empty means every status except drafts, which live behind their own tab. */
   statuses?: SubmissionStatus[];
+  /** Narrows an undecided set to one staging queue, or to what neither queue has claimed. */
+  stage?: QueueStage | null;
   trackId?: string | null;
   formatId?: string | null;
   tagId?: string | null;
@@ -1047,6 +1049,8 @@ export type QueueRow = {
   spread: number | null;
   assignedCount: number;
   completedCount: number;
+  /** Reviewers who turned the assignment down. They never complete, so readiness discounts them. */
+  declinedCount: number;
   hasAiReview: boolean;
 };
 
@@ -1060,11 +1064,88 @@ export type QueueBundle = {
   tags: Array<{ id: string; name: string }>;
 };
 
-const STATUS_TABS: Array<{ id: string; label: string; statuses: SubmissionStatus[] }> = [
+/**
+ * `V-1`, `V-4`. The two staging queues, and the reason they are a reading of the data rather than a
+ * pair of statuses. A proposal is never *moved* into a queue: it arrives in one the moment the panel
+ * finishes with it, and it leaves when an organizer commits the decision. So the accept queue is
+ * "reviewed, and the panel says yes" and the decline queue is "reviewed, and the panel says no" —
+ * the batch a chair wants to read end to end before signing it off, which is the whole point of a
+ * staging area sitting between Pending and the final statuses.
+ *
+ * Nothing here is decided. Committing is still `decideSubmissions`, the only thing that writes a
+ * status, records `decidedAt`, and mails the speaker.
+ *
+ * The trade this makes: there is no manual override, because there is nowhere to persist one. An
+ * organizer who wants a 2.8 accepted accepts it outright rather than staging it first. A stored
+ * provisional status would buy that override at the price of a second source of truth for the same
+ * decision, and one that goes stale the next time a reviewer submits a score.
+ */
+export type DecisionStage = 'accept' | 'decline';
+
+/** `unstaged` is what Pending means once the two queues have taken their share of it. */
+export type QueueStage = DecisionStage | 'unstaged';
+
+/** The midpoint of the 1–5 scale every scorecard is reported on, and the queues' only bar. */
+export const DECISION_QUEUE_BAR = (1 + SCORE_SCALE) / 2;
+
+/**
+ * Which queue a row is in, or `null` for one no queue has claimed. Reads only what the queue already
+ * carries, so the tab, the count and the filter cannot disagree about a single submission.
+ */
+export function decisionStage(
+  row: Pick<
+    QueueRow,
+    'status' | 'averageScore' | 'assignedCount' | 'completedCount' | 'declinedCount'
+  >,
+): DecisionStage | null {
+  // Only an undecided proposal stages. Anything else already has its answer.
+  if (row.status !== 'submitted' && row.status !== 'under_review') return null;
+  // Every reviewer has answered — scored it or turned it down — so no outstanding review can move it.
+  if (row.assignedCount === 0) return null;
+  if (row.completedCount + row.declinedCount < row.assignedCount) return null;
+  // Assigned, answered, and still unscored: nothing to read a recommendation off.
+  if (row.averageScore === null) return null;
+  return row.averageScore >= DECISION_QUEUE_BAR ? 'accept' : 'decline';
+}
+
+export type QueueTab = {
+  id: string;
+  label: string;
+  statuses: SubmissionStatus[];
+  stage?: QueueStage;
+  /** Shown under the tabs, because a derived queue has to say what put a proposal in it. */
+  hint?: string;
+};
+
+/**
+ * `V-1`. Ordered as the pipeline runs: each staging queue sits immediately before the status it
+ * commits to, and Pending holds only what neither queue has claimed, so the undecided work is
+ * partitioned rather than counted twice.
+ */
+const STATUS_TABS: QueueTab[] = [
   { id: 'all', label: 'All', statuses: [] },
-  { id: 'pending', label: 'Pending', statuses: ['submitted', 'under_review'] },
+  {
+    id: 'pending',
+    label: 'Pending',
+    statuses: ['submitted', 'under_review'],
+    stage: 'unstaged',
+  },
+  {
+    id: 'accept-queue',
+    label: 'Accept queue',
+    statuses: ['submitted', 'under_review'],
+    stage: 'accept',
+    hint: `Every review is in and the panel averaged ${DECISION_QUEUE_BAR.toFixed(1)} or better. Nothing here is decided until you accept it.`,
+  },
   { id: 'accepted', label: 'Accepted', statuses: ['accepted'] },
   { id: 'waitlisted', label: 'Waitlist', statuses: ['waitlisted'] },
+  {
+    id: 'decline-queue',
+    label: 'Decline queue',
+    statuses: ['submitted', 'under_review'],
+    stage: 'decline',
+    hint: `Every review is in and the panel averaged under ${DECISION_QUEUE_BAR.toFixed(1)}. Nothing here is declined until you decline it.`,
+  },
   { id: 'declined', label: 'Declined', statuses: ['declined'] },
   { id: 'withdrawn', label: 'Withdrawn', statuses: ['withdrawn'] },
   { id: 'drafts', label: 'Drafts', statuses: ['draft'] },
@@ -1072,6 +1153,12 @@ const STATUS_TABS: Array<{ id: string; label: string; statuses: SubmissionStatus
 
 export function statusesForTab(tabId: string): SubmissionStatus[] {
   return STATUS_TABS.find((tab) => tab.id === tabId)?.statuses ?? [];
+}
+
+/** The whole filter a tab stands for. A queue tab is a status set *and* a stage, never one alone. */
+export function filtersForTab(tabId: string): Pick<QueueFilters, 'statuses' | 'stage'> {
+  const tab = STATUS_TABS.find((entry) => entry.id === tabId);
+  return { statuses: tab?.statuses ?? [], stage: tab?.stage ?? null };
 }
 
 export { STATUS_TABS };
@@ -1491,16 +1578,16 @@ export async function loadQueue(
       spread: summary.spread,
       assignedCount: summary.assignedCount,
       completedCount: summary.completedCount,
+      declinedCount: assignments.filter((assignment) => assignment.status === 'declined').length,
       hasAiReview: withAi.has(row.id),
     };
   });
 
   const counts: Record<string, number> = {};
   for (const tab of STATUS_TABS) {
-    counts[tab.id] =
-      tab.statuses.length === 0
-        ? all.filter((row) => row.status !== 'draft').length
-        : all.filter((row) => tab.statuses.includes(row.status)).length;
+    counts[tab.id] = all.filter(
+      (row) => matchesStatuses(row, tab.statuses) && matchesStage(row, tab.stage),
+    ).length;
   }
 
   // Redacted before the filter runs, so a blind reviewer cannot recover a name by searching for it.
@@ -1517,14 +1604,24 @@ export async function loadQueue(
   };
 }
 
+/** Empty means everything except drafts, which live behind their own tab. */
+function matchesStatuses(row: QueueRow, statuses: SubmissionStatus[]): boolean {
+  return statuses.length === 0 ? row.status !== 'draft' : statuses.includes(row.status);
+}
+
+function matchesStage(row: QueueRow, stage: QueueStage | null | undefined): boolean {
+  if (!stage) return true;
+  const staged = decisionStage(row);
+  return stage === 'unstaged' ? staged === null : staged === stage;
+}
+
 export function filterQueue(rows: QueueRow[], filters: QueueFilters): QueueRow[] {
   const statuses = filters.statuses ?? [];
   const search = filters.search?.trim().toLowerCase() ?? '';
 
   return rows.filter((row) => {
-    if (statuses.length === 0 ? row.status === 'draft' : !statuses.includes(row.status)) {
-      return false;
-    }
+    if (!matchesStatuses(row, statuses)) return false;
+    if (!matchesStage(row, filters.stage)) return false;
     if (filters.trackId && row.trackId !== filters.trackId) return false;
     if (filters.formatId && row.formatId !== filters.formatId) return false;
     if (filters.tagId && !row.tagIds.includes(filters.tagId)) return false;
@@ -1793,15 +1890,15 @@ export type DecisionResult = {
 };
 
 /**
- * `C-2`. Which decisions carry a seeded speaker template today. `waitlist` deliberately has no
- * entry: the `submission.waitlisted` template is being added separately, and until it exists a
- * waitlist decision is a silent no-op rather than a guaranteed send failure. Adding the key here
- * once that template ships is the whole change.
+ * `C-2`. A decision is worth mailing about exactly when the status it lands on has a seeded speaker
+ * template, so this asks `comms` rather than keeping a second list beside it — the two cannot drift
+ * the way they did while `submission.waitlisted` was still being written. `reset` lands on
+ * `under_review`, which has no template, and rightly so: taking a decision back is a conversation an
+ * organizer has in their own words, not a form letter.
  */
-const DECISION_NOTICE: Partial<Record<Decision, true>> = {
-  accept: true,
-  decline: true,
-};
+function notifiesSpeaker(decision: Decision): boolean {
+  return Boolean(DECISION_TEMPLATES[DECISION_STATUS[decision]]);
+}
 
 /**
  * The transition that makes a session eligible for the agenda, so it is deliberately the only way
@@ -1855,7 +1952,7 @@ export async function decideSubmissions(
     })
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, eligible)));
 
-  const notices = DECISION_NOTICE[decision]
+  const notices = notifiesSpeaker(decision)
     ? await notifyDecided(transitioned)
     : { notified: 0, notifyFailed: 0 };
 

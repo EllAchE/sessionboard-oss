@@ -77,7 +77,7 @@ export default async function SubmissionReviewPage({
     : 'score_desc';
 
   const filters: review.QueueFilters = {
-    statuses: review.statusesForTab(tab),
+    ...review.filtersForTab(tab),
     trackId: search.track || null,
     formatId: search.format || null,
     tagId: search.tag || null,

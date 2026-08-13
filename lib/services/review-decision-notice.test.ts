@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EventContext } from '../context';
 
 /**
- * `C-2`. `decideSubmissions` is the only path that sets `accepted` or `declined`, so it is the only
- * place a speaker can be told. These cover the four things that matter: an accept mails, a decline
- * mails, a re-decision on a status that did not move stays quiet, and a refused send never costs
- * the decision.
+ * `C-2`. `decideSubmissions` is the only path that sets `accepted`, `waitlisted` or `declined`, so
+ * it is the only place a speaker can be told. These cover the things that matter: each of the three
+ * decisions mails, a re-decision on a status that did not move stays quiet, a reset says nothing,
+ * and a refused send never costs the decision.
  */
 
 const state = vi.hoisted(() => ({
@@ -17,6 +17,12 @@ const comms = vi.hoisted(() => ({
   loadCommsContext: vi.fn(),
   wrapInBranding: vi.fn(),
   sendDecisionNotice: vi.fn(),
+  // The real map, because which decisions mail is read straight off it.
+  DECISION_TEMPLATES: {
+    accepted: 'submission.accepted',
+    waitlisted: 'submission.waitlisted',
+    declined: 'submission.declined',
+  } as Record<string, string>,
 }));
 
 vi.mock('./comms', () => comms);
@@ -91,6 +97,31 @@ describe('decideSubmissions decision notices', () => {
     expect(state.updates[0]).toMatchObject({ status: 'declined' });
   });
 
+  it('mails the speaker when a submission is waitlisted', async () => {
+    // A waitlist is the decision a speaker is most likely to be left guessing about.
+    state.rows = [{ id: 'sub-3', status: 'under_review' }];
+
+    const result = await decideSubmissions(organizer, ['sub-3'], 'waitlist');
+
+    expect(comms.sendDecisionNotice).toHaveBeenCalledWith('sub-3');
+    expect(result).toMatchObject({ updated: 1, notified: 1, notifyFailed: 0 });
+    expect(state.updates[0]).toMatchObject({ status: 'waitlisted' });
+  });
+
+  it('does not re-mail a submission that was already waitlisted', async () => {
+    // Same gate as accept and decline: only a status that actually moved is news.
+    state.rows = [
+      { id: 'sub-old', status: 'waitlisted' },
+      { id: 'sub-new', status: 'submitted' },
+    ];
+
+    const result = await decideSubmissions(organizer, ['sub-old', 'sub-new'], 'waitlist');
+
+    expect(comms.sendDecisionNotice).toHaveBeenCalledTimes(1);
+    expect(comms.sendDecisionNotice).toHaveBeenCalledWith('sub-new');
+    expect(result).toMatchObject({ updated: 2, notified: 1 });
+  });
+
   it('does not re-mail a submission that was already accepted', async () => {
     // A re-decision is legal — nothing rejects it — but the speaker already has this news.
     state.rows = [
@@ -126,15 +157,13 @@ describe('decideSubmissions decision notices', () => {
     expect(state.updates[0]).toMatchObject({ status: 'accepted' });
   });
 
-  it('sends nothing for a waitlist or a reset', async () => {
-    state.rows = [{ id: 'sub-1', status: 'submitted' }];
-    const waitlisted = await decideSubmissions(organizer, ['sub-1'], 'waitlist');
-
+  it('sends nothing for a reset', async () => {
+    // Taking a decision back is not news: `under_review` has no template, so nothing goes out.
     state.rows = [{ id: 'sub-1', status: 'accepted' }];
+
     const reset = await decideSubmissions(organizer, ['sub-1'], 'reset');
 
     expect(comms.sendDecisionNotice).not.toHaveBeenCalled();
-    expect(waitlisted).toMatchObject({ updated: 1, notified: 0, notifyFailed: 0 });
     expect(reset).toMatchObject({ updated: 1, notified: 0, notifyFailed: 0 });
   });
 

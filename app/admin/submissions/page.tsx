@@ -53,7 +53,7 @@ export default async function SubmissionsPage({
     review.listRounds(ctx),
     review.listSavedViews(ctx),
     review.loadQueue(ctx, {
-      statuses: review.statusesForTab(tab),
+      ...review.filtersForTab(tab),
       trackId: trackId || null,
       formatId: formatId || null,
       tagId: tagId || null,
@@ -86,7 +86,11 @@ export default async function SubmissionsPage({
     <SubmissionQueue
       rows={rows}
       counts={bundle.counts}
-      tabs={review.STATUS_TABS.map((entry) => ({ id: entry.id, label: entry.label }))}
+      tabs={review.STATUS_TABS.map((entry) => ({
+        id: entry.id,
+        label: entry.label,
+        hint: entry.hint ?? null,
+      }))}
       tab={tab}
       sort={sort}
       trackId={trackId}
