@@ -206,6 +206,10 @@ export const user = pgTable(
     firstName: text('first_name'),
     lastName: text('last_name'),
     phone: text('phone'),
+    /** The current phone is not an SMS destination until an OTP bound to it has completed. */
+    phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
+    /** Log-mode proof is invalidated automatically if this deployment later enables Twilio. */
+    phoneVerificationTransport: text('phone_verification_transport'),
     notifyEmail: boolean('notify_email').notNull().default(true),
     notifySms: boolean('notify_sms').notNull().default(false),
     createdAt: createdAt(),
@@ -1305,6 +1309,106 @@ export const smsConsent = pgTable('sms_consent', {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+/** Short-lived proof that the signed-in account controls one exact E.164 destination. */
+export const phoneVerificationChallenge = pgTable(
+  'phone_verification_challenge',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    phone: text('phone').notNull(),
+    codeHash: text('code_hash').notNull(),
+    deliveryTransport: text('delivery_transport').notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byUserCreated: index('phone_verification_user_created_idx').on(t.userId, t.createdAt),
+    validTransport: check(
+      'phone_verification_transport_check',
+      sql`${t.deliveryTransport} in ('log', 'twilio')`,
+    ),
+  }),
+);
+
+/**
+ * Recipient-owned delivery rules. `scopeKey` is either `global` or the event UUID and makes the
+ * global row unique even though PostgreSQL normally treats two null event ids as distinct.
+ * `templateKey` is `*` for channel/delivery defaults or a category (`submission`, `session`,
+ * `task`, `form`, `adhoc`) for the AR-16 opt-out.
+ */
+export const notificationPreference = pgTable(
+  'notification_preference',
+  {
+    id: id(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'cascade' }),
+    scopeKey: text('scope_key').notNull(),
+    templateKey: text('template_key').notNull().default('*'),
+    notifyEmail: boolean('notify_email'),
+    notifySms: boolean('notify_sms'),
+    timezone: text('timezone'),
+    quietStartMinute: integer('quiet_start_minute'),
+    quietEndMinute: integer('quiet_end_minute'),
+    smsHourlyLimit: integer('sms_hourly_limit'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    uniqueRule: unique('notification_preference_user_scope_template').on(
+      t.userId,
+      t.scopeKey,
+      t.templateKey,
+    ),
+    byEvent: index('notification_preference_event_idx').on(t.eventId),
+    validScope: check(
+      'notification_preference_scope_check',
+      sql`(${t.scopeKey} = 'global' and ${t.eventId} is null) or ${t.scopeKey} = ${t.eventId}::text`,
+    ),
+    validQuietStart: check(
+      'notification_preference_quiet_start_check',
+      sql`${t.quietStartMinute} is null or (${t.quietStartMinute} between 0 and 1439)`,
+    ),
+    validQuietEnd: check(
+      'notification_preference_quiet_end_check',
+      sql`${t.quietEndMinute} is null or (${t.quietEndMinute} between 0 and 1439)`,
+    ),
+    completeQuietWindow: check(
+      'notification_preference_quiet_window_check',
+      sql`(${t.quietStartMinute} is null) = (${t.quietEndMinute} is null)`,
+    ),
+    validRate: check(
+      'notification_preference_sms_rate_check',
+      sql`${t.smsHourlyLimit} is null or (${t.smsHourlyLimit} between 1 and 100)`,
+    ),
+  }),
+);
+
+/** A one-click email action stores only the digest; the bearer token exists in the email alone. */
+export const unsubscribeToken = pgTable(
+  'unsubscribe_token',
+  {
+    id: id(),
+    tokenHash: text('token_hash').notNull().unique(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    templateKey: text('template_key').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    usedAt: timestamp('used_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byTokenHash: index('unsubscribe_token_hash_idx').on(t.tokenHash) }),
+);
 
 // ---------------------------------------------------------------------------
 // Integrations, API, saved state

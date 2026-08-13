@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Switch, Textarea } from '@/components/ui';
+import { PhoneVerificationControl } from '@/components/notifications/PhoneVerificationControl';
 import { renderMarkdown } from '@/lib/markdown';
 import type { Participant, ProfileName } from '@/lib/services/portal';
 import type { NotificationPrefs } from '@/lib/services/settings';
@@ -40,6 +41,10 @@ export function ProfileForm({
   const [phone, setPhone] = useState(notifications.phone ?? '');
   const [notifyEmail, setNotifyEmail] = useState(notifications.notifyEmail);
   const [notifySms, setNotifySms] = useState(notifications.notifySms);
+  const [verifiedPhone, setVerifiedPhone] = useState(
+    notifications.phoneVerified ? (notifications.phone ?? null) : null,
+  );
+  const phoneVerified = Boolean(verifiedPhone && phone === verifiedPhone);
 
   const setLink = (index: number, patch: Partial<LinkRow>) =>
     setLinks((current) => current.map((row, at) => (at === index ? { ...row, ...patch } : row)));
@@ -178,11 +183,22 @@ export function ProfileForm({
                 type="tel"
                 autoComplete="tel"
                 value={phone}
-                onChange={(untrusted) => setPhone(untrusted.target.value)}
+                onChange={(untrusted) => {
+                  setPhone(untrusted.target.value);
+                  if (untrusted.target.value !== verifiedPhone) setNotifySms(false);
+                }}
                 placeholder="+1 555 123 4567"
                 invalid={Boolean(state.details?.phone)}
               />
               <FieldError state={state} field="phone" />
+              <PhoneVerificationControl
+                phone={phone}
+                verified={phoneVerified}
+                onVerified={(normalized) => {
+                  setPhone(normalized);
+                  setVerifiedPhone(normalized);
+                }}
+              />
             </div>
           </div>
         </CardBody>
@@ -214,10 +230,52 @@ export function ProfileForm({
               <input type="hidden" name="notifySms" value={notifySms ? 'on' : ''} />
               <Switch
                 checked={notifySms}
-                disabled={!phone.trim()}
+                disabled={!phone.trim() || !phoneVerified}
                 aria-label="Text message alerts"
                 onCheckedChange={setNotifySms}
               />
+            </div>
+            <div className={styles.fieldGrid}>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="notificationTimezone">Alert timezone</label>
+                <Input
+                  id="notificationTimezone"
+                  name="notificationTimezone"
+                  defaultValue={notifications.timezone ?? me.timezone ?? ''}
+                  placeholder="America/New_York"
+                />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="quietStart">Text quiet hours start</label>
+                <Input id="quietStart" name="quietStart" type="time" defaultValue={notifications.quietStart ?? ''} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="quietEnd">Text quiet hours end</label>
+                <Input id="quietEnd" name="quietEnd" type="time" defaultValue={notifications.quietEnd ?? ''} />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="smsHourlyLimit">Maximum texts per hour</label>
+                <Input id="smsHourlyLimit" name="smsHourlyLimit" type="number" min={1} max={100} defaultValue={notifications.smsHourlyLimit} />
+              </div>
+              <PreferenceSelect name="eventNotifyEmail" label="Email for this event" value={notifications.eventNotifyEmail} />
+              <PreferenceSelect name="eventNotifySms" label="Texts for this event" value={notifications.eventNotifySms} />
+            </div>
+            <div className={styles.stackTight}>
+              {(
+                [
+                  ['submission', 'Submission updates'],
+                  ['session', 'Schedule changes'],
+                  ['task', 'Task reminders'],
+                  ['form', 'Submission deadlines'],
+                  ['adhoc', 'Organizer announcements'],
+                ] as const
+              ).map(([key, label]) => (
+                <div className={styles.switchRow} key={key}>
+                  <span className={styles.switchLabel}>{label}</span>
+                  <PreferenceSelect name={`category:${key}:email`} label="Email" value={notifications.categories[key].notifyEmail} />
+                  <PreferenceSelect name={`category:${key}:sms`} label="Text" value={notifications.categories[key].notifySms} />
+                </div>
+              ))}
             </div>
           </div>
         </CardBody>
@@ -345,5 +403,26 @@ export function ProfileForm({
         <SubmitButton variant="primary">Save profile</SubmitButton>
       </div>
     </form>
+  );
+}
+
+function PreferenceSelect({
+  name,
+  label,
+  value,
+}: {
+  name: string;
+  label: string;
+  value: boolean | null;
+}) {
+  return (
+    <label className={styles.field}>
+      <span className={styles.label}>{label}</span>
+      <select name={name} defaultValue={value === null ? 'inherit' : value ? 'on' : 'off'}>
+        <option value="inherit">Use global default</option>
+        <option value="on">On</option>
+        <option value="off">Off</option>
+      </select>
+    </label>
   );
 }

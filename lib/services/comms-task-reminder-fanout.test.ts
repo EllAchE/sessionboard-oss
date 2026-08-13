@@ -44,6 +44,7 @@ vi.mock('../mail', () => ({
   },
 }));
 vi.mock('../sms', () => ({
+  activeSmsTransportName: () => 'log',
   sendSms: async () => ({ id: 'sms-1', sent: true }),
 }));
 

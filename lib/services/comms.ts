@@ -33,8 +33,14 @@ import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail, type OutgoingIcs } from '../mail';
 import { escapeMarkdownText, markdownToText, renderMarkdown } from '../markdown';
 import { splitPersonName } from '../person-name';
-import { sendSms } from '../sms';
+import { activeSmsTransportName, sendSms } from '../sms';
 import { listEventsForUser, pickDefaultEvent } from './events';
+import {
+  maySendSmsNow,
+  phoneVerificationIsCurrent,
+  resolveRecipientDelivery,
+  type ResolvedDelivery,
+} from './notification-preferences';
 
 /**
  * `C-1`–`C-7`. Everything between an organizer pressing Send and a row in `email_log`: what the
@@ -336,6 +342,8 @@ export type Recipient = {
   phone: string | null;
   notifyEmail: boolean;
   notifySms: boolean;
+  phoneVerified?: boolean;
+  timezone?: string | null;
   name: string;
   submissions: RecipientSubmission[];
   openTasks: RecipientTask[];
@@ -370,6 +378,8 @@ export async function loadRecipientGraph(eventId: string) {
       phone: user.phone,
       notifyEmail: user.notifyEmail,
       notifySms: user.notifySms,
+      phoneVerifiedAt: user.phoneVerifiedAt,
+      phoneVerificationTransport: user.phoneVerificationTransport,
       userName: user.name,
       /** `F-6`. The real column, so `speaker.firstName` stops guessing at a string. */
       userFirstName: user.firstName,
@@ -377,6 +387,7 @@ export async function loadRecipientGraph(eventId: string) {
       company: participant.company,
       jobTitle: participant.jobTitle,
       pronouns: participant.pronouns,
+      timezone: participant.timezone,
     })
     .from(participant)
     .innerJoin(user, eq(user.id, participant.userId))
@@ -492,6 +503,8 @@ export async function resolveRecipients(
       phone: person.phone,
       notifyEmail: person.notifyEmail,
       notifySms: person.notifySms,
+      phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
+      timezone: person.timezone,
       name,
       submissions,
       openTasks,
@@ -1156,11 +1169,28 @@ function wantsChannel(
   hasContact: boolean,
 ): boolean {
   if (!hasContact) return false;
-  // A forced campaign may choose SMS over email; it may never override a person's SMS opt-out.
-  if (forced === 'sms' && !preferred) return false;
+  // A channel selector chooses among channels the recipient allowed; it never overrides opt-outs.
+  if (!preferred) return false;
   if (channel === 'auto') return preferred;
   return channel === forced;
 }
+
+async function recipientDelivery(
+  recipient: Recipient,
+  eventId: string,
+  templateKey: string,
+): Promise<ResolvedDelivery> {
+  return resolveRecipientDelivery({
+    userId: recipient.userId,
+    eventId,
+    templateKey,
+    baseEmail: recipient.notifyEmail,
+    baseSms: recipient.notifySms,
+    phoneVerified: Boolean(recipient.phoneVerified),
+    participantTimezone: recipient.timezone,
+  });
+}
+
 
 export type CampaignInput = {
   eventId: string;
@@ -1191,6 +1221,8 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
   };
 
   for (const recipient of recipients) {
+    const templateKey = input.templateKey ?? 'adhoc';
+    const delivery = await recipientDelivery(recipient, event.id, templateKey);
     const vars = await withPortalLink(
       recipient,
       input.eventId,
@@ -1198,7 +1230,7 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
       input.bodyMarkdown,
       input.smsBody,
     );
-    const message = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
+    const rendered = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
     // PUBLISH, not REQUEST. An ad-hoc send does not know whether it is a revision, and a REQUEST at
     // a sequence the speaker's calendar already holds is discarded as a duplicate — silently
     // undoing the invite. Real invitations go through `sendSessionInvites`, which owns the bump.
@@ -1212,14 +1244,15 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
 
     let emailId: string | null = null;
     let emailSent = false;
-    if (wantsChannel(channel, 'email', recipient.notifyEmail, Boolean(recipient.email))) {
+    if (wantsChannel(channel, 'email', delivery.notifyEmail, Boolean(recipient.email))) {
+      const message = rendered;
       const result = await sendMail({
         to: recipient.email,
         subject: message.subject,
         html: message.html,
         text: message.text,
         eventId: event.id,
-        templateKey: input.templateKey ?? 'adhoc',
+        templateKey,
         ics,
       });
       emailId = result.id;
@@ -1228,13 +1261,16 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
 
     let smsId: string | null = null;
     let smsSent = false;
-    if (wantsChannel(channel, 'sms', recipient.notifySms, Boolean(recipient.phone))) {
+    if (
+      wantsChannel(channel, 'sms', delivery.notifySms, Boolean(recipient.phone)) &&
+      (await maySendSmsNow(recipient.phone!, delivery))
+    ) {
       const smsText = renderSmsText(input.smsBody, input.bodyMarkdown, vars);
       const result = await sendSms({
         to: recipient.phone!,
         body: smsText,
         eventId: event.id,
-        templateKey: input.templateKey ?? 'adhoc',
+        templateKey,
       });
       smsId = result.id;
       smsSent = result.sent;
@@ -1279,8 +1315,9 @@ export async function previewCampaign(input: {
 
   const channelCounts = { email: 0, sms: 0, none: 0 };
   for (const row of recipients) {
-    const wantEmail = wantsChannel(channel, 'email', row.notifyEmail, Boolean(row.email));
-    const wantSms = wantsChannel(channel, 'sms', row.notifySms, Boolean(row.phone));
+    const delivery = await recipientDelivery(row, input.eventId, 'adhoc');
+    const wantEmail = wantsChannel(channel, 'email', delivery.notifyEmail, Boolean(row.email));
+    const wantSms = wantsChannel(channel, 'sms', delivery.notifySms, Boolean(row.phone));
     if (wantEmail) channelCounts.email += 1;
     if (wantSms) channelCounts.sms += 1;
     if (!wantEmail && !wantSms) channelCounts.none += 1;
@@ -1328,10 +1365,11 @@ async function sendTemplated(input: {
   const withLink = requestsPortalLink(subject, body, smsBodyTemplate)
     ? { ...base, 'portal.link': await mintPortalLink(input.recipient.userId, input.eventId) }
     : base;
+  const delivery = await recipientDelivery(input.recipient, input.eventId, input.key);
 
   let emailId: string | null = null;
   let emailSent = false;
-  if (input.recipient.notifyEmail && input.recipient.email) {
+  if (delivery.notifyEmail && input.recipient.email) {
     const message = renderMessage(branding, subject, body, withLink);
     const result = await sendMail({
       to: input.recipient.email,
@@ -1348,7 +1386,10 @@ async function sendTemplated(input: {
 
   let smsId: string | null = null;
   let smsSent = false;
-  if (input.recipient.notifySms && input.recipient.phone) {
+  if (
+    input.recipient.phone &&
+    (await maySendSmsNow(input.recipient.phone, delivery))
+  ) {
     const result = await sendSms({
       to: input.recipient.phone,
       body: renderSmsText(smsBodyTemplate, body, withLink),
@@ -1859,6 +1900,8 @@ export async function runDraftDeadlineReminders(
         name: user.name,
         firstName: user.firstName,
         phone: user.phone,
+        phoneVerifiedAt: user.phoneVerifiedAt,
+        phoneVerificationTransport: user.phoneVerificationTransport,
         notifyEmail: user.notifyEmail,
         notifySms: user.notifySms,
       })
@@ -1871,7 +1914,15 @@ export async function runDraftDeadlineReminders(
     const bodyMarkdown = stored?.bodyMarkdown ?? fallback.bodyMarkdown;
 
     for (const person of people) {
-      const alreadyEmailed = person.notifyEmail
+      const delivery = await resolveRecipientDelivery({
+        userId: person.id,
+        eventId: row.eventId,
+        templateKey: 'form.deadline',
+        baseEmail: person.notifyEmail,
+        baseSms: person.notifySms,
+        phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
+      });
+      const alreadyEmailed = delivery.notifyEmail
         ? await db
             .select({ id: emailLog.id })
             .from(emailLog)
@@ -1884,7 +1935,7 @@ export async function runDraftDeadlineReminders(
             )
             .limit(1)
         : [];
-      const alreadyTexted = person.notifySms && person.phone
+      const alreadyTexted = delivery.notifySms && person.phone
         ? await db
             .select({ id: smsLog.id })
             .from(smsLog)
@@ -1898,8 +1949,11 @@ export async function runDraftDeadlineReminders(
             .limit(1)
         : [];
 
-      const wantEmail = person.notifyEmail && alreadyEmailed.length === 0;
-      const wantSms = person.notifySms && Boolean(person.phone) && alreadyTexted.length === 0;
+      const wantEmail = delivery.notifyEmail && alreadyEmailed.length === 0;
+      const wantSms =
+        Boolean(person.phone) &&
+        alreadyTexted.length === 0 &&
+        (await maySendSmsNow(person.phone!, delivery, now));
       if (!wantEmail && !wantSms) continue;
 
       const vars: TemplateVars = {
