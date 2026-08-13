@@ -22,6 +22,7 @@
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
     "db:seed:first-settlement": "tsx --env-file-if-exists=.env db/seed-first-settlement.ts",
     "docs:openapi": "tsx scripts/generate-openapi.ts",
+    "docs:mcp": "tsx scripts/generate-mcp-tools.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
     "cf:deploy": "wrangler hyperdrive update 0d0c43d957e24187a177a06a6dd7faed --caching-disabled && opennextjs-cloudflare deploy"
@@ -32,6 +33,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@modelcontextprotocol/server": "2.0.0",
     "drizzle-orm": "^0.38.0",
     "libphonenumber-js": "^1.13.10",
     "lucide-react": "^0.469.0",

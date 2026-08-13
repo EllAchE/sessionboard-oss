@@ -140,17 +140,17 @@ one at `mcp.sessionboard.com/mcp` (US and EU) advertising 27 tools; the tool lis
 as a known unknown in [`reference/sessionboard-survey.md`](reference/sessionboard-survey.md). That
 survey is a competitor inventory, not a scope list — the rows below are the owner's scope.
 
-**Nothing MCP-related is built.** No dependency, no route, no config. The nearest existing thing is
-`.agents/skills/manage-cicero-event/`, an agent skill that drives the REST API above — which is
-useful precedent for tool design and is not a substitute.
+The shipped server complements `.agents/skills/manage-cicero-event/`: the skill remains the guided
+REST workflow, while MCP gives any compatible client a discoverable, event-scoped tool surface on
+the same deployment.
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-23 | **[REQUIRED]** | OUTSTANDING | **An MCP server exposing Cicero's event operations as tools**, hosted by the same deployment. It must call `lib/services/*` directly, exactly as the REST layer does — the repo's standing rule is that the UI never calls its own HTTP API and both entry points share a service function. An MCP server that shells out to `/api/v1` would be the third implementation of the same operations |
-| AR-24 | **[REQUIRED]** | OUTSTANDING | **Authenticate MCP with the existing per-event API keys** (`api_key`, Bearer). A second credential system for the same operations is not worth it, and AR-21's scoping should land before an agent can call write tools |
-| AR-25 | **[IMPORTANT]** | OUTSTANDING | **Streamable HTTP transport**, not stdio — the deployment target is Cloudflare Workers, which has no long-lived process to attach a stdio pipe to |
-| AR-26 | **[IMPORTANT]** | OUTSTANDING | **Start from the read surface and the write operations Cicero already exposes**: event, sessions, speakers, agenda, submissions, program reconcile. Parity with Sessionboard's 27 tools is not a target — their list is unknown, and matching a number is not a product goal. Cover the spine in `00-goals.md` and stop |
-| AR-27 | **[OPTIONAL]** | OUTSTANDING | **Publish the tool manifest in the docs** the way `docs/openapi.json` is published, generated from the same Zod schemas so it cannot drift |
+| AR-23 | **[REQUIRED]** | SHIPPED | **An MCP server exposes Cicero's event operations as tools** at `/api/v1/events/{slug}/mcp`, hosted by the same Next/OpenNext deployment. REST and MCP both call the transport-neutral read functions in `lib/services/public-api.ts`, and program reconciliation calls `lib/services/program-reconcile.ts`; the MCP route never calls Cicero over HTTP (`lib/mcp/server.ts`) |
+| AR-24 | **[REQUIRED]** | SHIPPED | **MCP authenticates with existing per-event API keys** through the same `requireApiKey` Bearer lookup as REST. The authenticated event id/slug are closed over by every tool, read-only keys receive only the `read` MCP scope, and the program write fails closed unless the key has `write` scope (`app/api/v1/events/[slug]/mcp/route.ts`, `lib/mcp/server.ts`) |
+| AR-25 | **[IMPORTANT]** | SHIPPED | **Streamable HTTP transport**, supplied by the official `@modelcontextprotocol/server` web-standard handler. A fresh MCP server is created per request for the Cloudflare Worker runtime; the endpoint does not expose stdio or retain client transports across requests |
+| AR-26 | **[IMPORTANT]** | SHIPPED | **The tool surface covers Cicero's existing spine**: event, sessions, speakers, agenda, submissions, and program reconcile. The tool definitions and handlers live in `lib/mcp/tools.ts` and `lib/mcp/server.ts`; no numerical parity claim is made about Sessionboard's unknown tool inventory |
+| AR-27 | **[OPTIONAL]** | SHIPPED | **The generated tool manifest is published** at `docs/mcp-tools.json` and `/api/v1/mcp-tools.json`. `bun run docs:mcp` projects the exact runtime Zod input/output schemas and `lib/mcp/tools.test.ts` fails if the committed document drifts |
 
 ---
 
