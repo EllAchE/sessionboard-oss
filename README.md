@@ -361,7 +361,10 @@ first dead end.
   `error code: 1102` with a 503 — so roughly one navigation in eight fails, and reloading fixes it.
   This is a plan limit, not a bug in the app: nothing in the code can render an admin table in 10ms
   of CPU. The fix is one line of billing (Workers Paid, $5/month, raises the cap to 30s) or a
-  redeploy to any host without a CPU quota. A self-hosted `docker compose up` has no such ceiling.
+  redeploy to any host without a CPU quota. A self-hosted `docker compose up` has no such ceiling —
+  `bun run bench` measures it at 41–58ms p50 with a zero error rate across 7000 requests to the five
+  public routes, and at 29–46ms of server CPU per rendered page, which is where a 10ms budget goes.
+  [`docs/performance-benchmark.md`](docs/performance-benchmark.md) has the method and the numbers.
 - **Reviewers are added by role, not by invitation.** There is no "invite a reviewer" flow and no
   per-submission manual assignment — rounds assign in bulk. The same gap is why the `manual`
   audience is hidden from the compose screen: nothing yet assigns a task to one named participant.
