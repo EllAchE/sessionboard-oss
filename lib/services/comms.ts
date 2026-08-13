@@ -415,6 +415,10 @@ export async function resolveRecipients(
     const name = person.displayName || person.userName || person.email.split('@')[0];
     const preferred =
       submissions.find((s) => s.status === 'accepted') ?? submissions[0] ?? null;
+    const selectedTask =
+      spec.kind === 'outstanding_tasks' && spec.taskId
+        ? (openTasks.find((entry) => entry.taskId === spec.taskId) ?? null)
+        : null;
 
     recipients.push({
       participantId: person.participantId,
@@ -432,6 +436,7 @@ export async function resolveRecipients(
         submission: preferred,
         session,
         openTasks,
+        selectedTask,
       }),
     });
   }
@@ -501,8 +506,18 @@ function buildVars(input: {
   submission: RecipientSubmission | null;
   session: typeof scheduledSession.$inferSelect | null;
   openTasks: RecipientTask[];
+  selectedTask: RecipientTask | null;
 }): TemplateVars {
-  const { event, branding, lookups, person, submission: sub, session, openTasks } = input;
+  const {
+    event,
+    branding,
+    lookups,
+    person,
+    submission: sub,
+    session,
+    openTasks,
+    selectedTask,
+  } = input;
   const zone = event.timezone;
 
   const sortedTasks = [...openTasks].sort((a, b) => {
@@ -547,7 +562,20 @@ function buildVars(input: {
       .join('\n'),
     'tasks.next': sortedTasks[0]?.name ?? '',
 
+    ...taskReminderVars(selectedTask),
+
     'portal.url': `${appUrl()}/portal`,
+  };
+}
+
+function taskReminderVars(
+  selectedTask: Pick<RecipientTask, 'name' | 'dueAt'> | null,
+): TemplateVars {
+  return {
+    'task.name': selectedTask?.name ?? '',
+    'task.dueAt': selectedTask?.dueAt
+      ? ` and due ${new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(selectedTask.dueAt)}`
+      : '',
   };
 }
 
@@ -1343,12 +1371,7 @@ export async function runTaskReminders(
         eventId: row.eventId,
         key: 'task.reminder',
         recipient,
-        extraVars: {
-          'task.name': row.name,
-          'task.dueAt': row.dueAt
-            ? ` and due ${new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(row.dueAt)}`
-            : '',
-        },
+        extraVars: taskReminderVars(row),
       });
 
       // Stamped even when the template is disabled, so turning reminders back on does not
