@@ -116,6 +116,30 @@ describe('mailboxBody, on templates that are not the sign-in email', () => {
   });
 });
 
+/**
+ * `sendMail` no longer stores the token at all where a real transport handled the recipient, so a
+ * row can arrive here already redacted. The page's explanation of the gap hangs off `redacted`, and
+ * it has to fire for that row too — otherwise the reader gets a message with a link missing and no
+ * sentence saying why.
+ */
+describe('mailboxBody, on a row whose token was never stored', () => {
+  const alreadyRedacted = bodyWith('https://cicero.test/auth/verify?token=redacted');
+
+  it('still explains the gap when the reader may not be shown the link', () => {
+    const result = mailboxBody(alreadyRedacted, null);
+
+    expect(result.redacted).toBe(true);
+    expect(result.links).toEqual(['https://acme.test/agenda']);
+  });
+
+  it('explains it even where visibility would have allowed a link, since there is none to show', () => {
+    const result = mailboxBody(alreadyRedacted, 'instance-delivers-nothing');
+
+    expect(result.redacted).toBe(true);
+    expect(result.links).toEqual(['https://acme.test/agenda']);
+  });
+});
+
 describe('mailboxBody, on bodies shaped to slip past the pattern', () => {
   it('catches every token in a body carrying more than one', () => {
     const second = 'second-secret';
