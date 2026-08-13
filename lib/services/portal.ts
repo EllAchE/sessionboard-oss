@@ -122,17 +122,30 @@ const linkSchema = z.object({
     .refine((value) => /^https?:\/\/[^\s]+$/i.test(value), 'Links must be http or https'),
 });
 
-export const profileSchema = z.object({
-  displayName: z.string().trim().max(120).optional(),
-  pronouns: z.string().trim().max(40).optional(),
-  jobTitle: z.string().trim().max(120).optional(),
-  company: z.string().trim().max(120).optional(),
-  bioMarkdown: z.string().max(5000, 'Biography is limited to 5,000 characters').optional(),
-  timezone: z.string().trim().max(64).optional(),
-  dietaryNotes: z.string().trim().max(1000).optional(),
-  accessibilityNotes: z.string().trim().max(1000).optional(),
-  links: z.array(linkSchema).max(8, 'Eight links is plenty').default([]),
-});
+export const profileSchema = z
+  .object({
+    displayName: z.string().trim().max(120).optional(),
+    pronouns: z.string().trim().max(40).optional(),
+    jobTitle: z.string().trim().max(120).optional(),
+    company: z.string().trim().max(120).optional(),
+    bioMarkdown: z.string().max(5000, 'Biography is limited to 5,000 characters').optional(),
+    timezone: z.string().trim().max(64).optional(),
+    dietaryNotes: z.string().trim().max(1000).optional(),
+    accessibilityNotes: z.string().trim().max(1000).optional(),
+    links: z.array(linkSchema).max(8, 'Eight links is plenty').default([]),
+    phone: z.string().trim().max(32).optional(),
+    notifyEmail: z.boolean().optional(),
+    notifySms: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.notifySms && !data.phone?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['phone'],
+        message: 'Add a phone number to receive SMS alerts',
+      });
+    }
+  });
 
 export type ProfileInput = z.input<typeof profileSchema>;
 
@@ -156,7 +169,8 @@ export async function updateProfile(
   }
 
   const data = parsed.data;
-  const [row] = await getDb()
+  const db = getDb();
+  const [row] = await db
     .update(participant)
     .set({
       displayName: blankToNull(data.displayName),
@@ -174,6 +188,21 @@ export async function updateProfile(
     .returning();
 
   if (!row) throw notFound('Your profile');
+
+  // Phone and channel preference live on `user`, not `participant` — they are global to the
+  // person, not per-event, which is what lets an organizer (no `participant` row) set the same
+  // preference from `/admin/settings`.
+  if (data.phone !== undefined || data.notifyEmail !== undefined || data.notifySms !== undefined) {
+    await db
+      .update(user)
+      .set({
+        ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
+        ...(data.notifyEmail !== undefined ? { notifyEmail: data.notifyEmail } : {}),
+        ...(data.notifySms !== undefined ? { notifySms: data.notifySms } : {}),
+      })
+      .where(eq(user.id, ctx.actor.userId));
+  }
+
   return row;
 }
 

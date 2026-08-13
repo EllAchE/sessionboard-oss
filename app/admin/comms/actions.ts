@@ -8,6 +8,7 @@ import {
   saveTemplate,
   sendCampaign,
   type AudienceSpec,
+  type ChannelSelection,
   type PreviewResult,
   type SendOutcome,
 } from '@/lib/services/comms';
@@ -52,6 +53,11 @@ function audienceFromForm(data: FormData): AudienceSpec {
   };
 }
 
+function channelFromForm(data: FormData): ChannelSelection {
+  const raw = data.get('channel');
+  return raw === 'email' || raw === 'sms' ? raw : 'auto';
+}
+
 export async function saveTemplateAction(data: FormData): Promise<ActionResult<{ key: string }>> {
   try {
     const eventId = await manageableEventId(data);
@@ -63,6 +69,7 @@ export async function saveTemplateAction(data: FormData): Promise<ActionResult<{
       bodyMarkdown: String(data.get('bodyMarkdown') ?? ''),
       enabled: data.get('enabled') !== 'off',
       attachIcs: data.get('attachIcs') === 'on',
+      smsBody: String(data.get('smsBody') ?? '') || null,
     });
     revalidatePath('/admin/comms/templates');
     return { ok: true, data: { key: row.key } };
@@ -101,6 +108,8 @@ export async function previewAction(data: FormData): Promise<ActionResult<Previe
       bodyMarkdown: String(data.get('bodyMarkdown') ?? ''),
       audience: audienceFromForm(data),
       participantId: (data.get('participantId') as string) || null,
+      channel: channelFromForm(data),
+      smsBody: String(data.get('smsBody') ?? '') || null,
     });
     return { ok: true, data: result };
   } catch (error) {
@@ -117,8 +126,11 @@ export async function sendCampaignAction(data: FormData): Promise<ActionResult<S
       audience: audienceFromForm(data),
       templateKey: (data.get('templateKey') as string) || null,
       attachIcs: data.get('attachIcs') === 'on',
+      channel: channelFromForm(data),
+      smsBody: String(data.get('smsBody') ?? '') || null,
     });
     revalidatePath('/admin/mail');
+    revalidatePath('/admin/sms');
     return { ok: true, data: outcome };
   } catch (error) {
     return fail(error);

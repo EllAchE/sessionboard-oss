@@ -13,6 +13,7 @@ import {
   submissionTag,
   tag,
   track,
+  user,
 } from '../../db/schema';
 import type { EventContext } from '../context';
 import { requireCapability } from '../context';
@@ -1013,6 +1014,62 @@ export async function removeFieldEntry(
   await requireFieldEntry(ctx, entryId);
   assertRemovable('library field', await fieldEntryDependents(entryId), options);
   await getDb().delete(fieldLibraryEntry).where(eq(fieldLibraryEntry.id, entryId));
+}
+
+// ---------------------------------------------------------------------------
+// Notification preferences — an organizer's own row, same shape as the speaker
+// portal's profile fields (`lib/services/portal.ts`), read/written independently
+// because an organizer has no `participant` row to piggyback on.
+// ---------------------------------------------------------------------------
+
+export type NotificationPrefs = {
+  phone: string | null;
+  notifyEmail: boolean;
+  notifySms: boolean;
+};
+
+export const notificationPrefsInput = z
+  .object({
+    phone: z.string().trim().max(32).optional(),
+    notifyEmail: z.boolean().optional(),
+    notifySms: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.notifySms && !data.phone?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['phone'],
+        message: 'Add a phone number to receive SMS alerts',
+      });
+    }
+  });
+export type NotificationPrefsInput = z.input<typeof notificationPrefsInput>;
+
+export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
+  const row = await getDb().query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { phone: true, notifyEmail: true, notifySms: true },
+  });
+  if (!row) throw notFound('Your account');
+  return row;
+}
+
+export async function saveNotificationPrefs(
+  userId: string,
+  input: NotificationPrefsInput,
+): Promise<NotificationPrefs> {
+  const values = parse(notificationPrefsInput, input);
+  const [updated] = await getDb()
+    .update(user)
+    .set({
+      ...(values.phone !== undefined ? { phone: values.phone || null } : {}),
+      ...(values.notifyEmail !== undefined ? { notifyEmail: values.notifyEmail } : {}),
+      ...(values.notifySms !== undefined ? { notifySms: values.notifySms } : {}),
+    })
+    .where(eq(user.id, userId))
+    .returning({ phone: user.phone, notifyEmail: user.notifyEmail, notifySms: user.notifySms });
+  if (!updated) throw notFound('Your account');
+  return updated;
 }
 
 // ---------------------------------------------------------------------------

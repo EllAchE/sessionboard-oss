@@ -12,6 +12,7 @@ import {
   room,
   scheduledSession,
   sessionFormat,
+  smsLog,
   submission,
   task,
   taskAssignment,
@@ -30,6 +31,7 @@ import {
 import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail } from '../mail';
 import { escapeMarkdownText, markdownToText, renderMarkdown } from '../markdown';
+import { sendSms } from '../sms';
 import { listEventsForUser, pickDefaultEvent } from './events';
 
 /**
@@ -318,6 +320,9 @@ export type Recipient = {
   participantId: string;
   userId: string;
   email: string;
+  phone: string | null;
+  notifyEmail: boolean;
+  notifySms: boolean;
   name: string;
   submissions: RecipientSubmission[];
   openTasks: RecipientTask[];
@@ -349,6 +354,9 @@ export async function loadRecipientGraph(eventId: string) {
       participantId: participant.id,
       userId: participant.userId,
       email: user.email,
+      phone: user.phone,
+      notifyEmail: user.notifyEmail,
+      notifySms: user.notifySms,
       userName: user.name,
       displayName: participant.displayName,
       company: participant.company,
@@ -457,6 +465,9 @@ export async function resolveRecipients(
       participantId: person.participantId,
       userId: person.userId,
       email: person.email,
+      phone: person.phone,
+      notifyEmail: person.notifyEmail,
+      notifySms: person.notifySms,
       name,
       submissions,
       openTasks,
@@ -628,6 +639,7 @@ export const DEFAULT_TEMPLATES: Array<{
   name: string;
   subject: string;
   bodyMarkdown: string;
+  smsBody?: string;
   attachIcs?: boolean;
 }> = [
   {
@@ -776,6 +788,7 @@ export async function ensureDefaultTemplates(eventId: string): Promise<void> {
       name: template.name,
       subject: template.subject,
       bodyMarkdown: template.bodyMarkdown,
+      smsBody: template.smsBody ?? null,
       attachIcs: template.attachIcs ?? false,
     })),
   );
@@ -787,6 +800,7 @@ export type TemplateInput = {
   name: string;
   subject: string;
   bodyMarkdown: string;
+  smsBody?: string | null;
   enabled?: boolean;
   attachIcs?: boolean;
 };
@@ -804,6 +818,7 @@ export async function saveTemplate(input: TemplateInput): Promise<EmailTemplateR
       name: input.name.trim() || input.key.trim(),
       subject: input.subject,
       bodyMarkdown: input.bodyMarkdown,
+      smsBody: input.smsBody?.trim() || null,
       enabled: input.enabled ?? true,
       attachIcs: input.attachIcs ?? false,
     })
@@ -813,6 +828,7 @@ export async function saveTemplate(input: TemplateInput): Promise<EmailTemplateR
         name: input.name.trim() || input.key.trim(),
         subject: input.subject,
         bodyMarkdown: input.bodyMarkdown,
+        smsBody: input.smsBody?.trim() || null,
         enabled: input.enabled ?? true,
         attachIcs: input.attachIcs ?? false,
         updatedAt: new Date(),
@@ -902,12 +918,83 @@ async function withPortalLink(
   return { ...recipient.vars, 'portal.link': await mintPortalLink(recipient.userId, eventId) };
 }
 
+/** Strips the markdown syntax a `bodyMarkdown` fallback carries, for a recipient with no `smsBody` override. */
+function stripMarkdownForSms(markdown: string): string {
+  return markdown
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/[#*_`>~]/g, '')
+    .replace(/^-\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const SMS_MAX_LENGTH = 300;
+
+/**
+ * `smsBody` renders like the email body (merge fields, no markdown); with no override, SMS falls
+ * back to a stripped, truncated read of the email's own markdown so every template works over SMS
+ * without an organizer having to write a second copy.
+ */
+export function renderSmsText(
+  smsBodyTemplate: string | null | undefined,
+  fallbackBodyMarkdown: string,
+  vars: TemplateVars,
+): string {
+  const source = smsBodyTemplate?.trim()
+    ? smsBodyTemplate
+    : stripMarkdownForSms(fallbackBodyMarkdown);
+  const rendered = renderTemplateText(source, vars).replace(/\s+/g, ' ').trim();
+  return rendered.length > SMS_MAX_LENGTH
+    ? `${rendered.slice(0, SMS_MAX_LENGTH - 1)}…`
+    : rendered;
+}
+
 export type SendOutcome = {
   recipients: number;
   sent: number;
   failed: number;
+  sentEmail: number;
+  sentSms: number;
   logIds: string[];
 };
+
+/** `auto` respects each recipient's stored preference; `email`/`sms` forces that one channel. */
+export type ChannelSelection = 'auto' | 'email' | 'sms';
+
+type DispatchResult = {
+  emailId: string | null;
+  emailSent: boolean;
+  smsId: string | null;
+  smsSent: boolean;
+} | null;
+
+/** Folds one recipient's dispatch result into a running `SendOutcome` — shared by every send path. */
+function applyDispatch(outcome: SendOutcome, result: DispatchResult): void {
+  if (!result) return;
+  if (result.emailId) {
+    outcome.logIds.push(result.emailId);
+    if (result.emailSent) outcome.sentEmail += 1;
+  }
+  if (result.smsId) {
+    outcome.logIds.push(result.smsId);
+    if (result.smsSent) outcome.sentSms += 1;
+  }
+  if (result.emailId || result.smsId) {
+    if (result.emailSent || result.smsSent) outcome.sent += 1;
+    else outcome.failed += 1;
+  }
+}
+
+function wantsChannel(
+  channel: ChannelSelection,
+  forced: 'email' | 'sms',
+  preferred: boolean,
+  hasContact: boolean,
+): boolean {
+  if (!hasContact) return false;
+  if (channel === 'auto') return preferred;
+  return channel === forced;
+}
 
 export type CampaignInput = {
   eventId: string;
@@ -917,14 +1004,25 @@ export type CampaignInput = {
   templateKey?: string | null;
   /** `C-3`: attach the calendar invite for each recipient's scheduled session, where they have one. */
   attachIcs?: boolean;
+  /** `auto` (default) follows each recipient's stored preference; `email`/`sms` forces that channel. */
+  channel?: ChannelSelection;
+  smsBody?: string | null;
 };
 
 /** `C-4`. One message per recipient, resolved and branded per person, logged either way. */
 export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
   const { branding, event } = await loadCommsContext(input.eventId);
   const recipients = await resolveRecipients(input.eventId, input.audience);
+  const channel = input.channel ?? 'auto';
 
-  const outcome: SendOutcome = { recipients: recipients.length, sent: 0, failed: 0, logIds: [] };
+  const outcome: SendOutcome = {
+    recipients: recipients.length,
+    sent: 0,
+    failed: 0,
+    sentEmail: 0,
+    sentSms: 0,
+    logIds: [],
+  };
 
   for (const recipient of recipients) {
     const vars = await withPortalLink(
@@ -943,19 +1041,37 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
           undefined)
         : undefined;
 
-    const result = await sendMail({
-      to: recipient.email,
-      subject: message.subject,
-      html: message.html,
-      text: message.text,
-      eventId: event.id,
-      templateKey: input.templateKey ?? 'adhoc',
-      ics,
-    });
+    let emailId: string | null = null;
+    let emailSent = false;
+    if (wantsChannel(channel, 'email', recipient.notifyEmail, Boolean(recipient.email))) {
+      const result = await sendMail({
+        to: recipient.email,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        eventId: event.id,
+        templateKey: input.templateKey ?? 'adhoc',
+        ics,
+      });
+      emailId = result.id;
+      emailSent = result.sent;
+    }
 
-    outcome.logIds.push(result.id);
-    if (result.sent) outcome.sent += 1;
-    else outcome.failed += 1;
+    let smsId: string | null = null;
+    let smsSent = false;
+    if (wantsChannel(channel, 'sms', recipient.notifySms, Boolean(recipient.phone))) {
+      const smsText = renderSmsText(input.smsBody, input.bodyMarkdown, vars);
+      const result = await sendSms({
+        to: recipient.phone!,
+        body: smsText,
+        eventId: event.id,
+        templateKey: input.templateKey ?? 'adhoc',
+      });
+      smsId = result.id;
+      smsSent = result.sent;
+    }
+
+    applyDispatch(outcome, emailId || smsId ? { emailId, emailSent, smsId, smsSent } : null);
   }
 
   return outcome;
@@ -965,6 +1081,8 @@ export type PreviewResult = {
   recipient: Recipient | null;
   audienceSize: number;
   message: RenderedMessage | null;
+  smsPreview: string | null;
+  channelCounts: { email: number; sms: number; none: number };
   unknown: string[];
 };
 
@@ -975,9 +1093,12 @@ export async function previewCampaign(input: {
   bodyMarkdown: string;
   audience: AudienceSpec;
   participantId?: string | null;
+  channel?: ChannelSelection;
+  smsBody?: string | null;
 }): Promise<PreviewResult> {
   const { branding } = await loadCommsContext(input.eventId);
   const recipients = await resolveRecipients(input.eventId, input.audience);
+  const channel = input.channel ?? 'auto';
   const recipient =
     recipients.find((row) => row.participantId === input.participantId) ?? recipients[0] ?? null;
 
@@ -986,8 +1107,17 @@ export async function previewCampaign(input: {
     ...unknownVariables(input.bodyMarkdown),
   ].filter((path, index, all) => all.indexOf(path) === index);
 
+  const channelCounts = { email: 0, sms: 0, none: 0 };
+  for (const row of recipients) {
+    const wantEmail = wantsChannel(channel, 'email', row.notifyEmail, Boolean(row.email));
+    const wantSms = wantsChannel(channel, 'sms', row.notifySms, Boolean(row.phone));
+    if (wantEmail) channelCounts.email += 1;
+    if (wantSms) channelCounts.sms += 1;
+    if (!wantEmail && !wantSms) channelCounts.none += 1;
+  }
+
   if (!recipient) {
-    return { recipient: null, audienceSize: 0, message: null, unknown };
+    return { recipient: null, audienceSize: 0, message: null, smsPreview: null, channelCounts, unknown };
   }
 
   // Never mint a live sign-in token for a preview.
@@ -996,6 +1126,8 @@ export async function previewCampaign(input: {
     recipient,
     audienceSize: recipients.length,
     message: renderMessage(branding, input.subject, input.bodyMarkdown, vars),
+    smsPreview: renderSmsText(input.smsBody, input.bodyMarkdown, vars),
+    channelCounts,
     unknown,
   };
 }
@@ -1004,13 +1136,14 @@ export async function previewCampaign(input: {
  * The automatic path (`C-2`). Looks the event's template up by key, falls back to the shipped copy,
  * and honours `enabled` so an organizer can turn one off without deleting it.
  */
+/** Triggered sends always respect the recipient's stored `notifyEmail`/`notifySms` preference. */
 async function sendTemplated(input: {
   eventId: string;
   key: string;
   recipient: Recipient;
   extraVars?: TemplateVars;
   ics?: string;
-}): Promise<{ id: string; sent: boolean } | null> {
+}): Promise<DispatchResult> {
   const { branding, event } = await loadCommsContext(input.eventId);
   const stored = await getTemplate(input.eventId, input.key);
   if (stored && !stored.enabled) return null;
@@ -1019,22 +1152,45 @@ async function sendTemplated(input: {
   const subject = stored?.subject ?? fallback?.subject;
   const body = stored?.bodyMarkdown ?? fallback?.bodyMarkdown;
   if (!subject || !body) throw notFound(`Template ${input.key}`);
+  const smsBodyTemplate = stored?.smsBody ?? fallback?.smsBody ?? null;
 
   const base = { ...input.recipient.vars, ...(input.extraVars ?? {}) };
   const withLink = PORTAL_LINK_PATTERN.test(subject) || PORTAL_LINK_PATTERN.test(body)
     ? { ...base, 'portal.link': await mintPortalLink(input.recipient.userId, input.eventId) }
     : base;
 
-  const message = renderMessage(branding, subject, body, withLink);
-  return sendMail({
-    to: input.recipient.email,
-    subject: message.subject,
-    html: message.html,
-    text: message.text,
-    eventId: event.id,
-    templateKey: input.key,
-    ics: input.ics,
-  });
+  let emailId: string | null = null;
+  let emailSent = false;
+  if (input.recipient.notifyEmail && input.recipient.email) {
+    const message = renderMessage(branding, subject, body, withLink);
+    const result = await sendMail({
+      to: input.recipient.email,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+      eventId: event.id,
+      templateKey: input.key,
+      ics: input.ics,
+    });
+    emailId = result.id;
+    emailSent = result.sent;
+  }
+
+  let smsId: string | null = null;
+  let smsSent = false;
+  if (input.recipient.notifySms && input.recipient.phone) {
+    const result = await sendSms({
+      to: input.recipient.phone,
+      body: renderSmsText(smsBodyTemplate, body, withLink),
+      eventId: event.id,
+      templateKey: input.key,
+    });
+    smsId = result.id;
+    smsSent = result.sent;
+  }
+
+  if (!emailId && !smsId) return null;
+  return { emailId, emailSent, smsId, smsSent };
 }
 
 async function recipientForParticipant(
@@ -1093,17 +1249,20 @@ async function fanOutSubmissionTemplate(
   key: string,
 ): Promise<SendOutcome> {
   const participantIds = await participantsForSubmission(submissionId);
-  const outcome: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
+  const outcome: SendOutcome = {
+    recipients: 0,
+    sent: 0,
+    failed: 0,
+    sentEmail: 0,
+    sentSms: 0,
+    logIds: [],
+  };
 
   for (const participantId of participantIds) {
     const recipient = await recipientForParticipant(eventId, participantId);
     if (!recipient) continue;
     outcome.recipients += 1;
-    const result = await sendTemplated({ eventId, key, recipient });
-    if (!result) continue;
-    outcome.logIds.push(result.id);
-    if (result.sent) outcome.sent += 1;
-    else outcome.failed += 1;
+    applyDispatch(outcome, await sendTemplated({ eventId, key, recipient }));
   }
 
   return outcome;
@@ -1274,7 +1433,14 @@ export async function sendSessionInvites(
   graph?: RecipientGraph,
 ): Promise<SessionNotifyResult> {
   const db = getDb();
-  const empty: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
+  const empty: SendOutcome = {
+    recipients: 0,
+    sent: 0,
+    failed: 0,
+    sentEmail: 0,
+    sentSms: 0,
+    logIds: [],
+  };
 
   const row = await loadSessionForCalendar(sessionId);
   if (!row) return { ...empty, sequence: 0, skipped: 'not_found' };
@@ -1307,23 +1473,29 @@ export async function sendSessionInvites(
   }
 
   const key = options.cancel ? 'session.cancelled' : 'session.invite';
-  const outcome: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
+  const outcome: SendOutcome = {
+    recipients: 0,
+    sent: 0,
+    failed: 0,
+    sentEmail: 0,
+    sentSms: 0,
+    logIds: [],
+  };
 
   for (const participantId of participantIds) {
     const recipient = await recipientForParticipant(event.id, participantId, graph);
     if (!recipient) continue;
     outcome.recipients += 1;
-    const result = await sendTemplated({
-      eventId: event.id,
-      key,
-      recipient,
-      extraVars: { 'session.calendarUrl': calendarDownloadUrl(sessionId) },
-      ics: calendar.body,
-    });
-    if (!result) continue;
-    outcome.logIds.push(result.id);
-    if (result.sent) outcome.sent += 1;
-    else outcome.failed += 1;
+    applyDispatch(
+      outcome,
+      await sendTemplated({
+        eventId: event.id,
+        key,
+        recipient,
+        extraVars: { 'session.calendarUrl': calendarDownloadUrl(sessionId) },
+        ics: calendar.body,
+      }),
+    );
   }
 
   return { ...outcome, sequence };
@@ -1418,7 +1590,7 @@ export async function runTaskReminders(
         .set({ lastRemindedAt: now, updatedAt: now })
         .where(eq(taskAssignment.id, assignment.id));
 
-      if (result?.sent) sent += 1;
+      if (result?.emailSent || result?.smsSent) sent += 1;
     }
   }
 
@@ -1464,27 +1636,53 @@ export async function runDraftDeadlineReminders(
     const { branding, event } = await loadCommsContext(row.eventId);
     const userIds = [...new Set(drafts.map((draft) => draft.submitterUserId))];
     const people = await db
-      .select({ id: user.id, email: user.email, name: user.name })
+      .select({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        notifyEmail: user.notifyEmail,
+        notifySms: user.notifySms,
+      })
       .from(user)
       .where(inArray(user.id, userIds));
 
-    for (const person of people) {
-      const already = await db
-        .select({ id: emailLog.id })
-        .from(emailLog)
-        .where(
-          and(
-            eq(emailLog.toEmail, person.email),
-            eq(emailLog.templateKey, 'form.deadline'),
-            gte(emailLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
-          ),
-        )
-        .limit(1);
-      if (already.length > 0) continue;
+    const stored = await getTemplate(row.eventId, 'form.deadline');
+    const fallback = DEFAULT_TEMPLATES.find((t) => t.key === 'form.deadline')!;
+    if (stored && !stored.enabled) continue;
+    const bodyMarkdown = stored?.bodyMarkdown ?? fallback.bodyMarkdown;
 
-      const stored = await getTemplate(row.eventId, 'form.deadline');
-      const fallback = DEFAULT_TEMPLATES.find((t) => t.key === 'form.deadline')!;
-      if (stored && !stored.enabled) continue;
+    for (const person of people) {
+      const alreadyEmailed = person.notifyEmail
+        ? await db
+            .select({ id: emailLog.id })
+            .from(emailLog)
+            .where(
+              and(
+                eq(emailLog.toEmail, person.email),
+                eq(emailLog.templateKey, 'form.deadline'),
+                gte(emailLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
+              ),
+            )
+            .limit(1)
+        : [];
+      const alreadyTexted = person.notifySms && person.phone
+        ? await db
+            .select({ id: smsLog.id })
+            .from(smsLog)
+            .where(
+              and(
+                eq(smsLog.toPhone, person.phone),
+                eq(smsLog.templateKey, 'form.deadline'),
+                gte(smsLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
+              ),
+            )
+            .limit(1)
+        : [];
+
+      const wantEmail = person.notifyEmail && alreadyEmailed.length === 0;
+      const wantSms = person.notifySms && Boolean(person.phone) && alreadyTexted.length === 0;
+      if (!wantEmail && !wantSms) continue;
 
       const vars: TemplateVars = {
         'event.name': event.name,
@@ -1497,21 +1695,33 @@ export async function runDraftDeadlineReminders(
         'form.url': `${appUrl()}/submit/${event.slug}/${row.slug}`,
       };
 
-      const message = renderMessage(
-        branding,
-        stored?.subject ?? fallback.subject,
-        stored?.bodyMarkdown ?? fallback.bodyMarkdown,
-        vars,
-      );
-      const result = await sendMail({
-        to: person.email,
-        subject: message.subject,
-        html: message.html,
-        text: message.text,
-        eventId: row.eventId,
-        templateKey: 'form.deadline',
-      });
-      if (result.sent) sent += 1;
+      let dispatched = false;
+
+      if (wantEmail) {
+        const message = renderMessage(branding, stored?.subject ?? fallback.subject, bodyMarkdown, vars);
+        const result = await sendMail({
+          to: person.email,
+          subject: message.subject,
+          html: message.html,
+          text: message.text,
+          eventId: row.eventId,
+          templateKey: 'form.deadline',
+        });
+        if (result.sent) dispatched = true;
+      }
+
+      if (wantSms) {
+        const smsText = renderSmsText(stored?.smsBody ?? fallback.smsBody ?? null, bodyMarkdown, vars);
+        const result = await sendSms({
+          to: person.phone!,
+          body: smsText,
+          eventId: row.eventId,
+          templateKey: 'form.deadline',
+        });
+        if (result.sent) dispatched = true;
+      }
+
+      if (dispatched) sent += 1;
     }
   }
 
@@ -1602,6 +1812,46 @@ export async function mailForRecipient(
     .where(and(eq(emailLog.eventId, eventId), eq(emailLog.toEmail, email)))
     .orderBy(desc(emailLog.createdAt))
     .limit(50);
+}
+
+// ---------------------------------------------------------------------------
+// The SMS mailbox — same shape as the mailbox above, one table over
+// ---------------------------------------------------------------------------
+
+export type SmsMailboxEntry = typeof smsLog.$inferSelect;
+
+export async function listSms(options: {
+  eventId?: string | null;
+  search?: string | null;
+  limit?: number;
+}): Promise<SmsMailboxEntry[]> {
+  const db = getDb();
+  const clauses = [];
+  if (options.eventId) clauses.push(eq(smsLog.eventId, options.eventId));
+  if (options.search) {
+    const needle = `%${options.search.toLowerCase()}%`;
+    clauses.push(
+      sql`(lower(${smsLog.toPhone}) like ${needle} or lower(${smsLog.body}) like ${needle})`,
+    );
+  }
+
+  return db
+    .select()
+    .from(smsLog)
+    .where(clauses.length > 0 ? and(...clauses) : undefined)
+    .orderBy(desc(smsLog.createdAt))
+    .limit(options.limit ?? 100);
+}
+
+/** `eventId` is not optional on purpose: a message id in a query string is not an authorisation. */
+export async function getSms(eventId: string, id: string): Promise<SmsMailboxEntry | undefined> {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(smsLog)
+    .where(and(eq(smsLog.id, id), eq(smsLog.eventId, eventId)))
+    .limit(1);
+  return row;
 }
 
 // ---------------------------------------------------------------------------

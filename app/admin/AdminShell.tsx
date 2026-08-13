@@ -9,6 +9,7 @@ import {
   FileText,
   LayoutDashboard,
   Mail,
+  MessageSquare,
   Plug,
   Settings,
   Users,
@@ -49,6 +50,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     items: [
       { id: 'comms', label: 'Comms', href: '/admin/comms', icon: <Mail size={15} /> },
       { id: 'mail', label: 'Mailbox', href: '/admin/mail', icon: <Mail size={15} /> },
+      { id: 'sms', label: 'SMS', href: '/admin/sms', icon: <MessageSquare size={15} /> },
       { id: 'embeds', label: 'Embeds', href: '/admin/embeds', icon: <Plug size={15} /> },
     ],
   },
