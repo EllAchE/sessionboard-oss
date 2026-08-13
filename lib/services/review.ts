@@ -9,6 +9,7 @@ import {
   participant,
   participantRole,
   reviewAssignment,
+  reviewRecusal,
   reviewRound,
   savedView,
   score as scoreTable,
@@ -220,8 +221,20 @@ export type AssignmentPair = { submissionId: string; reviewerUserId: string };
 /** A submission as the router sees it: an id, and the category that decides who reads it. */
 export type RoutableSubmission = { submissionId: string; trackId: string | null };
 
-/** Why a submission came out of the router with nobody on it. Never silently swallowed. */
-export type UnroutableReason = 'no_track' | 'track_uncovered' | 'all_conflicted';
+/**
+ * Why a submission came out of the router with nobody on it. Never silently swallowed.
+ *
+ * `all_recused` is kept apart from `all_conflicted` because they ask the organizer for different
+ * things. A conflict is a fact about the talk — its author cannot review it, and no amount of
+ * clicking changes that. A recusal is a decision somebody made, and the organizer can clear it. A
+ * single reason would have sent them looking at the track's coverage for a problem that was one
+ * button away.
+ */
+export type UnroutableReason =
+  | 'no_track'
+  | 'track_uncovered'
+  | 'all_conflicted'
+  | 'all_recused';
 
 export type UnroutableSubmission = { submissionId: string; reason: UnroutableReason };
 
@@ -237,6 +250,12 @@ export type RoutingPlanInput = {
   existing?: AssignmentPair[];
   /** Reviewers who must never be given a submission — its submitter and its co-speakers. */
   conflicts?: Map<string, ReadonlySet<string>>;
+  /**
+   * Reviewers who recused themselves from a submission and have not been cleared. Held apart from
+   * `conflicts` so the reason a submission ends up unroutable can name the one an organizer can
+   * undo.
+   */
+  recusals?: Map<string, ReadonlySet<string>>;
   /** Set when the organizer explicitly sends what routing cannot place to the whole pool. */
   fallbackToPool?: boolean;
 };
@@ -252,9 +271,11 @@ export type RoutingPlanInput = {
  * - **Unconfigured is not the same as uncovered.** An event with no coverage rows at all routes to
  *   the whole pool, which is exactly what assignment did before this model existed. Cover one
  *   track and coverage becomes the authority for that event, gaps included.
- * - **Conflicts are removed after routing, not before.** A track whose only reviewer wrote the
- *   talk is a real configuration, and the answer is to say so, not to hand the talk to someone
- *   the organizer never put on that track.
+ * - **Conflicts and recusals are removed after routing, not before.** A track whose only reviewer
+ *   wrote the talk is a real configuration, and the answer is to say so, not to hand the talk to
+ *   someone the organizer never put on that track. A recusal is removed the same way and for the
+ *   same reason: a reviewer who said no to a talk is not a reviewer that talk may be routed to,
+ *   whether or not the assignment they said it on still exists.
  * - **A submission that ends with nobody on it is returned, not dropped.** `unroutable` is the
  *   whole point: routing narrows, and anything it narrows to zero has to reach a human.
  */
@@ -262,6 +283,7 @@ export function planRoutedAssignments(input: RoutingPlanInput): RoutedPlan {
   const pool = [...new Set(input.pool)];
   const inPool = new Set(pool);
   const conflicts = input.conflicts ?? new Map<string, ReadonlySet<string>>();
+  const recusals = input.recusals ?? new Map<string, ReadonlySet<string>>();
   const configured = input.coverage.size > 0;
 
   const load = new Map<string, number>(pool.map((reviewerUserId) => [reviewerUserId, 0]));
@@ -278,7 +300,16 @@ export function planRoutedAssignments(input: RoutingPlanInput): RoutedPlan {
     subject: RoutableSubmission,
   ): { candidates: string[]; reason: UnroutableReason | null } => {
     const conflicted = conflicts.get(subject.submissionId) ?? new Set<string>();
-    const clear = (ids: string[]) => ids.filter((id) => !conflicted.has(id));
+    const recused = recusals.get(subject.submissionId) ?? new Set<string>();
+    const clear = (ids: string[]) => ids.filter((id) => !conflicted.has(id) && !recused.has(id));
+
+    /**
+     * Which of the two removals emptied the candidate list. A recusal is the answer whenever
+     * dropping only the conflicts would have left somebody — that is the case an organizer can
+     * act on, so it is the one they get told about.
+     */
+    const emptiedBy = (ids: string[]): UnroutableReason =>
+      ids.some((id) => !conflicted.has(id)) ? 'all_recused' : 'all_conflicted';
 
     const fallback = (reason: UnroutableReason) => {
       if (!input.fallbackToPool) return { candidates: [], reason };
@@ -288,7 +319,9 @@ export function planRoutedAssignments(input: RoutingPlanInput): RoutedPlan {
 
     if (!configured) {
       const open = clear(pool);
-      return open.length > 0 ? { candidates: open, reason: null } : { candidates: [], reason: 'all_conflicted' as const };
+      return open.length > 0
+        ? { candidates: open, reason: null }
+        : { candidates: [], reason: emptiedBy(pool) };
     }
     if (!subject.trackId) return fallback('no_track');
 
@@ -296,7 +329,7 @@ export function planRoutedAssignments(input: RoutingPlanInput): RoutedPlan {
     if (covered.length === 0) return fallback('track_uncovered');
 
     const open = clear(covered);
-    return open.length > 0 ? { candidates: open, reason: null } : fallback('all_conflicted');
+    return open.length > 0 ? { candidates: open, reason: null } : fallback(emptiedBy(covered));
   };
 
   const pairs: AssignmentPair[] = [];
@@ -888,6 +921,197 @@ export async function conflictsFor(
   return conflicts;
 }
 
+// ---------------------------------------------------------------------------
+// Recusals as a remembered fact — `ABS-12`
+// ---------------------------------------------------------------------------
+
+export type RecusalStatus = 'active' | 'released';
+
+export type RecusalRecord = {
+  id: string;
+  submissionId: string;
+  displayRef: string;
+  title: string;
+  reviewerUserId: string;
+  reviewerName: string;
+  reviewerEmail: string;
+  status: RecusalStatus;
+  reason: string | null;
+  recusedAt: Date;
+  releasedAt: Date | null;
+  /** The assignment the recusal was made on, when it is still there to release. */
+  assignmentId: string | null;
+};
+
+/**
+ * Who has taken themselves off which submission and not been cleared. This is the half of the
+ * recusal story that the assignment row cannot tell: an organizer frees a declined assignment so
+ * somebody else can pick the talk up, and that used to erase the only record that a reviewer had
+ * ever said no — after which the next auto-assign handed them the same talk again.
+ */
+export async function recusalsFor(submissionIds: string[]): Promise<Map<string, Set<string>>> {
+  const recusals = new Map<string, Set<string>>();
+  if (submissionIds.length === 0) return recusals;
+
+  const rows = await getDb()
+    .select({
+      submissionId: reviewRecusal.submissionId,
+      reviewerUserId: reviewRecusal.reviewerUserId,
+    })
+    .from(reviewRecusal)
+    .where(
+      and(
+        inArray(reviewRecusal.submissionId, submissionIds),
+        eq(reviewRecusal.status, 'active'),
+      ),
+    );
+
+  for (const row of rows) {
+    const set = recusals.get(row.submissionId) ?? new Set<string>();
+    set.add(row.reviewerUserId);
+    recusals.set(row.submissionId, set);
+  }
+  return recusals;
+}
+
+/**
+ * Upserts the fact rather than inserting a second one: a reviewer who recuses, is cleared, and
+ * recuses again is one standing answer about one talk, not a history the router has to reduce.
+ * The reason is only overwritten when a new one is given, so clearing and re-recusing without a
+ * note does not blank what they said the first time.
+ */
+async function recordRecusal(input: {
+  submissionId: string;
+  reviewerUserId: string;
+  reviewRoundId: string | null;
+  reason: string | null;
+}): Promise<void> {
+  await getDb()
+    .insert(reviewRecusal)
+    .values({
+      submissionId: input.submissionId,
+      reviewerUserId: input.reviewerUserId,
+      reviewRoundId: input.reviewRoundId,
+      reason: input.reason,
+      status: 'active',
+    })
+    .onConflictDoUpdate({
+      target: [reviewRecusal.submissionId, reviewRecusal.reviewerUserId],
+      set: {
+        status: 'active',
+        reviewRoundId: input.reviewRoundId,
+        recusedAt: new Date(),
+        releasedAt: null,
+        releasedByUserId: null,
+        ...(input.reason ? { reason: input.reason } : {}),
+      },
+    });
+}
+
+/**
+ * `ABS-12`. The organizer's deliberate undo, and the reason `released` is a state rather than a
+ * deleted row. Deleting would make "this reviewer may read this talk again" indistinguishable from
+ * "nobody ever recused", which is exactly the ambiguity that let auto-assign re-offer a recused
+ * talk in the first place. Kept as a row, the decision sticks: the next routing pass sees a
+ * released recusal, not an absent one, and the organizer can see they made the call.
+ */
+export async function clearRecusal(ctx: EventContext, recusalId: string): Promise<void> {
+  requireCapability(ctx, 'submission:decide');
+  const db = getDb();
+
+  const rows = await db
+    .select({ id: reviewRecusal.id })
+    .from(reviewRecusal)
+    .innerJoin(submission, eq(submission.id, reviewRecusal.submissionId))
+    .where(and(eq(reviewRecusal.id, recusalId), eq(submission.eventId, ctx.eventId)));
+  if (rows.length === 0) throw notFound('That recusal');
+
+  await db
+    .update(reviewRecusal)
+    .set({ status: 'released', releasedAt: new Date(), releasedByUserId: ctx.actor.userId })
+    .where(eq(reviewRecusal.id, recusalId));
+}
+
+/**
+ * Every recusal on the event, cleared ones included — a released recusal is a decision an organizer
+ * made and has to be able to see they made. `assignmentId` is the assignment the recusal still sits
+ * on, if any: it is null once the organizer has freed the work, and the recusal outlives it.
+ */
+export async function listRecusals(
+  ctx: EventContext,
+  roundId?: string | null,
+): Promise<RecusalRecord[]> {
+  requireCapability(ctx, 'submission:review');
+  const db = getDb();
+
+  const rows = await db
+    .select({
+      id: reviewRecusal.id,
+      submissionId: reviewRecusal.submissionId,
+      ref: submission.ref,
+      title: submission.title,
+      reviewerUserId: reviewRecusal.reviewerUserId,
+      reviewerName: user.name,
+      reviewerEmail: user.email,
+      status: reviewRecusal.status,
+      reason: reviewRecusal.reason,
+      recusedAt: reviewRecusal.recusedAt,
+      releasedAt: reviewRecusal.releasedAt,
+    })
+    .from(reviewRecusal)
+    .innerJoin(submission, eq(submission.id, reviewRecusal.submissionId))
+    .innerJoin(user, eq(user.id, reviewRecusal.reviewerUserId))
+    .where(eq(submission.eventId, ctx.eventId))
+    .orderBy(asc(submission.ref));
+
+  // Joined separately rather than as a left join on the recusal: one recusal can have an assignment
+  // in several rounds, and a join would have returned the same recusal once per round.
+  const assignments = roundId
+    ? await db
+        .select({
+          id: reviewAssignment.id,
+          submissionId: reviewAssignment.submissionId,
+          reviewerUserId: reviewAssignment.reviewerUserId,
+        })
+        .from(reviewAssignment)
+        .where(eq(reviewAssignment.reviewRoundId, roundId))
+    : [];
+  const assignmentByPair = new Map(
+    assignments.map((row) => [`${row.submissionId}:${row.reviewerUserId}`, row.id]),
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    submissionId: row.submissionId,
+    displayRef: formatRef('submission', row.ref),
+    title: row.title,
+    reviewerUserId: row.reviewerUserId,
+    reviewerName: row.reviewerName ?? row.reviewerEmail,
+    reviewerEmail: row.reviewerEmail,
+    status: row.status,
+    reason: row.reason,
+    recusedAt: row.recusedAt,
+    releasedAt: row.releasedAt,
+    assignmentId: assignmentByPair.get(`${row.submissionId}:${row.reviewerUserId}`) ?? null,
+  }));
+}
+
+/**
+ * A hand-assignment is refused rather than quietly honoured when the reviewer has an active
+ * recusal on that submission. The organizer has a way through — clear the recusal, which is one
+ * click and a recorded decision — and that is better than a silent override nobody can see later.
+ * Auto-assign never produces such a pair, so this only ever fires on a deliberate click.
+ */
+async function assertNotRecused(pairs: AssignmentPair[]): Promise<void> {
+  const recusals = await recusalsFor([...new Set(pairs.map((pair) => pair.submissionId))]);
+  const blocked = pairs.find((pair) => recusals.get(pair.submissionId)?.has(pair.reviewerUserId));
+  if (blocked) {
+    throw conflict(
+      'That reviewer recused themselves from this submission. Clear the recusal to assign them again.',
+    );
+  }
+}
+
 export async function assignReviewers(
   ctx: EventContext,
   roundId: string,
@@ -896,6 +1120,7 @@ export async function assignReviewers(
   requireCapability(ctx, 'submission:decide');
   await requireRound(ctx, roundId);
   if (pairs.length === 0) return 0;
+  await assertNotRecused(pairs);
 
   const inserted = await getDb()
     .insert(reviewAssignment)
@@ -951,7 +1176,7 @@ export async function autoAssignRound(
   if (input.submissionIds.length === 0) return { created: 0, routed: 0, unrouted: [] };
   const db = getDb();
 
-  const [existing, subjects, coverage, conflicts] = await Promise.all([
+  const [existing, subjects, coverage, conflicts, recusals] = await Promise.all([
     db
       .select({
         submissionId: reviewAssignment.submissionId,
@@ -974,6 +1199,7 @@ export async function autoAssignRound(
       ),
     trackCoverage(ctx.eventId),
     conflictsFor(input.submissionIds),
+    recusalsFor(input.submissionIds),
   ]);
 
   // The caller's order is what the organizer sees in the queue; keep it so a rerun is stable.
@@ -990,6 +1216,7 @@ export async function autoAssignRound(
     reviewersPerSubmission: input.reviewersPerSubmission,
     existing,
     conflicts,
+    recusals,
     fallbackToPool: input.fallbackToPool,
   });
 
@@ -1010,6 +1237,12 @@ export async function autoAssignRound(
   };
 }
 
+/**
+ * Frees the work, not the recusal. Releasing a declined assignment is the organizer saying "somebody
+ * else read this one" — it is not them overruling the reviewer who stepped back, and it used to be
+ * read as both because deleting the row deleted the only record that anyone had. `review_recusal`
+ * is untouched here on purpose; `clearRecusal` is the separate, deliberate undo.
+ */
 export async function unassignReviewer(ctx: EventContext, assignmentId: string): Promise<void> {
   requireCapability(ctx, 'submission:decide');
   const assignment = await loadAssignment(ctx, assignmentId);
@@ -1165,6 +1398,11 @@ export async function saveScorecard(
  * themselves off the assignment rather than leaving it pending forever. The row survives in
  * `declined` so the organizer can see the gap and reassign it; deleting it would make a recusal
  * indistinguishable from an assignment that was never made.
+ *
+ * The assignment is the *work*, though, and the organizer frees it the moment they hand the talk
+ * to somebody else — which is why the recusal is also written to `review_recusal`, where it
+ * outlives the row it was made on. That second write is what stops the next auto-assign offering
+ * this reviewer the very talk they just turned down.
  */
 export async function declineAssignment(
   ctx: EventContext,
@@ -1185,6 +1423,13 @@ export async function declineAssignment(
       comment: trimmed ? trimmed : assignment.comment,
     })
     .where(eq(reviewAssignment.id, assignment.id));
+
+  await recordRecusal({
+    submissionId: assignment.submissionId,
+    reviewerUserId: assignment.reviewerUserId,
+    reviewRoundId: assignment.reviewRoundId,
+    reason: trimmed ? trimmed : (assignment.comment ?? null),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1364,6 +1609,8 @@ export type QueueRow = {
   completedCount: number;
   /** Reviewers who turned the assignment down. They never complete, so readiness discounts them. */
   declinedCount: number;
+  /** What an organizer staged this as by hand, or `null` for "whatever the panel's average says". */
+  stagedDecision: StagedDecision | null;
   hasAiReview: boolean;
 };
 
@@ -1378,22 +1625,35 @@ export type QueueBundle = {
 };
 
 /**
- * `V-1`, `V-4`. The two staging queues, and the reason they are a reading of the data rather than a
- * pair of statuses. A proposal is never *moved* into a queue: it arrives in one the moment the panel
- * finishes with it, and it leaves when an organizer commits the decision. So the accept queue is
- * "reviewed, and the panel says yes" and the decline queue is "reviewed, and the panel says no" —
- * the batch a chair wants to read end to end before signing it off, which is the whole point of a
- * staging area sitting between Pending and the final statuses.
+ * `V-1`, `V-4`. The two staging queues. A proposal reaches one of two ways, and the order between
+ * them is the whole design.
  *
- * Nothing here is decided. Committing is still `decideSubmissions`, the only thing that writes a
- * status, records `decidedAt`, and mails the speaker.
+ * By default a queue is a *reading* of the panel's own work: the accept queue is "reviewed, and the
+ * panel says yes", the decline queue is "reviewed, and the panel says no". That is the batch a
+ * chair wants to read end to end before signing it off, and it needs no organizer to exist, so a
+ * queue is never empty just because nobody has curated it.
  *
- * The trade this makes: there is no manual override, because there is nowhere to persist one. An
- * organizer who wants a 2.8 accepted accepts it outright rather than staging it first. A stored
- * provisional status would buy that override at the price of a second source of truth for the same
- * decision, and one that goes stale the next time a reviewer submits a score.
+ * On top of that an organizer may stage by hand, and a hand stage **wins**. The reading is a
+ * default, not a verdict: an organizer who wants a 2.8 in the accept queue is disagreeing with the
+ * average on purpose, and a rule that let the average win back would make the disagreement
+ * unexpressible. The alternative they had before was accepting the talk outright — committing a
+ * decision to get a provisional one — which is what a staging area exists to avoid.
+ *
+ * Clearing a hand stage returns the proposal to the reading rather than to nothing; `hold` is the
+ * separate value for taking one *out* of a queue the average put it in.
+ *
+ * Nothing here is decided either way. Committing is still `decideSubmissions`, the only thing that
+ * writes a status, records `decidedAt`, and mails the speaker — and it clears the staging as it
+ * goes, so a decision that is later reset does not resurrect a stale batch.
  */
 export type DecisionStage = 'accept' | 'decline';
+
+/**
+ * What an organizer can put on a submission by hand. `hold` is the one that is not a queue: it
+ * pins the proposal to Pending against whatever the average says, which is the only way to remove
+ * something from a derived queue without deciding it.
+ */
+export type StagedDecision = DecisionStage | 'hold';
 
 /** `unstaged` is what Pending means once the two queues have taken their share of it. */
 export type QueueStage = DecisionStage | 'unstaged';
@@ -1401,24 +1661,44 @@ export type QueueStage = DecisionStage | 'unstaged';
 /** The midpoint of the 1–5 scale every scorecard is reported on, and the queues' only bar. */
 export const DECISION_QUEUE_BAR = (1 + SCORE_SCALE) / 2;
 
+export type StageableRow = Pick<
+  QueueRow,
+  'status' | 'averageScore' | 'assignedCount' | 'completedCount' | 'declinedCount' | 'stagedDecision'
+>;
+
 /**
- * Which queue a row is in, or `null` for one no queue has claimed. Reads only what the queue already
- * carries, so the tab, the count and the filter cannot disagree about a single submission.
+ * The queue a row would be in on the panel's numbers alone, ignoring anything an organizer said.
+ * Exported because it is what "clear the staging" falls back to, and the surface that offers that
+ * button has to be able to say where the proposal will land.
  */
-export function decisionStage(
-  row: Pick<
-    QueueRow,
-    'status' | 'averageScore' | 'assignedCount' | 'completedCount' | 'declinedCount'
-  >,
-): DecisionStage | null {
-  // Only an undecided proposal stages. Anything else already has its answer.
-  if (row.status !== 'submitted' && row.status !== 'under_review') return null;
+export function derivedDecisionStage(row: StageableRow): DecisionStage | null {
   // Every reviewer has answered — scored it or turned it down — so no outstanding review can move it.
   if (row.assignedCount === 0) return null;
   if (row.completedCount + row.declinedCount < row.assignedCount) return null;
   // Assigned, answered, and still unscored: nothing to read a recommendation off.
   if (row.averageScore === null) return null;
   return row.averageScore >= DECISION_QUEUE_BAR ? 'accept' : 'decline';
+}
+
+/**
+ * Which queue a row is in, or `null` for one no queue has claimed. Reads only what the queue already
+ * carries, so the tab, the count and the filter cannot disagree about a single submission.
+ */
+export function decisionStage(row: StageableRow): DecisionStage | null {
+  // Only an undecided proposal stages. Anything else already has its answer.
+  if (row.status !== 'submitted' && row.status !== 'under_review') return null;
+  // The organizer's hand beats the average, including the hand that says "not this batch".
+  if (row.stagedDecision === 'hold') return null;
+  if (row.stagedDecision) return row.stagedDecision;
+  return derivedDecisionStage(row);
+}
+
+/** Whether a row is where it is because somebody put it there. Drives the queue's own labelling. */
+export function stagedByHand(row: StageableRow): boolean {
+  return (
+    row.stagedDecision !== null &&
+    (row.status === 'submitted' || row.status === 'under_review')
+  );
 }
 
 export type QueueTab = {
@@ -1442,13 +1722,14 @@ const STATUS_TABS: QueueTab[] = [
     label: 'Pending',
     statuses: ['submitted', 'under_review'],
     stage: 'unstaged',
+    hint: 'Everything neither queue has claimed: still being reviewed, or held back here by hand.',
   },
   {
     id: 'accept-queue',
     label: 'Accept queue',
     statuses: ['submitted', 'under_review'],
     stage: 'accept',
-    hint: `Every review is in and the panel averaged ${DECISION_QUEUE_BAR.toFixed(1)} or better. Nothing here is decided until you accept it.`,
+    hint: `Every review is in and the panel averaged ${DECISION_QUEUE_BAR.toFixed(1)} or better, plus anything you staged here by hand. Nothing is decided until you accept it.`,
   },
   { id: 'accepted', label: 'Accepted', statuses: ['accepted'] },
   { id: 'waitlisted', label: 'Waitlist', statuses: ['waitlisted'] },
@@ -1457,7 +1738,7 @@ const STATUS_TABS: QueueTab[] = [
     label: 'Decline queue',
     statuses: ['submitted', 'under_review'],
     stage: 'decline',
-    hint: `Every review is in and the panel averaged under ${DECISION_QUEUE_BAR.toFixed(1)}. Nothing here is declined until you decline it.`,
+    hint: `Every review is in and the panel averaged under ${DECISION_QUEUE_BAR.toFixed(1)}, plus anything you staged here by hand. Nothing is declined until you decline it.`,
   },
   { id: 'declined', label: 'Declined', statuses: ['declined'] },
   { id: 'withdrawn', label: 'Withdrawn', statuses: ['withdrawn'] },
@@ -1763,6 +2044,7 @@ export async function loadQueue(
         trackId: submission.trackId,
         formatId: submission.formatId,
         level: submission.level,
+        stagedDecision: submission.stagedDecision,
         submitterName: user.name,
         submitterEmail: user.email,
       })
@@ -1892,6 +2174,7 @@ export async function loadQueue(
       assignedCount: summary.assignedCount,
       completedCount: summary.completedCount,
       declinedCount: assignments.filter((assignment) => assignment.status === 'declined').length,
+      stagedDecision: row.stagedDecision,
       hasAiReview: withAi.has(row.id),
     };
   });
@@ -2224,6 +2507,67 @@ export type DecisionResult = {
   notifyFailed: number;
 };
 
+export type StageResult = {
+  /** Submissions whose staging this call wrote. */
+  updated: number;
+  /** Ones it would not touch, and why — a decided talk is not a staging candidate. */
+  skipped: Array<{ id: string; reason: string }>;
+};
+
+/**
+ * `V-1`. The organizer's hand on the two queues, and deliberately not a decision: no status moves,
+ * no `decidedAt` is written, and nobody is mailed. Passing `null` clears the staging, which returns
+ * the submission to whatever the panel's average says about it rather than to nowhere.
+ *
+ * Only an undecided submission can be staged. Staging an accepted talk would be a second, quieter
+ * opinion about a question that already has a loud answer, and the organizer who wants to change
+ * their mind has `reset` for that.
+ *
+ * This is stored on the submission rather than in a saved view because a staged batch that only its
+ * author can see is not a batch: `saved_view.user_id` is `NOT NULL`, so a co-chair opening the same
+ * accept queue would have seen a different one.
+ */
+export async function stageSubmissions(
+  ctx: EventContext,
+  submissionIds: string[],
+  stage: StagedDecision | null,
+): Promise<StageResult> {
+  requireCapability(ctx, 'submission:decide');
+  if (submissionIds.length === 0) return { updated: 0, skipped: [] };
+
+  const db = getDb();
+  const rows = await db
+    .select({ id: submission.id, status: submission.status })
+    .from(submission)
+    .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, submissionIds)));
+
+  const skipped: Array<{ id: string; reason: string }> = [];
+  const eligible: string[] = [];
+  for (const row of rows) {
+    if (row.status === 'submitted' || row.status === 'under_review') {
+      eligible.push(row.id);
+    } else if (row.status === 'draft') {
+      skipped.push({ id: row.id, reason: 'That submission is still a draft' });
+    } else {
+      skipped.push({ id: row.id, reason: 'That submission has already been decided' });
+    }
+  }
+  if (eligible.length === 0) return { updated: 0, skipped };
+
+  const now = new Date();
+  await db
+    .update(submission)
+    .set({
+      stagedDecision: stage,
+      stagedAt: stage ? now : null,
+      stagedByUserId: stage ? ctx.actor.userId : null,
+      updatedAt: now,
+    })
+    .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, eligible)));
+
+  return { updated: eligible.length, skipped };
+}
+
 /**
  * `C-2`. A decision is worth mailing about exactly when the status it lands on has a seeded speaker
  * template, so this asks `comms` rather than keeping a second list beside it — the two cannot drift
@@ -2283,6 +2627,14 @@ export async function decideSubmissions(
       status,
       decidedAt: decision === 'reset' ? null : now,
       decisionNote: note === undefined ? undefined : (note?.trim() || null),
+      /**
+       * Committing consumes the staging. Keeping it would leave a talk that was accepted, then
+       * reset weeks later, sitting back in the accept queue on a batch nobody remembers staging —
+       * a stale second opinion about a decision that has already been taken and taken back.
+       */
+      stagedDecision: null,
+      stagedAt: null,
+      stagedByUserId: null,
       updatedAt: now,
     })
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, eligible)));

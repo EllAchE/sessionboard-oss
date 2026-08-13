@@ -23,6 +23,7 @@ import {
   portalPage,
   portalTheme,
   reviewAssignment,
+  reviewRecusal,
   reviewRound,
   room,
   scheduledSession,
@@ -1031,6 +1032,45 @@ await db.insert(score).values(
       })),
     ),
 );
+
+/**
+ * `ABS-12`. One reviewer steps back, so the recusal surface has something in it on first load — and
+ * so the demo shows the part that matters: the recusal is a row of its own, and it outlives the
+ * assignment. Release the assignment in the UI and the reviewer stays off this talk; clearing the
+ * recusal is the separate, deliberate click that lets them have it again.
+ */
+const recusedAssignment = secondAssignments.find(
+  (assignment) => assignment.status === 'pending',
+);
+if (recusedAssignment) {
+  const stepBack = 'I advised on this proposal before it was filed and cannot judge it fairly.';
+  await db
+    .update(reviewAssignment)
+    .set({ status: 'declined', comment: stepBack, completedAt: ago(1) })
+    .where(eq(reviewAssignment.id, recusedAssignment.id));
+  await db.insert(reviewRecusal).values({
+    submissionId: recusedAssignment.submissionId,
+    reviewerUserId: recusedAssignment.reviewerUserId,
+    reviewRoundId: recusedAssignment.reviewRoundId,
+    reason: stepBack,
+    recusedAt: ago(1),
+  });
+}
+
+/**
+ * `V-1`. One proposal the panel put below the bar and the chair pulled into the accept queue by
+ * hand, so the queues open showing both of the things they can hold: what the average staged, and
+ * what a person did. Nothing here is decided — the status is untouched.
+ */
+const stagedByChair = submissions.find(
+  (row) => row.status === 'under_review' && row.id !== recusedAssignment?.submissionId,
+);
+if (stagedByChair) {
+  await db
+    .update(submission)
+    .set({ stagedDecision: 'accept', stagedAt: ago(1), stagedByUserId: organizer.id })
+    .where(eq(submission.id, stagedByChair.id));
+}
 
 // ---------------------------------------------------------------------------
 // Agenda. Five accepted talks are placed; two are deliberately left in the

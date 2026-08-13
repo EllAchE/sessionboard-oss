@@ -79,6 +79,9 @@ export default async function SubmissionsPage({
     spread: row.spread,
     assignedCount: row.assignedCount,
     completedCount: row.completedCount,
+    // Asked rather than read straight off the row, so the badge and the queues answer "is this
+    // staged?" with the same rule: staging only means anything while a submission is undecided.
+    stagedDecision: review.stagedByHand(row) ? row.stagedDecision : null,
     hasAiReview: row.hasAiReview,
   }));
 

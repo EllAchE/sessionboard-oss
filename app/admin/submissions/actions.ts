@@ -52,6 +52,21 @@ export async function decideAction(
   });
 }
 
+/**
+ * `V-1`. Staging, which is not deciding: it moves a submission between the queues an organizer
+ * reads and never touches its status, its `decidedAt`, or the speaker's inbox. `null` clears the
+ * staging and hands the row back to whatever the panel's average says about it.
+ */
+export async function stageAction(
+  submissionIds: string[],
+  stage: review.StagedDecision | null,
+): Promise<ActionResult<review.StageResult>> {
+  return run(async () => {
+    const ctx = await decideContext();
+    return review.stageSubmissions(ctx, submissionIds, stage);
+  });
+}
+
 export async function createRoundAction(input: {
   name: string;
   blindUntilClose?: boolean;

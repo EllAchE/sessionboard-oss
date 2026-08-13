@@ -38,9 +38,13 @@ export default async function ReviewRoundsPage({
     review.loadRouting(ctx),
   ]);
 
-  const [criteria, declined, outstanding] = await Promise.all([
+  const [criteria, declined, recusals, outstanding] = await Promise.all([
     selected ? review.listCriteria(selected.id) : [],
     selected ? review.listRoundAssignments(ctx, selected.id, ['declined']) : [],
+    // Event-wide, and deliberately not scoped to the round: a recusal made in round one is still
+    // the reason round two must not offer that reviewer the same talk. The round only decides
+    // which assignment, if any, is still there to release.
+    review.listRecusals(ctx, selected?.id ?? null),
     selected ? review.outstandingReviewers(ctx, selected.id) : [],
   ]);
 
@@ -101,12 +105,14 @@ export default async function ReviewRoundsPage({
         untrackedPending: routing.untrackedPending,
       }}
       pendingSubmissionIds={queue.rows.map((row) => row.id)}
-      recusals={declined.map((row) => ({
+      recusals={recusals.map((row) => ({
+        id: row.id,
         assignmentId: row.assignmentId,
         displayRef: row.displayRef,
         title: row.title,
         reviewerName: row.reviewerName,
-        reason: row.comment,
+        reason: row.reason,
+        status: row.status,
       }))}
       outstandingReviewerCount={outstanding.length}
     />

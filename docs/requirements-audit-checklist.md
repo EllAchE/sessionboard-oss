@@ -237,10 +237,14 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 
 - [x] **V-1 · R · COMPLETE — Exact submission status tabs.** All eight named tabs exist — All,
   Accepted, Accept Queue, Pending, Decline Queue, Declined, Withdrawn, Drafts — plus Waitlist. The
-  two queues are **derived, not staged**: a submission enters one once every assigned reviewer has
-  answered and its average score falls above or below a fixed midpoint bar, and Pending is the
-  un-staged remainder, so the three tabs partition rather than overlap. There is no persisted staging
-  column and no organizer-driven manual staging; see [Follow-ups](#follow-ups).
+  two queues are **derived and staged**, in that order. By default a submission enters one once every
+  assigned reviewer has answered and its average score falls above or below a fixed midpoint bar, so
+  the queues fill without anyone curating them. On top of that an organizer stages by hand, and a
+  hand stage wins over the average: `submission.staged_decision` holds `accept`, `decline` or `hold`,
+  event-wide rather than per-user so a co-chair reads the same batch. Clearing it returns the row to
+  the derived reading rather than to nothing; `hold` is how a row leaves a queue the average put it
+  in. Pending is still the remainder, so the three tabs partition rather than overlap. Committing a
+  queue decides every row it is showing and clears the staging as it goes.
 - [x] **V-2 · R · COMPLETE — Inline accept/decline.** Inline and bulk decision actions are available.
 - [x] **V-3 · R · COMPLETE — Named reviewer scoring.** Reviewer identities, assignments, weighted
   criteria, and scorecards exist.
@@ -419,15 +423,11 @@ Resend rejects every non-owner recipient, so `delivered` would be `false` for *e
 invite path creates an account for an arbitrary typed address, so the leaked link is a session as
 that address. **Not fixed here — this audit owns `docs/` only.**
 
-- **`V-1` manual staging.** The accept and decline queues are computed from review completeness and
-  a hardcoded score midpoint. An organizer cannot stage a submission into a queue by hand, cannot
-  move one out, and cannot tune the bar; a submission with no assigned reviewers never stages at all.
-  A persisted staging column would make the queues organizer-driven as well as derived.
-- **A released recusal leaves no trace.** A recusal is kept as a `declined` assignment precisely so
-  the organizer can see the gap — but releasing that assignment *deletes the row*, and the conflict
-  check that auto-assign consults covers only submitters and speakers. The same reviewer can
-  therefore be re-offered the talk they recused from. Recording the recusal separately from the
-  assignment would fix it.
+- **`V-1` staging bar is still fixed.** Hand staging exists now — `submission.staged_decision`, and
+  it beats the score — so an organizer can put any undecided proposal in either queue, hold one out,
+  and commit the batch. What is still hardcoded is the *bar*: the derived reading uses the midpoint
+  of the 1–5 scale, and an organizer cannot tune it per event. Everything staged by hand routes
+  around that, so it is a convenience gap rather than a capability one.
 - **Per-session task reminders may be chattier than intended.** Reminders iterate per *assignment*,
   and a submission-scoped task (`S-16`) creates one assignment per accepted session. A speaker with
   three accepted sessions receives three reminder emails for one task. Correct by the data model,

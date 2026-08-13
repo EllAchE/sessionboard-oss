@@ -76,6 +76,19 @@ export const reviewAssignmentStatus = pgEnum('review_assignment_status', [
   'completed',
   'declined',
 ]);
+/**
+ * `V-1`. What an organizer said about a submission's *staging*, which is not a decision and never
+ * writes a status. `hold` is the third value on purpose: without it there is no way to take a
+ * proposal the panel's average put in a queue back out of it, and "remove from the queue" would
+ * only ever mean "return it to the score's opinion of it".
+ */
+export const submissionStage = pgEnum('submission_stage', ['accept', 'decline', 'hold']);
+/**
+ * `ABS-12`. A recusal outlives the assignment it was made against, so it needs a state of its own.
+ * `released` is not the same as no row at all: it records an organizer deciding this reviewer may
+ * be handed this talk again, and that decision has to stick against the next auto-assign.
+ */
+export const reviewRecusalStatus = pgEnum('review_recusal_status', ['active', 'released']);
 export const taskAudience = pgEnum('task_audience', [
   'all_participants',
   'accepted_participants',
@@ -614,6 +627,16 @@ export const submission = pgTable(
      * who never learns this gate exists, which is a worse failure than an unread edit going live.
      */
     contentStatus: contentApprovalStatus('content_status').notNull().default('approved'),
+    /**
+     * `V-1`. The organizer's own hand on the staging queues, held apart from `status` because
+     * staging is not a decision: nothing here mails a speaker or makes a talk agenda-eligible.
+     * `null` is the ordinary case and means "whatever the panel's average says", so an event that
+     * nobody has staged by hand reads exactly as it did before this column existed. Event-wide
+     * rather than per-user — a batch a co-chair cannot see is not a batch.
+     */
+    stagedDecision: submissionStage('staged_decision'),
+    stagedAt: timestamp('staged_at', { withTimezone: true }),
+    stagedByUserId: uuid('staged_by_user_id').references(() => user.id, { onDelete: 'set null' }),
     answers: jsonb('answers').$type<Record<string, unknown>>().notNull().default({}),
 
     submittedAt: timestamp('submitted_at', { withTimezone: true }),
@@ -810,6 +833,45 @@ export const reviewAssignment = pgTable(
     ),
     byReviewer: index('review_assignment_reviewer_idx').on(t.reviewerUserId),
     bySubmission: index('review_assignment_submission_idx').on(t.submissionId),
+  }),
+);
+
+/**
+ * `ABS-12`, `V-5`. A recusal as a remembered fact rather than the absence of an assignment. The
+ * assignment row is the *work*: an organizer frees it so somebody else can pick the talk up, and
+ * freeing it used to delete the only trace that a reviewer had ever said no — after which
+ * auto-assign handed them the same talk again on the next pass.
+ *
+ * Submission-scoped, not round-scoped, and for the same reason `track_reviewer` is event-scoped:
+ * "I know the author" is a standing fact about a person and a talk, and re-declaring it every
+ * round is how the reviewer ends up re-offered it in round two.
+ */
+export const reviewRecusal = pgTable(
+  'review_recusal',
+  {
+    id: id(),
+    submissionId: uuid('submission_id')
+      .notNull()
+      .references(() => submission.id, { onDelete: 'cascade' }),
+    reviewerUserId: uuid('reviewer_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: reviewRecusalStatus('status').notNull().default('active'),
+    /** The round it was made in, kept for context. Null once that round is deleted; the fact stays. */
+    reviewRoundId: uuid('review_round_id').references(() => reviewRound.id, {
+      onDelete: 'set null',
+    }),
+    reason: text('reason'),
+    recusedAt: timestamp('recused_at', { withTimezone: true }).notNull().defaultNow(),
+    releasedAt: timestamp('released_at', { withTimezone: true }),
+    releasedByUserId: uuid('released_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+  },
+  (t) => ({
+    uniquePair: unique('review_recusal_pair').on(t.submissionId, t.reviewerUserId),
+    bySubmission: index('review_recusal_submission_idx').on(t.submissionId),
+    byReviewer: index('review_recusal_reviewer_idx').on(t.reviewerUserId),
   }),
 );
 
