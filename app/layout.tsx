@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { GlobalFooter } from '@/components/GlobalFooter';
 import { ToastProvider } from '@/components/ui';
 import { fontVariables } from './fonts';
 import './tokens.css';
@@ -22,7 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          {children}
+          <GlobalFooter />
+        </ToastProvider>
       </body>
     </html>
   );

@@ -231,13 +231,6 @@ export default function Home() {
         </Button>
       </section>
 
-      <footer className={styles.footer}>
-        <span>© 2026 Cicero</span>
-        <a href="https://github.com/EllAchE/sessionboard-oss" aria-label="Cicero on GitHub">
-          <Github size={17} aria-hidden="true" />
-          <span>GitHub</span>
-        </a>
-      </footer>
     </main>
   );
 }
