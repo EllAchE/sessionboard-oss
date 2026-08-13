@@ -48,8 +48,8 @@ export default function Home() {
           <span>Cicero</span>
         </a>
         <div className={styles.navLinks}>
-          <a className={styles.productLink} href="#product">
-            Product
+          <a className={styles.aboutLink} href="#about">
+            About
           </a>
           <a className={styles.demoLink} href="/demo">
             Live demo
@@ -128,6 +128,50 @@ export default function Home() {
       </section>
 
       <div className={styles.mosaicRule} aria-hidden="true" />
+
+      <section className={styles.about} id="about" aria-labelledby="about-title">
+        <div className={styles.aboutHeading}>
+          <p className={styles.eyebrow}>About Cicero</p>
+          <h2 id="about-title">Built for the people who make conferences happen.</h2>
+        </div>
+        <div className={styles.aboutBody}>
+          <p>
+            Cicero is an open-source conference operations platform for the work between a call for
+            speakers and show day. It connects proposals, reviews, schedules, speaker tasks,
+            communications, and public programmes without turning the organizer into a systems
+            integrator.
+          </p>
+          <p>
+            Organizers keep control: run it on your own infrastructure, adapt the workflow, and
+            publish an agenda anyone can read without an account.
+          </p>
+          <dl className={styles.aboutFacts}>
+            <div>
+              <dt>License</dt>
+              <dd>MIT, open source</dd>
+            </div>
+            <div>
+              <dt>Hosting</dt>
+              <dd>Your infrastructure</dd>
+            </div>
+            <div>
+              <dt>Public access</dt>
+              <dd>No account required</dd>
+            </div>
+          </dl>
+          <div className={styles.aboutLinks}>
+            <a className={styles.textLink} href="#product">
+              Explore the product <ArrowRight size={16} aria-hidden="true" />
+            </a>
+            <a
+              className={styles.textLink}
+              href="https://github.com/EllAchE/sessionboard-oss"
+            >
+              View the source <Github size={16} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+      </section>
 
       <section className={styles.product} id="product">
         <div className={styles.sectionHeading}>
