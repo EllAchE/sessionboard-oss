@@ -1,4 +1,6 @@
 import { can } from '@/lib/context';
+import { eventBrandingUrl } from '@/lib/event-branding';
+import { utcToLocalInput } from '@/lib/event-dates';
 import { currentEventContext, getEvent } from '@/lib/services/events';
 import { FIELD_TYPE_VALUES, getNotificationPrefs, loadSettings } from '@/lib/services/settings';
 import { SettingsScreen } from './SettingsScreen';
@@ -81,9 +83,17 @@ export default async function SettingsPage({
         name: event.name,
         slug: event.slug,
         tagline: event.tagline,
+        descriptionMarkdown: event.descriptionMarkdown,
+        eventType: event.eventType,
+        theme: event.theme,
         timezone: event.timezone,
-        startsOn: event.startsOn,
-        endsOn: event.endsOn,
+        startsAt: utcToLocalInput(event.startsAt, event.timezone),
+        endsAt: utcToLocalInput(event.endsAt, event.timezone),
+        websiteUrl: event.websiteUrl,
+        venueName: event.venueName,
+        venueAddress: event.venueAddress,
+        logoUrl: eventBrandingUrl(event.slug, event.logoFileId),
+        bannerUrl: eventBrandingUrl(event.slug, event.bannerFileId),
       }}
       notifications={notifications}
       rows={rows}

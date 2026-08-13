@@ -8,7 +8,7 @@
 
 .card {
   width: 100%;
-  max-width: 30rem;
+  max-width: 34rem;
 }
 
 .form {
@@ -38,4 +38,9 @@
 .hint {
   font: var(--type-label);
   color: var(--text-muted);
+}
+
+.error {
+  font: var(--type-label);
+  color: var(--status-danger-fg);
 }

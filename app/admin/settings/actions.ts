@@ -3,7 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { requireCapability, type EventContext } from '@/lib/context';
 import { invalid, isAppError } from '@/lib/errors';
-import { currentEventContext, updateEvent } from '@/lib/services/events';
+import { EVENT_BRANDING, type EventBrandingKind } from '@/lib/event-branding';
+import { deleteFile } from '@/lib/services/files';
+import {
+  currentEventContext,
+  getEvent,
+  updateEvent,
+  type UpdateEventInput,
+} from '@/lib/services/events';
 import * as settings from '@/lib/services/settings';
 import type { ActionResult, EntityKind } from './types';
 
@@ -221,26 +228,43 @@ export async function reorderRowsAction(
 // The event itself
 // ---------------------------------------------------------------------------
 
-export type EventPatch = {
-  name?: string;
-  tagline?: string | null;
-  timezone?: string;
-  startsOn?: string | null;
-  endsOn?: string | null;
-};
+export type EventPatch = UpdateEventInput;
 
 /**
- * `updateEvent` owns the trimming and the timezone default. The slug is deliberately absent: it is
- * the public URL of every submitted talk, and the service does not accept a change to it — see
- * `tasks/W10-notes.md`.
+ * `updateEvent` owns every rule now — the trimming, the timezone, the website URL, and the
+ * start-before-end check that used to live here and was silently skipped whenever either date was
+ * blank. The slug is deliberately absent: it is the public URL of every submitted talk, and the
+ * service does not accept a change to it — see `tasks/W10-notes.md`.
  */
 export async function updateEventAction(patch: EventPatch): Promise<ActionResult> {
   return run(async () => {
     const ctx = await manageContext();
-    if (patch.startsOn && patch.endsOn && patch.endsOn < patch.startsOn) {
-      throw invalid('The event ends before it starts', { endsOn: 'Must be on or after the start' });
-    }
     await updateEvent(ctx, patch);
+    revalidatePath('/admin');
+    return null;
+  });
+}
+
+/**
+ * `E-3`. Removing a logo or a banner detaches it and then deletes the bytes: nothing else in the
+ * event points at a branding file, so keeping it would only grow the bucket. Uploading is a route
+ * handler instead of an action — a Server Action body is capped at 1 MB and a banner is not.
+ */
+export async function clearEventBrandingAction(kind: EventBrandingKind): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    const current = await getEvent(ctx.eventId);
+    const column = EVENT_BRANDING[kind].column;
+    const fileId = current[column];
+    if (!fileId) return null;
+
+    await updateEvent(ctx, { [column]: null });
+    try {
+      await deleteFile(ctx, fileId);
+    } catch (error) {
+      // The event no longer references it, which is the half the organizer can see.
+      console.error(`branding cleanup failed: ${String(error)}`);
+    }
     revalidatePath('/admin');
     return null;
   });

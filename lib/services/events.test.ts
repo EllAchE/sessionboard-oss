@@ -1,7 +1,94 @@
 import { describe, expect, it } from 'vitest';
-import { pickDefaultEvent } from './events';
+import { eventWriteSchemas, pickDefaultEvent } from './events';
 
 const TODAY = new Date('2026-08-12T00:00:00Z');
+
+/**
+ * `E-1`, `E-2`. There was no validation on this path at all before — the create form enforced
+ * nothing and the settings action carried one date comparison that a blank value skipped — so these
+ * cover the rules themselves rather than the database call that follows them.
+ */
+
+const WINDOW = { startsAt: '2026-10-12T09:00', endsAt: '2026-10-13T17:00' };
+
+function created(patch: Record<string, unknown> = {}) {
+  return eventWriteSchemas.create.safeParse({ name: 'Cascadia', ...WINDOW, ...patch });
+}
+
+function issueOn(result: ReturnType<typeof created>, field: string): boolean {
+  return !result.success && result.error.issues.some((issue) => issue.path[0] === field);
+}
+
+describe('the event write schema', () => {
+  it('accepts the minimum an event needs', () => {
+    const result = created();
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.timezone).toBe('America/Los_Angeles');
+  });
+
+  it('requires a name that is more than whitespace', () => {
+    expect(issueOn(created({ name: '   ' }), 'name')).toBe(true);
+    expect(created({ name: 'x'.repeat(201) }).success).toBe(false);
+  });
+
+  it('requires a start and an end, with a time of day on each', () => {
+    expect(issueOn(created({ startsAt: undefined }), 'startsAt')).toBe(true);
+    expect(issueOn(created({ endsAt: undefined }), 'endsAt')).toBe(true);
+    expect(issueOn(created({ startsAt: '' }), 'startsAt')).toBe(true);
+    expect(issueOn(created({ startsAt: '2026-10-12' }), 'startsAt')).toBe(true);
+  });
+
+  it('holds the timezone to a real IANA zone', () => {
+    expect(created({ timezone: 'Europe/Rome' }).success).toBe(true);
+    expect(issueOn(created({ timezone: 'Pacific Time' }), 'timezone')).toBe(true);
+    expect(issueOn(created({ timezone: '' }), 'timezone')).toBe(true);
+  });
+
+  it('completes a website address and refuses one that is not a web address', () => {
+    const bare = created({ websiteUrl: 'example.com' });
+    expect(bare.success && bare.data.websiteUrl).toBe('https://example.com');
+
+    const full = created({ websiteUrl: 'http://example.com/cfp' });
+    expect(full.success && full.data.websiteUrl).toBe('http://example.com/cfp');
+
+    expect(issueOn(created({ websiteUrl: 'javascript:alert(1)' }), 'websiteUrl')).toBe(true);
+    expect(issueOn(created({ websiteUrl: 'mailto:hi@example.com' }), 'websiteUrl')).toBe(true);
+  });
+
+  it('trims optional metadata and stores a blank as null', () => {
+    const result = created({
+      tagline: '  Two days  ',
+      eventType: '',
+      venueName: '  Pier 27 ',
+      theme: '   ',
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.tagline).toBe('Two days');
+    expect(result.data.venueName).toBe('Pier 27');
+    expect(result.data.eventType).toBeNull();
+    expect(result.data.theme).toBeNull();
+  });
+
+  it('refuses a branding reference that is not a file id', () => {
+    expect(created({ logoFileId: 'not-a-uuid' }).success).toBe(false);
+    expect(created({ logoFileId: null }).success).toBe(true);
+    expect(created({ bannerFileId: '3f1c9f4e-2f6a-4b7c-9c1d-8a2b6e5d4c3b' }).success).toBe(true);
+  });
+
+  it('lets an update send one field without the others', () => {
+    const result = eventWriteSchemas.update.safeParse({ venueName: 'Curia Julia' });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.name).toBeUndefined();
+    expect(result.success && result.data.startsAt).toBeUndefined();
+  });
+
+  it('applies the same rules to an update as to a create', () => {
+    expect(eventWriteSchemas.update.safeParse({ timezone: 'Pacific Time' }).success).toBe(false);
+    expect(eventWriteSchemas.update.safeParse({ name: '  ' }).success).toBe(false);
+    expect(eventWriteSchemas.update.safeParse({ startsAt: '2026-10-12' }).success).toBe(false);
+  });
+});
 
 describe('pickDefaultEvent', () => {
   it('opens on the soonest event that has not started yet', () => {

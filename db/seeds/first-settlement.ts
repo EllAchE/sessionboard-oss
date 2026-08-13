@@ -1,4 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
+import { requireEventWindow } from '../../lib/event-dates';
 import { newIcsUid } from '../../lib/ics';
 import { ensureDefaultTemplates } from '../../lib/services/comms';
 import { getStorage, storageKey } from '../../lib/storage';
@@ -184,6 +185,13 @@ export async function seedFirstSettlement(
   const day4 = new Date(day1.getTime() + 3 * DAY);
   const ago = (days: number) => new Date(now.getTime() - days * DAY);
 
+  /** `E-1`: the Senate sits from the first morning to the close of the fourth day, Rome time. */
+  const senateWindow = requireEventWindow(
+    'Europe/Rome',
+    `${isoDate(day1)}T09:00`,
+    `${isoDate(day4)}T17:00`,
+  );
+
   const [senate] = await db
     .insert(event)
     .values({
@@ -195,9 +203,15 @@ export async function seedFirstSettlement(
         '27 BCE, when Octavian returned extraordinary powers, accepted a new provincial command, ' +
         'and received the name Augustus. The programme imagines the motions, arguments, and ' +
         'unresolved questions as a living conference rather than a literal transcript.',
-      timezone: 'Europe/Rome',
-      startsOn: isoDate(day1),
-      endsOn: isoDate(day4),
+      eventType: 'Symposium',
+      theme:
+        'Powers returned and powers granted — what a republic keeps when it hands command to one ' +
+        'man for the sake of peace.',
+      timezone: senateWindow.timezone,
+      startsAt: senateWindow.startsAt,
+      endsAt: senateWindow.endsAt,
+      startsOn: senateWindow.startsOn,
+      endsOn: senateWindow.endsOn,
       websiteUrl: 'https://example.com/first-settlement',
       venueName: 'Curia Julia',
       venueAddress: 'Forum Romanum, Rome',
