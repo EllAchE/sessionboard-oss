@@ -15,7 +15,9 @@ import {
   reminderBody,
   sortQueue,
   summarizeReviews,
+  type AuthoredSubject,
   type CriterionSpec,
+  type ReviewAnswerField,
   type QueueRow,
   type ReviewerScorecard,
 } from './review';
@@ -350,17 +352,17 @@ describe('carriesIdentity', () => {
 });
 
 describe('redactAuthorship', () => {
-  const subject = {
-    submitterName: 'Ada Lovelace',
-    submitterEmail: 'ada@example.test',
+  const subject: AuthoredSubject = {
+    submitterName: 'Priya Raman',
+    submitterEmail: 'priya@latticework.example',
     speakers: [
       {
         participantId: 'p1',
-        name: 'Ada Lovelace',
-        email: 'ada@example.test',
-        jobTitle: 'Analyst',
-        company: 'Analytical Engines',
-        bioMarkdown: 'Ada wrote the first program.',
+        name: 'Priya Raman',
+        email: 'priya@latticework.example',
+        jobTitle: 'Principal Engineer',
+        company: 'Latticework Systems',
+        bioMarkdown: 'Priya leads the build-tooling platform team.',
         isPrimary: true,
         kind: 'speaker',
       },
@@ -375,11 +377,32 @@ describe('redactAuthorship', () => {
         kind: 'speaker',
       },
     ],
-    answers: { 'Speaker bio': 'Ada, of London', 'Why this talk': 'Because engines matter' },
+    answers: {
+      custom_1a2b: 'Priya Raman',
+      custom_2b3c: 'Latticework Systems',
+      custom_3c4d: 'priya@latticework.example',
+      custom_4d5e: 'She leads the build-tooling platform team.',
+      why_this_talk: 'Because engines matter',
+    },
+    answerLabels: {
+      custom_1a2b: 'Speaker name',
+      custom_2b3c: 'Affiliation',
+      custom_3c4d: 'How may we reach you?',
+      custom_4d5e: 'Speaker bio',
+      why_this_talk: 'Why this talk',
+    },
   };
 
-  it('strips every channel the author could be recognised through', () => {
-    const redacted = redactAuthorship(subject);
+  const fields: ReviewAnswerField[] = [
+    { key: 'custom_1a2b', label: 'Speaker name', type: 'short_text', builtinKey: null },
+    { key: 'custom_2b3c', label: 'Affiliation', type: 'short_text', builtinKey: null },
+    { key: 'custom_3c4d', label: 'How may we reach you?', type: 'email', builtinKey: null },
+    { key: 'custom_4d5e', label: 'Speaker bio', type: 'long_text', builtinKey: null },
+    { key: 'why_this_talk', label: 'Why this talk', type: 'long_text', builtinKey: null },
+  ];
+
+  it('strips every identity channel from the anonymized reviewer output', () => {
+    const redacted = redactAuthorship(subject, fields);
     expect(redacted.submitterName).toBe(ANONYMOUS_AUTHOR);
     expect(redacted.submitterEmail).toBe('');
     expect(redacted.speakers.map((speaker) => speaker.name)).toEqual([
@@ -389,21 +412,40 @@ describe('redactAuthorship', () => {
     expect(redacted.speakers.every((speaker) => speaker.email === '')).toBe(true);
     expect(redacted.speakers.every((speaker) => speaker.company === null)).toBe(true);
     expect(redacted.speakers.every((speaker) => speaker.bioMarkdown === null)).toBe(true);
-    expect(Object.keys(redacted.answers)).toEqual(['Why this talk']);
+    expect(redacted.answers).toEqual({ why_this_talk: 'Because engines matter' });
+    expect(redacted.answerLabels).toEqual({ why_this_talk: 'Why this talk' });
+    const reviewerOutput = JSON.stringify(redacted);
+    for (const identity of [
+      'Priya Raman',
+      'Latticework Systems',
+      'priya@latticework.example',
+      'leads the build-tooling platform team',
+    ]) {
+      expect(reviewerOutput).not.toContain(identity);
+    }
   });
 
   it('does not leak an identity through the participant id either', () => {
-    const redacted = redactAuthorship(subject);
+    const redacted = redactAuthorship(subject, fields);
     expect(redacted.speakers.map((speaker) => speaker.participantId)).toEqual([
       'anonymous-0',
       'anonymous-1',
     ]);
   });
 
-  it('leaves the original untouched, so an organizer read is never poisoned by a reviewer read', () => {
-    redactAuthorship(subject);
-    expect(subject.submitterName).toBe('Ada Lovelace');
-    expect(subject.speakers[0].company).toBe('Analytical Engines');
+  it('retains the full speaker profile and answer for an organizer', () => {
+    const organizerOutput = hidesAuthorship({ anonymized: true }, contextFor('organizer'))
+      ? redactAuthorship(subject, fields)
+      : subject;
+    const serialized = JSON.stringify(organizerOutput);
+    for (const identity of [
+      'Priya Raman',
+      'Latticework Systems',
+      'priya@latticework.example',
+      'leads the build-tooling platform team',
+    ]) {
+      expect(serialized).toContain(identity);
+    }
   });
 
   it('redacts a queue row without needing the full speaker list', () => {
