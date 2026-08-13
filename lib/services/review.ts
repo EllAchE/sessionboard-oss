@@ -32,7 +32,7 @@ import { markdownToText, renderMarkdown } from '../markdown';
 import { parseSpeakerName } from '../speaker-name';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
-import { loadCommsContext, wrapInBranding } from './comms';
+import { loadCommsContext, sendDecisionNotice, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 
 /**
@@ -1784,7 +1784,24 @@ export async function loadSubmissionReview(
 // Decisions — `V-2`
 // ---------------------------------------------------------------------------
 
-export type DecisionResult = { updated: number; skipped: Array<{ id: string; reason: string }> };
+export type DecisionResult = {
+  updated: number;
+  skipped: Array<{ id: string; reason: string }>;
+  /** `C-2`: decision notices actually delivered, and the ones whose send threw. */
+  notified: number;
+  notifyFailed: number;
+};
+
+/**
+ * `C-2`. Which decisions carry a seeded speaker template today. `waitlist` deliberately has no
+ * entry: the `submission.waitlisted` template is being added separately, and until it exists a
+ * waitlist decision is a silent no-op rather than a guaranteed send failure. Adding the key here
+ * once that template ships is the whole change.
+ */
+const DECISION_NOTICE: Partial<Record<Decision, true>> = {
+  accept: true,
+  decline: true,
+};
 
 /**
  * The transition that makes a session eligible for the agenda, so it is deliberately the only way
@@ -1798,7 +1815,8 @@ export async function decideSubmissions(
   note?: string | null,
 ): Promise<DecisionResult> {
   requireCapability(ctx, 'submission:decide');
-  if (submissionIds.length === 0) return { updated: 0, skipped: [] };
+  const empty: DecisionResult = { updated: 0, skipped: [], notified: 0, notifyFailed: 0 };
+  if (submissionIds.length === 0) return empty;
 
   const db = getDb();
   const rows = await db
@@ -1806,20 +1824,27 @@ export async function decideSubmissions(
     .from(submission)
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, submissionIds)));
 
+  const status = DECISION_STATUS[decision];
   const skipped: Array<{ id: string; reason: string }> = [];
   const eligible: string[] = [];
+  /**
+   * A re-decision is allowed — `nextStatusForDecision` only rejects drafts and withdrawals — so
+   * `updated` counts rows we wrote, which is not the same as rows that moved. Only a genuine
+   * transition earns a notice; accepting an already-accepted talk must not mail its speaker twice.
+   */
+  const transitioned: string[] = [];
   for (const row of rows) {
     try {
       nextStatusForDecision(row.status, decision);
       eligible.push(row.id);
+      if (row.status !== status) transitioned.push(row.id);
     } catch (error) {
       skipped.push({ id: row.id, reason: error instanceof Error ? error.message : 'Not eligible' });
     }
   }
-  if (eligible.length === 0) return { updated: 0, skipped };
+  if (eligible.length === 0) return { ...empty, skipped };
 
   const now = new Date();
-  const status = DECISION_STATUS[decision];
   await db
     .update(submission)
     .set({
@@ -1830,7 +1855,36 @@ export async function decideSubmissions(
     })
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, eligible)));
 
-  return { updated: eligible.length, skipped };
+  const notices = DECISION_NOTICE[decision]
+    ? await notifyDecided(transitioned)
+    : { notified: 0, notifyFailed: 0 };
+
+  return { updated: eligible.length, skipped, ...notices };
+}
+
+/**
+ * `C-2`. Best-effort by design, and deliberately after the status write has committed. A decision
+ * is a record of what the panel chose; a mail server refusing one message is not grounds to unmake
+ * it, and rolling a bulk accept back because recipient nineteen bounced would leave the organizer
+ * with no decisions and no idea which ones took. So every send is isolated, one failure never
+ * reaches the next recipient, and the count of failures is handed back for the UI to surface —
+ * an organizer who sees "2 notices failed" can resend from the campaign screen.
+ */
+async function notifyDecided(
+  submissionIds: string[],
+): Promise<{ notified: number; notifyFailed: number }> {
+  let notified = 0;
+  let notifyFailed = 0;
+  for (const id of submissionIds) {
+    try {
+      await sendDecisionNotice(id);
+      notified += 1;
+    } catch (error) {
+      notifyFailed += 1;
+      console.error(`decision notice failed for submission ${id}: ${String(error)}`);
+    }
+  }
+  return { notified, notifyFailed };
 }
 
 // ---------------------------------------------------------------------------

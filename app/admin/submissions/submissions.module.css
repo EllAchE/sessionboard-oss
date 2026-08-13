@@ -583,3 +583,36 @@
   overflow: hidden;
   background: var(--surface-card);
 }
+
+/* ---- Saved views and column picker (V-6) ---- */
+
+.viewBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.viewSelect {
+  min-width: 180px;
+}
+
+.columnPicker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+
+.columnOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body);
+  color: var(--text-default);
+}
+
+@media (max-width: 720px) {
+  .columnPicker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

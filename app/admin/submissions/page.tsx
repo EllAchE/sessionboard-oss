@@ -49,8 +49,9 @@ export default async function SubmissionsPage({
   const tagId = params.tag ?? '';
   const search = params.q ?? '';
 
-  const [rounds, bundle] = await Promise.all([
+  const [rounds, savedViews, bundle] = await Promise.all([
     review.listRounds(ctx),
+    review.listSavedViews(ctx),
     review.loadQueue(ctx, {
       statuses: review.statusesForTab(tab),
       trackId: trackId || null,
@@ -99,6 +100,11 @@ export default async function SubmissionsPage({
       roundId={bundle.round?.id ?? null}
       canDecide={can(ctx, 'submission:decide')}
       aiEnabled={aiReviewEnabled()}
+      savedViews={savedViews.map((view) => ({
+        id: view.id,
+        name: view.name,
+        filters: view.filters,
+      }))}
     />
   );
 }

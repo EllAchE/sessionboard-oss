@@ -174,14 +174,25 @@ export async function importSubmissionsAction(
   }, '/admin/submissions/import');
 }
 
+/**
+ * `V-6`. The queue loads its views on the server, but saving and deleting happen without a
+ * navigation, so the toolbar re-reads the list through here rather than guessing what the insert
+ * produced.
+ */
+export async function listViewsAction(): Promise<ActionResult<review.SavedViewRecord[]>> {
+  return run(async () => {
+    const ctx = await reviewContext();
+    return review.listSavedViews(ctx);
+  });
+}
+
 export async function saveViewAction(
   name: string,
   filters: Record<string, unknown>,
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<review.SavedViewRecord>> {
   return run(async () => {
     const ctx = await reviewContext();
-    const created = await review.saveView(ctx, name, filters);
-    return { id: created.id };
+    return review.saveView(ctx, name, filters);
   });
 }
 
