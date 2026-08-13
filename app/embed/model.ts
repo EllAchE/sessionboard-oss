@@ -129,7 +129,7 @@ export function dayKeyOf(iso: string, timezone: string): string {
 }
 
 export function groupByDay(sessions: PublicSession[], timezone: string): AgendaDay[] {
-  const labelFormat = new Intl.DateTimeFormat(undefined, {
+  const labelFormat = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     weekday: 'long',
     month: 'long',
@@ -163,7 +163,7 @@ export function groupByDay(sessions: PublicSession[], timezone: string): AgendaD
 
 export function formatTimeRange(session: PublicSession, timezone: string): string {
   if (!session.startsAt) return 'Time TBA';
-  const time = new Intl.DateTimeFormat(undefined, {
+  const time = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     hour: 'numeric',
     minute: '2-digit',
@@ -174,7 +174,7 @@ export function formatTimeRange(session: PublicSession, timezone: string): strin
 }
 
 export function formatDayLabel(iso: string, timezone: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     weekday: 'long',
     month: 'long',
@@ -183,7 +183,7 @@ export function formatDayLabel(iso: string, timezone: string): string {
 }
 
 export function formatShortDay(iso: string, timezone: string): string {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     weekday: 'short',
     month: 'short',
@@ -194,7 +194,7 @@ export function formatShortDay(iso: string, timezone: string): string {
 /** Day, both ends of the clock and the event's zone — what a detail view has to state outright. */
 export function formatFullDateTime(session: PublicSession, timezone: string): string {
   if (!session.startsAt) return 'Date and time to be announced';
-  const day = new Intl.DateTimeFormat(undefined, {
+  const day = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
     weekday: 'long',
     year: 'numeric',

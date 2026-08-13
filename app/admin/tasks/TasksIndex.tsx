@@ -44,7 +44,8 @@ const AUDIENCE_LABEL: Record<AdminTaskRow['audience'], string> = {
 
 function formatDate(iso: string | null): string {
   if (!iso) return 'No deadline';
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(iso).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 }
 
 const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
