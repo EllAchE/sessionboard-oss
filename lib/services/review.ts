@@ -851,9 +851,8 @@ export function hidesAuthorship(
 }
 
 /**
- * Answer keys whose value names or locates a human. Custom form fields are free text, so this is a
- * word list rather than a schema — an over-redacted answer costs a reviewer some context, while an
- * under-redacted one defeats the round.
+ * Form metadata that names or locates a human. Custom fields have no profile schema, so an
+ * over-redacted field costs a reviewer some context while an under-redacted one defeats the round.
  */
 const IDENTITY_WORDS = new Set([
   'affiliation',
@@ -897,8 +896,8 @@ const IDENTITY_WORDS = new Set([
   'website',
 ]);
 
-export function carriesIdentity(answerKey: string): boolean {
-  return answerKey
+export function carriesIdentity(fieldMetadata: string): boolean {
+  return fieldMetadata
     .split(/[^a-zA-Z0-9]+/)
     .some((word) => IDENTITY_WORDS.has(word.toLowerCase()));
 }
@@ -914,15 +913,44 @@ export type AuthoredSubject = {
   submitterEmail: string;
   speakers: ReviewSpeaker[];
   answers: Record<string, unknown>;
+  answerLabels: Record<string, string>;
 };
+
+export type ReviewAnswerField = Pick<
+  typeof formField.$inferSelect,
+  'key' | 'label' | 'type' | 'builtinKey'
+>;
+
+function answerCarriesIdentity(
+  answerFields: Map<string, ReviewAnswerField>,
+  key: string,
+): boolean {
+  const field = answerFields.get(key);
+  return (
+    carriesIdentity(key) ||
+    field?.type === 'email' ||
+    carriesIdentity(field?.label ?? '') ||
+    carriesIdentity(field?.builtinKey ?? '')
+  );
+}
 
 /**
  * Strips every handle on the author: the submitter, each speaker's name, address, affiliation and
- * bio, the participant ids that would let an adjacent route re-resolve them, and any free-text
- * answer whose key names a person.
+ * bio, the participant ids that would let an adjacent route re-resolve them, and any questionnaire
+ * field whose stored key or human-facing metadata identifies a person.
  */
-export function redactAuthorship<T extends AuthoredSubject>(subject: T): T {
+export function redactAuthorship<T extends AuthoredSubject>(
+  subject: T,
+  fields: ReviewAnswerField[],
+): T {
   const many = subject.speakers.length > 1;
+  const answerFields = new Map(fields.map((field) => [field.key, field]));
+  const visibleAnswers = Object.entries(subject.answers).filter(
+    ([key]) => !answerCarriesIdentity(answerFields, key),
+  );
+  const visibleLabels = Object.entries(subject.answerLabels).filter(
+    ([key]) => !answerCarriesIdentity(answerFields, key),
+  );
   return {
     ...redactSubmitter(subject),
     speakers: subject.speakers.map((speaker, index) => ({
@@ -934,9 +962,8 @@ export function redactAuthorship<T extends AuthoredSubject>(subject: T): T {
       company: null,
       bioMarkdown: null,
     })),
-    answers: Object.fromEntries(
-      Object.entries(subject.answers).filter(([key]) => !carriesIdentity(key)),
-    ),
+    answers: Object.fromEntries(visibleAnswers),
+    answerLabels: Object.fromEntries(visibleLabels),
   };
 }
 
@@ -1372,7 +1399,12 @@ export async function loadSubmissionReview(
         orderBy: [desc(aiReview.createdAt)],
       }),
       db
-        .select({ key: formField.key, label: formField.label })
+        .select({
+          key: formField.key,
+          label: formField.label,
+          type: formField.type,
+          builtinKey: formField.builtinKey,
+        })
         .from(formField)
         .where(eq(formField.formId, row.formId)),
     ]);
@@ -1466,7 +1498,7 @@ export async function loadSubmissionReview(
       : null,
   };
 
-  return authorHidden ? redactAuthorship(detail) : detail;
+  return authorHidden ? redactAuthorship(detail, fieldRows) : detail;
 }
 
 // ---------------------------------------------------------------------------
