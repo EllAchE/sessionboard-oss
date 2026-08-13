@@ -1,12 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { magicLinkMayBeShown } from '../../../../lib/auth';
 import { isAppError } from '../../../../lib/errors';
-import { activeTransportName } from '../../../../lib/mail';
 import { parseRoundDate } from '../../../../lib/review-round-dates';
 import * as review from '../../../../lib/services/review';
 import { decideContext } from '../context';
 import type { ActionResult } from '../types';
+import { inviteDelivery, type InviteDelivery } from './invite-delivery';
 
 /**
  * Round configuration writes. Same shape as the queue's actions: resolve the context, call the
@@ -44,18 +45,35 @@ export async function createRoundAction(input: {
   });
 }
 
-export async function inviteReviewerAction(input: review.ReviewerInviteInput): Promise<
-  ActionResult<{
-    reviewer: review.ReviewerInviteResult['reviewer'];
-    accessLink: string | null;
-  }>
-> {
+export type ReviewerInviteOutcome = {
+  reviewer: review.ReviewerInviteResult['reviewer'];
+  accessLink: string | null;
+  delivery: InviteDelivery;
+};
+
+/**
+ * Grants reviewer access and mails the link. Whether that link *also* comes back to the organizer
+ * is decided by `lib/demo-access.ts` through `magicLinkMayBeShown` — the same single predicate the
+ * sign-in page uses, so this surface cannot drift from it again.
+ *
+ * This used to read `activeTransportName() === 'log' || !invited.delivered`. The second clause was
+ * a privilege escalation: `inviteReviewer` binds to an *existing* account when one already holds
+ * the address, so an organizer who typed any real user's email and got a bounce received a working
+ * magic link — a session as that person, carrying whatever access they hold on other events. A
+ * failed send is now never a condition for revealing anything; it only changes the wording, and
+ * the organizer is offered a re-send instead.
+ */
+export async function inviteReviewerAction(
+  input: review.ReviewerInviteInput,
+): Promise<ActionResult<ReviewerInviteOutcome>> {
   return run(async () => {
     const ctx = await decideContext();
     const invited = await review.inviteReviewer(ctx, input);
+    const visibility = await magicLinkMayBeShown(invited.reviewer.email);
     return {
       reviewer: invited.reviewer,
-      accessLink: activeTransportName() === 'log' || !invited.delivered ? invited.link : null,
+      accessLink: visibility ? invited.link : null,
+      delivery: inviteDelivery(visibility, invited.delivered),
     };
   });
 }
