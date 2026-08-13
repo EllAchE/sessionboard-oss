@@ -1,4 +1,3 @@
-import { activeTransportName } from '@/lib/mail';
 import { SignInForm } from './SignInForm';
 import styles from './signin.module.css';
 
@@ -16,11 +15,7 @@ export default async function SignInPage({
 
   return (
     <main className={styles.root}>
-      <SignInForm
-        next={safeNext}
-        defaultEmail={email ?? ''}
-        mailboxHint={activeTransportName() === 'log'}
-      />
+      <SignInForm next={safeNext} defaultEmail={email ?? ''} />
     </main>
   );
 }

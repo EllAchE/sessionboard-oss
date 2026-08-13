@@ -48,3 +48,15 @@
   font: var(--type-label);
   color: var(--text-muted);
 }
+
+.switchMode {
+  margin: var(--space-5) 0 0;
+  text-align: center;
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
+.switchMode a {
+  color: var(--text-accent);
+  font-weight: var(--weight-semibold);
+}

@@ -55,6 +55,7 @@
 .productLink,
 .demoLink,
 .githubLink,
+.signInLink,
 .footer a {
   display: inline-flex;
   align-items: center;
@@ -66,6 +67,7 @@
 .productLink:hover,
 .demoLink:hover,
 .githubLink:hover,
+.signInLink:hover,
 .footer a:hover {
   color: var(--text-accent);
 }
@@ -390,6 +392,10 @@
   }
 
   .productLink {
+    display: none;
+  }
+
+  .demoLink {
     display: none;
   }
 
