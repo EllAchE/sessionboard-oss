@@ -1,13 +1,15 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useActionState, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { ImageIcon, Plus, Trash2 } from 'lucide-react';
 import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Switch, Textarea } from '@/components/ui';
 import { PhoneVerificationControl } from '@/components/notifications/PhoneVerificationControl';
 import { renderMarkdown } from '@/lib/markdown';
+import { normalizeProfileImage } from '@/lib/profile-image';
 import type { Participant, ProfileName } from '@/lib/services/portal';
 import type { NotificationPrefs } from '@/lib/services/settings';
-import { IDLE_STATE } from '../../form-state';
+import { IDLE_STATE, type FormState } from '../../form-state';
 import styles from '../../portal.module.css';
 import { saveProfileAction } from '../actions';
 import { FieldError, FormNotice, SubmitButton } from '../FormNotice';
@@ -27,13 +29,64 @@ export function ProfileForm({
   me,
   name,
   notifications,
+  collectHeadshot,
 }: {
   eventSlug: string;
   me: Participant;
   name: ProfileName;
   notifications: NotificationPrefs;
+  /** `AR-1`: the first profile save collects the picture instead of deferring it to another panel. */
+  collectHeadshot: boolean;
 }) {
-  const [state, action] = useActionState(saveProfileAction, IDLE_STATE);
+  const router = useRouter();
+  const [headshotPreview, setHeadshotPreview] = useState<string | null>(null);
+  const [state, action] = useActionState(
+    async (previous: FormState, formData: FormData): Promise<FormState> => {
+      const selected = formData.get('headshot');
+      formData.delete('headshot');
+
+      let normalized: File | null = null;
+      if (selected instanceof File && selected.size > 0) {
+        try {
+          normalized = await normalizeProfileImage(selected);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'That image could not be prepared.';
+          return { status: 'error', message, details: { headshot: message } };
+        }
+      }
+
+      const saved = await saveProfileAction(previous, formData);
+      if (saved.status !== 'ok' || !normalized) return saved;
+
+      try {
+        const upload = new FormData();
+        upload.set('intent', 'headshot');
+        upload.set('files', normalized);
+        const response = await fetch(`/portal/${eventSlug}/upload`, { method: 'POST', body: upload });
+        const result = (await response.json()) as { ok: boolean; message?: string };
+        if (!response.ok || !result.ok) {
+          const detail = result.message ?? 'The profile picture did not upload.';
+          return {
+            status: 'error',
+            message: `Profile saved, but ${detail.toLowerCase()}`,
+            details: { headshot: detail },
+          };
+        }
+        if (headshotPreview) URL.revokeObjectURL(headshotPreview);
+        setHeadshotPreview(null);
+        router.refresh();
+        return { status: 'ok', message: 'Profile and picture saved' };
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : 'the picture upload failed';
+        return {
+          status: 'error',
+          message: `Profile saved, but ${detail.toLowerCase()}`,
+          details: { headshot: detail },
+        };
+      }
+    },
+    IDLE_STATE,
+  );
   const [bio, setBio] = useState(me.bioMarkdown ?? '');
   const [links, setLinks] = useState<LinkRow[]>(
     me.links.length > 0 ? me.links : [{ label: '', url: '' }],
@@ -52,6 +105,47 @@ export function ProfileForm({
   return (
     <form action={action} className={styles.form}>
       <input type="hidden" name="eventSlug" value={eventSlug} />
+
+      {collectHeadshot ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile picture</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <div className={styles.headshotPanel}>
+              {headshotPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={styles.headshotImage} src={headshotPreview} alt="Selected headshot" />
+              ) : (
+                <div className={styles.headshotPlaceholder}>
+                  <ImageIcon size={24} aria-hidden />
+                </div>
+              )}
+              <div className={styles.spacer}>
+                <input
+                  name="headshot"
+                  type="file"
+                  className={styles.fileInput}
+                  accept="image/*"
+                  aria-describedby="headshot-help"
+                  onChange={(event) => {
+                    const selected = event.currentTarget.files?.[0] ?? null;
+                    setHeadshotPreview((current) => {
+                      if (current) URL.revokeObjectURL(current);
+                      return selected ? URL.createObjectURL(selected) : null;
+                    });
+                  }}
+                />
+                <p id="headshot-help" className={styles.hint}>
+                  Optional on your first save. JPEG, PNG, GIF or WebP up to 10 MB; center-cropped and
+                  stored as an optimized 512 px WebP.
+                </p>
+                <FieldError state={state} field="headshot" />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

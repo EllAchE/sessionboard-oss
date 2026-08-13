@@ -30,8 +30,16 @@ export default async function ProfilePage({
         </p>
       </div>
 
-      <HeadshotPanel eventSlug={eventSlug} headshotUrl={headshotUrl(eventSlug, me.headshotFileId)} />
-      <ProfileForm eventSlug={eventSlug} me={me} name={name} notifications={notifications} />
+      {me.headshotFileId ? (
+        <HeadshotPanel eventSlug={eventSlug} headshotUrl={headshotUrl(eventSlug, me.headshotFileId)} />
+      ) : null}
+      <ProfileForm
+        eventSlug={eventSlug}
+        me={me}
+        name={name}
+        notifications={notifications}
+        collectHeadshot={!me.headshotFileId}
+      />
     </div>
   );
 }

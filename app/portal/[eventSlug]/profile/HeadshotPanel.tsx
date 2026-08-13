@@ -39,10 +39,10 @@ export function HeadshotPanel({
               eventSlug={eventSlug}
               intent="headshot"
               accept="image/*"
-              acceptedLabel="JPEG, PNG, GIF, WebP"
+              acceptedLabel="JPEG, PNG, GIF, WebP — stored as a 512 px WebP"
               maxSizeMb={10}
               buttonLabel={headshotUrl ? 'Replace headshot' : 'Upload headshot'}
-              helpText="A square image works best."
+              helpText="The image is center-cropped, stripped of metadata and optimized before upload."
               compact
             />
             {headshotUrl && (

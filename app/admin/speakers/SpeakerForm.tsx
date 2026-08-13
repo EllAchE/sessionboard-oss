@@ -16,6 +16,7 @@ import {
   useToast,
 } from '@/components/ui';
 import type { SpeakerInput } from '@/lib/services/participants';
+import { normalizeProfileImage } from '@/lib/profile-image';
 import { createSpeakerAction, updateSpeakerAction } from './actions';
 import styles from './speakers.module.css';
 
@@ -118,8 +119,15 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
       let headshotFileId = values.headshotFileId;
 
       if (photo) {
+        let normalized: File;
+        try {
+          normalized = await normalizeProfileImage(photo);
+        } catch (error) {
+          setMessage(error instanceof Error ? error.message : 'That image could not be prepared.');
+          return;
+        }
         const body = new FormData();
-        body.set('photo', photo);
+        body.set('photo', normalized);
         const response = await fetch('/admin/speakers/upload', { method: 'POST', body });
         const uploaded = (await response.json()) as
           | { ok: true; fileId: string }
@@ -302,7 +310,9 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 {previewSrc ? 'Replace photo' : 'Choose photo'}
               </Button>
               <p className={styles.fieldHint}>
-                {photo ? photo.name : 'JPEG or PNG, up to 10 MB. Uploaded when you save.'}
+                {photo
+                  ? photo.name
+                  : 'JPEG, PNG, GIF or WebP up to 10 MB. Center-cropped and optimized when you save.'}
               </p>
             </div>
           </div>

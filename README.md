@@ -282,7 +282,12 @@ redeploy and nothing else.
 
 R2 is off by default, because enabling it requires a payment method on the Cloudflare account and
 that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
-database until you turn it on; `wrangler.jsonc` says exactly how.
+database until you turn it on; `wrangler.jsonc` says exactly how. Treat that database backend as a
+small-deployment convenience, not an object store: individual uploads are capped at 25 MiB, every
+byte inflates the primary database and every full backup, and files are served through the Worker
+and Hyperdrive rather than a storage CDN. The Files screen warns at 250 MiB of database blobs and
+uses 500 MiB as the practical handoff point to R2/S3. Those are operating limits, not Postgres hard
+limits; configure a bucket earlier for frequent decks, video, or a multi-event archive.
 
 The Worker also has an hourly Cron Trigger. `custom-worker.ts` keeps OpenNext's generated request
 handler and adds a scheduled handler that dispatches task and draft-deadline reminders through

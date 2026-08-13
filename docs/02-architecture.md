@@ -38,6 +38,22 @@ that keeps a few headshots in Postgres. The binding always wins where it exists,
 uncommenting two config blocks and changes no code. Same reasoning drops the R2 ISR cache: nearly
 every route is dynamic and per-event, so there is little to persist.
 
+The Postgres backend is intentionally bounded in product terms even though `bytea` itself permits
+more: one upload is capped at 25 MiB, the admin Files screen warns when deployment-wide blobs reach
+250 MiB, and 500 MiB is the practical handoff point to R2/S3. Database blobs enlarge the primary and
+every full backup, while reads traverse the Worker and Hyperdrive instead of an object CDN. The two
+numbers are operating guidance, chosen around common free database quotas, not engine limits.
+
+**One event-profile image model.** A published or portal speaker image is always
+`participant.headshotFileId`, pointing at controlled bytes in the configured `Storage`. Both
+speaker pickers center-crop and re-encode to a 512×512 WebP in the browser, then the upload route
+verifies the stored bytes' format, dimensions and 1 MiB ceiling. This keeps image processing out of
+the Worker runtime and makes that one asset suitable for the detail page and roster thumbnail.
+`contact.headshotUrl` remains only a CRM discovery/source reference: adding the contact to an event
+copies profile text but does not hotlink the external image. The explicit conversion is to open the
+source link, download the image, open the new event speaker, choose the downloaded file in the photo
+uploader, and let the normalizer create the canonical stored copy.
+
 ### Why Postgres, and why this is the load-bearing decision
 
 Hyperdrive pools TCP connections at the edge, so on Workers we use **`drizzle-orm/node-postgres`
