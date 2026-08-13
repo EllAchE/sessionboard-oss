@@ -16,6 +16,12 @@ The transparent layer is grouped by intent:
 - `illustrations/` — original editorial objects for speakers, review, and scheduling;
 - `/public/brand/` — the Cicero mark, reversed mark, and horizontal lockup as SVG.
 
+Speaker headshots are a deterministic generated system rather than a folder of repeated photos.
+`lib/roman-speaker-headshots.ts` defines 600 guaranteed-distinct, square- and circle-safe fictional
+classical portraits, then continues with a stable fallback for larger rosters. The seed renders only
+the slots it needs, so adding capacity does not add 600 network requests or binary files to a build.
+Review the complete set ten pages at a time at `/roman-headshots` in a development build.
+
 The sources of truth for names, alt text, focal points, recommended uses, and provenance are
 `lib/roman-assets.ts` and `lib/cicero-visual-assets.ts`. The complete library can be reviewed locally
 at `/roman-assets`; the route returns a 404 outside development builds.
@@ -90,4 +96,5 @@ stage follows `--accent`.
 Keep clear space equal to the stage width around the mark. Do not add a circle, microphone, eagle,
 gradient, or drop shadow. The open right edge and vermilion stage are the identifying features.
 
-See `GENERATION.md` for the prompt set and alpha-production workflow used for the generated assets.
+See `GENERATION.md` for the prompt set, deterministic headshot system, and alpha-production workflow
+used for the generated assets.
