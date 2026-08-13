@@ -81,6 +81,23 @@ export const speakerSchema = z
   })
   .describe('A speaker with at least one accepted session');
 
+export const sponsorSchema = z
+  .object({
+    id: z.string().describe('UUID'),
+    kind: z.enum(['sponsor', 'exhibitor']),
+    status: z.literal('published').describe('Public reads never expose drafts'),
+    name: z.string(),
+    tier: z.string().nullable(),
+    websiteUrl: z.string().nullable(),
+    description: z.string().nullable(),
+    boothLocation: z.string().nullable(),
+    logoUrl: z
+      .string()
+      .nullable()
+      .describe('Absolute URL of the logo for this published sponsor or exhibitor'),
+  })
+  .describe('A published sponsor or exhibitor');
+
 export const agendaSchema = z
   .object({
     event: eventSchema,
@@ -165,6 +182,16 @@ export const speakerListQuery = z
     q: queryFilter.optional().describe('Search name, biography, company, role, links, and sessions'),
     company: queryFilter.optional().describe('Company name'),
     session: queryFilter.optional().describe('Session title or id'),
+    limit: listLimit,
+    offset: listOffset,
+  })
+  .strict();
+
+export const sponsorListQuery = z
+  .object({
+    kind: z.enum(['sponsor', 'exhibitor']).optional(),
+    q: queryFilter.optional().describe('Search name, tier, description, booth, and website'),
+    tier: queryFilter.optional().describe('Tier name'),
     limit: listLimit,
     offset: listOffset,
   })
@@ -755,5 +782,6 @@ export const errorResponse = z
 export type EventPayload = z.infer<typeof eventSchema>;
 export type SessionPayload = z.infer<typeof sessionSchema>;
 export type SpeakerPayload = z.infer<typeof speakerSchema>;
+export type SponsorPayload = z.infer<typeof sponsorSchema>;
 export type AgendaPayload = z.infer<typeof agendaSchema>;
 export type SubmissionPayload = z.infer<typeof submissionSchema>;

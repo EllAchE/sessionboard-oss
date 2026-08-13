@@ -34,6 +34,7 @@ describe('OpenAPI documentation', () => {
 
     expect(spec.paths['/events/{slug}/sessions'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/speakers'].get?.security).toBeUndefined();
+    expect(spec.paths['/events/{slug}/sponsors'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/forms'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/forms/{formId}'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/forms/{formId}/submissions'].post?.security).toEqual(

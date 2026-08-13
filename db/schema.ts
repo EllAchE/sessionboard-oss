@@ -184,6 +184,8 @@ export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
  * and link to buy nothing, and a company that is both would become two unrelated rows.
  */
 export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
+/** A sponsor is staged privately until an organizer explicitly puts it on public surfaces. */
+export const sponsorStatus = pgEnum('sponsor_status', ['draft', 'published']);
 
 // ---------------------------------------------------------------------------
 // Identity. Users are global; everything role-shaped is event-scoped through
@@ -451,6 +453,7 @@ export const sponsor = pgTable(
       .notNull()
       .references(() => event.id, { onDelete: 'cascade' }),
     kind: sponsorKind('kind').notNull().default('sponsor'),
+    status: sponsorStatus('status').notNull().default('draft'),
     name: text('name').notNull(),
     /**
      * Free text rather than a second event-scoped list. Tiers are named differently at every

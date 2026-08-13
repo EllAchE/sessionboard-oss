@@ -5,6 +5,7 @@ import { GalleryWidget } from './views/GalleryWidget';
 import { ItineraryWidget } from './views/ItineraryWidget';
 import { SessionsWidget } from './views/SessionsWidget';
 import { SpeakersWidget } from './views/SpeakersWidget';
+import { SponsorsWidget } from './views/SponsorsWidget';
 import styles from './embed.module.css';
 
 /**
@@ -83,6 +84,9 @@ export function EmbedBody({
       ) : null}
       {view === 'gallery' ? (
         <GalleryWidget bundle={filtered} options={options} sessionBase={sessionHref} />
+      ) : null}
+      {view === 'sponsors' ? (
+        <SponsorsWidget sponsors={filtered.sponsors ?? []} options={options} />
       ) : null}
     </div>
   );

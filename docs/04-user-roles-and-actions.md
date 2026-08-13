@@ -248,8 +248,8 @@ An organizer can:
   field library. All six are managed from the same settings surface.
 - Define room capacities and the values speakers or admins select on submissions and sessions.
 - Record sponsors and exhibitors with logos and a display order. Both appear on the public wall at
-  `/{slug}/sponsors`, grouped by tier in that order. A sponsor row has no draft state, so it is
-  public from the moment it is saved.
+  `/{slug}/sponsors`, grouped by tier in that order. New rows are drafts; an organizer explicitly
+  publishes or unpublishes each row from the sponsor board.
 - Switch between events when multi-event support is enabled.
 
 An organizer cannot currently set the speaker portal's own appearance — logo, accent colour, welcome

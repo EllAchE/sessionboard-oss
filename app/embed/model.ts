@@ -66,15 +66,35 @@ export type PublicSession = {
   }[];
 };
 
+export type PublicSponsor = {
+  id: string;
+  kind: 'sponsor' | 'exhibitor';
+  name: string;
+  tier: string | null;
+  websiteUrl: string | null;
+  description: string | null;
+  boothLocation: string | null;
+  logoUrl: string | null;
+};
+
 export type PublicBundle = {
   event: PublicEvent;
   sessions: PublicSession[];
   speakers: PublicSpeaker[];
   tracks: { id: string; name: string }[];
   rooms: { id: string; name: string }[];
+  /** Optional for compatibility with callers that build programme-only fixtures by hand. */
+  sponsors?: PublicSponsor[];
 };
 
-export const EMBED_VIEWS = ['agenda', 'itinerary', 'sessions', 'speakers', 'gallery'] as const;
+export const EMBED_VIEWS = [
+  'agenda',
+  'itinerary',
+  'sessions',
+  'speakers',
+  'gallery',
+  'sponsors',
+] as const;
 
 export type EmbedView = (typeof EMBED_VIEWS)[number];
 
@@ -84,6 +104,7 @@ export const EMBED_VIEW_LABEL: Record<EmbedView, string> = {
   sessions: 'Sessions list',
   speakers: 'Speakers list',
   gallery: 'Speaker gallery',
+  sponsors: 'Sponsor wall',
 };
 
 export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
@@ -92,6 +113,7 @@ export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
   sessions: 'Searchable, filterable session cards.',
   speakers: 'An alphabetical speaker directory that drills into a profile.',
   gallery: 'A photo grid of speakers with a detail panel.',
+  sponsors: 'Published sponsors and exhibitors, grouped by type and tier.',
 };
 
 export function isEmbedView(value: string): value is EmbedView {

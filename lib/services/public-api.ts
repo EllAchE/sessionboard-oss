@@ -17,10 +17,13 @@ import { appUrl } from '@/lib/env';
 import { notFound } from '@/lib/errors';
 import { formatRef } from '@/lib/ids';
 import { publicSpeakerHeadshotUrl } from '@/lib/speaker-headshot';
+import { publicSponsorLogoUrl } from '@/lib/sponsor-branding';
+import { listPublicSponsors } from '@/lib/services/sponsors';
 import type {
   EventPayload,
   SessionPayload,
   SpeakerPayload,
+  SponsorPayload,
   SubmissionPayload,
 } from '@/app/api/v1/_lib/schemas';
 
@@ -337,6 +340,52 @@ export async function listSpeakers(
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const searched = payload.filter((row) => speakerMatchesSearch(row, filters));
+  const offset = filters.offset ?? 0;
+  return {
+    data: searched.slice(offset, offset + (filters.limit ?? 100)),
+    total: searched.length,
+  };
+}
+
+export type SponsorFilters = {
+  kind?: SponsorPayload['kind'];
+  q?: string;
+  tier?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export function sponsorMatchesSearch(row: SponsorPayload, filters: SponsorFilters): boolean {
+  if (filters.kind && row.kind !== filters.kind) return false;
+  if (filters.tier && !includesText(row.tier, filters.tier)) return false;
+  if (!filters.q) return true;
+  return [row.name, row.tier, row.websiteUrl, row.description, row.boothLocation].some((value) =>
+    includesText(value, filters.q as string),
+  );
+}
+
+/** Published-only sponsor projection shared by REST and future transport surfaces. */
+export async function listApiSponsors(
+  event: Pick<EventRow, 'id' | 'slug'>,
+  filters: SponsorFilters = {},
+): Promise<ListResult<SponsorPayload>> {
+  const origin = appUrl();
+  const payload: SponsorPayload[] = (await listPublicSponsors(event.id)).map((row) => {
+    const path = publicSponsorLogoUrl(event.slug, row.logoFileId);
+    return {
+      id: row.id,
+      kind: row.kind,
+      status: 'published',
+      name: row.name,
+      tier: row.tier,
+      websiteUrl: row.websiteUrl,
+      description: row.description,
+      boothLocation: row.boothLocation,
+      logoUrl: path ? new URL(path, origin).toString() : null,
+    };
+  });
+
+  const searched = payload.filter((row) => sponsorMatchesSearch(row, filters));
   const offset = filters.offset ?? 0;
   return {
     data: searched.slice(offset, offset + (filters.limit ?? 100)),

@@ -239,6 +239,7 @@ Nearly free once the services exist, because handlers are a Zod parse plus a ser
 GET  /api/v1/events/:slug
 GET  /api/v1/events/:slug/sessions?status=&track=&room=
 GET  /api/v1/events/:slug/speakers
+GET  /api/v1/events/:slug/sponsors
 GET  /api/v1/events/:slug/agenda
 GET  /api/v1/events/:slug/submissions          (key-scoped)
 POST /api/v1/events/:slug/forms/:formId/submissions
@@ -249,11 +250,16 @@ Auth is `Authorization: Bearer <key>`, keys are per event, hashed at rest.
 
 ### Embeds are server-rendered routes, not a JS widget
 
-`G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers` and `/embed/:slug/sessions`,
+`G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers`, `/embed/:slug/sessions`, and
+`/embed/:slug/sponsors`,
 served with `frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing
 iframe. The requirement that an embed "auto-updates with no re-paste" is then free rather than
 engineered: the iframe renders live data on every load, so there is no snapshot to go stale and no
 client bundle to version.
+
+Sponsor rows add one more structural gate: only `status = published` rows enter the public page,
+embed, REST list, navigation presence check, or logo authorization. Changing a row back to draft
+therefore removes both its metadata and its image bytes without deleting either.
 
 ## 6. The form engine — verdict: BUILD
 

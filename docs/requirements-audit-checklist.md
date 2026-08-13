@@ -97,10 +97,10 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   with a `sponsor_kind` enum of `sponsor`/`exhibitor`, and organizer CRUD is complete: list, create,
   edit, remove, drag reorder, logo upload and serve, all capability-gated. The public wall at
   `/{slug}/sponsors` groups both kinds by tier in the organizer's order, behind a nav tab that only
-  appears for events that have rows, and serves logos from an unauthenticated route that proves
-  access structurally — the file id must currently occupy a sponsor logo slot on that event. There is
-  still no embed widget or `/api/v1` exposure, and **a sponsor row has no published column**, so it
-  is public as soon as it is saved; both are recorded under [Follow-ups](#follow-ups).
+  appears for events that have published rows. New rows are drafts until an organizer toggles them
+  published; returning one to draft removes it from the wall, navigation, sponsor embed,
+  `GET /api/v1/events/{slug}/sponsors`, and the structural logo-serving predicate. The migration
+  preserves already-public legacy rows while retaining a draft default for every new row.
 - [x] **E-8 · X · EXCLUDED — Event-team permission grid.** Explicitly outside the requested scope.
 
 ## 3. Call-for-speakers forms
@@ -119,11 +119,11 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   in the builder. Turning participants off removes the participant stage from the public flow, and
   the API rejects participants on a form that does not collect them. Turning the stage on now seeds
   the permissive default role set when an existing form has none, including when the form is already
-  open; migration `0013` repairs any enabled empty role sets already stored.
+  open; migration `0018` repairs any enabled empty role sets already stored.
 - [x] **F-5 · R · COMPLETE — Complete abstract field set and constraints.** The six built-ins carry
   the brief's exact constraints — Title 255, Description 5,000 markdown, Format/Track/Tags required,
   Level optional — as shared constants that are written onto the rows, enforced at submit time, and
-  clamped if an organizer tries to raise them. Migration `0013` fills missing caps and clamps only
+  clamped if an organizer tries to raise them. Migration `0018` fills missing caps and clamps only
   over-limit legacy Title/Description rows while preserving any tighter organizer choice. Fields
   remain drag-reorderable with an independent required toggle.
 - [x] **F-6 · R · COMPLETE — Complete participant field set.** First name, last name, and email are
@@ -424,21 +424,9 @@ covering real recipients, the log transport, and seeded demo identities.
 - ~~**`V-1` staging bar is still fixed.**~~ Closed: each review round now stores a 1.0–5.0 queue bar
   in tenths and exposes it beside the round settings. Completed panel averages at or above that bar
   enter the accept queue; lower averages enter decline, while hand staging continues to win.
-- **Per-session task reminders may be chattier than intended.** Reminders iterate per *assignment*,
-  and a submission-scoped task (`S-16`) creates one assignment per accepted session. A speaker with
-  three accepted sessions receives three reminder emails for one task. Correct by the data model,
-  probably not what an organizer expects.
-- **No `published` column on `sponsor` (`E-7`).** The public wall now exists, and every other public
-  surface in the app is gated by an explicit state column — `scheduled_session.status`,
-  `submission.content_status`, `participant.workflow_status`. A sponsor row has none, so saving one
-  publishes it, and an organizer who wants to stage a wall before an announcement cannot. The admin
-  page says so before they type, which is the honest interim answer, not a substitute for the column.
-  Adding it is a migration plus a filter in `listPublicSponsors`, the same filter in
-  `eventHasSponsors` and `isPublicSponsorLogo` so an unpublished sponsor's logo stops being servable,
-  and a toggle on the board.
-- **No sponsor embed widget or `/api/v1` exposure (`E-7`).** The wall is a microsite page only.
-  `app/embed/**` has no sponsor view, so a sponsor block cannot be iframed onto an organizer's own
-  site the way the agenda and speaker directory can.
+- ~~**Per-session task reminders may be chattier than intended.**~~ Resolved. Reminder assignments
+  are grouped by person and task, so one message names every session where the task remains
+  outstanding; every included assignment is stamped together to preserve the cadence.
 - ~~**`S-17` form-builder target.**~~ Withdrawn. Declaring the contact/group/submission triple on the
   form as well as on the task would make a reusable form single-use and create a disagreement with no
   correct resolution. See the `S-17` row.

@@ -16,6 +16,8 @@ import {
 } from '@/db/schema';
 import { eventBrandingUrl } from '@/lib/event-branding';
 import { excerpt, markdownToText, renderMarkdown } from '@/lib/markdown';
+import { publicSponsorLogoUrl } from '@/lib/sponsor-branding';
+import { listPublicSponsors } from '@/lib/services/sponsors';
 import { speakerHeadshotPath } from '@/lib/speaker-headshot';
 import { publicRecordingPath, recordingPublicationIssue } from '@/lib/session-recording';
 import {
@@ -103,7 +105,8 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
   if (!event) return null;
   const db = getDb();
 
-  const [scheduledRows, tracks, rooms, formats, publicParticipants] = await Promise.all([
+  const [scheduledRows, tracks, rooms, formats, publicParticipants, publicSponsors] =
+    await Promise.all([
     db
       .select({ session: scheduledSession, recording: sessionRecording })
       .from(scheduledSession)
@@ -138,6 +141,7 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
         and(eq(participant.eventId, event.id), eq(participant.workflowStatus, 'confirmed')),
       )
       .orderBy(asc(participant.displayName), asc(userTable.name)),
+    listPublicSponsors(event.id),
   ]);
 
   const sessionRows = scheduledRows.map((row) => row.session);
@@ -276,5 +280,15 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
     rooms: rooms
       .filter((row) => usedRoomNames.has(row.name))
       .map((row) => ({ id: row.id, name: row.name })),
+    sponsors: publicSponsors.map((row) => ({
+      id: row.id,
+      kind: row.kind,
+      name: row.name,
+      tier: row.tier,
+      websiteUrl: row.websiteUrl,
+      description: row.description,
+      boothLocation: row.boothLocation,
+      logoUrl: publicSponsorLogoUrl(event.slug, row.logoFileId),
+    })),
   };
 }
