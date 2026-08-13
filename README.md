@@ -241,8 +241,12 @@ regenerates the checked-in manifest from the same Zod schemas used at runtime.
 
 ### Bonus: use Cicero through role-scoped agents
 
-These three surfaces are extra value beyond the required replacement scope:
+These four surfaces are extra value beyond the required replacement scope:
 
+- **Onboarding guide** — `onboard-cicero` keeps a non-secret local record of the chosen host,
+  account readiness, exact event slug, API-key readiness, and completed setup milestones. It
+  resumes at the first unfinished step and hands ongoing work to the organizer agent instead of
+  becoming a second front end.
 - **Viewer agent** — `explore-cicero-event` searches public event metadata, open CFPs, sessions,
   speakers, and agenda data without a credential. Structured filters and pagination make the same
   surface useful to a public assistant or another website.
@@ -257,9 +261,10 @@ These three surfaces are extra value beyond the required replacement scope:
   event-scoped integration key with destructive confirmation and rollback guidance.
 
 Codex loads repository skills from `.agents/skills` at the repository root. Invoke
-`$explore-cicero-event`, `$manage-cicero-speaker-work`, or `$manage-cicero-event` explicitly. All
-three discover the live OpenAPI before acting and stop cleanly when a deployment lacks the required
-operation. See the organizer workflow's
+`$onboard-cicero`, `$explore-cicero-event`, `$manage-cicero-speaker-work`, or
+`$manage-cicero-event` explicitly. Onboarding starts or resumes from
+`.cicero/onboarding.json`; the role-scoped agents discover the live OpenAPI before acting and stop
+cleanly when a deployment lacks the required operation. See the organizer workflow's
 [`First Settlement copy-ready prompt`](.agents/skills/manage-cicero-event/references/first-settlement-demo.md).
 The discovery location and `$skill-name` invocation follow the
 [official Codex skills documentation](https://developers.openai.com/codex/build-skills#where-codex-loads-local-skills).

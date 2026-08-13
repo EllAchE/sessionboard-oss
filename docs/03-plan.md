@@ -224,7 +224,7 @@ to-do.
 | --- | --- | --- |
 | Agent mail | **Shipped — bounded MCP slice** | The event MCP server can list effective templates and redacted delivery metadata, preview one recipient-resolved email, and send it through the existing audited mail boundary. It is deliberately not an agent-owned arbitrary mailbox: the target must be an existing participant on the API key's event, SMS and calendar sends stay out, email preference is rechecked at dispatch, and a write key must echo the preview's literal target confirmation plus its content-bound digest. Template, recipient or copy changes invalidate the preview. See `lib/services/agent-mail.ts` and `lib/mcp/server.ts`. |
 | Video uploads / post-conference assets | **Shipped** | `session_recording` holds one deliberately draft/published source per scheduled session. **Admin → Recordings** can upload a bounded 25 MB video through the existing event-scoped storage path, associate an existing event video, or validate an external HTTPS streaming URL. A recording cannot publish before its public session ends (the past event end is the fallback for historical imports), and changing its source returns it to draft. Published recordings alone add **Watch recording** to the public session list, home/program cards, agenda detail, itinerary, speaker-session lists, and embeds; stored bytes are streamed through a publication-gated route. |
-| Full agent guide | Not started; quick start is the v1 slice | The home page should offer a copyable **Agent quick start** prompt. The full version resumes a stateful onboarding conversation; the version worth building now only *describes* what an agent can do. See §6.1. |
+| Full agent guide | **Shipped** | `.agents/skills/onboard-cicero/` establishes or resumes non-secret local state, discovers the caller's current setup, walks only unfinished milestones, preserves confirmation boundaries, and hands ongoing work to `manage-cicero-event`. The home page exposes a copyable entry prompt. See §6.1. |
 
 ### 6.1 Agent quick start, and the full agent guide behind it
 
@@ -234,8 +234,8 @@ Claude Code, anything that can read a URL and call an HTTP API), and it takes ov
 copy affordance is the whole product — there is no Cicero-hosted agent, no chat panel, and nothing
 to sign in to before you can use it.
 
-**What the full guide would be.** The end state is a *guide*, not a script: pasted into an agent,
-it first works out how far along you already are before instructing anything. Roughly, in order:
+**What the full guide is.** It is a *guide*, not a second front end: pasted into an agent, it first
+works out how far along you already are before instructing anything. Roughly, in order:
 
 - Do you have a Cicero account yet, or are you starting from a bare repo?
 - Are you self-hosting, or pointing at a deployment someone else runs? What is the base URL?
@@ -247,17 +247,17 @@ event, open the CFP, review and accept, build the program, publish, mint an API 
 to the existing `manage-cicero-event` skill (`.agents/skills/manage-cicero-event/SKILL.md`) for
 ongoing compare → preview → confirm → apply → verify runs.
 
-**It has to remember.** Each answer is written to a small local state file in the user's working
-directory — base URL, event slug, account status, how far the walkthrough got. A second invocation
-reads that file and resumes instead of re-interrogating you; saying "the event I care about is
-`first-settlement`" once should be enough, forever. That local store is the only part of this that
-is genuinely stateful, and it is what turns a prompt into a guide.
+**How it remembers.** Each answer is written to `.cicero/onboarding.json` in the user's working
+directory — base URL, event slug, hosting choice, account/key readiness, and completed milestones,
+but never credential values. A second invocation reads that file and resumes instead of
+re-interrogating the user. The state helper uses a fixed milestone vocabulary, validates URLs and
+slugs, and writes atomically with owner-only permissions. `.cicero/` is ignored by this repository.
 
-**Why the v1 slice is smaller.** Building all of the above out of the gate is overkill for this
-submission. What ships first is the *concept* plus a quick start that **describes** what an agent
-can do against Cicero — the OpenAPI contract (`docs/openapi.json`), the reconcile operation, the
-`manage-cicero-event` skill, where keys come from — and points at those. It does not actually walk
-you through every step, does not branch on your progress, and writes no local state.
+**What shipped.** The `onboard-cicero` skill contains the branching and confirmation policy, a
+deterministic local-state helper, and the route/evidence map for each setup milestone. The home-page
+quick start now invokes that guide directly. Read-only users stop cleanly at API-key setup and can
+hand off to `explore-cicero-event`; organizers with a securely configured event key hand off to
+`manage-cicero-event` for compare → preview → confirm → apply → verify.
 
 **Explicit non-goal, so this does not sprawl.** There is no comprehensive agent parallel to the
 product: we are not mirroring every organizer action in the UI with an equivalent agent workflow,
