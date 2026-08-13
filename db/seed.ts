@@ -29,6 +29,7 @@ import {
   score,
   scorecardCriterion,
   sessionFormat,
+  sponsor,
   submission,
   submissionTag,
   tag,
@@ -267,6 +268,70 @@ const personas = await db
     },
   ])
   .returning();
+
+/**
+ * `E-7`. Sponsors and exhibitors, seeded partly filled in — a tier here, a booth there, one row
+ * with nothing but a name — because that is the state an organizer's list is actually in, and a
+ * uniformly complete list would hide how the surface reads when a field is empty. No logos: the
+ * seed writes no image bytes anywhere, and the upload route is the only way one arrives.
+ *
+ * `Fabrica Vitraria` appears in both lists on purpose. It is the case the unique constraint is
+ * keyed on `kind` to allow — a company that both sponsors and exhibits — so the demo data covers
+ * it rather than leaving it to a migration test.
+ */
+await db.insert(sponsor).values([
+  {
+    eventId: demo.id,
+    kind: 'sponsor',
+    name: 'Aquae Urbanae',
+    tier: 'Principal',
+    websiteUrl: 'https://example.com/aquae-urbanae',
+    description: 'Aqueduct survey and maintenance for the western provinces.',
+    position: 0,
+  },
+  {
+    eventId: demo.id,
+    kind: 'sponsor',
+    name: 'Fabrica Vitraria',
+    tier: 'Supporting',
+    websiteUrl: 'https://example.com/fabrica-vitraria',
+    description: 'Glassworks, and the reason the Basilica Gallery has windows.',
+    position: 1,
+  },
+  {
+    eventId: demo.id,
+    kind: 'sponsor',
+    name: 'Scriptorium Municipale',
+    tier: 'Supporting',
+    position: 2,
+  },
+  { eventId: demo.id, kind: 'sponsor', name: 'Collegium Fabrorum', position: 3 },
+  {
+    eventId: demo.id,
+    kind: 'exhibitor',
+    name: 'Officina Ferraria',
+    tier: 'Standard',
+    boothLocation: 'Peristyle, stand 3',
+    websiteUrl: 'https://example.com/officina-ferraria',
+    description: 'Ironmongery and survey instruments.',
+    position: 0,
+  },
+  {
+    eventId: demo.id,
+    kind: 'exhibitor',
+    name: 'Fabrica Vitraria',
+    boothLocation: 'Peristyle, stand 7',
+    description: 'The same firm as the sponsor above, with a stand of its own.',
+    position: 1,
+  },
+  {
+    eventId: demo.id,
+    kind: 'exhibitor',
+    name: 'Horrea Publica',
+    boothLocation: 'Lower level, stand 12',
+    position: 2,
+  },
+]);
 
 const [keynote, talk, workshop] = formats;
 const [infrastructure, governance, knowledge, logistics] = tracks;

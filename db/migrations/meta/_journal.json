@@ -78,6 +78,13 @@
       "when": 1786612872318,
       "tag": "0010_dark_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786614949413,
+      "tag": "0011_furry_microbe",
+      "breakpoints": true
     }
   ]
 }
