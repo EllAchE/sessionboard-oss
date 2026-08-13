@@ -935,7 +935,8 @@
             "additionalProperties": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 20000
                 },
                 {
                   "type": "number"
@@ -946,7 +947,8 @@
                 {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                   }
                 },
                 {
@@ -957,6 +959,7 @@
             "description": "Keyed by the form field key. Built-in keys are title, description, format, track, level, tags."
           }
         },
+        "additionalProperties": false,
         "required": [
           "email",
           "answers"
@@ -1354,6 +1357,8 @@
             "description": "Track name or id",
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
               "description": "Track name or id"
             }
           },
@@ -1364,6 +1369,8 @@
             "description": "Room name or id",
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
               "description": "Room name or id"
             }
           }
@@ -1712,7 +1719,7 @@
           "Submissions"
         ],
         "summary": "Submit to a call for speakers",
-        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed.",
+        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.",
         "operationId": "createSubmission",
         "parameters": [
           {

@@ -122,6 +122,7 @@ export function toJsonSchema(input: z.ZodTypeAny): JsonSchema {
         }
 
         const out: JsonSchema = { type: 'object', properties };
+        if ((def.unknownKeys as string | undefined) === 'strict') out.additionalProperties = false;
         if (required.length > 0) out.required = required;
         return out;
       }

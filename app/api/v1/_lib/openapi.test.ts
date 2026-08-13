@@ -6,6 +6,7 @@ import {
   programReconcileBody,
   sessionListQuery,
   sessionSchema,
+  submissionListQuery,
   submissionSchema,
 } from './schemas';
 
@@ -20,6 +21,10 @@ describe('toJsonSchema', () => {
     expect(schema.type).toBe('object');
     expect(schema.required).toEqual(['a']);
     expect((schema.properties as Record<string, { type: string }>).b.type).toBe('number');
+  });
+
+  it('publishes strict object boundaries', () => {
+    expect(toJsonSchema(z.object({ value: z.string() }).strict()).additionalProperties).toBe(false);
   });
 
   it('renders a nullable field as a type union rather than dropping it', () => {
@@ -70,5 +75,12 @@ describe('toParameters', () => {
     // Every filter on a public read is optional; a required one would break the bare `/sessions`.
     expect(params.every((param) => param.required === false)).toBe(true);
     expect(params.map((param) => param.name)).toContain('track');
+  });
+
+  it('publishes transformed numeric query limits as bounded integers', () => {
+    const limit = toParameters(submissionListQuery, 'query').find(
+      (parameter) => parameter.name === 'limit',
+    );
+    expect(limit?.schema).toMatchObject({ type: 'integer', minimum: 1, maximum: 200 });
   });
 });
