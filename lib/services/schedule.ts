@@ -57,10 +57,7 @@ function participatesInConflicts(entry: ScheduleEntry): entry is PlacedEntry {
 
 export type ConflictKind = 'room' | 'track' | 'speaker';
 
-/**
- * `error` is a clash that fails on the day; `warning` is a programming judgement the organizer may
- * well want. Neither ever blocks a drop — the board warns and lets the organizer decide.
- */
+/** `warning` remains a presentation level for non-conflict diagnostics; agenda overlaps are errors. */
 export type ConflictSeverity = 'error' | 'warning';
 
 export type Conflict = {
@@ -122,11 +119,11 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
         const name = labels.tracks?.[a.trackId] ?? 'the same track';
         add({
           kind: 'track',
-          severity: 'warning',
+          severity: 'error',
           sessionIds: pair(a, b),
           subjectId: a.trackId,
           subjectName: labels.tracks?.[a.trackId] ?? null,
-          message: `${a.title} and ${b.title} run at once on ${name} — attendees following it must choose`,
+          message: `${a.title} and ${b.title} run at once on ${name}`,
         });
       }
 

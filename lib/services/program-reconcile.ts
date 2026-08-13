@@ -1,12 +1,14 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { getDb, type Database } from '@/db/client';
 import { room, scheduledSession, sessionFormat, track } from '@/db/schema';
+import { conflict } from '@/lib/errors';
 import {
   allocateSessionRef,
   cancelPublishedSessionBeforeMutation,
   mintIcsUid,
   notifyIfPublished,
 } from '@/lib/services/agenda-mutations';
+import { detectConflicts, type ScheduleEntry } from '@/lib/services/schedule';
 
 export const DELETE_MISSING_CONFIRMATION = 'DELETE_MISSING_SESSIONS' as const;
 
@@ -385,6 +387,44 @@ function publicResult(plan: ProgramPlan, applied = false): ProgramReconcileResul
   };
 }
 
+function assertProgramPlanConflictFree(plan: ProgramPlan, stored: StoredSession[]): void {
+  const final = new Map(stored.map((row) => [row.id, row]));
+  const changedSessionIds = new Set<string>();
+
+  for (const mutation of plan.mutations) {
+    if (mutation.action === 'create') {
+      const id = `pending:${mutation.externalId}`;
+      final.set(id, { id, ...mutation.values });
+      changedSessionIds.add(id);
+    } else if (mutation.action === 'update') {
+      final.set(mutation.current.id, { ...mutation.current, ...mutation.values });
+      changedSessionIds.add(mutation.current.id);
+    } else {
+      final.delete(mutation.current.id);
+    }
+  }
+
+  const entries: ScheduleEntry[] = [...final.values()].map((row, index) => ({
+    id: row.id,
+    ref: index + 1,
+    title: row.title,
+    submissionId: null,
+    roomId: row.roomId,
+    trackId: row.trackId,
+    formatId: row.formatId,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    status: row.status,
+    ceuCredits: row.ceuCredits,
+    clientId: row.clientId,
+    speakers: [],
+  }));
+  const blocked = detectConflicts(entries).find((item) =>
+    item.sessionIds.some((sessionId) => changedSessionIds.has(sessionId)),
+  );
+  if (blocked) throw conflict(blocked.message);
+}
+
 async function applyProgramPlan(eventId: string, plan: ProgramPlan, database: ProgramDb) {
   const notifyAfterCommit: string[] = [];
 
@@ -447,13 +487,15 @@ export async function reconcileProgram(
   }
 
   const outcome = await database.transaction(async (transaction) => {
-    // Concurrent applies must plan from the state committed by the previous event/source apply.
+    // Every agenda writer shares this event lock, so the plan and conflict decision see the state
+    // committed by the previous mutation regardless of which write surface produced it.
     await transaction.execute(
-      sql`select pg_advisory_xact_lock(hashtext(${`cicero:program:${eventId}:${input.source}`}))`,
+      sql`select pg_advisory_xact_lock(hashtextextended(${eventId}, 0))`,
     );
     const state = await loadProgramState(eventId, transaction);
     const plan = planProgramReconciliation(input, state.stored, state.taxonomy);
     if (!plan.canApply) return { result: publicResult(plan), notifications: [] };
+    assertProgramPlanConflictFree(plan, state.stored);
     const notifications = await applyProgramPlan(eventId, plan, transaction);
     return { result: publicResult(plan, true), notifications };
   });
