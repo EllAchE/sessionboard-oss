@@ -1,13 +1,20 @@
-import { romanSpeakerHeadshotBytes } from '../../lib/roman-speaker-headshots';
+import {
+  romanSpeakerHeadshotBytes,
+  type RomanSpeakerHeadshotGender,
+} from '../../lib/roman-speaker-headshots';
 
 export const ROMAN_PROFILE_ART = [
-  { email: 'octavian@first-settlement.example' },
-  { email: 'agrippa@first-settlement.example' },
-  { email: 'plancus@first-settlement.example' },
-  { email: 'messalla@first-settlement.example' },
-  { email: 'maecenas@first-settlement.example' },
-  { email: 'taurus@first-settlement.example' },
+  { email: 'octavian@first-settlement.example', gender: 'man' },
+  { email: 'agrippa@first-settlement.example', gender: 'man' },
+  { email: 'plancus@first-settlement.example', gender: 'man' },
+  { email: 'messalla@first-settlement.example', gender: 'man' },
+  { email: 'maecenas@first-settlement.example', gender: 'man' },
+  { email: 'taurus@first-settlement.example', gender: 'man' },
 ] as const;
+
+const ROMAN_PROFILE_ART_GENDER = new Map<string, RomanSpeakerHeadshotGender>(
+  ROMAN_PROFILE_ART.map((entry) => [entry.email, entry.gender]),
+);
 
 export const ROMAN_PROFILE_ART_CONTENT_TYPE = 'image/svg+xml';
 
@@ -27,6 +34,6 @@ export function createRomanProfileArtAssignments<SpeakerKey extends string>(
     slot,
     filename: `roman-speaker-${String(slot + 1).padStart(3, '0')}.svg`,
     contentType: ROMAN_PROFILE_ART_CONTENT_TYPE,
-    bytes: romanSpeakerHeadshotBytes(speakerKey, slot),
+    bytes: romanSpeakerHeadshotBytes(speakerKey, slot, ROMAN_PROFILE_ART_GENDER.get(speakerKey)),
   }));
 }

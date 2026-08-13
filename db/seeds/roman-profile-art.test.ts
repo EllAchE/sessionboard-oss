@@ -29,7 +29,10 @@ describe('Roman profile art', () => {
       true,
     );
     expect(
-      assignments.every((entry) => new TextDecoder().decode(entry.bytes).includes('<svg')),
+      assignments.every((entry) => {
+        const svg = new TextDecoder().decode(entry.bytes);
+        return svg.includes('<svg') && svg.includes('classical man speaker portrait');
+      }),
     ).toBe(true);
   });
 
@@ -50,6 +53,11 @@ describe('Roman profile art', () => {
       ROMAN_SPEAKER_HEADSHOT_CAPACITY,
     );
     expect(designs.every((design) => design.guaranteedDistinct)).toBe(true);
+    expect(designs.filter((design) => design.gender === 'woman')).toHaveLength(300);
+    expect(designs.filter((design) => design.gender === 'man')).toHaveLength(300);
+    expect(
+      designs.filter((design) => design.gender === 'woman').every((design) => design.beard === 0),
+    ).toBe(true);
     expect(
       assignments.every((entry) => {
         const svg = new TextDecoder().decode(entry.bytes);

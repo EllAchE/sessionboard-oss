@@ -11,12 +11,15 @@ type Material = {
   line: string;
 };
 
+export type RomanSpeakerHeadshotGender = 'woman' | 'man';
+
 export type RomanSpeakerHeadshotDesign = {
   slot: number;
   guaranteedDistinct: boolean;
   face: number;
   hair: number;
   material: number;
+  gender: RomanSpeakerHeadshotGender;
   hairColor: number;
   garment: number;
   backdrop: number;
@@ -116,6 +119,7 @@ function permutedSlot(slot: number): number {
 export function designRomanSpeakerHeadshot(
   speakerKey: string,
   slot: number,
+  genderOverride?: RomanSpeakerHeadshotGender,
 ): RomanSpeakerHeadshotDesign {
   if (!Number.isSafeInteger(slot) || slot < 0) {
     throw new RangeError('Speaker headshot slots must be non-negative safe integers.');
@@ -126,17 +130,22 @@ export function designRomanSpeakerHeadshot(
   const face = permutation % FACE_COUNT;
   const hair = Math.floor(permutation / FACE_COUNT) % HAIR_COUNT;
   const material = Math.floor(permutation / (FACE_COUNT * HAIR_COUNT)) % MATERIAL_COUNT;
+  // Each face and hair silhouette appears across both genders. The complete
+  // 600-slot set stays evenly split without making gender depend on a name.
+  const gender =
+    genderOverride ?? ((face + hair + material) % 2 === 0 ? 'woman' : 'man');
   const design = {
     slot,
     guaranteedDistinct: slot < ROMAN_SPEAKER_HEADSHOT_CAPACITY,
     face,
     hair,
     material,
+    gender,
     hairColor: pick(seed, 1, HAIR_COLORS.length),
     garment: pick(seed, 2, GARMENTS.length),
     backdrop: pick(seed, 3, BACKDROPS.length),
     accessory: pick(seed, 4, 6),
-    beard: pick(seed, 5, 6),
+    beard: gender === 'man' ? pick(seed, 5, 6) : 0,
     nose: pick(seed, 6, 7),
     eyes: pick(seed, 7, 6),
     age: pick(seed, 8, 5),
@@ -150,6 +159,7 @@ export function designRomanSpeakerHeadshot(
       design.face,
       design.hair,
       design.material,
+      design.gender,
       design.hairColor,
       design.garment,
       design.backdrop,
@@ -172,6 +182,7 @@ export function romanSpeakerHeadshotVisualDistance(
     ['face', 4],
     ['hair', 5],
     ['material', 3],
+    ['gender', 2],
     ['hairColor', 1],
     ['garment', 2],
     ['backdrop', 2],
@@ -254,6 +265,39 @@ function hairMarkup(
       return `<circle cx="${cx.toFixed(1)}" cy="${cy}" r="${radius}" fill="${hair}" stroke="${line}" stroke-width="2"/>`;
     }).join('');
 
+  if (design.gender === 'woman') {
+    switch (design.hair) {
+      case 0:
+        return `<path d="M80 104Q79 48 126 38Q175 43 177 104L169 150Q158 135 163 91Q146 64 128 60Q107 64 92 91Q96 134 84 151Z" fill="${hair}" stroke="${line}" stroke-width="3"/>`;
+      case 1:
+        return `<path d="M82 91Q83 48 128 40Q173 48 174 91L169 139Q157 126 160 88Q147 64 128 60Q107 64 95 88Q98 125 86 139Z" fill="${hair}" stroke="${line}" stroke-width="3"/>${curls(8, 86, 54, 10)}`;
+      case 2:
+        return `<circle cx="168" cy="62" r="24" fill="${hair}" stroke="${line}" stroke-width="3"/><path d="M84 83Q90 45 128 42Q158 43 173 74Q149 62 128 63Q105 61 84 83Z" fill="${hair}" stroke="${line}" stroke-width="3"/><path d="M128 43V69" stroke="${line}" stroke-width="2" opacity=".45"/>`;
+      case 3:
+        return `${curls(9, 82, 50, 12)}${curls(10, 78, 70, 11)}<path d="M81 75Q75 108 84 148M175 75Q181 108 172 148" fill="none" stroke="${hair}" stroke-width="12" stroke-linecap="round"/>`;
+      case 4:
+        return `<path d="M76 168Q71 88 86 57Q103 30 128 31Q156 31 174 58Q188 94 180 168L163 145V91Q151 59 128 55Q104 59 92 91V145Z" fill="${hair}" stroke="${line}" stroke-width="3"/><path d="M128 34V63" stroke="${line}" stroke-width="2" opacity=".45"/>`;
+      case 5:
+        return `<path d="M83 83Q88 47 128 41Q168 47 173 83" fill="${hair}" stroke="${line}" stroke-width="3"/>${Array.from({ length: 10 }, (_, index) => {
+          const x = 83 + index * 10;
+          const length = 38 + ((index * 11 + design.slot) % 30);
+          return `<path d="M${x} 62Q${x - 4} ${82 + length / 2} ${x + (index % 2 ? 4 : -4)} ${80 + length}" fill="none" stroke="${hair}" stroke-width="7" stroke-linecap="round"/>`;
+        }).join('')}`;
+      case 6:
+        return `<circle cx="128" cy="36" r="25" fill="${hair}" stroke="${line}" stroke-width="3"/>${curls(9, 82, 56, 11)}<path d="M84 74Q78 105 86 142M172 74Q178 105 170 142" fill="none" stroke="${hair}" stroke-width="10" stroke-linecap="round"/>`;
+      case 7:
+        return `<path d="M82 86Q82 48 126 40Q166 42 175 79Q145 63 128 68Q105 62 82 86Z" fill="${hair}" stroke="${line}" stroke-width="3"/><path d="M91 76Q78 113 88 160M165 75Q179 113 168 160" fill="none" stroke="${hair}" stroke-width="14" stroke-linecap="round"/>${curls(5, 103, 49, 8)}`;
+      case 8:
+        return `<path d="M82 83Q88 42 128 39Q168 42 174 83Q150 65 128 63Q104 65 82 83Z" fill="${hair}" stroke="${line}" stroke-width="3"/><path d="M82 82Q72 121 83 173M174 82Q184 121 173 173" fill="none" stroke="${hair}" stroke-width="15" stroke-linecap="round"/><path d="M128 40V68" stroke="${line}" stroke-width="2" opacity=".5"/>`;
+      case 9:
+        return `<path d="M76 174Q69 87 86 55Q103 30 128 30Q155 30 174 57Q187 91 181 174L164 149V91Q150 60 128 56Q105 60 91 91V149Z" fill="${GARMENTS[design.garment][0]}" stroke="${GARMENTS[design.garment][1]}" stroke-width="4"/><path d="M89 73Q128 51 167 73" fill="none" stroke="${hair}" stroke-width="9" stroke-linecap="round"/>`;
+      case 10:
+        return `<circle cx="171" cy="59" r="21" fill="${hair}" stroke="${line}" stroke-width="3"/><path d="M83 82Q89 44 128 40Q164 43 174 81Q151 66 128 64Q104 66 83 82Z" fill="${hair}" stroke="${line}" stroke-width="3"/>${curls(6, 96, 50, 8)}`;
+      default:
+        return `<path d="M79 119Q76 54 126 39Q177 47 177 117L170 151Q157 130 161 91Q147 64 128 61Q107 64 94 91Q97 131 84 151Z" fill="${hair}" stroke="${line}" stroke-width="3"/>${curls(7, 89, 53, 9)}`;
+    }
+  }
+
   switch (design.hair) {
     case 0:
       return `<path d="M86 78Q128 35 170 78Q155 58 128 58Q101 58 86 78Z" fill="${hair}" opacity=".72"/>`;
@@ -287,6 +331,8 @@ function hairMarkup(
 }
 
 function beardMarkup(design: RomanSpeakerHeadshotDesign, hair: string, line: string): string {
+  if (design.gender === 'woman') return '';
+
   switch (design.beard) {
     case 1:
       return `<path d="M99 139Q128 159 157 139Q153 178 128 186Q103 177 99 139Z" fill="${hair}" opacity=".3"/>`;
@@ -343,14 +389,15 @@ function faceDetails(
   const noseWidth = 5 + (design.nose % 4);
   const mouthWidth = 13 + ((design.slot + design.face) % 8);
   const gaze = design.pose * 1.5;
+  const browWidth = design.gender === 'woman' ? 3 : 4;
   const wrinkles = Array.from({ length: design.age }, (_, index) => {
     const y = 91 - index * 5;
     return `<path d="M108 ${y}Q128 ${y - 3} 148 ${y}" fill="none" stroke="${material.line}" stroke-width="1.2" opacity=".24"/>`;
   }).join('');
 
   return `${wrinkles}
-    <path d="M${128 - eyeSpacing - eyeWidth} ${eyeY - 8}Q${128 - eyeSpacing} ${eyeY - 13} ${128 - eyeSpacing + eyeWidth} ${eyeY - 8}" fill="none" stroke="${hair}" stroke-width="4" stroke-linecap="round"/>
-    <path d="M${128 + eyeSpacing - eyeWidth} ${eyeY - 8}Q${128 + eyeSpacing} ${eyeY - 13} ${128 + eyeSpacing + eyeWidth} ${eyeY - 8}" fill="none" stroke="${hair}" stroke-width="4" stroke-linecap="round"/>
+    <path d="M${128 - eyeSpacing - eyeWidth} ${eyeY - 8}Q${128 - eyeSpacing} ${eyeY - 13} ${128 - eyeSpacing + eyeWidth} ${eyeY - 8}" fill="none" stroke="${hair}" stroke-width="${browWidth}" stroke-linecap="round"/>
+    <path d="M${128 + eyeSpacing - eyeWidth} ${eyeY - 8}Q${128 + eyeSpacing} ${eyeY - 13} ${128 + eyeSpacing + eyeWidth} ${eyeY - 8}" fill="none" stroke="${hair}" stroke-width="${browWidth}" stroke-linecap="round"/>
     <path d="M${128 - eyeSpacing - eyeWidth} ${eyeY}Q${128 - eyeSpacing} ${eyeY + 5} ${128 - eyeSpacing + eyeWidth} ${eyeY}" fill="none" stroke="${material.line}" stroke-width="2.4"/>
     <path d="M${128 + eyeSpacing - eyeWidth} ${eyeY}Q${128 + eyeSpacing} ${eyeY + 5} ${128 + eyeSpacing + eyeWidth} ${eyeY}" fill="none" stroke="${material.line}" stroke-width="2.4"/>
     <circle cx="${128 - eyeSpacing + gaze}" cy="${eyeY + 1}" r="2.5" fill="${material.line}"/>
@@ -359,8 +406,28 @@ function faceDetails(
     <path d="M${128 - mouthWidth} 151Q128 ${154 + (design.slot % 3)} ${128 + mouthWidth} 151Q128 161 ${128 - mouthWidth} 151Z" fill="${material.shadow}" opacity=".78" stroke="${material.line}" stroke-width="1.5"/>`;
 }
 
-export function renderRomanSpeakerHeadshot(speakerKey: string, slot: number): string {
-  const design = designRomanSpeakerHeadshot(speakerKey, slot);
+function genderDetailsMarkup(
+  design: RomanSpeakerHeadshotDesign,
+  accent: string,
+  line: string,
+  garmentShadow: string,
+): string {
+  if (design.gender !== 'woman') return '';
+
+  const earrings =
+    (design.slot + design.accessory) % 3 === 0
+      ? ''
+      : `<circle cx="${82 - design.pose * 2}" cy="132" r="4" fill="${accent}" stroke="${line}" stroke-width="1.5"/><circle cx="${174 - design.pose * 2}" cy="132" r="4" fill="${accent}" stroke="${line}" stroke-width="1.5"/>`;
+
+  return `${earrings}<path d="M83 222Q128 194 173 222" fill="none" stroke="${garmentShadow}" stroke-width="7" opacity=".72"/><circle cx="128" cy="211" r="5" fill="${accent}" stroke="${line}" stroke-width="1.5"/>`;
+}
+
+export function renderRomanSpeakerHeadshot(
+  speakerKey: string,
+  slot: number,
+  genderOverride?: RomanSpeakerHeadshotGender,
+): string {
+  const design = designRomanSpeakerHeadshot(speakerKey, slot, genderOverride);
   const material = MATERIALS[design.material];
   const hair = HAIR_COLORS[design.hairColor];
   const [background, backgroundAccent] = BACKDROPS[design.backdrop];
@@ -377,7 +444,7 @@ export function renderRomanSpeakerHeadshot(speakerKey: string, slot: number): st
   }).join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Fictional classical speaker portrait">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Fictional classical ${design.gender} speaker portrait">
   <defs>
     <linearGradient id="${id}-background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="${background}"/>
@@ -413,12 +480,17 @@ export function renderRomanSpeakerHeadshot(speakerKey: string, slot: number): st
     ${faceDetails(design, material, hair)}
     ${beardMarkup(design, hair, material.line)}
     ${accessoryMarkup(design, '#C69249', material.line)}
+    ${genderDetailsMarkup(design, '#C69249', material.line, garmentShadow)}
     <path d="M71 251Q95 215 128 229Q161 215 185 251" fill="none" stroke="${garment}" stroke-width="12" opacity=".78"/>
   </g>
   <rect x="5" y="5" width="246" height="246" rx="15" fill="none" stroke="${backgroundAccent}" stroke-width="2" opacity=".24"/>
 </svg>`;
 }
 
-export function romanSpeakerHeadshotBytes(speakerKey: string, slot: number): Uint8Array {
-  return new TextEncoder().encode(renderRomanSpeakerHeadshot(speakerKey, slot));
+export function romanSpeakerHeadshotBytes(
+  speakerKey: string,
+  slot: number,
+  genderOverride?: RomanSpeakerHeadshotGender,
+): Uint8Array {
+  return new TextEncoder().encode(renderRomanSpeakerHeadshot(speakerKey, slot, genderOverride));
 }

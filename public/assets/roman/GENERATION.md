@@ -33,6 +33,12 @@ garments, backdrops, hair color, facial hair, age, pose, accessories, and mosaic
 599 keep rendering from their stable index and key; they lose the strict no-near-duplicate guarantee
 but never fall back to a broken URL or repeated stock image.
 
+The default 600-slot set contains 300 women and 300 men. Both groups span every face geometry and
+hair-silhouette index; women receive a separate set of twelve historically inspired hair treatments,
+garment details, and optional jewelry rather than being represented only by removing facial hair.
+Callers can provide an explicit gender for known people, as the historically named First Settlement
+seed does, while generic speaker keys use the balanced deterministic assignment.
+
 Run `bun run verify:headshots` to check all 600 outputs for exact byte duplicates, repeated visual
 signatures, a weighted near-duplicate threshold, and aggregate byte size. The development-only
 `/roman-headshots` gallery alternates square and circular masks for manual crop review.

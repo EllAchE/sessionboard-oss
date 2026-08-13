@@ -19,6 +19,12 @@ const primaryCombinationCount = new Set(
   designs.map((design) => `${design.face}:${design.hair}:${design.material}`),
 ).size;
 const signatureDuplicateCount = designs.length - new Set(designs.map((design) => design.signature)).size;
+const genderCounts = Object.fromEntries(
+  ['woman', 'man'].map((gender) => [
+    gender,
+    designs.filter((design) => design.gender === gender).length,
+  ]),
+);
 let closestPairDistance = Number.POSITIVE_INFINITY;
 let nearDuplicatePairs = 0;
 
@@ -37,6 +43,7 @@ const report = {
   exactDuplicateCount,
   primaryCombinationCount,
   signatureDuplicateCount,
+  genderCounts,
   nearDuplicateThreshold: 2,
   nearDuplicatePairs,
   closestPairDistance,
@@ -52,6 +59,8 @@ if (
   exactDuplicateCount > 0 ||
   primaryCombinationCount !== ROMAN_SPEAKER_HEADSHOT_CAPACITY ||
   signatureDuplicateCount > 0 ||
+  genderCounts.woman !== ROMAN_SPEAKER_HEADSHOT_CAPACITY / 2 ||
+  genderCounts.man !== ROMAN_SPEAKER_HEADSHOT_CAPACITY / 2 ||
   nearDuplicatePairs > 0
 ) {
   process.exitCode = 1;

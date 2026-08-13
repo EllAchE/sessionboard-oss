@@ -18,9 +18,10 @@ The transparent layer is grouped by intent:
 
 Speaker headshots are a deterministic generated system rather than a folder of repeated photos.
 `lib/roman-speaker-headshots.ts` defines 600 guaranteed-distinct, square- and circle-safe fictional
-classical portraits, then continues with a stable fallback for larger rosters. The seed renders only
-the slots it needs, so adding capacity does not add 600 network requests or binary files to a build.
-Review the complete set ten pages at a time at `/roman-headshots` in a development build.
+classical portraits—300 women and 300 men by default—then continues with a stable fallback for larger
+rosters. Known speakers can supply an explicit gender. The seed renders only the slots it needs, so
+adding capacity does not add 600 network requests or binary files to a build. Review the complete set
+ten pages at a time at `/roman-headshots` in a development build.
 
 The sources of truth for names, alt text, focal points, recommended uses, and provenance are
 `lib/roman-assets.ts` and `lib/cicero-visual-assets.ts`. The complete library can be reviewed locally
