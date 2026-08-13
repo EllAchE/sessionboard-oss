@@ -1,12 +1,13 @@
 import Link from 'next/link';
-import { CalendarDays, Download, Inbox, Link2 } from 'lucide-react';
+import { CalendarDays, Download, Inbox, Link2, ShieldCheck } from 'lucide-react';
 import { Badge, Card, CardBody } from '@/components/ui';
-import { requireCurrentActor } from '@/lib/auth';
+import { magicLinkMayBeShown, requireCurrentActor } from '@/lib/auth';
 import { currentEventIdHint } from '@/lib/services/events';
 import { activeTransportName } from '@/lib/mail';
-import { getMail, listMail, resolveAdminEvent } from '@/lib/services/comms';
+import { getMail, listMail, resolveAdminEvent, type MailboxEntry } from '@/lib/services/comms';
 import { CommsTabs } from '../comms/CommsTabs';
 import { EventPicker } from '../comms/EventPicker';
+import { carriesMagicLink, mailboxBody, type MailboxBody } from './magic-links';
 import { MailSearch } from './MailSearch';
 import { RunRemindersButton } from './RunRemindersButton';
 import styles from '../comms/comms.module.css';
@@ -18,6 +19,12 @@ import styles from '../comms/comms.module.css';
  *
  * It is therefore a product surface, not a debug tool: every message is fully rendered, every link
  * in it is extracted and clickable, and the `.ics` is downloadable as its own file.
+ *
+ * With one exception, and it is a security boundary rather than a preference: a body can carry a
+ * live sign-in token, `sendMail` writes that body to `email_log` before dispatch under *every*
+ * transport, and the reader of this page is not always the person the token belongs to. Which
+ * tokens may be rendered is decided by `./magic-links.ts`, which explains the escalation, and
+ * ultimately by `lib/demo-access.ts`, which owns the rule.
  */
 export const dynamic = 'force-dynamic';
 
@@ -35,17 +42,13 @@ function when(date: Date): string {
 }
 
 /**
- * Pulls every href out of the rendered body. A magic link is the one thing a judge must be able to
- * click, and hunting for it inside a branded HTML table is exactly the friction `T-7a` exists to
- * remove.
+ * The body as this reader is allowed to see it. `magicLinkMayBeShown` is only asked when the body
+ * actually carries a sign-in token, so an ordinary acceptance email costs no extra queries — and a
+ * body with no credential in it is never gated on anything.
  */
-function linksIn(html: string): string[] {
-  const found = new Set<string>();
-  for (const match of html.matchAll(/href="([^"]+)"/g)) {
-    const href = match[1].replace(/&amp;/g, '&');
-    if (href.startsWith('http') || href.startsWith('/')) found.add(href);
-  }
-  return [...found];
+async function renderableBody(entry: MailboxEntry): Promise<MailboxBody> {
+  const visibility = carriesMagicLink(entry) ? await magicLinkMayBeShown(entry.toEmail) : null;
+  return mailboxBody(entry, visibility);
 }
 
 export default async function MailboxPage({
@@ -69,6 +72,7 @@ export default async function MailboxPage({
 
   const selectedId = params.id ?? messages[0]?.id;
   const selected = event && selectedId ? await getMail(event.id, selectedId) : undefined;
+  const body = selected ? await renderableBody(selected) : undefined;
 
   const transport = activeTransportName();
   const query = (id: string) => {
@@ -145,7 +149,7 @@ export default async function MailboxPage({
             </p>
           )}
 
-          {selected && (
+          {selected && body && (
             <>
               <div>
                 <h2 className={styles.previewSubject}>{selected.subject}</h2>
@@ -191,7 +195,18 @@ export default async function MailboxPage({
                 </Card>
               )}
 
-              {linksIn(selected.bodyHtml).length > 0 && (
+              {body.redacted && (
+                <p className={styles.notice}>
+                  <ShieldCheck size={16} />
+                  <span>
+                    This message carried a sign-in link for {selected.toEmail}, and it has been
+                    withheld. That link is a session as that person, so it is readable only by them,
+                    in the copy that was delivered.
+                  </span>
+                </p>
+              )}
+
+              {body.links.length > 0 && (
                 <Card>
                   <CardBody>
                     <div className={styles.row}>
@@ -199,7 +214,7 @@ export default async function MailboxPage({
                       <strong>Links in this message</strong>
                     </div>
                     <div className={styles.linkList} style={{ marginTop: 'var(--space-2)' }}>
-                      {linksIn(selected.bodyHtml).map((href) => (
+                      {body.links.map((href) => (
                         <a key={href} href={href}>
                           {href}
                         </a>
@@ -209,14 +224,11 @@ export default async function MailboxPage({
                 </Card>
               )}
 
-              <div
-                className={styles.mailBody}
-                dangerouslySetInnerHTML={{ __html: selected.bodyHtml }}
-              />
+              <div className={styles.mailBody} dangerouslySetInnerHTML={{ __html: body.bodyHtml }} />
 
               <details>
                 <summary className={styles.subtle}>Plain-text part</summary>
-                <pre className={styles.plainText}>{selected.bodyText}</pre>
+                <pre className={styles.plainText}>{body.bodyText}</pre>
               </details>
             </>
           )}
