@@ -56,6 +56,6 @@ describe('checkArchiveBudget', () => {
 
 describe('archiveFilename', () => {
   it('is dated so two downloads do not collide in a download folder', () => {
-    expect(archiveFilename(new Date('2026-08-12T10:00:00Z'))).toBe('cicero-files-2026-08-12.zip');
+    expect(archiveFilename(new Date('2026-08-12T10:00:00Z'))).toBe('cicero-records-2026-08-12.zip');
   });
 });

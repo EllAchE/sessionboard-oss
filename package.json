@@ -15,10 +15,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
+    "db:seed:first-settlement": "tsx --env-file-if-exists=.env db/seed-first-settlement.ts",
     "docs:openapi": "tsx scripts/generate-openapi.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare deploy"
+    "cf:deploy": "wrangler hyperdrive update 0d0c43d957e24187a177a06a6dd7faed --caching-disabled && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",

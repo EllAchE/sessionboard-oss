@@ -7,7 +7,7 @@ import { event, scheduledSession, sessionFormat, submission } from '@/db/schema'
 import { requireCapability } from '@/lib/context';
 import { appUrl } from '@/lib/env';
 import { toPublicError } from '@/lib/errors';
-import { sendSessionInvites } from '@/lib/services/comms';
+import { loadRecipientGraph, sendSessionInvites, type RecipientGraph } from '@/lib/services/comms';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_SESSION_MINUTES } from '@/lib/services/schedule';
 
@@ -60,17 +60,21 @@ function mintIcsUid(): string {
   return `${crypto.randomUUID()}@${host}`;
 }
 
-async function notifyIfPublished(sessionId: string, options: { cancel?: boolean } = {}) {
+async function notifyIfPublished(
+  sessionId: string,
+  options: { cancel?: boolean } = {},
+  graph?: RecipientGraph,
+) {
   const row = await getDb().query.scheduledSession.findFirst({
     where: eq(scheduledSession.id, sessionId),
   });
   if (!row) return;
   if (options.cancel) {
-    await sendSessionInvites(sessionId, { cancel: true });
+    await sendSessionInvites(sessionId, { cancel: true }, graph);
     return;
   }
   if (row.status !== 'published') return;
-  await sendSessionInvites(sessionId);
+  await sendSessionInvites(sessionId, {}, graph);
 }
 
 export type PlacementInput = {
@@ -199,6 +203,8 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
 export type ManualSessionInput = {
   /** Present when editing. */
   sessionId?: string | null;
+  /** Present when scheduling an accepted proposal through the non-drag path. */
+  sourceSubmissionId?: string | null;
   title: string;
   descriptionMarkdown?: string | null;
   roomId: string | null;
@@ -272,11 +278,34 @@ export async function saveManualSessionAction(
       return { ok: true, data: { sessionId: existing.id } };
     }
 
+    const source = input.sourceSubmissionId
+      ? await db.query.submission.findFirst({
+          where: and(
+            eq(submission.id, input.sourceSubmissionId),
+            eq(submission.eventId, ctx.eventId),
+            eq(submission.status, 'accepted'),
+          ),
+        })
+      : null;
+    if (input.sourceSubmissionId && !source) {
+      return { ok: false, error: 'That accepted petition is no longer on the rolls' };
+    }
+
+    if (source) {
+      const existing = await db.query.scheduledSession.findFirst({
+        where: and(
+          eq(scheduledSession.eventId, ctx.eventId),
+          eq(scheduledSession.submissionId, source.id),
+        ),
+      });
+      if (existing) return { ok: false, error: 'That petition is already inscribed in the fasti' };
+    }
+
     const [created] = await db
       .insert(scheduledSession)
       .values({
         eventId: ctx.eventId,
-        submissionId: null,
+        submissionId: source?.id ?? null,
         ref: await allocateSessionRef(ctx.eventId),
         status: 'draft',
         icsUid: mintIcsUid(),
@@ -295,6 +324,7 @@ export async function saveManualSessionAction(
 export async function setSessionStatusAction(
   sessionId: string,
   status: 'draft' | 'published' | 'cancelled',
+  graph?: RecipientGraph,
 ): Promise<ActionResult> {
   try {
     const ctx = await authorize();
@@ -316,8 +346,8 @@ export async function setSessionStatusAction(
       .set({ status, updatedAt: new Date() })
       .where(eq(scheduledSession.id, sessionId));
 
-    if (status === 'published') await notifyIfPublished(sessionId);
-    else if (wasVisible) await notifyIfPublished(sessionId, { cancel: true });
+    if (status === 'published') await notifyIfPublished(sessionId, {}, graph);
+    else if (wasVisible) await notifyIfPublished(sessionId, { cancel: true }, graph);
 
     revalidate();
     return { ok: true, data: null };
@@ -326,18 +356,28 @@ export async function setSessionStatusAction(
   }
 }
 
+/** Batched so one publish click can't hand the worker an unbounded, isolate-killing loop. */
+const PUBLISH_BATCH_SIZE = 25;
+
 /** `A-6` in bulk: the organizer finishes rearranging and releases the whole day at once. */
 export async function publishAllAction(
   sessionIds: string[],
 ): Promise<ActionResult<{ published: number; skipped: number }>> {
   try {
-    await authorize();
+    const ctx = await authorize();
+    // Loaded once and reused for every session below — resolving recipients per-session here
+    // instead of per-participant is what keeps a whole-day publish from re-scanning the event
+    // graph hundreds of times in one request.
+    const graph = await loadRecipientGraph(ctx.eventId);
     let published = 0;
     let skipped = 0;
-    for (const sessionId of sessionIds) {
-      const result = await setSessionStatusAction(sessionId, 'published');
-      if (result.ok) published += 1;
-      else skipped += 1;
+    for (let i = 0; i < sessionIds.length; i += PUBLISH_BATCH_SIZE) {
+      const batch = sessionIds.slice(i, i + PUBLISH_BATCH_SIZE);
+      for (const sessionId of batch) {
+        const result = await setSessionStatusAction(sessionId, 'published', graph);
+        if (result.ok) published += 1;
+        else skipped += 1;
+      }
     }
     revalidate();
     return { ok: true, data: { published, skipped } };

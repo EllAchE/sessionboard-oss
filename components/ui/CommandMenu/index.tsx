@@ -85,7 +85,6 @@ function Highlight({ text, indices }: { text: string; indices: number[] }) {
     <>
       {Array.from(text).map((char, index) =>
         marked.has(index) ? (
-          // eslint-disable-next-line react/no-array-index-key
           <span key={index} className={styles.match}>
             {char}
           </span>

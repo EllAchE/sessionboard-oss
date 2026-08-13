@@ -53,7 +53,13 @@ import { AiProposalDialog } from './AiProposalDialog';
 import type { AgendaData } from './data';
 import { fromWire, type NamedFormat, type NamedRoom, type NamedTrack, type WireEntry } from './wire';
 import { DayGrid, OrphanedNotice, UnscheduledRail, parseCellId, type DragPayload } from './Grid';
-import { SessionDialog, draftFor, type SavePayload, type SessionDraft } from './SessionDialog';
+import {
+  SessionDialog,
+  draftFor,
+  draftForQueueItem,
+  type SavePayload,
+  type SessionDraft,
+} from './SessionDialog';
 import { ConflictsView, GroupedView, ListView, MonthView } from './Views';
 import styles from './agenda.module.css';
 
@@ -344,6 +350,19 @@ export function AgendaBoard({
 
   const openNew = () => setDialog({ draft: draftFor(null, timeZone, dayKey), status: null });
 
+  const openQueued = (item: QueueItem) => {
+    if (!canManage) {
+      toast({ title: 'Read only', description: 'You cannot alter these fasti.', tone: 'warning' });
+      return;
+    }
+    if (item.kind === 'session') {
+      const entry = entries.find((candidate) => candidate.id === item.id);
+      if (entry) openEntry(entry);
+      return;
+    }
+    setDialog({ draft: draftForQueueItem(item, dayKey), status: null });
+  };
+
   const handleSave = async (payload: SavePayload) => {
     const result = await saveManualSessionAction(payload);
     if (!result.ok) {
@@ -541,7 +560,7 @@ export function AgendaBoard({
       >
         {GRID_VIEWS.includes(view) ? (
           <div className={styles.workspace}>
-            <UnscheduledRail queue={queue} />
+            <UnscheduledRail queue={queue} onSchedule={openQueued} />
             <div className={styles.boardMain}>
               <OrphanedNotice
                 entries={entries}

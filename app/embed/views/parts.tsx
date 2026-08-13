@@ -1,15 +1,22 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Search } from 'lucide-react';
 import {
+  EMPTY_SESSION_FACETS,
+  countSessionFacets,
+  dayKeyOf,
   facetValues,
   formatFullDateTime,
+  formatShortDay,
   initialsOf,
+  sessionMatchesFacets,
   speakerLine,
   type EmbedOptions,
   type PublicSession,
   type PublicSpeaker,
+  type SessionFacets,
 } from '../model';
 import styles from '../embed.module.css';
 
@@ -79,39 +86,77 @@ export function SearchField({
   );
 }
 
-export type FacetState = { tracks: string[]; formats: string[]; rooms: string[] };
-
-export const EMPTY_FACETS: FacetState = { tracks: [], formats: [], rooms: [] };
-
-export function countFacets(facets: FacetState): number {
-  return facets.tracks.length + facets.formats.length + facets.rooms.length;
-}
-
-export function facetsMatch(session: PublicSession, facets: FacetState): boolean {
-  if (facets.tracks.length > 0 && !facets.tracks.includes(session.track ?? '')) return false;
-  if (facets.formats.length > 0 && !facets.formats.includes(session.format ?? '')) return false;
-  if (facets.rooms.length > 0 && !facets.rooms.includes(session.room ?? '')) return false;
-  return true;
-}
+export {
+  EMPTY_SESSION_FACETS as EMPTY_FACETS,
+  countSessionFacets as countFacets,
+  sessionMatchesFacets as facetsMatch,
+};
+export type FacetState = SessionFacets;
 
 function toggle(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
 }
 
-/** `EMB-03`. Track, Format and Location, each offering only the values the data actually holds. */
+/** `EMB-03`. Every facet offers only values held by the published sessions. */
 export function FacetPanel({
   sessions,
   facets,
+  timezone,
   onChange,
 }: {
   sessions: PublicSession[];
   facets: FacetState;
+  timezone: string;
   onChange: (next: FacetState) => void;
 }) {
+  const days = facetValues(sessions, (session) =>
+    session.startsAt ? dayKeyOf(session.startsAt, timezone) : 'tbd',
+  ).map((option) => {
+    const sample = sessions.find(
+      (session) =>
+        (session.startsAt ? dayKeyOf(session.startsAt, timezone) : 'tbd') === option.value,
+    );
+    return {
+      ...option,
+      label:
+        option.value === 'tbd' || !sample?.startsAt
+          ? 'To be announced'
+          : formatShortDay(sample.startsAt, timezone),
+    };
+  });
   const groups = [
-    { key: 'tracks' as const, title: 'Track', options: facetValues(sessions, (s) => s.track) },
-    { key: 'formats' as const, title: 'Format', options: facetValues(sessions, (s) => s.format) },
-    { key: 'rooms' as const, title: 'Location', options: facetValues(sessions, (s) => s.room) },
+    { key: 'days' as const, title: 'Day', options: days },
+    {
+      key: 'topics' as const,
+      title: 'Topic',
+      options: facetValues(sessions, (session) => session.tags.map((tag) => tag.name)).map(
+        (option) => ({ ...option, label: option.value }),
+      ),
+    },
+    {
+      key: 'tracks' as const,
+      title: 'Track',
+      options: facetValues(sessions, (session) => session.track).map((option) => ({
+        ...option,
+        label: option.value,
+      })),
+    },
+    {
+      key: 'formats' as const,
+      title: 'Format',
+      options: facetValues(sessions, (session) => session.format).map((option) => ({
+        ...option,
+        label: option.value,
+      })),
+    },
+    {
+      key: 'rooms' as const,
+      title: 'Location',
+      options: facetValues(sessions, (session) => session.room).map((option) => ({
+        ...option,
+        label: option.value,
+      })),
+    },
   ].filter((group) => group.options.length > 0);
 
   if (groups.length === 0) return null;
@@ -130,18 +175,18 @@ export function FacetPanel({
                   onChange({ ...facets, [group.key]: toggle(facets[group.key], option.value) })
                 }
               />
-              <span>{option.value}</span>
+              <span>{option.label}</span>
               <span className={styles.facetCount}>{option.count}</span>
             </label>
           ))}
         </div>
       ))}
-      {countFacets(facets) > 0 ? (
+      {countSessionFacets(facets) > 0 ? (
         <div className={styles.filterFooter}>
           <button
             type="button"
             className={styles.controlButton}
-            onClick={() => onChange(EMPTY_FACETS)}
+            onClick={() => onChange(EMPTY_SESSION_FACETS)}
           >
             Clear filters
           </button>
@@ -166,7 +211,14 @@ export function SessionChips({
         </span>
       ) : null}
       {session.format ? <span className={styles.chip}>{session.format}</span> : null}
-      {options.showRoom && session.room ? <span className={styles.chip}>{session.room}</span> : null}
+      {session.tags.map((tag) => (
+        <span key={tag.id} className={styles.chip} data-kind="topic">
+          {tag.name}
+        </span>
+      ))}
+      {options.showRoom && session.room ? (
+        <span className={styles.chip}>{session.room}</span>
+      ) : null}
       {session.ceuCredits ? <span className={styles.chip}>{session.ceuCredits} CEU</span> : null}
     </div>
   );
@@ -190,7 +242,13 @@ export function SessionFacts({
 }
 
 /** `EMB-01`, `EMB-09`: every speaker, each with the job title and company beside the name. */
-export function SpeakerRoster({ session }: { session: PublicSession }) {
+export function SpeakerRoster({
+  session,
+  speakerBase,
+}: {
+  session: PublicSession;
+  speakerBase: string;
+}) {
   if (session.speakers.length === 0) return null;
   return (
     <div className={styles.speakerRoster}>
@@ -198,7 +256,9 @@ export function SpeakerRoster({ session }: { session: PublicSession }) {
         const role = speakerLine(person);
         return (
           <span key={person.id}>
-            <span className={styles.rosterName}>{person.name}</span>
+            <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`}>
+              {person.name}
+            </a>
             {role ? ` — ${role}` : null}
           </span>
         );
@@ -222,7 +282,16 @@ export function SpeakerAvatar({
       </span>
     );
   }
-  return <img className={styles.avatar} src={speaker.headshotUrl} alt="" loading="lazy" />;
+  return (
+    <Image
+      className={styles.avatar}
+      src={speaker.headshotUrl}
+      alt=""
+      width={48}
+      height={48}
+      unoptimized
+    />
+  );
 }
 
 /**
@@ -235,12 +304,14 @@ export function SpeakerProfile({
   timezone,
   showPhoto = true,
   showName = true,
+  sessionBase,
 }: {
   speaker: PublicSpeaker;
   sessions: PublicSession[];
   timezone: string;
   showPhoto?: boolean;
   showName?: boolean;
+  sessionBase: string;
 }) {
   const role = speakerLine(speaker);
 
@@ -249,7 +320,14 @@ export function SpeakerProfile({
       <div className={styles.detailHead}>
         {showPhoto ? (
           speaker.headshotUrl ? (
-            <img className={styles.detailPhoto} src={speaker.headshotUrl} alt={speaker.name} />
+            <Image
+              className={styles.detailPhoto}
+              src={speaker.headshotUrl}
+              alt={speaker.name}
+              width={128}
+              height={128}
+              unoptimized
+            />
           ) : (
             <span className={styles.detailPhotoFallback} aria-hidden>
               {initialsOf(speaker.name)}
@@ -298,7 +376,12 @@ export function SpeakerProfile({
         ) : (
           sessions.map((session) => (
             <div key={session.id} className={styles.detailSession}>
-              <span className={styles.sessionTitle}>{session.title}</span>
+              <a
+                className={`${styles.sessionTitle} ${styles.sessionRelationLink}`}
+                href={`${sessionBase}#session-${session.ref}`}
+              >
+                {session.title}
+              </a>
               <span className={styles.factRow}>
                 <span className={styles.fact}>{formatFullDateTime(session, timezone)}</span>
                 {session.room ? <span className={styles.fact}>{session.room}</span> : null}

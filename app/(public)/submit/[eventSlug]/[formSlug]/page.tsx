@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { currentActor } from '@/lib/auth';
+import { appUrl } from '@/lib/env';
 import type { AnswerMap } from '@/lib/forms/contract';
 import { renderTrustedMarkdown } from '@/lib/markdown';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import {
   countSubmissionsForUser,
   isAcceptingSubmissions,
@@ -38,10 +40,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { eventSlug, formSlug } = await params;
   const bundle = await loadPublicForm(eventSlug, formSlug);
   if (!bundle) return { title: 'Proclamation for orators' };
-  return {
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/submit/${bundle.event.slug}/${bundle.form.slug}`,
     title: `${bundle.form.name} · ${bundle.event.name}`,
     description: bundle.event.tagline ?? `Present an oration to ${bundle.event.name}.`,
-  };
+  });
 }
 
 export default async function SubmitFormPage({ params, searchParams }: PageProps) {

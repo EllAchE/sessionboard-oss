@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import {
   accelevantsSync,
@@ -109,7 +109,7 @@ export async function listAcceptedSpeakers(eventId: string): Promise<SpeakerCand
     db
       .select()
       .from(accelevantsSync)
-      .where(eq(accelevantsSync.eventId, eventId))
+      .where(and(eq(accelevantsSync.eventId, eventId), isNotNull(accelevantsSync.participantId)))
       .orderBy(asc(accelevantsSync.createdAt)),
   ]);
 
@@ -324,7 +324,7 @@ export async function listSyncLog(eventId: string, limit = 50): Promise<SyncLogE
   const rows = await db
     .select()
     .from(accelevantsSync)
-    .where(eq(accelevantsSync.eventId, eventId))
+    .where(and(eq(accelevantsSync.eventId, eventId), isNotNull(accelevantsSync.participantId)))
     .orderBy(asc(accelevantsSync.createdAt));
 
   return rows

@@ -326,6 +326,15 @@ export function SubmissionQueue(props: QueueProps) {
               >
                 Archive
               </Button>
+              {props.roundId ? (
+                <Button
+                  variant="ghost"
+                  iconLeft={<Download size={14} />}
+                  href={`/admin/submissions/export?round=${encodeURIComponent(props.roundId)}`}
+                >
+                  Export CSV
+                </Button>
+              ) : null}
               <Button variant="ghost" onClick={() => router.push('/admin/submissions/rounds')}>
                 Councils
               </Button>

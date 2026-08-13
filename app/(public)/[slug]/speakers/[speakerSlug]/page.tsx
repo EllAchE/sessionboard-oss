@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { embedStyles } from '../../../../embed/EmbedBody';
-import {
-  loadPublicBundle,
-  parseEmbedOptions,
-  sessionsForSpeaker,
-} from '../../../../embed/queries';
+import { loadPublicBundle, parseEmbedOptions, sessionsForSpeaker } from '../../../../embed/queries';
 import { SpeakerProfile } from '../../../../embed/views/parts';
 import { PublicChrome, publicStyles as styles } from '../../PublicChrome';
 
@@ -20,10 +18,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const bundle = await loadPublicBundle(slug);
   const speaker = bundle?.speakers.find((entry) => entry.slug === speakerSlug);
   if (!bundle || !speaker) return { title: 'Orator absent from the rolls' };
-  return {
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}/speakers/${speaker.slug}`,
     title: `${speaker.name} · ${bundle.event.name}`,
-    description: speaker.bioExcerpt || undefined,
-  };
+    description: speaker.bioExcerpt || `${speaker.name} is an orator at ${bundle.event.name}.`,
+  });
 }
 
 /** `EMB-05`. The directory drill-in as a shareable page, with no login between it and a reader. */
@@ -61,6 +61,7 @@ export default async function PublicSpeakerPage({
             timezone={bundle.event.timezone}
             showPhoto={options.showPhoto}
             showName={false}
+            sessionBase={`/${bundle.event.slug}/sessions`}
           />
         </div>
       </section>

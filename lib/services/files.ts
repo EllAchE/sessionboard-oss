@@ -86,19 +86,19 @@ export function matchesAcceptedType(candidate: UploadCandidate, pattern: string)
  */
 export function validateUpload(spec: FileRequestSpec, candidate: UploadCandidate): void {
   if (candidate.sizeBytes <= 0) {
-    throw invalid(`${candidate.filename} is empty`);
+    throw invalid(`${candidate.filename} is an empty record`);
   }
 
   const maxBytes = Math.max(1, spec.maxSizeMb) * BYTES_PER_MB;
   if (candidate.sizeBytes > maxBytes) {
     throw invalid(
-      `${candidate.filename} is ${(candidate.sizeBytes / BYTES_PER_MB).toFixed(1)} MB. ${spec.label} accepts files up to ${spec.maxSizeMb} MB.`,
+      `${candidate.filename} is ${(candidate.sizeBytes / BYTES_PER_MB).toFixed(1)} MB. ${spec.label} accepts records up to ${spec.maxSizeMb} MB.`,
     );
   }
 
   const types = spec.acceptedTypes.filter((entry) => entry.trim().length > 0);
   if (types.length > 0 && !types.some((pattern) => matchesAcceptedType(candidate, pattern))) {
-    throw invalid(`${candidate.filename} is not an accepted file type. ${spec.label} accepts ${types.join(', ')}.`);
+    throw invalid(`${candidate.filename} is not an accepted kind of record. ${spec.label} accepts ${types.join(', ')}.`);
   }
 }
 

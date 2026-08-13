@@ -286,7 +286,7 @@ describe('removeTrack', () => {
 
     const error = await rejection(removeTrack(context(), 'track-b'));
     expect(error.code).toBe('conflict');
-    expect(error.message).toBe('That track is still used by 2 submissions and 3 scheduled sessions');
+    expect(error.message).toBe('That track is still used by 2 petitions and 3 inscribed orations');
     expect(rec.deletes).toHaveLength(0);
   });
 
@@ -371,6 +371,9 @@ describe('createTrack', () => {
   });
 
   it('appends the new row at the end of the list', async () => {
+    // No existing track named "Platform" here, unlike the shared beforeEach fixture — this is
+    // the free-name path, not the conflict path.
+    rec.findFirst.set('track', null);
     rec.rows.set(track, [
       { id: 'track-a', position: 0 },
       { id: 'track-b', position: 1 },

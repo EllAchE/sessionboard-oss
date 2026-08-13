@@ -39,6 +39,7 @@ import {
   releaseAssignmentAction,
   remindReviewersAction,
 } from './actions';
+import { assignedReviewerIds } from './reviewer-pool';
 import styles from '../submissions.module.css';
 
 export type RoundWire = {
@@ -155,6 +156,7 @@ function RoundDateEditor({
 }) {
   const [draft, setDraft] = useState<RoundDateDraft>(EMPTY_DATES);
   const [hydrated, setHydrated] = useState(false);
+  const { opensAt, closesAt } = round;
 
   /**
    * Both the inputs and the summary read the browser's timezone, which the server does not know. A
@@ -162,9 +164,9 @@ function RoundDateEditor({
    * date, so they stay empty until mount rather than hydrating into a contradiction.
    */
   useEffect(() => {
-    setDraft(toRoundDateDraft(round));
+    setDraft(toRoundDateDraft({ opensAt, closesAt }));
     setHydrated(true);
-  }, [round.opensAt, round.closesAt]);
+  }, [opensAt, closesAt]);
 
   const dates = fromRoundDateDraft(draft);
   const invalidRange = roundDatesAreOutOfOrder(dates.opensAt, dates.closesAt);
@@ -219,10 +221,13 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [criterionWeight, setCriterionWeight] = useState('1');
   const [criterionMax, setCriterionMax] = useState('5');
 
-  const [selectedReviewers, setSelectedReviewers] = useState<string[]>(() =>
-    props.reviewers.map((reviewer) => reviewer.userId),
-  );
+  const assignedReviewers = useMemo(() => assignedReviewerIds(props.workload), [props.workload]);
+  const [selectedReviewers, setSelectedReviewers] = useState<string[]>(assignedReviewers);
   const [perSubmission, setPerSubmission] = useState('2');
+
+  useEffect(() => {
+    setSelectedReviewers(assignedReviewers);
+  }, [assignedReviewers, props.selectedRoundId]);
 
   const selectedRound = props.rounds.find((round) => round.id === props.selectedRoundId) ?? null;
   const newRoundDateWire = fromRoundDateDraft(newRoundDates);
@@ -269,8 +274,8 @@ export function RoundsManager(props: RoundsManagerProps) {
       setReviewerAccessLink(result.data.accessLink);
       setMessage(
         result.data.accessLink
-          ? `${result.data.reviewer.name} can review this event. Copy their access link below.`
-          : `Invitation sent to ${result.data.reviewer.email}.`,
+          ? `${result.data.reviewer.name} may sit on this council. Copy their sealed entry link below.`
+          : `Council summons dispatched to ${result.data.reviewer.email}.`,
       );
       router.refresh();
     });
@@ -337,7 +342,7 @@ export function RoundsManager(props: RoundsManagerProps) {
           <h1 className={styles.title}>Councils & deliberations</h1>
           <p className={styles.subtitle}>
             {props.rounds.length} round{props.rounds.length === 1 ? '' : 's'} ·{' '}
-            {props.pendingSubmissionIds.length} submission
+            {props.pendingSubmissionIds.length} petition
             {props.pendingSubmissionIds.length === 1 ? '' : 's'} awaiting a verdict
           </p>
         </div>
@@ -660,6 +665,11 @@ export function RoundsManager(props: RoundsManagerProps) {
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
+                <p className={styles.aiNote}>
+                  Council roll · appointments belong to {selectedRound.name}. Councillors with
+                  petitions in this round remain selected after reload; a new round begins with an
+                  empty bench.
+                </p>
                 <div className={styles.inlineStack}>
                   <Input
                     inputSize="sm"

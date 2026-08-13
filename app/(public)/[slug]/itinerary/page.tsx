@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../../embed/queries';
 import { PublicChrome, publicStyles as styles } from '../PublicChrome';
@@ -13,7 +15,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Assembly absent from the annals' };
-  return { title: `My route · ${bundle.event.name}` };
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}/itinerary`,
+    title: `My route · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Mark a personal route through ${bundle.event.name}.`,
+  });
 }
 
 /** `G-4`, `EMB-09`–`EMB-11`: the itinerary and the personal schedule built out of it. */
@@ -37,7 +44,13 @@ export default async function PublicItineraryPage({
             Mark the orations you seek, then carry the route to your own calendar.
           </span>
         </div>
-        <EmbedBody view="itinerary" bundle={bundle} options={parseEmbedOptions(search)} />
+        <EmbedBody
+          view="itinerary"
+          bundle={bundle}
+          options={parseEmbedOptions(search)}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
+        />
       </section>
     </PublicChrome>
   );

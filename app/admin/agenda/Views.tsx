@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AlertTriangle, CalendarX2, Users } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import {
@@ -167,11 +167,44 @@ export function GroupedView({
   const unassigned = entries.filter(
     (entry) => !(groupBy === 'room' ? entry.roomId : entry.trackId),
   );
+  const [selectedGroupId, setSelectedGroupId] = useState(
+    () => groups[0]?.id ?? (unassigned.length > 0 ? 'unassigned' : ''),
+  );
+  const selectableGroups = [
+    ...groups.map((group) => ({ id: group.id, name: group.name, count: group.rows.length })),
+    ...(unassigned.length > 0
+      ? [{ id: 'unassigned', name: `No ${groupBy}`, count: unassigned.length }]
+      : []),
+  ];
+  const activeGroupId = selectableGroups.some((group) => group.id === selectedGroupId)
+    ? selectedGroupId
+    : (selectableGroups[0]?.id ?? '');
+  const showMobilePicker = groupBy === 'track' && selectableGroups.length > 1;
 
   return (
     <div className={styles.panel}>
+      {showMobilePicker ? (
+        <label className={styles.groupPicker}>
+          <span className={styles.groupPickerLabel}>Track</span>
+          <select
+            className={styles.groupPickerSelect}
+            value={activeGroupId}
+            onChange={(event) => setSelectedGroupId(event.target.value)}
+          >
+            {selectableGroups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name} ({group.count})
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       {groups.map((group) => (
-        <div key={group.id}>
+        <section
+          key={group.id}
+          className={styles.groupSection}
+          data-mobile-active={!showMobilePicker || group.id === activeGroupId}
+        >
           <h3 className={styles.groupTitle}>
             {group.name} <span className={styles.listMuted}>({group.rows.length})</span>
           </h3>
@@ -189,10 +222,13 @@ export function GroupedView({
               />
             ))
           )}
-        </div>
+        </section>
       ))}
       {unassigned.length > 0 && (
-        <div>
+        <section
+          className={styles.groupSection}
+          data-mobile-active={!showMobilePicker || activeGroupId === 'unassigned'}
+        >
           <h3 className={styles.groupTitle}>Without {groupBy}</h3>
           {unassigned.map((entry) => (
             <Row
@@ -204,7 +240,7 @@ export function GroupedView({
               onOpen={onOpen}
             />
           ))}
-        </div>
+        </section>
       )}
     </div>
   );

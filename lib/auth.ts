@@ -7,7 +7,7 @@ import { appUrl } from './env';
 import { forbidden, invalid, notFound, unauthorized } from './errors';
 import { hashToken, randomToken } from './ids';
 import { sendMail } from './mail';
-import { renderMarkdown } from './markdown';
+import { escapeMarkdownText, renderMarkdown } from './markdown';
 
 /**
  * Magic links everywhere, passwords nowhere (`T-4a`). A speaker touches this product perhaps four
@@ -43,7 +43,9 @@ export async function ensureUserAccount(
   const db = getDb();
   const normalized = normalizeEmail(email);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalized)) {
-    throw invalid('That does not look like an email address', { email: 'Enter a valid email address' });
+    throw invalid('That dispatch address is not valid', {
+      email: 'Enter a valid dispatch address',
+    });
   }
 
   const existing = await db.query.user.findFirst({ where: eq(user.email, normalized) });
@@ -91,19 +93,26 @@ export async function requestMagicLink(
 
   const link = `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
   const body = [
-    `Hi${account.name ? ` ${account.name}` : ''},`,
+    `Salve${account.name ? ` ${escapeMarkdownText(account.name)}` : ''},`,
     '',
-    `[Sign in to Cicero](${link})`,
+    `[Break the seal and enter Cicero](${link})`,
     '',
-    `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
-    'If you did not ask for it, you can ignore this email.',
+    `This seal breaks once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+    'If you did not summon it, leave this dispatch unanswered.',
   ].join('\n');
 
   const { sent } = await sendMail({
     to: account.email,
-    subject: 'Your sign-in link',
+    subject: 'Your sealed entry link to Cicero',
     html: renderMarkdown(body),
-    text: body.replace(`[Sign in to Cicero](${link})`, link),
+    text: [
+      `Salve${account.name ? ` ${account.name}` : ''},`,
+      '',
+      link,
+      '',
+      `This seal breaks once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+      'If you did not summon it, leave this dispatch unanswered.',
+    ].join('\n'),
     eventId: request.eventId ?? null,
     templateKey: 'auth.magic_link',
   });

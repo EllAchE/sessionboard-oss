@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { Dialog } from '@/components/ui';
 import {
   initialsOf,
@@ -20,17 +21,19 @@ import styles from '../embed.module.css';
 export function GalleryWidget({
   bundle,
   options,
+  sessionBase,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
+  sessionBase: string;
 }) {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
 
   const ordered = useMemo(() => sortSpeakers(bundle.speakers), [bundle.speakers]);
   const visible = useMemo(
-    () => ordered.filter((speaker) => speakerMatches(speaker, query)),
-    [ordered, query],
+    () => ordered.filter((speaker) => speakerMatches(speaker, query, bundle.sessions)),
+    [bundle.sessions, ordered, query],
   );
 
   const open = openId ? ordered.find((speaker) => speaker.id === openId) : undefined;
@@ -41,11 +44,11 @@ export function GalleryWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search orators by name"
-          placeholder="Search the gallery of orators…"
+          label="Search orators, houses, or orations"
+          placeholder="Search orators, houses, or orations…"
         />
         <span className={styles.resultCount} role="status">
-          {visible.length} of {ordered.length} speakers
+          {visible.length} of {ordered.length} orators
         </span>
       </div>
 
@@ -67,11 +70,13 @@ export function GalleryWidget({
             >
               {options.showPhoto ? (
                 speaker.headshotUrl ? (
-                  <img
+                  <Image
                     className={styles.headshot}
                     src={speaker.headshotUrl}
                     alt=""
-                    loading="lazy"
+                    width={640}
+                    height={640}
+                    unoptimized
                   />
                 ) : (
                   <span className={styles.headshotFallback} aria-hidden>
@@ -107,6 +112,7 @@ export function GalleryWidget({
               timezone={bundle.event.timezone}
               showPhoto={options.showPhoto}
               showName={false}
+              sessionBase={sessionBase}
             />
           </div>
         ) : null}

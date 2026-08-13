@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../../embed/queries';
 import { PublicChrome, publicStyles as styles } from '../PublicChrome';
+import { SpeakerViewToggle } from './SpeakerViewToggle';
+import { speakerViewFromSearch } from './view';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Assembly absent from the annals' };
-  return { title: `Orators · ${bundle.event.name}` };
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}/speakers`,
+    title: `Orators · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Meet the orators of ${bundle.event.name}.`,
+  });
 }
 
 /** `G-4`, `EMB-04`, `EMB-05`, and `G-8`: `?sb-speaker-id=` still narrows to one person. */
@@ -27,19 +36,24 @@ export default async function PublicSpeakersPage({
   const [{ slug }, search] = await Promise.all([params, searchParams]);
   const bundle = await loadPublicBundle(slug);
   if (!bundle) notFound();
+  const view = speakerViewFromSearch(search);
 
   return (
     <PublicChrome event={bundle.event} active="speakers">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Orators</h2>
-          <span className={styles.sectionLink}>{bundle.speakers.length} proclaimed</span>
+          <div className={styles.sectionActions}>
+            <span className={styles.sectionLink}>{bundle.speakers.length} proclaimed</span>
+            <SpeakerViewToggle slug={bundle.event.slug} active={view} search={search} />
+          </div>
         </div>
         <EmbedBody
-          view="speakers"
+          view={view === 'gallery' ? 'gallery' : 'speakers'}
           bundle={bundle}
           options={parseEmbedOptions(search)}
           speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
         />
       </section>
     </PublicChrome>

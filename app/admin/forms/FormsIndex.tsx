@@ -48,7 +48,9 @@ const STATUS_LABEL: Record<FormStatus, string> = {
 
 function formatDate(value: string | null): string {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString(undefined, {
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(value).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
     day: 'numeric',

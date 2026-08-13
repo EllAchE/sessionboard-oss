@@ -310,7 +310,7 @@ function SubmitFormSession({
           </div>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="submitter-email">
-              Email
+              Dispatch address
               <span className={styles.required} aria-hidden>
                 *
               </span>

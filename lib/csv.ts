@@ -81,12 +81,17 @@ export function parseCsvTable(text: string): CsvTable {
   };
 }
 
-export function csvCell(value: string | number | null | undefined): string {
+export function spreadsheetSafeCellText(value: unknown): string {
   const text = value === null || value === undefined ? '' : String(value);
+  return typeof value === 'string' && /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
+export function csvCell(value: unknown): string {
+  const text = spreadsheetSafeCellText(value);
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-export function toCsv(rows: Array<Array<string | number | null | undefined>>): string {
+export function toCsv(rows: unknown[][]): string {
   return `${rows.map((row) => row.map(csvCell).join(',')).join('\n')}\n`;
 }
 

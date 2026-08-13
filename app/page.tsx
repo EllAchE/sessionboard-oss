@@ -2,22 +2,16 @@ import Image from 'next/image';
 import {
   ArrowRight,
   CalendarCheck,
-  Columns3,
   FileCheck,
   Github,
   ListChecks,
   UserPlus,
 } from 'lucide-react';
+import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import styles from './home.module.css';
-
-export const metadata = {
-  title: 'Cicero · Rule your conference from the Forum',
-  description:
-    'Convene petitions, councils, orators, fasti, and dispatches in one commanding conference forum.',
-};
 
 const FEATURES = [
   {
@@ -42,14 +36,11 @@ export default function Home() {
     <main className={styles.root}>
       <nav className={styles.nav} aria-label="Primary navigation">
         <a className={styles.brand} href="/" aria-label="Cicero home">
-          <span className={styles.brandMark} aria-hidden="true">
-            <Columns3 size={19} />
-          </span>
-          <span>Cicero</span>
+          <CiceroBrand markSize={34} />
         </a>
         <div className={styles.navLinks}>
-          <a className={styles.productLink} href="#product">
-            The Forum
+          <a className={styles.aboutLink} href="#about">
+            About the Forum
           </a>
           <a className={styles.demoLink} href="/demo">
             Tour the empire
@@ -129,6 +120,49 @@ export default function Home() {
 
       <div className={styles.mosaicRule} aria-hidden="true" />
 
+      <section className={styles.about} id="about" aria-labelledby="about-title">
+        <div className={styles.aboutHeading}>
+          <p className={styles.eyebrow}>The charter of Cicero</p>
+          <h2 id="about-title">Built for the magistrates who make assemblies happen.</h2>
+        </div>
+        <div className={styles.aboutBody}>
+          <p>
+            Cicero is an open-source Forum for the work between a proclamation for orators and the
+            day the gates open. It unites petitions, councils, fasti, orator duties, dispatches, and
+            the public programme without making the organizer govern a tangle of systems.
+          </p>
+          <p>
+            Magistrates retain command: raise it on your own infrastructure, adapt the customs, and
+            proclaim fasti that any citizen may read without presenting a seal.
+          </p>
+          <dl className={styles.aboutFacts}>
+            <div>
+              <dt>License</dt>
+              <dd>MIT, open source</dd>
+            </div>
+            <div>
+              <dt>Province</dt>
+              <dd>Your infrastructure</dd>
+            </div>
+            <div>
+              <dt>Public Forum</dt>
+              <dd>No seal required</dd>
+            </div>
+          </dl>
+          <div className={styles.aboutLinks}>
+            <a className={styles.textLink} href="#product">
+              Enter the Forum <ArrowRight size={16} aria-hidden="true" />
+            </a>
+            <a
+              className={styles.textLink}
+              href="https://github.com/EllAchE/sessionboard-oss"
+            >
+              Read the source scrolls <Github size={16} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section className={styles.product} id="product">
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>One commanding Forum</p>
@@ -187,13 +221,6 @@ export default function Home() {
         </Button>
       </section>
 
-      <footer className={styles.footer}>
-        <span>© 2026 Cicero</span>
-        <a href="https://github.com/EllAchE/sessionboard-oss" aria-label="Cicero on GitHub">
-          <Github size={17} aria-hidden="true" />
-          <span>GitHub</span>
-        </a>
-      </footer>
     </main>
   );
 }

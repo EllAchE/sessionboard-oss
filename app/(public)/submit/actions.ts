@@ -10,7 +10,7 @@ import { invalid, isAppError, toPublicError } from '@/lib/errors';
 import type { AnswerMap } from '@/lib/forms/contract';
 import { hashToken, randomToken } from '@/lib/ids';
 import { sendMail } from '@/lib/mail';
-import { renderTrustedMarkdown, markdownToText } from '@/lib/markdown';
+import { escapeMarkdownText, renderTrustedMarkdown, markdownToText } from '@/lib/markdown';
 import {
   ensureParticipant,
   isAcceptingSubmissions,
@@ -76,23 +76,29 @@ async function sendSubmissionEmails(input: {
     name: input.toName ?? '',
     portal_url: portalUrl,
   };
+  const markdownTokens = Object.fromEntries(
+    Object.entries(tokens).map(([key, value]) => [
+      key,
+      key === 'portal_url' ? value : escapeMarkdownText(value),
+    ]),
+  );
 
   // `F-12`. Organizer copy when they wrote some, a working default when they did not — a submitter
   // who gets no acknowledgement assumes the form ate their talk.
   const subject = fill(
-    formRow?.confirmationSubject || `${input.displayRef}: we have your submission`,
+    formRow?.confirmationSubject || `${input.displayRef}: your petition is on the rolls`,
     tokens,
   );
   const bodyMarkdown = fill(
     formRow?.confirmationBodyMarkdown ||
       [
-        `Thanks${input.toName ? ` ${input.toName}` : ''} — **${input.title}** is in.`,
+        `Salve${input.toName ? ' {{name}}' : ''} — **{{title}}** is on the rolls.`,
         '',
-        `Your reference is **${input.displayRef}**.`,
+        'Your reference is **{{ref}}**.',
         '',
-        `[Open your speaker portal](${portalUrl}) to add a bio, a headshot and anything else the organizers ask for.`,
+        '[Enter your orator atrium]({{portal_url}}) to inscribe a life, a likeness, and anything else the organizers decree.',
       ].join('\n'),
-    tokens,
+    markdownTokens,
   );
 
   await sendMail({
@@ -106,13 +112,12 @@ async function sendSubmissionEmails(input: {
 
   // `F-16`
   for (const address of formRow?.notifyEmails ?? []) {
+    const notificationMarkdown = `**${escapeMarkdownText(input.title)}** (${escapeMarkdownText(input.displayRef)}) was submitted to ${escapeMarkdownText(input.eventName)} by ${escapeMarkdownText(input.toEmail)}.`;
     await sendMail({
       to: address,
       subject: `New petition ${input.displayRef}: ${input.title}`,
-      html: renderTrustedMarkdown(
-        `**${input.title}** (${input.displayRef}) was submitted to ${input.eventName} by ${input.toEmail}.`,
-      ),
-      text: `${input.title} (${input.displayRef}) was submitted to ${input.eventName} by ${input.toEmail}.`,
+      html: renderTrustedMarkdown(notificationMarkdown),
+      text: `${input.title} (${input.displayRef}) was presented to ${input.eventName} by ${input.toEmail}.`,
       eventId: input.eventId,
       templateKey: 'submission.notify',
     });

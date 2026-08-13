@@ -35,6 +35,9 @@
   line-height: var(--leading-tight);
   color: var(--text-strong);
   text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brandMeta {
@@ -99,6 +102,58 @@
   color: var(--text-faint);
 }
 
+.countdown {
+  width: fit-content;
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.countdown[data-phase='live'] {
+  border-color: var(--border-accent);
+  background: var(--accent-subtle);
+}
+
+.countdownLabel {
+  font: var(--type-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  margin-bottom: var(--space-3);
+}
+
+.countdownUnits {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(4.5rem, 1fr));
+  gap: var(--space-4);
+}
+
+.countdownUnit {
+  display: flex;
+  flex-direction: column;
+}
+
+.countdownValue {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  line-height: var(--leading-tight);
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdownUnitLabel {
+  font: var(--type-label);
+  color: var(--text-faint);
+}
+
+.countdownComplete {
+  font: var(--type-prose);
+  color: var(--text-muted);
+}
+
 .heroActions {
   display: flex;
   gap: var(--space-3);
@@ -159,6 +214,42 @@
 .sectionLink {
   font: var(--type-label);
   color: var(--text-link);
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.viewToggle {
+  display: inline-flex;
+  padding: 2px;
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+}
+
+.viewToggleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: var(--text-muted);
+  font: var(--type-label);
+  text-decoration: none;
+}
+
+.viewToggleLink:hover {
+  color: var(--text-strong);
+  background: var(--surface-hover);
+}
+
+.viewToggleLink[data-active='true'] {
+  color: var(--text-accent);
+  background: var(--surface-selected);
 }
 
 .statRow {
@@ -245,6 +336,24 @@
 }
 
 @media (max-width: 640px) {
+  .barInner {
+    align-items: stretch;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .nav {
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navLink {
+    flex: none;
+  }
+
   .hero {
     padding: var(--space-8) var(--space-4) var(--space-6);
   }
@@ -255,5 +364,13 @@
 
   .section {
     padding: var(--space-6) var(--space-4);
+  }
+
+  .countdown {
+    width: 100%;
+  }
+
+  .countdownUnits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

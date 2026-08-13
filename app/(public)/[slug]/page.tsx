@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { listOpenCalls } from '@/lib/services/submissions';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../embed/queries';
+import { ConferenceCountdown } from './ConferenceCountdown';
 import { PublicChrome, publicStyles as styles } from './PublicChrome';
 
 export const dynamic = 'force-dynamic';
@@ -14,10 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Assembly absent from the annals' };
-  return {
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}`,
     title: bundle.event.name,
     description: bundle.event.tagline ?? `The public fasti for ${bundle.event.name}.`,
-  };
+  });
 }
 
 /** `G-4`. The public front door: the same published-only data the embeds serve. */
@@ -41,6 +46,14 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
           {event.venueName ? <span>{event.venueName}</span> : null}
           <span>{event.timezone.replace('_', ' ')}</span>
         </div>
+        {event.startsOn ? (
+          <ConferenceCountdown
+            startsOn={event.startsOn}
+            endsOn={event.endsOn}
+            timeZone={event.timezone}
+            initialNow={Date.now()}
+          />
+        ) : null}
         <div className={styles.heroActions}>
           {call ? (
             <Link
@@ -97,6 +110,8 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             view="gallery"
             bundle={{ ...bundle, speakers: bundle.speakers.slice(0, 6) }}
             options={{ ...options, showBio: false }}
+            speakerBase={`/${event.slug}/speakers`}
+            sessionBase={`/${event.slug}/sessions`}
           />
         </section>
       ) : null}
@@ -113,6 +128,8 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             view="sessions"
             bundle={{ ...bundle, sessions: bundle.sessions.slice(0, 6) }}
             options={{ ...options, columns: 2, showDescription: false }}
+            speakerBase={`/${event.slug}/speakers`}
+            sessionBase={`/${event.slug}/sessions`}
           />
         </section>
       ) : (

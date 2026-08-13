@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { appUrl } from '@/lib/env';
+import { createSocialMetadata } from '@/lib/site-metadata';
 import { EmbedBody } from '../../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../../embed/queries';
 import { PublicChrome, publicStyles as styles } from '../PublicChrome';
@@ -13,7 +15,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
   if (!bundle) return { title: 'Assembly absent from the annals' };
-  return { title: `Orations · ${bundle.event.name}` };
+  return createSocialMetadata({
+    origin: appUrl(),
+    path: `/${bundle.event.slug}/sessions`,
+    title: `Orations · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Hear the proclaimed orations of ${bundle.event.name}.`,
+  });
 }
 
 /** `G-4`, `EMB-01`–`EMB-03`. The session list, which is the agenda with the clock taken off. */
@@ -37,7 +44,13 @@ export default async function PublicSessionsPage({
           <h2 className={styles.sectionTitle}>Orations</h2>
           <span className={styles.sectionLink}>{bundle.sessions.length} proclaimed</span>
         </div>
-        <EmbedBody view="sessions" bundle={bundle} options={{ ...options, columns: 2 }} />
+        <EmbedBody
+          view="sessions"
+          bundle={bundle}
+          options={{ ...options, columns: 2 }}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
+        />
       </section>
     </PublicChrome>
   );

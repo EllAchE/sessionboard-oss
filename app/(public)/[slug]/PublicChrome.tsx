@@ -8,7 +8,6 @@ const TABS = [
   { id: 'itinerary', label: 'My route', path: '/itinerary' },
   { id: 'sessions', label: 'Orations', path: '/sessions' },
   { id: 'speakers', label: 'Orators', path: '/speakers' },
-  { id: 'gallery', label: 'Portraits', path: '/gallery' },
 ];
 
 export function PublicChrome({

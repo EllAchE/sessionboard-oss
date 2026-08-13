@@ -1,5 +1,4 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { z } from 'zod';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -17,7 +16,7 @@ import {
   user,
 } from '../../db/schema';
 import type { EventContext } from '../context';
-import { can, requireCapability } from '../context';
+import { can } from '../context';
 import { appUrl } from '../env';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import type { AnswerMap, FormFieldSpec } from '../forms/contract';

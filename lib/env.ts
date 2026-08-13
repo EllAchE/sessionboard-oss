@@ -38,7 +38,10 @@ function deployedToWorkers(): boolean {
 
 export function env(key: string): string | undefined {
   if (deployedToWorkers()) return fromCloudflare(key);
-  return fromCloudflare(key) ?? process.env[key] ?? undefined;
+  // `next dev` exposes wrangler vars through its local Cloudflare context, but `.env` is the
+  // developer-owned override surface. In particular, APP_URL must stay on localhost so magic-link
+  // tokens created in the local database are consumed by the local app rather than production.
+  return process.env[key] ?? fromCloudflare(key) ?? undefined;
 }
 
 export function requireEnv(key: string): string {

@@ -2,6 +2,8 @@ import { appUrl } from '@/lib/env';
 import { toJsonSchema, toParameters, type JsonSchema } from '../_lib/openapi';
 import { PUBLIC_CACHE, handle, json } from '../_lib/respond';
 import {
+  acceleventsProgramSyncBody,
+  acceleventsProgramSyncResult,
   agendaSchema,
   createSubmissionBody,
   createSubmissionResponse,
@@ -100,6 +102,8 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         },
       },
       schemas: {
+        AcceleventsProgramSync: toJsonSchema(acceleventsProgramSyncBody),
+        AcceleventsProgramSyncResult: toJsonSchema(acceleventsProgramSyncResult),
         Event: toJsonSchema(eventSchema),
         Session: toJsonSchema(sessionSchema),
         Speaker: toJsonSchema(speakerSchema),
@@ -200,6 +204,28 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           responses: {
             '201': okResponse('The petition', ref('NewSubmissionResult')),
             ...errors([404, 409, 422]),
+          },
+        },
+      },
+      '/events/{slug}/integrations/accelevents/program': {
+        post: {
+          tags: ['Programme'],
+          summary: 'Preview or command the fixture Accelevents programme crossing',
+          description:
+            'A fixture-province capability for deterministic demonstrations. It reconciles the proclaimed assembly, orations, and accepted orators with inscribe, revise, erase, and unchanged results. Live Accelevents remains limited to the documented accepted-orator crossing.',
+          operationId: 'syncAcceleventsProgramFixture',
+          security: [{ bearerAuth: [] }],
+          parameters: [slugParam],
+          requestBody: {
+            required: true,
+            content: jsonContent(ref('AcceleventsProgramSync')),
+          },
+          responses: {
+            '200': okResponse(
+              'The reconciliation plan or commanded result',
+              ref('AcceleventsProgramSyncResult'),
+            ),
+            ...errors([401, 409, 422]),
           },
         },
       },

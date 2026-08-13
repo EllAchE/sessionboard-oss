@@ -122,7 +122,9 @@ const STATUS_LABEL: Record<string, string> = {
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(iso).toLocaleDateString('en-US', {
+    timeZone: 'UTC',
     year: 'numeric',
     month: 'short',
     day: 'numeric',

@@ -45,7 +45,9 @@ const SYNC_TONE: Record<SyncLogRow['status'], 'neutral' | 'success' | 'danger'> 
 
 function formatWhen(value: string | null): string {
   if (!value) return '—';
-  return new Date(value).toLocaleString(undefined, {
+  // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
+  return new Date(value).toLocaleString('en-US', {
+    timeZone: 'UTC',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -277,8 +279,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
       }
       const { created, alreadyThere, skipped, failed, authHeaderUsed } = result.data;
       setPushed(
-        `${created} created, ${alreadyThere} already there, ${skipped} skipped as duplicates, ${failed} failed` +
-          (authHeaderUsed ? ` — Accelevents accepted the \`${authHeaderUsed}\` header` : ''),
+        `${created} inscribed, ${alreadyThere} already across, ${skipped} duplicate names passed over, ${failed} refused` +
+          (authHeaderUsed ? ` — Accelevents accepted the \`${authHeaderUsed}\` seal` : ''),
       );
     });
   };
@@ -297,20 +299,20 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
     },
     {
       id: 'sessions',
-      header: 'Accepted talks',
+      header: 'Accepted orations',
       render: (row) => (
         <span className={styles.cellSub}>{row.sessionTitles.join(', ') || '—'}</span>
       ),
     },
     {
       id: 'status',
-      header: 'Last push',
+      header: 'Last crossing',
       width: '22%',
       render: (row) =>
         row.lastStatus ? (
           <Badge tone={SYNC_TONE[row.lastStatus]}>{row.lastStatus}</Badge>
         ) : (
-          <Badge tone="neutral">not pushed</Badge>
+          <Badge tone="neutral">not sent</Badge>
         ),
     },
   ];
@@ -332,8 +334,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
             </li>
           </ul>
           <p className={styles.note}>
-            No credentials? Set <code>ACCELEVENTS_FAKE=1</code> to run the whole path against the
-            recorded fixtures, including the duplicate-email rejection.
+            No seals? Set <code>ACCELEVENTS_FAKE=1</code> to travel the whole road against the
+            recorded fixtures, including the duplicate-address rejection.
           </p>
         </div>
       </div>
@@ -357,7 +359,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
             <Badge tone="success">Live</Badge>
           )}
           <Button size="sm" loading={pending} onClick={runTest}>
-            Test connection
+            Test the road
           </Button>
           <Button
             size="sm"
@@ -372,8 +374,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
       </div>
 
       <div className={styles.status}>
-        <span className={styles.mono}>event: {panel.eventUrl ?? 'unset'}</span>
-        <span className={styles.mono}>header: {panel.authHeader}</span>
+        <span className={styles.mono}>assembly: {panel.eventUrl ?? 'unproclaimed'}</span>
+        <span className={styles.mono}>seal: {panel.authHeader}</span>
       </div>
 
       <Feedback result={test} />
@@ -388,7 +390,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         emptyState={<div className={styles.empty}>No accepted orator is ready to cross this road.</div>}
       />
 
-      <SyncLog rows={panel.log} label="Accelevents sync log" />
+      <SyncLog rows={panel.log} label="Accelevents courier annals" />
     </div>
   );
 }

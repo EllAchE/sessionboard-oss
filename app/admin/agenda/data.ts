@@ -132,6 +132,9 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
   }));
 
   const durationByFormat = new Map(formats.map((row) => [row.id, row.durationMinutes]));
+  const descriptionBySession = new Map(
+    sessions.map((row) => [row.id, row.descriptionMarkdown]),
+  );
   const scheduledSubmissionIds = new Set(
     sessions.map((row) => row.submissionId).filter((id): id is string => Boolean(id)),
   );
@@ -149,6 +152,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
         id: row.id,
         ref: formatRef('submission', row.ref),
         title: row.title,
+        descriptionMarkdown: row.descriptionMarkdown,
         trackId: row.trackId,
         formatId: row.formatId,
         durationMinutes:
@@ -163,6 +167,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
         id: entry.id,
         ref: formatRef('session', entry.ref),
         title: entry.title,
+        descriptionMarkdown: descriptionBySession.get(entry.id) ?? null,
         trackId: entry.trackId,
         formatId: entry.formatId,
         durationMinutes:

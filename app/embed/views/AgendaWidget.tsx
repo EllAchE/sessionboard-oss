@@ -126,9 +126,11 @@ function layoutFor(day: AgendaDay, timezone: string, roomOrder: string[]): DayLa
 export function AgendaWidget({
   bundle,
   options,
+  speakerBase,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
+  speakerBase: string;
 }) {
   const days = useMemo(
     () => groupByDay(bundle.sessions, bundle.event.timezone),
@@ -174,11 +176,14 @@ export function AgendaWidget({
             <p className={styles.truncated}>Room: {open.room ?? 'To be announced'}</p>
             <p className={styles.truncated}>Format: {open.format ?? 'Not specified'}</p>
             <p className={styles.truncated}>Track: {open.track ?? 'Not specified'}</p>
+            <p className={styles.truncated}>
+              Topics: {open.tags.map((tag) => tag.name).join(', ') || 'Not specified'}
+            </p>
           </div>
           {open.speakers.length > 0 ? (
             <div className={styles.detailSection}>
               <span className={styles.detailSectionTitle}>Orators</span>
-              <SpeakerRoster session={open} />
+              <SpeakerRoster session={open} speakerBase={speakerBase} />
             </div>
           ) : null}
           <div className={styles.detailSection}>
@@ -201,6 +206,8 @@ export function AgendaWidget({
   for (let minute = layout.gridStart; minute <= layout.gridEnd; minute += LABEL_MINUTES) {
     labelRows.push(minute);
   }
+  const scrollHintId = `agenda-scroll-hint-${day.date.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const needsScrollHint = layout.columns.length > 3;
 
   return (
     <div>
@@ -236,15 +243,29 @@ export function AgendaWidget({
             aria-selected={index === activeIndex}
             onClick={() => setDayIndex(index)}
           >
-            {entry.date === 'tbd' ? 'To be announced' : formatShortDay(
-              entry.sessions.find((session) => session.startsAt)?.startsAt ?? entry.date,
-              bundle.event.timezone,
-            )}
+            {entry.date === 'tbd'
+              ? 'To be announced'
+              : formatShortDay(
+                  entry.sessions.find((session) => session.startsAt)?.startsAt ?? entry.date,
+                  bundle.event.timezone,
+                )}
           </button>
         ))}
       </div>
 
-      <div className={styles.gridScroll}>
+      {needsScrollHint ? (
+        <p id={scrollHintId} className={styles.scrollHint}>
+          Scroll across and down to explore all {layout.columns.length} rooms. Room names and times
+          stay in view.
+        </p>
+      ) : null}
+      <div
+        className={styles.gridScroll}
+        role="region"
+        tabIndex={0}
+        aria-label={`${day.label} schedule, ${layout.columns.length} rooms`}
+        aria-describedby={needsScrollHint ? scrollHintId : undefined}
+      >
         <div
           className={styles.grid}
           style={{ '--agenda-columns': layout.columns.length } as CSSProperties}
@@ -281,7 +302,9 @@ export function AgendaWidget({
               key={entry.session.id}
               type="button"
               className={styles.block}
+              data-compact={entry.endRow - entry.startRow <= 2}
               id={`session-${entry.session.ref}`}
+              aria-label={`${entry.session.title}, ${formatTimeRange(entry.session, bundle.event.timezone)}, ${entry.session.room ?? 'room to be announced'}${entry.session.track ? `, ${entry.session.track} track` : ''}`}
               style={
                 {
                   gridColumn: entry.column + 2,
@@ -310,7 +333,7 @@ export function AgendaWidget({
             <article key={session.id} className={styles.sessionCard}>
               <h3 className={styles.sessionTitle}>{session.title}</h3>
               <SessionChips session={session} options={options} />
-              <SpeakerRoster session={session} />
+              <SpeakerRoster session={session} speakerBase={speakerBase} />
               {options.showDescription ? (
                 <ShowMore text={session.descriptionText} html={session.descriptionHtml} />
               ) : null}

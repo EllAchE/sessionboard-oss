@@ -27,9 +27,11 @@ function storageKey(slug: string): string {
 export function ItineraryWidget({
   bundle,
   options,
+  speakerBase,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
+  speakerBase: string;
 }) {
   const days = useMemo(
     () => groupByDay(bundle.sessions, bundle.event.timezone),
@@ -46,7 +48,8 @@ export function ItineraryWidget({
     try {
       const raw = window.localStorage.getItem(key);
       const parsed: unknown = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) setStarred(parsed.filter((id): id is string => typeof id === 'string'));
+      if (Array.isArray(parsed))
+        setStarred(parsed.filter((id): id is string => typeof id === 'string'));
     } catch {
       /* A corrupt or blocked store just means an empty schedule, never a broken widget. */
     }
@@ -162,9 +165,16 @@ export function ItineraryWidget({
                     timezone={bundle.event.timezone}
                     showRoom={options.showRoom}
                   />
-                  {session.format ? (
+                  {session.format || session.tags.length > 0 ? (
                     <div className={styles.metaRow}>
-                      <span className={styles.chip}>{session.format}</span>
+                      {session.format ? (
+                        <span className={styles.chip}>{session.format}</span>
+                      ) : null}
+                      {session.tags.map((tag) => (
+                        <span key={tag.id} className={styles.chip} data-kind="topic">
+                          {tag.name}
+                        </span>
+                      ))}
                     </div>
                   ) : null}
                   {options.showDescription ? (
@@ -174,7 +184,7 @@ export function ItineraryWidget({
                       limit={200}
                     />
                   ) : null}
-                  <SpeakerRoster session={session} />
+                  <SpeakerRoster session={session} speakerBase={speakerBase} />
                 </div>
                 <button
                   type="button"

@@ -36,6 +36,144 @@
       }
     },
     "schemas": {
+      "AcceleventsProgramSync": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "preview",
+              "apply"
+            ]
+          },
+          "allowDeletes": {
+            "type": "boolean",
+            "description": "Must be true with apply mode before remote-only fixture inscriptions are erased"
+          },
+          "resetFixture": {
+            "const": "drifted",
+            "description": "Fixture province only: reset the remote rolls to a repeatable drifted demo state"
+          }
+        },
+        "description": "Controls a one-way proclaimed-programme crossing to the fixture Accelevents road"
+      },
+      "AcceleventsProgramSyncResult": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "preview",
+              "apply"
+            ]
+          },
+          "adapter": {
+            "const": "fake"
+          },
+          "eventUrl": {
+            "type": "string"
+          },
+          "allowDeletes": {
+            "type": "boolean"
+          },
+          "fixtureReset": {
+            "type": "boolean"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "integer"
+              },
+              "update": {
+                "type": "integer"
+              },
+              "delete": {
+                "type": "integer"
+              },
+              "noop": {
+                "type": "integer"
+              },
+              "blockedDeletes": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "create",
+              "update",
+              "delete",
+              "noop",
+              "blockedDeletes"
+            ]
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "resourceType": {
+                  "type": "string",
+                  "enum": [
+                    "event",
+                    "session",
+                    "speaker"
+                  ]
+                },
+                "sourceId": {
+                  "type": "string"
+                },
+                "remoteId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete",
+                    "noop"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "planned",
+                    "applied",
+                    "blocked",
+                    "unchanged"
+                  ]
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "resourceType",
+                "sourceId",
+                "remoteId",
+                "action",
+                "status",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "mode",
+          "adapter",
+          "eventUrl",
+          "allowDeletes",
+          "fixtureReset",
+          "counts",
+          "results"
+        ]
+      },
       "Event": {
         "type": "object",
         "properties": {
@@ -1305,6 +1443,84 @@
           },
           "404": {
             "description": "No such assembly, scroll, or record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with a record already on the rolls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The petition failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/integrations/accelevents/program": {
+      "post": {
+        "tags": [
+          "Programme"
+        ],
+        "summary": "Preview or command the fixture Accelevents programme crossing",
+        "description": "A fixture-province capability for deterministic demonstrations. It reconciles the proclaimed assembly, orations, and accepted orators with inscribe, revise, erase, and unchanged results. Live Accelevents remains limited to the documented accepted-orator crossing.",
+        "operationId": "syncAcceleventsProgramFixture",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The assembly's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceleventsProgramSync"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reconciliation plan or commanded result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceleventsProgramSyncResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid aqueduct seal",
             "content": {
               "application/json": {
                 "schema": {

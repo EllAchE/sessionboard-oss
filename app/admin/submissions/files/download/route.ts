@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const subjects = index.filter((row) => requested.has(row.id));
     const missing = [...requested].filter((id) => !subjects.some((row) => row.id === id));
     if (missing.length > 0) {
-      throw invalid(`${missing.length} of those files are not on this event`);
+      throw invalid(`${missing.length} of those records are absent from this assembly`);
     }
 
     const refusal = checkArchiveBudget(

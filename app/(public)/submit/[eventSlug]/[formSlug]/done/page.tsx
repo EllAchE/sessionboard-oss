@@ -39,7 +39,7 @@ export default async function SubmissionDonePage({ params, searchParams }: PageP
           </p>
           <p className={styles.help}>
             Next, add your biography and portrait in the orator portal so the organizers are ready
-            if the council accepts your proposal.
+            if the council accepts your petition.
           </p>
 
           <Link href={portal}>
