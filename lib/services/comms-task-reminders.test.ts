@@ -103,17 +103,30 @@ const PEOPLE = {
 } as const;
 
 const SUBMISSIONS = {
-  'event-one': PEOPLE['event-one'].map((person, index) => ({
-    participantId: person.participantId,
-    id: `submission-${index + 1}`,
-    ref: index + 1,
-    title: `Submission ${index + 1}`,
-    status: 'accepted',
-    trackId: null,
-    formatId: null,
-    decisionNote: null,
-    isPrimary: true,
-  })),
+  'event-one': [
+    ...PEOPLE['event-one'].map((person, index) => ({
+      participantId: person.participantId,
+      id: `submission-${index + 1}`,
+      ref: index + 1,
+      title: `Submission ${index + 1}`,
+      status: 'accepted',
+      trackId: null,
+      formatId: null,
+      decisionNote: null,
+      isPrimary: true,
+    })),
+    {
+      participantId: 'participant-one',
+      id: 'submission-declined',
+      ref: 3,
+      title: 'Declined submission',
+      status: 'declined',
+      trackId: null,
+      formatId: null,
+      decisionNote: null,
+      isPrimary: true,
+    },
+  ],
   'event-two': [
     {
       participantId: 'participant-other-event',
@@ -278,5 +291,11 @@ describe('bulk task reminder merge data', () => {
       'task.dueAt': ' and due 1 October 2026',
     });
     expect(state.taskScopeChecks).toEqual(['event-one', 'event-two']);
+  });
+
+  it('includes a declined speaker who also has an accepted submission', async () => {
+    const recipients = await resolveRecipients('event-one', { kind: 'declined_speakers' });
+
+    expect(recipients.map((recipient) => recipient.participantId)).toEqual(['participant-one']);
   });
 });

@@ -170,6 +170,8 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
 export type ManualSessionInput = {
   /** Present when editing. */
   sessionId?: string | null;
+  /** Present when scheduling an accepted proposal through the non-drag path. */
+  sourceSubmissionId?: string | null;
   title: string;
   descriptionMarkdown?: string | null;
   roomId: string | null;
@@ -243,11 +245,34 @@ export async function saveManualSessionAction(
       return { ok: true, data: { sessionId: existing.id } };
     }
 
+    const source = input.sourceSubmissionId
+      ? await db.query.submission.findFirst({
+          where: and(
+            eq(submission.id, input.sourceSubmissionId),
+            eq(submission.eventId, ctx.eventId),
+            eq(submission.status, 'accepted'),
+          ),
+        })
+      : null;
+    if (input.sourceSubmissionId && !source) {
+      return { ok: false, error: 'That accepted proposal is no longer available' };
+    }
+
+    if (source) {
+      const existing = await db.query.scheduledSession.findFirst({
+        where: and(
+          eq(scheduledSession.eventId, ctx.eventId),
+          eq(scheduledSession.submissionId, source.id),
+        ),
+      });
+      if (existing) return { ok: false, error: 'That proposal is already on the agenda' };
+    }
+
     const [created] = await db
       .insert(scheduledSession)
       .values({
         eventId: ctx.eventId,
-        submissionId: null,
+        submissionId: source?.id ?? null,
         ref: await allocateSessionRef(ctx.eventId),
         status: 'draft',
         icsUid: mintIcsUid(),

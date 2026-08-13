@@ -7,7 +7,7 @@ import { appUrl } from './env';
 import { forbidden, invalid, notFound, unauthorized } from './errors';
 import { hashToken, randomToken } from './ids';
 import { sendMail } from './mail';
-import { renderMarkdown } from './markdown';
+import { escapeMarkdownText, renderMarkdown } from './markdown';
 
 /**
  * Magic links everywhere, passwords nowhere (`T-4a`). A speaker touches this product perhaps four
@@ -91,7 +91,7 @@ export async function requestMagicLink(
 
   const link = `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
   const body = [
-    `Hi${account.name ? ` ${account.name}` : ''},`,
+    `Hi${account.name ? ` ${escapeMarkdownText(account.name)}` : ''},`,
     '',
     `[Sign in to Cicero](${link})`,
     '',
@@ -103,7 +103,14 @@ export async function requestMagicLink(
     to: account.email,
     subject: 'Your sign-in link',
     html: renderMarkdown(body),
-    text: body.replace(`[Sign in to Cicero](${link})`, link),
+    text: [
+      `Hi${account.name ? ` ${account.name}` : ''},`,
+      '',
+      link,
+      '',
+      `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+      'If you did not ask for it, you can ignore this email.',
+    ].join('\n'),
     eventId: request.eventId ?? null,
     templateKey: 'auth.magic_link',
   });
