@@ -1,4 +1,3 @@
-import { activeTransportName } from '@/lib/mail';
 import { SignInForm } from '../signin/SignInForm';
 import { authRedirect } from '../signin/redirect';
 import styles from '../signin/signin.module.css';
@@ -18,7 +17,6 @@ export default async function SignUpPage({
       <SignInForm
         next={safeNext}
         defaultEmail={email ?? ''}
-        mailboxHint={activeTransportName() === 'log'}
         intent="sign-up"
       />
     </main>
