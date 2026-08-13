@@ -26,6 +26,8 @@ export const dynamic = 'force-dynamic';
 const STATUS_TONE = {
   queued: 'neutral',
   sent: 'success',
+  delivered: 'success',
+  undelivered: 'danger',
   failed: 'danger',
 } as const;
 

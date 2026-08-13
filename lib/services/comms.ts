@@ -1156,6 +1156,8 @@ function wantsChannel(
   hasContact: boolean,
 ): boolean {
   if (!hasContact) return false;
+  // A forced campaign may choose SMS over email; it may never override a person's SMS opt-out.
+  if (forced === 'sms' && !preferred) return false;
   if (channel === 'auto') return preferred;
   return channel === forced;
 }
@@ -1168,7 +1170,7 @@ export type CampaignInput = {
   templateKey?: string | null;
   /** `C-3`: attach the calendar invite for each recipient's scheduled session, where they have one. */
   attachIcs?: boolean;
-  /** `auto` (default) follows each recipient's stored preference; `email`/`sms` forces that channel. */
+  /** `auto` follows preferences; `sms` selects opted-in recipients and never overrides an opt-out. */
   channel?: ChannelSelection;
   smsBody?: string | null;
 };
@@ -2042,10 +2044,9 @@ export function uniqueSmsRecipientEmail(rows: ReadonlyArray<{ email: string }>):
 }
 
 /**
- * Resolves the account whose credential an SMS body could carry. Phone numbers are not unique yet,
- * so anything other than one exact match is ambiguous and must fail closed at the mailbox reader.
- * AR-10 will normalize the stored values; exact matching is still correct now because `sms_log`
- * receives the same value read from `user.phone` when the message is sent.
+ * Resolves the account whose credential an SMS body could carry. Phone numbers are normalized but
+ * deliberately not unique, so anything other than one exact match is ambiguous and must fail
+ * closed at the mailbox reader. `sms_log` receives the same E.164 value read from `user.phone`.
  */
 export async function emailForSmsRecipient(phone: string): Promise<string | null> {
   const db = getDb();

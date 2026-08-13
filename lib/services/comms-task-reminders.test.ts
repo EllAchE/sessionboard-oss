@@ -390,7 +390,7 @@ describe('SMS dual-dispatch and channel override', () => {
     expect(state.sentSms).toEqual([expect.objectContaining({ to: '+15551111111' })]);
   });
 
-  it('forces SMS for anyone with a phone number when channel is "sms", ignoring notifySms', async () => {
+  it('never lets the SMS channel selector override a recipient opt-out', async () => {
     state.peopleOverride = [
       { ...PEOPLE['event-one'][0], notifyEmail: true, notifySms: false, phone: '+15552222222' },
       { ...PEOPLE['event-one'][1], notifyEmail: true, notifySms: false, phone: null },
@@ -404,9 +404,9 @@ describe('SMS dual-dispatch and channel override', () => {
       channel: 'sms',
     });
 
-    expect(outcome).toMatchObject({ recipients: 2, sent: 1, failed: 0, sentEmail: 0, sentSms: 1 });
+    expect(outcome).toMatchObject({ recipients: 2, sent: 0, failed: 0, sentEmail: 0, sentSms: 0 });
     expect(state.sentMail).toEqual([]);
-    expect(state.sentSms).toEqual([expect.objectContaining({ to: '+15552222222' })]);
+    expect(state.sentSms).toEqual([]);
   });
 
   it('mints and renders a portal link requested only by the SMS body', async () => {

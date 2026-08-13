@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   customType,
   index,
   integer,
@@ -121,7 +122,14 @@ export const taskStatus = pgEnum('task_status', [
 ]);
 export const contentRevisionKind = pgEnum('content_revision_kind', ['session', 'participant']);
 export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
-export const smsStatus = pgEnum('sms_status', ['queued', 'sent', 'failed']);
+export const smsStatus = pgEnum('sms_status', [
+  'queued',
+  'sent',
+  'delivered',
+  'undelivered',
+  'failed',
+]);
+export const smsConsentStatus = pgEnum('sms_consent_status', ['opted_in', 'opted_out']);
 export const syncStatus = pgEnum('sync_status', ['pending', 'synced', 'failed']);
 export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
   'draft',
@@ -176,25 +184,34 @@ export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
 // more — `E-8` (Sessionboard's permission grid) stays excluded.
 // ---------------------------------------------------------------------------
 
-export const user = pgTable('user', {
-  id: id(),
-  email: text('email').notNull().unique(),
-  /**
-   * The display name, kept as the single string every other surface already renders. `F-6` splits
-   * capture into `firstName` / `lastName`; this stays as their join so the roster, the agenda, the
-   * exports, the mail merge and the embeds keep reading one column instead of recomposing a name in
-   * a dozen places that would each get the edge cases wrong.
-   */
-  name: text('name'),
-  /** `F-6`. Nullable because a name imported as one string may have no surname to speak of. */
-  firstName: text('first_name'),
-  lastName: text('last_name'),
-  phone: text('phone'),
-  notifyEmail: boolean('notify_email').notNull().default(true),
-  notifySms: boolean('notify_sms').notNull().default(false),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const user = pgTable(
+  'user',
+  {
+    id: id(),
+    email: text('email').notNull().unique(),
+    /**
+     * The display name, kept as the single string every other surface already renders. `F-6` splits
+     * capture into `firstName` / `lastName`; this stays as their join so the roster, the agenda, the
+     * exports, the mail merge and the embeds keep reading one column instead of recomposing a name in
+     * a dozen places that would each get the edge cases wrong.
+     */
+    name: text('name'),
+    /** `F-6`. Nullable because a name imported as one string may have no surname to speak of. */
+    firstName: text('first_name'),
+    lastName: text('last_name'),
+    phone: text('phone'),
+    notifyEmail: boolean('notify_email').notNull().default(true),
+    notifySms: boolean('notify_sms').notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    phoneE164: check(
+      'user_phone_e164_check',
+      sql`${t.phone} is null or ${t.phone} ~ '^\\+[1-9][0-9]{7,14}$'`,
+    ),
+  }),
+);
 
 export const event = pgTable('event', {
   id: id(),
@@ -1263,10 +1280,25 @@ export const smsLog = pgTable(
     error: text('error'),
     providerMessageId: text('provider_message_id'),
     sentAt: timestamp('sent_at', { withTimezone: true }),
+    statusUpdatedAt: timestamp('status_updated_at', { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => ({ byEventCreated: index('sms_log_event_created_idx').on(t.eventId, t.createdAt) }),
+  (t) => ({
+    byEventCreated: index('sms_log_event_created_idx').on(t.eventId, t.createdAt),
+    byProviderMessage: index('sms_log_provider_message_idx').on(t.providerMessageId),
+  }),
 );
+
+/** Current permission for a destination. STOP may arrive before Cicero can resolve an account. */
+export const smsConsent = pgTable('sms_consent', {
+  phone: text('phone').primaryKey(),
+  status: smsConsentStatus('status').notNull(),
+  source: text('source').notNull(),
+  consentedAt: timestamp('consented_at', { withTimezone: true }),
+  optedOutAt: timestamp('opted_out_at', { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
 
 // ---------------------------------------------------------------------------
 // Integrations, API, saved state

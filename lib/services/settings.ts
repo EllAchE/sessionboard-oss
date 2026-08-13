@@ -19,7 +19,12 @@ import {
 import type { EventContext } from '../context';
 import { requireCapability } from '../context';
 import { conflict, invalid, notFound } from '../errors';
+import { e164PhoneInput } from '../phone';
 import { normalizeAccent } from '../portal-appearance';
+import {
+  blockSmsBeforePreferenceChange,
+  grantSmsAfterPreferenceChange,
+} from '../sms/consent';
 
 /**
  * `E-1`–`E-5`: the six lists every other surface picks from. Nothing here is interesting on its
@@ -1179,7 +1184,7 @@ export type NotificationPrefs = {
 
 export const notificationPrefsInput = z
   .object({
-    phone: z.string().trim().max(32).optional(),
+    phone: e164PhoneInput.optional(),
     notifyEmail: z.boolean().optional(),
     notifySms: z.boolean().optional(),
   })
@@ -1208,16 +1213,26 @@ export async function saveNotificationPrefs(
   input: NotificationPrefsInput,
 ): Promise<NotificationPrefs> {
   const values = parse(notificationPrefsInput, input);
+  const current = await getNotificationPrefs(userId);
+  const nextPhone = values.phone !== undefined ? values.phone || null : current.phone;
+  const nextSmsEnabled = Boolean(nextPhone) && (values.notifySms ?? current.notifySms);
+  await blockSmsBeforePreferenceChange({
+    previousPhone: current.phone,
+    nextPhone,
+    nextEnabled: nextSmsEnabled,
+    source: 'organizer_settings',
+  });
   const [updated] = await getDb()
     .update(user)
     .set({
-      ...(values.phone !== undefined ? { phone: values.phone || null } : {}),
+      phone: nextPhone,
       ...(values.notifyEmail !== undefined ? { notifyEmail: values.notifyEmail } : {}),
-      ...(values.notifySms !== undefined ? { notifySms: values.notifySms } : {}),
+      notifySms: nextSmsEnabled,
     })
     .where(eq(user.id, userId))
     .returning({ phone: user.phone, notifyEmail: user.notifyEmail, notifySms: user.notifySms });
   if (!updated) throw notFound('Your account');
+  await grantSmsAfterPreferenceChange(nextPhone, nextSmsEnabled, 'organizer_settings');
   return updated;
 }
 

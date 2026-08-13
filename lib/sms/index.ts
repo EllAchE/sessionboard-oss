@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { smsLog } from '../../db/schema';
-import { env } from '../env';
+import { appUrl, env } from '../env';
+import { normalizePhoneNumber } from '../phone';
+import { hasActiveSmsConsent } from './consent';
 import { logTransport } from './log';
 import { twilioTransport } from './twilio';
 import type { OutgoingSms, SmsTransport } from './transport';
@@ -15,7 +17,17 @@ function selectTransport(): SmsTransport {
     const token = env('TWILIO_AUTH_TOKEN');
     // Falling back rather than throwing is deliberate: a missing key should degrade to the dev
     // mailbox, not take down every notification that has an SMS-preferring recipient.
-    return sid && token ? twilioTransport(sid, token) : logTransport();
+    const callbackBase = appUrl();
+    let publicCallbacks = false;
+    try {
+      const parsed = new URL(callbackBase);
+      publicCallbacks = parsed.protocol === 'https:' && parsed.hostname !== 'localhost';
+    } catch {
+      publicCallbacks = false;
+    }
+    return sid && token && publicCallbacks
+      ? twilioTransport(sid, token, `${callbackBase}/api/webhooks/twilio/status`)
+      : logTransport();
   }
   return logTransport();
 }
@@ -34,12 +46,19 @@ export async function sendSms(input: SendSmsInput): Promise<{ id: string; sent: 
   const db = getDb();
   const transport = selectTransport();
   const from = input.from ?? env('SMS_FROM') ?? '';
+  let to: string | null = null;
+  let inputError: string | null = null;
+  try {
+    to = normalizePhoneNumber(input.to);
+  } catch (error) {
+    inputError = error instanceof Error ? error.message : String(error);
+  }
 
   const [row] = await db
     .insert(smsLog)
     .values({
       eventId: input.eventId ?? null,
-      toPhone: input.to,
+      toPhone: to ?? input.to.trim(),
       fromPhone: from,
       body: input.body,
       templateKey: input.templateKey ?? null,
@@ -48,12 +67,17 @@ export async function sendSms(input: SendSmsInput): Promise<{ id: string; sent: 
     .returning({ id: smsLog.id });
 
   try {
-    const result = await transport.send({ ...input, from });
+    if (inputError || !to) throw new Error(inputError ?? 'Invalid SMS destination');
+    if (!(await hasActiveSmsConsent(to))) {
+      throw new Error('SMS suppressed: this phone number has not opted in');
+    }
+    const result = await transport.send({ ...input, to, from });
     await db
       .update(smsLog)
       .set({
         status: 'sent',
         sentAt: new Date(),
+        statusUpdatedAt: new Date(),
         providerMessageId: result.providerMessageId ?? null,
       })
       .where(eq(smsLog.id, row.id));
@@ -61,7 +85,10 @@ export async function sendSms(input: SendSmsInput): Promise<{ id: string; sent: 
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(message);
-    await db.update(smsLog).set({ status: 'failed', error: message }).where(eq(smsLog.id, row.id));
+    await db
+      .update(smsLog)
+      .set({ status: 'failed', error: message, statusUpdatedAt: new Date() })
+      .where(eq(smsLog.id, row.id));
     return { id: row.id, sent: false };
   }
 }
