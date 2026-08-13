@@ -5,6 +5,44 @@ workflow. Four used licensed local photographs as edit targets. Three were gener
 Simple chroma-key outputs were converted to alpha locally; model-native alpha outputs were retained.
 Every final was composited over Cicero cream, charcoal, and vermilion surfaces before inclusion.
 
+## Speaker headshot system
+
+The speaker portraits use a deterministic SVG pipeline instead of 600 checked-in raster files. Its
+art direction began with the owned ImageGen board at
+[`docs/images/speaker-headshot-art-direction.webp`](../../../docs/images/speaker-headshot-art-direction.webp),
+generated with OpenAI's built-in image-generation workflow on 2026-08-12:
+
+```text
+Use case: stylized-concept
+Asset type: visual direction board for Cicero's deterministic speaker-headshot system
+Primary request: Create one exact 4-by-4 contact sheet containing sixteen genuinely distinct, fictional Roman senator or classical-orator headshot portraits. Every tile must depict a different person, not variants of the same face.
+Scene/backdrop: sixteen separate square tiles with equal clean gutters; each tile has a simple flat background drawn from warm limestone, terracotta, muted ochre, deep ink, olive, and restrained verdigris.
+Subject: broad visual diversity across apparent age, facial proportions, skin tone, hair texture and style, facial hair, and draped senatorial attire; include women and men; fictional people only, no resemblance to public figures.
+Style/medium: original matte cut-paper and shallow 3D bas-relief hybrid, refined museum-catalog editorial illustration, simplified geometric forms, subtle stone grain, cohesive across all tiles, visibly not photography.
+Composition/framing: in every tile, a centered head-and-shoulders portrait at consistent scale; complete hair and shoulders visible; face and identifying features stay inside the central 70 percent safe circle so both square and circular avatar crops work; straight-on or restrained three-quarter poses.
+Lighting/mood: soft sculptural side light contained within each portrait, calm and authoritative.
+Color palette: warm limestone #E7DFCF, charcoal ink #292621, terracotta #B56A45, vermilion #B7391F, muted olive, restrained verdigris; varied skin and hair tones.
+Materials/textures: matte carved stone, paper grain, understated patina.
+Constraints: exactly sixteen portraits in an exact 4-by-4 grid; all sixteen faces clearly different; equal tile sizes and gutters; no shared subjects across tiles; no text, letters, numerals, labels, logos, borders, flags, weapons, modern clothing, photorealism, or watermark.
+```
+
+`lib/roman-speaker-headshots.ts` translates that direction into compact self-contained SVGs. For
+slots 0–599, a coprime permutation covers every combination of ten face geometries, twelve hair
+silhouettes, and five material/complexion families exactly once. Stable speaker-key hashing varies
+garments, backdrops, hair color, facial hair, age, pose, accessories, and mosaic motifs. Slots past
+599 keep rendering from their stable index and key; they lose the strict no-near-duplicate guarantee
+but never fall back to a broken URL or repeated stock image.
+
+The default 600-slot set contains 300 women and 300 men. Both groups span every face geometry and
+hair-silhouette index; women receive a separate set of twelve historically inspired hair treatments,
+garment details, and optional jewelry rather than being represented only by removing facial hair.
+Callers can provide an explicit gender for known people, as the historically named First Settlement
+seed does, while generic speaker keys use the balanced deterministic assignment.
+
+Run `bun run verify:headshots` to check all 600 outputs for exact byte duplicates, repeated visual
+signatures, a weighted near-duplicate threshold, and aggregate byte size. The development-only
+`/roman-headshots` gallery alternates square and circular masks for manual crop review.
+
 ## Photo cutouts
 
 Each cutout used the matching artifact WebP as its edit target and this request, with the subject
