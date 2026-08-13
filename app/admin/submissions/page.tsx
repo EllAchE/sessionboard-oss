@@ -89,7 +89,7 @@ export default async function SubmissionsPage({
     <SubmissionQueue
       rows={rows}
       counts={bundle.counts}
-      tabs={review.STATUS_TABS.map((entry) => ({
+      tabs={review.statusTabsForBar(bundle.round?.decisionQueueBar).map((entry) => ({
         id: entry.id,
         label: entry.label,
         hint: entry.hint ?? null,
