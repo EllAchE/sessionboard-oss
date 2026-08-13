@@ -14,13 +14,6 @@
   overflow-y: auto;
 }
 
-.wordmark {
-  font: var(--type-title);
-  font-family: var(--font-display);
-  color: var(--text-strong);
-  letter-spacing: -0.01em;
-}
-
 .main {
   display: flex;
   flex-direction: column;

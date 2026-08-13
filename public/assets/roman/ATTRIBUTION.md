@@ -34,3 +34,18 @@ derivatives; the underlying source licenses still apply.
 
 The gold laurel wreath dates to the 3rd–2nd century BCE and is Hellenistic Greek. It is retained as
 a classical laurel reference and labeled accordingly in the manifest and gallery.
+
+## Derived cutouts
+
+The four files in `cutouts/` are AI-assisted background-extraction derivatives of the corresponding
+licensed photographs above. Each derivative retains the source work's attribution and license.
+
+| Cutout | Source asset |
+| --- | --- |
+| `cutouts/germanicus-bust.png` | `artifacts/germanicus-bust.webp` |
+| `cutouts/laurel-head.png` | `artifacts/laurel-head.webp` |
+| `cutouts/toga-statue.png` | `artifacts/toga-statue.webp` |
+| `cutouts/corinthian-capital.png` | `artifacts/corinthian-capital.webp` |
+
+The three files in `illustrations/` are original generated assets created for Cicero rather than
+derivatives of an external image. Their prompt and production record lives in `GENERATION.md`.
