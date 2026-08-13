@@ -371,6 +371,9 @@ describe('createTrack', () => {
   });
 
   it('appends the new row at the end of the list', async () => {
+    // No existing track named "Platform" here, unlike the shared beforeEach fixture — this is
+    // the free-name path, not the conflict path.
+    rec.findFirst.set('track', null);
     rec.rows.set(track, [
       { id: 'track-a', position: 0 },
       { id: 'track-b', position: 1 },

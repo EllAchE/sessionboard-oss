@@ -228,7 +228,10 @@ export const track = pgTable(
     position: integer('position').notNull().default(0),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('track_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('track_event_idx').on(t.eventId),
+    uniqueName: unique('track_event_name').on(t.eventId, t.name),
+  }),
 );
 
 export const room = pgTable(
@@ -244,7 +247,10 @@ export const room = pgTable(
     position: integer('position').notNull().default(0),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('room_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('room_event_idx').on(t.eventId),
+    uniqueName: unique('room_event_name').on(t.eventId, t.name),
+  }),
 );
 
 export const sessionFormat = pgTable(
