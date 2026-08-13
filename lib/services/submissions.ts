@@ -80,6 +80,19 @@ function labelMap(rows: NamedRow[]): Record<string, string> {
   return Object.fromEntries(rows.map((row) => [row.id, row.name]));
 }
 
+function normalizeConditionValue(
+  condition: Condition | null,
+  target: RuntimeField | undefined,
+): Condition | null {
+  if (!condition || condition.value === undefined || !target?.optionLabels) return condition;
+
+  const value = String(condition.value);
+  if (target.options?.includes(value)) return condition;
+
+  const option = Object.entries(target.optionLabels).find(([, label]) => label === value);
+  return option ? { ...condition, value: option[0] } : condition;
+}
+
 /**
  * Built-in choice fields take their options from the event's taxonomy rather than from whatever the
  * builder stored on the row, so a track renamed after the form was published still renders — and so
@@ -88,7 +101,7 @@ function labelMap(rows: NamedRow[]): Record<string, string> {
 export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeField[] {
   const ordered = [...rows].sort((a, b) => a.step - b.step || a.position - b.position);
 
-  return ordered.map((row) => {
+  const fields = ordered.map((row) => {
     const builtinKey = (row.builtinKey ?? null) as BuiltinKey | null;
     const meta = builtinKey ? BUILTIN_META[builtinKey] : null;
 
@@ -127,6 +140,12 @@ export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeFi
       optionLabels,
     };
   });
+
+  const byId = new Map(fields.map((field) => [field.id, field]));
+  return fields.map((field) => ({
+    ...field,
+    showIf: normalizeConditionValue(field.showIf, byId.get(field.showIf?.fieldId ?? '')),
+  }));
 }
 
 export type SubmissionColumns = {

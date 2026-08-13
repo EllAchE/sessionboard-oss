@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { isAppError } from '../../../../lib/errors';
+import { activeTransportName } from '../../../../lib/mail';
 import * as review from '../../../../lib/services/review';
 import { decideContext } from '../context';
 import type { ActionResult } from '../types';
@@ -32,6 +33,22 @@ export async function createRoundAction(input: {
     const ctx = await decideContext();
     const created = await review.createRound(ctx, { ...input, status: 'open' });
     return { id: created.id };
+  });
+}
+
+export async function inviteReviewerAction(input: review.ReviewerInviteInput): Promise<
+  ActionResult<{
+    reviewer: review.ReviewerInviteResult['reviewer'];
+    accessLink: string | null;
+  }>
+> {
+  return run(async () => {
+    const ctx = await decideContext();
+    const invited = await review.inviteReviewer(ctx, input);
+    return {
+      reviewer: invited.reviewer,
+      accessLink: activeTransportName() === 'log' || !invited.delivered ? invited.link : null,
+    };
   });
 }
 

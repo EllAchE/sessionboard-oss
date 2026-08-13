@@ -31,6 +31,7 @@ export default async function AdminTasksPage() {
       assignments={assignments}
       summary={summarizeTaskCompletion(assignments)}
       speakerCount={speakers.length}
+      speakers={speakers.map(({ id, name, email }) => ({ id, name, email }))}
       forms={forms.map((entry) => ({ id: entry.id, name: entry.name }))}
       copyableEvents={copyable}
       canManage={canManage}

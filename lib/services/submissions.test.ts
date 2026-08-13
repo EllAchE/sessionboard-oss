@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { submission, submissionTag } from '../../db/schema';
 import { submitFormStateKey } from '../../app/(public)/submit/shared';
+import { submission, submissionTag } from '../../db/schema';
+import { visibleFields } from '../forms/contract';
 import {
+  buildFieldSpecs,
   rehydrateDraftValues,
   saveSubmission,
+  type FieldRow,
   type RuntimeField,
+  type Taxonomy,
 } from './submissions';
 
 type Recorder = {
@@ -61,7 +65,10 @@ function fakeDb(recorder: Recorder) {
   };
 }
 
-function field(key: string, builtinKey: RuntimeField['builtinKey'] = null): RuntimeField {
+function runtimeField(
+  key: string,
+  builtinKey: RuntimeField['builtinKey'] = null,
+): RuntimeField {
   return {
     id: key,
     key,
@@ -81,6 +88,36 @@ function field(key: string, builtinKey: RuntimeField['builtinKey'] = null): Runt
     optionLabels: null,
   };
 }
+
+function fieldRow(
+  overrides: Partial<FieldRow> & Pick<FieldRow, 'id' | 'key'>,
+): FieldRow {
+  return {
+    position: 0,
+    step: 0,
+    type: 'short_text',
+    builtinKey: null,
+    label: overrides.key,
+    helpText: null,
+    placeholder: null,
+    required: false,
+    options: null,
+    showIf: null,
+    minLength: null,
+    maxLength: null,
+    charLimitGroup: null,
+    ...overrides,
+  };
+}
+
+const TAXONOMY: Taxonomy = {
+  formats: [
+    { id: 'format-talk', name: 'Talk (45 min)' },
+    { id: 'format-workshop', name: 'Workshop (120 min)' },
+  ],
+  tracks: [],
+  tags: [],
+};
 
 let recorder: Recorder;
 
@@ -129,17 +166,17 @@ describe('draft resume state', () => {
       },
       ['tag-typescript', 'tag-testing'],
       [
-        field('title', 'title'),
-        field('description', 'description'),
-        field('format', 'format'),
-        field('track', 'track'),
-        field('level', 'level'),
-        field('tags', 'tags'),
-        field('takeaway'),
-        field('seats'),
-        field('recorded'),
-        field('topics'),
-        field('optional'),
+        runtimeField('title', 'title'),
+        runtimeField('description', 'description'),
+        runtimeField('format', 'format'),
+        runtimeField('track', 'track'),
+        runtimeField('level', 'level'),
+        runtimeField('tags', 'tags'),
+        runtimeField('takeaway'),
+        runtimeField('seats'),
+        runtimeField('recorded'),
+        runtimeField('topics'),
+        runtimeField('optional'),
       ],
     );
 
@@ -165,7 +202,7 @@ describe('resumed draft submission', () => {
       eventId: 'event-1',
       formId: 'form-1',
       userId: 'user-1',
-      fields: [field('title', 'title')],
+      fields: [runtimeField('title', 'title')],
       values: { title: 'Final title' },
       limits: { allowDrafts: true, maxSubmissionsPerUser: 3 },
       mode: 'submit',
@@ -188,5 +225,74 @@ describe('resumed draft submission', () => {
     ]);
     expect(recorder.inserts).toEqual([]);
     expect(recorder.deletes).toEqual([submissionTag]);
+  });
+});
+
+describe('buildFieldSpecs conditional option values', () => {
+  const rows = [
+    fieldRow({
+      id: 'session-format',
+      key: 'format',
+      builtinKey: 'format',
+      type: 'select',
+      label: 'Session format',
+    }),
+    fieldRow({
+      id: 'workshop-prerequisites',
+      key: 'workshopPrerequisites',
+      position: 1,
+      type: 'long_text',
+      label: 'Workshop prerequisites',
+      showIf: {
+        fieldId: 'session-format',
+        op: 'eq',
+        value: 'Workshop (120 min)',
+      },
+    }),
+  ];
+
+  it('represents a taxonomy condition with the same id submitted by the dropdown', () => {
+    const fields = buildFieldSpecs(rows, TAXONOMY);
+
+    expect(fields[0].options).toEqual(['format-talk', 'format-workshop']);
+    expect(fields[0].optionLabels).toEqual({
+      'format-talk': 'Talk (45 min)',
+      'format-workshop': 'Workshop (120 min)',
+    });
+    expect(fields[1].showIf?.value).toBe('format-workshop');
+  });
+
+  it('shows for the matching dropdown id and hides again after switching away', () => {
+    const fields = buildFieldSpecs(rows, TAXONOMY);
+
+    expect(
+      visibleFields(fields, { format: 'format-workshop' }).map(
+        (entry) => entry.key,
+      ),
+    ).toEqual(['format', 'workshopPrerequisites']);
+    expect(
+      visibleFields(fields, { format: 'format-talk' }).map(
+        (entry) => entry.key,
+      ),
+    ).toEqual(['format']);
+  });
+
+  it('preserves conditions that already use a taxonomy id', () => {
+    const fields = buildFieldSpecs(
+      [
+        rows[0],
+        {
+          ...rows[1],
+          showIf: {
+            fieldId: 'session-format',
+            op: 'eq',
+            value: 'format-workshop',
+          },
+        },
+      ],
+      TAXONOMY,
+    );
+
+    expect(fields[1].showIf?.value).toBe('format-workshop');
   });
 });

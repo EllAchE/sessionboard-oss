@@ -20,6 +20,7 @@ import {
   track as trackTable,
   user,
 } from '../../db/schema';
+import { ensureUserAccount, grantRole, requestMagicLink } from '../auth';
 import type { EventContext } from '../context';
 import { can, requireCapability } from '../context';
 import { appUrl } from '../env';
@@ -569,6 +570,43 @@ export type ReviewerRow = {
   email: string;
   roles: string[];
 };
+
+export type ReviewerInviteInput = {
+  email: string;
+  name?: string | null;
+};
+
+export type ReviewerInviteResult = {
+  reviewer: Omit<ReviewerRow, 'roles'>;
+  link: string;
+  delivered: boolean;
+};
+
+export async function inviteReviewer(
+  ctx: EventContext,
+  input: ReviewerInviteInput,
+): Promise<ReviewerInviteResult> {
+  requireCapability(ctx, 'submission:decide');
+  const name = input.name?.trim() || null;
+  const account = await ensureUserAccount(input.email, name);
+  await grantRole(account.id, ctx.eventId, 'reviewer');
+  const invite = await requestMagicLink({
+    email: account.email,
+    name: account.name,
+    eventId: ctx.eventId,
+    redirectTo: '/review',
+  });
+
+  return {
+    reviewer: {
+      userId: account.id,
+      name: account.name ?? account.email,
+      email: account.email,
+    },
+    link: invite.link,
+    delivered: invite.delivered,
+  };
+}
 
 export async function listReviewers(ctx: EventContext): Promise<ReviewerRow[]> {
   requireCapability(ctx, 'submission:review');
