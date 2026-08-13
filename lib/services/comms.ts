@@ -316,11 +316,12 @@ type Lookups = {
  * One pass over the event rather than a query per recipient. At the scale this product assumes
  * (hundreds of submissions) the whole graph is a few thousand rows and fits comfortably in memory,
  * which keeps audience filtering readable instead of spread across eight SQL variants.
+ *
+ * Loading it is the expensive part, so callers resolving many recipients in one request (a publish
+ * batch notifying every session on a day) should load it once with `loadRecipientGraph` and pass it
+ * to every `resolveRecipients`/`recipientForParticipant` call instead of letting each call reload it.
  */
-export async function resolveRecipients(
-  eventId: string,
-  spec: AudienceSpec,
-): Promise<Recipient[]> {
+export async function loadRecipientGraph(eventId: string) {
   const db = getDb();
   const { event, branding } = await loadCommsContext(eventId);
 
@@ -378,6 +379,19 @@ export async function resolveRecipients(
 
   const lookups = await loadLookups(eventId);
 
+  return { event, branding, people, submissionRows, sessionRows, taskRows, lookups };
+}
+
+export type RecipientGraph = Awaited<ReturnType<typeof loadRecipientGraph>>;
+
+export async function resolveRecipients(
+  eventId: string,
+  spec: AudienceSpec,
+  graph?: RecipientGraph,
+): Promise<Recipient[]> {
+  const { event, branding, people, submissionRows, sessionRows, taskRows, lookups } =
+    graph ?? (await loadRecipientGraph(eventId));
+
   const submissionsByParticipant = new Map<string, RecipientSubmission[]>();
   for (const row of submissionRows) {
     const list = submissionsByParticipant.get(row.participantId) ?? [];
@@ -415,6 +429,10 @@ export async function resolveRecipients(
     const name = person.displayName || person.userName || person.email.split('@')[0];
     const preferred =
       submissions.find((s) => s.status === 'accepted') ?? submissions[0] ?? null;
+    const selectedTask =
+      spec.kind === 'outstanding_tasks' && spec.taskId
+        ? (openTasks.find((entry) => entry.taskId === spec.taskId) ?? null)
+        : null;
 
     recipients.push({
       participantId: person.participantId,
@@ -432,6 +450,7 @@ export async function resolveRecipients(
         submission: preferred,
         session,
         openTasks,
+        selectedTask,
       }),
     });
   }
@@ -501,8 +520,18 @@ function buildVars(input: {
   submission: RecipientSubmission | null;
   session: typeof scheduledSession.$inferSelect | null;
   openTasks: RecipientTask[];
+  selectedTask: RecipientTask | null;
 }): TemplateVars {
-  const { event, branding, lookups, person, submission: sub, session, openTasks } = input;
+  const {
+    event,
+    branding,
+    lookups,
+    person,
+    submission: sub,
+    session,
+    openTasks,
+    selectedTask,
+  } = input;
   const zone = event.timezone;
 
   const sortedTasks = [...openTasks].sort((a, b) => {
@@ -547,7 +576,20 @@ function buildVars(input: {
       .join('\n'),
     'tasks.next': sortedTasks[0]?.name ?? '',
 
+    ...taskReminderVars(selectedTask),
+
     'portal.url': `${appUrl()}/portal`,
+  };
+}
+
+function taskReminderVars(
+  selectedTask: Pick<RecipientTask, 'name' | 'dueAt'> | null,
+): TemplateVars {
+  return {
+    'task.name': selectedTask?.name ?? '',
+    'task.dueAt': selectedTask?.dueAt
+      ? ` and due ${new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(selectedTask.dueAt)}`
+      : '',
   };
 }
 
@@ -979,11 +1021,13 @@ async function sendTemplated(input: {
 async function recipientForParticipant(
   eventId: string,
   participantId: string,
+  graph?: RecipientGraph,
 ): Promise<Recipient | null> {
-  const recipients = await resolveRecipients(eventId, {
-    kind: 'manual',
-    participantIds: [participantId],
-  });
+  const recipients = await resolveRecipients(
+    eventId,
+    { kind: 'manual', participantIds: [participantId] },
+    graph,
+  );
   return recipients[0] ?? null;
 }
 
@@ -1173,13 +1217,14 @@ export async function sessionCalendarDownload(
  * Scoped to the two invite templates on purpose: an ad-hoc campaign that attached the plain
  * add-to-calendar copy carries the same UID but is not a revision of anything.
  */
-async function inviteAlreadySent(uid: string): Promise<boolean> {
+async function inviteAlreadySent(uid: string, eventId: string): Promise<boolean> {
   const db = getDb();
   const [row] = await db
     .select({ id: emailLog.id })
     .from(emailLog)
     .where(
       and(
+        eq(emailLog.eventId, eventId),
         isNotNull(emailLog.icsBody),
         like(emailLog.icsBody, `%${uid}%`),
         inArray(emailLog.templateKey, ['session.invite', 'session.cancelled']),
@@ -1207,6 +1252,7 @@ export type SessionNotifyResult = SendOutcome & {
 export async function sendSessionInvites(
   sessionId: string,
   options: { cancel?: boolean } = {},
+  graph?: RecipientGraph,
 ): Promise<SessionNotifyResult> {
   const db = getDb();
   const empty: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
@@ -1219,7 +1265,7 @@ export async function sendSessionInvites(
     return { ...empty, sequence: session.icsSequence, skipped: 'unscheduled' };
   }
 
-  const alreadySent = await inviteAlreadySent(session.icsUid);
+  const alreadySent = await inviteAlreadySent(session.icsUid, event.id);
   const sequence = alreadySent ? session.icsSequence + 1 : session.icsSequence;
   if (sequence !== session.icsSequence) {
     await db
@@ -1245,7 +1291,7 @@ export async function sendSessionInvites(
   const outcome: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
 
   for (const participantId of participantIds) {
-    const recipient = await recipientForParticipant(event.id, participantId);
+    const recipient = await recipientForParticipant(event.id, participantId, graph);
     if (!recipient) continue;
     outcome.recipients += 1;
     const result = await sendTemplated({
@@ -1343,12 +1389,7 @@ export async function runTaskReminders(
         eventId: row.eventId,
         key: 'task.reminder',
         recipient,
-        extraVars: {
-          'task.name': row.name,
-          'task.dueAt': row.dueAt
-            ? ` and due ${new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(row.dueAt)}`
-            : '',
-        },
+        extraVars: taskReminderVars(row),
       });
 
       // Stamped even when the template is disabled, so turning reminders back on does not

@@ -1,4 +1,5 @@
 import type { HTMLAttributes } from 'react';
+import Image from 'next/image';
 import { cn } from '../cn';
 import styles from './Avatar.module.css';
 
@@ -32,7 +33,9 @@ function Avatar({ name, src, size = 'md', className, ...rest }: AvatarProps) {
       <span className={styles.initials} aria-hidden="true">
         {initials}
       </span>
-      {src && <img className={styles.image} src={src} alt="" />}
+      {src && (
+        <Image className={styles.image} src={src} alt="" width={48} height={48} unoptimized />
+      )}
     </span>
   );
 }
