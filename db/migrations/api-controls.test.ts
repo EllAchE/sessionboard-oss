@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const sql = readFileSync(
-  fileURLToPath(new URL('./0013_high_makkari.sql', import.meta.url)),
+  fileURLToPath(new URL('./0014_classy_paper_doll.sql', import.meta.url)),
   'utf8',
 );
 

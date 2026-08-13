@@ -1330,9 +1330,10 @@ export const apiKey = pgTable(
 );
 
 /**
- * One current fixed-window counter per caller identity. Keeping only the current window bounds
- * storage even when a public embed is hit for years, and the upsert in `lib/rate-limit.ts` makes
- * increments atomic across Worker isolates and self-hosted processes.
+ * One current fixed-window counter per caller identity. The row count is bounded per observed
+ * identity rather than per request, and the upsert in `lib/rate-limit.ts` makes increments atomic
+ * across Worker isolates and self-hosted processes. Operators may prune rows whose `updatedAt` is
+ * older than their longest policy window; deletion is safe because the next request recreates one.
  */
 export const inboundRateLimit = pgTable('inbound_rate_limit', {
   keyHash: text('key_hash').primaryKey(),

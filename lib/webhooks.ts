@@ -44,7 +44,38 @@ export type WebhookDeliverySummary = {
   createdAt: Date;
 };
 
-function webhookUrl(value: string): string {
+function privateIpv4(hostname: string): boolean {
+  const parts = hostname.split('.');
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) return false;
+  const octets = parts.map(Number);
+  if (octets.some((part) => part > 255)) return true;
+  const [a, b] = octets;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    a >= 224
+  );
+}
+
+function privateIpv6(hostname: string): boolean {
+  const normalized = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (!normalized.includes(':')) return false;
+  if (normalized === '::' || normalized === '::1') return true;
+  // Browsers normalize IPv4-mapped literals into hexadecimal, so conservatively refuse the whole
+  // mapped range instead of trying to recover an address after URL parsing.
+  if (normalized.startsWith('::ffff:')) return true;
+  const first = normalized.split(':')[0];
+  if (/^f[cd]/.test(first) || /^fe[89ab]/.test(first) || /^ff/.test(first)) return true;
+  return false;
+}
+
+export function normalizeWebhookUrl(value: string): string {
   let parsed: URL;
   try {
     parsed = new URL(value.trim());
@@ -54,6 +85,19 @@ function webhookUrl(value: string): string {
   if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
     throw invalid('Enter a valid webhook URL', {
       url: 'Use http or https without credentials in the URL',
+    });
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    hostname === 'localhost' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.local') ||
+    hostname.endsWith('.internal') ||
+    privateIpv4(hostname) ||
+    privateIpv6(hostname)
+  ) {
+    throw invalid('Webhook targets must be publicly routable', {
+      url: 'Local, private, link-local, and metadata-network targets are not allowed',
     });
   }
   parsed.hash = '';
@@ -77,7 +121,7 @@ export async function createWebhookEndpoint(
   if (!name) throw invalid('Give this webhook a name', { name: 'Name is required' });
   if (name.length > 80) throw invalid('Webhook names are limited to 80 characters');
 
-  const url = webhookUrl(input.url);
+  const url = normalizeWebhookUrl(input.url);
   const eventTypes = normalizedEventTypes(input.eventTypes);
   const db = getDb();
   const existing = await db.query.webhookEndpoint.findFirst({

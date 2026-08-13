@@ -26,7 +26,41 @@ vi.mock('@/db/client', () => ({
   }),
 }));
 
-import { emitWebhook } from './webhooks';
+import { emitWebhook, normalizeWebhookUrl } from './webhooks';
+
+describe('webhook target validation', () => {
+  it('normalizes public HTTP and HTTPS targets without credentials or fragments', () => {
+    expect(normalizeWebhookUrl('https://hooks.example.com/cicero#ignored')).toBe(
+      'https://hooks.example.com/cicero',
+    );
+    expect(normalizeWebhookUrl('http://hooks.example.com:8080/cicero')).toBe(
+      'http://hooks.example.com:8080/cicero',
+    );
+  });
+
+  it.each([
+    'http://localhost:3000/hook',
+    'http://service.internal/hook',
+    'http://127.0.0.1/hook',
+    'http://10.1.2.3/hook',
+    'http://172.16.0.1/hook',
+    'http://192.168.1.1/hook',
+    'http://169.254.169.254/latest/meta-data',
+    'http://100.64.0.1/hook',
+    'http://[::1]/hook',
+    'http://[fd00::1]/hook',
+    'http://[fe80::1]/hook',
+    'http://[::ffff:127.0.0.1]/hook',
+  ])('rejects non-public target %s', (url) => {
+    expect(() => normalizeWebhookUrl(url)).toThrow('Webhook targets must be publicly routable');
+  });
+
+  it('rejects credentials embedded in the URL', () => {
+    expect(() => normalizeWebhookUrl('https://user:secret@hooks.example.com/hook')).toThrow(
+      'Enter a valid webhook URL',
+    );
+  });
+});
 
 describe('outbound webhooks', () => {
   beforeEach(() => {
