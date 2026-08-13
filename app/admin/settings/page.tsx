@@ -37,7 +37,7 @@ export default async function SettingsPage({
     loadSettings(ctx),
     getEvent(ctx.eventId),
     getPortalAppearance(ctx.eventId),
-    getNotificationPrefs(ctx.actor.userId),
+    getNotificationPrefs(ctx.actor.userId, ctx.eventId),
   ]);
 
   const rows: Record<EntityKind, EntityRow[]> = {

@@ -358,6 +358,7 @@ export async function seedFirstSettlement(
     {
       eventId: senate.id,
       kind: 'sponsor',
+      status: 'published',
       name: 'Gens Iulia',
       tier: 'Patron',
       description: 'Underwrites the record of the sessions.',
@@ -366,6 +367,7 @@ export async function seedFirstSettlement(
     {
       eventId: senate.id,
       kind: 'sponsor',
+      status: 'published',
       name: 'Collegium Pontificum',
       tier: 'Patron',
       position: 1,
@@ -373,6 +375,7 @@ export async function seedFirstSettlement(
     {
       eventId: senate.id,
       kind: 'exhibitor',
+      status: 'published',
       name: 'Tabularium',
       boothLocation: 'Portico, west end',
       description: 'The public records, open for consultation between sessions.',

@@ -4,7 +4,8 @@ import { emailLog } from '../../db/schema';
 import { env } from '../env';
 import { resolveMailTransport, undeliverableRecipient } from './config';
 import { logTransport } from './log';
-import { redactMagicLinks } from './redact';
+import { redactSensitiveMailLinks } from './redact';
+import { prepareEventMail } from '../services/notification-preferences';
 import { resendTransport } from './resend';
 import { smtpTransport } from './smtp';
 import type { MailTransport, OutgoingMail } from './transport';
@@ -126,10 +127,10 @@ function loggedCopy(input: SendMailInput, transport: MailTransport['name']): Log
     return { subject: input.subject, html: input.html, text: input.text, ics };
   }
   return {
-    subject: redactMagicLinks(input.subject),
-    html: redactMagicLinks(input.html),
-    text: redactMagicLinks(input.text),
-    ics: ics === null ? null : redactMagicLinks(ics),
+    subject: redactSensitiveMailLinks(input.subject),
+    html: redactSensitiveMailLinks(input.html),
+    text: redactSensitiveMailLinks(input.text),
+    ics: ics === null ? null : redactSensitiveMailLinks(ics),
   };
 }
 
@@ -147,27 +148,45 @@ function loggedCopy(input: SendMailInput, transport: MailTransport['name']): Log
  */
 export async function sendMail(input: SendMailInput): Promise<{ id: string; sent: boolean }> {
   const db = getDb();
-  const transport = transportFor(input.to);
-  const from = input.from ?? env('MAIL_FROM') ?? 'Cicero <cicero@localhost>';
-  const logged = loggedCopy(input, transport.name);
+  let preparationError: unknown = null;
+  let preparedEventMail: Pick<SendMailInput, 'html' | 'text'> & { allowed: boolean } = {
+    ...input,
+    allowed: true,
+  };
+  try {
+    preparedEventMail = await prepareEventMail(input);
+  } catch (error) {
+    // A notification must not leave without the preference link it promised. Log the intent below
+    // and fail it through the ordinary transport-error path, preserving `sendMail`'s never-throw
+    // contract while failing closed.
+    preparationError = error;
+  }
+  const prepared = { ...input, ...preparedEventMail };
+  const transport = transportFor(prepared.to);
+  const from = prepared.from ?? env('MAIL_FROM') ?? 'Cicero <cicero@localhost>';
+  const logged = loggedCopy(prepared, transport.name);
 
   const [row] = await db
     .insert(emailLog)
     .values({
-      eventId: input.eventId ?? null,
-      toEmail: input.to,
+      eventId: prepared.eventId ?? null,
+      toEmail: prepared.to,
       fromEmail: from,
       subject: logged.subject,
       bodyHtml: logged.html,
       bodyText: logged.text,
-      templateKey: input.templateKey ?? null,
+      templateKey: prepared.templateKey ?? null,
       icsBody: logged.ics,
       status: 'queued',
     })
     .returning({ id: emailLog.id });
 
   try {
-    const result = await transport.send({ ...input, from });
+    if (preparationError) throw preparationError;
+    if (!prepared.allowed) {
+      throw new Error('Email suppressed: the recipient opted out of this notification');
+    }
+    const result = await transport.send({ ...prepared, from });
     await db
       .update(emailLog)
       .set({

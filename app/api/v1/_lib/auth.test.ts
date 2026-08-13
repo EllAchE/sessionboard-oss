@@ -24,6 +24,11 @@ vi.mock('@/lib/ids', () => ({
   hashToken: vi.fn(async () => 'matching-hash'),
   randomToken: vi.fn(),
 }));
+vi.mock('@/lib/rate-limit', () => ({
+  API_KEY_RATE_LIMIT: {},
+  SPEAKER_API_RATE_LIMIT: {},
+  consumeRateLimit: vi.fn(),
+}));
 
 import { requireApiKey, requireSpeakerSession } from './auth';
 
@@ -36,6 +41,7 @@ describe('event API-key isolation', () => {
         id: 'key-1',
         eventId: 'event-1',
         name: 'Integration',
+        scope: 'write',
         keyHash: 'matching-hash',
       },
     ]);
@@ -60,6 +66,41 @@ describe('event API-key isolation', () => {
         'other-event',
       ),
     ).rejects.toMatchObject({ code: 'unauthorized' });
+  });
+
+  it('allows a write key to read and write', async () => {
+    findEvent.mockResolvedValue({ id: 'event-1', slug: 'first-settlement' });
+    const request = new Request('https://cicero.test', {
+      headers: { authorization: 'Bearer abcdefgh-secret' },
+    });
+    await expect(requireApiKey(request, 'first-settlement', 'read')).resolves.toMatchObject({
+      scope: 'write',
+    });
+    await expect(requireApiKey(request, 'first-settlement', 'write')).resolves.toMatchObject({
+      scope: 'write',
+    });
+  });
+
+  it('rejects a read-only key on a write operation', async () => {
+    findEvent.mockResolvedValue({ id: 'event-1', slug: 'first-settlement' });
+    selectWhere.mockResolvedValueOnce([
+      {
+        id: 'key-1',
+        eventId: 'event-1',
+        name: 'Website',
+        scope: 'read',
+        keyHash: 'matching-hash',
+      },
+    ]);
+    await expect(
+      requireApiKey(
+        new Request('https://cicero.test', {
+          headers: { authorization: 'Bearer abcdefgh-secret' },
+        }),
+        'first-settlement',
+        'write',
+      ),
+    ).rejects.toMatchObject({ code: 'forbidden' });
   });
 });
 

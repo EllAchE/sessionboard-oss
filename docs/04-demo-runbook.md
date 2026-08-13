@@ -38,36 +38,36 @@ first 20 minutes. Bonus segments are the first material to cut.
 
 ## Live entry points and expected status
 
-The production base URL is <https://cicero.lhar8771.workers.dev>.
+The production base URL is <https://cicero.elehche.workers.dev>.
 
 | Purpose | URL | Pre-demo expectation |
 | --- | --- | --- |
-| Home | <https://cicero.lhar8771.workers.dev> | Live |
-| Organizer sign-in | <https://cicero.lhar8771.workers.dev/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
-| Organizer dashboard | <https://cicero.lhar8771.workers.dev/admin> | Live after sign-in |
-| Captured demo mail | <https://cicero.lhar8771.workers.dev/admin/mail> | Live after sign-in |
-| Existing public demo | <https://cicero.lhar8771.workers.dev/demo> | Live fallback |
-| Existing demo agenda | <https://cicero.lhar8771.workers.dev/demo/agenda> | Live fallback |
-| Existing public CFP | <https://cicero.lhar8771.workers.dev/submit/demo/speak> | Live fallback |
-| Existing agenda embed | <https://cicero.lhar8771.workers.dev/embed/demo/agenda> | Live fallback |
-| Existing public agenda API | <https://cicero.lhar8771.workers.dev/api/v1/events/demo/agenda> | Live fallback |
-| Live OpenAPI | <https://cicero.lhar8771.workers.dev/api/v1/openapi.json> | Live; proves whether a provisional route is deployed |
+| Home | <https://cicero.elehche.workers.dev> | Live |
+| Organizer sign-in | <https://cicero.elehche.workers.dev/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
+| Organizer dashboard | <https://cicero.elehche.workers.dev/admin> | Live after sign-in |
+| Captured demo mail | <https://cicero.elehche.workers.dev/admin/mail> | Live after sign-in |
+| Existing public demo | <https://cicero.elehche.workers.dev/demo> | Live fallback |
+| Existing demo agenda | <https://cicero.elehche.workers.dev/demo/agenda> | Live fallback |
+| Existing public CFP | <https://cicero.elehche.workers.dev/submit/demo/speak> | Live fallback |
+| Existing agenda embed | <https://cicero.elehche.workers.dev/embed/demo/agenda> | Live fallback |
+| Existing public agenda API | <https://cicero.elehche.workers.dev/api/v1/events/demo/agenda> | Live fallback |
+| Live OpenAPI | <https://cicero.elehche.workers.dev/api/v1/openapi.json> | Live; proves whether a provisional route is deployed |
 
 After a separately approved targeted production seed, the First Settlement links are expected to
 be:
 
 | Purpose | Expected URL | Status before that approval |
 | --- | --- | --- |
-| Public Roman event | <https://cicero.lhar8771.workers.dev/first-settlement> | **Not live; last observed 404** |
-| Public agenda | <https://cicero.lhar8771.workers.dev/first-settlement/agenda> | **Not live** |
-| Session list | <https://cicero.lhar8771.workers.dev/first-settlement/sessions> | **Not live** |
-| Speaker directory | <https://cicero.lhar8771.workers.dev/first-settlement/speakers> | **Not live** |
-| Speaker gallery | <https://cicero.lhar8771.workers.dev/first-settlement/gallery> | **Not live** |
-| Itinerary | <https://cicero.lhar8771.workers.dev/first-settlement/itinerary> | **Not live** |
-| Public CFP, “Order of Debate” | <https://cicero.lhar8771.workers.dev/submit/first-settlement/motions> | **Not live** |
-| Agenda embed | <https://cicero.lhar8771.workers.dev/embed/first-settlement/agenda> | **Not live** |
-| Speaker embed | <https://cicero.lhar8771.workers.dev/embed/first-settlement/speakers> | **Not live** |
-| Public agenda API | <https://cicero.lhar8771.workers.dev/api/v1/events/first-settlement/agenda> | **Not live** |
+| Public Roman event | <https://cicero.elehche.workers.dev/first-settlement> | **Not live; last observed 404** |
+| Public agenda | <https://cicero.elehche.workers.dev/first-settlement/agenda> | **Not live** |
+| Session list | <https://cicero.elehche.workers.dev/first-settlement/sessions> | **Not live** |
+| Speaker directory | <https://cicero.elehche.workers.dev/first-settlement/speakers> | **Not live** |
+| Speaker gallery | <https://cicero.elehche.workers.dev/first-settlement/gallery> | **Not live** |
+| Itinerary | <https://cicero.elehche.workers.dev/first-settlement/itinerary> | **Not live** |
+| Public CFP, “Order of Debate” | <https://cicero.elehche.workers.dev/submit/first-settlement/motions> | **Not live** |
+| Agenda embed | <https://cicero.elehche.workers.dev/embed/first-settlement/agenda> | **Not live** |
+| Speaker embed | <https://cicero.elehche.workers.dev/embed/first-settlement/speakers> | **Not live** |
+| Public agenda API | <https://cicero.elehche.workers.dev/api/v1/events/first-settlement/agenda> | **Not live** |
 
 The seed in [`../db/seeds/first-settlement.ts`](../db/seeds/first-settlement.ts) creates **The First
 Settlement**, a Europe/Rome event around the January 27 BCE settlement. It includes eleven motions,
@@ -92,7 +92,7 @@ open as the no-mutation fallback.
 Have these values available without displaying them:
 
 ```bash
-export CICERO_BASE_URL='https://cicero.lhar8771.workers.dev'
+export CICERO_BASE_URL='https://cicero.elehche.workers.dev'
 export CICERO_EVENT_SLUG='first-settlement'
 export CICERO_PROGRAM_FILE='docs/fixtures/first-settlement-accelevents-program.json'
 # Load CICERO_API_KEY from the approved secret store; never paste it into notes or shell history.

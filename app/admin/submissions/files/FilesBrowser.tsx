@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, Download, FileDown, MessageSquare } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, Database, Download, FileDown, MessageSquare } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -14,6 +14,7 @@ import {
   type DataTableColumn,
 } from '../../../../components/ui';
 import { formatBytes } from '../../../../lib/services/file-format';
+import { postgresStoragePressure, type StorageUsage } from '../../../../lib/storage/status';
 import { checkArchiveBudget } from './archive';
 import { FilesNav } from './FilesNav';
 import { FILE_KINDS, fileKindLabel, type FileKind } from './kind';
@@ -86,7 +87,7 @@ function formatDate(iso: string): string {
  * "select everything shown" after a filter is the fast path to "every accepted talk's deck", and it
  * is one keystroke away because `DataTable` already owns roving focus and space-to-toggle.
  */
-export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
+export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: StorageUsage }) {
   const router = useRouter();
   const { toast } = useToast();
   const downloadForm = useRef<HTMLFormElement>(null);
@@ -291,6 +292,34 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
           </Button>
         </div>
       </header>
+
+      <div
+        className={styles.storageStatus}
+        data-pressure={
+          storage.backend === 'postgres' && storage.usedBytes !== null
+            ? postgresStoragePressure(storage.usedBytes)
+            : 'normal'
+        }
+      >
+        {storage.backend === 'postgres' && storage.usedBytes !== null &&
+        postgresStoragePressure(storage.usedBytes) !== 'normal' ? (
+          <AlertTriangle size={18} aria-hidden />
+        ) : (
+          <Database size={18} aria-hidden />
+        )}
+        <div>
+          <strong>
+            {storage.backend === 'postgres'
+              ? `Postgres file storage · ${formatBytes(storage.usedBytes ?? 0)} used`
+              : `${storage.backend.toUpperCase()} object storage`}
+          </strong>
+          <p>
+            {storage.backend === 'postgres'
+              ? `Uploads count toward database size and every full backup. Move to R2 or S3 before ${formatBytes(storage.practicalCeilingBytes ?? 0)}; the warning starts at ${formatBytes(storage.warningBytes ?? 0)}.`
+              : 'Uploads are stored outside Postgres in the configured object bucket.'}
+          </p>
+        </div>
+      </div>
 
       <div className={queue.filters}>
         <Input

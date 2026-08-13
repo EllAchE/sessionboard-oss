@@ -1,0 +1,2 @@
+ALTER TABLE "review_round" ADD COLUMN "decision_queue_bar_tenths" integer DEFAULT 30 NOT NULL;--> statement-breakpoint
+ALTER TABLE "review_round" ADD CONSTRAINT "review_round_decision_queue_bar_range" CHECK ("review_round"."decision_queue_bar_tenths" between 10 and 50);

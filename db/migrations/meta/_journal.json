@@ -92,6 +92,55 @@
       "when": 1786629670262,
       "tag": "0012_tan_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786647510357,
+      "tag": "0013_dazzling_scarlet_spider",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786648298357,
+      "tag": "0014_classy_paper_doll",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1786649614413,
+      "tag": "0015_charming_sebastian_shaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786649746298,
+      "tag": "0016_pretty_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1786650161677,
+      "tag": "0017_smart_thanos",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786650500000,
+      "tag": "0018_form_invariant_repairs",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786650650229,
+      "tag": "0019_boring_adam_warlock",
+      "breakpoints": true
     }
   ]
 }

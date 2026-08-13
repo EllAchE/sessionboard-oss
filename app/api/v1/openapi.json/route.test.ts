@@ -4,7 +4,7 @@ import { buildSpec } from './route';
 
 describe('OpenAPI documentation', () => {
   it('keeps docs/openapi.json in sync with the generated API contract', () => {
-    expect(buildSpec('https://cicero.lhar8771.workers.dev')).toEqual(committedSpec);
+    expect(buildSpec('https://cicero.elehche.workers.dev')).toEqual(committedSpec);
   });
 
   it('advertises the authenticated program reconciliation contract', () => {
@@ -34,6 +34,7 @@ describe('OpenAPI documentation', () => {
 
     expect(spec.paths['/events/{slug}/sessions'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/speakers'].get?.security).toBeUndefined();
+    expect(spec.paths['/events/{slug}/sponsors'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/forms'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/forms/{formId}'].get?.security).toBeUndefined();
     expect(spec.paths['/events/{slug}/forms/{formId}/submissions'].post?.security).toEqual(

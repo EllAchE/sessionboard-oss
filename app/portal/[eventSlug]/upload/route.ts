@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
 import { requireEventContext } from '@/lib/auth';
 import { httpStatus, invalid, notFound, toPublicError } from '@/lib/errors';
+import { normalizedProfileImageProblem } from '@/lib/profile-image';
 import { replaceDeliverable } from '@/lib/services/content';
 import { adhocSpec, storeFile, validateUpload, type UploadInput } from '@/lib/services/files';
 import { ensureParticipant, getEventBySlug, setHeadshot } from '@/lib/services/portal';
@@ -47,6 +48,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
     if (intent === 'headshot') {
       const [candidate] = await toUploads(picked.slice(0, 1));
       validateUpload(HEADSHOT_SPEC, candidate);
+      const bytes = candidate.bytes instanceof Uint8Array
+        ? candidate.bytes
+        : new Uint8Array(candidate.bytes);
+      const problem = normalizedProfileImageProblem({ ...candidate, bytes });
+      if (problem) throw invalid(problem);
       const stored = await storeFile(ctx, candidate);
       await setHeadshot(ctx, me.id, stored.id);
       revalidatePath(`/portal/${eventSlug}`, 'layout');

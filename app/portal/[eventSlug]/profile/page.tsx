@@ -16,7 +16,7 @@ export default async function ProfilePage({
   const { eventSlug } = await params;
   const { me, ctx } = await portalSession(eventSlug);
   const [notifications, name] = await Promise.all([
-    getNotificationPrefs(ctx.actor.userId),
+    getNotificationPrefs(ctx.actor.userId, ctx.eventId),
     getProfileName(ctx.actor.userId),
   ]);
 
@@ -30,8 +30,16 @@ export default async function ProfilePage({
         </p>
       </div>
 
-      <HeadshotPanel eventSlug={eventSlug} headshotUrl={headshotUrl(eventSlug, me.headshotFileId)} />
-      <ProfileForm eventSlug={eventSlug} me={me} name={name} notifications={notifications} />
+      {me.headshotFileId ? (
+        <HeadshotPanel eventSlug={eventSlug} headshotUrl={headshotUrl(eventSlug, me.headshotFileId)} />
+      ) : null}
+      <ProfileForm
+        eventSlug={eventSlug}
+        me={me}
+        name={name}
+        notifications={notifications}
+        collectHeadshot={!me.headshotFileId}
+      />
     </div>
   );
 }

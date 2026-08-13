@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { httpStatus, invalid, toPublicError } from '../../../../lib/errors';
+import { normalizedProfileImageProblem } from '../../../../lib/profile-image';
 import { adhocSpec, storeFile, validateUpload } from '../../../../lib/services/files';
 import { manageSpeakersContext } from '../context';
 
@@ -22,13 +23,17 @@ export async function POST(request: Request) {
     const picked = body.get('photo');
     if (!(picked instanceof File) || picked.size === 0) throw invalid('Choose an image to upload');
 
+    const bytes = new Uint8Array(await picked.arrayBuffer());
     const candidate = {
       filename: picked.name,
       contentType: picked.type || 'application/octet-stream',
       sizeBytes: picked.size,
+      bytes,
     };
     validateUpload(HEADSHOT, candidate);
-    const stored = await storeFile(ctx, { ...candidate, bytes: await picked.arrayBuffer() });
+    const problem = normalizedProfileImageProblem(candidate);
+    if (problem) throw invalid(problem);
+    const stored = await storeFile(ctx, candidate);
 
     return NextResponse.json({ ok: true, fileId: stored.id });
   } catch (error) {

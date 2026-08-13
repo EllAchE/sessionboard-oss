@@ -215,7 +215,12 @@ export function ContactProfile({
                 <div className={styles.identity}>
                   {contact.headshotUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className={styles.headshot} src={contact.headshotUrl} alt={contact.name} />
+                    <img
+                      className={styles.headshot}
+                      src={contact.headshotUrl}
+                      alt={contact.name}
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
                     <div className={styles.headshotEmpty}>No headshot</div>
                   )}
@@ -232,6 +237,19 @@ export function ContactProfile({
                         {contact.tags.map((tag) => (
                           <Tag key={tag}>{tag}</Tag>
                         ))}
+                      </span>
+                    ) : null}
+                    {contact.headshotUrl ? (
+                      <span className={styles.hint}>
+                        Directory source image. Event profiles use a normalized stored copy.{' '}
+                        <a
+                          href={contact.headshotUrl}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          referrerPolicy="no-referrer"
+                        >
+                          Open source image
+                        </a>
                       </span>
                     ) : null}
                   </div>
@@ -352,7 +370,9 @@ export function ContactProfile({
                     </Button>
                     <p className={styles.hint}>
                       Creates the speaker in that event&rsquo;s roster with this name, email,
-                      company and bio already filled in.
+                      company and bio already filled in. A headshot URL stays a directory source:
+                      open and download it, then upload it on the speaker record to create the
+                      event&rsquo;s controlled 512 px copy.
                     </p>
                   </>
                 ) : null}
@@ -505,6 +525,11 @@ export function ContactProfile({
               value={draft.headshotUrl}
               onChange={(e) => setDraft({ ...draft, headshotUrl: e.currentTarget.value })}
             />
+            <span className={styles.hint}>
+              A source reference for prospecting. Event profiles never hotlink it; promote it with
+              the speaker photo uploader after adding this contact to an event. Open and download
+              the source first, then choose that local file.
+            </span>
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Tags</span>

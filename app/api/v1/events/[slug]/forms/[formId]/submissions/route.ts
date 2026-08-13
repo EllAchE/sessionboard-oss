@@ -19,6 +19,7 @@ import { requireSpeakerSession } from '../../../../../_lib/auth';
 import { requireEvent } from '../../../../../_lib/queries';
 import { PRIVATE_CACHE, handle, json, parseBody } from '../../../../../_lib/respond';
 import { createSubmissionBody } from '../../../../../_lib/schemas';
+import { emitWebhook } from '@/lib/webhooks';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,6 +135,25 @@ export async function POST(
       );
     } else {
       await linkPrimarySpeaker(saved.id, participantId);
+    }
+
+    if (body.mode === 'submit') {
+      await emitWebhook(event.id, 'submission.received', {
+        submissionId: saved.id,
+        ref: saved.displayRef,
+        title: saved.title,
+        status: saved.status,
+        formId: bundle.form.id,
+      });
+      if (saved.status === 'accepted') {
+        await emitWebhook(event.id, 'submission.decision_made', {
+          submissionId: saved.id,
+          decision: saved.status,
+          note: null,
+          decidedAt: new Date().toISOString(),
+          automatic: true,
+        });
+      }
     }
 
     return json(

@@ -37,15 +37,10 @@ export default async function AdminSponsorsPage() {
             The organisations behind this event. Sponsors are recognised in tier order; exhibitors
             have a stand on the floor. Both lists are scoped to this event.
           </p>
-          {/*
-            `E-7`. A sponsor row has no draft state — unlike a session or a speaker profile, there is
-            no column to hold one — so saving one publishes it. Said here, before the organizer
-            types, rather than discovered afterwards on the wall.
-          */}
           <p className={styles.subtitle}>
-            Everything on these lists is public. A row appears on the{' '}
-            <a href={`/${event.slug}/sponsors`}>sponsor wall</a> as soon as it is saved, so add one
-            when the agreement is signed rather than while it is being negotiated.
+            New rows start as drafts. Publish each one when it is ready for the{' '}
+            <a href={`/${event.slug}/sponsors`}>sponsor wall</a>, public API, and sponsor embed; return
+            it to draft to remove its details and logo from every public surface.
           </p>
         </div>
       </div>

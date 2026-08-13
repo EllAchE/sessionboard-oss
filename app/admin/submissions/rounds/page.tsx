@@ -54,6 +54,7 @@ export default async function ReviewRoundsPage({
       id: round.id,
       name: round.name,
       status: round.status,
+      decisionQueueBar: round.decisionQueueBar,
       blindUntilClose: round.blindUntilClose,
       anonymized: round.anonymized,
       opensAt: round.opensAt?.toISOString() ?? null,

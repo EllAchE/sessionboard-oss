@@ -19,7 +19,18 @@ import {
 import type { EventContext } from '../context';
 import { requireCapability } from '../context';
 import { conflict, invalid, notFound } from '../errors';
+import { e164PhoneInput } from '../phone';
 import { normalizeAccent } from '../portal-appearance';
+import {
+  blockSmsBeforePreferenceChange,
+  grantSmsAfterPreferenceChange,
+} from '../sms/consent';
+import {
+  getRecipientNotificationPrefs,
+  saveDeliveryPreferences,
+  type DeliveryPreferenceInput,
+  type NotificationPrefs,
+} from './notification-preferences';
 
 /**
  * `E-1`–`E-5`: the six lists every other surface picks from. Nothing here is interesting on its
@@ -1171,15 +1182,11 @@ async function upsertAppearance(
 // because an organizer has no `participant` row to piggyback on.
 // ---------------------------------------------------------------------------
 
-export type NotificationPrefs = {
-  phone: string | null;
-  notifyEmail: boolean;
-  notifySms: boolean;
-};
+export type { DeliveryPreferenceInput, NotificationPrefs };
 
 export const notificationPrefsInput = z
   .object({
-    phone: z.string().trim().max(32).optional(),
+    phone: e164PhoneInput.optional(),
     notifyEmail: z.boolean().optional(),
     notifySms: z.boolean().optional(),
   })
@@ -1194,13 +1201,11 @@ export const notificationPrefsInput = z
   });
 export type NotificationPrefsInput = z.input<typeof notificationPrefsInput>;
 
-export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
-  const row = await getDb().query.user.findFirst({
-    where: eq(user.id, userId),
-    columns: { phone: true, notifyEmail: true, notifySms: true },
-  });
-  if (!row) throw notFound('Your account');
-  return row;
+export async function getNotificationPrefs(
+  userId: string,
+  eventId?: string | null,
+): Promise<NotificationPrefs> {
+  return getRecipientNotificationPrefs(userId, eventId);
 }
 
 export async function saveNotificationPrefs(
@@ -1208,17 +1213,49 @@ export async function saveNotificationPrefs(
   input: NotificationPrefsInput,
 ): Promise<NotificationPrefs> {
   const values = parse(notificationPrefsInput, input);
+  const current = await getNotificationPrefs(userId);
+  const nextPhone = values.phone !== undefined ? values.phone || null : current.phone;
+  const nextSmsEnabled = Boolean(nextPhone) && (values.notifySms ?? current.notifySms);
+  if (nextSmsEnabled && (nextPhone !== current.phone || !current.phoneVerified)) {
+    throw invalid('Verify this phone number before enabling text messages', {
+      phone: 'Request and enter the verification code first',
+    });
+  }
+  await blockSmsBeforePreferenceChange({
+    previousPhone: current.phone,
+    nextPhone,
+    nextEnabled: nextSmsEnabled,
+    source: 'organizer_settings',
+  });
   const [updated] = await getDb()
     .update(user)
     .set({
-      ...(values.phone !== undefined ? { phone: values.phone || null } : {}),
+      phone: nextPhone,
+      ...(nextPhone !== current.phone
+        ? { phoneVerifiedAt: null, phoneVerificationTransport: null }
+        : {}),
       ...(values.notifyEmail !== undefined ? { notifyEmail: values.notifyEmail } : {}),
-      ...(values.notifySms !== undefined ? { notifySms: values.notifySms } : {}),
+      notifySms: nextSmsEnabled,
     })
     .where(eq(user.id, userId))
-    .returning({ phone: user.phone, notifyEmail: user.notifyEmail, notifySms: user.notifySms });
+    .returning({
+      phone: user.phone,
+      phoneVerifiedAt: user.phoneVerifiedAt,
+      phoneVerificationTransport: user.phoneVerificationTransport,
+      notifyEmail: user.notifyEmail,
+      notifySms: user.notifySms,
+    });
   if (!updated) throw notFound('Your account');
-  return updated;
+  await grantSmsAfterPreferenceChange(nextPhone, nextSmsEnabled, 'organizer_settings');
+  return getRecipientNotificationPrefs(userId);
+}
+
+export async function saveNotificationDeliveryPrefs(
+  userId: string,
+  eventId: string,
+  input: DeliveryPreferenceInput,
+): Promise<NotificationPrefs> {
+  return saveDeliveryPreferences(userId, eventId, input);
 }
 
 // ---------------------------------------------------------------------------

@@ -1,12 +1,14 @@
 import { listOpenCalls } from '@/lib/services/submissions';
 import { requireEvent } from '../../../_lib/queries';
 import { PUBLIC_CACHE, handle, isoOrNull, json } from '../../../_lib/respond';
+import { enforcePublicApiRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 /** Public discovery only: closed and draft CFPs are deliberately absent. */
-export async function GET(_request: Request, context: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, context: { params: Promise<{ slug: string }> }) {
   return handle(async () => {
+    await enforcePublicApiRateLimit(request);
     const { slug } = await context.params;
     const event = await requireEvent(slug);
     const calls = await listOpenCalls(event.id);

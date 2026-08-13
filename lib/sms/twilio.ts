@@ -5,11 +5,20 @@ import type { OutgoingSms, SendResult, SmsTransport } from './transport';
  * HTTP rather than the `twilio` SDK: same reasoning as `lib/mail/resend.ts` — Workers has no Node
  * built-ins to shim, and one `fetch` against the REST API needs none.
  */
-export function twilioTransport(accountSid: string, authToken: string): SmsTransport {
+export function twilioTransport(
+  accountSid: string,
+  authToken: string,
+  statusCallbackUrl: string,
+): SmsTransport {
   return {
     name: 'twilio',
     async send(sms: OutgoingSms): Promise<SendResult> {
-      const body = new URLSearchParams({ To: sms.to, From: sms.from, Body: sms.body });
+      const body = new URLSearchParams({
+        To: sms.to,
+        From: sms.from,
+        Body: sms.body,
+        StatusCallback: statusCallbackUrl,
+      });
 
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,

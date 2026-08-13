@@ -6,15 +6,17 @@ import { isAcceptingSubmissions, loadPublicForm } from '@/lib/services/submissio
 import { formFieldPayload, formParticipantRolePayload } from '../../../../_lib/forms';
 import { requireEvent } from '../../../../_lib/queries';
 import { PUBLIC_CACHE, handle, isoOrNull, json } from '../../../../_lib/respond';
+import { enforcePublicApiRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
 /** Public form contract so a speaker agent can prepare valid answers before authenticating a write. */
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ slug: string; formId: string }> },
 ) {
   return handle(async () => {
+    await enforcePublicApiRateLimit(request);
     const { slug, formId } = await context.params;
     const event = await requireEvent(slug);
     const formRow = await getDb().query.form.findFirst({

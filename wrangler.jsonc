@@ -1,7 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cicero",
-  "main": ".open-next/worker.js",
+  // OpenNext generates the fetch implementation; this small custom entry point preserves it and
+  // adds the scheduled handler used by the hourly reminder Cron Trigger below.
+  "main": "custom-worker.ts",
   "compatibility_date": "2025-03-25",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 
@@ -26,7 +28,7 @@
   // mailbox can exist behind, holding no membership outside the demo events it does not own. Real
   // accounts are unreachable through it at any setting; `lib/demo-access.ts` states the boundary.
   "vars": {
-    "APP_URL": "https://cicero.lhar8771.workers.dev",
+    "APP_URL": "https://cicero.elehche.workers.dev",
     "MAIL_TRANSPORT": "auto",
     "MAIL_FROM": "Cicero <onboarding@resend.dev>",
     "DEMO_ONSCREEN_MAGIC_LINKS": "1"
@@ -39,6 +41,12 @@
 
   "observability": {
     "enabled": true
+  },
+
+  // Reminder jobs are idempotent and evaluate their own due times, so an hourly trigger keeps
+  // delivery timely without duplicate mail. Cron expressions are evaluated in UTC by Cloudflare.
+  "triggers": {
+    "crons": ["0 * * * *"]
   },
 
   // Pooled Neon connection, created with

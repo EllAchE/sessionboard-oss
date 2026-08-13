@@ -97,8 +97,19 @@ export type PortalAppearanceWire = {
 
 export type NotificationsWire = {
   phone: string | null;
+  phoneVerified: boolean;
   notifyEmail: boolean;
   notifySms: boolean;
+  timezone: string | null;
+  quietStart: string | null;
+  quietEnd: string | null;
+  smsHourlyLimit: number;
+  eventNotifyEmail: boolean | null;
+  eventNotifySms: boolean | null;
+  categories: Record<
+    'submission' | 'session' | 'task' | 'form' | 'adhoc',
+    { notifyEmail: boolean | null; notifySms: boolean | null }
+  >;
 };
 
 export function humanizeFieldType(value: string): string {

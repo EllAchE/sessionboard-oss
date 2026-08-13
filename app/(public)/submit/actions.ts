@@ -24,6 +24,7 @@ import {
   type ParticipantInput,
 } from '@/lib/services/submissions';
 import { donePath, portalPath, type SubmitPayload, type SubmitResult } from './shared';
+import { emitWebhook } from '@/lib/webhooks';
 
 const SESSION_COOKIE = 'cicero_session';
 const SESSION_TTL_DAYS = 30;
@@ -230,6 +231,25 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
       );
     } else {
       await linkPrimarySpeaker(saved.id, participantId);
+    }
+
+    if (payload.mode === 'submit') {
+      await emitWebhook(bundle.event.id, 'submission.received', {
+        submissionId: saved.id,
+        ref: saved.displayRef,
+        title: saved.title,
+        status: saved.status,
+        formId: bundle.form.id,
+      });
+      if (saved.status === 'accepted') {
+        await emitWebhook(bundle.event.id, 'submission.decision_made', {
+          submissionId: saved.id,
+          decision: saved.status,
+          note: null,
+          decidedAt: new Date().toISOString(),
+          automatic: true,
+        });
+      }
     }
 
     // Last, so a failure here cannot cost someone their submission.

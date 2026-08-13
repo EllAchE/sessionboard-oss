@@ -19,9 +19,16 @@ secondary target, not the thing the architecture bends around.
 | DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** |
 | File storage | Postgres by default, R2 binding when bound | MinIO, or any S3 endpoint |
 | Email | Resend HTTP API | SMTP via nodemailer |
-| Scheduled sends | Cron Triggers → `/api/cron` | any cron hitting `/api/cron` |
+| Scheduled sends | Hourly Cron Trigger → custom Worker → `/api/cron` in-process | any cron hitting `/api/cron` |
 
-`wrangler.jsonc` sets `main: ".open-next/worker.js"`, `nodejs_compat`, and an `[assets]` binding.
+`wrangler.jsonc` points at `custom-worker.ts`, which preserves OpenNext's generated `fetch` handler
+and adds Cloudflare's module-format `scheduled` handler. The hourly trigger calls that fetch handler
+in-process at `/api/cron`; this establishes OpenNext's request-local Hyperdrive context without a
+public loopback request. The same route remains the self-hosted scheduler contract. Reminder jobs
+carry durable idempotency guards because Cron Trigger delivery is at least once. This is the
+documented [OpenNext custom Worker](https://opennext.js.org/cloudflare/howtos/custom-worker) shape
+with a [`triggers.crons`](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+schedule owned by Wrangler.
 
 **File storage defaults to the database, not R2.** `lib/storage` resolves in three steps — the `FILES`
 R2 binding if present, then an `S3_BUCKET` if configured, then a `file_blob` row. R2 would be the
@@ -30,6 +37,22 @@ an open-source project that demands a credit card before it will run is a worse 
 that keeps a few headshots in Postgres. The binding always wins where it exists, so turning R2 on is
 uncommenting two config blocks and changes no code. Same reasoning drops the R2 ISR cache: nearly
 every route is dynamic and per-event, so there is little to persist.
+
+The Postgres backend is intentionally bounded in product terms even though `bytea` itself permits
+more: one upload is capped at 25 MiB, the admin Files screen warns when deployment-wide blobs reach
+250 MiB, and 500 MiB is the practical handoff point to R2/S3. Database blobs enlarge the primary and
+every full backup, while reads traverse the Worker and Hyperdrive instead of an object CDN. The two
+numbers are operating guidance, chosen around common free database quotas, not engine limits.
+
+**One event-profile image model.** A published or portal speaker image is always
+`participant.headshotFileId`, pointing at controlled bytes in the configured `Storage`. Both
+speaker pickers center-crop and re-encode to a 512×512 WebP in the browser, then the upload route
+verifies the stored bytes' format, dimensions and 1 MiB ceiling. This keeps image processing out of
+the Worker runtime and makes that one asset suitable for the detail page and roster thumbnail.
+`contact.headshotUrl` remains only a CRM discovery/source reference: adding the contact to an event
+copies profile text but does not hotlink the external image. The explicit conversion is to open the
+source link, download the image, open the new event speaker, choose the downloaded file in the photo
+uploader, and let the normalizer create the canonical stored copy.
 
 ### Why Postgres, and why this is the load-bearing decision
 
@@ -123,7 +146,7 @@ event · track · room · tag · session_format · persona · field_library_entr
 user · membership(user,event,role) · magic_token · session_cookie(+impersonated_by)
 form · form_field · submission · submission_tag · participant · participant_role · profile
 review_round · review_assignment · score · scorecard_criterion
-scheduled_session
+scheduled_session · session_recording(file XOR external HTTPS URL, published_at)
 task · task_assignment · file · file_request
 portal_page · portal_theme · email_template · email_log
 api_key · accelevents_sync · airtable_sync · saved_view
@@ -147,6 +170,21 @@ JSONB is good at.
 The split is therefore not a compromise between two designs; it follows from two genuinely different
 access patterns living in the same row. Section 5 explains why no off-the-shelf form engine can
 express it.
+
+### Post-conference recordings stay behind two publication gates
+
+`session_recording` is a one-to-one child of `scheduled_session`, not a URL column on the public
+programme. Its source is either an event-scoped `file` row or a validated credential-free HTTPS
+URL, enforced as an exclusive pair by a database check. `published_at` is independent of the
+session's agenda status: attaching or replacing media leaves it draft, and publication is refused
+until the public session has ended. A past event end substitutes for a missing session time so
+historical imports are not stranded.
+
+The in-app upload stays at 25 MB and uses the existing `Storage` abstraction. This keeps Worker and
+Postgres memory bounded to the same ceiling as other uploads; full-length masters belong on a
+streaming host and are associated by URL. Stored public playback is still an application route,
+not a presigned object: it rechecks event ownership, recording publication, session publication,
+and submission-content approval before returning the storage stream.
 
 ### `email_log` doubles as the dev mailbox
 
@@ -217,6 +255,7 @@ Nearly free once the services exist, because handlers are a Zod parse plus a ser
 GET  /api/v1/events/:slug
 GET  /api/v1/events/:slug/sessions?status=&track=&room=
 GET  /api/v1/events/:slug/speakers
+GET  /api/v1/events/:slug/sponsors
 GET  /api/v1/events/:slug/agenda
 GET  /api/v1/events/:slug/submissions          (key-scoped)
 POST /api/v1/events/:slug/forms/:formId/submissions
@@ -227,11 +266,16 @@ Auth is `Authorization: Bearer <key>`, keys are per event, hashed at rest.
 
 ### Embeds are server-rendered routes, not a JS widget
 
-`G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers` and `/embed/:slug/sessions`,
+`G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers`, `/embed/:slug/sessions`, and
+`/embed/:slug/sponsors`,
 served with `frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing
 iframe. The requirement that an embed "auto-updates with no re-paste" is then free rather than
 engineered: the iframe renders live data on every load, so there is no snapshot to go stale and no
 client bundle to version.
+
+Sponsor rows add one more structural gate: only `status = published` rows enter the public page,
+embed, REST list, navigation presence check, or logo authorization. Changing a row back to draft
+therefore removes both its metadata and its image bytes without deleting either.
 
 ## 6. The form engine — verdict: BUILD
 

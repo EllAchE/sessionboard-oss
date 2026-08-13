@@ -57,6 +57,7 @@ export type RoundWire = {
   id: string;
   name: string;
   status: 'draft' | 'open' | 'closed';
+  decisionQueueBar: number;
   blindUntilClose: boolean;
   anonymized: boolean;
   opensAt: string | null;
@@ -225,6 +226,7 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [newRoundName, setNewRoundName] = useState('');
   const [newRoundBlind, setNewRoundBlind] = useState(true);
   const [newRoundAnonymized, setNewRoundAnonymized] = useState(false);
+  const [newRoundBar, setNewRoundBar] = useState('3.0');
   const [newRoundDates, setNewRoundDates] = useState<RoundDateDraft>(EMPTY_DATES);
   const [reminderNote, setReminderNote] = useState('');
   const [reviewerName, setReviewerName] = useState('');
@@ -493,6 +495,27 @@ export function RoundsManager(props: RoundsManagerProps) {
                   <option value="open">Open</option>
                   <option value="closed">Closed</option>
                 </Select>
+                <label className={styles.keyRow}>
+                  Queue ≥
+                  <Input
+                    inputSize="sm"
+                    type="number"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    defaultValue={round.decisionQueueBar.toFixed(1)}
+                    aria-label={`Accept queue bar for ${round.name}`}
+                    title="Completed submissions at or above this average enter the accept queue"
+                    onBlur={(event) => {
+                      const value = Number(event.target.value);
+                      if (!Number.isFinite(value)) return;
+                      run(
+                        () => updateRoundAction(round.id, { decisionQueueBar: value }),
+                        `Queue bar updated to ${value.toFixed(1)}.`,
+                      );
+                    }}
+                  />
+                </label>
                 <span className={styles.keyRow}>
                   <Switch
                     size="sm"
@@ -563,6 +586,20 @@ export function RoundsManager(props: RoundsManagerProps) {
                 />
                 Blind
               </span>
+              <label className={styles.keyRow}>
+                Queue ≥
+                <Input
+                  inputSize="sm"
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  value={newRoundBar}
+                  aria-label="New round accept queue bar"
+                  title="Completed submissions at or above this average enter the accept queue"
+                  onChange={(event) => setNewRoundBar(event.target.value)}
+                />
+              </label>
               <span className={styles.keyRow}>
                 <Switch
                   size="sm"
@@ -584,6 +621,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                       name: newRoundName,
                       blindUntilClose: newRoundBlind,
                       anonymized: newRoundAnonymized,
+                      decisionQueueBar: Number(newRoundBar),
                       ...newRoundDateWire,
                     });
                     if (result.ok) {

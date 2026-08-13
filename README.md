@@ -18,22 +18,22 @@ one-command self-host that needs no API key from anyone.
 
 ## Look at the running one first
 
-**<https://cicero.lhar8771.workers.dev>** is deployed and seeded.
+**<https://cicero.elehche.workers.dev>** is deployed and seeded.
 
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/admin/mail`](https://cicero.lhar8771.workers.dev/admin/mail).
+[`/admin/mail`](https://cicero.elehche.workers.dev/admin/mail).
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
 seeded demo cannot see each other.
 
-Without signing in at all: the [public event page](https://cicero.lhar8771.workers.dev/demo), the
-[programme](https://cicero.lhar8771.workers.dev/demo/agenda), an
-[open call for speakers](https://cicero.lhar8771.workers.dev/submit/demo/speak) you can submit to,
-the [embeddable agenda](https://cicero.lhar8771.workers.dev/embed/demo/agenda) an event site would
-iframe, and the [REST API](https://cicero.lhar8771.workers.dev/api/v1/events/demo/agenda).
+Without signing in at all: the [public event page](https://cicero.elehche.workers.dev/demo), the
+[programme](https://cicero.elehche.workers.dev/demo/agenda), an
+[open call for speakers](https://cicero.elehche.workers.dev/submit/demo/speak) you can submit to,
+the [embeddable agenda](https://cicero.elehche.workers.dev/embed/demo/agenda) an event site would
+iframe, and the [REST API](https://cicero.elehche.workers.dev/api/v1/events/demo/agenda).
 
 ![The organizer dashboard, opening on outstanding speaker tasks](docs/images/dashboard.jpg)
 
@@ -203,6 +203,12 @@ portal pages, group access.
 clashes and — the one the brief doesn't ask for — **speaker double-booking**, which is the clash
 that fails publicly on the day.
 
+**Post-conference recordings.** **Admin → Recordings** attaches a bounded video upload, an existing
+event video, or an HTTPS streaming URL to a session. Media stays draft until an organizer publishes
+it after the session ends; only then do public programme pages and embeds show **Watch recording**.
+Replacing the source unpublishes it automatically. Full-length recordings should use a streaming
+host—the through-app upload is intentionally capped at 25 MB.
+
 ![The agenda grid, with the unscheduled rail on the left and a clash banner above it](docs/images/agenda.jpg)
 
 **Comms.** Branded templates, a send log, and a real `.ics` `METHOD:REQUEST` that bumps `SEQUENCE`
@@ -215,11 +221,23 @@ and speaker gallery — all server-rendered, all readable with no account, each 
 snippet, per-embed filters and styling. The embed is an auto-resizing iframe over a live route, so
 "updates without re-pasting the snippet" comes for free.
 
-**Integrations.** A public REST API with a generated
-[`docs/openapi.json`](docs/openapi.json) schema, an Accelevents speaker-push client, and a one-way
-Airtable mirror. The [Accelevents demo](docs/accelevents-demo.md) also includes a deterministic
-fixture adapter that previews and applies a full published-program create/update/delete/no-op sync
-without claiming undocumented live Accelevents capabilities.
+**Integrations.** A rate-limited public REST API with read/write event keys and a generated
+[`docs/openapi.json`](docs/openapi.json) schema, a Streamable HTTP MCP server with a generated
+[`docs/mcp-tools.json`](docs/mcp-tools.json) manifest, signed lifecycle webhooks with a delivery
+log, an Accelevents speaker-push client, and a one-way Airtable mirror. The
+[Accelevents demo](docs/accelevents-demo.md) also includes a deterministic fixture adapter that
+previews and applies a full published-program create/update/delete/no-op sync without claiming
+undocumented live Accelevents capabilities.
+
+An MCP client connects to `/api/v1/events/{event-slug}/mcp` with an event API key as its Bearer
+token. The endpoint exposes event, session, speaker, agenda, and submission reads plus program
+reconciliation and an event-scoped agent-mail surface. Mail tools can inspect templates and
+redacted delivery metadata, then preview one existing participant against one template. Sending
+requires a write key, the preview's exact target-specific confirmation literal, and its
+content-bound digest; the service rechecks the recipient, template and email preference before an
+email enters the ordinary audited transport. It never accepts an arbitrary address or sends SMS.
+A read-only key can discover every tool but the server refuses both writes. `bun run docs:mcp`
+regenerates the checked-in manifest from the same Zod schemas used at runtime.
 
 ### Bonus: use Cicero through role-scoped agents
 
@@ -269,7 +287,18 @@ redeploy and nothing else.
 
 R2 is off by default, because enabling it requires a payment method on the Cloudflare account and
 that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
-database until you turn it on; `wrangler.jsonc` says exactly how.
+database until you turn it on; `wrangler.jsonc` says exactly how. Treat that database backend as a
+small-deployment convenience, not an object store: individual uploads are capped at 25 MiB, every
+byte inflates the primary database and every full backup, and files are served through the Worker
+and Hyperdrive rather than a storage CDN. The Files screen warns at 250 MiB of database blobs and
+uses 500 MiB as the practical handoff point to R2/S3. Those are operating limits, not Postgres hard
+limits; configure a bucket earlier for frequent decks, video, or a multi-event archive.
+
+The Worker also has an hourly Cron Trigger. `custom-worker.ts` keeps OpenNext's generated request
+handler and adds a scheduled handler that dispatches task and draft-deadline reminders through
+`/api/cron` in-process. Self-hosters can call that route from their own timer; set `CRON_SECRET` and
+send it as a bearer token when the route is exposed publicly. Each reminder job is idempotent, so
+Cloudflare's at-least-once delivery does not intentionally duplicate messages.
 
 Two things to know before you deploy this yourself. The free plan's 10ms CPU limit is real and you
 will notice it — see the last section. And **`next build` reads `.env` and inlines what it finds
@@ -348,6 +377,7 @@ coexist without either seeing the other.
    added by the owner after the brief was frozen, with build status per row and what the optional
    add-ons cost a self-hoster
 9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
 Alongside those, two unnumbered companions:
 
