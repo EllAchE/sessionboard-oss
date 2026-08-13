@@ -12,7 +12,7 @@ import type { ActionResult } from './types';
 function failure(error: unknown, what: string): ActionResult<never> {
   if (isAppError(error)) return { ok: false, message: error.message, details: error.details };
   console.error(`${what} failed: ${String(error)}`);
-  return { ok: false, message: 'Something went wrong. Try again.' };
+  return { ok: false, message: 'The Forum hit a snag. Try once more.' };
 }
 
 /**
@@ -28,7 +28,7 @@ export async function previewSpeakerImportAction(
     const ctx = await speakersContext();
     return { ok: true, data: await speakers.planSpeakerImport(ctx, csv, mapping) };
   } catch (error) {
-    return failure(error, 'speaker import preview');
+    return failure(error, 'orator import preview');
   }
 }
 
@@ -42,7 +42,7 @@ export async function importSpeakersAction(
     revalidatePath('/admin/speakers');
     return { ok: true, data: result };
   } catch (error) {
-    return failure(error, 'speaker import');
+    return failure(error, 'orator import');
   }
 }
 
@@ -57,7 +57,7 @@ export async function setSpeakerStatusAction(
     revalidatePath(`/admin/speakers/${participantId}`);
     return { ok: true, data: { status: saved } };
   } catch (error) {
-    return failure(error, 'speaker status');
+    return failure(error, 'orator standing');
   }
 }
 
@@ -70,7 +70,7 @@ export async function createSpeakerAction(
     revalidatePath('/admin/speakers');
     return { ok: true, data: { id } };
   } catch (error) {
-    return failure(error, 'speaker create');
+    return failure(error, 'orator inscription');
   }
 }
 
@@ -87,10 +87,10 @@ export async function viewPortalAsAction(participantId: string): Promise<ActionR
     const ctx = await manageSpeakersContext();
     const userId = await speakers.userIdForParticipant(ctx, participantId);
     slug = (await getEvent(ctx.eventId))?.slug ?? '';
-    if (!slug) return { ok: false, message: 'That event could not be found.' };
+    if (!slug) return { ok: false, message: 'That assembly is absent from the rolls.' };
     await startImpersonation(ctx, userId);
   } catch (error) {
-    return failure(error, 'view portal as speaker');
+    return failure(error, 'view atrium as orator');
   }
   redirect(`/portal/${slug}`);
 }
@@ -106,6 +106,6 @@ export async function updateSpeakerAction(
     revalidatePath(`/admin/speakers/${participantId}`);
     return { ok: true, data: { id: participantId } };
   } catch (error) {
-    return failure(error, 'speaker update');
+    return failure(error, 'orator revision');
   }
 }

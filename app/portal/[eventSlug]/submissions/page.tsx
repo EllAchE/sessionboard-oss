@@ -11,7 +11,7 @@ import {
 import styles from '../../portal.module.css';
 import { portalSession } from '../context';
 
-export const metadata = { title: 'My sessions · Speaker portal' };
+export const metadata = { title: 'My orations · Orator atrium' };
 
 /** `S-5`. Ref, title, format and status — the four things a speaker looks for. */
 export default async function SubmissionsPage({
@@ -26,18 +26,19 @@ export default async function SubmissionsPage({
   return (
     <div className={styles.stack}>
       <div className={styles.pageHead}>
-        <h1 className={styles.pageTitle}>My sessions</h1>
+        <h1 className={styles.pageTitle}>My orations</h1>
         <p className={styles.pageLead}>
-          Everything you are speaking on at {event.name}, and where each one has got to.
+          Every petition bearing your name at {event.name}, and its present standing before the
+          council.
         </p>
       </div>
 
       {submissions.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>No talks yet</div>
+          <div className={styles.emptyTitle}>No orations yet</div>
           <p>
-            When a talk with your name on it is submitted, it appears here with its reference and
-            status. Once the schedule is published, its time and room show up alongside them.
+            When a petition bearing your name is filed, its reference and standing appear here. Once
+            the fasti are proclaimed, its hour and chamber join them.
           </p>
         </div>
       ) : (
@@ -80,7 +81,7 @@ export default async function SubmissionsPage({
                           </>
                         )}
                         {!entry.scheduled.published && (
-                          <Badge tone="warning">Not published yet</Badge>
+                          <Badge tone="warning">Not yet proclaimed</Badge>
                         )}
                       </div>
                     )}

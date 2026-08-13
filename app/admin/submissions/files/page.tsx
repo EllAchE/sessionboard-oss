@@ -5,7 +5,7 @@ import { FilesBrowser, type FileRowWire } from './FilesBrowser';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Files · Cicero' };
+export const metadata = { title: 'The archive · Cicero' };
 
 /**
  * `V-11`. Every file on the event in one table, whatever collected it — a submission answer, a

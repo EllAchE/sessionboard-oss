@@ -108,7 +108,7 @@ async function sendSubmissionEmails(input: {
   for (const address of formRow?.notifyEmails ?? []) {
     await sendMail({
       to: address,
-      subject: `New submission ${input.displayRef}: ${input.title}`,
+      subject: `New petition ${input.displayRef}: ${input.title}`,
       html: renderTrustedMarkdown(
         `**${input.title}** (${input.displayRef}) was submitted to ${input.eventName} by ${input.toEmail}.`,
       ),
@@ -127,9 +127,9 @@ async function sendSubmissionEmails(input: {
 export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitResult> {
   try {
     const bundle = await loadPublicForm(payload.eventSlug, payload.formSlug);
-    if (!bundle) throw invalid('That call for speakers could not be found');
+    if (!bundle) throw invalid('That proclamation for orators is absent from the Forum');
     if (!isAcceptingSubmissions(bundle.form)) {
-      throw invalid('This call for speakers is not accepting submissions right now');
+      throw invalid('This call for orators is not accepting petitions right now');
     }
 
     const actor = await currentActor();
@@ -149,7 +149,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
       const account = await getDb().query.user.findFirst({
         where: eq(userTable.email, normalizeEmail(requested.email)),
       });
-      if (!account) throw invalid('We could not create your account', { submitterEmail: 'Try again' });
+      if (!account) throw invalid('We could not enter your name in the rolls', { submitterEmail: 'Try once more' });
       userId = account.id;
       openedSession = true;
     }

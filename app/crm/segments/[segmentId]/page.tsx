@@ -7,7 +7,7 @@ import { toContactWire, toFieldWire } from '../../serialize';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Segment · Cicero' };
+export const metadata = { title: 'Cohort · Cicero' };
 
 function facetsOf(
   rows: Array<{

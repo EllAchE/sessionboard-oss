@@ -46,7 +46,7 @@ export function archiveFilename(now = new Date()): string {
 export type ArchiveRefusal = { message: string } | null;
 
 export function checkArchiveBudget(count: number, totalBytes: number): ArchiveRefusal {
-  if (count === 0) return { message: 'Select at least one file' };
+  if (count === 0) return { message: 'Select at least one scroll' };
   if (count > ARCHIVE_MAX_FILES) {
     return { message: `One archive holds up to ${ARCHIVE_MAX_FILES} files. Narrow the filters and download in batches.` };
   }

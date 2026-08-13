@@ -30,27 +30,27 @@ import styles from '../dashboard/dashboard.module.css';
 import editor from './editor.module.css';
 
 const KIND_LABEL: Record<AdminTaskRow['kind'], string> = {
-  form: 'Form',
-  file_upload: 'File upload',
-  acknowledge: 'Acknowledgement',
-  link: 'External link',
+  form: 'Scroll',
+  file_upload: 'Archive scroll',
+  acknowledge: 'Oath',
+  link: 'Road elsewhere',
 };
 
 const AUDIENCE_LABEL: Record<AdminTaskRow['audience'], string> = {
-  all_participants: 'All participants',
-  accepted_participants: 'Accepted speakers',
-  manual: 'Manually assigned',
+  all_participants: 'Everyone on the rolls',
+  accepted_participants: 'Proclaimed orators',
+  manual: 'Personally appointed',
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return 'No deadline';
+  if (!iso) return 'No appointed day';
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
   {
     id: 'name',
-    header: 'Task',
+    header: 'Duty',
     width: '30%',
     render: (row) => (
       <div className={styles.taskCell}>
@@ -64,13 +64,13 @@ const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
   },
   {
     id: 'due',
-    header: 'Deadline',
+    header: 'Appointed day',
     width: '14%',
     render: (row) => <span className={styles.dueDate}>{formatDate(row.dueAt)}</span>,
   },
   {
     id: 'progress',
-    header: 'Progress',
+    header: 'Fulfillment',
     width: '26%',
     render: (row) => (
       <span className={styles.barTrack} title={`${row.completionPct}% complete`}>
@@ -88,7 +88,7 @@ const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
     width: '18%',
     render: (row) => (
       <span className={styles.personMeta}>
-        {row.completed + row.waived}/{row.assigned} done · {row.inProgress} in progress
+        {row.completed + row.waived}/{row.assigned} fulfilled · {row.inProgress} in hand
       </span>
     ),
   },
@@ -150,7 +150,7 @@ export function TasksIndex({
         toast({ title: result.message, tone: 'danger' });
         return;
       }
-      toast({ title: `${row.name} deleted`, tone: 'success' });
+      toast({ title: `${row.name} erased from the ledger`, tone: 'success' });
       router.refresh();
     });
   };
@@ -164,7 +164,7 @@ export function TasksIndex({
         return;
       }
       setCopySource('');
-      toast({ title: 'Tasks copied', tone: 'success' });
+      toast({ title: 'Duties copied to the ledger', tone: 'success' });
       router.refresh();
     });
   };
@@ -174,13 +174,13 @@ export function TasksIndex({
         ...COLUMNS,
         {
           id: 'actions',
-          header: <span className={editor.visuallyHidden}>Actions</span>,
+          header: <span className={editor.visuallyHidden}>Edicts</span>,
           width: 'calc(var(--control-md) * 2.4)',
           align: 'right',
           render: (row) => (
             <span className={editor.rowActions}>
               <IconButton
-                label={`Edit ${row.name}`}
+                label={`Revise ${row.name}`}
                 size="xs"
                 disabled={pending}
                 onKeyDown={(event) => event.stopPropagation()}
@@ -189,7 +189,7 @@ export function TasksIndex({
                 <Pencil size={14} />
               </IconButton>
               <IconButton
-                label={`Delete ${row.name}`}
+                label={`Erase ${row.name}`}
                 size="xs"
                 variant="danger"
                 disabled={pending}
@@ -208,24 +208,24 @@ export function TasksIndex({
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>Collect</p>
-          <h1 className={styles.title}>Tasks</h1>
+          <p className={styles.eyebrow}>The ledger</p>
+          <h1 className={styles.title}>Orator duties</h1>
           <p className={styles.subtitle}>
-            {tasks.length} tasks across {speakerCount} participants.
+            {tasks.length} duties across {speakerCount} orators.
           </p>
         </div>
         {canManage ? (
           <div className={editor.headActions}>
             {copyableEvents.length > 0 ? (
               <label className={editor.copy}>
-                <span className={editor.label}>Copy tasks from</span>
+                <span className={editor.label}>Copy duties from</span>
                 <Select
                   selectSize="sm"
                   value={copySource}
                   disabled={pending}
                   onChange={(event) => setCopySource(event.target.value)}
                 >
-                  <option value="">Another event…</option>
+                  <option value="">Another assembly…</option>
                   {copyableEvents.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.name}
@@ -236,11 +236,11 @@ export function TasksIndex({
             ) : null}
             {copySource ? (
               <Button size="sm" loading={pending} onClick={copyFrom}>
-                Copy
+                Copy to the ledger
               </Button>
             ) : null}
             <Button variant="primary" size="sm" iconLeft={<Plus size={14} />} onClick={openNew}>
-              New task
+              Decree a duty
             </Button>
           </div>
         ) : null}
@@ -265,7 +265,7 @@ export function TasksIndex({
             data-active={view === 'assignments'}
             onClick={() => setView('assignments')}
           >
-            By person
+            By orator
           </button>
           <button
             type="button"
@@ -273,7 +273,7 @@ export function TasksIndex({
             data-active={view === 'tasks'}
             onClick={() => setView('tasks')}
           >
-            By task
+            By duty
           </button>
         </div>
       </div>
@@ -281,7 +281,7 @@ export function TasksIndex({
       {view === 'assignments' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Who owes what</CardTitle>
+            <CardTitle>Who owes what to the Forum</CardTitle>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={assignments} />
@@ -290,18 +290,18 @@ export function TasksIndex({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Tasks</CardTitle>
+            <CardTitle>Duty ledger</CardTitle>
           </CardHeader>
           <CardBody>
             <DataTable
-              label="Tasks"
+              label="Duties"
               columns={columns}
               rows={tasks}
               getRowId={(row) => row.id}
               emptyState={
                 canManage
-                  ? 'No tasks yet. "New task" adds the first one.'
-                  : 'No tasks defined for this event yet.'
+                  ? 'No duties have been decreed. Begin with “Decree a duty.”'
+                  : 'No duties have been decreed for this assembly.'
               }
             />
           </CardBody>
@@ -319,15 +319,15 @@ export function TasksIndex({
       <Dialog
         open={confirming !== null}
         onOpenChange={(open) => (open ? undefined : setConfirming(null))}
-        title={`Delete ${confirming?.name ?? ''}?`}
-        description={`Every speaker's copy of this task goes with it, including ${
+        title={`Erase ${confirming?.name ?? ''}?`}
+        description={`Every orator's copy of this duty goes with it, including ${
           confirming ? confirming.completed + confirming.waived : 0
         } already finished.`}
         footer={
           <>
-            <Button onClick={() => setConfirming(null)}>Keep it</Button>
+            <Button onClick={() => setConfirming(null)}>Keep the duty</Button>
             <Button variant="danger" onClick={confirmDelete}>
-              Delete task
+              Erase duty
             </Button>
           </>
         }

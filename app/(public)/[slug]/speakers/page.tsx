@@ -12,8 +12,8 @@ type Search = Record<string, string | string[] | undefined>;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Event not found' };
-  return { title: `Speakers · ${bundle.event.name}` };
+  if (!bundle) return { title: 'Assembly absent from the annals' };
+  return { title: `Orators · ${bundle.event.name}` };
 }
 
 /** `G-4`, `EMB-04`, `EMB-05`, and `G-8`: `?sb-speaker-id=` still narrows to one person. */
@@ -32,8 +32,8 @@ export default async function PublicSpeakersPage({
     <PublicChrome event={bundle.event} active="speakers">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>Speakers</h2>
-          <span className={styles.sectionLink}>{bundle.speakers.length} announced</span>
+          <h2 className={styles.sectionTitle}>Orators</h2>
+          <span className={styles.sectionLink}>{bundle.speakers.length} proclaimed</span>
         </div>
         <EmbedBody
           view="speakers"

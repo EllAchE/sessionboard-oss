@@ -47,7 +47,7 @@ async function allocateSessionRef(eventId: string): Promise<number> {
     .set({ sessionSeq: sql`${event.sessionSeq} + 1`, updatedAt: new Date() })
     .where(eq(event.id, eventId))
     .returning({ ref: event.sessionSeq });
-  if (!row) throw new Error('That event could not be found');
+  if (!row) throw new Error('That assembly is absent from the rolls');
   return row.ref;
 }
 
@@ -99,7 +99,7 @@ export async function placeSessionAction(
       return { ok: false, error: 'That slot is not a valid time' };
     }
     if (endsAt.getTime() <= startsAt.getTime()) {
-      return { ok: false, error: 'A session has to end after it starts' };
+      return { ok: false, error: 'An oration must conclude after it begins' };
     }
 
     if (input.kind === 'session') {
@@ -109,7 +109,7 @@ export async function placeSessionAction(
           eq(scheduledSession.eventId, ctx.eventId),
         ),
       });
-      if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
+      if (!existing) return { ok: false, error: 'That oration is no longer inscribed in the fasti' };
 
       await db
         .update(scheduledSession)
@@ -124,7 +124,7 @@ export async function placeSessionAction(
     const source = await db.query.submission.findFirst({
       where: and(eq(submission.id, input.targetId), eq(submission.eventId, ctx.eventId)),
     });
-    if (!source) return { ok: false, error: 'That submission is no longer available' };
+    if (!source) return { ok: false, error: 'That petition is no longer before the Forum' };
 
     const already = await db.query.scheduledSession.findFirst({
       where: and(
@@ -175,7 +175,7 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
     const existing = await db.query.scheduledSession.findFirst({
       where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
     });
-    if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
+    if (!existing) return { ok: false, error: 'That oration is no longer inscribed in the fasti' };
 
     // Pulling a published talk off the grid is a cancellation as far as an attendee's calendar is
     // concerned, and has to be sent before the times are cleared — a row with no start cannot
@@ -223,7 +223,7 @@ export async function saveManualSessionAction(
     const db = getDb();
 
     const title = input.title.trim();
-    if (!title) return { ok: false, error: 'A session needs a title' };
+    if (!title) return { ok: false, error: 'An oration needs a title' };
 
     const startsAt = input.startsAt ? new Date(input.startsAt) : null;
     let endsAt = input.endsAt ? new Date(input.endsAt) : null;
@@ -237,7 +237,7 @@ export async function saveManualSessionAction(
       endsAt = new Date(startsAt.getTime() + minutes * 60_000);
     }
     if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) {
-      return { ok: false, error: 'A session has to end after it starts' };
+      return { ok: false, error: 'An oration must conclude after it begins' };
     }
 
     const patch = {
@@ -260,7 +260,7 @@ export async function saveManualSessionAction(
           eq(scheduledSession.eventId, ctx.eventId),
         ),
       });
-      if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
+      if (!existing) return { ok: false, error: 'That oration is no longer inscribed in the fasti' };
 
       await db
         .update(scheduledSession)
@@ -302,7 +302,7 @@ export async function setSessionStatusAction(
     const existing = await db.query.scheduledSession.findFirst({
       where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
     });
-    if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
+    if (!existing) return { ok: false, error: 'That oration is no longer inscribed in the fasti' };
     if (existing.status === status) return { ok: true, data: null };
 
     if (status === 'published' && (!existing.startsAt || !existing.endsAt || !existing.roomId)) {

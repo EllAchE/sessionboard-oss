@@ -4,7 +4,7 @@ import { RoundsManager, type RoundWire } from './RoundsManager';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Review rounds · Cicero' };
+export const metadata = { title: 'Councils · Cicero' };
 
 export default async function ReviewRoundsPage({
   searchParams,

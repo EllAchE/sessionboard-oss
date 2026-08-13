@@ -11,7 +11,7 @@ import { DeliverableDetail, type CommentWire, type VersionWire } from './Deliver
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Deliverable · Cicero' };
+export const metadata = { title: 'Archived scroll · Cicero' };
 
 function when(value: Date): string {
   return value.toISOString().slice(0, 16).replace('T', ' ');

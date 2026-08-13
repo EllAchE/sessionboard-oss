@@ -131,7 +131,7 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
       ceuCredits: row.ceuCredits,
       speakers: linked.map((entry) => ({
         id: entry.person.id,
-        name: entry.person.displayName?.trim() || entry.account.name?.trim() || 'Speaker',
+        name: entry.person.displayName?.trim() || entry.account.name?.trim() || 'Unnamed orator',
         jobTitle: entry.person.jobTitle,
         company: entry.person.company,
       })),

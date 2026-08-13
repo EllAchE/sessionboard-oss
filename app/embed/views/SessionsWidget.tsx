@@ -49,8 +49,8 @@ export function SessionsWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search sessions and speakers"
-          placeholder="Search sessions or speakers…"
+          label="Search orations and orators"
+          placeholder="Search orations or orators…"
         />
         <button
           type="button"
@@ -73,7 +73,7 @@ export function SessionsWidget({
       ) : null}
 
       {visible.length === 0 ? (
-        <p className={styles.empty}>No sessions match that search.</p>
+        <p className={styles.empty}>No oration answers that search.</p>
       ) : (
         <div className={styles.sessionList}>
           {visible.map((session) => (

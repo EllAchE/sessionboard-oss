@@ -54,7 +54,7 @@ export async function parseBody<T extends z.ZodTypeAny>(
   try {
     raw = await request.json();
   } catch {
-    throw invalid('Send a JSON body');
+    throw invalid('Send a JSON petition body');
   }
 
   const parsed = schema.safeParse(raw);

@@ -126,7 +126,7 @@ export function Dialog({
             ) : null}
           </div>
           {hideClose ? null : (
-            <IconButton label="Close dialog" size="sm" onClick={() => onOpenChange(false)}>
+            <IconButton label="Close tablet" size="sm" onClick={() => onOpenChange(false)}>
               <X size={16} aria-hidden="true" />
             </IconButton>
           )}

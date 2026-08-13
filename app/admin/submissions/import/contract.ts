@@ -25,61 +25,62 @@ export type ImportColumn = {
 
 export const IMPORT_COLUMNS: ImportColumn[] = [
   {
-    header: 'Title',
-    aliases: ['Session', 'Session title', 'Name'],
+    header: 'Oration title',
+    aliases: ['Title', 'Session', 'Session title', 'Name'],
     required: true,
-    description: 'A row with no title is reported and skipped.',
-    example: 'Rewriting the Postgres planner in anger',
+    description: 'A petition with no oration title is reported and set aside.',
+    example: 'The Republic after Caesar',
   },
   {
-    header: 'Speaker email',
-    aliases: ['Email', 'Speaker e-mail'],
+    header: 'Orator email',
+    aliases: ['Email', 'Speaker email', 'Speaker e-mail'],
     required: true,
     description:
-      'Matched against existing accounts; an unknown address gets an account and a participant record, with no email sent.',
-    example: 'ada@example.com',
+      'Matched against the rolls; an unknown address receives an account and orator record without sending a dispatch.',
+    example: 'marcus@example.com',
   },
   {
-    header: 'Speaker name',
-    aliases: ['Speaker'],
+    header: 'Orator name',
+    aliases: ['Speaker', 'Speaker name'],
     required: false,
-    description: 'Only used when the address is new to this event.',
-    example: 'Ada Lovelace',
+    description: 'Used only when the address is new to this assembly.',
+    example: 'Marcus Tullius',
   },
   {
-    header: 'Description',
-    aliases: ['Abstract', 'Summary'],
+    header: 'Argument',
+    aliases: ['Description', 'Abstract', 'Summary'],
     required: false,
-    description: 'Stored as markdown.',
-    example: 'Why the join order changed and what it cost us.',
+    description: 'Inscribed as markdown.',
+    example: 'A defense of republican virtue before the gathered citizens.',
   },
   {
-    header: 'Track',
-    aliases: [],
-    required: false,
-    description: "Matched by name against this event's tracks. An unknown name imports as no track.",
-    example: 'Databases',
-  },
-  {
-    header: 'Format',
-    aliases: ['Session format', 'Type'],
+    header: 'Theme',
+    aliases: ['Track'],
     required: false,
     description:
-      "Matched by name against this event's session formats. An unknown name imports as no format.",
-    example: 'Talk',
+      "Matched by name against this assembly's themes. An unknown standard remains unassigned.",
+    example: 'Civic life',
   },
   {
-    header: 'Level',
-    aliases: ['Audience'],
+    header: 'Oration format',
+    aliases: ['Format', 'Session format', 'Type'],
     required: false,
-    description: 'Free text; nothing validates it against the form options.',
-    example: 'Intermediate',
+    description:
+      "Matched by name against this assembly's oration formats. An unknown name remains unassigned.",
+    example: 'Address',
   },
   {
-    header: 'Status',
-    aliases: [],
+    header: 'Audience rank',
+    aliases: ['Level', 'Audience'],
     required: false,
-    description: '`accepted` imports as accepted and skips review. Anything else imports as submitted.',
+    description: 'A free inscription; it is not judged against the scroll’s choices.',
+    example: 'All citizens',
+  },
+  {
+    header: 'Standing',
+    aliases: ['Status'],
+    required: false,
+    description: '`accepted` is proclaimed without a council. Any other value enters deliberation.',
     example: 'submitted',
   },
 ];
@@ -87,9 +88,9 @@ export const IMPORT_COLUMNS: ImportColumn[] = [
 /** Column order is irrelevant to the parser and header matching ignores case. */
 export const IMPORT_RULES = [
   'Column order does not matter, and header matching ignores case.',
-  'Unrecognised columns are ignored rather than rejected.',
+  'Unrecognised columns are passed over rather than rejected.',
   'Quoted cells, doubled quotes and newlines inside quotes all parse.',
-  'Track and format are matched by name; a name this event does not have imports as unassigned.',
+  'Theme and format are matched by name; a name absent from the assembly remains unassigned.',
 ];
 
 function csvCell(value: string): string {

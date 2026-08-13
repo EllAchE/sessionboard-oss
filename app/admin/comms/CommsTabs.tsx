@@ -8,15 +8,15 @@ import styles from './comms.module.css';
 export type CommsTab = 'compose' | 'templates' | 'mail';
 
 const TABS: Array<{ id: CommsTab; label: string; href: string }> = [
-  { id: 'compose', label: 'Compose', href: '/admin/comms' },
-  { id: 'templates', label: 'Templates', href: '/admin/comms/templates' },
-  { id: 'mail', label: 'Mailbox', href: '/admin/mail' },
+  { id: 'compose', label: 'Write a dispatch', href: '/admin/comms' },
+  { id: 'templates', label: 'Dispatch patterns', href: '/admin/comms/templates' },
+  { id: 'mail', label: 'Courier archive', href: '/admin/mail' },
 ];
 
 export function CommsTabs({ active, eventSlug }: { active: CommsTab; eventSlug?: string | null }) {
   const suffix = eventSlug ? `?event=${encodeURIComponent(eventSlug)}` : '';
   return (
-    <nav className={styles.tabsRow} aria-label="Communications">
+    <nav className={styles.tabsRow} aria-label="Dispatches">
       {TABS.map((tab) => (
         <Link
           key={tab.id}

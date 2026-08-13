@@ -38,9 +38,9 @@ export async function POST(
     const formSlug = await resolveFormSlug(event.id, formId);
 
     const bundle = await loadPublicForm(slug, formSlug);
-    if (!bundle) throw notFound('That form');
+    if (!bundle) throw notFound('That scroll');
     if (!isAcceptingSubmissions(bundle.form)) {
-      throw invalid('This form is not accepting submissions right now');
+      throw invalid('This scroll is not accepting petitions right now');
     }
 
     // No session on an API call, so the submitter is identified by email. The magic link this
@@ -55,7 +55,7 @@ export async function POST(
     const account = await getDb().query.user.findFirst({
       where: eq(userTable.email, normalizeEmail(requested.email)),
     });
-    if (!account) throw invalid('We could not create an account for that email address');
+    if (!account) throw invalid('We could not enter that dispatch address on the rolls');
 
     await grantRole(account.id, event.id, 'speaker');
     const participantId = await ensureParticipant(event.id, account.id, body.name ?? null);
@@ -94,6 +94,6 @@ async function resolveFormSlug(eventId: string, formId: string): Promise<string>
     : undefined;
 
   if (byId && byId.eventId === eventId) return byId.slug;
-  if (byId) throw notFound('That form');
+  if (byId) throw notFound('That scroll');
   return formId;
 }

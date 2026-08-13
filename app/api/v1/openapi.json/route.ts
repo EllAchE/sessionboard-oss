@@ -25,7 +25,7 @@ const slugParam: JsonSchema = {
   name: 'slug',
   in: 'path',
   required: true,
-  description: "The event's URL slug",
+  description: "The assembly's URL slug",
   schema: { type: 'string' },
 };
 
@@ -39,11 +39,11 @@ function jsonContent(schema: JsonSchema): JsonSchema {
 
 function errors(codes: number[]): Record<string, JsonSchema> {
   const descriptions: Record<number, string> = {
-    401: 'Missing or invalid API key',
-    404: 'No such event, form or resource',
-    409: 'Conflicts with an existing record',
-    422: 'The request failed validation',
-    429: 'Rate limited',
+    401: 'Missing or invalid aqueduct seal',
+    404: 'No such assembly, scroll, or record',
+    409: 'Conflicts with a record already on the rolls',
+    422: 'The petition failed validation',
+    429: 'Too many petitions at once',
   };
 
   return Object.fromEntries(
@@ -74,29 +74,29 @@ export function buildSpec(origin = appUrl()): JsonSchema {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'Cicero API',
+      title: 'Cicero Public Aqueduct',
       version: '1.0.0',
       description: [
-        'Read the public program of a Cicero event, and submit to an open call for speakers.',
+        'Read the public programme of a Cicero assembly and answer an open proclamation for orators.',
         '',
-        'Public reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key',
-        'issued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.',
-        'Keys are hashed at rest and shown once, at creation.',
+        'Public reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key',
+        'issued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.',
+        'Keys are hashed at rest and revealed only once, when forged.',
       ].join('\n'),
       license: { name: 'MIT' },
     },
     servers: [{ url: `${origin.replace(/\/+$/, '')}/api/v1` }],
     tags: [
-      { name: 'Events', description: 'Event metadata' },
-      { name: 'Program', description: 'Sessions, speakers and the agenda' },
-      { name: 'Submissions', description: 'The call for speakers' },
+      { name: 'Assemblies', description: 'Founding charters and public records' },
+      { name: 'Programme', description: 'Orations, orators, and the fasti' },
+      { name: 'Petitions', description: 'The proclamation for orators' },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          description: 'A per-event API key. Public read endpoints do not require it.',
+          description: 'An aqueduct key for one assembly. Public reads do not require it.',
         },
       },
       schemas: {
@@ -113,75 +113,75 @@ export function buildSpec(origin = appUrl()): JsonSchema {
     paths: {
       '/events/{slug}': {
         get: {
-          tags: ['Events'],
-          summary: 'Fetch one event',
+          tags: ['Assemblies'],
+          summary: 'Read one assembly charter',
           operationId: 'getEvent',
           parameters: [slugParam],
           responses: {
-            '200': okResponse('The event', ref('Event')),
+            '200': okResponse('The assembly', ref('Event')),
             ...errors([404]),
           },
         },
       },
       '/events/{slug}/sessions': {
         get: {
-          tags: ['Program'],
-          summary: 'List sessions',
-          description: 'Published sessions only. Filters accept a track or room name, or its id.',
+          tags: ['Programme'],
+          summary: 'List proclaimed orations',
+          description: 'Proclaimed orations only. Filters accept a theme or chamber name, or its id.',
           operationId: 'listSessions',
           parameters: [slugParam, ...toParameters(sessionListQuery, 'query')],
           responses: {
-            '200': okResponse('Matching sessions', listOf('Session')),
+            '200': okResponse('Matching orations', listOf('Session')),
             ...errors([404, 422]),
           },
         },
       },
       '/events/{slug}/speakers': {
         get: {
-          tags: ['Program'],
-          summary: 'List speakers',
-          description: 'Everyone on an accepted submission. Emails are not included.',
+          tags: ['Programme'],
+          summary: 'List orators',
+          description: 'Every orator named on an accepted petition. Dispatch addresses are withheld.',
           operationId: 'listSpeakers',
           parameters: [slugParam],
           responses: {
-            '200': okResponse('The speakers', listOf('Speaker')),
+            '200': okResponse('The orators', listOf('Speaker')),
             ...errors([404]),
           },
         },
       },
       '/events/{slug}/agenda': {
         get: {
-          tags: ['Program'],
-          summary: 'Fetch the agenda',
-          description: "Published sessions grouped by day in the event's timezone.",
+          tags: ['Programme'],
+          summary: 'Read the fasti',
+          description: "The proclaimed fasti grouped by day in the event's timezone.",
           operationId: 'getAgenda',
           parameters: [slugParam],
           responses: {
-            '200': okResponse('The agenda', ref('Agenda')),
+            '200': okResponse('The fasti', ref('Agenda')),
             ...errors([404]),
           },
         },
       },
       '/events/{slug}/submissions': {
         get: {
-          tags: ['Submissions'],
-          summary: 'List submissions',
-          description: 'Requires an API key issued for this event.',
+          tags: ['Petitions'],
+          summary: 'List petitions',
+          description: 'Requires an aqueduct key issued for this assembly.',
           operationId: 'listSubmissions',
           security: [{ bearerAuth: [] }],
           parameters: [slugParam, ...toParameters(submissionListQuery, 'query')],
           responses: {
-            '200': okResponse('Matching submissions', listOf('Submission')),
+            '200': okResponse('Matching petitions', listOf('Submission')),
             ...errors([401, 404, 422]),
           },
         },
       },
       '/events/{slug}/forms/{formId}/submissions': {
         post: {
-          tags: ['Submissions'],
-          summary: 'Submit to a call for speakers',
+          tags: ['Petitions'],
+          summary: 'Answer a proclamation for orators',
           description:
-            'No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed.',
+            'No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link.',
           operationId: 'createSubmission',
           parameters: [
             slugParam,
@@ -189,7 +189,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               name: 'formId',
               in: 'path',
               required: true,
-              description: "The form's id or slug",
+              description: "The scroll's id or slug",
               schema: { type: 'string' },
             },
           ],
@@ -198,14 +198,14 @@ export function buildSpec(origin = appUrl()): JsonSchema {
             content: jsonContent(ref('NewSubmission')),
           },
           responses: {
-            '201': okResponse('The submission', ref('NewSubmissionResult')),
+            '201': okResponse('The petition', ref('NewSubmissionResult')),
             ...errors([404, 409, 422]),
           },
         },
       },
       '/openapi.json': {
         get: {
-          tags: ['Events'],
+          tags: ['Assemblies'],
           summary: 'This document',
           operationId: 'getOpenApi',
           responses: {

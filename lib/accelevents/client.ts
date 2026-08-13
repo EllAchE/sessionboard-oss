@@ -120,12 +120,12 @@ export class AccelEventsClient implements AccelEventsGateway {
     );
 
     if (response.status < 200 || response.status >= 300) {
-      throw this.toAppError(response, 'Accelevents could not list speakers');
+      throw this.toAppError(response, 'Accelevents could not list the orators');
     }
 
     const parsed = speakerListResponseSchema.safeParse(response.body);
     if (!parsed.success) {
-      throw unavailable('Accelevents returned a speaker list we could not read');
+      throw unavailable('Accelevents returned an orator roll we could not read');
     }
 
     return {

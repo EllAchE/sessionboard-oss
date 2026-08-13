@@ -12,8 +12,8 @@ type Search = Record<string, string | string[] | undefined>;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Event not found' };
-  return { title: `Sessions · ${bundle.event.name}` };
+  if (!bundle) return { title: 'Assembly absent from the annals' };
+  return { title: `Orations · ${bundle.event.name}` };
 }
 
 /** `G-4`, `EMB-01`–`EMB-03`. The session list, which is the agenda with the clock taken off. */
@@ -34,8 +34,8 @@ export default async function PublicSessionsPage({
     <PublicChrome event={bundle.event} active="sessions">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>Sessions</h2>
-          <span className={styles.sectionLink}>{bundle.sessions.length} published</span>
+          <h2 className={styles.sectionTitle}>Orations</h2>
+          <span className={styles.sectionLink}>{bundle.sessions.length} proclaimed</span>
         </div>
         <EmbedBody view="sessions" bundle={bundle} options={{ ...options, columns: 2 }} />
       </section>

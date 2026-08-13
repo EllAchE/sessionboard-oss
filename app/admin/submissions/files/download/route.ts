@@ -69,9 +69,9 @@ export async function POST(request: Request) {
       // An archive that quietly drops a deck is worse than one that says which deck it dropped.
       if (unreadable.length > 0) {
         yield {
-          name: '_missing-files.txt',
+          name: '_missing-records.txt',
           bytes: new TextEncoder().encode(
-            `These files are recorded on the event but could not be read from storage:\n\n${unreadable.join('\n')}\n`,
+            `These records appear in the annals but could not be read from the archive:\n\n${unreadable.join('\n')}\n`,
           ),
         };
       }

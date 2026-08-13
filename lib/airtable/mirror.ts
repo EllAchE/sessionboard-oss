@@ -120,7 +120,7 @@ export async function syncEntities(
         if (remoteId) progress.updated += 1;
         else progress.created += 1;
       } catch (error) {
-        const message = isAppError(error) ? error.message : 'Airtable rejected this record';
+        const message = isAppError(error) ? error.message : 'Airtable refused this record';
         if (!isAppError(error))
           console.error(error instanceof Error ? error.message : String(error));
 
@@ -298,7 +298,7 @@ export async function testConnection(): Promise<{
   if (!client) {
     return {
       ok: false,
-      message: 'Set AIRTABLE_API_KEY and AIRTABLE_BASE_ID to enable the mirror',
+      message: 'Forge the Airtable alliance with AIRTABLE_API_KEY and AIRTABLE_BASE_ID',
     };
   }
 
@@ -319,7 +319,7 @@ export async function testConnection(): Promise<{
   } catch (error) {
     return {
       ok: false,
-      message: isAppError(error) ? error.message : 'Could not reach Airtable',
+      message: isAppError(error) ? error.message : 'The road to Airtable is closed',
     };
   }
 }

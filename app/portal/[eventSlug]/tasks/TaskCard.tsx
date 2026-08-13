@@ -58,7 +58,7 @@ export function TaskCard({
               <span className={styles.dot}>Done {formatDateTime(task.completedAt, timezone)}</span>
             )}
             {task.submissionTitle && <span className={styles.dot}>{task.submissionTitle}</span>}
-            {!task.required && <span className={styles.dot}>Optional</span>}
+            {!task.required && <span className={styles.dot}>At your discretion</span>}
           </div>
         </div>
         <Badge tone={taskTone(task.status, task.overdue)}>
@@ -76,8 +76,7 @@ export function TaskCard({
 
       {waived ? (
         <p className={styles.muted}>
-          An organizer decided this one is not needed for you. Nothing to do.
-        </p>
+          The magistrates have waived this duty. No action is owed.</p>
       ) : (
         <TaskBody task={task} eventSlug={eventSlug} />
       )}
@@ -111,7 +110,7 @@ function AcknowledgeTask({ task, eventSlug }: { task: PortalTask; eventSlug: str
       <FormNotice state={state} />
       <div className={styles.taskActions}>
         <SubmitButton variant="primary" size="sm" iconLeft={<CheckCircle2 size={15} />}>
-          Mark as done
+          Mark duty fulfilled
         </SubmitButton>
       </div>
     </form>
@@ -130,13 +129,13 @@ function LinkTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
         {task.linkUrl && (
           <a href={task.linkUrl} target="_blank" rel="noopener noreferrer">
             <Button type="button" variant="secondary" size="sm" iconRight={<ExternalLink size={14} />}>
-              Open the link
+              Follow the road
             </Button>
           </a>
         )}
         {task.status !== 'completed' && (
           <SubmitButton variant="primary" size="sm" iconLeft={<CheckCircle2 size={15} />}>
-            I have done this
+            I have fulfilled this duty
           </SubmitButton>
         )}
       </div>
@@ -166,7 +165,7 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
               </span>
               <a
                 href={`/portal/${eventSlug}/file/${record.id}?download`}
-                aria-label={`Download ${record.filename}`}
+                aria-label={`Take a copy of ${record.filename}`}
               >
                 <Download size={15} />
               </a>
@@ -178,7 +177,7 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
 
       {full ? (
         <p className={styles.hint}>
-          Open the file above to upload a new version — the one on record stays downloadable.
+          Open the scroll above to lodge a new version—the copy in the archive remains available.
         </p>
       ) : (
         <Uploader
@@ -186,10 +185,10 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
           intent="task"
           assignmentId={task.assignmentId}
           accept={spec ? acceptAttribute(spec) : undefined}
-          acceptedLabel={spec ? describeAcceptedTypes(spec) : 'Any file type'}
+          acceptedLabel={spec ? describeAcceptedTypes(spec) : 'Any kind of scroll'}
           maxSizeMb={spec?.maxSizeMb ?? 25}
           multiple={spec?.allowMultiple ?? true}
-          buttonLabel={task.files.length > 0 ? 'Upload another' : 'Upload'}
+          buttonLabel={task.files.length > 0 ? 'Lodge another scroll' : 'Lodge the scroll'}
         />
       )}
     </div>
@@ -211,7 +210,7 @@ function RemoveFileForm({
       <input type="hidden" name="eventSlug" value={eventSlug} />
       <input type="hidden" name="assignmentId" value={task.assignmentId} />
       <input type="hidden" name="fileId" value={fileId} />
-      <IconButton label="Remove this file" variant="ghost" size="sm" type="submit">
+      <IconButton label="Remove this scroll" variant="ghost" size="sm" type="submit">
         <Trash2 size={15} />
       </IconButton>
     </form>
@@ -220,7 +219,7 @@ function RemoveFileForm({
 
 function FormTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) {
   const [state, action] = useActionState(saveTaskFormAction, IDLE_STATE);
-  if (!task.form) return <p className={styles.muted}>This form is no longer available.</p>;
+  if (!task.form) return <p className={styles.muted}>This scroll is no longer in circulation.</p>;
 
   return (
     <form action={action} className={styles.stackTight}>
@@ -234,10 +233,10 @@ function FormTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
       <FormNotice state={state} />
       <div className={styles.taskActions}>
         <SubmitButton variant="ghost" size="sm" name="intent" value="save">
-          Save for later
+          Set aside for later
         </SubmitButton>
         <SubmitButton variant="primary" size="sm" name="intent" value="submit">
-          {task.status === 'completed' ? 'Resubmit' : 'Submit'}
+          {task.status === 'completed' ? 'Lodge again' : 'Lodge response'}
         </SubmitButton>
       </div>
     </form>
@@ -254,7 +253,7 @@ function ReopenForm({ task, eventSlug }: { task: PortalTask; eventSlug: string }
       <input type="hidden" name="assignmentId" value={task.assignmentId} />
       <FormNotice state={state} />
       <SubmitButton variant="ghost" size="sm">
-        This is not done after all
+        Reopen this duty
       </SubmitButton>
     </form>
   );

@@ -271,7 +271,7 @@ export function AgendaBoard({
     if (!overId) return;
 
     if (!canManage) {
-      toast({ title: 'Read only', description: 'You cannot change this agenda.', tone: 'warning' });
+      toast({ title: 'The seal is unbroken', description: 'You cannot revise these fasti.', tone: 'warning' });
       return;
     }
 
@@ -283,7 +283,7 @@ export function AgendaBoard({
           row.id === entry.id ? { ...row, roomId: null, startsAt: null, endsAt: null } : row,
         ),
       );
-      run('Could not unschedule that session', () => unscheduleSessionAction(entry.id));
+      run('Could not strike that oration from the fasti', () => unscheduleSessionAction(entry.id));
       return;
     }
 
@@ -326,7 +326,7 @@ export function AgendaBoard({
       ),
     );
 
-    run('Could not move that session', () => placeSessionAction(input));
+    run('Could not move that oration', () => placeSessionAction(input));
   };
 
   // -------------------------------------------------------------------------
@@ -347,7 +347,7 @@ export function AgendaBoard({
   const handleSave = async (payload: SavePayload) => {
     const result = await saveManualSessionAction(payload);
     if (!result.ok) {
-      toast({ title: 'Could not save that session', description: result.error, tone: 'danger' });
+      toast({ title: 'That oration was not inscribed', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -357,7 +357,7 @@ export function AgendaBoard({
   const handleDelete = async (sessionId: string) => {
     const result = await deleteSessionAction(sessionId);
     if (!result.ok) {
-      toast({ title: 'Could not delete that session', description: result.error, tone: 'danger' });
+      toast({ title: 'That oration was not erased', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -367,7 +367,7 @@ export function AgendaBoard({
   const handleUnschedule = async (sessionId: string) => {
     const result = await unscheduleSessionAction(sessionId);
     if (!result.ok) {
-      toast({ title: 'Could not unschedule it', description: result.error, tone: 'danger' });
+      toast({ title: 'That oration remains in the fasti', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -380,7 +380,7 @@ export function AgendaBoard({
   ) => {
     const result = await setSessionStatusAction(sessionId, next);
     if (!result.ok) {
-      toast({ title: 'Could not change the status', description: result.error, tone: 'danger' });
+      toast({ title: 'The standing was not changed', description: result.error, tone: 'danger' });
       return;
     }
     setDialog(null);
@@ -390,11 +390,11 @@ export function AgendaBoard({
   const handleProposal = async (placements: PlacementInput[]) => {
     const result = await applyProposalAction(placements);
     if (!result.ok) {
-      toast({ title: 'Could not apply the proposal', description: result.error, tone: 'danger' });
+      toast({ title: 'The augur’s proposal was not inscribed', description: result.error, tone: 'danger' });
       return;
     }
     toast({
-      title: `Applied ${result.data.applied} placement${result.data.applied === 1 ? '' : 's'}`,
+      title: `Inscribed ${result.data.applied} placement${result.data.applied === 1 ? '' : 's'} in the fasti`,
       description:
         result.data.failed > 0 ? `${result.data.failed} could not be placed.` : undefined,
       tone: result.data.failed > 0 ? 'warning' : 'success',
@@ -416,11 +416,11 @@ export function AgendaBoard({
       const result = await publishAllAction(draftsOnDay);
       if (result.ok) {
         toast({
-          title: `Published ${result.data.published} session${result.data.published === 1 ? '' : 's'}`,
+          title: `Proclaimed ${result.data.published} oration${result.data.published === 1 ? '' : 's'}`,
           description:
             result.data.skipped > 0
               ? `${result.data.skipped} still needs a room and a time.`
-              : 'Speakers with a published slot have been sent an invite.',
+              : 'Every orator with a proclaimed hour has received a summons.',
           tone: result.data.skipped > 0 ? 'warning' : 'success',
         });
       }
@@ -437,24 +437,24 @@ export function AgendaBoard({
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>{event.name}</p>
-          <h1 className={styles.title}>Agenda</h1>
+          <h1 className={styles.title}>Fasti</h1>
           <p className={styles.lede}>
-            Drag an accepted talk from the rail onto a room and a time. Clashes are flagged as you
-            move, never blocked — times shown in {timeZone}.
+            Marshal an accepted oration from the rail into its chamber and hour. Cicero names every
+            clash but never overrules you—times shown in {timeZone}.
           </p>
         </div>
         <div className={styles.headerActions}>
           <Badge tone="neutral">{counts.draft} draft</Badge>
           <Badge tone="success">{counts.published} published</Badge>
           <Button iconLeft={<Plus size={14} />} onClick={openNew} disabled={!canManage}>
-            Add session
+            Add an oration
           </Button>
           <Button
             iconLeft={<Sparkles size={14} />}
             onClick={() => setProposalOpen(true)}
             disabled={!canManage}
           >
-            Draft with AI
+            Consult the augur
           </Button>
           <Button
             variant="primary"
@@ -463,7 +463,7 @@ export function AgendaBoard({
             loading={pending}
             disabled={!canManage || draftsOnDay.length === 0}
           >
-            Publish day ({draftsOnDay.length})
+            Proclaim the day ({draftsOnDay.length})
           </Button>
         </div>
       </header>
@@ -503,12 +503,12 @@ export function AgendaBoard({
         <div className={`${styles.banner} ${styles.bannerError}`}>
           <AlertTriangle size={15} aria-hidden />
           <span>{introduced.map((conflict) => conflict.message).join(' · ')}</span>
-          <span className={styles.bannerCounts}>Drop anyway if you mean to</span>
+          <span className={styles.bannerCounts}>The consul may overrule the warning</span>
         </div>
       ) : summary.total === 0 ? (
         <div className={`${styles.banner} ${styles.bannerClear}`}>
           <CheckCircle2 size={15} aria-hidden />
-          <span>No room, track or speaker clashes. Back-to-back sessions are not clashes.</span>
+          <span>The fasti are orderly: no chamber, theme, or orator clashes.</span>
         </div>
       ) : (
         <div
@@ -518,14 +518,14 @@ export function AgendaBoard({
         >
           <AlertTriangle size={15} aria-hidden />
           <span>
-            {summary.total} conflict{summary.total === 1 ? '' : 's'} on this agenda.
+            {summary.total} conflict{summary.total === 1 ? '' : 's'} in the fasti.
           </span>
           <span className={styles.bannerCounts}>
             <span>{summary.room} room</span>
-            <span>{summary.speaker} speaker</span>
+            <span>{summary.speaker} orator</span>
             <span>{summary.track} track</span>
             <button type="button" className={styles.viewButton} onClick={() => setView('conflicts')}>
-              Review
+              Inspect
             </button>
           </span>
         </div>

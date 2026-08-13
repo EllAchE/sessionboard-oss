@@ -18,28 +18,28 @@ export type ReportId =
 export const REPORTS: { id: ReportId; name: string; description: string }[] = [
   {
     id: 'outstanding-tasks',
-    name: 'Outstanding speaker tasks',
-    description: 'One row per person per unfinished task, worst overdue first.',
+    name: 'Outstanding orator duties',
+    description: 'One line per orator per unfinished duty, the gravest delay first.',
   },
   {
     id: 'task-completion',
-    name: 'Task completion',
-    description: 'Every assignment including the finished ones, for a completion rate.',
+    name: 'Duty completion',
+    description: 'The full ledger of duties, settled and unsettled, with a completion rate.',
   },
   {
     id: 'speakers',
-    name: 'Speaker roster',
-    description: 'Profile completeness, accepted sessions and task progress per speaker.',
+    name: 'Roll of orators',
+    description: 'Portraits, accepted orations, and duty progress for every orator.',
   },
   {
     id: 'submissions',
-    name: 'Submission pipeline',
-    description: 'Every submission with its form, track, status and decision date.',
+    name: 'Petition ledger',
+    description: 'Every petition with its scroll, theme, standing, and verdict date.',
   },
   {
     id: 'review-scores',
-    name: 'Review scores',
-    description: 'One row per reviewer per submission: score, completion state and comment.',
+    name: 'Council scores',
+    description: 'One line per councillor per petition: score, state, and written judgment.',
   },
 ];
 
@@ -62,33 +62,33 @@ export type WidgetId =
   | 'reports';
 
 export const WIDGETS: { id: WidgetId; name: string; description: string }[] = [
-  { id: 'counters', name: 'Counters', description: 'Submissions, speakers, sessions.' },
-  { id: 'nudges', name: 'Next actions', description: 'What is blocking the program right now.' },
+  { id: 'counters', name: 'Forum census', description: 'Petitions, orators, and orations.' },
+  { id: 'nudges', name: 'Next commands', description: 'What obstructs the programme right now.' },
   {
     id: 'outstanding',
-    name: 'Outstanding tasks',
-    description: 'Who owes what, overdue first.',
+    name: 'Unsettled duties',
+    description: 'Who owes what to the Forum, overdue first.',
   },
   {
     id: 'status-breakdown',
-    name: 'Status breakdown',
-    description: 'Accepted / pending / declined / drafts / withdrawn.',
+    name: 'Verdict ledger',
+    description: 'Accepted / pending / declined / draft / withdrawn.',
   },
-  { id: 'pacing', name: 'Submission pacing', description: 'Arrivals over time, with a comparison.' },
-  { id: 'by-form', name: 'By form', description: 'Volume and acceptance per form.' },
-  { id: 'by-track', name: 'By track', description: 'Volume and acceptance per track.' },
-  { id: 'review-progress', name: 'Review progress', description: 'Scoring completion per round.' },
+  { id: 'pacing', name: 'Petition pace', description: 'Arrivals at the Forum over time, with a comparison.' },
+  { id: 'by-form', name: 'By scroll', description: 'Petitions and verdicts per scroll.' },
+  { id: 'by-track', name: 'By theme', description: 'Petitions and verdicts per theme.' },
+  { id: 'review-progress', name: 'Council progress', description: 'Scoring completion per deliberation.' },
   {
     id: 'schedule-health',
-    name: 'Schedule health',
-    description: 'Unscheduled talks, missing rooms, room clashes.',
+    name: 'Fasti health',
+    description: 'Unscheduled orations, missing rooms, and public clashes.',
   },
   {
     id: 'speaker-tracking',
-    name: 'Speaker tracking',
-    description: 'Profile completeness and task progress.',
+    name: 'Orator readiness',
+    description: 'Profile completeness and duty progress.',
   },
-  { id: 'reports', name: 'Reports', description: 'CSV exports.' },
+  { id: 'reports', name: 'State tablets', description: 'CSV exports from the imperial record.' },
 ];
 
 export const PREBUILT_DASHBOARDS: {
@@ -99,32 +99,32 @@ export const PREBUILT_DASHBOARDS: {
 }[] = [
   {
     id: 'event-overview',
-    name: 'Event Overview',
-    description: 'The whole program in one screen.',
+    name: 'The Forum',
+    description: 'The whole programme on one imperial tablet.',
     widgets: ['counters', 'nudges', 'outstanding', 'status-breakdown'],
   },
   {
     id: 'submissions-pipeline',
-    name: 'Submissions Pipeline',
-    description: 'Where the content is coming from and how fast.',
+    name: 'Petition Ledger',
+    description: 'Where every proposal came from and how quickly the rolls fill.',
     widgets: ['status-breakdown', 'pacing', 'by-form', 'by-track'],
   },
   {
     id: 'speaker-tracking',
-    name: 'Speaker Tracking',
-    description: 'Onboarding state for every confirmed speaker.',
+    name: 'Orator Census',
+    description: 'Readiness of every confirmed orator.',
     widgets: ['outstanding', 'speaker-tracking', 'reports'],
   },
   {
     id: 'review-progress',
-    name: 'Review Progress',
-    description: 'How far each scoring round has got.',
+    name: 'Council Progress',
+    description: 'How far each round of deliberation has advanced.',
     widgets: ['review-progress', 'status-breakdown'],
   },
   {
     id: 'schedule-health',
-    name: 'Schedule Health',
-    description: 'Everything that would break the printed agenda.',
+    name: 'Fasti Health',
+    description: 'Everything that would dishonour the published calendar.',
     widgets: ['schedule-health', 'counters', 'nudges'],
   },
 ];

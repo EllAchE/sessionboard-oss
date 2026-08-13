@@ -60,8 +60,8 @@ function GroupCard({ group, fields }: { group: DuplicateGroupWire; fields: Merge
         return;
       }
       toast({
-        title: 'Records merged',
-        description: 'One contact now carries both.',
+        title: 'Census records reconciled',
+        description: 'One name on the rolls now carries both histories.',
         tone: 'success',
       });
       router.push(`/crm/${result.data.id}`);
@@ -159,11 +159,11 @@ export function MergePanel({ groups, fields }: Props) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>Organization</p>
-          <h1 className={styles.title}>Duplicates</h1>
+          <p className={styles.eyebrow}>The census</p>
+          <h1 className={styles.title}>Reconcile the rolls</h1>
           <p className={styles.subtitle}>
-            Contacts that share a name but arrived under different addresses. Merging keeps one
-            record and moves the notes, activity and event links onto it.
+            Citizens who share a name but arrived under different dispatch addresses. Reconciliation
+            keeps one record and gathers every note, deed, and assembly link beneath it.
           </p>
         </div>
       </div>
@@ -172,13 +172,13 @@ export function MergePanel({ groups, fields }: Props) {
         <Card>
           <CardBody>
             <div className={styles.empty}>
-              <p className={styles.emptyTitle}>No near-duplicates found</p>
+              <p className={styles.emptyTitle}>The census contains no rival records</p>
               <p className={styles.emptyBody}>
-                Every contact in the directory has a distinct name. This page fills up on its own
-                after an import that overlaps what you already had.
+                Every citizen in the census has a distinct name. This chamber fills itself when an
+                imported tablet overlaps the existing rolls.
               </p>
               <Button variant="primary" href="/crm/import">
-                Import a CSV
+                Import a tablet
               </Button>
             </div>
           </CardBody>

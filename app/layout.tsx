@@ -6,7 +6,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Cicero',
-  description: 'Open-source speaker and content management for conferences.',
+  description: 'The open-source forum for proposals, orators, and conference programmes.',
 };
 
 /**

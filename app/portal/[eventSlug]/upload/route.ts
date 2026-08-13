@@ -42,7 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
     const body = await request.formData();
     const intent = String(body.get('intent') ?? '');
     const picked = body.getAll('files').filter((entry): entry is File => entry instanceof File && entry.size > 0);
-    if (picked.length === 0) throw invalid('Choose a file to upload');
+    if (picked.length === 0) throw invalid('Choose a scroll to lodge');
 
     if (intent === 'headshot') {
       const [candidate] = await toUploads(picked.slice(0, 1));
@@ -50,34 +50,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
       const stored = await storeFile(ctx, candidate);
       await setHeadshot(ctx, me.id, stored.id);
       revalidatePath(`/portal/${eventSlug}`, 'layout');
-      return NextResponse.json({ ok: true, message: 'Headshot updated' });
+      return NextResponse.json({ ok: true, message: 'Portrait placed in the gallery' });
     }
 
     if (intent === 'task') {
       const assignmentId = String(body.get('assignmentId') ?? '');
-      if (!assignmentId) throw invalid('That task could not be found');
+      if (!assignmentId) throw invalid('That duty is absent from the ledger');
       await attachTaskFiles(ctx, me.id, assignmentId, await toUploads(picked));
       revalidatePath(`/portal/${eventSlug}`, 'layout');
       return NextResponse.json({
         ok: true,
-        message: picked.length === 1 ? 'File uploaded' : `${picked.length} files uploaded`,
+        message: picked.length === 1 ? 'Scroll entered in the archive' : `${picked.length} scrolls entered in the archive`,
       });
     }
 
     if (intent === 'replace') {
       const fileId = String(body.get('fileId') ?? '');
-      if (!fileId) throw invalid('That deliverable could not be found');
+      if (!fileId) throw invalid('That scroll is absent from the archive');
       const [candidate] = await toUploads(picked.slice(0, 1));
       const next = await replaceDeliverable(ctx, fileId, candidate);
       revalidatePath(`/portal/${eventSlug}`, 'layout');
       return NextResponse.json({
         ok: true,
-        message: `Uploaded as version ${next.version} — the earlier version is still on file`,
+        message: `Filed as version ${next.version}—the earlier record remains in the annals`,
         fileId: next.id,
       });
     }
 
-    throw invalid('That upload is not something the portal collects');
+    throw invalid('The atrium has no decree calling for that record');
   } catch (error) {
     const publicError = toPublicError(error);
     // `toPublicError` drops the original so a connection string cannot reach the speaker; logging it

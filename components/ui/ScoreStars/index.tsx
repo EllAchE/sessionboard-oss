@@ -21,7 +21,7 @@ function ScoreStars({
   readOnly = true,
   onChange,
   size = 'md',
-  label = 'Score',
+  label = 'Judgment score',
   className,
   ...rest
 }: ScoreStarsProps) {

@@ -53,7 +53,7 @@ function ProspectCard({
       </div>
       <div className={styles.cardFooter}>
         {card.score !== null ? <Badge tone="accent">Score {card.score}</Badge> : <span />}
-        <span className={styles.cardMeta}>{card.eventName ?? 'No event yet'}</span>
+        <span className={styles.cardMeta}>{card.eventName ?? 'No assembly yet'}</span>
       </div>
       <Select
         selectSize="sm"
@@ -182,8 +182,8 @@ export function PipelineBoard({ columns }: Props) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>Organization</p>
-          <h1 className={styles.title}>Sourcing pipeline</h1>
+          <p className={styles.eyebrow}>The summoning campaign</p>
+          <h1 className={styles.title}>Summoning of orators</h1>
           <p className={styles.subtitle}>
             {total} prospects across {board.length} stages. Drag a card, or use the stage picker on
             it.
@@ -202,10 +202,10 @@ export function PipelineBoard({ columns }: Props) {
         <Card>
           <CardBody>
             <div className={styles.empty}>
-              <p className={styles.emptyTitle}>No one is being sourced yet</p>
+              <p className={styles.emptyTitle}>No orator awaits a summons</p>
               <p className={styles.emptyBody}>
-                Open the directory, pick a contact and choose Enroll to put them on the board with a
-                score and a rationale.
+                Open the census, choose a citizen, and issue a summons to place them on the board
+                with a rank and rationale.
               </p>
               <Button variant="primary" href="/crm">
                 Go to the directory

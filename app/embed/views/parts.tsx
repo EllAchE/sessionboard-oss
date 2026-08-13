@@ -261,7 +261,7 @@ export function SpeakerProfile({
           {speaker.pronouns ? <p className={styles.speakerRole}>{speaker.pronouns}</p> : null}
           {speaker.jobTitle ? <p className={styles.speakerRole}>{speaker.jobTitle}</p> : null}
           {speaker.company ? <p className={styles.speakerRole}>{speaker.company}</p> : null}
-          {!role ? <p className={styles.speakerRole}>Speaker</p> : null}
+          {!role ? <p className={styles.speakerRole}>Orator</p> : null}
           {speaker.links.length > 0 ? (
             <p className={styles.speakerLinks}>
               {speaker.links.map((link) => (
@@ -281,20 +281,20 @@ export function SpeakerProfile({
       </div>
 
       <div className={styles.detailSection}>
-        <span className={styles.detailSectionTitle}>Biography</span>
+        <span className={styles.detailSectionTitle}>Life of the orator</span>
         {speaker.bioText || speaker.bioHtml ? (
           <ShowMore text={speaker.bioText} html={speaker.bioHtml} limit={240} />
         ) : (
-          <p className={styles.speakerRole}>No biography has been published yet.</p>
+          <p className={styles.speakerRole}>The annals hold no public biography yet.</p>
         )}
       </div>
 
       <div className={styles.detailSection}>
         <span className={styles.detailSectionTitle}>
-          Sessions ({sessions.length})
+          Orations ({sessions.length})
         </span>
         {sessions.length === 0 ? (
-          <p className={styles.speakerRole}>No published sessions yet.</p>
+          <p className={styles.speakerRole}>No oration has yet been proclaimed.</p>
         ) : (
           sessions.map((session) => (
             <div key={session.id} className={styles.detailSession}>

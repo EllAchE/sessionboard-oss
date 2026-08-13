@@ -66,21 +66,21 @@ const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | '
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
-  submitted: 'Submitted',
-  under_review: 'In review',
-  accepted: 'Accepted',
-  waitlisted: 'Waitlist',
+  submitted: 'Before the council',
+  under_review: 'Under deliberation',
+  accepted: 'Proclaimed',
+  waitlisted: 'Held in reserve',
   declined: 'Declined',
   withdrawn: 'Withdrawn',
 };
 
 const SORTS: Array<{ id: string; label: string }> = [
-  { id: 'score_desc', label: 'Score, high to low' },
-  { id: 'score_asc', label: 'Score, low to high' },
-  { id: 'ref_asc', label: 'Ref, ascending' },
-  { id: 'ref_desc', label: 'Ref, descending' },
-  { id: 'title_asc', label: 'Title, A–Z' },
-  { id: 'newest', label: 'Newest first' },
+  { id: 'score_desc', label: 'Judgment, high to low' },
+  { id: 'score_asc', label: 'Judgment, low to high' },
+  { id: 'ref_asc', label: 'Petition mark, ascending' },
+  { id: 'ref_desc', label: 'Petition mark, descending' },
+  { id: 'title_asc', label: 'Oration title, A–Z' },
+  { id: 'newest', label: 'Most recent petition first' },
 ];
 
 /**
@@ -225,7 +225,7 @@ export function SubmissionQueue(props: QueueProps) {
       },
       {
         id: 'title',
-        header: 'Title',
+        header: 'Oration',
         strong: true,
         render: (row) => (
           <span className={styles.cellTitle}>
@@ -238,25 +238,25 @@ export function SubmissionQueue(props: QueueProps) {
       },
       {
         id: 'submitter',
-        header: 'Speaker',
+        header: 'Orator',
         width: '18%',
         render: (row) => <span className={styles.titleText}>{row.submitterName}</span>,
       },
       {
         id: 'track',
-        header: 'Track',
+        header: 'Theme',
         width: '13%',
         render: (row) => row.trackName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'format',
-        header: 'Format',
+        header: 'Oration format',
         width: '12%',
         render: (row) => row.formatName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'status',
-        header: 'Status',
+        header: 'Standing',
         width: '110px',
         render: (row) => (
           <Badge tone={STATUS_TONE[row.status] ?? 'neutral'}>
@@ -266,7 +266,7 @@ export function SubmissionQueue(props: QueueProps) {
       },
       {
         id: 'progress',
-        header: 'Reviews',
+        header: 'Judgments',
         width: '84px',
         align: 'right',
         render: (row) =>
@@ -300,13 +300,13 @@ export function SubmissionQueue(props: QueueProps) {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headings}>
-          <span className={styles.eyebrow}>Review</span>
-          <h1 className={styles.title}>Submissions</h1>
+          <span className={styles.eyebrow}>The council</span>
+          <h1 className={styles.title}>Petitions</h1>
           <p className={styles.subtitle}>
             {rows.length} shown
             {props.rounds.length > 0 && props.roundId
               ? ` · scoring ${props.rounds.find((round) => round.id === props.roundId)?.name ?? ''}`
-              : ' · no review round yet'}
+              : ' · no council convened yet'}
           </p>
         </div>
         <div className={styles.actions}>
@@ -317,31 +317,31 @@ export function SubmissionQueue(props: QueueProps) {
                 iconLeft={<Upload size={14} />}
                 onClick={() => router.push('/admin/submissions/import')}
               >
-                Import
+                Import tablets
               </Button>
               <Button
                 variant="ghost"
                 iconLeft={<Download size={14} />}
                 onClick={() => router.push('/admin/submissions/files')}
               >
-                Files
+                Archive
               </Button>
               <Button variant="ghost" onClick={() => router.push('/admin/submissions/rounds')}>
-                Rounds
+                Councils
               </Button>
               <Button
                 variant="primary"
                 iconLeft={<Plus size={14} />}
                 onClick={() => router.push('/admin/submissions/new')}
               >
-                Add submission
+                Enter petition
               </Button>
             </>
           ) : null}
         </div>
       </header>
 
-      <nav className={styles.tabs} aria-label="Submission status">
+      <nav className={styles.tabs} aria-label="Petition standing">
         {props.tabs.map((tab) => (
           <button
             key={tab.id}
@@ -360,19 +360,19 @@ export function SubmissionQueue(props: QueueProps) {
         <Input
           className={styles.search}
           inputSize="sm"
-          placeholder="Search ref, title or speaker"
+          placeholder="Search reference, title, or orator"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') navigate({ q: search });
           }}
-          aria-label="Search submissions"
+          aria-label="Search petitions"
         />
         <Select
           selectSize="sm"
           value={props.trackId}
           onChange={(event) => navigate({ track: event.target.value })}
-          aria-label="Filter by track"
+          aria-label="Filter by programme theme"
         >
           <option value="">All tracks</option>
           {props.tracks.map((track) => (
@@ -385,7 +385,7 @@ export function SubmissionQueue(props: QueueProps) {
           selectSize="sm"
           value={props.formatId}
           onChange={(event) => navigate({ format: event.target.value })}
-          aria-label="Filter by format"
+          aria-label="Filter by oration format"
         >
           <option value="">All formats</option>
           {props.formats.map((format) => (
@@ -398,7 +398,7 @@ export function SubmissionQueue(props: QueueProps) {
           selectSize="sm"
           value={props.tagId}
           onChange={(event) => navigate({ tag: event.target.value })}
-          aria-label="Filter by tag"
+          aria-label="Filter by petition mark"
         >
           <option value="">All tags</option>
           {props.tags.map((tag) => (
@@ -411,7 +411,7 @@ export function SubmissionQueue(props: QueueProps) {
           selectSize="sm"
           value={props.sort}
           onChange={(event) => navigate({ sort: event.target.value })}
-          aria-label="Sort submissions"
+          aria-label="Sort petitions"
         >
           {SORTS.map((sort) => (
             <option key={sort.id} value={sort.id}>
@@ -424,7 +424,7 @@ export function SubmissionQueue(props: QueueProps) {
             selectSize="sm"
             value={props.roundId ?? ''}
             onChange={(event) => navigate({ round: event.target.value })}
-            aria-label="Review round"
+            aria-label="Council round"
           >
             {props.rounds.map((round) => (
               <option key={round.id} value={round.id}>
@@ -484,20 +484,20 @@ export function SubmissionQueue(props: QueueProps) {
         activeIndex={Math.max(0, Math.min(rows.length - 1, active))}
         onActiveIndexChange={setActive}
         onRowActivate={(row) => router.push(`/admin/submissions/${row.id}`)}
-        label="Submissions"
-        emptyState="No submissions match these filters."
+        label="Petitions"
+        emptyState="No petitions answer these filters."
       />
 
       <div className={styles.hintBar}>
         <span className={styles.hint}>
           <Kbd>j</Kbd>
-          <Kbd>k</Kbd> move
+          <Kbd>k</Kbd> move through the rolls
         </span>
         <span className={styles.hint}>
           <Kbd>x</Kbd> select
         </span>
         <span className={styles.hint}>
-          <Kbd>o</Kbd> open
+          <Kbd>o</Kbd> unroll
         </span>
         {props.canDecide ? (
           <>

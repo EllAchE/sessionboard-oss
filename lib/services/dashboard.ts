@@ -302,42 +302,42 @@ export async function loadNudges(ctx: EventContext, now = new Date()): Promise<N
   const nudges: Nudge[] = [
     {
       id: 'overdue-tasks',
-      label: 'overdue speaker tasks',
+      label: 'overdue orator duties',
       count: overdue,
       href: '/admin/tasks',
       tone: 'danger',
     },
     {
       id: 'needs-slot',
-      label: 'sessions still need a time slot',
+      label: 'orations still need a place in the fasti',
       count: needsSlot,
       href: '/admin/agenda',
       tone: 'warning',
     },
     {
       id: 'accepted-unscheduled',
-      label: 'accepted talks are not on the agenda yet',
+      label: 'accepted orations await proclamation in the fasti',
       count: acceptedWithoutSession,
       href: '/admin/agenda',
       tone: 'warning',
     },
     {
       id: 'missing-profile',
-      label: 'speakers are missing a bio or headshot',
+      label: 'orators are missing a biography or portrait',
       count: missingProfile,
       href: '/admin/speakers',
       tone: 'warning',
     },
     {
       id: 'awaiting-review',
-      label: 'submissions are still awaiting a decision',
+      label: 'petitions still await the council’s verdict',
       count: awaitingReview,
       href: '/admin/submissions',
       tone: 'info',
     },
     {
       id: 'unpublished',
-      label: 'sessions are drafts and stay out of the public embeds',
+      label: 'draft orations remain outside the public inscriptions',
       count: unpublished,
       href: '/admin/agenda',
       tone: 'info',
@@ -407,7 +407,7 @@ export async function loadPacing(
 
   const ids = compareEventId ? [ctx.eventId, compareEventId] : [ctx.eventId];
   const events = await db.query.event.findMany({ where: inArray(event.id, ids) });
-  const nameOf = (id: string) => events.find((row) => row.id === id)?.name ?? 'Event';
+  const nameOf = (id: string) => events.find((row) => row.id === id)?.name ?? 'Assembly';
 
   const current = await pacingFor(ctx.eventId, nameOf(ctx.eventId));
   const compare =
@@ -458,7 +458,7 @@ export async function loadBreakdowns(
 
   const byForm = new Map(forms.map((row) => [row.id, emptyBreakdown(row.id, row.name)]));
   const byTrack = new Map(tracks.map((row) => [row.id, emptyBreakdown(row.id, row.name)]));
-  byTrack.set('none', emptyBreakdown('none', 'No track'));
+  byTrack.set('none', emptyBreakdown('none', 'No theme'));
 
   for (const row of submissions) {
     const formBucket = byForm.get(row.formId);
@@ -740,11 +740,11 @@ async function buildReviewScoreReport(ctx: EventContext): Promise<string> {
   const header = [
     'Ref',
     'Title',
-    'Submission status',
+    'Petition standing',
     'Round',
-    'Reviewer',
-    'Reviewer email',
-    'Review status',
+    'Councillor',
+    'Councillor dispatch address',
+    'Judgment standing',
     'Score',
     'Criteria scored',
     'Comment',
@@ -852,11 +852,11 @@ export async function buildReport(ctx: EventContext, report: ReportId): Promise<
     const rows = report === 'outstanding-tasks' ? all.filter((r) => r.urgency !== 'done') : all;
     return toCsv([
       [
-        'Speaker',
-        'Email',
-        'Company',
-        'Accepted',
-        'Task',
+        'Orator',
+        'Dispatch address',
+        'House or company',
+        'Proclaimed',
+        'Duty',
         'Kind',
         'Required',
         'Status',
@@ -883,15 +883,15 @@ export async function buildReport(ctx: EventContext, report: ReportId): Promise<
     return toCsv([
       [
         'Name',
-        'Email',
-        'Job title',
-        'Company',
-        'Bio',
-        'Headshot',
-        'Submissions',
-        'Accepted sessions',
-        'Tasks done',
-        'Tasks total',
+        'Dispatch address',
+        'Office or title',
+        'House or company',
+        'Biography',
+        'Portrait',
+        'Petitions',
+        'Proclaimed orations',
+        'Duties fulfilled',
+        'Duties decreed',
         'Overdue',
       ],
       ...rows.map((row) => [
@@ -922,7 +922,7 @@ export async function buildReport(ctx: EventContext, report: ReportId): Promise<
   const trackName = new Map(tracks.map((row) => [row.id, row.name]));
 
   return toCsv([
-    ['Ref', 'Title', 'Form', 'Track', 'Status', 'Submitted', 'Decided'],
+    ['Petition mark', 'Oration title', 'Scroll', 'Programme theme', 'Standing', 'Lodged', 'Verdict entered'],
     ...submissions.map((row) => [
       `ABS-${row.ref}`,
       row.title,

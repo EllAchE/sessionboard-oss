@@ -29,14 +29,25 @@ export default async function PortalLayout({
 
   const base = `/portal/${eventSlug}`;
   const tabs: PortalTab[] = [
-    { id: 'home', label: 'Home', href: base },
-    { id: 'sessions', label: 'My sessions', href: `${base}/submissions`, count: submissions.length },
-    { id: 'tasks', label: 'Tasks', href: `${base}/tasks`, count: summary.outstanding, alert: summary.overdue > 0 },
-    { id: 'files', label: 'Files', href: `${base}/files` },
-    { id: 'profile', label: 'Profile', href: `${base}/profile` },
-    { id: 'group', label: 'Group', href: `${base}/group` },
+    { id: 'home', label: 'Atrium', href: base },
+    {
+      id: 'sessions',
+      label: 'My orations',
+      href: `${base}/submissions`,
+      count: submissions.length,
+    },
+    {
+      id: 'tasks',
+      label: 'Duties',
+      href: `${base}/tasks`,
+      count: summary.outstanding,
+      alert: summary.overdue > 0,
+    },
+    { id: 'files', label: 'Scrolls', href: `${base}/files` },
+    { id: 'profile', label: 'Public likeness', href: `${base}/profile` },
+    { id: 'group', label: 'Delegation', href: `${base}/group` },
   ];
-  if (pages.length > 0) tabs.push({ id: 'pages', label: 'Info', href: `${base}/pages` });
+  if (pages.length > 0) tabs.push({ id: 'pages', label: 'Notices', href: `${base}/pages` });
 
   /**
    * `S-11`. The organizer's accent is data, so it arrives as a custom property rather than a
@@ -51,7 +62,10 @@ export default async function PortalLayout({
       } as unknown as CSSProperties)
     : undefined;
 
-  const dates = [formatDate(event.startsOn, event.timezone), formatDate(event.endsOn, event.timezone)]
+  const dates = [
+    formatDate(event.startsOn, event.timezone),
+    formatDate(event.endsOn, event.timezone),
+  ]
     .filter(Boolean)
     .join(' – ');
 
@@ -62,14 +76,16 @@ export default async function PortalLayout({
           <ShieldAlert size={18} className={styles.impersonationIcon} aria-hidden />
           <div className={styles.impersonationText}>
             You are viewing the portal as{' '}
-            <span className={styles.impersonationWho}>{speakerName(me, ctx)}</span> ({ctx.actor.email}).
+            <span className={styles.impersonationWho}>{speakerName(me, ctx)}</span> (
+            {ctx.actor.email}).
             <span className={styles.impersonationNote}>
-              Anything you change here is saved as them — finish their task, then return to admin.
+              Anything you change here is recorded as them—settle their duty, then return to the
+              Curia.
             </span>
           </div>
           <form action={stopImpersonationAction}>
             <Button type="submit" variant="primary" size="sm">
-              Return to admin
+              Return to the Curia
             </Button>
           </form>
         </div>
@@ -89,7 +105,7 @@ export default async function PortalLayout({
             <div className={styles.brandText}>
               <div className={styles.eventName}>{event.name}</div>
               <div className={styles.eventMeta}>
-                Speaker portal{dates ? ` · ${dates}` : ''}
+                Orator atrium{dates ? ` · ${dates}` : ''}
                 {event.venueName ? ` · ${event.venueName}` : ''}
               </div>
             </div>
@@ -106,7 +122,7 @@ export default async function PortalLayout({
               {!impersonatedByUserId && (
                 <form action={portalSignOutAction} className={styles.inlineForm}>
                   <Button type="submit" variant="ghost" size="sm">
-                    Sign out
+                    Leave the Forum
                   </Button>
                 </form>
               )}
@@ -121,10 +137,11 @@ export default async function PortalLayout({
       <footer className={styles.footer}>
         {branding.supportEmail ? (
           <>
-            Stuck? Email <a href={`mailto:${branding.supportEmail}`}>{branding.supportEmail}</a>.
+            At an impasse? Dispatch{' '}
+            <a href={`mailto:${branding.supportEmail}`}>{branding.supportEmail}</a>.
           </>
         ) : (
-          <>Everything you submit here goes straight to the {event.name} organizers.</>
+          <>Every word placed here travels straight to the {event.name} organizers.</>
         )}
       </footer>
     </div>

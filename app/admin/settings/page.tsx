@@ -12,7 +12,7 @@ import type { EntityKind, EntityRow } from './types';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Settings · Cicero' };
+export const metadata = { title: 'Edicts · Cicero' };
 
 function text(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';

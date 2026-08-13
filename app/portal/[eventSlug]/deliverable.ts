@@ -34,7 +34,7 @@ export async function myDeliverable(
   const tasks = await listPortalTasks(ctx.eventId, me.id);
   const task = tasks.find((entry) => entry.files.some((record) => ids.includes(record.id))) ?? null;
   const isHeadshot = Boolean(me.headshotFileId && ids.includes(me.headshotFileId));
-  if (!task && !isHeadshot) throw forbidden('That file is not one of yours');
+  if (!task && !isHeadshot) throw forbidden('That record is not one of yours');
 
   return {
     lineageId: versions[0]?.id ?? fileId,

@@ -12,8 +12,8 @@ type Search = Record<string, string | string[] | undefined>;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Event not found' };
-  return { title: `Agenda · ${bundle.event.name}` };
+  if (!bundle) return { title: 'Assembly absent from the annals' };
+  return { title: `Fasti · ${bundle.event.name}` };
 }
 
 /** `G-4`. The room-by-time grid, over the same read model as `/embed/[slug]/agenda`. */
@@ -32,8 +32,8 @@ export default async function PublicAgendaPage({
     <PublicChrome event={bundle.event} active="agenda">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>Agenda</h2>
-          <span className={styles.sectionLink}>{bundle.sessions.length} published sessions</span>
+          <h2 className={styles.sectionTitle}>Fasti</h2>
+          <span className={styles.sectionLink}>{bundle.sessions.length} proclaimed orations</span>
         </div>
         <EmbedBody view="agenda" bundle={bundle} options={parseEmbedOptions(search)} />
       </section>

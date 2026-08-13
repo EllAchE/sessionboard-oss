@@ -281,7 +281,7 @@ export function FormBuilder({
   const saveToLibrary = (fieldId: string) => {
     startTransition(async () => {
       const result = await saveFieldToLibraryAction(form.id, fieldId);
-      handle(result, () => setNotice('Saved to the field library.'));
+      handle(result, () => setNotice('Kept in the inscription library.'));
     });
   };
 
@@ -295,7 +295,7 @@ export function FormBuilder({
   const saveSettings = (patch: FormSettingsInput) => {
     startTransition(async () => {
       const result = await updateFormAction(form.id, patch);
-      handle(result, () => setNotice('Settings saved.'));
+      handle(result, () => setNotice('Decrees sealed.'));
     });
   };
 
@@ -305,10 +305,10 @@ export function FormBuilder({
       handle(result, () =>
         setNotice(
           status === 'open'
-            ? 'The form is published and accepting submissions.'
+            ? 'The scroll is proclaimed and accepting petitions.'
             : status === 'closed'
-              ? 'The form is closed. The link still resolves, but it no longer accepts answers.'
-              : 'The form is back to a draft and is no longer reachable.',
+              ? 'The scroll is sealed. Its road remains, but no new answers may enter.'
+              : 'The scroll is unproclaimed and no longer reachable.',
         ),
       );
     });
@@ -317,7 +317,7 @@ export function FormBuilder({
   const copyLink = () => {
     void navigator.clipboard?.writeText(publicUrl).then(() => {
       setCopied(true);
-      setNotice('Public link copied.');
+      setNotice('Public road copied.');
       setTimeout(() => setCopied(false), 2000);
     });
   };
@@ -327,14 +327,14 @@ export function FormBuilder({
       <header className={styles.header}>
         <div className={styles.headings}>
           <Link className={styles.breadcrumb} href="/admin/forms">
-            Forms
+            Scrolls
           </Link>
           <h1 className={styles.title}>{form.name}</h1>
           <div className={styles.metaRow}>
             <Badge tone={STATUS_TONE[form.status]}>{form.status}</Badge>
             <span className={styles.publicLink}>{publicPath}</span>
-            <Tooltip content={copied ? 'Copied' : 'Copy the public link'}>
-              <IconButton label="Copy the public link" size="xs" onClick={copyLink}>
+            <Tooltip content={copied ? 'Road copied' : 'Copy the public road'}>
+              <IconButton label="Copy the public proclamation" size="xs" onClick={copyLink}>
                 {copied ? (
                   <Check size={13} aria-hidden="true" />
                 ) : (
@@ -347,7 +347,7 @@ export function FormBuilder({
               href={publicPath}
               target="_blank"
               rel="noreferrer"
-              aria-label="Open the public form in a new tab"
+              aria-label="Unroll the public scroll in a new tab"
             >
               <ExternalLink size={12} aria-hidden="true" />
             </a>
@@ -358,15 +358,15 @@ export function FormBuilder({
           {form.status === 'open' ? (
             <>
               <Button variant="secondary" loading={pending} onClick={() => setStatus('closed')}>
-                Close submissions
+                Seal to new petitions
               </Button>
               <Button variant="ghost" loading={pending} onClick={() => setStatus('draft')}>
-                Back to draft
+                Withdraw proclamation
               </Button>
             </>
           ) : (
             <Button variant="primary" loading={pending} onClick={() => setStatus('open')}>
-              Publish
+              Proclaim
             </Button>
           )}
         </div>
@@ -379,9 +379,9 @@ export function FormBuilder({
 
       <Tabs defaultValue="build">
         <TabsList>
-          <TabsTrigger value="build">Questions</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger value="build">Inscriptions</TabsTrigger>
+          <TabsTrigger value="settings">Decrees</TabsTrigger>
+          <TabsTrigger value="preview">Wax preview</TabsTrigger>
         </TabsList>
 
         <TabsPanel value="build" className={styles.tabPanel}>
@@ -400,12 +400,12 @@ export function FormBuilder({
                     <section className={styles.step} key={step}>
                       <div className={styles.stepHeader}>
                         <span className={styles.stepTitle}>
-                          {steps.length > 1 ? `Step ${step + 1}` : 'Questions'}
+                          {steps.length > 1 ? `Tablet ${step + 1}` : 'Prompts'}
                         </span>
                         {steps.length > 1 ? (
-                          <Tooltip content="Remove this step and move its questions up">
+                          <Tooltip content="Remove this tablet and move its prompts upward">
                             <IconButton
-                              label={`Remove step ${step + 1}`}
+                              label={`Remove tablet ${step + 1}`}
                               size="xs"
                               variant="danger"
                               disabled={pending}
@@ -424,7 +424,7 @@ export function FormBuilder({
                         >
                           {inStep.length === 0 ? (
                             <p className={styles.stepEmpty}>
-                              Drag a question type here, or click one in the palette.
+                              Drag an inscription here, or choose one from the scribe’s palette.
                             </p>
                           ) : (
                             inStep.map((field) => (
@@ -452,10 +452,10 @@ export function FormBuilder({
                     iconLeft={<Plus size={14} />}
                     onClick={() => setManualStepTotal(steps.length + 1)}
                   >
-                    Add a step
+                    Add a tablet
                   </Button>
                   <span className={styles.help}>
-                    Steps become pages a submitter moves through one at a time.
+                    Tablets become pages a petitioner reads one at a time.
                   </span>
                 </div>
               </div>
@@ -488,9 +488,9 @@ export function FormBuilder({
                       ? fieldTypeLabel(activeDrag.type)
                       : activeDrag.source === 'library'
                         ? (library.find((entry) => entry.id === activeDrag.entryId)?.label ??
-                          'Library field')
+                          'Library inscription')
                         : (ordered.find((field) => field.id === activeDrag.fieldId)?.label ??
-                          'Question')}
+                          'Prompt')}
                   </span>
                 </Card>
               ) : null}

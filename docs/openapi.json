@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Cicero API",
+    "title": "Cicero Public Aqueduct",
     "version": "1.0.0",
-    "description": "Read the public program of a Cicero event, and submit to an open call for speakers.\n\nPublic reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key\nissued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and shown once, at creation.",
+    "description": "Read the public programme of a Cicero assembly and answer an open proclamation for orators.\n\nPublic reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key\nissued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and revealed only once, when forged.",
     "license": {
       "name": "MIT"
     }
@@ -15,16 +15,16 @@
   ],
   "tags": [
     {
-      "name": "Events",
-      "description": "Event metadata"
+      "name": "Assemblies",
+      "description": "Founding charters and public records"
     },
     {
-      "name": "Program",
-      "description": "Sessions, speakers and the agenda"
+      "name": "Programme",
+      "description": "Orations, orators, and the fasti"
     },
     {
-      "name": "Submissions",
-      "description": "The call for speakers"
+      "name": "Petitions",
+      "description": "The proclamation for orators"
     }
   ],
   "components": {
@@ -32,7 +32,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "A per-event API key. Public read endpoints do not require it."
+        "description": "An aqueduct key for one assembly. Public reads do not require it."
       }
     },
     "schemas": {
@@ -108,7 +108,7 @@
           "venueName",
           "venueAddress"
         ],
-        "description": "A conference or event"
+        "description": "An assembly charter"
       },
       "Session": {
         "type": "object",
@@ -228,7 +228,7 @@
           "ceuCredits",
           "speakers"
         ],
-        "description": "A scheduled session on the agenda"
+        "description": "An oration inscribed in the fasti"
       },
       "Speaker": {
         "type": "object",
@@ -319,7 +319,7 @@
           "links",
           "sessions"
         ],
-        "description": "A speaker with at least one accepted session"
+        "description": "An orator named on at least one accepted petition"
       },
       "Agenda": {
         "type": "object",
@@ -396,7 +396,7 @@
               "venueName",
               "venueAddress"
             ],
-            "description": "A conference or event"
+            "description": "An assembly charter"
           },
           "days": {
             "type": "array",
@@ -527,7 +527,7 @@
                       "ceuCredits",
                       "speakers"
                     ],
-                    "description": "A scheduled session on the agenda"
+                    "description": "An oration inscribed in the fasti"
                   }
                 }
               },
@@ -657,7 +657,7 @@
                 "ceuCredits",
                 "speakers"
               ],
-              "description": "A scheduled session on the agenda"
+              "description": "An oration inscribed in the fasti"
             }
           }
         },
@@ -666,7 +666,7 @@
           "days",
           "unscheduled"
         ],
-        "description": "The published agenda, grouped by day"
+        "description": "The proclaimed fasti, grouped by day"
       },
       "Submission": {
         "type": "object",
@@ -746,7 +746,7 @@
           "answers": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Custom form answers, keyed by field key"
+            "description": "Custom scroll answers, keyed by prompt key"
           },
           "submittedAt": {
             "type": [
@@ -778,7 +778,7 @@
           "submittedAt",
           "decidedAt"
         ],
-        "description": "A CFP submission. Requires an API key."
+        "description": "A petition from the call for orators. Requires an aqueduct key."
       },
       "NewSubmission": {
         "type": "object",
@@ -786,11 +786,11 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Submitter email; an account is created if none exists"
+            "description": "Petitioner dispatch address; Cicero creates an account if none exists"
           },
           "name": {
             "type": "string",
-            "description": "Submitter display name"
+            "description": "Petitioner name for the rolls"
           },
           "answers": {
             "type": "object",
@@ -816,14 +816,14 @@
                 }
               ]
             },
-            "description": "Keyed by the form field key. Built-in keys are title, description, format, track, level, tags."
+            "description": "Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags."
           }
         },
         "required": [
           "email",
           "answers"
         ],
-        "description": "A submission to a published form"
+        "description": "A petition filed through a proclaimed scroll"
       },
       "NewSubmissionResult": {
         "type": "object",
@@ -899,16 +899,16 @@
     "/events/{slug}": {
       "get": {
         "tags": [
-          "Events"
+          "Assemblies"
         ],
-        "summary": "Fetch one event",
+        "summary": "Read one assembly charter",
         "operationId": "getEvent",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -916,7 +916,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The event",
+            "description": "The assembly",
             "content": {
               "application/json": {
                 "schema": {
@@ -926,7 +926,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -941,17 +941,17 @@
     "/events/{slug}/sessions": {
       "get": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "List sessions",
-        "description": "Published sessions only. Filters accept a track or room name, or its id.",
+        "summary": "List proclaimed orations",
+        "description": "Proclaimed orations only. Filters accept a theme or chamber name, or its id.",
         "operationId": "listSessions",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -994,7 +994,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching sessions",
+            "description": "Matching orations",
             "content": {
               "application/json": {
                 "schema": {
@@ -1019,7 +1019,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1029,7 +1029,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1044,17 +1044,17 @@
     "/events/{slug}/speakers": {
       "get": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "List speakers",
-        "description": "Everyone on an accepted submission. Emails are not included.",
+        "summary": "List orators",
+        "description": "Every orator named on an accepted petition. Dispatch addresses are withheld.",
         "operationId": "listSpeakers",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1062,7 +1062,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The speakers",
+            "description": "The orators",
             "content": {
               "application/json": {
                 "schema": {
@@ -1087,7 +1087,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1102,17 +1102,17 @@
     "/events/{slug}/agenda": {
       "get": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "Fetch the agenda",
-        "description": "Published sessions grouped by day in the event's timezone.",
+        "summary": "Read the fasti",
+        "description": "The proclaimed fasti grouped by day in the event's timezone.",
         "operationId": "getAgenda",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1120,7 +1120,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The agenda",
+            "description": "The fasti",
             "content": {
               "application/json": {
                 "schema": {
@@ -1130,7 +1130,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1145,10 +1145,10 @@
     "/events/{slug}/submissions": {
       "get": {
         "tags": [
-          "Submissions"
+          "Petitions"
         ],
-        "summary": "List submissions",
-        "description": "Requires an API key issued for this event.",
+        "summary": "List petitions",
+        "description": "Requires an aqueduct key issued for this assembly.",
         "operationId": "listSubmissions",
         "security": [
           {
@@ -1160,7 +1160,7 @@
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1197,7 +1197,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching submissions",
+            "description": "Matching petitions",
             "content": {
               "application/json": {
                 "schema": {
@@ -1222,7 +1222,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid aqueduct seal",
             "content": {
               "application/json": {
                 "schema": {
@@ -1232,7 +1232,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1242,7 +1242,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1257,17 +1257,17 @@
     "/events/{slug}/forms/{formId}/submissions": {
       "post": {
         "tags": [
-          "Submissions"
+          "Petitions"
         ],
-        "summary": "Submit to a call for speakers",
-        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed.",
+        "summary": "Answer a proclamation for orators",
+        "description": "No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link.",
         "operationId": "createSubmission",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1276,7 +1276,7 @@
             "name": "formId",
             "in": "path",
             "required": true,
-            "description": "The form's id or slug",
+            "description": "The scroll's id or slug",
             "schema": {
               "type": "string"
             }
@@ -1294,7 +1294,7 @@
         },
         "responses": {
           "201": {
-            "description": "The submission",
+            "description": "The petition",
             "content": {
               "application/json": {
                 "schema": {
@@ -1304,7 +1304,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1314,7 +1314,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with an existing record",
+            "description": "Conflicts with a record already on the rolls",
             "content": {
               "application/json": {
                 "schema": {
@@ -1324,7 +1324,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1339,7 +1339,7 @@
     "/openapi.json": {
       "get": {
         "tags": [
-          "Events"
+          "Assemblies"
         ],
         "summary": "This document",
         "operationId": "getOpenApi",

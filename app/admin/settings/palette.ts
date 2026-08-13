@@ -24,6 +24,6 @@ export const COLOR_TOKENS: ColorToken[] = [
 ];
 
 export function colorLabel(token: string | null | undefined): string {
-  if (!token) return 'No colour';
+  if (!token) return 'Uncoloured stone';
   return COLOR_TOKENS.find((entry) => entry.token === token)?.label ?? token;
 }

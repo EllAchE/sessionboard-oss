@@ -71,7 +71,7 @@ export function Toast({
         ) : null}
       </div>
       {onDismiss ? (
-        <button type="button" className={styles.dismiss} aria-label="Dismiss" onClick={onDismiss}>
+        <button type="button" className={styles.dismiss} aria-label="Dismiss dispatch" onClick={onDismiss}>
           <X size={14} aria-hidden="true" />
         </button>
       ) : null}
@@ -142,7 +142,7 @@ export function ToastProvider({ children, duration = 5000, max = 4 }: ToastProvi
       {children}
       {mounted
         ? createPortal(
-            <div className={styles.viewport} role="region" aria-label="Notifications">
+            <div className={styles.viewport} role="region" aria-label="Dispatches">
               {toasts.map((entry) => (
                 <Toast
                   key={entry.id}

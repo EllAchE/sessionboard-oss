@@ -8,7 +8,7 @@ import styles from '../../portal.module.css';
 import { HeadshotPanel } from '../profile/HeadshotPanel';
 import { TaskCard } from '../tasks/TaskCard';
 
-export const metadata = { title: 'Files · Speaker portal' };
+export const metadata = { title: 'Scrolls · Orator atrium' };
 
 /**
  * `S-4`, `S-18`. Every file the event has asked you for, on one screen. The same card the tasks page
@@ -38,9 +38,9 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
   return (
     <div className={styles.stack}>
       <div className={styles.pageHead}>
-        <h1 className={styles.pageTitle}>Files</h1>
+        <h1 className={styles.pageTitle}>Scrolls &amp; records</h1>
         <p className={styles.pageLead}>
-          Slides, headshots, signed releases — whatever {event.name} has asked you to send.{' '}
+          Slides, portraits, signed releases—every record {event.name} has asked you to send.{' '}
           {uploaded > 0
             ? `${uploaded} file${uploaded === 1 ? '' : 's'} received so far.`
             : 'Nothing received yet.'}
@@ -49,10 +49,10 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
 
       {delivered.length > 0 && (
         <section className={styles.stackTight}>
-          <h2 className={styles.sectionTitle}>What you have sent</h2>
+          <h2 className={styles.sectionTitle}>Entered in the archive</h2>
           <p className={styles.hint}>
-            Open a file to read the organizers&apos; feedback, reply to it, or upload a new version
-            without losing the one on record.
+            Unroll a record to read the organizers&apos; notes, answer them, or file a new version
+            without erasing the one in the annals.
           </p>
           <ul className={styles.fileList}>
             {delivered.map((record) => (
@@ -78,15 +78,15 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
 
       {tasks.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>No file requests</div>
+          <div className={styles.emptyTitle}>No scrolls requested</div>
           <p>
-            The organizers have not asked you for any documents yet. When they do — slides, a signed
-            release — the request appears here with what it accepts.
+            The organizers have not requested any records. When they do—slides, a signed release—the
+            decree appears here with the accepted form.
           </p>
         </div>
       ) : (
         <section className={styles.stackTight}>
-          <h2 className={styles.sectionTitle}>Requested from you</h2>
+          <h2 className={styles.sectionTitle}>Requested by decree</h2>
           {tasks.map((task) => (
             <TaskCard
               key={task.assignmentId}

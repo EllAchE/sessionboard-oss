@@ -24,7 +24,7 @@ export function EventPicker({
   return (
     <div className={styles.field}>
       <label className={styles.label} htmlFor="eventPicker">
-        Event
+        Assembly
       </label>
       <Select
         id="eventPicker"

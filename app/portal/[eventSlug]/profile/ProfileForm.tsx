@@ -36,7 +36,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
 
       <Card>
         <CardHeader>
-          <CardTitle>Who you are</CardTitle>
+          <CardTitle>Name &amp; station</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.fieldGrid}>
@@ -62,7 +62,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="jobTitle">
-                Job title
+                Office or title
               </label>
               <Input
                 id="jobTitle"
@@ -74,14 +74,14 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="company">
-                Company
+                House or company
               </label>
               <Input id="company" name="company" defaultValue={me.company ?? ''} placeholder="Analytical Engines" />
               <FieldError state={state} field="company" />
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="timezone">
-                Your timezone
+                Your home timezone
               </label>
               <Input
                 id="timezone"
@@ -89,7 +89,8 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
                 defaultValue={me.timezone ?? ''}
                 placeholder="Europe/London"
               />
-              <span className={styles.hint}>Used when organizers schedule anything with you.</span>
+              <span className={styles.hint}>Used when the magistrates set your hour in the fasti.
+              </span>
             </div>
           </div>
         </CardBody>
@@ -97,7 +98,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
 
       <Card>
         <CardHeader>
-          <CardTitle>Biography</CardTitle>
+          <CardTitle>Biography for the herald</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.grid2}>
@@ -112,7 +113,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
                 value={bio}
                 maxLength={BIO_LIMIT}
                 onChange={(untrusted) => setBio(untrusted.target.value)}
-                placeholder={'The two-paragraph version an MC could read aloud.\n\n**Bold**, _italic_ and [links](https://example.com) all work.'}
+                placeholder={'The two-paragraph account a herald could read aloud.\n\n**Bold**, _italic_ and [links](https://example.com) all work.'}
                 invalid={Boolean(state.details?.bioMarkdown)}
               />
               <span className={styles.hint}>
@@ -121,7 +122,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
               <FieldError state={state} field="bioMarkdown" />
             </div>
             <div className={styles.field}>
-              <span className={styles.label}>Preview</span>
+              <span className={styles.label}>Wax preview</span>
               <div
                 className={`${styles.previewPane} ${styles.prose}`}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(bio) }}
@@ -133,7 +134,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
 
       <Card>
         <CardHeader>
-          <CardTitle>Links</CardTitle>
+          <CardTitle>Roads elsewhere</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.stackTight}>
@@ -143,18 +144,18 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
                   name="linkLabel"
                   value={row.label}
                   placeholder="LinkedIn"
-                  aria-label="Link label"
+                  aria-label="Road label"
                   onChange={(untrusted) => setLink(index, { label: untrusted.target.value })}
                 />
                 <Input
                   name="linkUrl"
                   value={row.url}
                   placeholder="linkedin.com/in/ada"
-                  aria-label="Link address"
+                  aria-label="Road address"
                   onChange={(untrusted) => setLink(index, { url: untrusted.target.value })}
                 />
                 <IconButton
-                  label="Remove this link"
+                  label="Close this road"
                   variant="ghost"
                   size="sm"
                   onClick={() => setLinks((current) => current.filter((_, at) => at !== index))}
@@ -173,13 +174,13 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
                   iconLeft={<Plus size={14} />}
                   onClick={() => setLinks((current) => [...current, { label: '', url: '' }])}
                 >
-                  Add a link
+                  Add a road
                 </Button>
               </div>
             )}
             <span className={styles.hint}>
-              LinkedIn, X, Facebook, your own site — anything you want on the programme. Addresses
-              without https:// are fixed up for you.
+              LinkedIn, X, Facebook, or your own site—any road you want beside your public likeness.
+              Addresses without https:// are repaired for you.
             </span>
           </div>
         </CardBody>
@@ -187,7 +188,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
 
       <Card>
         <CardHeader>
-          <CardTitle>Anything we should know</CardTitle>
+          <CardTitle>Private petitions to the magistrates</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.fieldGrid}>
@@ -214,7 +215,7 @@ export function ProfileForm({ eventSlug, me }: { eventSlug: string; me: Particip
 
       <FormNotice state={state} />
       <div className={styles.taskActions}>
-        <SubmitButton variant="primary">Save profile</SubmitButton>
+        <SubmitButton variant="primary">Inscribe my likeness</SubmitButton>
       </div>
     </form>
   );

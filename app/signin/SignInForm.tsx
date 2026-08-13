@@ -33,7 +33,7 @@ export function SignInForm({
         {state.sent ? (
           <div className={styles.sent} aria-live="polite">
             <p className={styles.sentLead}>{delivery?.lead}</p>
-            <p className={styles.hint}>It works once and expires in 30 minutes.</p>
+            <p className={styles.hint}>The seal breaks after one use or 30 minutes.</p>
             {state.link ? (
               <>
                 <Button href={state.link} variant="primary" fullWidth>
@@ -47,7 +47,7 @@ export function SignInForm({
           <form action={action} className={styles.form}>
             <input type="hidden" name="next" value={next} />
             <label className={styles.field}>
-              <span className={styles.label}>Email</span>
+              <span className={styles.label}>Dispatch address</span>
               <Input
                 name="email"
                 type="email"

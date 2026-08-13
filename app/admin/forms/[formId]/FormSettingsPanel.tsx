@@ -98,7 +98,7 @@ export function FormSettingsPanel({
     <div className={styles.stack}>
       <div className={styles.settingsGrid}>
         <Card padding="md">
-          <p className={styles.panelTitle}>The form</p>
+          <p className={styles.panelTitle}>The scroll</p>
           <div className={styles.stack}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-name">
@@ -109,7 +109,7 @@ export function FormSettingsPanel({
                 value={draft.name}
                 onChange={(event) => update({ name: event.target.value })}
               />
-              <span className={styles.help}>Only organizers see this.</span>
+              <span className={styles.help}>Only the magistrates see this.</span>
             </div>
 
             <div className={styles.field}>
@@ -128,15 +128,15 @@ export function FormSettingsPanel({
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-kind">
-                Form type
+                Scroll purpose
               </label>
               <Select
                 id="settings-kind"
                 value={draft.kind}
                 onChange={(event) => update({ kind: event.target.value as FormKind })}
               >
-                <option value="cfp">Call for speakers</option>
-                <option value="portal">Portal form</option>
+                <option value="cfp">Proclamation for orators</option>
+                <option value="portal">Atrium duty scroll</option>
               </Select>
             </div>
 
@@ -158,7 +158,7 @@ export function FormSettingsPanel({
         </Card>
 
         <Card padding="md">
-          <p className={styles.panelTitle}>When it runs</p>
+          <p className={styles.panelTitle}>When the rolls open</p>
           <div className={styles.stack}>
             <div className={styles.grid2}>
               <div className={styles.field}>
@@ -185,37 +185,37 @@ export function FormSettingsPanel({
               </div>
             </div>
             <span className={styles.help}>
-              Times are in your browser&rsquo;s timezone. Leave both empty and the form is governed
-              only by its published status.
+              Times follow your local hour. Leave both empty and the scroll is governed only by
+              its seal.
             </span>
 
             <hr className={styles.divider} />
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-limit">
-                Submissions per person
+                Petitions per citizen
               </label>
               <Input
                 id="settings-limit"
                 type="number"
                 min={1}
-                placeholder="No limit"
+                placeholder="No decree"
                 value={draft.maxSubmissionsPerUser}
                 onChange={(event) => update({ maxSubmissionsPerUser: event.target.value })}
               />
-              <span className={styles.help}>Blank means as many as they like.</span>
+              <span className={styles.help}>Blank permits as many petitions as they wish.</span>
             </div>
 
             <div className={styles.switchRow}>
               <span className={styles.switchText}>
-                <span className={styles.switchLabel}>Allow multiple drafts</span>
+                <span className={styles.switchLabel}>Allow several draft petitions</span>
                 <span className={styles.help}>
-                  A speaker can keep more than one unfinished submission open at a time.
+                  An orator may keep more than one unfinished petition on the desk at once.
                 </span>
               </span>
               <Switch
                 checked={draft.allowDrafts}
-                aria-label="Allow multiple drafts"
+                aria-label="Allow several draft petitions"
                 onCheckedChange={(next) => update({ allowDrafts: next })}
               />
             </div>
@@ -223,11 +223,11 @@ export function FormSettingsPanel({
         </Card>
 
         <Card padding="md">
-          <p className={styles.panelTitle}>Notify organizers</p>
+          <p className={styles.panelTitle}>Dispatch the organizers</p>
           <div className={styles.stack}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-notify">
-                Email on each new submission
+                Dispatch on each new petition
               </label>
               <Textarea
                 id="settings-notify"
@@ -244,7 +244,7 @@ export function FormSettingsPanel({
         </Card>
 
         <Card padding="md">
-          <p className={styles.panelTitle}>Confirmation to the submitter</p>
+          <p className={styles.panelTitle}>Confirmation to the petitioner</p>
           <div className={styles.stack}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-subject">
@@ -253,7 +253,7 @@ export function FormSettingsPanel({
               <Input
                 id="settings-subject"
                 value={draft.confirmationSubject}
-                placeholder="We received your talk"
+                placeholder="Your oration is before the council"
                 onChange={(event) => update({ confirmationSubject: event.target.value })}
               />
             </div>
@@ -277,7 +277,7 @@ export function FormSettingsPanel({
 
       <div className={styles.actions}>
         <Button variant="primary" loading={busy} disabled={!draft.name.trim()} onClick={save}>
-          Save settings
+          Seal decrees
         </Button>
       </div>
     </div>

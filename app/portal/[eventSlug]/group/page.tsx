@@ -3,7 +3,7 @@ import styles from '../../portal.module.css';
 import { portalSession } from '../context';
 import { GroupPanel } from './GroupPanel';
 
-export const metadata = { title: 'Group · Speaker portal' };
+export const metadata = { title: 'Delegation · Orator atrium' };
 
 /** `S-12`, `S-13`. The group view of the same identity: everyone you share a session with. */
 export default async function GroupPage({ params }: { params: Promise<{ eventSlug: string }> }) {
@@ -21,17 +21,17 @@ export default async function GroupPage({ params }: { params: Promise<{ eventSlu
   return (
     <div className={styles.stack}>
       <div className={styles.pageHead}>
-        <h1 className={styles.pageTitle}>Group access</h1>
+        <h1 className={styles.pageTitle}>Your delegation</h1>
         <p className={styles.pageLead}>
-          Co-speakers, moderators and panelists on your sessions. Adding someone gives them their own
-          portal for the session — their own bio, their own tasks — rather than a copy of yours.
+          Fellow orators, moderators, and panelists on your orations. Summoning someone grants a
+          private atrium of their own—their biography and duties, never a copy of yours.
         </p>
       </div>
 
       {groups.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>No sessions to share</div>
-          <p>Once you have a session, you can add the people speaking on it with you here.</p>
+          <div className={styles.emptyTitle}>No oration to share</div>
+          <p>Once an oration bears your name, summon those who will speak beside you here.</p>
         </div>
       ) : (
         groups.map(({ submission, members }) => (

@@ -23,7 +23,7 @@ export function PortalRedirect({ to, seconds = 5 }: { to: string; seconds?: numb
 
   return (
     <p aria-live="polite">
-      Taking you to your speaker portal in {left} second{left === 1 ? '' : 's'}…
+      Taking you to your private atrium in {left} second{left === 1 ? '' : 's'}…
     </p>
   );
 }

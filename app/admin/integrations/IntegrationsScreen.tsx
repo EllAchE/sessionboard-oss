@@ -101,7 +101,7 @@ function SyncLog({ rows, label }: { rows: SyncLogRow[]; label: string }) {
       rows={rows}
       getRowId={(row) => row.id}
       label={label}
-      emptyState={<div className={styles.empty}>Nothing synced yet.</div>}
+      emptyState={<div className={styles.empty}>No record has crossed this road.</div>}
     />
   );
 }
@@ -162,7 +162,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
     },
     {
       id: 'created',
-      header: 'Created',
+      header: 'Forged',
       width: '18%',
       render: (row) => formatWhen(row.createdAt),
     },
@@ -191,9 +191,9 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
     <div className={styles.section}>
       <div className={styles.sectionHead}>
         <div className={styles.headings}>
-          <h2 className={styles.sectionTitle}>API keys</h2>
+          <h2 className={styles.sectionTitle}>Keys to the city</h2>
           <p className={styles.note}>
-            A key reads this event&apos;s submissions over <code>/api/v1</code>. Public program
+            A key reads this event&apos;s petitions over <code>/api/v1</code>. The public programme
             endpoints need none. Keys are hashed at rest, so the value below is shown once and
             cannot be recovered.
           </p>
@@ -203,13 +203,13 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       <div className={styles.createRow}>
         <Input
           className={styles.createInput}
-          placeholder="What is this key for? e.g. Website agenda embed"
+          placeholder="What gate does this key open? e.g. Website fasti"
           value={name}
           onChange={(event) => setName(event.target.value)}
           disabled={pending}
         />
         <Button variant="primary" iconLeft={<Plus size={15} />} loading={pending} onClick={create}>
-          Create key
+          Mint aqueduct key
         </Button>
       </div>
 
@@ -244,7 +244,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
         rows={keys}
         getRowId={(row) => row.id}
         label="API keys"
-        emptyState={<div className={styles.empty}>No keys yet.</div>}
+        emptyState={<div className={styles.empty}>No keys have been struck.</div>}
       />
     </div>
   );
@@ -286,7 +286,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
   const columns: DataTableColumn<AccelEventsPanel['speakers'][number]>[] = [
     {
       id: 'name',
-      header: 'Speaker',
+      header: 'Orator',
       strong: true,
       render: (row) => (
         <div className={styles.cellStack}>
@@ -321,8 +321,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>Accelevents is not configured</strong>
           <p className={styles.note}>
-            Accepted speakers are pushed to an Accelevents event so they receive their comped ticket
-            without anyone re-typing a list. Set these and reload:
+            Accepted orators are sent to Accelevents so they receive their complimentary token
+            without a scribe re-entering the roll. Set these and reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>ACCELEVENTS_API_KEY</li>
@@ -346,8 +346,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         <div className={styles.headings}>
           <h2 className={styles.sectionTitle}>Accelevents</h2>
           <p className={styles.note}>
-            One way, accepted speakers only. Accelevents rejects a duplicate email outright rather
-            than updating, so anyone already pushed is left alone.
+            One road, accepted orators only. Accelevents rejects a duplicate dispatch address
+            rather than updating it, so anyone already sent is left alone.
           </p>
         </div>
         <div className={styles.actions}>
@@ -366,7 +366,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
             loading={pending}
             onClick={push}
           >
-            Push accepted speakers
+            Send accepted orators
           </Button>
         </div>
       </div>
@@ -384,8 +384,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         columns={columns}
         rows={panel.speakers}
         getRowId={(row) => row.participantId}
-        label="Accepted speakers"
-        emptyState={<div className={styles.empty}>No accepted speakers to push yet.</div>}
+        label="Accepted orators"
+        emptyState={<div className={styles.empty}>No accepted orator is ready to cross this road.</div>}
       />
 
       <SyncLog rows={panel.log} label="Accelevents sync log" />
@@ -432,9 +432,8 @@ function AirtableSection({ panel }: { panel: AirtablePanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>Airtable is not configured</strong>
           <p className={styles.note}>
-            Cicero can mirror submissions, speakers and the agenda into an Airtable base your team
-            can build views over. The mirror is one way — Airtable is never the store. Set these and
-            reload:
+            Cicero can mirror petitions, orators, and the fasti into an Airtable base for your
+            scribes. The road runs one way—Airtable is never the archive. Set these and reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>AIRTABLE_API_KEY</li>
@@ -516,21 +515,22 @@ export function IntegrationsScreen({
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headings}>
-          <span className={styles.eyebrow}>Admin</span>
-          <h1 className={styles.title}>Integrations</h1>
+          <span className={styles.eyebrow}>Foreign relations</span>
+          <h1 className={styles.title}>Alliances &amp; roads</h1>
           <p className={styles.subtitle}>
-            The public API, the Accelevents speaker push and the Airtable mirror. Each is off until
-            its credentials are set, and says so rather than failing quietly.
+            The public aqueduct, Accelevents road, and Airtable mirror. Each gate remains shut until
+            its seal is set, and says so rather than failing quietly.
           </p>
         </div>
       </header>
 
       <Card padding="lg">
         <CardHeader>
-          <CardTitle>Public API</CardTitle>
+          <CardTitle>Public aqueduct</CardTitle>
           <CardDescription>
-            The program is readable without a credential at <code>/api/v1/events/&lt;slug&gt;</code>
-            . The full description lives at <code>/api/v1/openapi.json</code>.
+            The programme flows without a credential at <code>/api/v1/events/&lt;slug&gt;</code>
+            .
+            The engineer’s plan is inscribed at <code>/api/v1/openapi.json</code>.
           </CardDescription>
         </CardHeader>
         <CardBody>

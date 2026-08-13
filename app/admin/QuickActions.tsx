@@ -37,28 +37,28 @@ export function QuickActions({
   const conveniences: Convenience[] = [
     {
       href: '/admin',
-      label: 'Organizer dashboard',
-      detail: 'Return to your event overview',
+      label: 'Organizer Forum',
+      detail: 'Return to the seat of command',
       icon: <Gauge size={17} aria-hidden="true" />,
     },
     {
       href: '/events/new',
-      label: 'Create an event',
-      detail: 'Start a new programme',
+      label: 'Convene an event',
+      detail: 'Raise the standard of a new programme',
       icon: <CalendarPlus size={17} aria-hidden="true" />,
     },
     {
       href: '/portal',
-      label: 'Speaker portal',
-      detail: 'Open the participant experience',
+      label: 'Orator portal',
+      detail: 'Enter the orators’ side of the Forum',
       icon: <UserRound size={17} aria-hidden="true" />,
     },
     ...(currentEventSlug
       ? [
           {
             href: `/${currentEventSlug}`,
-            label: 'Public programme',
-            detail: 'Preview the attendee-facing agenda',
+            label: 'Public proclamation',
+            detail: 'Inspect the programme as the city sees it',
             icon: <ArrowUpRight size={17} aria-hidden="true" />,
           },
         ]
@@ -74,7 +74,7 @@ export function QuickActions({
     <>
       <IconButton
         className={styles.trigger}
-        label="Open health and quick actions"
+        label="Open Forum health and commands"
         variant="secondary"
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -87,8 +87,8 @@ export function QuickActions({
       <Dialog
         open={open}
         onOpenChange={setOpen}
-        title="Health & quick actions"
-        description="Hotkeys and useful places, kept close by."
+        title="Forum health & commands"
+        description="Short roads to every corner of the empire."
         className={styles.drawer}
       >
         <div className={styles.stack}>
@@ -97,10 +97,10 @@ export function QuickActions({
               <Activity size={18} />
             </span>
             <div className={styles.healthCopy}>
-              <strong>Organizer workspace ready</strong>
-              <span>You are connected to this event workspace.</span>
+              <strong>The Forum stands ready</strong>
+              <span>You hold the keys to this event province.</span>
             </div>
-            <span className={styles.ready}>Ready</span>
+            <span className={styles.ready}>All clear</span>
           </div>
 
           <section className={styles.section} aria-labelledby="quick-actions-shortcuts">
@@ -114,8 +114,8 @@ export function QuickActions({
                   <Search size={17} />
                 </span>
                 <span className={styles.rowCopy}>
-                  <strong>Search and jump</strong>
-                  <span>Find any organizer view or action</span>
+                  <strong>Search the empire</strong>
+                  <span>Find any organizer view or command</span>
                 </span>
                 <span className={styles.keys} aria-label="Command or Control K">
                   <Kbd>⌘ / Ctrl</Kbd>
@@ -127,8 +127,8 @@ export function QuickActions({
                   <Keyboard size={17} />
                 </span>
                 <span className={styles.rowCopy}>
-                  <strong>Close a panel</strong>
-                  <span>Return to the view beneath it</span>
+                  <strong>Dismiss a tablet</strong>
+                  <span>Return to the Forum beneath it</span>
                 </span>
                 <Kbd>Esc</Kbd>
               </div>
@@ -138,9 +138,9 @@ export function QuickActions({
           <section className={styles.section} aria-labelledby="quick-actions-conveniences">
             <div className={styles.sectionHeading}>
               <Sparkles size={15} aria-hidden="true" />
-              <h3 id="quick-actions-conveniences">Conveniences</h3>
+              <h3 id="quick-actions-conveniences">Short roads</h3>
             </div>
-            <nav className={styles.list} aria-label="Convenient links">
+            <nav className={styles.list} aria-label="Short roads through Cicero">
               {conveniences.map((item) => (
                 <a className={styles.row} href={item.href} key={item.href}>
                   <span className={styles.rowIcon}>{item.icon}</span>
@@ -157,7 +157,7 @@ export function QuickActions({
           <section className={styles.section} aria-labelledby="quick-actions-helper">
             <div className={styles.sectionHeading}>
               <MessageCircleMore size={15} aria-hidden="true" />
-              <h3 id="quick-actions-helper">Interactive helper</h3>
+              <h3 id="quick-actions-helper">House rhetorician</h3>
             </div>
             <button
               className={styles.helper}
@@ -170,20 +170,20 @@ export function QuickActions({
                 <Sparkles size={18} />
               </span>
               <span className={styles.helperCopy}>
-                <strong>Ask Cicero</strong>
-                <span>Preview only · no tokens used</span>
+                <strong>Consult Cicero</strong>
+                <span>Wax-tablet preview · no tokens used</span>
               </span>
-              <span className={styles.preview}>Preview</span>
+              <span className={styles.preview}>Wax tablet</span>
             </button>
             {helperOpen ? (
               <div className={styles.helperNote} id={helperId} role="status">
-                <strong>Not implemented yet</strong>
+                <strong>The rhetorician has not arrived</strong>
                 <p>
-                  A live LLM helper would be straightforward to add later. This preview does not start an agent, send a
-                  prompt or use any model tokens.
+                  A live LLM adviser can join the household later. This wax-tablet preview starts no
+                  agent, sends no prompt, and spends no model tokens.
                 </p>
                 <Button variant="secondary" size="sm" onClick={() => setHelperOpen(false)}>
-                  Got it
+                  Understood
                 </Button>
               </div>
             ) : null}

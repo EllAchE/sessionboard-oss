@@ -4,24 +4,24 @@ type DeliveryState = 'email' | 'logged' | 'failed';
 
 const COPY = {
   'sign-in': {
-    title: 'Sign in to Cicero',
+    title: 'Enter Cicero',
     description:
-      'We email you a link. Organizers, reviewers and speakers all sign in the same way, and none of them have a password to forget.',
-    submit: 'Email me a link',
-    switchPrompt: 'New to Cicero?',
-    switchLabel: 'Create an account',
+      'We send a sealed link by courier. Magistrates, councillors, and orators all enter through the same gate—no password scroll to lose.',
+    submit: 'Send my sealed link',
+    switchPrompt: 'New to the Forum?',
+    switchLabel: 'Join Cicero',
     switchHref: '/signup',
-    linkLabel: 'Open your sign-in link',
+    linkLabel: 'Pass through the gate',
   },
   'sign-up': {
-    title: 'Create your Cicero account',
+    title: 'Join the Cicero Forum',
     description:
-      'Enter your email address. We will create your account and give you a secure link to continue — no password needed.',
-    submit: 'Create my account',
-    switchPrompt: 'Already have an account?',
-    switchLabel: 'Sign in',
+      'Enter your email address. We will add your name to the rolls and send a sealed link—no password required.',
+    submit: 'Add me to the rolls',
+    switchPrompt: 'Already on the rolls?',
+    switchLabel: 'Enter Cicero',
     switchHref: '/signin',
-    linkLabel: 'Continue to Cicero',
+    linkLabel: 'Enter the Forum',
   },
 } as const;
 
@@ -32,16 +32,16 @@ export function authCopy(intent: AuthIntent) {
 export function deliveryCopy(intent: AuthIntent, delivery: DeliveryState, email: string) {
   if (delivery === 'email') {
     return {
-      lead: `Check ${email} for your sign-in link.`,
+      lead: `A sealed entry link is on its way to ${email}.`,
       hint: null,
     };
   }
 
   return {
-    lead: intent === 'sign-up' ? 'Your account is ready.' : 'Your secure sign-in link is ready.',
+    lead: intent === 'sign-up' ? 'Your name is on the rolls.' : 'Your sealed entry link is ready.',
     hint:
       delivery === 'failed'
-        ? 'The mail provider could not deliver to that address on this demo. Use the link above to continue.'
-        : 'Email delivery is disabled on this demo. Use the link above to continue.',
+        ? 'The courier could not reach that address in this demo. Use the link above to pass through the gate.'
+        : 'Couriers are resting in this demo. Use the link above to pass through the gate.',
   };
 }

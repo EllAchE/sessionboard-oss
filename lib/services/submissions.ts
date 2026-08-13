@@ -188,7 +188,7 @@ export function prepareSubmission(fields: RuntimeField[], rawValues: AnswerMap):
 
   return {
     columns: {
-      title: asText(builtins.title ?? null) ?? 'Untitled submission',
+      title: asText(builtins.title ?? null) ?? 'Untitled petition',
       descriptionMarkdown: asText(builtins.description ?? null),
       formatId: asText(builtins.format ?? null),
       trackId: asText(builtins.track ?? null),
@@ -220,15 +220,15 @@ export function assertWithinSubmissionLimit(
   if (max !== null && max !== undefined && existingCount >= max) {
     throw conflict(
       max === 1
-        ? 'You have already submitted to this call for speakers'
-        : `You have reached this event's limit of ${max} submissions`,
+        ? 'You have already filed a petition with this call for orators'
+        : `You have reached this event's limit of ${max} petitions`,
     );
   }
 }
 
 export function assertDraftsAllowed(limits: SubmissionLimits): void {
   if (!limits.allowDrafts) {
-    throw invalid('This form does not allow saving a draft');
+    throw invalid('This scroll does not permit unfiled drafts');
   }
 }
 
@@ -441,7 +441,9 @@ export function rehydrateDraftValues(
   for (const field of fields) {
     switch (field.builtinKey) {
       case 'title':
-        values[field.key] = row.title === 'Untitled submission' ? '' : row.title;
+        values[field.key] = ['Untitled submission', 'Untitled petition'].includes(row.title)
+          ? ''
+          : row.title;
         break;
       case 'description':
         values[field.key] = row.descriptionMarkdown ?? '';
@@ -562,12 +564,12 @@ export async function saveSubmission(input: SaveSubmissionInput): Promise<SavedS
     ? await db.query.submission.findFirst({ where: eq(submission.id, input.submissionId) })
     : undefined;
 
-  if (input.submissionId && !existing) throw notFound('That submission');
+  if (input.submissionId && !existing) throw notFound('That petition');
   if (existing && existing.submitterUserId !== input.userId) {
-    throw forbidden('That submission belongs to someone else');
+    throw forbidden('That petition belongs to another petitioner');
   }
   if (existing && existing.status !== 'draft') {
-    throw conflict('That submission has already been sent');
+    throw conflict('That petition has already been filed');
   }
 
   if (!existing) {
@@ -631,7 +633,7 @@ function prepareDraft(fields: RuntimeField[], rawValues: AnswerMap): PreparedSub
   const { builtins, answers } = splitAnswers(fields, values);
   return {
     columns: {
-      title: asText(builtins.title ?? null) ?? 'Untitled submission',
+      title: asText(builtins.title ?? null) ?? 'Untitled petition',
       descriptionMarkdown: asText(builtins.description ?? null),
       formatId: asText(builtins.format ?? null),
       trackId: asText(builtins.track ?? null),
@@ -675,7 +677,7 @@ export async function ensureParticipant(
   const raced = await db.query.participant.findFirst({
     where: and(eq(participant.eventId, eventId), eq(participant.userId, userId)),
   });
-  if (!raced) throw notFound('That participant');
+  if (!raced) throw notFound('That orator');
   return raced.id;
 }
 
@@ -693,8 +695,8 @@ export async function linkPrimarySpeaker(
 export async function withdrawSubmission(submissionId: string, userId: string): Promise<void> {
   const db = getDb();
   const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
-  if (!row) throw notFound('That submission');
-  if (row.submitterUserId !== userId) throw forbidden('That submission belongs to someone else');
+  if (!row) throw notFound('That petition');
+  if (row.submitterUserId !== userId) throw forbidden('That petition belongs to another petitioner');
   if (row.status === 'withdrawn') return;
 
   await db
@@ -762,12 +764,12 @@ export function buildCsv(
   const header = [
     'Ref',
     'Status',
-    'Submitted at',
-    'Submitter name',
-    'Submitter email',
+    'Lodged at',
+    'Petitioner name',
+    'Petitioner dispatch address',
     'Title',
     'Description',
-    'Format',
+    'Oration format',
     'Track',
     'Level',
     'Tags',
@@ -801,13 +803,13 @@ export async function exportFormSubmissionsCsv(formId: string): Promise<{ filena
   const db = getDb();
 
   const formRow = await db.query.form.findFirst({ where: eq(form.id, formId) });
-  if (!formRow) throw notFound('That form');
+  if (!formRow) throw notFound('That scroll');
 
   const eventRow = await db.query.event.findFirst({ where: eq(event.id, formRow.eventId) });
   if (!eventRow) throw notFound('That event');
 
   const bundle = await loadPublicForm(eventRow.slug, formRow.slug);
-  if (!bundle) throw notFound('That form');
+  if (!bundle) throw notFound('That scroll');
 
   const rows = await db
     .select({

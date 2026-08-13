@@ -10,7 +10,7 @@ function columns(): Array<DataTableColumn<SpeakerRow>> {
   return [
     {
       id: 'name',
-      header: 'Speaker',
+      header: 'Orator',
       width: '30%',
       render: (row) => (
         <div className={styles.person}>
@@ -30,9 +30,9 @@ function columns(): Array<DataTableColumn<SpeakerRow>> {
       width: '20%',
       render: (row) => (
         <span className={styles.sessionList}>
-          <Badge tone={row.hasBio ? 'success' : 'warning'}>{row.hasBio ? 'Bio' : 'No bio'}</Badge>
+          <Badge tone={row.hasBio ? 'success' : 'warning'}>{row.hasBio ? 'Biography' : 'No biography'}</Badge>
           <Badge tone={row.hasHeadshot ? 'success' : 'warning'}>
-            {row.hasHeadshot ? 'Headshot' : 'No headshot'}
+            {row.hasHeadshot ? 'Portrait' : 'No portrait'}
           </Badge>
         </span>
       ),
@@ -50,7 +50,7 @@ function columns(): Array<DataTableColumn<SpeakerRow>> {
     },
     {
       id: 'tasks',
-      header: 'Tasks',
+      header: 'Duties',
       width: '22%',
       render: (row) => (
         <span className={styles.due}>
@@ -92,8 +92,8 @@ export function SpeakerTable({ speakers }: { speakers: SpeakerRow[] }) {
         <Input
           inputSize="sm"
           value={query}
-          placeholder="Search speakers…"
-          aria-label="Search speakers"
+          placeholder="Search the roll of orators…"
+          aria-label="Search orators"
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className={styles.tabs}>
@@ -101,7 +101,7 @@ export function SpeakerTable({ speakers }: { speakers: SpeakerRow[] }) {
             [
               ['all', 'All'],
               ['incomplete', 'Incomplete profile'],
-              ['overdue', 'Has overdue tasks'],
+              ['overdue', 'Has overdue duties'],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -116,14 +116,14 @@ export function SpeakerTable({ speakers }: { speakers: SpeakerRow[] }) {
           ))}
         </div>
         <span className={styles.toolbarSpacer} />
-        <span className={styles.filterLabel}>{rows.length} speakers</span>
+        <span className={styles.filterLabel}>{rows.length} orators</span>
       </div>
       <DataTable
-        label="Speakers"
+        label="Orators"
         columns={columns()}
         rows={rows}
         getRowId={(row) => row.id}
-        emptyState="No speakers yet. They appear once a submission names them."
+        emptyState="The roll is empty. Orators appear when a petition names them."
       />
     </div>
   );
@@ -133,7 +133,7 @@ export function SpeakerTrackingWidget({ speakers }: { speakers: SpeakerRow[] }) 
   return (
     <Card className={styles.wide}>
       <CardHeader>
-        <CardTitle>Speaker tracking</CardTitle>
+        <CardTitle>Census of orators</CardTitle>
       </CardHeader>
       <CardBody>
         <SpeakerTable speakers={speakers} />

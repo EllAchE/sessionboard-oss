@@ -36,8 +36,14 @@ const STATUS_TONE: Record<FormStatus, 'neutral' | 'success' | 'warning'> = {
 };
 
 const KIND_LABEL: Record<FormKind, string> = {
-  cfp: 'Call for speakers',
-  portal: 'Portal form',
+  cfp: 'Proclamation for orators',
+  portal: 'Atrium scroll',
+};
+
+const STATUS_LABEL: Record<FormStatus, string> = {
+  draft: 'Unproclaimed',
+  open: 'Open in the Forum',
+  closed: 'Sealed',
 };
 
 function formatDate(value: string | null): string {
@@ -92,7 +98,7 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
   const columns: Array<DataTableColumn<FormRow>> = [
     {
       id: 'name',
-      header: 'Form',
+      header: 'Scroll',
       width: '34%',
       render: (row) => (
         <span className={styles.nameCell}>
@@ -103,28 +109,38 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
         </span>
       ),
     },
-    { id: 'kind', header: 'Type', width: '16%', render: (row) => KIND_LABEL[row.kind] },
+    {
+      id: 'kind',
+      header: 'Purpose',
+      width: '16%',
+      render: (row) => KIND_LABEL[row.kind],
+    },
     {
       id: 'status',
-      header: 'Status',
+      header: 'Standing',
       width: '12%',
-      render: (row) => <Badge tone={STATUS_TONE[row.status]}>{row.status}</Badge>,
+      render: (row) => <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>,
     },
     {
       id: 'fields',
-      header: 'Questions',
+      header: 'Prompts',
       width: '10%',
       align: 'right',
       render: (row) => row.fieldCount,
     },
     {
       id: 'submissions',
-      header: 'Submissions',
+      header: 'Petitions',
       width: '12%',
       align: 'right',
       render: (row) => row.submissionCount,
     },
-    { id: 'closes', header: 'Closes', width: '12%', render: (row) => formatDate(row.closesAt) },
+    {
+      id: 'closes',
+      header: 'Closes',
+      width: '12%',
+      render: (row) => formatDate(row.closesAt),
+    },
     {
       id: 'actions',
       header: '',
@@ -132,9 +148,9 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
       align: 'right',
       render: (row) => (
         <span className={styles.rowActions}>
-          <Tooltip content="Duplicate">
+          <Tooltip content="Copy this scroll">
             <IconButton
-              label={`Duplicate ${row.name}`}
+              label={`Copy ${row.name}`}
               size="sm"
               disabled={pending}
               onClick={() => duplicate(row.id)}
@@ -142,9 +158,11 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
               <Copy size={14} aria-hidden="true" />
             </IconButton>
           </Tooltip>
-          <Tooltip content={row.submissionCount > 0 ? 'Has submissions' : 'Delete'}>
+          <Tooltip
+            content={row.submissionCount > 0 ? 'Petitions invoke this scroll' : 'Burn scroll'}
+          >
             <IconButton
-              label={`Delete ${row.name}`}
+              label={`Burn ${row.name}`}
               size="sm"
               variant="danger"
               disabled={pending || row.submissionCount > 0}
@@ -162,16 +180,16 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headings}>
-          <span className={styles.eyebrow}>Submissions</span>
-          <h1 className={styles.title}>Forms</h1>
+          <span className={styles.eyebrow}>The scriptorium</span>
+          <h1 className={styles.title}>Scrolls of the scriptorium</h1>
           <p className={styles.subtitle}>
-            A call for speakers collects talks; a portal form collects anything else you need from a
-            speaker once they are accepted.
+            A proclamation gathers petitions; an atrium scroll gathers whatever else a proclaimed
+            orator owes the Forum.
           </p>
         </div>
         <div className={styles.actions}>
           <Button variant="primary" iconLeft={<Plus size={15} />} onClick={() => setCreating(true)}>
-            New form
+            Inscribe a scroll
           </Button>
         </div>
       </header>
@@ -181,9 +199,12 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
       {forms.length === 0 && !creating ? (
         <Card>
           <div className={styles.empty}>
-            <p>No forms yet. A call for speakers arrives with the six built-in fields already on it.</p>
+            <p>
+              No scrolls yet. A proclamation for orators arrives with the six essential prompts
+              already inscribed.
+            </p>
             <Button variant="primary" onClick={() => setCreating(true)}>
-              Create the first one
+              Inscribe the first scroll
             </Button>
           </div>
         </Card>
@@ -193,8 +214,8 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
             columns={columns}
             rows={forms}
             getRowId={(row) => row.id}
-            label="Forms"
-            emptyState="No forms yet."
+            label="Scrolls of the scriptorium"
+            emptyState="The scriptorium shelves are empty."
           />
         </Card>
       )}
@@ -204,17 +225,18 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
           <div className={styles.fieldStack}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="new-form-name">
-                Form name
+                Scroll name
               </label>
               <Input
                 id="new-form-name"
                 autoFocus
                 value={name}
-                placeholder="2026 Call for Speakers"
+                placeholder="MMXXVI Proclamation for Orators"
                 onChange={(event) => setName(event.target.value)}
               />
               <span className={styles.help}>
-                Organizers see this name. The public heading is set in the form&rsquo;s settings.
+                Magistrates see this name. Its public heading is governed in the scroll&rsquo;s
+                decrees.
               </span>
             </div>
 
@@ -231,8 +253,8 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
                     <span className={styles.kindOptionTitle}>{KIND_LABEL[option]}</span>
                     <span className={styles.kindOptionHint}>
                       {option === 'cfp'
-                        ? 'Creates a submission. Starts with the six built-in fields.'
-                        : 'Collects extra information from a speaker. Starts empty.'}
+                        ? 'Creates a petition with the six foundational inscriptions.'
+                        : 'Collects further particulars from an orator. Starts blank.'}
                     </span>
                   </span>
                 </button>
@@ -241,10 +263,10 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
 
             <div className={styles.actions}>
               <Button variant="primary" loading={pending} disabled={!name.trim()} onClick={create}>
-                Create form
+                Inscribe scroll
               </Button>
               <Button variant="ghost" onClick={() => setCreating(false)}>
-                Cancel
+                Leave the scriptorium
               </Button>
             </div>
           </div>

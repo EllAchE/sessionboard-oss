@@ -3,12 +3,12 @@ import type { PublicEvent } from '../../embed/queries';
 import styles from './public-event.module.css';
 
 const TABS = [
-  { id: 'home', label: 'Overview', path: '' },
-  { id: 'agenda', label: 'Agenda', path: '/agenda' },
-  { id: 'itinerary', label: 'Schedule', path: '/itinerary' },
-  { id: 'sessions', label: 'Sessions', path: '/sessions' },
-  { id: 'speakers', label: 'Speakers', path: '/speakers' },
-  { id: 'gallery', label: 'Speaker gallery', path: '/gallery' },
+  { id: 'home', label: 'Forum', path: '' },
+  { id: 'agenda', label: 'Fasti', path: '/agenda' },
+  { id: 'itinerary', label: 'My route', path: '/itinerary' },
+  { id: 'sessions', label: 'Orations', path: '/sessions' },
+  { id: 'speakers', label: 'Orators', path: '/speakers' },
+  { id: 'gallery', label: 'Portraits', path: '/gallery' },
 ];
 
 export function PublicChrome({
@@ -59,12 +59,12 @@ export function PublicChrome({
               <>
                 {' · '}
                 <a href={event.websiteUrl} rel="noreferrer" target="_blank">
-                  Event website
+                  Official event scroll
                 </a>
               </>
             ) : null}
           </span>
-          <span>Powered by Cicero</span>
+          <span>Proclaimed by Cicero</span>
         </div>
       </footer>
     </div>

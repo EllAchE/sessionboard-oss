@@ -44,9 +44,9 @@ export type DeliverableWire = {
 };
 
 const STATE_LABEL: Record<DeliverableState, string> = {
-  submitted: 'Submitted',
-  outstanding: 'Outstanding',
-  waived: 'Waived',
+  submitted: 'Lodged',
+  outstanding: 'Awaiting a scroll',
+  waived: 'Waived by decree',
 };
 
 const STATE_TONE: Record<DeliverableState, 'success' | 'warning' | 'neutral'> = {
@@ -92,7 +92,9 @@ export function DeliverablesBoard({
 
   const chaseable = useMemo(
     () =>
-      selectedIds.filter((id) => rows.find((row) => row.assignmentId === id)?.state === 'outstanding'),
+      selectedIds.filter(
+        (id) => rows.find((row) => row.assignmentId === id)?.state === 'outstanding',
+      ),
     [selectedIds, rows],
   );
 
@@ -100,16 +102,20 @@ export function DeliverablesBoard({
     start(async () => {
       const result = await chaseDeliverablesAction(chaseable);
       if (!result.ok) {
-        toast({ title: 'Nothing sent', description: result.message, tone: 'danger' });
+        toast({
+          title: 'No courier departed',
+          description: result.message,
+          tone: 'danger',
+        });
         return;
       }
       setSelectedIds([]);
       toast({
-        title: `Chased ${result.data.sent} speaker${result.data.sent === 1 ? '' : 's'}`,
+        title: `Sent couriers after ${result.data.sent} orator${result.data.sent === 1 ? '' : 's'}`,
         description:
           result.data.skipped.length > 0
-            ? `Skipped ${result.data.skipped.length}: ${result.data.skipped.join(', ')}`
-            : 'Every reminder is in the mail log.',
+            ? `Passed over ${result.data.skipped.length}: ${result.data.skipped.join(', ')}`
+            : 'Every reminder is entered in the courier log.',
         tone: 'success',
       });
       router.refresh();
@@ -120,7 +126,7 @@ export function DeliverablesBoard({
     () => [
       {
         id: 'speaker',
-        header: 'Speaker',
+        header: 'Orator',
         width: '22%',
         strong: true,
         render: (row) => (
@@ -132,7 +138,7 @@ export function DeliverablesBoard({
       },
       {
         id: 'deliverable',
-        header: 'Deliverable',
+        header: 'Required scroll',
         width: '22%',
         render: (row) => (
           <span className={styles.owner}>
@@ -140,17 +146,19 @@ export function DeliverablesBoard({
             <span className={queue.muted}>
               {row.accepts}
               {row.maxSizeMb ? ` · up to ${row.maxSizeMb} MB` : ''}
-              {row.required ? '' : ' · optional'}
+              {row.required ? '' : ' · at the orator’s discretion'}
             </span>
           </span>
         ),
       },
       {
         id: 'state',
-        header: 'Status',
+        header: 'Standing',
         width: '124px',
         render: (row) => (
-          <Badge tone={row.overdue && row.state === 'outstanding' ? 'danger' : STATE_TONE[row.state]}>
+          <Badge
+            tone={row.overdue && row.state === 'outstanding' ? 'danger' : STATE_TONE[row.state]}
+          >
             {row.overdue && row.state === 'outstanding' ? 'Overdue' : STATE_LABEL[row.state]}
           </Badge>
         ),
@@ -161,7 +169,7 @@ export function DeliverablesBoard({
         width: '22%',
         render: (row) =>
           row.files.length === 0 ? (
-            <span className={queue.muted}>Nothing yet</span>
+            <span className={queue.muted}>Archive still empty</span>
           ) : (
             <span className={styles.owner}>
               {row.files.map((entry) => (
@@ -185,7 +193,7 @@ export function DeliverablesBoard({
       },
       {
         id: 'session',
-        header: 'Session',
+        header: 'Oration',
         width: '18%',
         render: (row) =>
           row.submissionId ? (
@@ -198,14 +206,14 @@ export function DeliverablesBoard({
       },
       {
         id: 'due',
-        header: 'Due',
+        header: 'Appointed day',
         width: '112px',
         mono: true,
         render: (row) => formatDay(row.dueAt),
       },
       {
         id: 'reminded',
-        header: 'Chased',
+        header: 'Courier sent',
         width: '112px',
         mono: true,
         render: (row) =>
@@ -225,10 +233,10 @@ export function DeliverablesBoard({
 
       <header className={queue.header}>
         <div className={queue.headings}>
-          <span className={queue.eyebrow}>Content</span>
-          <h1 className={queue.title}>Deliverables</h1>
+          <span className={queue.eyebrow}>The tabularium</span>
+          <h1 className={queue.title}>Required scrolls</h1>
           <p className={queue.subtitle}>
-            What each speaker still owes, and who to chase for it.
+            What each orator still owes the archive, and where a courier should be sent.
           </p>
         </div>
         <div className={queue.actions}>
@@ -239,8 +247,8 @@ export function DeliverablesBoard({
             onClick={chase}
           >
             {pending
-              ? 'Sending…'
-              : `Chase ${chaseable.length > 0 ? chaseable.length : ''} missing`.trim()}
+              ? 'Dispatching couriers…'
+              : `Dispatch ${chaseable.length > 0 ? chaseable.length : ''} courier${chaseable.length === 1 ? '' : 's'}`.trim()}
           </Button>
         </div>
       </header>
@@ -248,7 +256,7 @@ export function DeliverablesBoard({
       <div className={styles.summaryRow}>
         <div className={styles.summaryCard}>
           <div className={styles.summaryValue}>{summary.submitted}</div>
-          <div className={styles.summaryLabel}>Submitted</div>
+          <div className={styles.summaryLabel}>Lodged</div>
         </div>
         <div className={styles.summaryCard}>
           <div className={styles.summaryValue}>{summary.outstanding}</div>
@@ -260,7 +268,7 @@ export function DeliverablesBoard({
         </div>
         <div className={styles.summaryCard}>
           <div className={styles.summaryValue}>{summary.speakersMissing}</div>
-          <div className={styles.summaryLabel}>Speakers to chase</div>
+          <div className={styles.summaryLabel}>Orators awaiting a courier</div>
         </div>
       </div>
 
@@ -268,20 +276,20 @@ export function DeliverablesBoard({
         <Input
           className={queue.search}
           inputSize="sm"
-          placeholder="Speaker, deliverable or session"
-          aria-label="Search deliverables"
+          placeholder="Orator, scroll, or oration"
+          aria-label="Search required scrolls"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
         <Select
           selectSize="sm"
-          aria-label="Filter by status"
+          aria-label="Filter by standing"
           value={state}
           onChange={(event) => setState(event.target.value)}
         >
-          <option value="">Any status</option>
-          <option value="outstanding">Outstanding</option>
-          <option value="submitted">Submitted</option>
+          <option value="">Any standing</option>
+          <option value="outstanding">Awaiting a scroll</option>
+          <option value="submitted">Lodged</option>
           <option value="waived">Waived</option>
         </Select>
         <Button
@@ -294,7 +302,7 @@ export function DeliverablesBoard({
           }
           disabled={visible.every((row) => row.state !== 'outstanding')}
         >
-          Select everything outstanding
+          Select every missing scroll
         </Button>
         <Button
           size="sm"
@@ -302,7 +310,7 @@ export function DeliverablesBoard({
           onClick={() => setSelectedIds([])}
           disabled={selectedIds.length === 0}
         >
-          Clear
+          Clear selection
         </Button>
       </div>
 
@@ -314,11 +322,11 @@ export function DeliverablesBoard({
           selectionMode="multiple"
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
-          label="Deliverable status"
+          label="Standing of required scrolls"
           emptyState={
             rows.length === 0
-              ? 'No file has been requested from any speaker yet.'
-              : 'No deliverable matches these filters.'
+              ? 'No scroll has been requested from any orator.'
+              : 'No required scroll answers these filters.'
           }
         />
       </div>

@@ -155,7 +155,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
       }
 
       toast({
-        title: editing ? 'Speaker updated' : `${values.name || values.email} added`,
+        title: editing ? 'Orator record revised' : `${values.name || values.email} summoned to the rolls`,
         tone: 'success',
       });
       router.push(editing ? `/admin/speakers/${outcome.data.id}` : '/admin/speakers');
@@ -179,11 +179,11 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Details</CardTitle>
+          <CardTitle>Name &amp; station</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.formGrid}>
-            <Field label="Full name" htmlFor="speaker-name" error={errors.displayName}>
+            <Field label="Orator’s full name" htmlFor="speaker-name" error={errors.displayName}>
               <Input
                 id="speaker-name"
                 value={values.name}
@@ -193,14 +193,14 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
               />
             </Field>
             <Field
-              label="Email"
+              label="Dispatch address"
               htmlFor="speaker-email"
               required
               error={errors.email}
               hint={
                 editing
-                  ? 'The address this speaker signs in with. Fixed once the record exists.'
-                  : 'Identifies the speaker. An address already on the roster is updated, never duplicated.'
+                  ? 'The address this orator uses to enter the Forum. Fixed once entered in the rolls.'
+                  : 'Identifies the orator. An address already on the rolls is revised, never duplicated.'
               }
             >
               <Input
@@ -216,7 +216,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 onChange={(event) => set('email', event.target.value)}
               />
             </Field>
-            <Field label="Job title" htmlFor="speaker-job" error={errors.jobTitle}>
+            <Field label="Office or title" htmlFor="speaker-job" error={errors.jobTitle}>
               <Input
                 id="speaker-job"
                 value={values.jobTitle}
@@ -224,7 +224,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 onChange={(event) => set('jobTitle', event.target.value)}
               />
             </Field>
-            <Field label="Company" htmlFor="speaker-company" error={errors.company}>
+            <Field label="House or company" htmlFor="speaker-company" error={errors.company}>
               <Input
                 id="speaker-company"
                 value={values.company}
@@ -240,7 +240,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 onChange={(event) => set('pronouns', event.target.value)}
               />
             </Field>
-            <Field label="Website" htmlFor="speaker-website" error={errors['links.0.url']}>
+            <Field label="Road to the web" htmlFor="speaker-website" error={errors['links.0.url']}>
               <Input
                 id="speaker-website"
                 value={values.website}
@@ -252,7 +252,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
               label="Biography"
               htmlFor="speaker-bio"
               wide
-              hint="Markdown. Shown on the public speaker page and in embeds."
+              hint="Markdown. Shown on the orator’s public likeness and inscriptions."
               error={errors.bioMarkdown}
             >
               <Textarea
@@ -269,7 +269,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Photo</CardTitle>
+          <CardTitle>Portrait</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.photoRow}>
@@ -291,10 +291,10 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 iconLeft={<ImagePlus size={15} />}
                 onClick={() => picker.current?.click()}
               >
-                {previewSrc ? 'Replace photo' : 'Choose photo'}
+                {previewSrc ? 'Replace portrait' : 'Choose portrait'}
               </Button>
               <p className={styles.fieldHint}>
-                {photo ? photo.name : 'JPEG or PNG, up to 10 MB. Uploaded when you save.'}
+                {photo ? photo.name : 'JPEG or PNG, up to 10 MB. Lodged when revisions are sealed.'}
               </p>
             </div>
           </div>
@@ -303,17 +303,18 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Travel &amp; logistics</CardTitle>
+          <CardTitle>Journey &amp; provisions</CardTitle>
         </CardHeader>
         <CardBody>
           <p className={styles.sectionNote}>
-Organizer-only. None of this reaches the public speaker page or an embed.
+Only magistrates see this. None of it reaches the orator’s public likeness or an
+            inscription.
           </p>
           <div className={styles.formGrid}>
             <Field
-              label="Timezone"
+              label="Home timezone"
               htmlFor="speaker-timezone"
-              hint="Where they are travelling from, for scheduling calls and arrival."
+              hint="Where the orator journeys from, for scheduling audiences and arrival."
               error={errors.timezone}
             >
               <Input
@@ -333,7 +334,7 @@ Organizer-only. None of this reaches the public speaker page or an embed.
               />
             </Field>
             <Field
-              label="Accessibility & arrival"
+              label="Access &amp; arrival"
               htmlFor="speaker-accessibility"
               hint="Access requirements, plus arrival and travel notes."
               error={errors.accessibilityNotes}
@@ -352,14 +353,14 @@ Organizer-only. None of this reaches the public speaker page or an embed.
 
       <div className={styles.formActions}>
         <Button type="submit" variant="primary" loading={pending} iconLeft={<Save size={15} />}>
-          {editing ? 'Save changes' : 'Add speaker'}
+          {editing ? 'Seal revisions' : 'Summon orator'}
         </Button>
         <Button
           type="button"
           variant="ghost"
           href={editing ? `/admin/speakers/${initial.id}` : '/admin/speakers'}
         >
-          Cancel
+          Leave unchanged
         </Button>
       </div>
     </form>

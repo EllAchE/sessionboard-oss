@@ -67,7 +67,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       }
       setRecusing(null);
       setReason('');
-      setMessage(`You are no longer reviewing ${target.displayRef}. The organizer can reassign it.`);
+      setMessage(`You have withdrawn from ${target.displayRef}. The magistrates may appoint another councillor.`);
       router.refresh();
     });
   }, [reason, recusing, router]);
@@ -76,7 +76,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
     const base: Array<DataTableColumn<AssignmentWire>> = [
       {
         id: 'title',
-        header: 'Submission',
+        header: 'Petition',
         strong: true,
         render: (row) => (
           <span className={styles.rowTitle}>
@@ -87,7 +87,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       },
       {
         id: 'author',
-        header: 'Author',
+        header: 'Petitioner',
         width: '18%',
         render: (row) =>
           props.authorHidden ? (
@@ -98,21 +98,21 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             row.submitterName
           ),
       },
-      { id: 'track', header: 'Track', width: '14%', render: (row) => row.trackName ?? '—' },
+      { id: 'track', header: 'Theme', width: '14%', render: (row) => row.trackName ?? '—' },
       {
         id: 'status',
-        header: 'Status',
+        header: 'Standing',
         width: '110px',
         render: (row) =>
           row.status === 'completed' ? (
-            <Badge tone="success">Scored</Badge>
+            <Badge tone="success">Judgment cast</Badge>
           ) : (
-            <Badge tone="info">To do</Badge>
+            <Badge tone="info">Awaiting judgment</Badge>
           ),
       },
       {
         id: 'score',
-        header: 'Your score',
+        header: 'Your judgment',
         width: '96px',
         align: 'right',
         render: (row) =>
@@ -129,7 +129,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         render: (row) => (
           <span className={styles.rowActions}>
             <Button size="sm" variant="ghost" onClick={() => open(row)}>
-              {row.status === 'completed' ? 'Review again' : 'Score'}
+              {row.status === 'completed' ? 'Revisit judgment' : 'Judge petition'}
             </Button>
             <Button
               size="sm"
@@ -153,7 +153,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
     () => [
       {
         id: 'title',
-        header: 'Submission',
+        header: 'Petition',
         strong: true,
         render: (row) => (
           <span className={styles.rowTitle}>
@@ -165,7 +165,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       {
         id: 'reason',
         header: 'Reason you gave',
-        render: (row) => row.comment ?? <span className={styles.muted}>No reason given</span>,
+        render: (row) => row.comment ?? <span className={styles.muted}>No reason entered</span>,
       },
     ],
     [],
@@ -176,18 +176,18 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       <header className={styles.header}>
         <div className={styles.headings}>
           <span className={styles.eyebrow}>{props.eventName}</span>
-          <h1 className={styles.title}>Your reviews</h1>
+          <h1 className={styles.title}>Your deliberations</h1>
           <p className={styles.subtitle}>
             {props.round
-              ? `${props.round.name} · ${props.pendingCount} to score, ${props.completedCount} done`
-              : 'No review round is open yet.'}
+              ? `${props.round.name} · ${props.pendingCount} to judge, ${props.completedCount} done`
+              : 'No council is open for deliberation.'}
           </p>
         </div>
         {props.rounds.length > 1 ? (
           <div className={styles.actions}>
             <Select
               selectSize="sm"
-              aria-label="Review round"
+              aria-label="Council"
               value={props.round?.id ?? ''}
               onChange={(event) => router.push(`/review?round=${event.target.value}`)}
             >
@@ -209,11 +209,11 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           <div className={styles.progressCard}>
             <span className={styles.progressStat}>
               <span className={styles.bigNumber}>{props.pendingCount}</span>
-              <span className={styles.progressLabel}>still to score</span>
+              <span className={styles.progressLabel}>judgments remaining</span>
             </span>
             <span className={styles.progressStat}>
               <span className={styles.bigNumber}>{props.completedCount}</span>
-              <span className={styles.progressLabel}>submitted</span>
+              <span className={styles.progressLabel}>judgments cast</span>
             </span>
             <div className={styles.track}>
               <div className={styles.trackFill} style={{ width: `${percent}%` }} />
@@ -222,12 +222,12 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           </div>
           <div className={styles.metaRow}>
             {props.round ? <Badge tone="info">{props.round.status}</Badge> : null}
-            {props.round?.blindUntilClose ? <Badge>Peer scores hidden</Badge> : null}
+            {props.round?.blindUntilClose ? <Badge>Other ballots sealed</Badge> : null}
             {props.authorHidden ? (
-              <Badge tone="warning">Anonymized — you cannot see who submitted</Badge>
+              <Badge tone="warning">Anonymous petition — the author’s name is sealed</Badge>
             ) : null}
             {props.criterionCount === 0 && props.round ? (
-              <Badge tone="danger">This round has no criteria yet</Badge>
+              <Badge tone="danger">This council has no criteria yet</Badge>
             ) : null}
           </div>
         </CardBody>
@@ -235,7 +235,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Assigned to you</CardTitle>
+          <CardTitle>Petitions before you</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.tableWrap}>
@@ -243,8 +243,8 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
               columns={columns}
               rows={props.assignments}
               getRowId={(row) => row.assignmentId}
-              label="Your assignments"
-              emptyState="Nothing is assigned to you in this round yet."
+              label="Your petitions"
+              emptyState="No petition has been laid before you in this council."
               onRowActivate={open}
             />
           </div>
@@ -254,7 +254,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       {props.recused.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle>You recused yourself</CardTitle>
+            <CardTitle>Petitions from which you withdrew</CardTitle>
           </CardHeader>
           <CardBody>
             <p className={styles.muted}>
@@ -278,7 +278,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         onOpenChange={(next) => {
           if (!next) setRecusing(null);
         }}
-        title="Recuse yourself from this submission"
+        title="Withdraw from judgment on this petition"
         description={
           recusing
             ? `${recusing.displayRef} — ${recusing.title}. It leaves your queue and the organizer can reassign it.`
@@ -303,7 +303,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             id="recusal-reason"
             rows={3}
             value={reason}
-            placeholder="A conflict of interest, or simply no capacity."
+            placeholder="A conflict of interest, prior allegiance, or simply no capacity."
             onChange={(event) => setReason(event.target.value)}
           />
         </div>

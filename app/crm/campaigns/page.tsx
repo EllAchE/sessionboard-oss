@@ -5,7 +5,7 @@ import { toContactWire } from '../serialize';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Bulk email · Cicero' };
+export const metadata = { title: 'Census dispatches · Cicero' };
 
 export default async function CampaignsPage({
   searchParams,

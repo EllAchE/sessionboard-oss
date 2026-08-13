@@ -20,7 +20,7 @@ export function Uploader({
   acceptedLabel,
   maxSizeMb,
   multiple = false,
-  buttonLabel = 'Upload',
+  buttonLabel = 'Lodge scroll',
   helpText,
   compact = false,
 }: {
@@ -46,7 +46,7 @@ export function Uploader({
   async function send() {
     const files = inputRef.current?.files;
     if (!files || files.length === 0) {
-      setNotice({ ok: false, message: 'Choose a file first' });
+      setNotice({ ok: false, message: 'Choose a scroll first' });
       return;
     }
 
@@ -62,15 +62,15 @@ export function Uploader({
       const response = await fetch(`/portal/${eventSlug}/upload`, { method: 'POST', body });
       const result = (await response.json()) as { ok: boolean; message?: string };
       if (!response.ok || !result.ok) {
-        setNotice({ ok: false, message: result.message ?? 'That upload did not go through' });
+        setNotice({ ok: false, message: result.message ?? 'The archive did not receive that scroll' });
         return;
       }
-      setNotice({ ok: true, message: result.message ?? 'Uploaded' });
+      setNotice({ ok: true, message: result.message ?? 'Entered in the archive' });
       setChosen([]);
       if (inputRef.current) inputRef.current.value = '';
       router.refresh();
     } catch {
-      setNotice({ ok: false, message: 'That upload did not go through. Check your connection.' });
+      setNotice({ ok: false, message: 'The archive did not receive that scroll. Check the road to Cicero.' });
     } finally {
       setPending(false);
     }
@@ -80,9 +80,9 @@ export function Uploader({
     <div className={compact ? styles.stackTight : styles.dropzone}>
       {helpText && <p className={styles.hint}>{helpText}</p>}
       <p className={styles.hint}>
-        Accepted file types: <strong>{acceptedLabel}</strong> · Maximum size:{' '}
+        Scrolls accepted: <strong>{acceptedLabel}</strong> · Maximum size:{' '}
         <strong>{maxSizeMb} MB</strong>
-        {multiple ? ' · several files allowed' : ' · one file at a time'}
+        {multiple ? ' · several scrolls permitted' : ' · one scroll at a time'}
       </p>
       <input
         ref={inputRef}
@@ -107,7 +107,7 @@ export function Uploader({
         </Button>
         {chosen.length > 0 && (
           <span className={styles.faint}>
-            {chosen.length === 1 ? chosen[0] : `${chosen.length} files selected`}
+            {chosen.length === 1 ? chosen[0] : `${chosen.length} scrolls selected`}
           </span>
         )}
       </div>

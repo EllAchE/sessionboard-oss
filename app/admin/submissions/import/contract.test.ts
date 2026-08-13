@@ -9,14 +9,14 @@ import { IMPORT_COLUMNS, templateCsv, templateHeaderRow } from './contract';
  */
 
 const FIELD_FOR_HEADER: Record<string, string> = {
-  Title: 'title',
-  'Speaker email': 'speakerEmail',
-  'Speaker name': 'speakerName',
-  Description: 'description',
-  Track: 'track',
-  Format: 'format',
-  Level: 'level',
-  Status: 'status',
+  'Oration title': 'title',
+  'Orator email': 'speakerEmail',
+  'Orator name': 'speakerName',
+  Argument: 'description',
+  Theme: 'track',
+  'Oration format': 'format',
+  'Audience rank': 'level',
+  Standing: 'status',
 };
 
 describe('the documented template', () => {
@@ -32,8 +32,7 @@ describe('the documented template', () => {
     >;
     for (const column of IMPORT_COLUMNS) {
       const field = FIELD_FOR_HEADER[column.header];
-      const expected =
-        field === 'speakerEmail' ? column.example.toLowerCase() : column.example;
+      const expected = field === 'speakerEmail' ? column.example.toLowerCase() : column.example;
       expect(row[field], `${column.header} -> ${field}`).toBe(expected);
     }
   });
@@ -62,8 +61,7 @@ describe('every documented alias', () => {
         expect(parsed.errors).toEqual([]);
         expect(parsed.rows).toHaveLength(1);
         const field = FIELD_FOR_HEADER[column.header];
-        const expected =
-          field === 'speakerEmail' ? column.example.toLowerCase() : column.example;
+        const expected = field === 'speakerEmail' ? column.example.toLowerCase() : column.example;
         expect((parsed.rows[0] as unknown as Record<string, unknown>)[field]).toBe(expected);
       });
     }
@@ -72,7 +70,9 @@ describe('every documented alias', () => {
 
 describe('the rules the page states', () => {
   it('ignores header case and column order', () => {
-    const parsed = parseSubmissionImport('SPEAKER EMAIL,title\nada@example.com,Planner internals\n');
+    const parsed = parseSubmissionImport(
+      'SPEAKER EMAIL,title\nada@example.com,Planner internals\n',
+    );
     expect(parsed.errors).toEqual([]);
     expect(parsed.rows[0].title).toBe('Planner internals');
     expect(parsed.rows[0].speakerEmail).toBe('ada@example.com');
@@ -94,6 +94,6 @@ describe('the rules the page states', () => {
   it('reports a missing required column once, against the header line', () => {
     const parsed = parseSubmissionImport('Title,Track\nA,Databases\n');
     expect(parsed.rows).toEqual([]);
-    expect(parsed.errors).toEqual([{ line: 1, message: 'No Speaker email column found' }]);
+    expect(parsed.errors).toEqual([{ line: 1, message: 'No Orator email column found' }]);
   });
 });

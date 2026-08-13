@@ -25,7 +25,7 @@
 /** RFC 5545 §3.1: octets, not characters, and the CRLF is not counted. */
 const MAX_LINE_OCTETS = 75;
 
-const PRODID = '-//Cicero//Speaker Management//EN';
+const PRODID = '-//Cicero//Orator Fasti//EN';
 
 export type CalendarMethod = 'REQUEST' | 'CANCEL' | 'PUBLISH';
 

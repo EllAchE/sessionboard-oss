@@ -22,7 +22,7 @@ export const eventSchema = z
     venueName: z.string().nullable(),
     venueAddress: z.string().nullable(),
   })
-  .describe('A conference or event');
+  .describe('An assembly charter');
 
 export const sessionSchema = z
   .object({
@@ -47,7 +47,7 @@ export const sessionSchema = z
       }),
     ),
   })
-  .describe('A scheduled session on the agenda');
+  .describe('An oration inscribed in the fasti');
 
 export const speakerSchema = z
   .object({
@@ -61,7 +61,7 @@ export const speakerSchema = z
     links: z.array(z.object({ label: z.string(), url: z.string() })),
     sessions: z.array(z.object({ id: z.string(), title: z.string() })),
   })
-  .describe('A speaker with at least one accepted session');
+  .describe('An orator named on at least one accepted petition');
 
 export const agendaSchema = z
   .object({
@@ -75,7 +75,7 @@ export const agendaSchema = z
     /** Published sessions with no time yet, so a consumer does not silently drop them. */
     unscheduled: z.array(sessionSchema),
   })
-  .describe('The published agenda, grouped by day');
+  .describe('The proclaimed fasti, grouped by day');
 
 export const submissionSchema = z
   .object({
@@ -97,11 +97,11 @@ export const submissionSchema = z
     level: z.string().nullable(),
     tags: z.array(z.string()),
     submitter: z.object({ name: z.string().nullable(), email: z.string() }),
-    answers: z.record(z.unknown()).describe('Custom form answers, keyed by field key'),
+    answers: z.record(z.unknown()).describe('Custom scroll answers, keyed by prompt key'),
     submittedAt: z.string().nullable().describe('ISO 8601'),
     decidedAt: z.string().nullable().describe('ISO 8601'),
   })
-  .describe('A CFP submission. Requires an API key.');
+  .describe('A petition from the call for orators. Requires an aqueduct key.');
 
 export const sessionListQuery = z.object({
   status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
@@ -118,15 +118,15 @@ export const submissionListQuery = z.object({
 
 export const createSubmissionBody = z
   .object({
-    email: z.string().email().describe('Submitter email; an account is created if none exists'),
-    name: z.string().optional().describe('Submitter display name'),
+    email: z.string().email().describe('Petitioner dispatch address; Cicero creates an account if none exists'),
+    name: z.string().optional().describe('Petitioner name for the rolls'),
     answers: z
       .record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]))
       .describe(
-        'Keyed by the form field key. Built-in keys are title, description, format, track, level, tags.',
+        'Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags.',
       ),
   })
-  .describe('A submission to a published form');
+  .describe('A petition filed through a proclaimed scroll');
 
 export const createSubmissionResponse = z.object({
   id: z.string(),
