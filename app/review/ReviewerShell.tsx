@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ClipboardCheck } from 'lucide-react';
+import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import { ThemeToggle } from '../admin/ThemeToggle';
 import { signOutAction } from '../admin/shell-actions';
@@ -25,8 +25,7 @@ export function ReviewerShell({
     <div className={styles.shell}>
       <header className={styles.topbar}>
         <Link href="/review" className={styles.brand}>
-          <ClipboardCheck size={16} aria-hidden />
-          <span className={styles.wordmark}>Cicero</span>
+          <CiceroBrand markSize={18} />
           <span className={styles.brandRole}>Review</span>
         </Link>
         <nav className={styles.nav} aria-label="Reviewer">

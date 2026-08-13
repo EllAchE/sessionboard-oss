@@ -20,17 +20,19 @@ import styles from '../embed.module.css';
 export function GalleryWidget({
   bundle,
   options,
+  sessionBase,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
+  sessionBase: string;
 }) {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
 
   const ordered = useMemo(() => sortSpeakers(bundle.speakers), [bundle.speakers]);
   const visible = useMemo(
-    () => ordered.filter((speaker) => speakerMatches(speaker, query)),
-    [ordered, query],
+    () => ordered.filter((speaker) => speakerMatches(speaker, query, bundle.sessions)),
+    [bundle.sessions, ordered, query],
   );
 
   const open = openId ? ordered.find((speaker) => speaker.id === openId) : undefined;
@@ -41,8 +43,8 @@ export function GalleryWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search speakers by name"
-          placeholder="Search speakers by name…"
+          label="Search speakers, companies, or talks"
+          placeholder="Search speakers, companies, or talks…"
         />
         <span className={styles.resultCount} role="status">
           {visible.length} of {ordered.length} speakers
@@ -107,6 +109,7 @@ export function GalleryWidget({
               timezone={bundle.event.timezone}
               showPhoto={options.showPhoto}
               showName={false}
+              sessionBase={sessionBase}
             />
           </div>
         ) : null}

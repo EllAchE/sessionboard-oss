@@ -8,11 +8,20 @@ import {
   scheduledSession,
   sessionFormat,
   submission,
+  submissionTag,
+  tag as tagTable,
   track as trackTable,
   user as userTable,
 } from '@/db/schema';
 import { excerpt, markdownToText, renderMarkdown } from '@/lib/markdown';
-import { sortSpeakers, speakerSlug, type PublicBundle, type PublicEvent, type PublicSession, type PublicSpeaker } from './model';
+import {
+  sortSpeakers,
+  speakerSlug,
+  type PublicBundle,
+  type PublicEvent,
+  type PublicSession,
+  type PublicSpeaker,
+} from './model';
 
 /**
  * The read model behind the embeds and the public event pages. Everything here is unauthenticated,
@@ -62,10 +71,7 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
         and(
           eq(scheduledSession.eventId, event.id),
           eq(scheduledSession.status, 'published'),
-          or(
-            isNull(scheduledSession.submissionId),
-            eq(submission.contentStatus, 'approved'),
-          ),
+          or(isNull(scheduledSession.submissionId), eq(submission.contentStatus, 'approved')),
         ),
       )
       .orderBy(asc(scheduledSession.startsAt), asc(scheduledSession.ref)),
@@ -89,10 +95,10 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
    * submission behind it (a keynote typed straight into the agenda) simply has no speakers, which
    * is correct rather than an error.
    */
-  const roleRows =
+  const [roleRows, tagRows] = await Promise.all([
     submissionIds.length === 0
-      ? []
-      : await db
+      ? Promise.resolve([])
+      : db
           .select({ role: participantRole, person: participant, account: userTable })
           .from(participantRole)
           .innerJoin(participant, eq(participantRole.participantId, participant.id))
@@ -105,12 +111,40 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
               eq(submission.contentStatus, 'approved'),
             ),
           )
-          .orderBy(asc(participantRole.position));
+          .orderBy(asc(participantRole.position)),
+    submissionIds.length === 0
+      ? Promise.resolve([])
+      : db
+          .select({
+            submissionId: submissionTag.submissionId,
+            id: tagTable.id,
+            name: tagTable.name,
+          })
+          .from(submissionTag)
+          .innerJoin(tagTable, eq(tagTable.id, submissionTag.tagId))
+          .innerJoin(submission, eq(submission.id, submissionTag.submissionId))
+          .where(
+            and(
+              inArray(submissionTag.submissionId, submissionIds),
+              eq(submission.eventId, event.id),
+              eq(submission.contentStatus, 'approved'),
+            ),
+          )
+          .orderBy(asc(tagTable.name)),
+  ]);
 
   const bySubmission = new Map<string, typeof roleRows>();
   for (const row of roleRows) {
     const key = row.role.submissionId;
     bySubmission.set(key, [...(bySubmission.get(key) ?? []), row]);
+  }
+
+  const tagsBySubmission = new Map<string, Array<{ id: string; name: string }>>();
+  for (const row of tagRows) {
+    tagsBySubmission.set(row.submissionId, [
+      ...(tagsBySubmission.get(row.submissionId) ?? []),
+      { id: row.id, name: row.name },
+    ]);
   }
 
   const sessions: PublicSession[] = sessionRows.map((row) => {
@@ -129,9 +163,14 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
       trackId: row.trackId,
       format: row.formatId ? (formatName.get(row.formatId) ?? null) : null,
       ceuCredits: row.ceuCredits,
+      tags: row.submissionId ? (tagsBySubmission.get(row.submissionId) ?? []) : [],
       speakers: linked.map((entry) => ({
         id: entry.person.id,
         name: entry.person.displayName?.trim() || entry.account.name?.trim() || 'Speaker',
+        slug: speakerSlug(
+          entry.person.id,
+          entry.person.displayName?.trim() || entry.account.name?.trim() || 'Speaker',
+        ),
         jobTitle: entry.person.jobTitle,
         company: entry.person.company,
       })),

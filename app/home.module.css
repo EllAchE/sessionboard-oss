@@ -67,28 +67,7 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  color: var(--text-strong);
-  font: var(--weight-medium) var(--text-xl) / 1 var(--font-display);
-  letter-spacing: 0.065em;
   text-decoration: none;
-  text-transform: uppercase;
-}
-
-.brandMark {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  color: var(--text-accent);
-  border: var(--border-width) solid var(--border-strong);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.82)),
-    url('/assets/roman/materials/carrara-marble.webp') center / 96px 96px;
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.72),
-    3px 3px 0 rgba(183, 57, 31, 0.14);
 }
 
 .navLinks {
@@ -562,11 +541,6 @@
 }
 
 @media (max-width: 390px) {
-  .brandMark {
-    width: 30px;
-    height: 30px;
-  }
-
   .navLinks {
     gap: var(--space-3);
   }
