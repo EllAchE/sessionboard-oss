@@ -267,32 +267,19 @@ export type Condition = {
 export const BUILTIN_FIELDS = ['title','description','format','tags','track','level'] as const;
 ```
 
-## 7. Accelevents — what the research actually found
+## 7. Accelevents
 
-`01-requirements.md` §11 describes the Accelevents contract as public, with an OpenAPI spec. Direct
-research did not bear that out, and `N-1a` should be read accordingly.
+The external contract is recorded separately in
+[`reference/accelevents-api.md`](reference/accelevents-api.md), including the speaker request and
+response fields, error codes, five-step attendee order flow, official source links, and every known
+documentation contradiction. That reference stays contract-focused; this section records only the
+architectural decision.
 
-**There is no downloadable OpenAPI file.** The docs are ReadMe.io pages rendering an unpublished
-spec. That changes `N-1a` from "code against the published spec" to "code against verified pages,
-and be honest about the gaps." The findings that shape the client:
+`N-1` uses the documented speaker create endpoint because it matches the required one-way program
+→ registration flow. Duplicate email is a hard remote rejection rather than an upsert, so Cicero
+deduplicates before pushing and never reconciles remote edits back into participant records. The
+fixture-backed gateway preserves that behavior when no credential is available.
 
-- **Speaker push is well documented.** `POST /rest/host/event/{eventUrl}/speaker` with a full
-  `SpeakerDTO`; `GET` on the same path with a required `expand` param. A duplicate email is a **hard
-  reject** (`4068906`), not an upsert — so we dedupe on our side before pushing.
-- **There is no create-attendee endpoint.** Attendee creation is a five-call order flow
-  (availability → `calculateFee` → create order → `formattributes` → payment), with no documented
-  "complimentary" flag.
-- **The auth header is genuinely ambiguous.** The spec's security scheme says `Key`; every endpoint
-  *also* lists an `Authorization` header; the guide calls it "AUTHENTICATION," which is a UI label
-  rather than a header name. No `Bearer` prefix is mentioned anywhere. The requirements doc's fact
-  table records the UI label; treat the header as unresolved.
-- **Rate limits, webhook payload schemas and signature verification are entirely undocumented.**
-
-**Therefore:** `N-1` ships as a real client for the speaker push — the documented, verifiable path,
-and the one that matches the brief's stated pain, an organizer re-typing accepted speakers so they
-get comped tickets. The order flow ships behind the same interface, marked experimental.
-`ACCELEVENTS_AUTH_HEADER` is an env var defaulting to `Authorization`, and the client retries once
-with `Key` on a 401 — three lines that resolve from runtime an ambiguity we cannot resolve from
-docs. `N-1b`'s fixture-backed fake is built from the exact request and response shapes above, so
-tests, the demo, and a judge without credentials all exercise the full path. The gaps go in the
-README rather than being papered over.
+Attendee creation remains experimental. The vendor exposes a ticket-order sequence rather than a
+single create-attendee operation, publishes no complimentary-ticket flag, and has not been tested
+from this repository with a live account. The required speaker path does not depend on it.

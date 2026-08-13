@@ -218,7 +218,7 @@ coexist without either seeing the other.
 2. **[`docs/01-requirements.md`](docs/01-requirements.md)** — every requirement and deliverable,
    tagged `[REQUIRED]` / `[IMPORTANT]` / `[OPTIONAL]` / `[EXCLUDED]` / `[BONUS]`
 3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
-   API layers, the form-engine verdict, and what the Accelevents research actually found
+   API layers, and the form-engine and integration decisions
 4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
 5. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 
@@ -230,6 +230,9 @@ coexist without either seeing the other.
   the brief, filed by section, with the author's hand-drawn priority annotations catalogued
 - [`docs/reference/sessionboard-survey.md`](docs/reference/sessionboard-survey.md) — an independent
   inventory of the real Sessionboard product. **Not a scope list**
+- [`docs/reference/accelevents-api.md`](docs/reference/accelevents-api.md) — the Accelevents speaker
+  and attendee API contract Cicero depends on, its documented inconsistencies, and verification
+  steps
 
 `docs/00-goals.md` and `docs/01-requirements.md` are derived **only** from the competition brief and
 its screenshots — nothing is inferred from Sessionboard's own documentation. Where the brief was
@@ -247,11 +250,13 @@ than the spec — the brief says outright that most of Sessionboard is not neede
 Stated plainly, because a README that claims everything works is one a judge stops trusting at the
 first dead end.
 
-- **Accelevents** has no downloadable OpenAPI file; the docs render an unpublished spec. The speaker
-  push is documented and implemented against verified pages. Attendee creation is a five-call order
+- **Accelevents** publishes per-endpoint OpenAPI fragments but no combined specification. The
+  speaker push is implemented against the verified pages. Attendee creation is a five-call order
   flow with no documented complimentary flag, so it ships behind the same interface marked
-  experimental. The auth header name is genuinely ambiguous in their docs — `ACCELEVENTS_AUTH_HEADER`
-  defaults to `Authorization` and the client retries once with `Key` on a 401.
+  experimental. The auth header name is genuinely ambiguous in their docs —
+  `ACCELEVENTS_AUTH_HEADER` defaults to `Authorization` and the client retries once with `Key` on a
+  401. The focused contract and remaining live-verification items are in
+  [`docs/reference/accelevents-api.md`](docs/reference/accelevents-api.md).
 - **AI features** (review assist, agenda suggestions) stay on the screen when `ANTHROPIC_API_KEY` is
   unset. Each says so and falls back — a rule-based reader for the review, a deterministic
   earliest-free-slot planner for the agenda. Hiding an unconfigured feature hides the shape of it,
