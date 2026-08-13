@@ -1178,7 +1178,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Absolute URL of the public headshot. Null when the speaker has not uploaded one or has not confirmed their profile yet, since nothing is served publicly until they do."
           },
           "links": {
             "type": "array",
