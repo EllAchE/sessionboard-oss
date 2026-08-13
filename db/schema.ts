@@ -149,6 +149,13 @@ export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
   'declined',
   'withdrawn',
 ]);
+/**
+ * `E-7`. One entity covers both, because the incumbent models them the same way — a *group* record
+ * that is either a sponsor or an exhibitor — and the two differ by a single field: an exhibitor
+ * stands somewhere on a floor and a sponsor does not. Two tables would duplicate name, tier, logo
+ * and link to buy nothing, and a company that is both would become two unrelated rows.
+ */
+export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
 
 // ---------------------------------------------------------------------------
 // Identity. Users are global; everything role-shaped is event-scoped through
@@ -380,6 +387,63 @@ export const fieldLibraryEntry = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ uniqueKey: unique('field_library_event_key').on(t.eventId, t.key) }),
+);
+
+// ---------------------------------------------------------------------------
+// Sponsors and exhibitors — E-7
+// ---------------------------------------------------------------------------
+
+/**
+ * `E-7`. The organisations backing an event, as against the people in `contact` and `participant`.
+ * Event-scoped like every other collection here, and shaped like one: a name, an ordering, and a
+ * handful of fields the organizer fills in.
+ *
+ * Deliberately not a CRM. There is no contact join, no contract, no invoice and no intake form —
+ * `E-7` is Optional and asks for the entity, and the person-shaped records those would need already
+ * exist in `contact`. Attaching them is the natural next migration, not this one.
+ */
+export const sponsor = pgTable(
+  'sponsor',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    kind: sponsorKind('kind').notNull().default('sponsor'),
+    name: text('name').notNull(),
+    /**
+     * Free text rather than a second event-scoped list. Tiers are named differently at every
+     * conference — Gold/Silver, Principal/Supporting, Legatus/Centurio — they are ordered by the
+     * row's own `position`, and nothing else in the app joins against them. A `sponsor_tier` table
+     * would be a taxonomy for a taxonomy, and `E-7` does not ask for one.
+     */
+    tier: text('tier'),
+    websiteUrl: text('website_url'),
+    description: text('description'),
+    /**
+     * `boothLocation` is the only field that is about being an exhibitor rather than a sponsor. It
+     * is not constrained to `kind = 'exhibitor'`: an organizer who gives a headline sponsor a stand
+     * by the door is not making a mistake the database should refuse.
+     */
+    boothLocation: text('booth_location'),
+    /**
+     * A row in `file`, held as a bare uuid with no foreign key — the same shape as
+     * `event.logo_file_id` and `participant.headshot_file_id`, and for the same reason: the image is
+     * decoration, and losing it must never be able to take the sponsor row with it.
+     */
+    logoFileId: uuid('logo_file_id'),
+    position: integer('position').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byEvent: index('sponsor_event_idx').on(t.eventId),
+    /**
+     * `kind` is in the key because a company that sponsors *and* exhibits is two rows with the same
+     * name, which is the ordinary case rather than a mistake. All three columns are `NOT NULL`, so
+     * this needs none of the NULL-distinctness care a partial unique index would.
+     */
+    uniqueName: unique('sponsor_event_kind_name').on(t.eventId, t.kind, t.name),
+  }),
 );
 
 // ---------------------------------------------------------------------------

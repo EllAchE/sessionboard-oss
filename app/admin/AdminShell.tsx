@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import {
+  Building2,
   CalendarDays,
   ClipboardList,
   Contact,
@@ -59,6 +60,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     title: 'Setup',
     items: [
       { id: 'settings', label: 'Settings', href: '/admin/settings', icon: <Settings size={15} /> },
+      { id: 'sponsors', label: 'Sponsors', href: '/admin/sponsors', icon: <Building2 size={15} /> },
       { id: 'integrations', label: 'Integrations', href: '/admin/integrations', icon: <Plug size={15} /> },
     ],
   },

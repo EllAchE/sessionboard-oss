@@ -30,6 +30,7 @@ import {
   score,
   scorecardCriterion,
   sessionFormat,
+  sponsor,
   submission,
   submissionTag,
   tag,
@@ -347,6 +348,37 @@ export async function seedFirstSettlement(
       },
     ])
     .returning();
+
+  /**
+   * `E-7`. A shorter list than `/demo`'s, and deliberately so: a symposium has patrons rather than
+   * a sponsor wall, and two events whose sponsor lists looked identical would prove nothing about
+   * event scoping. Every name here belongs to this event and appears in no other seed.
+   */
+  await db.insert(sponsor).values([
+    {
+      eventId: senate.id,
+      kind: 'sponsor',
+      name: 'Gens Iulia',
+      tier: 'Patron',
+      description: 'Underwrites the record of the sessions.',
+      position: 0,
+    },
+    {
+      eventId: senate.id,
+      kind: 'sponsor',
+      name: 'Collegium Pontificum',
+      tier: 'Patron',
+      position: 1,
+    },
+    {
+      eventId: senate.id,
+      kind: 'exhibitor',
+      name: 'Tabularium',
+      boothLocation: 'Portico, west end',
+      description: 'The public records, open for consultation between sessions.',
+      position: 0,
+    },
+  ]);
 
   const [oratio, relatio, consilium] = formats;
   const [constitution, provinces, publicWorks, legitimacy] = tracks;
