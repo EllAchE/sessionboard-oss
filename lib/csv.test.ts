@@ -120,6 +120,17 @@ describe('csv writing', () => {
     expect(csvCell(7)).toBe('7');
   });
 
+  it.each(['=2+2', '+cmd', '-1+2', '@SUM(A1:A2)', '\t=2+2', '\r=2+2'])(
+    'keeps formula-shaped text inert: %j',
+    (value) => {
+      expect(parseCsvRows(toCsv([[value]]))).toEqual([[`'${value}`]]);
+    },
+  );
+
+  it('keeps numeric values numeric', () => {
+    expect(csvCell(-42)).toBe('-42');
+  });
+
   it('round-trips through the parser', () => {
     const grid = [
       ['Name', 'Bio'],

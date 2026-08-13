@@ -39,6 +39,7 @@ import {
   releaseAssignmentAction,
   remindReviewersAction,
 } from './actions';
+import { assignedReviewerIds } from './reviewer-pool';
 import styles from '../submissions.module.css';
 
 export type RoundWire = {
@@ -215,10 +216,13 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [criterionWeight, setCriterionWeight] = useState('1');
   const [criterionMax, setCriterionMax] = useState('5');
 
-  const [selectedReviewers, setSelectedReviewers] = useState<string[]>(() =>
-    props.reviewers.map((reviewer) => reviewer.userId),
-  );
+  const assignedReviewers = useMemo(() => assignedReviewerIds(props.workload), [props.workload]);
+  const [selectedReviewers, setSelectedReviewers] = useState<string[]>(assignedReviewers);
   const [perSubmission, setPerSubmission] = useState('2');
+
+  useEffect(() => {
+    setSelectedReviewers(assignedReviewers);
+  }, [assignedReviewers, props.selectedRoundId]);
 
   const selectedRound = props.rounds.find((round) => round.id === props.selectedRoundId) ?? null;
   const newRoundDateWire = fromRoundDateDraft(newRoundDates);
@@ -639,6 +643,11 @@ export function RoundsManager(props: RoundsManagerProps) {
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
+                <p className={styles.aiNote}>
+                  Round reviewer pool · selections are scoped to {selectedRound.name}. Reviewers
+                  with assignments in this round remain selected after reload; a new round starts
+                  with an empty pool.
+                </p>
                 <div className={styles.inlineStack}>
                   <Input
                     inputSize="sm"

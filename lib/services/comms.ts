@@ -29,7 +29,7 @@ import {
 } from '../ics';
 import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail } from '../mail';
-import { markdownToText, renderMarkdown } from '../markdown';
+import { escapeMarkdownText, markdownToText, renderMarkdown } from '../markdown';
 import { listEventsForUser, pickDefaultEvent } from './events';
 
 /**
@@ -115,6 +115,25 @@ export function renderTemplateText(source: string, vars: TemplateVars): string {
     const value = vars[path];
     if (value === undefined || value === null || value === '') return (fallback ?? '').trim();
     return value;
+  });
+}
+
+const MARKDOWN_FRAGMENT_VARIABLES = new Set(['tasks.list']);
+const MARKDOWN_URL_VARIABLES = new Set([
+  'event.website',
+  'event.url',
+  'session.calendarUrl',
+  'portal.url',
+  'portal.link',
+  'form.url',
+]);
+
+function renderTemplateMarkdown(source: string, vars: TemplateVars): string {
+  return source.replace(VARIABLE_PATTERN, (_match, path: string, fallback?: string) => {
+    const value = vars[path];
+    if (value === undefined || value === null || value === '') return (fallback ?? '').trim();
+    if (MARKDOWN_FRAGMENT_VARIABLES.has(path) || MARKDOWN_URL_VARIABLES.has(path)) return value;
+    return escapeMarkdownText(value);
   });
 }
 
@@ -479,7 +498,7 @@ function matchesAudience(
     case 'pending_speakers':
       return has(['submitted', 'under_review', 'waitlisted']);
     case 'declined_speakers':
-      return has(['declined']) && !has(['accepted']);
+      return has(['declined']);
     case 'scheduled_speakers':
       return candidate.session !== null;
     case 'track':
@@ -833,7 +852,7 @@ export function renderMessage(
   vars: TemplateVars,
 ): RenderedMessage {
   const renderedSubject = renderTemplateText(subject, vars).replace(/\s+/g, ' ').trim();
-  const renderedBody = renderTemplateText(bodyMarkdown, vars);
+  const renderedBody = renderTemplateMarkdown(bodyMarkdown, vars);
   const missing = [...templateVariablesUsed(subject), ...templateVariablesUsed(bodyMarkdown)]
     .filter((path, index, all) => all.indexOf(path) === index)
     .filter((path) => !vars[path]);

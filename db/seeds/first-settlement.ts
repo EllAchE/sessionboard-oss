@@ -66,6 +66,29 @@ const REVIEWER_EMAILS = ['calvisius@first-settlement.example', 'arruntius@first-
 
 const SPEAKER_EMAILS = ROMAN_PROFILE_ART.map((entry) => entry.email);
 
+type SenateUser = { id: string; email: string; name: string | null };
+
+export type FirstSettlementSeedStore = {
+  findTargetEvent: () => Promise<{ id: string } | undefined>;
+  deleteTargetEvent: (eventId: string) => Promise<void>;
+  findSenatePeople: (emails: readonly string[]) => Promise<SenateUser[]>;
+  createSenatePeople: (people: readonly { email: string; name: string }[]) => Promise<SenateUser[]>;
+};
+
+export async function prepareFirstSettlementSeed(
+  store: FirstSettlementSeedStore,
+): Promise<Map<string, SenateUser>> {
+  const existingEvent = await store.findTargetEvent();
+  if (existingEvent) await store.deleteTargetEvent(existingEvent.id);
+
+  const existingPeople = await store.findSenatePeople(SENATE_PEOPLE.map((person) => person.email));
+  const existingEmails = new Set(existingPeople.map((person) => person.email));
+  const missingPeople = SENATE_PEOPLE.filter((person) => !existingEmails.has(person.email));
+  const createdPeople = missingPeople.length > 0 ? await store.createSenatePeople(missingPeople) : [];
+
+  return new Map([...existingPeople, ...createdPeople].map((person) => [person.email, person]));
+}
+
 async function removeEventFiles(db: Database, eventId: string): Promise<void> {
   const records = await db.select({ storageKey: file.storageKey }).from(file).where(eq(file.eventId, eventId));
   const storage = getStorage();
@@ -127,39 +150,26 @@ export async function seedFirstSettlement(
   scheduledSessions: number;
   tasks: number;
 }> {
-  const [existingEvent] = await db.select().from(event).where(eq(event.slug, SLUG));
-  if (existingEvent) {
-    await removeEventFiles(db, existingEvent.id);
-    await db.delete(event).where(eq(event.id, existingEvent.id));
-  }
-
-  const senateEmails = SENATE_PEOPLE.map((person) => person.email);
-  const existingPeople = await db.select({ id: user.id }).from(user).where(inArray(user.email, senateEmails));
-  if (existingPeople.length > 0) {
-    await db.delete(event).where(
-      inArray(
-        event.ownerUserId,
-        existingPeople.map((person) => person.id),
-      ),
-    );
-    await db.delete(user).where(
-      inArray(
-        user.id,
-        existingPeople.map((person) => person.id),
-      ),
-    );
-  }
-
-  const senateUsers = await db
-    .insert(user)
-    .values(
-      SENATE_PEOPLE.map((person) => ({
-        email: person.email,
-        name: person.name,
-      })),
-    )
-    .returning();
-  const userByEmail = new Map(senateUsers.map((person) => [person.email, person]));
+  const userByEmail = await prepareFirstSettlementSeed({
+    findTargetEvent: async () => {
+      const [existingEvent] = await db.select({ id: event.id }).from(event).where(eq(event.slug, SLUG));
+      return existingEvent;
+    },
+    deleteTargetEvent: async (eventId) => {
+      await removeEventFiles(db, eventId);
+      await db.delete(event).where(eq(event.id, eventId));
+    },
+    findSenatePeople: (emails) =>
+      db
+        .select({ id: user.id, email: user.email, name: user.name })
+        .from(user)
+        .where(inArray(user.email, [...emails])),
+    createSenatePeople: (people) =>
+      db
+        .insert(user)
+        .values([...people])
+        .returning({ id: user.id, email: user.email, name: user.name }),
+  });
   const reviewers = REVIEWER_EMAILS.map((email) => userByEmail.get(email)!);
 
   const day1 = currentOrNextAnniversary(now);
@@ -644,7 +654,7 @@ export async function seedFirstSettlement(
       SPEAKER_EMAILS.map((email) => ({
         eventId: senate.id,
         userId: userByEmail.get(email)!.id,
-        displayName: userByEmail.get(email)!.name,
+        displayName: userByEmail.get(email)!.name ?? SENATE_PEOPLE.find((person) => person.email === email)!.name,
         jobTitle: profiles[email].title,
         company: profiles[email].house,
         bioMarkdown: profiles[email].bio,

@@ -76,6 +76,22 @@ const untrusted = new Marked({ gfm: true, breaks: true }).use({ renderer: untrus
 
 const trusted = new Marked({ gfm: true, breaks: true });
 
+function isAsciiPunctuation(character: string): boolean {
+  const code = character.charCodeAt(0);
+  return (
+    (code >= 0x21 && code <= 0x2f) ||
+    (code >= 0x3a && code <= 0x40) ||
+    (code >= 0x5b && code <= 0x60) ||
+    (code >= 0x7b && code <= 0x7e)
+  );
+}
+
+export function escapeMarkdownText(value: string): string {
+  return Array.from(value, (character) =>
+    isAsciiPunctuation(character) ? `\\${character}` : character,
+  ).join('');
+}
+
 /** Speaker-authored text. Safe to interpolate into `dangerouslySetInnerHTML`. */
 export function renderMarkdown(source: string | null | undefined): string {
   if (!source) return '';
@@ -94,7 +110,13 @@ export function renderTrustedMarkdown(source: string | null | undefined): string
  */
 export function markdownToText(source: string | null | undefined): string {
   if (!source) return '';
-  return source
+  const escaped: string[] = [];
+  const protectedSource = source.replace(/\\(.)/g, (match, character: string) => {
+    if (!isAsciiPunctuation(character)) return match;
+    const index = escaped.push(character) - 1;
+    return `\uE000${index}\uE001`;
+  });
+  return protectedSource
     .replace(/```[\s\S]*?```/g, '')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
@@ -102,6 +124,7 @@ export function markdownToText(source: string | null | undefined): string {
     .replace(/^[#> \t-]+/gm, '')
     .replace(/[*_`~]/g, '')
     .replace(/\n{3,}/g, '\n\n')
+    .replace(/\uE000(\d+)\uE001/g, (_match, index: string) => escaped[Number(index)] ?? '')
     .trim();
 }
 
