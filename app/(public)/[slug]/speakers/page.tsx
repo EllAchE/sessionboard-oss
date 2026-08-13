@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { EmbedBody } from '../../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../../embed/queries';
 import { PublicChrome, publicStyles as styles } from '../PublicChrome';
+import { SpeakerViewToggle } from './SpeakerViewToggle';
+import { speakerViewFromSearch } from './view';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,16 +29,20 @@ export default async function PublicSpeakersPage({
   const [{ slug }, search] = await Promise.all([params, searchParams]);
   const bundle = await loadPublicBundle(slug);
   if (!bundle) notFound();
+  const view = speakerViewFromSearch(search);
 
   return (
     <PublicChrome event={bundle.event} active="speakers">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Speakers</h2>
-          <span className={styles.sectionLink}>{bundle.speakers.length} announced</span>
+          <div className={styles.sectionActions}>
+            <span className={styles.sectionLink}>{bundle.speakers.length} announced</span>
+            <SpeakerViewToggle slug={bundle.event.slug} active={view} search={search} />
+          </div>
         </div>
         <EmbedBody
-          view="speakers"
+          view={view === 'gallery' ? 'gallery' : 'speakers'}
           bundle={bundle}
           options={parseEmbedOptions(search)}
           speakerBase={`/${bundle.event.slug}/speakers`}
