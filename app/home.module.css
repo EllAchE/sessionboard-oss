@@ -42,8 +42,7 @@
 .mosaicRule,
 .product,
 .programme,
-.finalCta,
-.footer {
+.finalCta {
   width: min(100% - var(--space-12), var(--content-max));
   margin-inline: auto;
 }
@@ -102,8 +101,7 @@
 .productLink,
 .demoLink,
 .githubLink,
-.signInLink,
-.footer a {
+.signInLink {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -114,8 +112,7 @@
 .productLink:hover,
 .demoLink:hover,
 .githubLink:hover,
-.signInLink:hover,
-.footer a:hover {
+.signInLink:hover {
   color: var(--text-accent);
 }
 
@@ -401,6 +398,7 @@
 
 .finalCta {
   align-items: center;
+  margin-bottom: var(--space-20);
   padding: var(--space-24) var(--space-10);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-xs);
@@ -417,18 +415,6 @@
 .finalCta h2,
 .finalCta > p:not(.eyebrow) {
   max-width: 720px;
-}
-
-.footer {
-  min-height: 128px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-5);
-  margin-top: var(--space-20);
-  border-top: var(--border-width) solid rgba(111, 101, 87, 0.34);
-  color: var(--text-faint);
-  font: var(--type-label);
 }
 
 @media (max-width: 1020px) {
@@ -480,8 +466,7 @@
   .hero,
   .product,
   .programme,
-  .finalCta,
-  .footer {
+  .finalCta {
     width: min(100% - var(--space-8), var(--content-max));
   }
 
@@ -574,10 +559,6 @@
     background-size: 560px auto;
   }
 
-  .footer {
-    min-height: 104px;
-    margin-top: var(--space-12);
-  }
 }
 
 @media (max-width: 390px) {
