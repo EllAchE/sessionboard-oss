@@ -133,6 +133,27 @@ snippet, per-embed filters and styling. The embed is an auto-resizing iframe ove
 [`docs/openapi.json`](docs/openapi.json) schema, an Accelevents speaker-push client, and a one-way
 Airtable mirror.
 
+### Bonus: operate an event with an agent
+
+These three surfaces are extra value beyond the required replacement scope:
+
+- **Public API bonus** — the generated OpenAPI contract exposes Cicero data to another site or
+  tool without UI automation.
+- **Inbound Accelevents bonus** — when the deployed OpenAPI advertises the program reconcile
+  operation, an Accelevents-shaped collection can be previewed and atomically applied to Cicero.
+  This is separate from the required outbound accepted-speaker push.
+- **Agent operation bonus** — the repo-local `manage-cicero-event` skill turns either an event spec
+  or Accelevents-shaped payload into a compare → preview → confirm → apply → verify workflow, with
+  destructive confirmation and rollback guidance.
+
+Codex loads repository skills from `.agents/skills` at the repository root. Invoke this one
+explicitly with `$manage-cicero-event`, or ask Codex to manage a named Cicero event from a supplied
+spec. The skill discovers the live OpenAPI before using a write route and stops cleanly when a
+deployment is read-only. See the
+[`First Settlement copy-ready prompt`](.agents/skills/manage-cicero-event/references/first-settlement-demo.md).
+The discovery location and `$skill-name` invocation follow the
+[official Codex skills documentation](https://developers.openai.com/codex/build-skills#where-codex-loads-local-skills).
+
 ## Deployment
 
 **Cloudflare Workers** is the primary target, via `@opennextjs/cloudflare`:
