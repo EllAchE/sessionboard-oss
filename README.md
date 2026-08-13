@@ -216,11 +216,18 @@ snippet, per-embed filters and styling. The embed is an auto-resizing iframe ove
 "updates without re-pasting the snippet" comes for free.
 
 **Integrations.** A rate-limited public REST API with read/write event keys and a generated
-[`docs/openapi.json`](docs/openapi.json) schema, signed lifecycle webhooks with a delivery log, an
-Accelevents speaker-push client, and a one-way Airtable mirror. The
+[`docs/openapi.json`](docs/openapi.json) schema, a Streamable HTTP MCP server with a generated
+[`docs/mcp-tools.json`](docs/mcp-tools.json) manifest, signed lifecycle webhooks with a delivery
+log, an Accelevents speaker-push client, and a one-way Airtable mirror. The
 [Accelevents demo](docs/accelevents-demo.md) also includes a deterministic fixture adapter that
 previews and applies a full published-program create/update/delete/no-op sync without claiming
 undocumented live Accelevents capabilities.
+
+An MCP client connects to `/api/v1/events/{event-slug}/mcp` with an event API key as its Bearer
+token. The endpoint exposes event, session, speaker, agenda, and submission reads plus program
+reconciliation. A read-only key can discover every tool but the server refuses the reconciliation
+write; issue a write key only to an agent that must mutate the program. `bun run docs:mcp`
+regenerates the checked-in manifest from the same Zod schemas used at runtime.
 
 ### Bonus: use Cicero through role-scoped agents
 
@@ -344,6 +351,7 @@ coexist without either seeing the other.
    added by the owner after the brief was frozen, with build status per row and what the optional
    add-ons cost a self-hoster
 9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
 Alongside those, two unnumbered companions:
 

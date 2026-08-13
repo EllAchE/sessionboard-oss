@@ -1,0 +1,1264 @@
+{
+  "name": "cicero",
+  "version": "1.0.0",
+  "transport": "streamable-http",
+  "authentication": {
+    "scheme": "bearer",
+    "credential": "event-api-key"
+  },
+  "tools": [
+    {
+      "name": "cicero_event_get",
+      "title": "Get event",
+      "description": "Read metadata for the event associated with this API key.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "URL-safe identifier for the event"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Markdown"
+          },
+          "eventType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Organizer-set, e.g. Conference"
+          },
+          "theme": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The theme of this edition, long form"
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone, e.g. America/Los_Angeles"
+          },
+          "startsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO date, in the event timezone"
+          },
+          "endsOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO date, in the event timezone"
+          },
+          "startsAt": {
+            "type": "string",
+            "description": "ISO 8601 instant the event starts"
+          },
+          "endsAt": {
+            "type": "string",
+            "description": "ISO 8601 instant the event ends"
+          },
+          "websiteUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "venueName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "venueAddress": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "tagline",
+          "description",
+          "eventType",
+          "theme",
+          "timezone",
+          "startsOn",
+          "endsOn",
+          "startsAt",
+          "endsAt",
+          "websiteUrl",
+          "venueName",
+          "venueAddress"
+        ],
+        "description": "A conference or event"
+      }
+    },
+    {
+      "name": "cicero_sessions_list",
+      "title": "List sessions",
+      "description": "Search and filter sessions for the event associated with this API key.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "cancelled"
+            ],
+            "description": "Defaults to published"
+          },
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Search title, description, taxonomy, and speaker names"
+          },
+          "track": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Track name or id"
+          },
+          "room": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Room name or id"
+          },
+          "format": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Session format name"
+          },
+          "speaker": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Speaker name or participant id"
+          },
+          "startsAfter": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Keep sessions starting at or after this ISO 8601 instant"
+          },
+          "startsBefore": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Keep sessions starting before this ISO 8601 instant"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Defaults to 100; maximum 200"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Zero-based result offset; defaults to 0"
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "UUID"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "Human-readable reference, e.g. SESS-4"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Markdown"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "cancelled"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "room": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ceuCredits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "speakers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "jobTitle": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "company": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "isPrimary": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "jobTitle",
+                      "company",
+                      "isPrimary"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "ref",
+                "title",
+                "description",
+                "status",
+                "startsAt",
+                "endsAt",
+                "room",
+                "track",
+                "format",
+                "ceuCredits",
+                "speakers"
+              ],
+              "description": "A scheduled session on the agenda"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ]
+      }
+    },
+    {
+      "name": "cicero_speakers_list",
+      "title": "List speakers",
+      "description": "Search speakers on accepted submissions for this event.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Search name, biography, company, role, links, and sessions"
+          },
+          "company": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Company name"
+          },
+          "session": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Session title or id"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Defaults to 100; maximum 200"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Zero-based result offset; defaults to 0"
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "UUID"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "pronouns": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "jobTitle": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bio": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Markdown"
+                },
+                "headshotUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Absolute URL of the public headshot. Null when the speaker has not uploaded one or has not confirmed their profile yet, since nothing is served publicly until they do."
+                },
+                "links": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "url"
+                    ]
+                  }
+                },
+                "sessions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "pronouns",
+                "jobTitle",
+                "company",
+                "bio",
+                "headshotUrl",
+                "links",
+                "sessions"
+              ],
+              "description": "A speaker with at least one accepted session"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ]
+      }
+    },
+    {
+      "name": "cicero_agenda_get",
+      "title": "Get agenda",
+      "description": "Read the event's published agenda grouped in the event timezone.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "event": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "description": "URL-safe identifier for the event"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tagline": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Markdown"
+              },
+              "eventType": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Organizer-set, e.g. Conference"
+              },
+              "theme": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The theme of this edition, long form"
+              },
+              "timezone": {
+                "type": "string",
+                "description": "IANA timezone, e.g. America/Los_Angeles"
+              },
+              "startsOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date, in the event timezone"
+              },
+              "endsOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO date, in the event timezone"
+              },
+              "startsAt": {
+                "type": "string",
+                "description": "ISO 8601 instant the event starts"
+              },
+              "endsAt": {
+                "type": "string",
+                "description": "ISO 8601 instant the event ends"
+              },
+              "websiteUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "venueName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "venueAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "slug",
+              "name",
+              "tagline",
+              "description",
+              "eventType",
+              "theme",
+              "timezone",
+              "startsOn",
+              "endsOn",
+              "startsAt",
+              "endsAt",
+              "websiteUrl",
+              "venueName",
+              "venueAddress"
+            ],
+            "description": "A conference or event"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "description": "ISO date in the event timezone"
+                },
+                "sessions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "UUID"
+                      },
+                      "ref": {
+                        "type": "string",
+                        "description": "Human-readable reference, e.g. SESS-4"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Markdown"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "draft",
+                          "published",
+                          "cancelled"
+                        ]
+                      },
+                      "startsAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "ISO 8601"
+                      },
+                      "endsAt": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "ISO 8601"
+                      },
+                      "room": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "track": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "format": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "ceuCredits": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "speakers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "jobTitle": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "company": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "isPrimary": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "jobTitle",
+                            "company",
+                            "isPrimary"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "ref",
+                      "title",
+                      "description",
+                      "status",
+                      "startsAt",
+                      "endsAt",
+                      "room",
+                      "track",
+                      "format",
+                      "ceuCredits",
+                      "speakers"
+                    ],
+                    "description": "A scheduled session on the agenda"
+                  }
+                }
+              },
+              "required": [
+                "date",
+                "sessions"
+              ]
+            }
+          },
+          "unscheduled": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "UUID"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "Human-readable reference, e.g. SESS-4"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Markdown"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "cancelled"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "room": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "ceuCredits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "speakers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "jobTitle": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "company": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "isPrimary": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "jobTitle",
+                      "company",
+                      "isPrimary"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "ref",
+                "title",
+                "description",
+                "status",
+                "startsAt",
+                "endsAt",
+                "room",
+                "track",
+                "format",
+                "ceuCredits",
+                "speakers"
+              ],
+              "description": "A scheduled session on the agenda"
+            }
+          }
+        },
+        "required": [
+          "event",
+          "days",
+          "unscheduled"
+        ],
+        "description": "The published agenda, grouped by day"
+      }
+    },
+    {
+      "name": "cicero_submissions_list",
+      "title": "List submissions",
+      "description": "List event submissions, including private review status and submitter details.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "submitted",
+              "under_review",
+              "accepted",
+              "declined",
+              "waitlisted",
+              "withdrawn"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "description": "Defaults to 100; maximum 200"
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "UUID"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "Human-readable reference, e.g. ABS-12"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Markdown"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "submitted",
+                    "under_review",
+                    "accepted",
+                    "declined",
+                    "waitlisted",
+                    "withdrawn"
+                  ]
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "level": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "submitter": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "email": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "email"
+                  ]
+                },
+                "answers": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "description": "Custom form answers, keyed by field key"
+                },
+                "submittedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                },
+                "decidedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "ISO 8601"
+                }
+              },
+              "required": [
+                "id",
+                "ref",
+                "title",
+                "description",
+                "status",
+                "track",
+                "format",
+                "level",
+                "tags",
+                "submitter",
+                "answers",
+                "submittedAt",
+                "decidedAt"
+              ],
+              "description": "A CFP submission. Requires an API key."
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "total"
+        ]
+      }
+    },
+    {
+      "name": "cicero_program_reconcile",
+      "title": "Reconcile program",
+      "description": "Preview or apply an Accelevents-shaped program reconciliation. Preview with apply=false before writing.",
+      "access": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "accelevents"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "replace"
+            ],
+            "description": "merge upserts listed records; replace also deletes managed records that are absent"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "False previews the exact operations without writing"
+          },
+          "confirmDeleteMissing": {
+            "const": "DELETE_MISSING_SESSIONS",
+            "description": "Required to apply replace mode when missing managed sessions would be deleted"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "externalId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Stable Accelevents session id; unique within this event"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 50000,
+                  "description": "Required Markdown field; null or blank clears the description"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "cancelled"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "room": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Event room id or exact name (case-insensitive)"
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Event track id or exact name (case-insensitive)"
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Event format id or exact name (case-insensitive)"
+                },
+                "ceuCredits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 50
+                }
+              },
+              "required": [
+                "externalId",
+                "title",
+                "description",
+                "status",
+                "startsAt",
+                "endsAt",
+                "room",
+                "track",
+                "format",
+                "ceuCredits"
+              ]
+            }
+          },
+          "deleteExternalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Explicit source-managed sessions to delete in merge mode"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "description": "An Accelevents-shaped program snapshot or patch"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "accelevents"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "replace"
+            ]
+          },
+          "applied": {
+            "type": "boolean"
+          },
+          "canApply": {
+            "type": "boolean"
+          },
+          "requiresDeleteConfirmation": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "integer"
+              },
+              "update": {
+                "type": "integer"
+              },
+              "delete": {
+                "type": "integer"
+              },
+              "noop": {
+                "type": "integer"
+              },
+              "error": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "create",
+              "update",
+              "delete",
+              "noop",
+              "error"
+            ]
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "externalId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete",
+                    "noop",
+                    "error"
+                  ]
+                },
+                "sessionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "externalId",
+                "action",
+                "sessionId",
+                "changes",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "source",
+          "mode",
+          "applied",
+          "canApply",
+          "requiresDeleteConfirmation",
+          "summary",
+          "operations"
+        ]
+      }
+    }
+  ]
+}
