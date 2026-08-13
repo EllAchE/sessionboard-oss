@@ -1,4 +1,5 @@
 import { SignInForm } from '../signin/SignInForm';
+import { authRedirect } from '../signin/redirect';
 import styles from '../signin/signin.module.css';
 
 export const metadata = { title: 'Sign up · Cicero' };
@@ -9,7 +10,7 @@ export default async function SignUpPage({
   searchParams: Promise<{ next?: string; email?: string }>;
 }) {
   const { next, email } = await searchParams;
-  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/events/new';
+  const safeNext = authRedirect(next, '/events/new');
 
   return (
     <main className={styles.root}>

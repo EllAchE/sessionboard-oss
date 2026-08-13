@@ -1,4 +1,5 @@
 import { SignInForm } from './SignInForm';
+import { authRedirect } from './redirect';
 import styles from './signin.module.css';
 
 export const metadata = { title: 'Sign in · Cicero' };
@@ -10,8 +11,7 @@ export default async function SignInPage({
 }) {
   const { next, email } = await searchParams;
 
-  /** Only relative paths, so `?next=https://evil.example` cannot turn sign-in into an open redirect. */
-  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/admin';
+  const safeNext = authRedirect(next, '/admin');
 
   return (
     <main className={styles.root}>
