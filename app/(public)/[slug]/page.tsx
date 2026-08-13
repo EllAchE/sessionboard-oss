@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { listOpenCalls } from '@/lib/services/submissions';
 import { EmbedBody } from '../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../embed/queries';
+import { ConferenceCountdown } from './ConferenceCountdown';
 import { PublicChrome, publicStyles as styles } from './PublicChrome';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,14 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
           {event.venueName ? <span>{event.venueName}</span> : null}
           <span>{event.timezone.replace('_', ' ')}</span>
         </div>
+        {event.startsOn ? (
+          <ConferenceCountdown
+            startsOn={event.startsOn}
+            endsOn={event.endsOn}
+            timeZone={event.timezone}
+            initialNow={Date.now()}
+          />
+        ) : null}
         <div className={styles.heroActions}>
           {call ? (
             <Link
