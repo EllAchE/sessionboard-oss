@@ -85,12 +85,7 @@ export type RoundsManagerProps = {
   rounds: RoundWire[];
   selectedRoundId: string | null;
   criteria: CriterionWire[];
-  reviewers: Array<{
-    userId: string;
-    name: string;
-    email: string;
-    roles: string[];
-  }>;
+  reviewers: Array<{ userId: string; name: string; email: string; roles: string[] }>;
   workload: WorkloadWire[];
   /** Submissions eligible for assignment in this round — everything still awaiting a verdict. */
   pendingSubmissionIds: string[];
@@ -187,7 +182,7 @@ function RoundDateEditor({
         loading={pending}
         onClick={() => onSave(dates)}
       >
-        Seal dates
+        Save dates
       </Button>
       <span className={invalidRange ? styles.dateError : styles.roundDateSummary}>
         {invalidRange ? INVALID_DATE_RANGE : hydrated ? describeRoundDates(round) : ''}
@@ -253,8 +248,7 @@ export function RoundsManager(props: RoundsManagerProps) {
     [router],
   );
 
-  const selectRound = (roundId: string) =>
-    router.push(`/admin/submissions/rounds?round=${roundId}`);
+  const selectRound = (roundId: string) => router.push(`/admin/submissions/rounds?round=${roundId}`);
 
   const inviteReviewer = () => {
     setError(null);
@@ -274,8 +268,8 @@ export function RoundsManager(props: RoundsManagerProps) {
       setReviewerAccessLink(result.data.accessLink);
       setMessage(
         result.data.accessLink
-          ? `${result.data.reviewer.name} may sit on this council. Copy their sealed entry link below.`
-          : `Council summons dispatched to ${result.data.reviewer.email}.`,
+          ? `${result.data.reviewer.name} can review this event. Copy their access link below.`
+          : `Invitation sent to ${result.data.reviewer.email}.`,
       );
       router.refresh();
     });
@@ -288,18 +282,8 @@ export function RoundsManager(props: RoundsManagerProps) {
 
   const workloadColumns = useMemo<Array<DataTableColumn<WorkloadWire>>>(
     () => [
-      {
-        id: 'name',
-        header: 'Councillor',
-        strong: true,
-        render: (row) => row.name,
-      },
-      {
-        id: 'email',
-        header: 'Dispatch address',
-        width: '26%',
-        render: (row) => row.email,
-      },
+      { id: 'name', header: 'Reviewer', strong: true, render: (row) => row.name },
+      { id: 'email', header: 'Email', width: '26%', render: (row) => row.email },
       {
         id: 'assigned',
         header: 'Assigned',
@@ -338,11 +322,11 @@ export function RoundsManager(props: RoundsManagerProps) {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headings}>
-          <span className={styles.eyebrow}>The Curia</span>
-          <h1 className={styles.title}>Councils & deliberations</h1>
+          <span className={styles.eyebrow}>Review</span>
+          <h1 className={styles.title}>Rounds</h1>
           <p className={styles.subtitle}>
             {props.rounds.length} round{props.rounds.length === 1 ? '' : 's'} ·{' '}
-            {props.pendingSubmissionIds.length} petition
+            {props.pendingSubmissionIds.length} submission
             {props.pendingSubmissionIds.length === 1 ? '' : 's'} awaiting a verdict
           </p>
         </div>
@@ -362,7 +346,7 @@ export function RoundsManager(props: RoundsManagerProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Councils</CardTitle>
+          <CardTitle>Rounds</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.stack}>
@@ -402,18 +386,15 @@ export function RoundsManager(props: RoundsManagerProps) {
                   <Switch
                     size="sm"
                     checked={round.blindUntilClose}
-                    aria-label={`Sealed ballots for ${round.name}`}
+                    aria-label={`Blind review for ${round.name}`}
                     onCheckedChange={(checked) =>
                       run(
-                        () =>
-                          updateRoundAction(round.id, {
-                            blindUntilClose: checked,
-                          }),
-                        'Council updated.',
+                        () => updateRoundAction(round.id, { blindUntilClose: checked }),
+                        'Round updated.',
                       )
                     }
                   />
-                  Sealed ballots
+                  Blind
                 </span>
                 <span className={styles.keyRow}>
                   <Switch
@@ -424,21 +405,21 @@ export function RoundsManager(props: RoundsManagerProps) {
                       run(
                         () => updateRoundAction(round.id, { anonymized: checked }),
                         checked
-                          ? 'Councillors can no longer see who filed each petition.'
-                          : 'Councillors can see each petitioner again.',
+                          ? 'Reviewers can no longer see who submitted.'
+                          : 'Reviewers can see who submitted again.',
                       )
                     }
                   />
-                  Veiled authors
+                  Anonymized
                 </span>
                 <Button
                   size="sm"
                   variant="ghost"
                   iconLeft={<Trash2 size={14} />}
                   loading={pending}
-                  onClick={() => run(() => deleteRoundAction(round.id), 'Council erased.')}
+                  onClick={() => run(() => deleteRoundAction(round.id), 'Round deleted.')}
                 >
-                  Dissolve
+                  Delete
                 </Button>
               </div>,
               <RoundDateEditor
@@ -446,19 +427,19 @@ export function RoundsManager(props: RoundsManagerProps) {
                 round={round}
                 pending={pending}
                 onSave={(dates) =>
-                  run(() => updateRoundAction(round.id, dates), 'Council dates updated.')
+                  run(() => updateRoundAction(round.id, dates), 'Round dates updated.')
                 }
               />,
             ])}
             {props.rounds.length === 0 ? (
-              <p className={styles.muted}>No council has convened. Summon the first below.</p>
+              <p className={styles.muted}>No rounds yet. Create the first one below.</p>
             ) : null}
 
             <div className={styles.criterionEditor}>
               <Input
                 inputSize="sm"
-                placeholder="New council name"
-                aria-label="New council name"
+                placeholder="New round name"
+                aria-label="New round name"
                 value={newRoundName}
                 onChange={(event) => setNewRoundName(event.target.value)}
               />
@@ -466,7 +447,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                 <Switch
                   size="sm"
                   checked={newRoundBlind}
-                  aria-label="Keep ballots sealed until close"
+                  aria-label="Blind until close"
                   onCheckedChange={setNewRoundBlind}
                 />
                 Blind
@@ -499,32 +480,32 @@ export function RoundsManager(props: RoundsManagerProps) {
                       setNewRoundDates(EMPTY_DATES);
                     }
                     return result;
-                  }, 'Council convened with the customary tablet of judgment.')
+                  }, 'Round created with the default scorecard.')
                 }
               >
-                Convene council
+                Add round
               </Button>
             </div>
             <div className={styles.roundDates}>
               <RoundDateInputs
                 draft={newRoundDates}
                 invalidRange={newRoundDateRangeIsInvalid}
-                labelPrefix="New council"
+                labelPrefix="New round"
                 onChange={setNewRoundDates}
               />
-              <span className={styles.roundDateTimezone}>Your local hour</span>
+              <span className={styles.roundDateTimezone}>Browser timezone</span>
               <span
                 className={newRoundDateRangeIsInvalid ? styles.dateError : styles.roundDateSummary}
               >
                 {newRoundDateRangeIsInvalid
                   ? INVALID_DATE_RANGE
-                  : 'Leave either date empty when the council has no boundary.'}
+                  : 'Leave either date empty when the round has no boundary.'}
               </span>
             </div>
             <p className={styles.aiNote}>
-              Sealed ballots hide fellow councillors&rsquo; scores until the council closes. Veiled
-              authors hide each petitioner&rsquo;s identity while organizers retain it for conflicts
-              and verdicts.
+              Blind hides other reviewers&rsquo; scores until the round closes. Anonymized hides the
+              author from reviewers — names, contact details, affiliations and bios are stripped
+              from what they see, while organizers keep all of it for conflict checks and decisions.
             </p>
           </div>
         </CardBody>
@@ -534,7 +515,7 @@ export function RoundsManager(props: RoundsManagerProps) {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Tablet of judgment · {selectedRound.name}</CardTitle>
+              <CardTitle>Scorecard · {selectedRound.name}</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
@@ -547,10 +528,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                       onBlur={(event) => {
                         if (event.target.value === criterion.label) return;
                         run(
-                          () =>
-                            updateCriterionAction(criterion.id, {
-                              label: event.target.value,
-                            }),
+                          () => updateCriterionAction(criterion.id, { label: event.target.value }),
                           'Criterion updated.',
                         );
                       }}
@@ -602,7 +580,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                 ))}
                 {props.criteria.length === 0 ? (
                   <p className={styles.muted}>
-                    This council has no measures, so councillors have nothing to judge.
+                    This round has no criteria, so reviewers have nothing to score.
                   </p>
                 ) : null}
 
@@ -652,8 +630,8 @@ export function RoundsManager(props: RoundsManagerProps) {
                   </Button>
                 </div>
                 <p className={styles.aiNote}>
-                  Weight balances one measure against the others; the maximum is the scale a
-                  councillor uses. Every result returns to a 1–5 scale.
+                  Weight scales a criterion against the others; the maximum is the scale a reviewer
+                  scores on. Every average is reported back on 1–5 whatever the maximum.
                 </p>
               </div>
             </CardBody>
@@ -661,28 +639,28 @@ export function RoundsManager(props: RoundsManagerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Appoint councillors</CardTitle>
+              <CardTitle>Assign reviewers</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
                 <p className={styles.aiNote}>
-                  Council roll · appointments belong to {selectedRound.name}. Councillors with
-                  petitions in this round remain selected after reload; a new round begins with an
-                  empty bench.
+                  Round reviewer pool · selections are scoped to {selectedRound.name}. Reviewers
+                  with assignments in this round remain selected after reload; a new round starts
+                  with an empty pool.
                 </p>
                 <div className={styles.inlineStack}>
                   <Input
                     inputSize="sm"
-                    placeholder="Councillor name (optional)"
-                    aria-label="Councillor name"
+                    placeholder="Reviewer name (optional)"
+                    aria-label="Reviewer name"
                     value={reviewerName}
                     onChange={(event) => setReviewerName(event.target.value)}
                   />
                   <Input
                     inputSize="sm"
                     type="email"
-                    placeholder="councillor@example.com"
-                    aria-label="Councillor dispatch address"
+                    placeholder="reviewer@example.com"
+                    aria-label="Reviewer email"
                     value={reviewerEmail}
                     onChange={(event) => setReviewerEmail(event.target.value)}
                   />
@@ -693,24 +671,22 @@ export function RoundsManager(props: RoundsManagerProps) {
                     disabled={!reviewerEmail.trim()}
                     onClick={inviteReviewer}
                   >
-                    Summon councillor
+                    Invite reviewer
                   </Button>
                 </div>
                 <p className={styles.aiNote}>
-                  Summoned councillors receive a sealed link to this assembly&rsquo;s deliberations.
-                  Summoning the same address again sends a fresh seal without duplicating access.
+                  Invited reviewers receive a passwordless link to their event-scoped review queue.
+                  Inviting the same address again sends a fresh link without duplicating access.
                 </p>
                 {reviewerAccessLink ? (
                   <div className={styles.inlineStack}>
-                    <span className={styles.aiNote}>
-                      The dispatch is logged in this environment.
-                    </span>
+                    <span className={styles.aiNote}>Email is logged in this environment.</span>
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => navigator.clipboard.writeText(reviewerAccessLink)}
                     >
-                      Copy councillor’s sealed link
+                      Copy reviewer access link
                     </Button>
                   </div>
                 ) : null}
@@ -732,18 +708,18 @@ export function RoundsManager(props: RoundsManagerProps) {
                     </label>
                   ))}
                   {props.reviewers.length === 0 ? (
-                    <p className={styles.muted}>Summon the first councillor above.</p>
+                    <p className={styles.muted}>Invite the first reviewer above.</p>
                   ) : null}
                 </div>
 
                 <div className={styles.inlineStack}>
-                  <span className={styles.fieldLabel}>Councillors per petition</span>
+                  <span className={styles.fieldLabel}>Reviewers per submission</span>
                   <Input
                     inputSize="sm"
                     type="number"
                     min={1}
                     max={10}
-                    aria-label="Councillors per petition"
+                    aria-label="Reviewers per submission"
                     value={perSubmission}
                     onChange={(event) => setPerSubmission(event.target.value)}
                   />
@@ -760,17 +736,17 @@ export function RoundsManager(props: RoundsManagerProps) {
                             reviewerUserIds: selectedReviewers,
                             reviewersPerSubmission: Number(perSubmission) || 1,
                           }),
-                        'Petitions divided evenly among the appointed councillors.',
+                        'Assignments balanced across the selected reviewers.',
                       )
                     }
                   >
-                    Divide petitions
+                    Auto-assign
                   </Button>
                   <span className={styles.aiNote}>
-                    Up to {plannedTotal} assignment
-                    {plannedTotal === 1 ? '' : 's'} across {selectedReviewers.length} councillor
-                    {selectedReviewers.length === 1 ? '' : 's'}; existing appointments remain and
-                    the council is filled around them.
+                    Up to {plannedTotal} assignment{plannedTotal === 1 ? '' : 's'} across{' '}
+                    {selectedReviewers.length} reviewer
+                    {selectedReviewers.length === 1 ? '' : 's'}; existing ones are kept and topped
+                    up.
                   </span>
                 </div>
 
@@ -779,8 +755,8 @@ export function RoundsManager(props: RoundsManagerProps) {
                     columns={workloadColumns}
                     rows={props.workload}
                     getRowId={(row) => row.reviewerUserId}
-                    label="Councillor workload"
-                    emptyState="No councillors have been summoned to this assembly."
+                    label="Reviewer workload"
+                    emptyState="No reviewers on this event yet."
                   />
                 </div>
 
@@ -804,17 +780,17 @@ export function RoundsManager(props: RoundsManagerProps) {
                         });
                         if (result.ok) setReminderNote('');
                         return result;
-                  }, 'Courier dispatched. Every message enters the courier archive.')
+                      }, 'Reminder sent. Every message is recorded in Mail.')
                     }
                   >
-                    Dispatch reminders
+                    Remind outstanding reviewers
                   </Button>
                   <span className={styles.aiNote}>
                     {props.outstandingReviewerCount === 0
-                      ? 'No councillor owes a judgment in this council.'
-                      : `${props.outstandingReviewerCount} councillor${
+                      ? 'Nobody has an outstanding assignment in this round.'
+                      : `${props.outstandingReviewerCount} reviewer${
                           props.outstandingReviewerCount === 1 ? '' : 's'
-                        } still owe judgments. Every dispatch enters the courier archive.`}
+                        } still owe scores. Each send is logged under Mail.`}
                   </span>
                 </div>
               </div>
@@ -823,7 +799,7 @@ export function RoundsManager(props: RoundsManagerProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Withdrawals · {selectedRound.declinedCount}</CardTitle>
+              <CardTitle>Recusals · {selectedRound.declinedCount}</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
@@ -833,7 +809,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                       <strong>{recusal.displayRef}</strong> {recusal.title}
                     </span>
                     <span className={styles.muted}>{recusal.reviewerName}</span>
-                    <span className={styles.muted}>{recusal.reason ?? 'No reason entered'}</span>
+                    <span className={styles.muted}>{recusal.reason ?? 'No reason given'}</span>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -851,16 +827,14 @@ export function RoundsManager(props: RoundsManagerProps) {
                   </div>
                 ))}
                 {props.recusals.length === 0 ? (
-                  <p className={styles.muted}>
-                    No councillor has withdrawn from this deliberation.
-                  </p>
+                  <p className={styles.muted}>No reviewer has recused themselves in this round.</p>
                 ) : null}
               </div>
             </CardBody>
           </Card>
         </>
       ) : (
-        <p className={styles.notice}>Convene a council to set its scorecard and appointments.</p>
+        <p className={styles.notice}>Create a round to configure its scorecard and assignments.</p>
       )}
     </div>
   );

@@ -101,10 +101,10 @@ export function CommandMenu({
   open,
   defaultOpen = false,
   onOpenChange,
-  placeholder = 'Search the Forum…',
-  emptyMessage = 'No decree matches that search.',
+  placeholder = 'Search commands…',
+  emptyMessage = 'No matching commands.',
   hotkey = true,
-  label = 'Forum command menu',
+  label = 'Command menu',
   className,
 }: CommandMenuProps) {
   const baseId = useId();

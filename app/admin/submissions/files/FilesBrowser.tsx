@@ -41,18 +41,18 @@ export type FileRowWire = {
 };
 
 const SOURCE_LABEL: Record<FileRowWire['source'], string> = {
-  submission: 'Petition answer',
-  task: 'Orator duty',
-  headshot: 'Portrait',
-  unattached: 'Loose scroll',
+  submission: 'Submission answer',
+  task: 'Speaker task',
+  headshot: 'Headshot',
+  unattached: 'Unattached',
 };
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
-  submitted: 'Before the council',
-  under_review: 'Under deliberation',
-  accepted: 'Proclaimed',
-  waitlisted: 'Held in reserve',
+  submitted: 'Submitted',
+  under_review: 'Under review',
+  accepted: 'Accepted',
+  waitlisted: 'Waitlisted',
   declined: 'Declined',
   withdrawn: 'Withdrawn',
 };
@@ -127,19 +127,15 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
   const download = useCallback(() => {
     const refusal = checkArchiveBudget(selected.length, selectedBytes);
     if (refusal) {
-      toast({
-        title: 'No archive prepared',
-        description: refusal.message,
-        tone: 'warning',
-      });
+      toast({ title: 'Nothing downloaded', description: refusal.message, tone: 'warning' });
       return;
     }
     if (!downloadForm.current || !downloadIds.current) return;
     downloadIds.current.value = selected.map((row) => row.fileId).join(',');
     downloadForm.current.submit();
     toast({
-      title: `Binding ${selected.length} scroll${selected.length === 1 ? '' : 's'} into an archive`,
-      description: 'The copy begins when the final scroll has been read.',
+      title: `Building an archive of ${selected.length} file${selected.length === 1 ? '' : 's'}`,
+      description: 'The download starts as soon as the last file is read.',
       tone: 'info',
     });
   }, [selected, selectedBytes, toast]);
@@ -148,7 +144,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
     () => [
       {
         id: 'filename',
-        header: 'Scroll',
+        header: 'File',
         strong: true,
         width: '28%',
         render: (row) => (
@@ -162,7 +158,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
             </Link>
             <a
               href={`/admin/submissions/files/${row.fileId}`}
-              aria-label={`Take a copy of ${row.filename}`}
+              aria-label={`Download ${row.filename}`}
             >
               <Download size={14} />
             </a>
@@ -228,7 +224,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
       },
       {
         id: 'submission',
-        header: 'Petition',
+        header: 'Submission',
         width: '24%',
         render: (row) =>
           row.submissionId ? (
@@ -241,7 +237,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
       },
       {
         id: 'status',
-        header: 'Standing',
+        header: 'Status',
         width: '108px',
         render: (row) =>
           row.submissionStatus ? (
@@ -254,7 +250,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
       },
       {
         id: 'uploaded',
-        header: 'Lodged',
+        header: 'Uploaded',
         width: '112px',
         mono: true,
         render: (row) => formatDate(row.createdAt),
@@ -269,11 +265,11 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
 
       <header className={queue.header}>
         <div className={queue.headings}>
-          <span className={queue.eyebrow}>The tabularium</span>
-          <h1 className={queue.title}>Imperial archive</h1>
+          <span className={queue.eyebrow}>Review</span>
+          <h1 className={queue.title}>Files</h1>
           <p className={queue.subtitle}>
-            {visible.length} of {rows.length} scroll
-            {rows.length === 1 ? '' : 's'} · {formatBytes(visibleBytes)} shown ·{' '}
+            {visible.length} of {rows.length} file{rows.length === 1 ? '' : 's'} ·{' '}
+            {formatBytes(visibleBytes)} shown ·{' '}
             {showSuperseded ? 'every version' : 'current versions only'}
           </p>
         </div>
@@ -283,7 +279,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
             iconLeft={<ChevronLeft size={14} />}
             onClick={() => router.push('/admin/submissions')}
           >
-            Return to petitions
+            Back to queue
           </Button>
           <Button
             variant="primary"
@@ -291,7 +287,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
             disabled={selected.length === 0}
             onClick={download}
           >
-            Take {selected.length > 0 ? `${selected.length} ` : ''}as an archive
+            Download {selected.length > 0 ? `${selected.length} ` : ''}as zip
           </Button>
         </div>
       </header>
@@ -300,8 +296,8 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
         <Input
           className={queue.search}
           inputSize="sm"
-          placeholder="Scroll, orator, or petition"
-          aria-label="Search the archive"
+          placeholder="Filename, speaker or submission"
+          aria-label="Search files"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -320,11 +316,11 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
         </Select>
         <Select
           selectSize="sm"
-          aria-label="Filter by petition standing"
+          aria-label="Filter by submission status"
           value={status}
           onChange={(event) => setStatus(event.target.value)}
         >
-          <option value="">Any petition standing</option>
+          <option value="">Any submission status</option>
           {statuses.map((entry) => (
             <option key={entry} value={entry}>
               {statusLabel(entry)}
@@ -336,7 +332,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
           variant={showSuperseded ? 'secondary' : 'ghost'}
           onClick={() => setShowSuperseded((current) => !current)}
         >
-          {showSuperseded ? 'Hide earlier scrolls' : 'Show earlier scrolls'}
+          {showSuperseded ? 'Hide older versions' : 'Show older versions'}
         </Button>
         <Button
           size="sm"
@@ -344,7 +340,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
           onClick={() => setSelectedIds(visible.map((row) => row.fileId))}
           disabled={visible.length === 0}
         >
-          Select every shown scroll
+          Select all shown
         </Button>
         <Button
           size="sm"
@@ -352,7 +348,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
           onClick={() => setSelectedIds([])}
           disabled={selectedIds.length === 0}
         >
-          Clear selection
+          Clear
         </Button>
       </div>
 
@@ -362,7 +358,7 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
             {selected.length} selected · {formatBytes(selectedBytes)}
           </span>
           <Button size="sm" variant="primary" iconLeft={<FileDown size={14} />} onClick={download}>
-            Take archive
+            Download zip
           </Button>
         </div>
       ) : null}
@@ -375,11 +371,11 @@ export function FilesBrowser({ rows }: { rows: FileRowWire[] }) {
           selectionMode="multiple"
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
-          label="Scrolls in the imperial archive"
+          label="Event files"
           emptyState={
             rows.length === 0
-              ? 'No scroll has been lodged for this assembly.'
-              : 'No scroll answers these filters.'
+              ? 'Nothing has been uploaded to this event yet.'
+              : 'No file matches these filters.'
           }
         />
       </div>

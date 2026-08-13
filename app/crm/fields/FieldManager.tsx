@@ -76,11 +76,11 @@ export function FieldManager({ fields, types }: Props) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>The census</p>
-          <h1 className={styles.title}>Custom inscriptions</h1>
+          <p className={styles.eyebrow}>Organization</p>
+          <h1 className={styles.title}>Custom fields</h1>
           <p className={styles.subtitle}>
-            Your own inscriptions on every citizen. A choice field also becomes a lens over the
-            census.
+            Your own columns on every contact. A dropdown field also becomes a filter in the
+            directory.
           </p>
         </div>
       </div>
@@ -90,9 +90,9 @@ export function FieldManager({ fields, types }: Props) {
       <div className={styles.split}>
         <Card>
           <CardHeader>
-            <CardTitle>New inscription</CardTitle>
+            <CardTitle>New field</CardTitle>
             <CardDescription>
-              For example, an Orator rank choice with Citizen and Foreign envoy.
+              For example a dropdown named Speaker Type with Internal and External.
             </CardDescription>
           </CardHeader>
           <CardBody>
@@ -100,7 +100,7 @@ export function FieldManager({ fields, types }: Props) {
               <label className={styles.field}>
                 <span className={styles.label}>Field name</span>
                 <Input
-                  placeholder="Orator rank"
+                  placeholder="Speaker Type"
                   value={label}
                   onChange={(entry) => setLabel(entry.currentTarget.value)}
                 />
@@ -134,7 +134,7 @@ export function FieldManager({ fields, types }: Props) {
                   loading={pending}
                   onClick={create}
                 >
-                  Inscribe field
+                  Create field
                 </Button>
               </div>
             </div>
@@ -143,7 +143,7 @@ export function FieldManager({ fields, types }: Props) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Existing inscriptions</CardTitle>
+            <CardTitle>Existing fields</CardTitle>
           </CardHeader>
           <CardBody>
             {fields.length === 0 ? (
@@ -172,7 +172,7 @@ export function FieldManager({ fields, types }: Props) {
                         loading={pending}
                         onClick={() => remove(field.id)}
                       >
-                        Erase
+                        Delete
                       </Button>
                     </div>
                   </div>

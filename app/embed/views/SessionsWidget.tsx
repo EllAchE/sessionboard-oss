@@ -48,8 +48,8 @@ export function SessionsWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search orations, orators, or themes"
-          placeholder="Search orations, orators, or themes…"
+          label="Search talks, speakers, or topics"
+          placeholder="Search talks, speakers, or topics…"
         />
         <button
           type="button"
@@ -63,7 +63,7 @@ export function SessionsWidget({
           {activeFacets > 0 ? ` (${activeFacets})` : ''}
         </button>
         <span className={styles.resultCount} role="status">
-          {visible.length} of {bundle.sessions.length} orations
+          {visible.length} of {bundle.sessions.length} sessions
         </span>
       </div>
 
@@ -77,7 +77,7 @@ export function SessionsWidget({
       ) : null}
 
       {visible.length === 0 ? (
-        <p className={styles.empty}>No oration answers that search.</p>
+        <p className={styles.empty}>No sessions match that search.</p>
       ) : (
         <div className={styles.sessionList}>
           {visible.map((session) => (

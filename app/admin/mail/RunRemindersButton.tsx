@@ -33,7 +33,7 @@ export function RunRemindersButton() {
           })
         }
       >
-        Dispatch scheduled couriers
+        Run scheduled reminders
       </Button>
       {result && <span className={styles.subtle}>{result}</span>}
     </div>

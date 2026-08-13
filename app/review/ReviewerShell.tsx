@@ -26,29 +26,29 @@ export function ReviewerShell({
       <header className={styles.topbar}>
         <Link href="/review" className={styles.brand}>
           <CiceroBrand markSize={18} />
-          <span className={styles.brandRole}>Curia</span>
+          <span className={styles.brandRole}>Review</span>
         </Link>
-        <nav className={styles.nav} aria-label="Councillor">
+        <nav className={styles.nav} aria-label="Reviewer">
           <Link
             href="/review"
             className={styles.navLink}
             data-active={pathname === '/review'}
           >
-            My petitions
+            My queue
           </Link>
         </nav>
         <div className={styles.topbarRight}>
           <span className={styles.eventName}>{eventName}</span>
           {canDecide ? (
             <Link href="/admin/submissions" className={styles.navLink}>
-              Magistrate view
+              Organizer view
             </Link>
           ) : null}
           <ThemeToggle />
           <span className={styles.actor}>{actorName}</span>
           <form action={signOutAction}>
             <Button type="submit" variant="ghost" size="sm">
-              Leave the Forum
+              Sign out
             </Button>
           </form>
         </div>

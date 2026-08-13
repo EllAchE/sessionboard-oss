@@ -14,7 +14,7 @@ interface TagProps extends HTMLAttributes<HTMLSpanElement> {
 function Tag({
   tone = 'neutral',
   onRemove,
-  removeLabel = 'Remove mark',
+  removeLabel = 'Remove',
   className,
   children,
   ...rest

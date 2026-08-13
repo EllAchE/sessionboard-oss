@@ -74,7 +74,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
       const reader = new FileReader();
       reader.onload = () => editCsv(String(reader.result ?? ''), file.name);
       reader.onerror = () =>
-        toast({ title: 'The scribe could not read that tablet', tone: 'danger', description: file.name });
+        toast({ title: 'Could not read that file', tone: 'danger', description: file.name });
       reader.readAsText(file);
     },
     [editCsv, toast],
@@ -103,7 +103,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
       }
       setResult(outcome.data);
       toast({
-        title: `${outcome.data.created} petition${outcome.data.created === 1 ? '' : 's'} entered in the rolls`,
+        title: `${outcome.data.created} submission${outcome.data.created === 1 ? '' : 's'} imported`,
         tone: outcome.data.created > 0 ? 'success' : 'warning',
       });
       router.refresh();
@@ -113,11 +113,11 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
   const copyHeader = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(templateHeaderRow());
-      toast({ title: 'Header inscription copied', tone: 'success' });
+      toast({ title: 'Header row copied', tone: 'success' });
     } catch {
       toast({
-        title: 'Copying tablet unavailable',
-        description: 'Take the template scroll instead.',
+        title: 'Clipboard unavailable',
+        description: 'Use the template download instead.',
         tone: 'warning',
       });
     }
@@ -127,7 +127,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
     const url = URL.createObjectURL(new Blob([templateCsv()], { type: 'text/csv' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = 'cicero-petition-import-tablet.csv';
+    anchor.download = 'cicero-submission-import-template.csv';
     anchor.click();
     URL.revokeObjectURL(url);
   }, []);
@@ -137,7 +137,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
       { id: 'title', header: 'Title', strong: true, width: '30%', render: (row) => row.title },
       {
         id: 'speaker',
-        header: 'Orator',
+        header: 'Speaker',
         width: '24%',
         render: (row) => (
           <span className={styles.stacked}>
@@ -153,7 +153,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
       },
       {
         id: 'format',
-        header: 'Oration format',
+        header: 'Format',
         render: (row) => row.format ?? <span className={queue.muted}>—</span>,
       },
       {
@@ -195,10 +195,10 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
     <div className={queue.page}>
       <header className={queue.header}>
         <div className={queue.headings}>
-          <span className={queue.eyebrow}>The council</span>
-          <h1 className={queue.title}>Import petitions</h1>
+          <span className={queue.eyebrow}>Review</span>
+          <h1 className={queue.title}>Import submissions</h1>
           <p className={queue.subtitle}>
-            Tablet in, petitions out. Nothing enters the archive until you command the import.
+            CSV in, submissions out. Nothing is written until you press import.
           </p>
         </div>
         <div className={queue.actions}>
@@ -216,7 +216,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Required inscriptions</CardTitle>
+          <CardTitle>Expected columns</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.templateBar}>
@@ -262,18 +262,18 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Source scroll</CardTitle>
+          <CardTitle>Source</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.sourceBar}>
             <label className={styles.field}>
-              <span className={styles.label}>Target proclamation</span>
+              <span className={styles.label}>Target form</span>
               <Select
                 selectSize="sm"
                 value={formId}
                 onChange={(event) => setFormId(event.target.value)}
               >
-                {forms.length === 0 ? <option value="">No proclamation scroll yet</option> : null}
+                {forms.length === 0 ? <option value="">No CFP form yet</option> : null}
                 {forms.map((entry) => (
                   <option key={entry.id} value={entry.id}>
                     {entry.name} · {entry.status} · {entry.submissionCount} existing
@@ -307,7 +307,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
             className={styles.csv}
             rows={12}
             spellCheck={false}
-            aria-label="CSV petition roll to import"
+            aria-label="CSV to import"
             placeholder={templateHeaderRow()}
             value={csv}
             onChange={(event) => editCsv(event.target.value, null)}
@@ -325,7 +325,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
             >
               {preview && preview.rows.length > 0
                 ? `Import ${preview.rows.length} row${preview.rows.length === 1 ? '' : 's'}`
-                : 'Enter petitions in the rolls'}
+                : 'Import'}
             </Button>
           </div>
         </CardBody>
@@ -363,7 +363,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
                   columns={previewColumns}
                   rows={preview.rows.slice(0, PREVIEW_ROWS)}
                   getRowId={(row, index) => `${row.speakerEmail}-${index}`}
-                  label="Petitions ready to enter the rolls"
+                  label="Rows that will be imported"
                 />
                 {preview.rows.length > PREVIEW_ROWS ? (
                   <p className={queue.muted}>
@@ -372,8 +372,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
                 ) : null}
               </div>
             ) : (
-              <p className={queue.muted}>Nothing on this scroll can enter the rolls as it stands.
-              </p>
+              <p className={queue.muted}>Nothing in this file can be imported as it stands.</p>
             )}
           </CardBody>
         </Card>
@@ -382,7 +381,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
       {result ? (
         <Card>
           <CardHeader>
-            <CardTitle>Clerk’s report</CardTitle>
+            <CardTitle>Result</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.buckets}>
@@ -403,8 +402,8 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
             {partial ? (
               <p className={styles.partial}>
                 A partial import. The {result.created} row{result.created === 1 ? '' : 's'} above are
-                already in the Forum — amend and re-import only the rows listed below, or presenting
-                this tablet again will duplicate them.
+                already in the queue — fix and re-import only the rows listed below, or importing
+                this file again will duplicate them.
               </p>
             ) : null}
 

@@ -5,7 +5,7 @@ import { toColumnWire } from '../serialize';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Summoning campaign · Cicero' };
+export const metadata = { title: 'Sourcing pipeline · Cicero' };
 
 export default async function PipelinePage() {
   const actor = await requireCurrentActor();

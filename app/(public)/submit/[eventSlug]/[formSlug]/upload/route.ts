@@ -21,14 +21,14 @@ export async function POST(
   try {
     const { eventSlug, formSlug } = await params;
     const bundle = await loadPublicForm(eventSlug, formSlug);
-    if (!bundle || bundle.form.status === 'draft') throw invalid('That scroll is absent from the Forum');
-    if (!isAcceptingSubmissions(bundle.form)) throw invalid('This scroll is sealed');
+    if (!bundle || bundle.form.status === 'draft') throw invalid('That form could not be found');
+    if (!isAcceptingSubmissions(bundle.form)) throw invalid('This form is closed');
 
     const body = await request.formData();
     const picked = body.get('file');
-    if (!(picked instanceof File)) throw invalid('No scroll was attached');
-    if (picked.size === 0) throw invalid('That scroll is empty');
-    if (picked.size > MAX_BYTES) throw invalid('Scrolls must be 25 MB or smaller');
+    if (!(picked instanceof File)) throw invalid('No file was attached');
+    if (picked.size === 0) throw invalid('That file is empty');
+    if (picked.size > MAX_BYTES) throw invalid('Files must be 25 MB or smaller');
 
     const key = storageKey(bundle.event.id, picked.name);
     const contentType = picked.type || 'application/octet-stream';

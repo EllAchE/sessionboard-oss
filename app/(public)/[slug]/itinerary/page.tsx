@@ -14,12 +14,12 @@ type Search = Record<string, string | string[] | undefined>;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Assembly absent from the annals' };
+  if (!bundle) return { title: 'Event not found' };
   return createSocialMetadata({
     origin: appUrl(),
     path: `/${bundle.event.slug}/itinerary`,
-    title: `My route · ${bundle.event.name}`,
-    description: bundle.event.tagline ?? `Mark a personal route through ${bundle.event.name}.`,
+    title: `Schedule · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Build a personal schedule for ${bundle.event.name}.`,
   });
 }
 
@@ -39,9 +39,9 @@ export default async function PublicItineraryPage({
     <PublicChrome event={bundle.event} active="itinerary">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>My route through the Forum</h2>
+          <h2 className={styles.sectionTitle}>Schedule</h2>
           <span className={styles.sectionLink}>
-            Mark the orations you seek, then carry the route to your own calendar.
+            Star the talks you want and export them to your calendar.
           </span>
         </div>
         <EmbedBody

@@ -32,8 +32,8 @@ export type SpeakerWorkflowStatus = (typeof speakerWorkflowStatus.enumValues)[nu
 
 /** Pipeline order, so the roster filter and both selects present the same sequence. */
 export const SPEAKER_WORKFLOW_OPTIONS: Array<{ value: SpeakerWorkflowStatus; label: string }> = [
-  { value: 'invited', label: 'Summoned' },
-  { value: 'confirmed', label: 'Sworn in' },
+  { value: 'invited', label: 'Invited' },
+  { value: 'confirmed', label: 'Confirmed' },
   { value: 'declined', label: 'Declined' },
   { value: 'withdrawn', label: 'Withdrawn' },
 ];
@@ -62,23 +62,23 @@ export type SpeakerImportField = {
 export const SPEAKER_IMPORT_FIELDS: SpeakerImportField[] = [
   {
     key: 'email',
-    label: 'Dispatch address',
+    label: 'Email',
     required: true,
-    hint: 'Identifies the orator. An address already on the rolls updates that record instead of adding a second.',
+    hint: 'Identifies the speaker. A row whose email already exists updates that speaker instead of adding a second one.',
     example: 'ada@example.com',
     aliases: ['email', 'e mail', 'email address', 'speaker email', 'contact email'],
   },
   {
     key: 'name',
-    label: 'Orator’s full name',
+    label: 'Full name',
     required: false,
-    hint: 'Shown wherever the orator appears. Falls back to the dispatch address when blank.',
+    hint: 'Shown everywhere the speaker appears. Falls back to the email address when blank.',
     example: 'Ada Lovelace',
     aliases: ['name', 'full name', 'speaker', 'speaker name', 'display name', 'first name'],
   },
   {
     key: 'jobTitle',
-    label: 'Office or title',
+    label: 'Job title',
     required: false,
     hint: 'Free text.',
     example: 'Principal Engineer',
@@ -86,7 +86,7 @@ export const SPEAKER_IMPORT_FIELDS: SpeakerImportField[] = [
   },
   {
     key: 'company',
-    label: 'House or company',
+    label: 'Company',
     required: false,
     hint: 'Free text.',
     example: 'Analytical Engines Ltd',
@@ -94,9 +94,9 @@ export const SPEAKER_IMPORT_FIELDS: SpeakerImportField[] = [
   },
   {
     key: 'bioMarkdown',
-    label: 'Public biography',
+    label: 'Biography',
     required: false,
-    hint: 'Entered as markdown. Newlines inside a quoted cell are preserved.',
+    hint: 'Stored as markdown. Newlines inside a quoted cell are kept.',
     example: 'Wrote the first algorithm intended for a machine.',
     aliases: ['bio', 'biography', 'about', 'speaker bio', 'profile', 'description'],
   },
@@ -110,17 +110,17 @@ export const SPEAKER_IMPORT_FIELDS: SpeakerImportField[] = [
   },
   {
     key: 'website',
-    label: 'Road to the web',
+    label: 'Website',
     required: false,
-    hint: 'Added to the public likeness. A bare domain receives an https prefix.',
+    hint: 'Saved as a profile link. A bare domain gets an https prefix.',
     example: 'https://example.com/ada',
     aliases: ['website', 'url', 'link', 'homepage', 'web site', 'personal site'],
   },
   {
     key: 'workflowStatus',
-    label: 'Standing',
+    label: 'Status',
     required: false,
-    hint: 'Use invited, confirmed, declined, or withdrawn. Any other value enters the roll as invited.',
+    hint: 'Invited, confirmed, declined or withdrawn. Anything else lands as invited.',
     example: 'confirmed',
     aliases: [
       'status',
@@ -135,7 +135,7 @@ export const SPEAKER_IMPORT_FIELDS: SpeakerImportField[] = [
   },
   {
     key: 'timezone',
-    label: 'Home timezone',
+    label: 'Timezone',
     required: false,
     hint: 'Travel and logistics. Free text, so `Europe/London` and `GMT` both import.',
     example: 'Europe/London',
@@ -145,7 +145,7 @@ export const SPEAKER_IMPORT_FIELDS: SpeakerImportField[] = [
     key: 'dietaryNotes',
     label: 'Dietary needs',
     required: false,
-    hint: 'Travel and logistics. Visible only to the magistrates.',
+    hint: 'Travel and logistics. Visible to organizers only.',
     example: 'Vegetarian, no nuts',
     aliases: ['dietary needs', 'dietary', 'dietary requirements', 'diet', 'food', 'allergies'],
   },
@@ -274,7 +274,7 @@ export async function userIdForParticipant(
     where: and(eq(participant.id, participantId), eq(participant.eventId, ctx.eventId)),
     columns: { userId: true },
   });
-  if (!row) throw notFound('That orator');
+  if (!row) throw notFound('That speaker');
   return row.userId;
 }
 
@@ -284,7 +284,7 @@ export async function getSpeakerProfile(
 ): Promise<SpeakerProfile> {
   const all = await listSpeakerProfiles(ctx);
   const found = all.find((row) => row.id === participantId);
-  if (!found) throw notFound('That orator');
+  if (!found) throw notFound('That speaker');
   return found;
 }
 
@@ -314,7 +314,7 @@ function clean(value: string | null | undefined): string | undefined {
 
 function requireEmail(value: string | undefined): string {
   const email = clean(value)?.toLowerCase();
-  if (!email) throw invalid('An orator needs a dispatch address', { email: 'A dispatch address is required' });
+  if (!email) throw invalid('A speaker needs an email address', { email: 'Email is required' });
   if (!EMAIL.test(email)) {
     throw invalid('That does not look like an email address', { email: 'Enter a valid address' });
   }
@@ -352,7 +352,7 @@ async function participantRow(eventId: string, participantId: string): Promise<P
   const row = await getDb().query.participant.findFirst({
     where: and(eq(participant.id, participantId), eq(participant.eventId, eventId)),
   });
-  if (!row) throw notFound('That orator');
+  if (!row) throw notFound('That speaker');
   return row;
 }
 
@@ -439,7 +439,7 @@ export async function setSpeakerWorkflowStatus(
   requireCapability(ctx, 'event:manage');
 
   if (!SPEAKER_WORKFLOW_OPTIONS.some((option) => option.value === status)) {
-    throw invalid('That is not an orator standing', { workflowStatus: 'Unknown standing' });
+    throw invalid('That is not a speaker status', { workflowStatus: 'Unknown status' });
   }
 
   await participantRow(ctx.eventId, participantId);
@@ -529,7 +529,7 @@ export async function planSpeakerImport(
       sample: [],
       rows: [],
       skipped: [],
-      problems: ['That tablet has no heading row to map.'],
+      problems: ['That file has no header row to map.'],
     };
   }
 
@@ -543,10 +543,10 @@ export async function planSpeakerImport(
 
   const problems: string[] = [];
   if (!columnOf.has('email')) {
-    problems.push('Map one column to Dispatch address. It distinguishes a new orator from one already on the rolls.');
+    problems.push('Map one column to Email. It is what tells a new speaker from an existing one.');
   }
   if (table.rows.length === 0) {
-    problems.push('That tablet has a header row and no names beneath it.');
+    problems.push('That file has a header row and nothing under it.');
   }
   const sample = table.rows[0] ?? table.headers.map(() => '');
   if (problems.length > 0) {
@@ -578,7 +578,7 @@ export async function planSpeakerImport(
     const label = values.name || email || `Row ${line}`;
 
     if (!email) {
-      skipped.push({ line, label, reason: 'No dispatch address' });
+      skipped.push({ line, label, reason: 'No email address' });
       return;
     }
     if (!EMAIL.test(email)) {
@@ -587,7 +587,7 @@ export async function planSpeakerImport(
     }
     const duplicate = seen.get(email);
     if (duplicate) {
-      skipped.push({ line, label, reason: `Same dispatch address as line ${duplicate}` });
+      skipped.push({ line, label, reason: `Same email as line ${duplicate}` });
       return;
     }
     seen.set(email, line);

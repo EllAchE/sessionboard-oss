@@ -11,7 +11,7 @@ import { myDeliverable } from '../../deliverable';
 import { Uploader } from '../../Uploader';
 import { CommentThread, type CommentWire } from '../CommentThread';
 
-export const metadata = { title: 'Archived scroll · Orator atrium' };
+export const metadata = { title: 'Deliverable · Speaker portal' };
 
 /**
  * `CNT-01`, `CNT-04`, `CNT-05`. One deliverable, its whole version history and the review thread
@@ -48,20 +48,20 @@ export default async function DeliverablePage({
     <div className={styles.stack}>
       <div className={styles.pageHead}>
         <Link className={styles.backLink} href={`/portal/${eventSlug}/files`}>
-          <ChevronLeft size={14} aria-hidden /> All scrolls
+          <ChevronLeft size={14} aria-hidden /> All files
         </Link>
         <h1 className={styles.pageTitle}>{current.filename}</h1>
         <p className={styles.pageLead}>
-          {task ? task.name : 'Portrait'} · version {current.version} of {versions.length} ·{' '}
+          {task ? task.name : 'Headshot'} · version {current.version} of {versions.length} ·{' '}
           {formatBytes(current.sizeBytes)}
         </p>
       </div>
 
       <section className={styles.stackTight}>
-        <h2 className={styles.sectionTitle}>File a revised scroll</h2>
+        <h2 className={styles.sectionTitle}>Upload a replacement</h2>
         <p className={styles.hint}>
-          Lodging here adds version {current.version + 1}. Every earlier scroll remains in these
-          annals and available to copy.
+          Uploading here adds version {current.version + 1}. Every earlier version stays on this page
+          and stays downloadable.
         </p>
         <Uploader
           eventSlug={eventSlug}
@@ -70,12 +70,12 @@ export default async function DeliverablePage({
           accept={spec ? acceptAttribute(spec) : 'image/*'}
           acceptedLabel={spec ? describeAcceptedTypes(spec) : 'JPEG, PNG'}
           maxSizeMb={spec?.maxSizeMb ?? 10}
-          buttonLabel="Lodge a new version"
+          buttonLabel="Upload a new version"
         />
       </section>
 
       <section className={styles.stackTight}>
-        <h2 className={styles.sectionTitle}>The annals of this record</h2>
+        <h2 className={styles.sectionTitle}>Version history</h2>
         <ul className={styles.fileList}>
           {[...versions].reverse().map((version) => (
             <li key={version.id} className={styles.fileRow}>
@@ -90,7 +90,7 @@ export default async function DeliverablePage({
               {version.isCurrent && <Badge tone="success">Current</Badge>}
               <a
                 href={`/portal/${eventSlug}/file/${version.id}?download`}
-                aria-label={`Take version ${version.version} of ${version.filename}`}
+                aria-label={`Download version ${version.version} of ${version.filename}`}
               >
                 <Download size={15} />
               </a>
@@ -103,7 +103,7 @@ export default async function DeliverablePage({
         eventSlug={eventSlug}
         fileId={current.id}
         comments={commentWire}
-        emptyLabel="No counsel has been entered. Anything the magistrates write will appear here."
+        emptyLabel="No feedback on this one yet. Anything the organizers write appears here."
       />
     </div>
   );

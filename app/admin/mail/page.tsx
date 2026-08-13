@@ -83,11 +83,11 @@ export default async function MailboxPage({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>The courier house</p>
-          <h1 className={styles.title}>Courier archive</h1>
+          <p className={styles.eyebrow}>Communications</p>
+          <h1 className={styles.title}>Mailbox</h1>
           <p className={styles.lede}>
-            Every dispatch sent or attempted for this event, with its rendered scroll, calendar
-            summons, and any obstruction the courier reported.
+            Every message this event has sent or tried to send, with its rendered body, its
+            calendar attachment and any error the provider returned.
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -101,7 +101,7 @@ export default async function MailboxPage({
         <Badge tone={transport === 'log' ? 'info' : 'success'}>transport: {transport}</Badge>
         {transport === 'log' && (
           <span className={styles.subtle}>
-            No courier leaves the server. Every dispatch an orator would receive is preserved here.
+            Nothing leaves the server. Everything a speaker would have received is readable here.
           </span>
         )}
         <span className={styles.spacer} />
@@ -114,7 +114,7 @@ export default async function MailboxPage({
           {messages.length === 0 && (
             <p className={styles.empty}>
               <Inbox size={20} />
-              The archive is empty. Accept a petition or write a dispatch.
+              No mail yet. Accept a submission or send a message from Compose.
             </p>
           )}
           {messages.map((message) => (
@@ -141,7 +141,7 @@ export default async function MailboxPage({
           {!selected && (
             <p className={styles.empty}>
               <Inbox size={20} />
-              Choose a dispatch to unroll.
+              Choose a message.
             </p>
           )}
 
@@ -176,14 +176,14 @@ export default async function MailboxPage({
                   <CardBody>
                     <div className={styles.row}>
                       <CalendarDays size={16} />
-                      <strong>Calendar summons attached</strong>
+                      <strong>Calendar invitation attached</strong>
                       <span className={styles.spacer} />
                       <a
                         className={styles.variableChip}
                         href={`/api/mail/${selected.id}/ics`}
                         download
                       >
-                        <Download size={13} /> Download fasti scroll (.ics)
+                        <Download size={13} /> Download .ics
                       </a>
                     </div>
                     <pre className={styles.plainText}>{selected.icsBody}</pre>
@@ -196,7 +196,7 @@ export default async function MailboxPage({
                   <CardBody>
                     <div className={styles.row}>
                       <Link2 size={16} />
-                      <strong>Roads named in this dispatch</strong>
+                      <strong>Links in this message</strong>
                     </div>
                     <div className={styles.linkList} style={{ marginTop: 'var(--space-2)' }}>
                       {linksIn(selected.bodyHtml).map((href) => (
@@ -215,7 +215,7 @@ export default async function MailboxPage({
               />
 
               <details>
-                <summary className={styles.subtle}>Plain-text tablet</summary>
+                <summary className={styles.subtle}>Plain-text part</summary>
                 <pre className={styles.plainText}>{selected.bodyText}</pre>
               </details>
             </>

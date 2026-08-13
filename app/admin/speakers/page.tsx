@@ -8,7 +8,7 @@ import styles from './speakers.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Orators · Cicero' };
+export const metadata = { title: 'Speakers · Cicero' };
 
 function Counter({
   value,
@@ -42,46 +42,46 @@ export default async function AdminSpeakersPage() {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>The census</p>
-          <h1 className={styles.title}>Orators</h1>
+          <p className={styles.eyebrow}>Program</p>
+          <h1 className={styles.title}>Speakers</h1>
           <p className={styles.subtitle}>
-            Every orator on the event roll, with their likeness, journey, and preparations.
+            Everyone on this event&rsquo;s roster, with their profile, travel and logistics state.
           </p>
         </div>
         {manages ? (
           <div className={styles.headActions}>
             <Button href="/admin/speakers/import" iconLeft={<Upload size={15} />}>
-              Import tablet
+              Import CSV
             </Button>
             <Button
               href="/admin/speakers/new"
               variant="primary"
               iconLeft={<Plus size={15} />}
             >
-              Summon an orator
+              Add speaker
             </Button>
           </div>
         ) : null}
       </div>
 
       <div className={styles.counterGrid}>
-        <Counter value={speakers.length} label="Orators" />
-        <Counter value={confirmed} label="Confirmed orators" tone="success" />
+        <Counter value={speakers.length} label="Speakers" />
+        <Counter value={confirmed} label="Confirmed speakers" tone="success" />
         <Counter
           value={incomplete}
-          label="Incomplete public likenesses"
+          label="Incomplete profiles"
           tone={incomplete > 0 ? 'warning' : 'success'}
         />
         <Counter
           value={noTravel}
-          label="No journey details"
+          label="No travel details"
           tone={noTravel > 0 ? 'warning' : 'success'}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Roll of orators</CardTitle>
+          <CardTitle>Roster</CardTitle>
         </CardHeader>
         <CardBody>
           <SpeakerRoster

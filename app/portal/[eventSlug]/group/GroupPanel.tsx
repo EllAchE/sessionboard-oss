@@ -48,7 +48,7 @@ export function GroupPanel({
               </div>
               <div className={styles.row}>
                 <Badge tone={member.isPrimary ? 'accent' : 'neutral'}>
-                  {member.isPrimary ? 'Principal orator' : (ROLE_LABEL[member.kind] ?? member.kind)}
+                  {member.isPrimary ? 'Primary speaker' : (ROLE_LABEL[member.kind] ?? member.kind)}
                 </Badge>
                 {canManage && !member.isPrimary && !member.isMe && (
                   <form action={revoke} className={styles.inlineForm}>
@@ -79,7 +79,7 @@ export function GroupPanel({
                     id={`share-email-${submissionId}`}
                     name="email"
                     type="email"
-                    placeholder="fellow-orator@example.com"
+                    placeholder="co-speaker@example.com"
                     invalid={Boolean(shareState.details?.email)}
                   />
                   <FieldError state={shareState} field="email" />
@@ -95,10 +95,10 @@ export function GroupPanel({
                     Their role
                   </label>
                   <Select id={`share-kind-${submissionId}`} name="kind" defaultValue="co_speaker">
-                    <option value="co_speaker">Fellow orator</option>
+                    <option value="co_speaker">Co-speaker</option>
                     <option value="moderator">Moderator</option>
                     <option value="panelist">Panelist</option>
-                    <option value="speaker">Orator</option>
+                    <option value="speaker">Speaker</option>
                   </Select>
                 </div>
               </div>
@@ -109,12 +109,12 @@ export function GroupPanel({
                 </SubmitButton>
               </div>
               <span className={styles.hint}>
-                A courier brings their own sealed link and duties for this oration.
+                They get an email with their own sign-in link and their own tasks for this session.
               </span>
             </form>
           ) : (
             <p className={styles.hint}>
-              Only the principal orator may change the delegation for this oration.
+              Only the primary speaker can add or remove people on this session.
             </p>
           )}
         </div>

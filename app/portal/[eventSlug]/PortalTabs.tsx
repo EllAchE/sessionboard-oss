@@ -22,7 +22,7 @@ export function PortalTabs({ tabs }: { tabs: PortalTab[] }) {
     .sort((a, b) => b.href.length - a.href.length)[0]?.id;
 
   return (
-    <nav className={styles.tabs} aria-label="Orator atrium">
+    <nav className={styles.tabs} aria-label="Speaker portal">
       {tabs.map((tab) => (
         <Link
           key={tab.id}

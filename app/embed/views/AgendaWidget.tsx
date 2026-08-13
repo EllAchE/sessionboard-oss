@@ -156,7 +156,7 @@ export function AgendaWidget({
   const open = openId ? bundle.sessions.find((session) => session.id === openId) : undefined;
 
   if (days.length === 0 || !day || !layout) {
-    return <p className={styles.empty}>The fasti remain under seal.</p>;
+    return <p className={styles.empty}>The schedule has not been published yet.</p>;
   }
 
   if (open) {
@@ -165,7 +165,7 @@ export function AgendaWidget({
         <div className={styles.backRow}>
           <button type="button" className={styles.controlButton} onClick={() => setOpenId(null)}>
             <ArrowLeft size={14} aria-hidden />
-            Back to the fasti
+            Back to agenda
           </button>
         </div>
         <div className={styles.detail}>
@@ -182,7 +182,7 @@ export function AgendaWidget({
           </div>
           {open.speakers.length > 0 ? (
             <div className={styles.detailSection}>
-              <span className={styles.detailSectionTitle}>Orators</span>
+              <span className={styles.detailSectionTitle}>Speakers</span>
               <SpeakerRoster session={open} speakerBase={speakerBase} />
             </div>
           ) : null}
@@ -194,7 +194,7 @@ export function AgendaWidget({
                 dangerouslySetInnerHTML={{ __html: open.descriptionHtml }}
               />
             ) : (
-              <p className={styles.speakerRole}>No argument has yet been proclaimed.</p>
+              <p className={styles.speakerRole}>No description has been published yet.</p>
             )}
           </div>
         </div>
@@ -233,7 +233,7 @@ export function AgendaWidget({
         </button>
       </div>
 
-      <div className={styles.dayTabs} role="tablist" aria-label="Assembly days">
+      <div className={styles.dayTabs} role="tablist" aria-label="Event days">
         {days.map((entry, index) => (
           <button
             key={entry.date}

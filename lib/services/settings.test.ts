@@ -286,7 +286,7 @@ describe('removeTrack', () => {
 
     const error = await rejection(removeTrack(context(), 'track-b'));
     expect(error.code).toBe('conflict');
-    expect(error.message).toBe('That track is still used by 2 petitions and 3 inscribed orations');
+    expect(error.message).toBe('That track is still used by 2 submissions and 3 scheduled sessions');
     expect(rec.deletes).toHaveLength(0);
   });
 

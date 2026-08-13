@@ -26,8 +26,8 @@ export function MailSearch({ initial, eventSlug }: { initial: string; eventSlug?
       <Input
         inputSize="sm"
         value={value}
-        placeholder="Recipient or dispatch subject"
-        aria-label="Search the courier archive"
+        placeholder="Recipient or subject"
+        aria-label="Search the mailbox"
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') apply();

@@ -106,7 +106,7 @@ export function ContactProfile({
         return;
       }
       setNote('');
-      toast({ title: 'Note entered in the annals', tone: 'success' });
+      toast({ title: 'Note saved', tone: 'success' });
       router.refresh();
     });
   };
@@ -129,7 +129,7 @@ export function ContactProfile({
         return;
       }
       setEditing(false);
-      toast({ title: 'Census record revised', tone: 'success' });
+      toast({ title: 'Profile updated', tone: 'success' });
       router.refresh();
     });
   };
@@ -146,7 +146,7 @@ export function ContactProfile({
         setError(result.error);
         return;
       }
-      toast({ title: 'Entered in the annals', tone: 'success' });
+      toast({ title: 'Saved', tone: 'success' });
       router.refresh();
     });
   };
@@ -165,7 +165,7 @@ export function ContactProfile({
       }
       toast({
         title: `Added to ${result.data.eventName}`,
-        description: 'Name, email, house, and biography carried to the roll of orators.',
+        description: 'Name, email, company and bio carried over to the speakers module.',
         tone: 'success',
       });
       router.refresh();
@@ -177,7 +177,7 @@ export function ContactProfile({
       <div className={styles.pageHead}>
         <div>
           <p className={styles.eyebrow}>
-            <Link href="/crm">Census of orators</Link>
+            <Link href="/crm">Speaker directory</Link>
           </p>
           <h1 className={styles.title}>{contact.name}</h1>
           <p className={styles.subtitle}>
@@ -192,7 +192,7 @@ export function ContactProfile({
             iconLeft={<Pencil size={14} />}
             onClick={() => setEditing(true)}
           >
-            Revise likeness
+            Edit profile
           </Button>
           <Button
             size="sm"
@@ -217,7 +217,7 @@ export function ContactProfile({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img className={styles.headshot} src={contact.headshotUrl} alt={contact.name} />
                   ) : (
-                    <div className={styles.headshotEmpty}>Portrait not commissioned</div>
+                    <div className={styles.headshotEmpty}>No headshot</div>
                   )}
                   <div className={styles.identityBody}>
                     <span className={styles.value}>{contact.email}</span>
@@ -236,20 +236,20 @@ export function ContactProfile({
                     ) : null}
                   </div>
                 </div>
-                <p className={styles.bio}>{contact.bioMarkdown ?? 'No biography in the annals.'}</p>
+                <p className={styles.bio}>{contact.bioMarkdown ?? 'No bio on file yet.'}</p>
               </div>
             </CardBody>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Private annals</CardTitle>
+              <CardTitle>Internal notes</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
                 <Textarea
                   rows={3}
-                  placeholder="Only the inner council sees this."
+                  placeholder="Only your team sees this."
                   aria-label="Internal note"
                   value={note}
                   onChange={(entry) => setNote(entry.currentTarget.value)}
@@ -262,11 +262,11 @@ export function ContactProfile({
                     loading={pending}
                     onClick={saveNote}
                   >
-                    Seal note
+                    Save note
                   </Button>
                 </div>
                 {notes.length === 0 ? (
-                  <p className={styles.hint}>No notes in the annals.</p>
+                  <p className={styles.hint}>No notes yet.</p>
                 ) : (
                   notes.map((entry) => (
                     <div key={entry.id} className={styles.note}>
@@ -283,11 +283,11 @@ export function ContactProfile({
 
           <Card>
             <CardHeader>
-              <CardTitle>Public record</CardTitle>
+              <CardTitle>Activity</CardTitle>
             </CardHeader>
             <CardBody>
               {activity.length === 0 ? (
-                <p className={styles.hint}>The annals hold no deed for this name yet.</p>
+                <p className={styles.hint}>Nothing has happened on this record yet.</p>
               ) : (
                 <div className={styles.timeline}>
                   {activity.map((entry) => (
@@ -310,12 +310,12 @@ export function ContactProfile({
         <div className={styles.stack}>
           <Card>
             <CardHeader>
-              <CardTitle>Assemblies</CardTitle>
+              <CardTitle>Events</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
                 {events.length === 0 ? (
-                  <p className={styles.hint}>Not yet appointed to any assembly.</p>
+                  <p className={styles.hint}>Not yet on any event.</p>
                 ) : (
                   events.map((entry) => (
                     <div key={entry.eventId} className={styles.spread}>
@@ -327,11 +327,11 @@ export function ContactProfile({
                 {pushable.length > 0 ? (
                   <>
                     <label className={styles.field}>
-                      <span className={styles.label}>Appoint to an event</span>
+                      <span className={styles.label}>Add to an event</span>
                       <Select
                         selectSize="sm"
                         value={pushEventId}
-                        aria-label="Assembly to summon this citizen to"
+                        aria-label="Event to add this contact to"
                         onChange={(entry) => setPushEventId(entry.currentTarget.value)}
                       >
                         {pushable.map((entry) => (
@@ -351,8 +351,8 @@ export function ContactProfile({
                       Add to event
                     </Button>
                     <p className={styles.hint}>
-                      Enters the orator on that assembly&rsquo;s roll with this name, dispatch address,
-                      affiliation, and biography already inscribed.
+                      Creates the speaker in that event&rsquo;s roster with this name, email,
+                      company and bio already filled in.
                     </p>
                   </>
                 ) : null}
@@ -363,7 +363,7 @@ export function ContactProfile({
                     href="/admin/speakers"
                     iconRight={<ArrowUpRight size={14} />}
                   >
-                    Open the orator census
+                    Open the speakers module
                   </Button>
                 ) : null}
               </div>
@@ -372,12 +372,12 @@ export function ContactProfile({
 
           <Card>
             <CardHeader>
-              <CardTitle>Custom inscriptions</CardTitle>
+              <CardTitle>Custom fields</CardTitle>
             </CardHeader>
             <CardBody>
               {fields.length === 0 ? (
                 <p className={styles.hint}>
-                  No custom inscriptions yet. <Link href="/crm/fields">Inscribe one</Link>.
+                  No organizer-defined fields yet. <Link href="/crm/fields">Create one</Link>.
                 </p>
               ) : (
                 <div className={styles.stack}>
@@ -421,11 +421,11 @@ export function ContactProfile({
 
           <Card>
             <CardHeader>
-              <CardTitle>Summoning</CardTitle>
+              <CardTitle>Sourcing</CardTitle>
             </CardHeader>
             <CardBody>
               {prospects.length === 0 ? (
-                <p className={styles.hint}>Not under recruitment.</p>
+                <p className={styles.hint}>Not on the sourcing pipeline.</p>
               ) : (
                 <div className={styles.stack}>
                   {prospects.map((entry) => (
@@ -434,7 +434,7 @@ export function ContactProfile({
                       href={`/crm/pipeline/${entry.id}`}
                       className={styles.spread}
                     >
-                      <span className={styles.value}>{entry.eventName ?? 'No assembly yet'}</span>
+                      <span className={styles.value}>{entry.eventName ?? 'No event yet'}</span>
                       <span className={styles.row}>
                         {entry.score !== null ? <Badge>{entry.score}</Badge> : null}
                         <Badge tone="accent">{entry.stageLabel}</Badge>
@@ -451,14 +451,14 @@ export function ContactProfile({
       <Dialog
         open={editing}
         onOpenChange={setEditing}
-        title="Revise the census record"
+        title="Edit contact"
         footer={
           <>
             <Button variant="ghost" onClick={() => setEditing(false)}>
               Cancel
             </Button>
             <Button variant="primary" loading={pending} onClick={saveProfile}>
-              Seal changes
+              Save
             </Button>
           </>
         }
@@ -472,7 +472,7 @@ export function ContactProfile({
             />
           </label>
           <label className={styles.field}>
-            <span className={styles.label}>Dispatch address</span>
+            <span className={styles.label}>Email</span>
             <Input
               value={draft.email}
               onChange={(e) => setDraft({ ...draft, email: e.currentTarget.value })}

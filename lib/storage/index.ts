@@ -48,7 +48,7 @@ function r2Storage(bucket: R2Bucket): Storage {
     },
     async get(key) {
       const object = await bucket.get(key);
-      if (!object) throw notFound('That record');
+      if (!object) throw notFound('That file');
       return {
         body: object.body,
         contentType: object.httpMetadata?.contentType ?? 'application/octet-stream',
@@ -97,7 +97,7 @@ function s3Storage(): Storage {
     async get(key) {
       const { GetObjectCommand } = await import('@aws-sdk/client-s3');
       const object = await (await client()).send(new GetObjectCommand({ Bucket: bucket, Key: key }));
-      if (!object.Body) throw notFound('That record');
+      if (!object.Body) throw notFound('That file');
       return {
         body: object.Body.transformToWebStream() as ReadableStream<Uint8Array>,
         contentType: object.ContentType ?? 'application/octet-stream',
@@ -139,7 +139,7 @@ function postgresStorage(): Storage {
         import('drizzle-orm'),
       ]);
       const [row] = await getDb().select().from(fileBlob).where(eq(fileBlob.storageKey, key));
-      if (!row) throw notFound('That record');
+      if (!row) throw notFound('That file');
       const bytes = row.bytes;
       return {
         body: new ReadableStream<Uint8Array>({

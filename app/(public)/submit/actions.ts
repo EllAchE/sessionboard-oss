@@ -86,17 +86,17 @@ async function sendSubmissionEmails(input: {
   // `F-12`. Organizer copy when they wrote some, a working default when they did not — a submitter
   // who gets no acknowledgement assumes the form ate their talk.
   const subject = fill(
-    formRow?.confirmationSubject || `${input.displayRef}: your petition is on the rolls`,
+    formRow?.confirmationSubject || `${input.displayRef}: we have your submission`,
     tokens,
   );
   const bodyMarkdown = fill(
     formRow?.confirmationBodyMarkdown ||
       [
-        `Salve${input.toName ? ' {{name}}' : ''} — **{{title}}** is on the rolls.`,
+        `Thanks${input.toName ? ' {{name}}' : ''} — **{{title}}** is in.`,
         '',
         'Your reference is **{{ref}}**.',
         '',
-        '[Enter your orator atrium]({{portal_url}}) to inscribe a life, a likeness, and anything else the organizers decree.',
+        '[Open your speaker portal]({{portal_url}}) to add a bio, a headshot and anything else the organizers ask for.',
       ].join('\n'),
     markdownTokens,
   );
@@ -115,9 +115,9 @@ async function sendSubmissionEmails(input: {
     const notificationMarkdown = `**${escapeMarkdownText(input.title)}** (${escapeMarkdownText(input.displayRef)}) was submitted to ${escapeMarkdownText(input.eventName)} by ${escapeMarkdownText(input.toEmail)}.`;
     await sendMail({
       to: address,
-      subject: `New petition ${input.displayRef}: ${input.title}`,
+      subject: `New submission ${input.displayRef}: ${input.title}`,
       html: renderTrustedMarkdown(notificationMarkdown),
-      text: `${input.title} (${input.displayRef}) was presented to ${input.eventName} by ${input.toEmail}.`,
+      text: `${input.title} (${input.displayRef}) was submitted to ${input.eventName} by ${input.toEmail}.`,
       eventId: input.eventId,
       templateKey: 'submission.notify',
     });
@@ -132,9 +132,9 @@ async function sendSubmissionEmails(input: {
 export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitResult> {
   try {
     const bundle = await loadPublicForm(payload.eventSlug, payload.formSlug);
-    if (!bundle) throw invalid('That proclamation for orators is absent from the Forum');
+    if (!bundle) throw invalid('That call for speakers could not be found');
     if (!isAcceptingSubmissions(bundle.form)) {
-      throw invalid('This call for orators is not accepting petitions right now');
+      throw invalid('This call for speakers is not accepting submissions right now');
     }
 
     const actor = await currentActor();
@@ -154,7 +154,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
       const account = await getDb().query.user.findFirst({
         where: eq(userTable.email, normalizeEmail(requested.email)),
       });
-      if (!account) throw invalid('We could not enter your name in the rolls', { submitterEmail: 'Try once more' });
+      if (!account) throw invalid('We could not create your account', { submitterEmail: 'Try again' });
       userId = account.id;
       openedSession = true;
     }

@@ -72,13 +72,13 @@ export function DeliverableDetail({
     start(async () => {
       const result = await postFileCommentAction(currentId, body);
       if (!result.ok) {
-        toast({ title: 'Not entered in the annals', description: result.message, tone: 'danger' });
+        toast({ title: 'Not posted', description: result.message, tone: 'danger' });
         return;
       }
       setBody('');
       toast({
-        title: 'Counsel dispatched',
-        description: `${ownerName ?? 'The orator'} sees this in their atrium.`,
+        title: 'Feedback sent',
+        description: `${ownerName ?? 'The speaker'} sees this on their portal.`,
         tone: 'success',
       });
       router.refresh();
@@ -91,10 +91,10 @@ export function DeliverableDetail({
 
       <header className={queue.header}>
         <div className={queue.headings}>
-          <span className={queue.eyebrow}>Archived scroll</span>
+          <span className={queue.eyebrow}>Deliverable</span>
           <h1 className={queue.title}>{filename}</h1>
           <p className={queue.subtitle}>
-            {ownerName ?? 'Loose scroll'} ·{' '}
+            {ownerName ?? 'Unattached'} ·{' '}
             {versions.length === 1 ? '1 version' : `${versions.length} versions`}
             {submissionId && submissionTitle ? (
               <>
@@ -112,11 +112,11 @@ export function DeliverableDetail({
             iconLeft={<ChevronLeft size={14} />}
             onClick={() => router.push('/admin/submissions/files')}
           >
-            Return to the archive
+            Back to files
           </Button>
           <a href={`/admin/submissions/files/${currentId}`}>
             <Button variant="primary" iconLeft={<Download size={14} />}>
-              Take the current scroll
+              Download current
             </Button>
           </a>
         </div>
@@ -125,7 +125,7 @@ export function DeliverableDetail({
       <div className={styles.split}>
         <Card>
           <CardHeader>
-            <CardTitle>Record through the ages</CardTitle>
+            <CardTitle>Version history</CardTitle>
           </CardHeader>
           <CardBody>
             <ul className={styles.rowList}>
@@ -141,7 +141,7 @@ export function DeliverableDetail({
                   {version.isCurrent && <Badge tone="success">Current</Badge>}
                   <a
                     href={`/admin/submissions/files/${version.id}`}
-                    aria-label={`Take version ${version.version}`}
+                    aria-label={`Download version ${version.version}`}
                   >
                     <Download size={15} />
                   </a>
@@ -153,14 +153,14 @@ export function DeliverableDetail({
 
         <Card>
           <CardHeader>
-            <CardTitle>Notes from the council</CardTitle>
+            <CardTitle>Review feedback</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>
               {comments.length === 0 ? (
                 <p className={queue.muted}>
-                  No counsel has entered the annals. Anything written here appears beside this
-                  scroll in the orator&apos;s atrium.
+                  No feedback yet. Anything written here appears on the speaker&apos;s portal against
+                  this file.
                 </p>
               ) : (
                 <ul className={styles.rowList}>
@@ -184,13 +184,13 @@ export function DeliverableDetail({
 
               <div className={styles.field}>
                 <label className={styles.fieldLabel} htmlFor="deliverable-comment">
-                  Leave counsel for the orator
+                  Leave feedback for the speaker
                 </label>
                 <Textarea
                   id="deliverable-comment"
                   rows={4}
                   value={body}
-                  placeholder="What must be revised before this enters the official archive?"
+                  placeholder="What needs to change before this is accepted?"
                   onChange={(event) => setBody(event.target.value)}
                 />
               </div>
@@ -201,9 +201,9 @@ export function DeliverableDetail({
                   disabled={pending || body.trim().length === 0}
                   onClick={post}
                 >
-                  {pending ? 'Inscribing…' : 'Enter counsel in the annals'}
+                  {pending ? 'Posting…' : 'Post feedback'}
                 </Button>
-                <span className={styles.faint}>The orator sees this in their atrium.</span>
+                <span className={styles.faint}>The speaker sees this on their portal.</span>
               </div>
             </div>
           </CardBody>

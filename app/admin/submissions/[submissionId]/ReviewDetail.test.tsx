@@ -71,7 +71,7 @@ describe('ReviewDetail reviewer assignments', () => {
   it('shows every event reviewer and checks only the reviewer assigned to this submission', () => {
     const html = renderToStaticMarkup(<ReviewDetail {...props} />);
 
-    expect(html).toContain('Councillor assignments');
+    expect(html).toContain('Reviewer assignments');
     expect(html).toContain('Reviewer One · one@example.test');
     expect(html).toContain('Reviewer Two · two@example.test');
     expect(html.match(/type="checkbox"/g)).toHaveLength(2);
@@ -81,7 +81,7 @@ describe('ReviewDetail reviewer assignments', () => {
   it('does not expose assignment controls without decision permission', () => {
     const html = renderToStaticMarkup(<ReviewDetail {...props} canDecide={false} />);
 
-    expect(html).not.toContain('Councillor assignments');
+    expect(html).not.toContain('Reviewer assignments');
     expect(html).not.toContain('one@example.test');
   });
 });

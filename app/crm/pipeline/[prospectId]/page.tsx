@@ -5,7 +5,7 @@ import { ProspectDetail } from './ProspectDetail';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Prospective orator · Cicero' };
+export const metadata = { title: 'Prospect · Cicero' };
 
 export default async function ProspectPage({
   params,

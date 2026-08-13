@@ -40,15 +40,15 @@ export function planArchive(subjects: ArchiveSubject[]): Array<{ fileId: string;
 }
 
 export function archiveFilename(now = new Date()): string {
-  return `cicero-records-${now.toISOString().slice(0, 10)}.zip`;
+  return `cicero-files-${now.toISOString().slice(0, 10)}.zip`;
 }
 
 export type ArchiveRefusal = { message: string } | null;
 
 export function checkArchiveBudget(count: number, totalBytes: number): ArchiveRefusal {
-  if (count === 0) return { message: 'Select at least one scroll' };
+  if (count === 0) return { message: 'Select at least one file' };
   if (count > ARCHIVE_MAX_FILES) {
-    return { message: `One archive holds up to ${ARCHIVE_MAX_FILES} records. Narrow the inscriptions and download in batches.` };
+    return { message: `One archive holds up to ${ARCHIVE_MAX_FILES} files. Narrow the filters and download in batches.` };
   }
   if (totalBytes > ARCHIVE_MAX_BYTES) {
     const gigabytes = (totalBytes / ARCHIVE_MAX_BYTES).toFixed(1);

@@ -20,7 +20,7 @@ import {
 import styles from '../portal.module.css';
 import { portalSession, speakerName } from './context';
 
-export const metadata = { title: 'Orator atrium · Cicero' };
+export const metadata = { title: 'Speaker portal · Cicero' };
 
 /**
  * `S-1`. The screen answers one question before any other: what do I owe, and by when. Everything
@@ -55,7 +55,7 @@ export default async function PortalHomePage({
   return (
     <div className={styles.stack}>
       <section className={styles.hero}>
-        <h1 className={styles.pageTitle}>Salve, {speakerName(me, ctx).split(' ')[0]}</h1>
+        <h1 className={styles.pageTitle}>Hello, {speakerName(me, ctx).split(' ')[0]}</h1>
         {branding.welcomeHtml ? (
           <div
             className={styles.prose}
@@ -64,36 +64,36 @@ export default async function PortalHomePage({
           />
         ) : (
           <p className={styles.pageLead}>
-            This is your private atrium for {event.name} . Settle the duties below at your pace—every
-            word and scroll will be waiting when you return.
+            This is where {event.name} collects everything it needs from you. Work through what is
+            outstanding below — nothing here is lost if you leave and come back.
           </p>
         )}
       </section>
 
       <section className={styles.statGrid}>
         <Stat
-          label="Unsettled duties"
+          label="Outstanding tasks"
           value={String(summary.outstanding)}
           alert={summary.outstanding > 0}
         />
         <Stat label="Overdue" value={String(summary.overdue)} alert={summary.overdue > 0} />
         <Stat
-          label="Next due date"
+          label="Next deadline"
           value={summary.nextDueAt ? formatDate(summary.nextDueAt, event.timezone) : 'None'}
         />
-        <Stat label="Accepted orations" value={String(accepted.length)} />
+        <Stat label="Accepted sessions" value={String(accepted.length)} />
       </section>
 
       <section>
         <h2 className={styles.sectionTitle}>
-          <CircleDot size={16} aria-hidden /> Duties owed to the Forum
+          <CircleDot size={16} aria-hidden /> What you owe
         </h2>
         {outstanding.length === 0 ? (
           <div className={styles.empty}>
-            <div className={styles.emptyTitle}>Your ledger is clear</div>
+            <div className={styles.emptyTitle}>You are all caught up</div>
             <p>
-              No duty remains. If the organizers issue another, it will appear here and a dispatch
-              will reach you.
+              Nothing is outstanding right now. If the organizers add a task, it will appear here and
+              you will get an email.
             </p>
           </div>
         ) : (
@@ -130,7 +130,7 @@ export default async function PortalHomePage({
             <div className={styles.checkRow}>
               <Link href={`${base}/tasks`}>
                 <Button variant="secondary" size="sm" iconRight={<ArrowRight size={14} />}>
-                  Open all {summary.total} duties
+                  Open all {summary.total} tasks
                 </Button>
               </Link>
             </div>
@@ -140,13 +140,13 @@ export default async function PortalHomePage({
 
       <div className={styles.grid2}>
         <section>
-          <h2 className={styles.sectionTitle}>Your orations</h2>
+          <h2 className={styles.sectionTitle}>Your sessions</h2>
           <Card>
             <CardBody>
               {submissions.length === 0 ? (
                 <p className={styles.muted}>
-                  No petition on {event.name} bears your name yet. Once one is filed, its standing
-                  appears here.
+                  You have no sessions on {event.name} yet. Once a talk is submitted it shows up here
+                  with its status.
                 </p>
               ) : (
                 <div className={styles.stackTight}>
@@ -177,7 +177,7 @@ export default async function PortalHomePage({
                   ))}
                   {pending.length > 0 && (
                     <p className={styles.faint}>
-                      {pending.length} still await the council’s verdict.
+                      {pending.length} still awaiting a decision from the programme committee.
                     </p>
                   )}
                 </div>
@@ -187,18 +187,17 @@ export default async function PortalHomePage({
         </section>
 
         <section>
-          <h2 className={styles.sectionTitle}>Your public likeness</h2>
+          <h2 className={styles.sectionTitle}>Your profile</h2>
           <Card>
             <CardHeader>
               <CardTitle>
-                {gaps.length === 0 ? 'Your likeness is ready for the Forum' : `${gaps.length} inscriptions remain`}
+                {gaps.length === 0 ? 'Your profile is complete' : `${gaps.length} things left`}
               </CardTitle>
             </CardHeader>
             <CardBody>
               {gaps.length === 0 ? (
                 <p className={styles.muted}>
-                  Your biography, portrait, and roads elsewhere are what organizers proclaim
-                  publicly.
+                  Your bio, headshot and links are what the organizers publish on the programme.
                 </p>
               ) : (
                 <div className={styles.stackTight}>
@@ -213,7 +212,7 @@ export default async function PortalHomePage({
               <div className={styles.taskActions} style={{ marginTop: 'var(--space-4)' }}>
                 <Link href={`${base}/profile`}>
                   <Button size="sm" variant={gaps.length > 0 ? 'primary' : 'secondary'}>
-                    {gaps.length > 0 ? 'Complete your likeness' : 'Revise your likeness'}
+                    {gaps.length > 0 ? 'Finish your profile' : 'Edit profile'}
                   </Button>
                 </Link>
               </div>
@@ -224,7 +223,7 @@ export default async function PortalHomePage({
 
       {pages.length > 0 && (
         <section>
-          <h2 className={styles.sectionTitle}>Notices to orators</h2>
+          <h2 className={styles.sectionTitle}>Speaker information</h2>
           <div className={styles.typeGrid}>
             {pages.map((page) => (
               <Link key={page.id} href={`${base}/pages/${page.slug}`} className={styles.typeCard}>
@@ -237,7 +236,7 @@ export default async function PortalHomePage({
       )}
 
       <section>
-        <h2 className={styles.sectionTitle}>Every chamber in your atrium</h2>
+        <h2 className={styles.sectionTitle}>Everywhere else in your portal</h2>
         <div className={styles.typeGrid}>
           {types.map((type) => (
             <Link key={type.id} href={type.href} className={styles.typeCard}>

@@ -8,7 +8,7 @@ import { ReviewDetail } from './ReviewDetail';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Deliberate on a petition · Cicero' };
+export const metadata = { title: 'Review submission · Cicero' };
 
 type Search = {
   tab?: string;

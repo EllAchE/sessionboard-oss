@@ -29,12 +29,7 @@ export type FormOptionWire = {
   requiredKeys: string[];
   labels: Record<string, string>;
   levelOptions: string[];
-  customFields: Array<{
-    id: string;
-    label: string;
-    type: string;
-    required: boolean;
-  }>;
+  customFields: Array<{ id: string; label: string; type: string; required: boolean }>;
 };
 
 export type NewSubmissionFormProps = {
@@ -77,7 +72,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
 
   const noFormsReason =
     props.forms.length === 0
-      ? 'This assembly has no proclamation scroll. Inscribe one before entering a petition by hand.'
+      ? 'This event has no CFP form yet. Create one before adding a submission by hand.'
       : null;
   const banner = error ?? noFormsReason;
 
@@ -103,9 +98,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
     setError(null);
     setFieldErrors({});
     if (!formId) {
-      setError(
-        'This assembly has no proclamation scroll. Inscribe one before entering a petition by hand.',
-      );
+      setError('This event has no CFP form yet. Create one before adding a submission by hand.');
       return;
     }
 
@@ -130,7 +123,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
       }
 
       toast({
-        title: `${result.data.displayRef} entered in the rolls`,
+        title: `${result.data.displayRef} created`,
         description: title,
         tone: 'success',
       });
@@ -160,11 +153,11 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
     <div className={queue.page}>
       <header className={queue.header}>
         <div className={queue.headings}>
-          <span className={queue.eyebrow}>The council</span>
-          <h1 className={queue.title}>Enter a petition by hand</h1>
+          <span className={queue.eyebrow}>Review</span>
+          <h1 className={queue.title}>Add submission</h1>
           <p className={queue.subtitle}>
-            Enters the orator in the rolls if no account or record exists. ⌘&#8629; lodges the
-            petition.
+            Creates the speaker&apos;s account and participant record if they have neither.
+            ⌘&#8629; submits.
           </p>
         </div>
         <div className={queue.actions}>
@@ -173,7 +166,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
             iconLeft={<ChevronLeft size={14} />}
             onClick={() => router.push('/admin/submissions')}
           >
-            Return to petitions
+            Back to queue
           </Button>
         </div>
       </header>
@@ -195,16 +188,14 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Petition</CardTitle>
+            <CardTitle>Submission</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.grid}>
               <label className={styles.field}>
-                <span className={styles.label}>Proclamation scroll</span>
+                <span className={styles.label}>Form</span>
                 <Select value={formId} onChange={(event) => setFormId(event.target.value)}>
-                  {props.forms.length === 0 ? (
-                    <option value="">No proclamation scroll yet</option>
-                  ) : null}
+                  {props.forms.length === 0 ? <option value="">No CFP form yet</option> : null}
                   {props.forms.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.name}
@@ -216,28 +207,27 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
                     <Badge tone={FORM_STATUS_TONE[selected.status] ?? 'neutral'} size="sm">
                       {selected.status}
                     </Badge>{' '}
-                    A sealed scroll still accepts a petition entered by a magistrate.
+                    A closed form still accepts an organizer-entered talk.
                   </span>
                 ) : null}
               </label>
 
               <label className={styles.field}>
-                <span className={styles.label}>Standing on entry</span>
+                <span className={styles.label}>Status on creation</span>
                 <Select
                   value={status}
                   onChange={(event) =>
                     setStatus(event.target.value === 'accepted' ? 'accepted' : 'submitted')
                   }
                 >
-                  <option value="submitted">Filed · goes before the council</option>
-                  <option value="accepted">Decreed accepted · goes straight to the fasti</option>
+                  <option value="submitted">Submitted · goes through review</option>
+                  <option value="accepted">Accepted · skips review, agenda-eligible</option>
                 </Select>
               </label>
 
               <label className={`${styles.field} ${styles.wide}`}>
                 <span className={styles.label}>
-                  {labelFor('title', 'Oration title')}{' '}
-                  <span className={styles.required}>required by decree</span>
+                  {labelFor('title', 'Title')} <span className={styles.required}>required</span>
                 </span>
                 <Input
                   value={title}
@@ -253,15 +243,15 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
               {shows('description') ? (
                 <label className={`${styles.field} ${styles.wide}`}>
                   <span className={styles.label}>
-                    {labelFor('description', 'Argument')}
+                    {labelFor('description', 'Description')}
                     {required('description') ? (
-                      <span className={styles.required}>required by decree</span>
+                      <span className={styles.required}>required</span>
                     ) : null}
                   </span>
                   <Textarea
                     rows={8}
                     value={description}
-                    placeholder="Markdown. Inscribed on the petition detail and public programme."
+                    placeholder="Markdown. Rendered on the submission detail and the public site."
                     onChange={(event) => setDescription(event.target.value)}
                   />
                 </label>
@@ -269,7 +259,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
 
               {shows('format') ? (
                 <label className={styles.field}>
-                  <span className={styles.label}>{labelFor('format', 'Oration format')}</span>
+                  <span className={styles.label}>{labelFor('format', 'Session format')}</span>
                   <Select value={formatId} onChange={(event) => setFormatId(event.target.value)}>
                     <option value="">Unassigned</option>
                     {props.formats.map((entry) => (
@@ -283,7 +273,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
 
               {shows('track') ? (
                 <label className={styles.field}>
-                  <span className={styles.label}>{labelFor('track', 'Programme theme')}</span>
+                  <span className={styles.label}>{labelFor('track', 'Track')}</span>
                   <Select value={trackId} onChange={(event) => setTrackId(event.target.value)}>
                     <option value="">Unassigned</option>
                     {props.tracks.map((entry) => (
@@ -297,7 +287,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
 
               {shows('level') ? (
                 <label className={styles.field}>
-                  <span className={styles.label}>{labelFor('level', 'Audience rank')}</span>
+                  <span className={styles.label}>{labelFor('level', 'Audience level')}</span>
                   <Select value={level} onChange={(event) => setLevel(event.target.value)}>
                     <option value="">Unassigned</option>
                     {(selected?.levelOptions ?? []).map((entry) => (
@@ -311,7 +301,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
 
               {shows('tags') && props.tags.length > 0 ? (
                 <div className={`${styles.field} ${styles.wide}`}>
-                  <span className={styles.label}>{labelFor('tags', 'Petition marks')}</span>
+                  <span className={styles.label}>{labelFor('tags', 'Tags')}</span>
                   <div className={styles.tagGrid}>
                     {props.tags.map((entry) => (
                       <label key={entry.id} className={styles.tag}>
@@ -331,24 +321,24 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Orator</CardTitle>
+            <CardTitle>Speaker</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.grid}>
               <label className={styles.field}>
                 <span className={styles.label}>
-                  Dispatch address <span className={styles.required}>required by decree</span>
+                  Email <span className={styles.required}>required</span>
                 </span>
                 <Input
                   type="email"
                   value={speakerEmail}
                   invalid={Boolean(fieldErrors.speakerEmail)}
-                  placeholder="orator@example.com"
+                  placeholder="speaker@example.com"
                   onChange={(event) => setSpeakerEmail(event.target.value)}
                 />
                 <span className={styles.hint}>
-                  An existing citizen account is reused; a new address enters the rolls without
-                  sending a dispatch.
+                  An existing account is reused; a new address gets one, with no email sent from
+                  here.
                 </span>
                 {fieldErrors.speakerEmail ? (
                   <span className={styles.fieldError}>{fieldErrors.speakerEmail}</span>
@@ -370,15 +360,15 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
         {selected && selected.customFields.length > 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>Further inscriptions on {selected.name}</CardTitle>
+              <CardTitle>Custom fields on {selected.name}</CardTitle>
             </CardHeader>
             <CardBody>
               <p className={styles.notice}>
                 <Info size={14} />
-                These {selected.customFields.length} inscription
-                {selected.customFields.length === 1 ? '' : 's'} are not collected here. This path
-                enters only the petition&rsquo;s foundational record, so the orator completes them
-                from the atrium afterward.
+                These {selected.customFields.length} field
+                {selected.customFields.length === 1 ? '' : 's'} are not collected here. The organizer
+                path writes the submission&apos;s own columns only, so the speaker fills these in
+                from the portal once they have the submission.
               </p>
               <ul className={styles.fieldList}>
                 {selected.customFields.map((field) => (
@@ -396,16 +386,11 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
         ) : null}
 
         <div className={styles.footer}>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={pending}
-            disabled={props.forms.length === 0}
-          >
-            Enter petition in the rolls
+          <Button type="submit" variant="primary" loading={pending} disabled={props.forms.length === 0}>
+            Create submission
           </Button>
           <Button type="button" variant="ghost" onClick={() => router.push('/admin/submissions')}>
-            Leave unchanged
+            Cancel
           </Button>
         </div>
       </form>

@@ -6,7 +6,7 @@ import { NewSubmissionForm, type FormOptionWire } from './NewSubmissionForm';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Enter a petition · Cicero' };
+export const metadata = { title: 'Add submission · Cicero' };
 
 /**
  * `V-7`. Every CFP form is offered, including a closed one: the reason an organizer is on this

@@ -67,7 +67,7 @@ export const ROMAN_ASSETS = [
     orientation: "landscape",
     alt: "A long section of the Appian Way framed by umbrella pines, meadow grass, and low ruins.",
     focalPoint: "50% 48%",
-    recommendedFor: ["journey theme", "fasti cover", "quiet hero"],
+    recommendedFor: ["journey theme", "agenda cover", "quiet hero"],
     source: {
       title: "Appian Way",
       pageUrl: "https://commons.wikimedia.org/wiki/File:Appian_Way.jpg",
@@ -105,7 +105,7 @@ export const ROMAN_ASSETS = [
     focalPoint: "47% 41%",
     recommendedFor: [
       "infrastructure story",
-      "fasti section",
+      "agenda section",
       "panoramic card",
     ],
     source: {
@@ -205,7 +205,7 @@ export const ROMAN_ASSETS = [
     orientation: "panorama",
     alt: "A wide view across the stone seating and stage wall of the Roman Theatre of Orange.",
     focalPoint: "51% 58%",
-    recommendedFor: ["program hero", "orator assembly", "wide card"],
+    recommendedFor: ["program hero", "speaker lineup", "wide card"],
     source: {
       title: "Roman Theatre in Orange 2008",
       pageUrl:
@@ -248,7 +248,7 @@ export const ROMAN_ASSETS = [
     alt: "A white marble portrait bust of Germanicus against a charcoal museum backdrop.",
     focalPoint: "50% 38%",
     recommendedFor: [
-      "orator placeholder",
+      "speaker placeholder",
       "portrait card",
       "editorial feature",
     ],
@@ -289,7 +289,7 @@ export const ROMAN_ASSETS = [
     orientation: "portrait",
     alt: "A headless Roman marble statue with deeply folded toga drapery.",
     focalPoint: "50% 48%",
-    recommendedFor: ["portrait panel", "drapery detail", "orator background"],
+    recommendedFor: ["portrait panel", "drapery detail", "speaker background"],
     source: {
       title: "Roman Marble Toga Statue (28450694740)",
       pageUrl:

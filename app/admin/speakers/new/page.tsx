@@ -6,7 +6,7 @@ import styles from '../speakers.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Summon an orator · Cicero' };
+export const metadata = { title: 'Add speaker · Cicero' };
 
 /**
  * `SPK-02`. Invited keynotes and sponsor speakers never touch the CFP, and an organizer who cannot
@@ -20,14 +20,14 @@ export default async function NewSpeakerPage() {
       <div>
         <Link className={styles.backLink} href="/admin/speakers">
           <ChevronLeft size={14} />
-          Orators
+          Speakers
         </Link>
         <div className={styles.pageHead}>
           <div>
-            <p className={styles.eyebrow}>The census</p>
-            <h1 className={styles.title}>Summon an orator</h1>
+            <p className={styles.eyebrow}>Program</p>
+            <h1 className={styles.title}>Add a speaker</h1>
             <p className={styles.subtitle}>
-              Their name enters this event&rsquo;s roll straight away. No courier is sent.
+              They join this event&rsquo;s roster straight away. No email is sent.
             </p>
           </div>
         </div>

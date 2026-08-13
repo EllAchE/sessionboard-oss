@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const subjects = index.filter((row) => requested.has(row.id));
     const missing = [...requested].filter((id) => !subjects.some((row) => row.id === id));
     if (missing.length > 0) {
-      throw invalid(`${missing.length} of those records are absent from this assembly`);
+      throw invalid(`${missing.length} of those files are not on this event`);
     }
 
     const refusal = checkArchiveBudget(
@@ -69,9 +69,9 @@ export async function POST(request: Request) {
       // An archive that quietly drops a deck is worse than one that says which deck it dropped.
       if (unreadable.length > 0) {
         yield {
-          name: '_missing-records.txt',
+          name: '_missing-files.txt',
           bytes: new TextEncoder().encode(
-            `These records appear in the annals but could not be read from the archive:\n\n${unreadable.join('\n')}\n`,
+            `These files are recorded on the event but could not be read from storage:\n\n${unreadable.join('\n')}\n`,
           ),
         };
       }

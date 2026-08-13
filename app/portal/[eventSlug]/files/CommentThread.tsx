@@ -37,7 +37,7 @@ export function CommentThread({
   return (
     <section className={styles.stackTight}>
       <h2 className={styles.sectionTitle}>
-        <MessageSquare size={15} aria-hidden /> Counsel from the magistrates
+        <MessageSquare size={15} aria-hidden /> Review feedback
       </h2>
 
       {comments.length === 0 ? (
@@ -68,14 +68,14 @@ export function CommentThread({
         <Textarea
           name="body"
           rows={3}
-          placeholder="Answer the organizers, or inscribe what changed in this version"
-          aria-label="Enter a note in the annals"
+          placeholder="Reply to the organizers, or note what changed in this version"
+          aria-label="Add a comment"
           required
         />
         <FormNotice state={state} />
         <div className={styles.taskActions}>
           <SubmitButton variant="primary" size="sm" iconLeft={<Send size={14} />}>
-            Enter note in the annals
+            Post comment
           </SubmitButton>
         </div>
       </form>

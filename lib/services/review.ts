@@ -48,7 +48,13 @@ import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 export const SCORE_SCALE = 5;
 
 export type SubmissionStatus =
-  'draft' | 'submitted' | 'under_review' | 'accepted' | 'declined' | 'waitlisted' | 'withdrawn';
+  | 'draft'
+  | 'submitted'
+  | 'under_review'
+  | 'accepted'
+  | 'declined'
+  | 'waitlisted'
+  | 'withdrawn';
 
 export type AssignmentStatus = 'pending' | 'completed' | 'declined';
 
@@ -171,10 +177,10 @@ export function summarizeReviews(
 export type Decision = 'accept' | 'decline' | 'waitlist' | 'reset';
 
 export const DECISION_LABEL: Record<Decision, string> = {
-  accept: 'Accept petition',
-  decline: 'Decline petition',
-  waitlist: 'Hold in reserve',
-  reset: 'Return to council',
+  accept: 'Accepted',
+  decline: 'Declined',
+  waitlist: 'Waitlisted',
+  reset: 'Back to review',
 };
 
 const DECISION_STATUS: Record<Decision, SubmissionStatus> = {
@@ -193,8 +199,8 @@ export function nextStatusForDecision(
   current: SubmissionStatus,
   decision: Decision,
 ): SubmissionStatus {
-  if (current === 'draft') throw conflict('That petition is still an unfiled draft');
-  if (current === 'withdrawn') throw conflict('That petition was withdrawn by its orator');
+  if (current === 'draft') throw conflict('That submission is still a draft');
+  if (current === 'withdrawn') throw conflict('That submission was withdrawn by its speaker');
   return DECISION_STATUS[decision];
 }
 
@@ -274,23 +280,22 @@ export type RoundDetail = ReviewRoundRecord & {
 /** What a fresh event gets so the scorecard is never an empty screen on the first submission. */
 export const DEFAULT_CRITERIA: Array<Omit<CriterionSpec, 'id'>> = [
   {
-    label: 'Service to the Forum',
-    description: 'Does this argument serve the theme and the people assembled?',
+    label: 'Relevance',
+    description: 'Fit with the track and the audience this event is for.',
     weight: 2,
     maxScore: 5,
     position: 0,
   },
   {
-    label: 'Freshness of argument',
-    description:
-      'Will the assembly hear an idea that has not crossed the rostra three times already?',
+    label: 'Originality',
+    description: 'Says something the audience has not already heard three times.',
     weight: 1,
     maxScore: 5,
     position: 1,
   },
   {
-    label: 'Command of the orator',
-    description: 'Evidence this orator can deliver the address they propose.',
+    label: 'Speaker readiness',
+    description: 'Evidence this speaker can deliver the talk they described.',
     weight: 1,
     maxScore: 5,
     position: 2,
@@ -351,7 +356,7 @@ export async function resolveRound(
   const rounds = await listRounds(ctx);
   if (roundId) {
     const named = rounds.find((round) => round.id === roundId);
-    if (!named) throw notFound('That council');
+    if (!named) throw notFound('That review round');
     return named;
   }
   return rounds.find((round) => round.status === 'open') ?? rounds[rounds.length - 1] ?? null;
@@ -360,7 +365,7 @@ export async function resolveRound(
 export async function ensureDefaultRound(ctx: EventContext): Promise<ReviewRoundRecord> {
   const existing = await resolveRound(ctx);
   if (existing) return existing;
-  return createRound(ctx, { name: 'First council', status: 'open' });
+  return createRound(ctx, { name: 'Round 1', status: 'open' });
 }
 
 export type CreateRoundInput = {
@@ -380,7 +385,7 @@ export async function createRound(
 ): Promise<ReviewRoundRecord> {
   requireCapability(ctx, 'submission:decide');
   const name = input.name.trim();
-  if (!name) throw invalid('A council needs a name', { name: 'Name is required' });
+  if (!name) throw invalid('A round needs a name', { name: 'Name is required' });
   assertRoundDateOrder(input.opensAt, input.closesAt);
 
   const db = getDb();
@@ -437,7 +442,7 @@ export async function updateRound(
   const values: Record<string, unknown> = {};
   if (patch.name !== undefined) {
     const name = patch.name.trim();
-    if (!name) throw invalid('A council needs a name', { name: 'Name is required' });
+    if (!name) throw invalid('A round needs a name', { name: 'Name is required' });
     values.name = name;
   }
   if (patch.status !== undefined) values.status = patch.status;
@@ -470,7 +475,7 @@ async function requireRound(ctx: EventContext, roundId: string): Promise<ReviewR
   const row = await getDb().query.reviewRound.findFirst({
     where: and(eq(reviewRound.id, roundId), eq(reviewRound.eventId, ctx.eventId)),
   });
-  if (!row) throw notFound('That council');
+  if (!row) throw notFound('That review round');
   return toRoundRecord(row);
 }
 
@@ -517,10 +522,7 @@ export async function updateCriterion(
   const values: Record<string, unknown> = {};
   if (patch.label !== undefined) {
     const label = patch.label.trim();
-    if (!label)
-      throw invalid('A criterion needs a label', {
-        label: 'Label is required',
-      });
+    if (!label) throw invalid('A criterion needs a label', { label: 'Label is required' });
     values.label = label;
   }
   if (patch.description !== undefined) values.description = patch.description?.trim() || null;
@@ -613,12 +615,7 @@ export async function inviteReviewer(
 export async function listReviewers(ctx: EventContext): Promise<ReviewerRow[]> {
   requireCapability(ctx, 'submission:review');
   const rows = await getDb()
-    .select({
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      role: membership.role,
-    })
+    .select({ userId: user.id, name: user.name, email: user.email, role: membership.role })
     .from(membership)
     .innerJoin(user, eq(user.id, membership.userId))
     .where(
@@ -711,7 +708,7 @@ async function loadAssignment(ctx: EventContext, assignmentId: string) {
     .from(reviewAssignment)
     .innerJoin(reviewRound, eq(reviewRound.id, reviewAssignment.reviewRoundId))
     .where(and(eq(reviewAssignment.id, assignmentId), eq(reviewRound.eventId, ctx.eventId)));
-  if (rows.length === 0) throw notFound('That council appointment');
+  if (rows.length === 0) throw notFound('That review assignment');
   return rows[0].assignment;
 }
 
@@ -740,14 +737,14 @@ export async function saveScorecard(
   requireCapability(ctx, 'submission:review');
   const round = await requireRound(ctx, input.roundId);
   if (round.status === 'closed' && !can(ctx, 'submission:decide')) {
-    throw conflict('That council has closed');
+    throw conflict('That review round is closed');
   }
 
   const db = getDb();
   const target = await db.query.submission.findFirst({
     where: and(eq(submission.id, input.submissionId), eq(submission.eventId, ctx.eventId)),
   });
-  if (!target) throw notFound('That petition');
+  if (!target) throw notFound('That submission');
 
   let assignment = await db.query.reviewAssignment.findFirst({
     where: and(
@@ -759,7 +756,7 @@ export async function saveScorecard(
 
   if (!assignment) {
     if (!can(ctx, 'submission:decide')) {
-      throw conflict('You were not appointed to judge that petition');
+      throw conflict('You are not assigned to review that submission');
     }
     const [created] = await db
       .insert(reviewAssignment)
@@ -779,11 +776,11 @@ export async function saveScorecard(
           eq(reviewAssignment.reviewerUserId, ctx.actor.userId),
         ),
       }));
-    if (!assignment) throw notFound('That council appointment');
+    if (!assignment) throw notFound('That review assignment');
   }
 
   if (assignment.status === 'declined' && !can(ctx, 'submission:decide')) {
-    throw conflict('You recused yourself from that petition');
+    throw conflict('You recused yourself from that submission');
   }
 
   const criteria = await listCriteria(input.roundId);
@@ -795,11 +792,7 @@ export async function saveScorecard(
     const value = Math.max(0, Math.min(criterion.maxScore, Math.round(entry.value)));
     await db
       .insert(scoreTable)
-      .values({
-        reviewAssignmentId: assignment.id,
-        criterionId: entry.criterionId,
-        value,
-      })
+      .values({ reviewAssignmentId: assignment.id, criterionId: entry.criterionId, value })
       .onConflictDoUpdate({
         target: [scoreTable.reviewAssignmentId, scoreTable.criterionId],
         set: { value },
@@ -828,7 +821,7 @@ export async function saveScorecard(
    * completes on request: skipping one criterion is a judgment, skipping all of them is a misclick.
    */
   if (input.complete === true && criteria.length > 0 && aggregate.scoredCount === 0) {
-    throw invalid('Score at least one measure before sealing the judgment');
+    throw invalid('Score at least one criterion before submitting the review');
   }
 
   const completing = input.complete ?? aggregate.complete;
@@ -836,7 +829,7 @@ export async function saveScorecard(
   await db
     .update(reviewAssignment)
     .set({
-      comment: input.comment === undefined ? assignment.comment : input.comment?.trim() || null,
+      comment: input.comment === undefined ? assignment.comment : (input.comment?.trim() || null),
       status: completing ? 'completed' : 'pending',
       completedAt: completing ? new Date() : null,
     })
@@ -867,7 +860,7 @@ export async function declineAssignment(
   requireCapability(ctx, 'submission:review');
   const assignment = await loadAssignment(ctx, assignmentId);
   if (assignment.reviewerUserId !== ctx.actor.userId && !can(ctx, 'submission:decide')) {
-    throw conflict('That appointment belongs to another councillor');
+    throw conflict('That assignment belongs to another reviewer');
   }
   const trimmed = reason?.trim();
   await getDb()
@@ -970,7 +963,10 @@ export type ReviewAnswerField = Pick<
   'key' | 'label' | 'type' | 'builtinKey'
 >;
 
-function answerCarriesIdentity(answerFields: Map<string, ReviewAnswerField>, key: string): boolean {
+function answerCarriesIdentity(
+  answerFields: Map<string, ReviewAnswerField>,
+  key: string,
+): boolean {
   const field = answerFields.get(key);
   return (
     carriesIdentity(key) ||
@@ -1028,8 +1024,7 @@ export type QueueFilters = {
   roundId?: string | null;
 };
 
-export type QueueSort =
-  'score_desc' | 'score_asc' | 'ref_asc' | 'ref_desc' | 'title_asc' | 'newest';
+export type QueueSort = 'score_desc' | 'score_asc' | 'ref_asc' | 'ref_desc' | 'title_asc' | 'newest';
 
 export type QueueRow = {
   id: string;
@@ -1064,11 +1059,7 @@ export type QueueBundle = {
   tags: Array<{ id: string; name: string }>;
 };
 
-const STATUS_TABS: Array<{
-  id: string;
-  label: string;
-  statuses: SubmissionStatus[];
-}> = [
+const STATUS_TABS: Array<{ id: string; label: string; statuses: SubmissionStatus[] }> = [
   { id: 'all', label: 'All', statuses: [] },
   { id: 'pending', label: 'Pending', statuses: ['submitted', 'under_review'] },
   { id: 'accepted', label: 'Accepted', statuses: ['accepted'] },
@@ -1105,8 +1096,7 @@ export function sortQueue(rows: QueueRow[], sort: QueueSort = 'score_desc'): Que
       return copy.sort((a, b) => a.title.localeCompare(b.title));
     case 'newest':
       return copy.sort(
-        (a, b) =>
-          (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0) || b.ref - a.ref,
+        (a, b) => (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0) || b.ref - a.ref,
       );
     case 'score_desc':
     default:
@@ -1144,25 +1134,25 @@ export function reviewResultsCsv(
 ): string {
   const orderedCriteria = [...criteria].sort((a, b) => a.position - b.position);
   const header = [
-    'Petition ref',
+    'Submission ref',
     'Title',
-    'Petition standing',
-    'Council round',
-    'Council score (1-5)',
-    'Judgments cast',
-    'Councillors appointed',
-    'Orators',
-    'Fellow orators',
-    'Councillor',
-    'Councillor dispatch address',
-    'Judgment standing',
-    'Councillor score (1-5)',
+    'Submission status',
+    'Round',
+    'Aggregate score (1-5)',
+    'Reviews completed',
+    'Reviews assigned',
+    'Speakers',
+    'Co-speakers',
+    'Reviewer',
+    'Reviewer email',
+    'Review status',
+    'Reviewer score (1-5)',
     ...orderedCriteria.map(
       (criterion) =>
         `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
     ),
-    'Councillor counsel',
-    'Judgment cast at',
+    'Reviewer comment',
+    'Review completed at',
   ];
 
   const rows = [...submissions]
@@ -1400,10 +1390,7 @@ export async function loadQueue(
   const [tagRows, assignmentRows, scoreRows, aiRows] = await Promise.all([
     ids.length
       ? db
-          .select({
-            submissionId: submissionTag.submissionId,
-            tagId: submissionTag.tagId,
-          })
+          .select({ submissionId: submissionTag.submissionId, tagId: submissionTag.tagId })
           .from(submissionTag)
           .where(inArray(submissionTag.submissionId, ids))
       : Promise.resolve([]),
@@ -1448,11 +1435,7 @@ export async function loadQueue(
       : Promise.resolve([]),
   ]);
 
-  const tagsBySubmission = groupBy(
-    tagRows,
-    (row) => row.submissionId,
-    (row) => row.tagId,
-  );
+  const tagsBySubmission = groupBy(tagRows, (row) => row.submissionId, (row) => row.tagId);
   const scoresByAssignment = new Map<string, ScoreValue[]>();
   for (const row of scoreRows) {
     const list = scoresByAssignment.get(row.assignmentId) ?? [];
@@ -1632,7 +1615,7 @@ export async function loadSubmissionReview(
   const row = await db.query.submission.findFirst({
     where: and(eq(submission.id, submissionId), eq(submission.eventId, ctx.eventId)),
   });
-  if (!row) throw notFound('That petition');
+  if (!row) throw notFound('That submission');
 
   const round = await resolveRound(ctx, roundId ?? null);
   const criteria = round ? await listCriteria(round.id) : [];
@@ -1644,9 +1627,7 @@ export async function loadSubmissionReview(
         ? db.query.track.findFirst({ where: eq(trackTable.id, row.trackId) })
         : Promise.resolve(undefined),
       row.formatId
-        ? db.query.sessionFormat.findFirst({
-            where: eq(sessionFormat.id, row.formatId),
-          })
+        ? db.query.sessionFormat.findFirst({ where: eq(sessionFormat.id, row.formatId) })
         : Promise.resolve(undefined),
       db
         .select({ id: tagTable.id, name: tagTable.name })
@@ -1802,10 +1783,7 @@ export async function loadSubmissionReview(
 // Decisions — `V-2`
 // ---------------------------------------------------------------------------
 
-export type DecisionResult = {
-  updated: number;
-  skipped: Array<{ id: string; reason: string }>;
-};
+export type DecisionResult = { updated: number; skipped: Array<{ id: string; reason: string }> };
 
 /**
  * The transition that makes a session eligible for the agenda, so it is deliberately the only way
@@ -1834,10 +1812,7 @@ export async function decideSubmissions(
       nextStatusForDecision(row.status, decision);
       eligible.push(row.id);
     } catch (error) {
-      skipped.push({
-        id: row.id,
-        reason: error instanceof Error ? error.message : 'Not eligible',
-      });
+      skipped.push({ id: row.id, reason: error instanceof Error ? error.message : 'Not eligible' });
     }
   }
   if (eligible.length === 0) return { updated: 0, skipped };
@@ -1849,7 +1824,7 @@ export async function decideSubmissions(
     .set({
       status,
       decidedAt: decision === 'reset' ? null : now,
-      decisionNote: note === undefined ? undefined : note?.trim() || null,
+      decisionNote: note === undefined ? undefined : (note?.trim() || null),
       updatedAt: now,
     })
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, eligible)));
@@ -1874,7 +1849,10 @@ export type WorkloadRow = {
   lastActivityAt: Date | null;
 };
 
-export async function reviewerWorkload(ctx: EventContext, roundId: string): Promise<WorkloadRow[]> {
+export async function reviewerWorkload(
+  ctx: EventContext,
+  roundId: string,
+): Promise<WorkloadRow[]> {
   requireCapability(ctx, 'submission:review');
   await requireRound(ctx, roundId);
   const db = getDb();
@@ -2005,10 +1983,7 @@ export type NewSubmissionInput = {
 async function allocateRef(eventId: string): Promise<number> {
   const [row] = await getDb()
     .update(event)
-    .set({
-      submissionSeq: sql`${event.submissionSeq} + 1`,
-      updatedAt: new Date(),
-    })
+    .set({ submissionSeq: sql`${event.submissionSeq} + 1`, updatedAt: new Date() })
     .where(eq(event.id, eventId))
     .returning({ ref: event.submissionSeq });
   if (!row) throw notFound('That event');
@@ -2028,7 +2003,7 @@ export async function createSubmissionAsOrganizer(
   const db = getDb();
 
   const title = input.title.trim();
-  if (!title) throw invalid('A petition needs a title', { title: 'Title is required' });
+  if (!title) throw invalid('A submission needs a title', { title: 'Title is required' });
 
   const email = input.speakerEmail.trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
@@ -2037,9 +2012,7 @@ export async function createSubmissionAsOrganizer(
     });
   }
 
-  const existingUser = await db.query.user.findFirst({
-    where: eq(user.email, email),
-  });
+  const existingUser = await db.query.user.findFirst({ where: eq(user.email, email) });
   const speaker =
     existingUser ??
     (
@@ -2154,43 +2127,31 @@ export function parseCsv(text: string): string[][] {
 
 const IMPORT_ALIASES: Record<string, keyof ImportRow> = {
   title: 'title',
-  'oration title': 'title',
   session: 'title',
   'session title': 'title',
   name: 'title',
   description: 'description',
-  argument: 'description',
   abstract: 'description',
   summary: 'description',
   track: 'track',
-  theme: 'track',
   format: 'format',
-  'oration format': 'format',
   'session format': 'format',
   type: 'format',
   level: 'level',
-  'audience rank': 'level',
   audience: 'level',
   email: 'speakerEmail',
   'speaker email': 'speakerEmail',
   'speaker e-mail': 'speakerEmail',
-  'orator email': 'speakerEmail',
   speaker: 'speakerName',
   'speaker name': 'speakerName',
-  'orator name': 'speakerName',
   status: 'status',
-  standing: 'status',
 };
 
 /** `V-10`. Column order is irrelevant; a recognisable header in any of its usual spellings wins. */
 export function parseSubmissionImport(text: string): ImportParse {
   const table = parseCsv(text);
   if (table.length === 0) {
-    return {
-      rows: [],
-      headers: [],
-      errors: [{ line: 0, message: 'That tablet is empty' }],
-    };
+    return { rows: [], headers: [], errors: [{ line: 0, message: 'That file is empty' }] };
   }
 
   const headers = table[0].map((header) => header.trim());
@@ -2198,10 +2159,10 @@ export function parseSubmissionImport(text: string): ImportParse {
   const errors: Array<{ line: number; message: string }> = [];
 
   if (!mapped.includes('title')) {
-    errors.push({ line: 1, message: 'No Oration title column found' });
+    errors.push({ line: 1, message: 'No Title column found' });
   }
   if (!mapped.includes('speakerEmail')) {
-    errors.push({ line: 1, message: 'No Orator email column found' });
+    errors.push({ line: 1, message: 'No Speaker email column found' });
   }
   if (errors.length > 0) return { rows: [], headers, errors };
 
@@ -2214,14 +2175,11 @@ export function parseSubmissionImport(text: string): ImportParse {
     });
 
     if (!record.title) {
-      errors.push({ line, message: 'Missing oration title' });
+      errors.push({ line, message: 'Missing title' });
       return;
     }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(record.speakerEmail ?? '')) {
-      errors.push({
-        line,
-        message: `Invalid orator email for "${record.title}"`,
-      });
+      errors.push({ line, message: `Invalid speaker email for "${record.title}"` });
       return;
     }
 
@@ -2240,10 +2198,7 @@ export function parseSubmissionImport(text: string): ImportParse {
   return { rows, headers, errors };
 }
 
-export type ImportResult = {
-  created: number;
-  failed: Array<{ title: string; message: string }>;
-};
+export type ImportResult = { created: number; failed: Array<{ title: string; message: string }> };
 
 export async function importSubmissions(
   ctx: EventContext,
@@ -2338,11 +2293,7 @@ export async function listSubmissionFiles(
   const db = getDb();
 
   const rows = await db
-    .select({
-      id: submission.id,
-      ref: submission.ref,
-      answers: submission.answers,
-    })
+    .select({ id: submission.id, ref: submission.ref, answers: submission.answers })
     .from(submission)
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, submissionIds)));
 
@@ -2379,20 +2330,12 @@ export async function listSubmissionFiles(
 
 export const QUEUE_SURFACE = 'submissions';
 
-export type SavedViewRecord = {
-  id: string;
-  name: string;
-  filters: Record<string, unknown>;
-};
+export type SavedViewRecord = { id: string; name: string; filters: Record<string, unknown> };
 
 export async function listSavedViews(ctx: EventContext): Promise<SavedViewRecord[]> {
   requireCapability(ctx, 'submission:read_all');
   const rows = await getDb()
-    .select({
-      id: savedView.id,
-      name: savedView.name,
-      filters: savedView.filters,
-    })
+    .select({ id: savedView.id, name: savedView.name, filters: savedView.filters })
     .from(savedView)
     .where(
       and(
@@ -2402,11 +2345,7 @@ export async function listSavedViews(ctx: EventContext): Promise<SavedViewRecord
       ),
     )
     .orderBy(asc(savedView.name));
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    filters: row.filters,
-  }));
+  return rows.map((row) => ({ id: row.id, name: row.name, filters: row.filters }));
 }
 
 export async function saveView(
@@ -2458,7 +2397,7 @@ export async function saveAiReview(
   const owned = await getDb().query.submission.findFirst({
     where: and(eq(submission.id, draft.submissionId), eq(submission.eventId, ctx.eventId)),
   });
-  if (!owned) throw notFound('That petition');
+  if (!owned) throw notFound('That submission');
 
   const [created] = await getDb()
     .insert(aiReview)
@@ -2661,7 +2600,9 @@ export async function loadReviewerQueue(
       average: aggregate.average,
       scoredCount: aggregate.scoredCount,
     };
-    return authorHidden ? { ...built, submitterName: ANONYMOUS_AUTHOR } : built;
+    return authorHidden
+      ? { ...built, submitterName: ANONYMOUS_AUTHOR }
+      : built;
   });
 
   const active = all.filter((row) => row.status !== 'declined');
@@ -2673,8 +2614,7 @@ export async function loadReviewerQueue(
     authorHidden,
     // Unscored first: the point of the dashboard is the work that is left.
     assignments: [...active].sort(
-      (a, b) =>
-        Number(a.status === 'completed') - Number(b.status === 'completed') || a.ref - b.ref,
+      (a, b) => Number(a.status === 'completed') - Number(b.status === 'completed') || a.ref - b.ref,
     ),
     recused: all.filter((row) => row.status === 'declined'),
     pendingCount: active.filter((row) => row.status !== 'completed').length,
@@ -2693,7 +2633,7 @@ export async function loadAssignedReview(
 ): Promise<SubmissionReview> {
   requireCapability(ctx, 'submission:review');
   const round = await resolveRound(ctx, roundId ?? null);
-  if (!round) throw notFound('A council');
+  if (!round) throw notFound('A review round');
 
   if (!can(ctx, 'submission:decide')) {
     const assignment = await getDb().query.reviewAssignment.findFirst({
@@ -2703,9 +2643,9 @@ export async function loadAssignedReview(
         eq(reviewAssignment.reviewerUserId, ctx.actor.userId),
       ),
     });
-    if (!assignment) throw forbidden('That petition was not entrusted to you');
+    if (!assignment) throw forbidden('That submission is not assigned to you');
     if (assignment.status === 'declined') {
-      throw forbidden('You recused yourself from this petition');
+      throw forbidden('You recused yourself from this submission');
     }
   }
 
@@ -2820,16 +2760,16 @@ export function reminderBody(
 ): string {
   const count = reviewer.outstanding.length;
   const lines = [
-    `Salve ${reviewer.name},`,
+    `Hi ${reviewer.name},`,
     '',
-    `You have ${count} petition${count === 1 ? '' : 's'} still awaiting judgment in **${round.name}**.`,
+    `You have ${count} submission${count === 1 ? '' : 's'} still waiting for your score in **${round.name}**.`,
     '',
     ...reviewer.outstanding.map((row) => `- ${row.displayRef} — ${row.title}`),
     '',
-    `[Enter your council chamber](${link})`,
+    `[Open your review queue](${link})`,
   ];
   if (round.closesAt) {
-    lines.push('', `The council closes on ${round.closesAt.toISOString().slice(0, 10)}.`);
+    lines.push('', `The round closes on ${round.closesAt.toISOString().slice(0, 10)}.`);
   }
   if (note?.trim()) lines.push('', note.trim());
   return lines.join('\n');
@@ -2854,7 +2794,7 @@ export async function remindOutstandingReviewers(
     : all;
 
   if (targets.length === 0) {
-    throw invalid('Every councillor has delivered judgment. No reminder is needed.');
+    throw invalid('Every reviewer on this round has finished. There is nothing to remind them of.');
   }
 
   const { branding } = await loadCommsContext(ctx.eventId);
@@ -2871,7 +2811,7 @@ export async function remindOutstandingReviewers(
     const body = reminderBody(reviewer, round, link, options.note);
     const result = await sendMail({
       to: reviewer.email,
-      subject: `${reviewer.outstanding.length} judgment${reviewer.outstanding.length === 1 ? '' : 's'} remain before the council — ${round.name}`,
+      subject: `${reviewer.outstanding.length} review${reviewer.outstanding.length === 1 ? '' : 's'} outstanding — ${round.name}`,
       html: wrapInBranding(branding, renderMarkdown(body)),
       text: markdownToText(body),
       eventId: ctx.eventId,

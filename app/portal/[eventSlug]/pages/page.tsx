@@ -3,7 +3,7 @@ import { listPortalPages } from '@/lib/services/portal';
 import styles from '../../portal.module.css';
 import { portalSession } from '../context';
 
-export const metadata = { title: 'Notices to orators · Cicero' };
+export const metadata = { title: 'Speaker information · Speaker portal' };
 
 /** `S-6`. */
 export default async function PortalPagesIndex({
@@ -18,7 +18,7 @@ export default async function PortalPagesIndex({
   return (
     <div className={styles.stack}>
       <div className={styles.pageHead}>
-        <h1 className={styles.pageTitle}>Notices to orators</h1>
+        <h1 className={styles.pageTitle}>Speaker information</h1>
         <p className={styles.pageLead}>
           Reference material written by the {event.name} organizers — travel, AV, house style.
         </p>
@@ -26,15 +26,15 @@ export default async function PortalPagesIndex({
 
       {pages.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyTitle}>No notice has been posted</div>
-          <p>The organizers have not inscribed any guidance for the orators.</p>
+          <div className={styles.emptyTitle}>Nothing published yet</div>
+          <p>The organizers have not written any speaker information for this event.</p>
         </div>
       ) : (
         <div className={styles.typeGrid}>
           {pages.map((page) => (
             <Link key={page.id} href={`/portal/${eventSlug}/pages/${page.slug}`} className={styles.typeCard}>
               <div className={styles.typeLabel}>{page.title}</div>
-              <div className={styles.typeDescription}>Unroll this notice</div>
+              <div className={styles.typeDescription}>Read this page</div>
             </Link>
           ))}
         </div>

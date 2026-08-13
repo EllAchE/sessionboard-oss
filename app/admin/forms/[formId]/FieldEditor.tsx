@@ -141,16 +141,16 @@ export function FieldEditor({
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
-      title={`Revise “${field.label}”`}
-      description={locked ? (lockReason(field) ?? undefined) : `Ledger key ${field.key}`}
+      title={`Edit “${field.label}”`}
+      description={locked ? (lockReason(field) ?? undefined) : `Answer key ${field.key}`}
       size="lg"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Leave unchanged
+            Cancel
           </Button>
           <Button variant="primary" loading={busy} disabled={!draft.label.trim()} onClick={save}>
-            Seal prompt
+            Save question
           </Button>
         </>
       }
@@ -161,7 +161,7 @@ export function FieldEditor({
         <div className={styles.grid2}>
           <div className={styles.field}>
             <label className={styles.label} htmlFor="field-label">
-              Prompt
+              Label
             </label>
             <Input
               id="field-label"
@@ -172,7 +172,7 @@ export function FieldEditor({
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="field-type">
-              Inscription style
+              Type
             </label>
             <Select
               id="field-type"
@@ -186,13 +186,13 @@ export function FieldEditor({
                 </option>
               ))}
             </Select>
-            {locked ? <span className={styles.help}>Foundational inscriptions keep their style.</span> : null}
+            {locked ? <span className={styles.help}>Built-in fields keep their type.</span> : null}
           </div>
         </div>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="field-help">
-            Guidance beneath the prompt
+            Help text
           </label>
           <Textarea
             id="field-help"
@@ -200,14 +200,14 @@ export function FieldEditor({
             value={draft.helpText}
             onChange={(event) => update({ helpText: event.target.value })}
           />
-          <span className={styles.help}>Shown beneath the prompt on the public scroll.</span>
+          <span className={styles.help}>Shown under the question on the public form.</span>
         </div>
 
         {draft.type !== 'section_break' ? (
           <>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="field-placeholder">
-                Example response
+                Placeholder
               </label>
               <Input
                 id="field-placeholder"
@@ -218,13 +218,12 @@ export function FieldEditor({
 
             <div className={styles.switchRow}>
               <span className={styles.switchText}>
-                <span className={styles.switchLabel}>Required by decree</span>
-                <span className={styles.help}>A petitioner cannot lodge the scroll without answering.
-                </span>
+                <span className={styles.switchLabel}>Required</span>
+                <span className={styles.help}>A submitter cannot submit without answering.</span>
               </span>
               <Switch
                 checked={draft.required}
-                aria-label="Required by decree"
+                aria-label="Required"
                 onCheckedChange={(next) => update({ required: next })}
               />
             </div>
@@ -233,7 +232,7 @@ export function FieldEditor({
 
         {supportsOptions(draft.type) ? (
           <div className={styles.field}>
-            <span className={styles.label}>Permitted responses</span>
+            <span className={styles.label}>Choices</span>
             {canAddOptions(field) ? (
               <>
                 <div className={styles.optionsList}>
@@ -241,11 +240,11 @@ export function FieldEditor({
                     <div className={styles.optionRow} key={index}>
                       <Input
                         value={option}
-                        aria-label={`Response ${index + 1}`}
+                        aria-label={`Choice ${index + 1}`}
                         onChange={(event) => setOption(index, event.target.value)}
                       />
                       <IconButton
-                        label={`Remove response ${index + 1}`}
+                        label={`Remove choice ${index + 1}`}
                         size="sm"
                         variant="danger"
                         onClick={() =>
@@ -263,13 +262,13 @@ export function FieldEditor({
                   iconLeft={<Plus size={14} />}
                   onClick={() => update({ options: [...draft.options, ''] })}
                 >
-                  Add a response
+                  Add a choice
                 </Button>
               </>
             ) : (
               <span className={styles.help}>
-                This foundational inscription reads its responses from the assembly&rsquo;s themes,
-                formats, ranks, and marks, so they are governed by the Edicts.
+                This built-in reads its choices from the event&rsquo;s tracks, formats, levels and
+                tags, so they are managed there rather than here.
               </span>
             )}
           </div>
@@ -280,7 +279,7 @@ export function FieldEditor({
             <div className={styles.grid2}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="field-min">
-                  Minimum length
+                  Minimum characters
                 </label>
                 <Input
                   id="field-min"
@@ -292,7 +291,7 @@ export function FieldEditor({
               </div>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="field-max">
-                  Maximum length
+                  Maximum characters
                 </label>
                 <Input
                   id="field-max"
@@ -306,7 +305,7 @@ export function FieldEditor({
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="field-group">
-                Shared length decree
+                Combined limit group
               </label>
               <Input
                 id="field-group"
@@ -315,8 +314,8 @@ export function FieldEditor({
                 onChange={(event) => update({ charLimitGroup: event.target.value })}
               />
               <span className={styles.help}>
-                Prompts bearing the same decree are counted together against its largest limit. The
-                petitioner sees one live count for the whole group.
+                Questions sharing a group name are counted together against the largest maximum in
+                the group, and the submitter sees one live counter for all of them.
               </span>
             </div>
           </>
@@ -325,23 +324,24 @@ export function FieldEditor({
         <hr className={styles.divider} />
 
         <div className={styles.field}>
-          <span className={styles.label}>Rules of appearance</span>
+          <span className={styles.label}>Conditional logic</span>
           <span className={styles.help}>
-            A prompt may depend on <strong>one earlier prompt</strong>, and nothing else. Only
-            prompts inscribed above this one are offered, and a conditional prompt cannot govern
-            another.
+            A question can depend on <strong>one earlier question</strong>, and on nothing else. Only
+            questions above this one are offered, and a question that is itself conditional is never
+            offered — conditions do not chain, which is what makes it impossible to build a loop or a
+            cascade that renders for nobody.
           </span>
 
           {eligible.length === 0 ? (
             <span className={styles.help}>
-              No earlier prompt can govern this one yet. Move it farther down the scroll, or
-              inscribe another prompt before it.
+              Nothing above this question can drive a condition yet. Move it further down the form,
+              or add a question before it.
             </span>
           ) : draft.showIf ? (
             <div className={styles.conditionBox}>
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="condition-field">
-                  Reveal this prompt when
+                  Show this question when
                 </label>
                 <Select
                   id="condition-field"
@@ -359,7 +359,7 @@ export function FieldEditor({
               <div className={styles.grid2}>
                 <div className={styles.field}>
                   <label className={styles.label} htmlFor="condition-op">
-                    Rule
+                    Comparison
                   </label>
                   <Select
                     id="condition-op"
@@ -391,7 +391,7 @@ export function FieldEditor({
                           update({ showIf: { ...draft.showIf!, value: event.target.value } })
                         }
                       >
-                        <option value="">Choose a response…</option>
+                        <option value="">Choose…</option>
                         {conditionTarget.options.map((option) => (
                           <option key={option} value={option}>
                             {option}
@@ -406,8 +406,8 @@ export function FieldEditor({
                           update({ showIf: { ...draft.showIf!, value: event.target.value } })
                         }
                       >
-                        <option value="true">Affirmed</option>
-                        <option value="false">Left blank</option>
+                        <option value="true">Checked</option>
+                        <option value="false">Unchecked</option>
                       </Select>
                     ) : (
                       <Input

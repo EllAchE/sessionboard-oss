@@ -78,14 +78,14 @@ export function AiProposalDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Consult the scheduling augur"
-      description="A suggested, conflict-free fasti for every oration awaiting an hour. Nothing is inscribed until you approve it."
+      title="Draft an agenda"
+      description="A suggested, conflict-free placement for everything still waiting for a slot. Nothing is saved until you apply it."
       size="lg"
       footer={
         <div className={styles.detailActions}>
           {proposal && proposal.placements.length > 0 ? (
             <Button variant="primary" onClick={apply} loading={pending}>
-              Inscribe {chosen.size} placement{chosen.size === 1 ? '' : 's'}
+              Apply {chosen.size} placement{chosen.size === 1 ? '' : 's'}
             </Button>
           ) : (
             <Button
@@ -94,10 +94,10 @@ export function AiProposalDialog({
               loading={pending}
               iconLeft={<Sparkles size={14} />}
             >
-              Read the omens
+              Suggest a schedule
             </Button>
           )}
-          <Button onClick={() => onOpenChange(false)}>Return to the fasti</Button>
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
         </div>
       }
     >
@@ -107,12 +107,12 @@ export function AiProposalDialog({
         {!proposal && (
           <div className={styles.field}>
             <label className={styles.label} htmlFor="agenda-guidance">
-              What should the augur know? (optional)
+              Anything it should know? (optional)
             </label>
             <Textarea
               id="agenda-guidance"
               rows={3}
-              placeholder="Hold workshops after noon; reserve the great chamber for the keynote."
+              placeholder="Keep workshops in the afternoon; the keynote room is the largest."
               value={guidance}
               onChange={(fired) => setGuidance(fired.target.value)}
             />
@@ -154,7 +154,7 @@ export function AiProposalDialog({
 
         {proposal && proposal.unplaced.length > 0 && (
           <div>
-            <h3 className={styles.groupTitle}>Beyond the augur’s sight</h3>
+            <h3 className={styles.groupTitle}>Left for you</h3>
             {proposal.unplaced.map((row) => (
               <p key={row.title} className={styles.proposalRationale}>
                 {row.title} — {row.reason}

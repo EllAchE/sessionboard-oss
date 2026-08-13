@@ -66,21 +66,21 @@ const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | '
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
-  submitted: 'Before the council',
-  under_review: 'Under deliberation',
-  accepted: 'Proclaimed',
-  waitlisted: 'Held in reserve',
+  submitted: 'Submitted',
+  under_review: 'In review',
+  accepted: 'Accepted',
+  waitlisted: 'Waitlist',
   declined: 'Declined',
   withdrawn: 'Withdrawn',
 };
 
 const SORTS: Array<{ id: string; label: string }> = [
-  { id: 'score_desc', label: 'Judgment, high to low' },
-  { id: 'score_asc', label: 'Judgment, low to high' },
-  { id: 'ref_asc', label: 'Petition mark, ascending' },
-  { id: 'ref_desc', label: 'Petition mark, descending' },
-  { id: 'title_asc', label: 'Oration title, A–Z' },
-  { id: 'newest', label: 'Most recent petition first' },
+  { id: 'score_desc', label: 'Score, high to low' },
+  { id: 'score_asc', label: 'Score, low to high' },
+  { id: 'ref_asc', label: 'Ref, ascending' },
+  { id: 'ref_desc', label: 'Ref, descending' },
+  { id: 'title_asc', label: 'Title, A–Z' },
+  { id: 'newest', label: 'Newest first' },
 ];
 
 /**
@@ -225,7 +225,7 @@ export function SubmissionQueue(props: QueueProps) {
       },
       {
         id: 'title',
-        header: 'Oration',
+        header: 'Title',
         strong: true,
         render: (row) => (
           <span className={styles.cellTitle}>
@@ -238,25 +238,25 @@ export function SubmissionQueue(props: QueueProps) {
       },
       {
         id: 'submitter',
-        header: 'Orator',
+        header: 'Speaker',
         width: '18%',
         render: (row) => <span className={styles.titleText}>{row.submitterName}</span>,
       },
       {
         id: 'track',
-        header: 'Theme',
+        header: 'Track',
         width: '13%',
         render: (row) => row.trackName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'format',
-        header: 'Oration format',
+        header: 'Format',
         width: '12%',
         render: (row) => row.formatName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'status',
-        header: 'Standing',
+        header: 'Status',
         width: '110px',
         render: (row) => (
           <Badge tone={STATUS_TONE[row.status] ?? 'neutral'}>
@@ -266,7 +266,7 @@ export function SubmissionQueue(props: QueueProps) {
       },
       {
         id: 'progress',
-        header: 'Judgments',
+        header: 'Reviews',
         width: '84px',
         align: 'right',
         render: (row) =>
@@ -300,13 +300,13 @@ export function SubmissionQueue(props: QueueProps) {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headings}>
-          <span className={styles.eyebrow}>The council</span>
-          <h1 className={styles.title}>Petitions</h1>
+          <span className={styles.eyebrow}>Review</span>
+          <h1 className={styles.title}>Submissions</h1>
           <p className={styles.subtitle}>
             {rows.length} shown
             {props.rounds.length > 0 && props.roundId
               ? ` · scoring ${props.rounds.find((round) => round.id === props.roundId)?.name ?? ''}`
-              : ' · no council convened yet'}
+              : ' · no review round yet'}
           </p>
         </div>
         <div className={styles.actions}>
@@ -317,14 +317,14 @@ export function SubmissionQueue(props: QueueProps) {
                 iconLeft={<Upload size={14} />}
                 onClick={() => router.push('/admin/submissions/import')}
               >
-                Import tablets
+                Import
               </Button>
               <Button
                 variant="ghost"
                 iconLeft={<Download size={14} />}
                 onClick={() => router.push('/admin/submissions/files')}
               >
-                Archive
+                Files
               </Button>
               {props.roundId ? (
                 <Button
@@ -336,21 +336,21 @@ export function SubmissionQueue(props: QueueProps) {
                 </Button>
               ) : null}
               <Button variant="ghost" onClick={() => router.push('/admin/submissions/rounds')}>
-                Councils
+                Rounds
               </Button>
               <Button
                 variant="primary"
                 iconLeft={<Plus size={14} />}
                 onClick={() => router.push('/admin/submissions/new')}
               >
-                Enter petition
+                Add submission
               </Button>
             </>
           ) : null}
         </div>
       </header>
 
-      <nav className={styles.tabs} aria-label="Petition standing">
+      <nav className={styles.tabs} aria-label="Submission status">
         {props.tabs.map((tab) => (
           <button
             key={tab.id}
@@ -369,19 +369,19 @@ export function SubmissionQueue(props: QueueProps) {
         <Input
           className={styles.search}
           inputSize="sm"
-          placeholder="Search reference, title, or orator"
+          placeholder="Search ref, title or speaker"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') navigate({ q: search });
           }}
-          aria-label="Search petitions"
+          aria-label="Search submissions"
         />
         <Select
           selectSize="sm"
           value={props.trackId}
           onChange={(event) => navigate({ track: event.target.value })}
-          aria-label="Filter by programme theme"
+          aria-label="Filter by track"
         >
           <option value="">All tracks</option>
           {props.tracks.map((track) => (
@@ -394,7 +394,7 @@ export function SubmissionQueue(props: QueueProps) {
           selectSize="sm"
           value={props.formatId}
           onChange={(event) => navigate({ format: event.target.value })}
-          aria-label="Filter by oration format"
+          aria-label="Filter by format"
         >
           <option value="">All formats</option>
           {props.formats.map((format) => (
@@ -407,7 +407,7 @@ export function SubmissionQueue(props: QueueProps) {
           selectSize="sm"
           value={props.tagId}
           onChange={(event) => navigate({ tag: event.target.value })}
-          aria-label="Filter by petition mark"
+          aria-label="Filter by tag"
         >
           <option value="">All tags</option>
           {props.tags.map((tag) => (
@@ -420,7 +420,7 @@ export function SubmissionQueue(props: QueueProps) {
           selectSize="sm"
           value={props.sort}
           onChange={(event) => navigate({ sort: event.target.value })}
-          aria-label="Sort petitions"
+          aria-label="Sort submissions"
         >
           {SORTS.map((sort) => (
             <option key={sort.id} value={sort.id}>
@@ -433,7 +433,7 @@ export function SubmissionQueue(props: QueueProps) {
             selectSize="sm"
             value={props.roundId ?? ''}
             onChange={(event) => navigate({ round: event.target.value })}
-            aria-label="Council round"
+            aria-label="Review round"
           >
             {props.rounds.map((round) => (
               <option key={round.id} value={round.id}>
@@ -493,20 +493,20 @@ export function SubmissionQueue(props: QueueProps) {
         activeIndex={Math.max(0, Math.min(rows.length - 1, active))}
         onActiveIndexChange={setActive}
         onRowActivate={(row) => router.push(`/admin/submissions/${row.id}`)}
-        label="Petitions"
-        emptyState="No petitions answer these filters."
+        label="Submissions"
+        emptyState="No submissions match these filters."
       />
 
       <div className={styles.hintBar}>
         <span className={styles.hint}>
           <Kbd>j</Kbd>
-          <Kbd>k</Kbd> move through the rolls
+          <Kbd>k</Kbd> move
         </span>
         <span className={styles.hint}>
           <Kbd>x</Kbd> select
         </span>
         <span className={styles.hint}>
-          <Kbd>o</Kbd> unroll
+          <Kbd>o</Kbd> open
         </span>
         {props.canDecide ? (
           <>

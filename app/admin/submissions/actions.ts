@@ -23,7 +23,7 @@ async function run<T>(work: () => Promise<T>, path = '/admin/submissions'): Prom
   } catch (error) {
     if (isAppError(error)) return { ok: false, message: error.message, details: error.details };
     console.error(`review action failed: ${String(error)}`);
-    return { ok: false, message: 'The Forum hit a snag. Try once more.' };
+    return { ok: false, message: 'Something went wrong. Try again.' };
   }
 }
 
@@ -203,7 +203,7 @@ export async function generateAiReviewAction(
 ): Promise<ActionResult<AiReviewWire>> {
   return run(async () => {
     if (!aiReviewEnabled()) {
-      throw new Error('The council augur is not configured');
+      throw new Error('AI review is not configured');
     }
     const ctx = await reviewContext();
     const subject = await review.loadAiReviewSubject(ctx, submissionId, roundId);

@@ -15,11 +15,11 @@ export function aiModelConfigured(): boolean {
  * a key for this instance yet.
  */
 export const AI_KEY_MISSING_NOTE =
-  'The augur has no model key. This is a demonstration province and no treasury has funded its ' +
-  'omens yet—the aqueduct is complete, so setting ANTHROPIC_API_KEY in the environment is the whole ' +
-  'change, and the next request calls claude-sonnet-5.';
+  'No model key is set here. This deployment is a demo and nobody wanted to put a card down for it ' +
+  'yet — the wiring is finished either way, so setting ANTHROPIC_API_KEY in the environment is the ' +
+  'whole change, and this starts calling claude-sonnet-5 on the next request.';
 
 export const AI_KEY_MISSING_NOTE_MARKDOWN =
-  '**The augur has no model key.** This is a demonstration province and its treasury has not funded ' +
-  'omens yet. The aqueduct is complete—set `ANTHROPIC_API_KEY` and the same seal calls ' +
-  '`claude-sonnet-5`.';
+  '**No model key is set on this deployment.** It is a demo and nobody wanted to put a card down ' +
+  'for one yet. The wiring is finished — set `ANTHROPIC_API_KEY` and the same button calls ' +
+  '`claude-sonnet-5` instead.';

@@ -35,7 +35,7 @@ export function formatTimeRange(
   endsAt: Date | null,
   timezone: string,
 ): string {
-  if (!startsAt) return 'Hour awaiting proclamation';
+  if (!startsAt) return 'Time to be confirmed';
   const start = formatDateTime(startsAt, timezone);
   if (!endsAt) return start;
   const end = formatter(timezone, { hour: 'numeric', minute: '2-digit' }).format(endsAt);
@@ -46,7 +46,7 @@ const DAY_MS = 86_400_000;
 
 /** "Due in 3 days" beats a bare date on the one screen that has to make urgency obvious. */
 export function relativeDue(dueAt: Date | null, now = new Date()): string {
-  if (!dueAt) return 'No appointed day';
+  if (!dueAt) return 'No deadline';
   const days = Math.round((dueAt.getTime() - now.getTime()) / DAY_MS);
   if (days === 0) return 'Due today';
   if (days === 1) return 'Due tomorrow';
@@ -59,10 +59,10 @@ export function relativeDue(dueAt: Date | null, now = new Date()): string {
 export type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'accent';
 
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
-  not_started: 'Not begun',
-  in_progress: 'In hand',
-  completed: 'Fulfilled',
-  waived: 'Waived by magistrates',
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  completed: 'Done',
+  waived: 'Waived by organizers',
 };
 
 export function taskTone(status: TaskStatus, overdue: boolean): Tone {
@@ -75,11 +75,11 @@ export function taskTone(status: TaskStatus, overdue: boolean): Tone {
 
 export const SUBMISSION_STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
-  submitted: 'Before the council',
-  under_review: 'Under deliberation',
-  accepted: 'Proclaimed',
-  declined: 'Declined',
-  waitlisted: 'Held in reserve',
+  submitted: 'Pending review',
+  under_review: 'Under review',
+  accepted: 'Accepted',
+  declined: 'Not selected',
+  waitlisted: 'Waitlisted',
   withdrawn: 'Withdrawn',
 };
 
@@ -100,8 +100,8 @@ export function submissionTone(status: string): Tone {
 }
 
 export const ROLE_LABEL: Record<string, string> = {
-  speaker: 'Orator',
-  co_speaker: 'Fellow orator',
+  speaker: 'Speaker',
+  co_speaker: 'Co-speaker',
   moderator: 'Moderator',
   panelist: 'Panelist',
 };

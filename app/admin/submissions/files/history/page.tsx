@@ -8,7 +8,7 @@ import { ContentHistory, type EntityWire, type RevisionWire } from './ContentHis
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'The annals · Cicero' };
+export const metadata = { title: 'Content history · Cicero' };
 
 /**
  * `CNT-11` and `CNT-12` on one screen, deliberately: the approval control and the attributed history

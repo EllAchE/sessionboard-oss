@@ -63,13 +63,13 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
         toast({ title: result.message, tone: 'danger' });
         return;
       }
-      toast({ title: 'Founding charter inscribed', tone: 'success' });
+      toast({ title: 'Event saved', tone: 'success' });
       router.refresh();
     });
   };
 
   return (
-    <section className={styles.panel} aria-label="Founding charter">
+    <section className={styles.panel} aria-label="Event">
       <p className={styles.lede}>
         What the public pages, the calendar invites and every merge field call this event.
       </p>
@@ -98,7 +98,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
           <span className={styles.label}>Tagline</span>
           <Input
             value={tagline}
-            placeholder="The proclamation beneath the event name"
+            placeholder="One line under the event name"
             disabled={!canManage}
             onChange={(e) => setTagline(e.target.value)}
           />
@@ -118,7 +118,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
               <option key={zone} value={zone} />
             ))}
           </datalist>
-          <span className={styles.hint}>IANA name. Every hour in the fasti follows it.</span>
+          <span className={styles.hint}>IANA name. Every agenda time is rendered in it.</span>
         </label>
 
         <label className={styles.field}>
@@ -147,9 +147,9 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
       {canManage ? (
         <div className={styles.formActions}>
           <Button variant="primary" loading={pending} disabled={!dirty} onClick={save}>
-            Seal charter
+            Save event
           </Button>
-          {dirty ? <span className={styles.hint}>Uninscribed changes</span> : null}
+          {dirty ? <span className={styles.hint}>Unsaved changes</span> : null}
         </div>
       ) : null}
     </section>

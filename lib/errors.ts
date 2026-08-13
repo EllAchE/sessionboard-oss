@@ -26,13 +26,13 @@ export class AppError extends Error {
   }
 }
 
-export const unauthorized = (message = 'Present your seal to continue') =>
+export const unauthorized = (message = 'Sign in to continue') =>
   new AppError('unauthorized', message);
 
-export const forbidden = (message = 'This chamber is closed to you') =>
+export const forbidden = (message = 'You do not have access to this') =>
   new AppError('forbidden', message);
 
-export const notFound = (what = 'That record') => new AppError('not_found', `${what} is absent from the rolls`);
+export const notFound = (what = 'That') => new AppError('not_found', `${what} could not be found`);
 
 export const invalid = (message: string, details?: Record<string, string>) =>
   new AppError('invalid', message, details);
@@ -40,7 +40,7 @@ export const invalid = (message: string, details?: Record<string, string>) =>
 export const conflict = (message: string, details?: Record<string, string>) =>
   new AppError('conflict', message, details);
 
-export const rateLimited = (message = 'Too many petitions reached the Forum at once') => new AppError('rate_limited', message);
+export const rateLimited = (message = 'Too many requests') => new AppError('rate_limited', message);
 
 export const unavailable = (message: string) => new AppError('unavailable', message);
 
@@ -70,5 +70,5 @@ export function toPublicError(error: unknown): { code: ErrorCode | 'internal'; m
   if (isAppError(error)) {
     return { code: error.code, message: error.message, details: error.details };
   }
-  return { code: 'internal', message: 'The Forum hit a snag' };
+  return { code: 'internal', message: 'Something went wrong' };
 }

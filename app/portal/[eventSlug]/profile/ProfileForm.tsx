@@ -48,7 +48,7 @@ export function ProfileForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Name &amp; station</CardTitle>
+          <CardTitle>Who you are</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.fieldGrid}>
@@ -74,7 +74,7 @@ export function ProfileForm({
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="jobTitle">
-                Office or title
+                Job title
               </label>
               <Input
                 id="jobTitle"
@@ -86,14 +86,14 @@ export function ProfileForm({
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="company">
-                House or company
+                Company
               </label>
               <Input id="company" name="company" defaultValue={me.company ?? ''} placeholder="Analytical Engines" />
               <FieldError state={state} field="company" />
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="timezone">
-                Your home timezone
+                Your timezone
               </label>
               <Input
                 id="timezone"
@@ -101,12 +101,11 @@ export function ProfileForm({
                 defaultValue={me.timezone ?? ''}
                 placeholder="Europe/London"
               />
-              <span className={styles.hint}>Used when the magistrates set your hour in the fasti.
-              </span>
+              <span className={styles.hint}>Used when organizers schedule anything with you.</span>
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="phone">
-                Courier number
+                Phone number
               </label>
               <Input
                 id="phone"
@@ -125,32 +124,32 @@ export function ProfileForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Summons</CardTitle>
+          <CardTitle>Alerts</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.stackTight}>
             <div className={styles.switchRow}>
               <span className={styles.switchText}>
-                <span className={styles.switchLabel}>Email courier</span>
-                <span className={styles.hint}>Reminders, verdicts, and oration details by email.</span>
+                <span className={styles.switchLabel}>Email</span>
+                <span className={styles.hint}>Reminders, decisions and session details by email.</span>
               </span>
               <input type="hidden" name="notifyEmail" value={notifyEmail ? 'on' : ''} />
-              <Switch checked={notifyEmail} aria-label="Email summons" onCheckedChange={setNotifyEmail} />
+              <Switch checked={notifyEmail} aria-label="Email alerts" onCheckedChange={setNotifyEmail} />
             </div>
             <div className={styles.switchRow}>
               <span className={styles.switchText}>
-                <span className={styles.switchLabel}>SMS courier</span>
+                <span className={styles.switchLabel}>Text message</span>
                 <span className={styles.hint}>
                   {phone.trim()
-                    ? 'The same summons, dispatched to your phone by SMS.'
-                    : 'Inscribe a courier number above to summon this route.'}
+                    ? 'The same alerts, sent to your phone as a text.'
+                    : 'Add a phone number above to turn this on.'}
                 </span>
               </span>
               <input type="hidden" name="notifySms" value={notifySms ? 'on' : ''} />
               <Switch
                 checked={notifySms}
                 disabled={!phone.trim()}
-                aria-label="SMS summons"
+                aria-label="Text message alerts"
                 onCheckedChange={setNotifySms}
               />
             </div>
@@ -160,7 +159,7 @@ export function ProfileForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Biography for the herald</CardTitle>
+          <CardTitle>Biography</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.grid2}>
@@ -175,7 +174,7 @@ export function ProfileForm({
                 value={bio}
                 maxLength={BIO_LIMIT}
                 onChange={(untrusted) => setBio(untrusted.target.value)}
-                placeholder={'The two-paragraph account a herald could read aloud.\n\n**Bold**, _italic_ and [links](https://example.com) all work.'}
+                placeholder={'The two-paragraph version an MC could read aloud.\n\n**Bold**, _italic_ and [links](https://example.com) all work.'}
                 invalid={Boolean(state.details?.bioMarkdown)}
               />
               <span className={styles.hint}>
@@ -184,7 +183,7 @@ export function ProfileForm({
               <FieldError state={state} field="bioMarkdown" />
             </div>
             <div className={styles.field}>
-              <span className={styles.label}>Wax preview</span>
+              <span className={styles.label}>Preview</span>
               <div
                 className={`${styles.previewPane} ${styles.prose}`}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(bio) }}
@@ -196,7 +195,7 @@ export function ProfileForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Roads elsewhere</CardTitle>
+          <CardTitle>Links</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.stackTight}>
@@ -206,18 +205,18 @@ export function ProfileForm({
                   name="linkLabel"
                   value={row.label}
                   placeholder="LinkedIn"
-                  aria-label="Road label"
+                  aria-label="Link label"
                   onChange={(untrusted) => setLink(index, { label: untrusted.target.value })}
                 />
                 <Input
                   name="linkUrl"
                   value={row.url}
                   placeholder="linkedin.com/in/ada"
-                  aria-label="Road address"
+                  aria-label="Link address"
                   onChange={(untrusted) => setLink(index, { url: untrusted.target.value })}
                 />
                 <IconButton
-                  label="Close this road"
+                  label="Remove this link"
                   variant="ghost"
                   size="sm"
                   onClick={() => setLinks((current) => current.filter((_, at) => at !== index))}
@@ -236,13 +235,13 @@ export function ProfileForm({
                   iconLeft={<Plus size={14} />}
                   onClick={() => setLinks((current) => [...current, { label: '', url: '' }])}
                 >
-                  Add a road
+                  Add a link
                 </Button>
               </div>
             )}
             <span className={styles.hint}>
-              LinkedIn, X, Facebook, or your own site—any road you want beside your public likeness.
-              Addresses without https:// are repaired for you.
+              LinkedIn, X, Facebook, your own site — anything you want on the programme. Addresses
+              without https:// are fixed up for you.
             </span>
           </div>
         </CardBody>
@@ -250,7 +249,7 @@ export function ProfileForm({
 
       <Card>
         <CardHeader>
-          <CardTitle>Private petitions to the magistrates</CardTitle>
+          <CardTitle>Anything we should know</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.fieldGrid}>
@@ -277,7 +276,7 @@ export function ProfileForm({
 
       <FormNotice state={state} />
       <div className={styles.taskActions}>
-        <SubmitButton variant="primary">Inscribe my likeness</SubmitButton>
+        <SubmitButton variant="primary">Save profile</SubmitButton>
       </div>
     </form>
   );

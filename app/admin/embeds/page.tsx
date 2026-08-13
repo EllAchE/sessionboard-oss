@@ -6,7 +6,7 @@ import { EmbedStudio } from './EmbedStudio';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Inscriptions · Cicero' };
+export const metadata = { title: 'Embeds · Cicero' };
 
 /** `G-5`, `G-6`, `G-7`. */
 export default async function EmbedsPage() {

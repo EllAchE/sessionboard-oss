@@ -82,8 +82,8 @@ export function BuilderSidebar({
   return (
     <aside className={styles.sidebar}>
       <Card padding="sm">
-        <p className={styles.panelTitle}>Inscribe a prompt</p>
-        <p className={styles.help}>Drag it onto a tablet, or click to add it to the final one.</p>
+        <p className={styles.panelTitle}>Add a question</p>
+        <p className={styles.help}>Drag onto a step, or click to append it to the last step.</p>
         <div className={styles.libraryList}>
           {FIELD_TYPE_OPTIONS.map((option) => (
             <PaletteRow
@@ -93,7 +93,7 @@ export function BuilderSidebar({
               label={option.label}
               hint={option.hint}
               disabled={busy}
-              addLabel={`Add a ${option.label.toLowerCase()} prompt`}
+              addLabel={`Add a ${option.label.toLowerCase()} question`}
               onAdd={() => onAddType(option.value)}
             />
           ))}
@@ -101,10 +101,10 @@ export function BuilderSidebar({
       </Card>
 
       <Card padding="sm">
-        <p className={styles.panelTitle}>Scribe’s library</p>
+        <p className={styles.panelTitle}>Field library</p>
         {library.length === 0 ? (
           <p className={styles.help}>
-            Keep a prompt in the library and it may be reused on every scroll in this assembly.
+            Save a question to the library and it becomes reusable on every form for this event.
           </p>
         ) : (
           <div className={styles.libraryList}>
@@ -138,11 +138,11 @@ export function BuilderSidebar({
       </Card>
 
       <Card padding="sm">
-        <p className={styles.panelTitle}>Shared length decrees</p>
+        <p className={styles.panelTitle}>Combined limits</p>
         {groups.length === 0 ? (
           <p className={styles.help}>
-            Give two prompts the same length decree and their answers share one allowance, with a
-            live count for the petitioner.
+            Give two questions the same limit group in their settings and their answers count against
+            one shared budget, with a live counter for the submitter.
           </p>
         ) : (
           <div className={styles.groupSummary}>

@@ -9,12 +9,12 @@ import type { AccelEventsPanel, AirtablePanel, ApiKeyRow, SmsPanel, SyncLogRow }
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Alliances · Cicero' };
+export const metadata = { title: 'Integrations · Cicero' };
 
 const ENTITY_LABEL: Record<airtable.AirtableEntityType, string> = {
-  speaker: 'Orators',
-  submission: 'Petitions',
-  session: 'Fasti',
+  speaker: 'Speakers',
+  submission: 'Submissions',
+  session: 'Agenda',
 };
 
 export default async function IntegrationsPage() {
@@ -45,7 +45,7 @@ export default async function IntegrationsPage() {
     })),
     log: accelLog.map((row): SyncLogRow => ({
       id: row.id,
-      label: (row.participantId && nameByParticipant.get(row.participantId)) || 'Orator',
+      label: (row.participantId && nameByParticipant.get(row.participantId)) || 'Speaker',
       status: row.status,
       detail: row.remoteId ? `Accelevents id ${row.remoteId}` : null,
       error: row.error,

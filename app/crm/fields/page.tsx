@@ -5,7 +5,7 @@ import { toFieldWire } from '../serialize';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Custom inscriptions · Cicero' };
+export const metadata = { title: 'Custom fields · Cicero' };
 
 const TYPE_LABELS: Record<string, string> = {
   short_text: 'Short text',

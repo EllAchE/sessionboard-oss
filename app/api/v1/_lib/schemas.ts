@@ -22,7 +22,7 @@ export const eventSchema = z
     venueName: z.string().nullable(),
     venueAddress: z.string().nullable(),
   })
-  .describe('An assembly charter');
+  .describe('A conference or event');
 
 export const sessionSchema = z
   .object({
@@ -47,7 +47,7 @@ export const sessionSchema = z
       }),
     ),
   })
-  .describe('An oration inscribed in the fasti');
+  .describe('A scheduled session on the agenda');
 
 export const speakerSchema = z
   .object({
@@ -61,7 +61,7 @@ export const speakerSchema = z
     links: z.array(z.object({ label: z.string(), url: z.string() })),
     sessions: z.array(z.object({ id: z.string(), title: z.string() })),
   })
-  .describe('An orator named on at least one accepted petition');
+  .describe('A speaker with at least one accepted session');
 
 export const agendaSchema = z
   .object({
@@ -75,7 +75,7 @@ export const agendaSchema = z
     /** Published sessions with no time yet, so a consumer does not silently drop them. */
     unscheduled: z.array(sessionSchema),
   })
-  .describe('The proclaimed fasti, grouped by day');
+  .describe('The published agenda, grouped by day');
 
 export const submissionSchema = z
   .object({
@@ -97,19 +97,19 @@ export const submissionSchema = z
     level: z.string().nullable(),
     tags: z.array(z.string()),
     submitter: z.object({ name: z.string().nullable(), email: z.string() }),
-    answers: z.record(z.unknown()).describe('Custom scroll answers, keyed by prompt key'),
+    answers: z.record(z.unknown()).describe('Custom form answers, keyed by field key'),
     submittedAt: z.string().nullable().describe('ISO 8601'),
     decidedAt: z.string().nullable().describe('ISO 8601'),
   })
-  .describe('A petition from the call for orators. Requires an aqueduct key.');
+  .describe('A CFP submission. Requires an API key.');
 
 const queryFilter = z.string().trim().min(1).max(120);
 
 export const sessionListQuery = z
   .object({
     status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
-    track: queryFilter.optional().describe('Theme name or id'),
-    room: queryFilter.optional().describe('Chamber name or id'),
+    track: queryFilter.optional().describe('Track name or id'),
+    room: queryFilter.optional().describe('Room name or id'),
   })
   .strict();
 
@@ -141,24 +141,21 @@ const answers = z.record(z.string().min(1).max(120), answerValue).superRefine((v
   if (Object.keys(value).length > 100) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'A petition may answer at most 100 prompts',
+      message: 'Answers are limited to 100 fields',
     });
   }
 });
 
 export const createSubmissionBody = z
   .object({
-    email: z
-      .string()
-      .email()
-      .describe('Petitioner dispatch address; Cicero creates an account if none exists'),
-    name: z.string().optional().describe('Petitioner name for the rolls'),
+    email: z.string().email().describe('Submitter email; an account is created if none exists'),
+    name: z.string().optional().describe('Submitter display name'),
     answers: answers.describe(
-      'Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags.',
+      'Keyed by the form field key. Built-in keys are title, description, format, track, level, tags.',
     ),
   })
   .strict()
-  .describe('A petition filed through a proclaimed scroll');
+  .describe('A submission to a published form');
 
 export const createSubmissionResponse = z.object({
   id: z.string(),
@@ -173,13 +170,13 @@ export const programSessionInputSchema = z.object({
     .trim()
     .min(1)
     .max(200)
-    .describe('Stable Accelevents oration id; unique within this assembly'),
+    .describe('Stable Accelevents session id; unique within this event'),
   title: z.string().trim().min(1).max(300),
   description: z
     .string()
     .max(50_000)
     .nullable()
-    .describe('Required Markdown inscription; null or blank clears the description'),
+    .describe('Required Markdown field; null or blank clears the description'),
   status: z.enum(['draft', 'published', 'cancelled']),
   startsAt: z.string().datetime({ offset: true }).nullable(),
   endsAt: z.string().datetime({ offset: true }).nullable(),
@@ -189,21 +186,21 @@ export const programSessionInputSchema = z.object({
     .min(1)
     .max(200)
     .nullable()
-    .describe('Assembly chamber id or exact name (case-insensitive)'),
+    .describe('Event room id or exact name (case-insensitive)'),
   track: z
     .string()
     .trim()
     .min(1)
     .max(200)
     .nullable()
-    .describe('Assembly theme id or exact name (case-insensitive)'),
+    .describe('Event track id or exact name (case-insensitive)'),
   format: z
     .string()
     .trim()
     .min(1)
     .max(200)
     .nullable()
-    .describe('Assembly oration format id or exact name (case-insensitive)'),
+    .describe('Event format id or exact name (case-insensitive)'),
   ceuCredits: z.string().trim().max(50).nullable(),
 });
 
@@ -214,24 +211,24 @@ export const programReconcileBody = z
       .enum(['merge', 'replace'])
       .default('merge')
       .describe(
-        'merge inscribes or revises listed records; replace also erases absent managed records',
+        'merge upserts listed records; replace also deletes managed records that are absent',
       ),
     apply: z
       .boolean()
       .default(false)
-      .describe('False previews the exact acts without altering the rolls'),
+      .describe('False previews the exact operations without writing'),
     confirmDeleteMissing: z
       .literal('DELETE_MISSING_SESSIONS')
       .optional()
-      .describe('Required to enact replace mode when missing managed orations would be erased'),
+      .describe('Required to apply replace mode when missing managed sessions would be deleted'),
     sessions: z.array(programSessionInputSchema).max(1_000).default([]),
     deleteExternalIds: z
       .array(z.string().trim().min(1).max(200))
       .max(1_000)
       .default([])
-      .describe('Source-managed orations to erase explicitly in merge mode'),
+      .describe('Explicit source-managed sessions to delete in merge mode'),
   })
-  .describe('An Accelevents-shaped programme snapshot or petition');
+  .describe('An Accelevents-shaped program snapshot or patch');
 
 export const programOperationSchema = z.object({
   externalId: z.string(),
@@ -263,15 +260,15 @@ export const acceleventsProgramSyncBody = z
     allowDeletes: z
       .boolean()
       .default(false)
-      .describe('Must be true with apply mode before remote-only fixture inscriptions are erased'),
+      .describe('Must be true with apply mode before remote-only fixture records are deleted'),
     resetFixture: z
       .literal('drifted')
       .optional()
       .describe(
-        'Fixture province only: reset the remote rolls to a repeatable drifted demo state',
+        'Fixture mode only: reset the remote collection to a repeatable drifted demo state',
       ),
   })
-  .describe('Controls a one-way proclaimed-programme crossing to the fixture Accelevents road');
+  .describe('Controls a one-way published-program sync to the fixture Accelevents adapter');
 
 export const acceleventsProgramSyncResult = z.object({
   mode: z.enum(['preview', 'apply']),

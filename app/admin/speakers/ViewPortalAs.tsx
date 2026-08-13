@@ -46,7 +46,7 @@ export function ViewPortalAsRowButton({
   const { pending, go } = useViewAs(participantId);
   return (
     <IconButton
-      label={`Enter the atrium as ${name}`}
+      label={`View the portal as ${name}`}
       size="xs"
       disabled={pending}
       onKeyDown={(event) => event.stopPropagation()}

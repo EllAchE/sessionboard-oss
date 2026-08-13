@@ -100,7 +100,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
         return;
       }
       toast({
-        title: `Couriers dispatched to ${result.data.sent} names`,
+        title: `Sent to ${result.data.sent} contacts`,
         description: result.data.failed > 0 ? `${result.data.failed} failed.` : undefined,
         tone: result.data.failed > 0 ? 'warning' : 'success',
       });
@@ -113,10 +113,11 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>The courier house</p>
-          <h1 className={styles.title}>Dispatch the census</h1>
+          <p className={styles.eyebrow}>Organization</p>
+          <h1 className={styles.title}>Bulk email</h1>
           <p className={styles.subtitle}>
-            One summons, addressed to each recipient. Every courier enters the organizer archive.
+            One message, personalized per recipient. Every send is logged and readable in the
+            organizer mailbox.
           </p>
         </div>
         <div className={styles.headActions}>
@@ -126,7 +127,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
             href="/admin/mail"
             iconRight={<ArrowUpRight size={14} />}
           >
-            Open the courier archive
+            Open the mailbox
           </Button>
         </div>
       </div>
@@ -136,7 +137,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
       <div className={styles.composerGrid}>
         <Card>
           <CardHeader>
-            <CardTitle>Names on the dispatch roll</CardTitle>
+            <CardTitle>Recipients</CardTitle>
             <CardDescription>{selected.length} selected — at least two are needed.</CardDescription>
           </CardHeader>
           <CardBody>
@@ -160,7 +161,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Dispatch</CardTitle>
+            <CardTitle>Message</CardTitle>
             <CardDescription>
               Merge tags are replaced per recipient before the message goes out.
             </CardDescription>
@@ -170,7 +171,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
               <label className={styles.field}>
                 <span className={styles.label}>Subject</span>
                 <Input
-                  placeholder="Will you address the DevFlow Forum in MMXXVII?"
+                  placeholder="Speak at DevFlow Conf 2027?"
                   value={subject}
                   onChange={(entry) => setSubject(entry.currentTarget.value)}
                 />
@@ -199,7 +200,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                   value={eventId}
                   onChange={(entry) => setEventId(entry.currentTarget.value)}
                 >
-                  <option value="">No assembly</option>
+                  <option value="">No event</option>
                   {events.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       {entry.name}
@@ -217,7 +218,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                 ) : (
                   <>
                     <p className={styles.previewSubject}>
-                      {renderMergeTagsWire(subject, sample) || 'No subject line inscribed'}
+                      {renderMergeTagsWire(subject, sample) || 'No subject yet'}
                     </p>
                     <p className={styles.previewBody}>{renderMergeTagsWire(body, sample)}</p>
                   </>
@@ -246,7 +247,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
         </CardHeader>
         <CardBody>
           {campaigns.length === 0 ? (
-            <p className={styles.hint}>No courier has departed from the census house.</p>
+            <p className={styles.hint}>Nothing sent from the CRM yet.</p>
           ) : (
             <div className={styles.stack}>
               {campaigns.map((campaign) => (
@@ -266,8 +267,8 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                 </div>
               ))}
               <p className={styles.hint}>
-                Every one of these is also in <Link href="/admin/mail">the courier archive</Link>{' '}
-                with its rendered body.
+                Every one of these is also in <Link href="/admin/mail">the mailbox</Link> with its
+                rendered body.
               </p>
             </div>
           )}

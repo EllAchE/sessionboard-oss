@@ -7,7 +7,7 @@ import type { AssignmentWire, RoundWire } from './types';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Your deliberations · Cicero' };
+export const metadata = { title: 'Your reviews · Cicero' };
 
 function toWire(row: review.ReviewerAssignmentRow): AssignmentWire {
   return {

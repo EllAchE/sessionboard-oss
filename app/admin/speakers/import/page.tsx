@@ -7,7 +7,7 @@ import styles from '../speakers.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Import orators · Cicero' };
+export const metadata = { title: 'Import speakers · Cicero' };
 
 /**
  * `SPK-03`. The field catalog is passed down rather than imported by the client component, because
@@ -22,15 +22,15 @@ export default async function ImportSpeakersPage() {
       <div>
         <Link className={styles.backLink} href="/admin/speakers">
           <ChevronLeft size={14} />
-          Orators
+          Speakers
         </Link>
         <div className={styles.pageHead}>
           <div>
-            <p className={styles.eyebrow}>The census</p>
-            <h1 className={styles.title}>Import orators</h1>
+            <p className={styles.eyebrow}>Program</p>
+            <h1 className={styles.title}>Import speakers</h1>
             <p className={styles.subtitle}>
-              Bring a roster over from a tablet. Map the columns, inspect the roll, then confirm —
-              nothing enters the census until you do.
+              Bring a roster over from a spreadsheet. Map the columns, check the preview, then
+              confirm — nothing is written until you do.
             </p>
           </div>
         </div>

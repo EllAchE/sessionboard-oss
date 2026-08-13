@@ -55,7 +55,7 @@ describe('the initial invitation', () => {
   it('matches the golden REQUEST', () => {
     expect(unfold(ics)).toEqual([
       'BEGIN:VCALENDAR',
-      'PRODID:-//Cicero//Orator Fasti//EN',
+      'PRODID:-//Cicero//Speaker Management//EN',
       'VERSION:2.0',
       'CALSCALE:GREGORIAN',
       'METHOD:REQUEST',
@@ -107,7 +107,7 @@ describe('a rescheduled session', () => {
   it('matches the golden SEQUENCE-bumped REQUEST', () => {
     expect(unfold(update)).toEqual([
       'BEGIN:VCALENDAR',
-      'PRODID:-//Cicero//Orator Fasti//EN',
+      'PRODID:-//Cicero//Speaker Management//EN',
       'VERSION:2.0',
       'CALSCALE:GREGORIAN',
       'METHOD:REQUEST',
@@ -146,7 +146,7 @@ describe('a cancelled session', () => {
   it('matches the golden CANCEL', () => {
     expect(unfold(ics)).toEqual([
       'BEGIN:VCALENDAR',
-      'PRODID:-//Cicero//Orator Fasti//EN',
+      'PRODID:-//Cicero//Speaker Management//EN',
       'VERSION:2.0',
       'CALSCALE:GREGORIAN',
       'METHOD:CANCEL',
@@ -184,7 +184,7 @@ describe('the add-to-calendar download', () => {
     expect(ics).toBe(
       [
         'BEGIN:VCALENDAR',
-      'PRODID:-//Cicero//Orator Fasti//EN',
+        'PRODID:-//Cicero//Speaker Management//EN',
         'VERSION:2.0',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',

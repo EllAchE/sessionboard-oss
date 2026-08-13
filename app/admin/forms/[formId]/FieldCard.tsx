@@ -74,19 +74,18 @@ export function FieldCard({
               </span>
             </Tooltip>
           ) : null}
-          {field.required ? <Badge tone="accent">Required by decree</Badge> : null}
-          {field.libraryEntryId ? <Badge tone="info">In the library</Badge> : null}
+          {field.required ? <Badge tone="accent">Required</Badge> : null}
+          {field.libraryEntryId ? <Badge tone="info">Library</Badge> : null}
         </div>
 
         <div className={styles.fieldMeta}>
           <span>{fieldTypeLabel(field.type)}</span>
           <span className={styles.fieldKey}>{field.key}</span>
-          {field.maxLength ? <span>limit {field.maxLength}</span> : null}
-          {field.charLimitGroup ? <span>shared decree “{field.charLimitGroup}”</span> : null}
+          {field.maxLength ? <span>max {field.maxLength}</span> : null}
+          {field.charLimitGroup ? <span>combined limit “{field.charLimitGroup}”</span> : null}
           {field.options && field.options.length > 0 ? (
             <span>
-              {field.options.length} response
-              {field.options.length === 1 ? '' : 's'}
+              {field.options.length} choice{field.options.length === 1 ? '' : 's'}
             </span>
           ) : null}
         </div>
@@ -97,9 +96,9 @@ export function FieldCard({
       </div>
 
       <div className={styles.fieldActions}>
-        <Tooltip content="Revise prompt">
+        <Tooltip content="Edit question">
           <IconButton
-            label={`Revise ${field.label}`}
+            label={`Edit ${field.label}`}
             size="sm"
             disabled={disabled}
             onClick={() => onEdit(field.id)}
@@ -108,9 +107,9 @@ export function FieldCard({
           </IconButton>
         </Tooltip>
         {!locked && field.type !== 'section_break' ? (
-          <Tooltip content="Keep in the inscription library">
+          <Tooltip content="Save to the field library">
             <IconButton
-              label={`Keep ${field.label} in the inscription library`}
+              label={`Save ${field.label} to the field library`}
               size="sm"
               disabled={disabled || Boolean(field.libraryEntryId)}
               onClick={() => onSaveToLibrary(field.id)}
@@ -119,9 +118,9 @@ export function FieldCard({
             </IconButton>
           </Tooltip>
         ) : null}
-        <Tooltip content={reason ?? 'Erase prompt'}>
+        <Tooltip content={reason ?? 'Delete question'}>
           <IconButton
-            label={`Erase ${field.label}`}
+            label={`Delete ${field.label}`}
             size="sm"
             variant="danger"
             disabled={disabled || !canDeleteField(field)}

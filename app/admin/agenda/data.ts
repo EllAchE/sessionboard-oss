@@ -104,7 +104,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
   ]);
 
   if (!eventRow) {
-    throw new Error('That assembly is absent from the rolls');
+    throw new Error('That event could not be found');
   }
 
   const submissionIds = [

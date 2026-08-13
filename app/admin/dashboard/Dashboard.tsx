@@ -89,10 +89,10 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
       return (
         <Card className={styles.wide}>
           <CardHeader>
-            <CardTitle>The ledger of unsettled duties</CardTitle>
+            <CardTitle>Who owes what</CardTitle>
             <CardDescription>
-              Every orator × every duty assigned to them. Overdue first, then due soon, then not
-              begun.
+              Every speaker × every task assigned to them. Overdue first, then due soon, then not
+              started.
             </CardDescription>
           </CardHeader>
           <CardBody>
@@ -105,7 +105,7 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
     case 'pacing':
       return <PacingWidget current={data.pacing.current} compare={data.pacing.compare} />;
     case 'by-form':
-      return <BreakdownWidget title="By scroll" rows={data.byForm} />;
+      return <BreakdownWidget title="By form" rows={data.byForm} />;
     case 'by-track':
       return <BreakdownWidget title="By track" rows={data.byTrack} />;
     case 'review-progress':
@@ -145,7 +145,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
       ...custom.map((board) => ({
         id: board.id,
         name: board.name,
-        description: 'Your private view of the Forum.',
+        description: 'Your dashboard.',
         widgets: board.widgets,
         custom: true,
       })),
@@ -156,7 +156,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
   const active = boards.find((board) => board.id === activeId) ?? boards[0];
 
   const saveDraft = () => {
-    const name = draftName.trim() || 'Untitled tablet';
+    const name = draftName.trim() || 'Untitled dashboard';
     const board: CustomDashboard = {
       id: `custom-${Date.now()}`,
       name,
@@ -188,12 +188,12 @@ export function Dashboard({ data }: { data: DashboardData }) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>The Forum</p>
+          <p className={styles.eyebrow}>Dashboard</p>
           <h1 className={styles.title}>{data.eventName}</h1>
           <p className={styles.subtitle}>
             {data.taskSummary.overdue > 0
-              ? `${data.taskSummary.overdue} overdue duties across ${data.taskSummary.blockedSpeakers} orators.`
-              : `${data.taskSummary.outstanding} duties remain, and none are overdue.`}
+              ? `${data.taskSummary.overdue} overdue tasks across ${data.taskSummary.blockedSpeakers} speakers.`
+              : `${data.taskSummary.outstanding} tasks outstanding, none overdue.`}
           </p>
         </div>
       </div>
@@ -229,13 +229,13 @@ export function Dashboard({ data }: { data: DashboardData }) {
             iconLeft={<Plus size={14} />}
             onClick={() => setBuilderOpen(true)}
           >
-            New tablet
+            New dashboard
           </Button>
         </div>
       </div>
 
       {active.widgets.length === 0 ? (
-        <p className={styles.emptyDashboard}>This tablet bears no records yet.</p>
+        <p className={styles.emptyDashboard}>This dashboard has no widgets yet.</p>
       ) : (
         <div className={styles.grid}>
           {active.widgets.map((widget) => (
@@ -247,13 +247,13 @@ export function Dashboard({ data }: { data: DashboardData }) {
       <Dialog
         open={builderOpen}
         onOpenChange={setBuilderOpen}
-        title="Inscribe a Forum tablet"
-        description="Choose the records it should bear. The tablet stays in this browser."
+        title="Build a dashboard"
+        description="Pick the widgets you want. It is saved in this browser."
       >
         <Input
           value={draftName}
-          placeholder="Tablet name"
-          aria-label="Tablet name"
+          placeholder="Dashboard name"
+          aria-label="Dashboard name"
           onChange={(e) => setDraftName(e.target.value)}
         />
         <div className={styles.widgetPicker} style={{ marginTop: 'var(--space-3)' }}>
@@ -278,7 +278,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
         </div>
         <div className={styles.builderBar}>
           <Button onClick={saveDraft} disabled={draftWidgets.length === 0}>
-            Save tablet
+            Save dashboard
           </Button>
           <Button variant="ghost" onClick={() => setBuilderOpen(false)}>
             Cancel

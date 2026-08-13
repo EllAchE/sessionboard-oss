@@ -110,7 +110,7 @@ function SyncLog({ rows, label }: { rows: SyncLogRow[]; label: string }) {
       rows={rows}
       getRowId={(row) => row.id}
       label={label}
-      emptyState={<div className={styles.empty}>No record has crossed this road.</div>}
+      emptyState={<div className={styles.empty}>Nothing synced yet.</div>}
     />
   );
 }
@@ -171,7 +171,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
     },
     {
       id: 'created',
-      header: 'Forged',
+      header: 'Created',
       width: '18%',
       render: (row) => formatWhen(row.createdAt),
     },
@@ -200,9 +200,9 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
     <div className={styles.section}>
       <div className={styles.sectionHead}>
         <div className={styles.headings}>
-          <h2 className={styles.sectionTitle}>Keys to the city</h2>
+          <h2 className={styles.sectionTitle}>API keys</h2>
           <p className={styles.note}>
-            A key reads this event&apos;s petitions over <code>/api/v1</code>. The public programme
+            A key reads this event&apos;s submissions over <code>/api/v1</code>. Public program
             endpoints need none. Keys are hashed at rest, so the value below is shown once and
             cannot be recovered.
           </p>
@@ -212,13 +212,13 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       <div className={styles.createRow}>
         <Input
           className={styles.createInput}
-          placeholder="What gate does this key open? e.g. Website fasti"
+          placeholder="What is this key for? e.g. Website agenda embed"
           value={name}
           onChange={(event) => setName(event.target.value)}
           disabled={pending}
         />
         <Button variant="primary" iconLeft={<Plus size={15} />} loading={pending} onClick={create}>
-          Mint aqueduct key
+          Create key
         </Button>
       </div>
 
@@ -253,7 +253,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
         rows={keys}
         getRowId={(row) => row.id}
         label="API keys"
-        emptyState={<div className={styles.empty}>No keys have been struck.</div>}
+        emptyState={<div className={styles.empty}>No keys yet.</div>}
       />
     </div>
   );
@@ -286,8 +286,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
       }
       const { created, alreadyThere, skipped, failed, authHeaderUsed } = result.data;
       setPushed(
-        `${created} inscribed, ${alreadyThere} already across, ${skipped} duplicate names passed over, ${failed} refused` +
-          (authHeaderUsed ? ` — Accelevents accepted the \`${authHeaderUsed}\` seal` : ''),
+        `${created} created, ${alreadyThere} already there, ${skipped} skipped as duplicates, ${failed} failed` +
+          (authHeaderUsed ? ` — Accelevents accepted the \`${authHeaderUsed}\` header` : ''),
       );
     });
   };
@@ -295,7 +295,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
   const columns: DataTableColumn<AccelEventsPanel['speakers'][number]>[] = [
     {
       id: 'name',
-      header: 'Orator',
+      header: 'Speaker',
       strong: true,
       render: (row) => (
         <div className={styles.cellStack}>
@@ -306,20 +306,20 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
     },
     {
       id: 'sessions',
-      header: 'Accepted orations',
+      header: 'Accepted talks',
       render: (row) => (
         <span className={styles.cellSub}>{row.sessionTitles.join(', ') || '—'}</span>
       ),
     },
     {
       id: 'status',
-      header: 'Last crossing',
+      header: 'Last push',
       width: '22%',
       render: (row) =>
         row.lastStatus ? (
           <Badge tone={SYNC_TONE[row.lastStatus]}>{row.lastStatus}</Badge>
         ) : (
-          <Badge tone="neutral">not sent</Badge>
+          <Badge tone="neutral">not pushed</Badge>
         ),
     },
   ];
@@ -330,8 +330,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>Accelevents is not configured</strong>
           <p className={styles.note}>
-            Accepted orators are sent to Accelevents so they receive their complimentary token
-            without a scribe re-entering the roll. Set these and reload:
+            Accepted speakers are pushed to an Accelevents event so they receive their comped ticket
+            without anyone re-typing a list. Set these and reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>ACCELEVENTS_API_KEY</li>
@@ -341,8 +341,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
             </li>
           </ul>
           <p className={styles.note}>
-            No seals? Set <code>ACCELEVENTS_FAKE=1</code> to travel the whole road against the
-            recorded fixtures, including the duplicate-address rejection.
+            No credentials? Set <code>ACCELEVENTS_FAKE=1</code> to run the whole path against the
+            recorded fixtures, including the duplicate-email rejection.
           </p>
         </div>
       </div>
@@ -355,8 +355,8 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         <div className={styles.headings}>
           <h2 className={styles.sectionTitle}>Accelevents</h2>
           <p className={styles.note}>
-            One road, accepted orators only. Accelevents rejects a duplicate dispatch address
-            rather than updating it, so anyone already sent is left alone.
+            One way, accepted speakers only. Accelevents rejects a duplicate email outright rather
+            than updating, so anyone already pushed is left alone.
           </p>
         </div>
         <div className={styles.actions}>
@@ -366,7 +366,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
             <Badge tone="success">Live</Badge>
           )}
           <Button size="sm" loading={pending} onClick={runTest}>
-            Test the road
+            Test connection
           </Button>
           <Button
             size="sm"
@@ -375,14 +375,14 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
             loading={pending}
             onClick={push}
           >
-            Send accepted orators
+            Push accepted speakers
           </Button>
         </div>
       </div>
 
       <div className={styles.status}>
-        <span className={styles.mono}>assembly: {panel.eventUrl ?? 'unproclaimed'}</span>
-        <span className={styles.mono}>seal: {panel.authHeader}</span>
+        <span className={styles.mono}>event: {panel.eventUrl ?? 'unset'}</span>
+        <span className={styles.mono}>header: {panel.authHeader}</span>
       </div>
 
       <Feedback result={test} />
@@ -393,11 +393,11 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         columns={columns}
         rows={panel.speakers}
         getRowId={(row) => row.participantId}
-        label="Accepted orators"
-        emptyState={<div className={styles.empty}>No accepted orator is ready to cross this road.</div>}
+        label="Accepted speakers"
+        emptyState={<div className={styles.empty}>No accepted speakers to push yet.</div>}
       />
 
-      <SyncLog rows={panel.log} label="Accelevents courier annals" />
+      <SyncLog rows={panel.log} label="Accelevents sync log" />
     </div>
   );
 }
@@ -441,8 +441,9 @@ function AirtableSection({ panel }: { panel: AirtablePanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>Airtable is not configured</strong>
           <p className={styles.note}>
-            Cicero can mirror petitions, orators, and the fasti into an Airtable base for your
-            scribes. The road runs one way—Airtable is never the archive. Set these and reload:
+            Cicero can mirror submissions, speakers and the agenda into an Airtable base your team
+            can build views over. The mirror is one way — Airtable is never the store. Set these and
+            reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>AIRTABLE_API_KEY</li>
@@ -516,9 +517,9 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
     return (
       <div className={styles.section}>
         <div className={styles.disabled}>
-          <strong className={styles.disabledTitle}>The SMS courier is not configured</strong>
+          <strong className={styles.disabledTitle}>SMS is not configured</strong>
           <p className={styles.note}>
-            Citizens who choose SMS summons fall back to the practice archive at{' '}
+            Anyone who chooses text alerts over email falls back to the dev mailbox at{' '}
             <code>/admin/sms</code> until Twilio is configured. Set these and reload:
           </p>
           <ul className={styles.envList}>
@@ -535,24 +536,24 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
     <div className={styles.section}>
       <div className={styles.sectionHead}>
         <div className={styles.headings}>
-          <h2 className={styles.sectionTitle}>SMS courier</h2>
+          <h2 className={styles.sectionTitle}>SMS</h2>
           <p className={styles.note}>
-            Summons for anyone who prefers SMS—the same occasions as email, plus the dispatch
-            composer&rsquo;s courier route. Every dispatch is inscribed at <code>/admin/sms</code>,
-            as email is at <code>/admin/mail</code>.
+            Alerts to anyone who prefers text over email — the same triggers as email, and the
+            manual composer&apos;s channel selector. Every send is logged at{' '}
+            <code>/admin/sms</code>, the way email is at <code>/admin/mail</code>.
           </p>
         </div>
         <div className={styles.actions}>
           {panel.transport === 'twilio' ? (
-            <Badge tone="success">Live courier — Twilio</Badge>
+            <Badge tone="success">Live — Twilio</Badge>
           ) : (
-            <Badge tone="warning">Practice archive — SMS_TRANSPORT=log</Badge>
+            <Badge tone="warning">Dev mailbox — SMS_TRANSPORT=log</Badge>
           )}
         </div>
       </div>
 
       <div className={styles.status}>
-        <span className={styles.mono}>courier number: {panel.from ?? 'not inscribed'}</span>
+        <span className={styles.mono}>from: {panel.from ?? 'unset'}</span>
       </div>
     </div>
   );
@@ -573,22 +574,21 @@ export function IntegrationsScreen({
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headings}>
-          <span className={styles.eyebrow}>Foreign relations</span>
-          <h1 className={styles.title}>Alliances &amp; roads</h1>
+          <span className={styles.eyebrow}>Admin</span>
+          <h1 className={styles.title}>Integrations</h1>
           <p className={styles.subtitle}>
-            The public aqueduct, Accelevents road, and Airtable mirror. Each gate remains shut until
-            its seal is set, and says so rather than failing quietly.
+            The public API, the Accelevents speaker push and the Airtable mirror. Each is off until
+            its credentials are set, and says so rather than failing quietly.
           </p>
         </div>
       </header>
 
       <Card padding="lg">
         <CardHeader>
-          <CardTitle>Public aqueduct</CardTitle>
+          <CardTitle>Public API</CardTitle>
           <CardDescription>
-            The programme flows without a credential at <code>/api/v1/events/&lt;slug&gt;</code>
-            .
-            The engineer’s plan is inscribed at <code>/api/v1/openapi.json</code>.
+            The program is readable without a credential at <code>/api/v1/events/&lt;slug&gt;</code>
+            . The full description lives at <code>/api/v1/openapi.json</code>.
           </CardDescription>
         </CardHeader>
         <CardBody>
@@ -602,7 +602,7 @@ export function IntegrationsScreen({
             <TabsList>
               <TabsTrigger value="accelevents">Accelevents</TabsTrigger>
               <TabsTrigger value="airtable">Airtable</TabsTrigger>
-              <TabsTrigger value="sms">SMS courier</TabsTrigger>
+              <TabsTrigger value="sms">SMS</TabsTrigger>
             </TabsList>
             <TabsPanel value="accelevents">
               <div className={styles.panel}>

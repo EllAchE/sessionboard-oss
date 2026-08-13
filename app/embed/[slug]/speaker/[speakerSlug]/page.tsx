@@ -39,7 +39,7 @@ export default async function EmbedSpeakerPage({
     <div className={styles.root} data-theme={options.theme === 'auto' ? undefined : options.theme}>
       <div className={styles.backRow}>
         <a className={styles.controlButton} href={`/embed/${slug}/speakers`}>
-          ← All orators
+          ← All speakers
         </a>
       </div>
       <div className={styles.detail}>

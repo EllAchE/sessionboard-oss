@@ -31,7 +31,7 @@ export default async function PortalPageView({
     <div className={styles.grid2}>
       <aside>
         <Link href={`/portal/${eventSlug}/pages`} className={styles.metaLine}>
-          <ChevronLeft size={14} aria-hidden /> All notices
+          <ChevronLeft size={14} aria-hidden /> All pages
         </Link>
         <nav className={styles.sidebarLinks} style={{ marginTop: 'var(--space-4)' }}>
           {siblings.map((sibling) => (
@@ -45,7 +45,7 @@ export default async function PortalPageView({
               }
             >
               {sibling.title}
-              {!sibling.published ? ' (unproclaimed)' : ''}
+              {!sibling.published ? ' (draft)' : ''}
             </Link>
           ))}
         </nav>
@@ -54,8 +54,8 @@ export default async function PortalPageView({
       <article>
         <h1 className={styles.pageTitle}>{page.title}</h1>
         <p className={styles.faint} style={{ marginBottom: 'var(--space-6)' }}>
-          Revised {formatDate(page.updatedAt, event.timezone)}
-          {!page.published ? ' · not yet proclaimed to orators' : ''}
+          Updated {formatDate(page.updatedAt, event.timezone)}
+          {!page.published ? ' · not published to speakers yet' : ''}
         </p>
         <div className={styles.prose} dangerouslySetInnerHTML={{ __html: page.html }} />
       </article>
