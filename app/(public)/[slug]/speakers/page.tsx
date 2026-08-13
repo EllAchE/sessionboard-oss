@@ -40,6 +40,7 @@ export default async function PublicSpeakersPage({
           bundle={bundle}
           options={parseEmbedOptions(search)}
           speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
         />
       </section>
     </PublicChrome>

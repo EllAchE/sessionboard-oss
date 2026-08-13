@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import {
-  sessionMatches,
-  type EmbedOptions,
-  type PublicBundle,
-} from '../model';
+import { sessionMatches, type EmbedOptions, type PublicBundle } from '../model';
 import {
   EMPTY_FACETS,
   FacetPanel,
@@ -25,9 +21,11 @@ import styles from '../embed.module.css';
 export function SessionsWidget({
   bundle,
   options,
+  speakerBase,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
+  speakerBase: string;
 }) {
   const [query, setQuery] = useState(options.query);
   const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
@@ -36,9 +34,10 @@ export function SessionsWidget({
   const visible = useMemo(
     () =>
       bundle.sessions.filter(
-        (session) => sessionMatches(session, query) && facetsMatch(session, facets),
+        (session) =>
+          sessionMatches(session, query) && facetsMatch(session, facets, bundle.event.timezone),
       ),
-    [bundle.sessions, query, facets],
+    [bundle.event.timezone, bundle.sessions, query, facets],
   );
 
   const activeFacets = countFacets(facets);
@@ -49,8 +48,8 @@ export function SessionsWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search sessions and speakers"
-          placeholder="Search sessions or speakers…"
+          label="Search talks, speakers, or topics"
+          placeholder="Search talks, speakers, or topics…"
         />
         <button
           type="button"
@@ -69,7 +68,12 @@ export function SessionsWidget({
       </div>
 
       {filtersOpen ? (
-        <FacetPanel sessions={bundle.sessions} facets={facets} onChange={setFacets} />
+        <FacetPanel
+          sessions={bundle.sessions}
+          facets={facets}
+          timezone={bundle.event.timezone}
+          onChange={setFacets}
+        />
       ) : null}
 
       {visible.length === 0 ? (
@@ -85,7 +89,7 @@ export function SessionsWidget({
                 showRoom={options.showRoom}
               />
               <SessionChips session={session} options={options} />
-              <SpeakerRoster session={session} />
+              <SpeakerRoster session={session} speakerBase={speakerBase} />
               {options.showDescription ? (
                 <ShowMore
                   text={session.descriptionText}

@@ -415,8 +415,27 @@
 }
 
 .rosterName {
-  color: var(--text-strong);
+  color: var(--text-link);
   font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.rosterName:hover,
+.sessionRelationLink:hover {
+  color: var(--text-accent);
+}
+
+.sessionRelationLink {
+  color: var(--text-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.rosterName:focus-visible,
+.sessionRelationLink:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
 }
 
 /* ---- Speaker directory ---- */

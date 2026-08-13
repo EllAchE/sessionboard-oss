@@ -35,7 +35,13 @@ export default async function PublicAgendaPage({
           <h2 className={styles.sectionTitle}>Agenda</h2>
           <span className={styles.sectionLink}>{bundle.sessions.length} published sessions</span>
         </div>
-        <EmbedBody view="agenda" bundle={bundle} options={parseEmbedOptions(search)} />
+        <EmbedBody
+          view="agenda"
+          bundle={bundle}
+          options={parseEmbedOptions(search)}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
+        />
       </section>
     </PublicChrome>
   );

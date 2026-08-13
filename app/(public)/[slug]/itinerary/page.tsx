@@ -37,7 +37,13 @@ export default async function PublicItineraryPage({
             Star the talks you want and export them to your calendar.
           </span>
         </div>
-        <EmbedBody view="itinerary" bundle={bundle} options={parseEmbedOptions(search)} />
+        <EmbedBody
+          view="itinerary"
+          bundle={bundle}
+          options={parseEmbedOptions(search)}
+          speakerBase={`/${bundle.event.slug}/speakers`}
+          sessionBase={`/${bundle.event.slug}/sessions`}
+        />
       </section>
     </PublicChrome>
   );
