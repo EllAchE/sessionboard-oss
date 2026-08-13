@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { parseSpeakerName } from '@/lib/speaker-name';
 
 /**
  * `Z-5`. One set of schemas, two jobs: they validate what comes in and they generate
@@ -116,10 +117,22 @@ export const submissionListQuery = z.object({
   limit: z.coerce.number().int().min(1).max(200).optional().describe('Defaults to 100'),
 });
 
+const speakerNameInput = z.string().transform((value, context) => {
+  try {
+    return parseSpeakerName(value) ?? undefined;
+  } catch (error) {
+    context.addIssue({
+      code: 'custom',
+      message: error instanceof Error ? error.message : 'Invalid speaker name',
+    });
+    return z.NEVER;
+  }
+});
+
 export const createSubmissionBody = z
   .object({
     email: z.string().email().describe('Submitter email; an account is created if none exists'),
-    name: z.string().optional().describe('Submitter display name'),
+    name: speakerNameInput.optional().describe('Submitter display name'),
     answers: z
       .record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]))
       .describe(

@@ -191,6 +191,8 @@
   font-size: var(--text-lg);
   line-height: var(--leading-snug);
   color: var(--text-strong);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
 }
 
 .speakerRole {
@@ -419,6 +421,8 @@
   font-weight: var(--weight-semibold);
   text-decoration: underline;
   text-underline-offset: 0.15em;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
 }
 
 .rosterName:hover,
@@ -509,6 +513,8 @@
   font-size: var(--text-lg);
   line-height: var(--leading-snug);
   color: var(--text-strong);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
 }
 
 .directoryMeta {
@@ -572,6 +578,8 @@
   font-size: var(--text-3xl);
   line-height: var(--leading-tight);
   color: var(--text-strong);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
 }
 
 .detailSection {

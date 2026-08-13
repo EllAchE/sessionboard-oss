@@ -31,6 +31,7 @@ import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
+import { parseSpeakerName } from '../speaker-name';
 import { loadCommsContext, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 
@@ -48,13 +49,7 @@ import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 export const SCORE_SCALE = 5;
 
 export type SubmissionStatus =
-  | 'draft'
-  | 'submitted'
-  | 'under_review'
-  | 'accepted'
-  | 'declined'
-  | 'waitlisted'
-  | 'withdrawn';
+  'draft' | 'submitted' | 'under_review' | 'accepted' | 'declined' | 'waitlisted' | 'withdrawn';
 
 export type AssignmentStatus = 'pending' | 'completed' | 'declined';
 
@@ -522,7 +517,10 @@ export async function updateCriterion(
   const values: Record<string, unknown> = {};
   if (patch.label !== undefined) {
     const label = patch.label.trim();
-    if (!label) throw invalid('A criterion needs a label', { label: 'Label is required' });
+    if (!label)
+      throw invalid('A criterion needs a label', {
+        label: 'Label is required',
+      });
     values.label = label;
   }
   if (patch.description !== undefined) values.description = patch.description?.trim() || null;
@@ -615,7 +613,12 @@ export async function inviteReviewer(
 export async function listReviewers(ctx: EventContext): Promise<ReviewerRow[]> {
   requireCapability(ctx, 'submission:review');
   const rows = await getDb()
-    .select({ userId: user.id, name: user.name, email: user.email, role: membership.role })
+    .select({
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      role: membership.role,
+    })
     .from(membership)
     .innerJoin(user, eq(user.id, membership.userId))
     .where(
@@ -792,7 +795,11 @@ export async function saveScorecard(
     const value = Math.max(0, Math.min(criterion.maxScore, Math.round(entry.value)));
     await db
       .insert(scoreTable)
-      .values({ reviewAssignmentId: assignment.id, criterionId: entry.criterionId, value })
+      .values({
+        reviewAssignmentId: assignment.id,
+        criterionId: entry.criterionId,
+        value,
+      })
       .onConflictDoUpdate({
         target: [scoreTable.reviewAssignmentId, scoreTable.criterionId],
         set: { value },
@@ -829,7 +836,7 @@ export async function saveScorecard(
   await db
     .update(reviewAssignment)
     .set({
-      comment: input.comment === undefined ? assignment.comment : (input.comment?.trim() || null),
+      comment: input.comment === undefined ? assignment.comment : input.comment?.trim() || null,
       status: completing ? 'completed' : 'pending',
       completedAt: completing ? new Date() : null,
     })
@@ -963,10 +970,7 @@ export type ReviewAnswerField = Pick<
   'key' | 'label' | 'type' | 'builtinKey'
 >;
 
-function answerCarriesIdentity(
-  answerFields: Map<string, ReviewAnswerField>,
-  key: string,
-): boolean {
+function answerCarriesIdentity(answerFields: Map<string, ReviewAnswerField>, key: string): boolean {
   const field = answerFields.get(key);
   return (
     carriesIdentity(key) ||
@@ -1024,7 +1028,8 @@ export type QueueFilters = {
   roundId?: string | null;
 };
 
-export type QueueSort = 'score_desc' | 'score_asc' | 'ref_asc' | 'ref_desc' | 'title_asc' | 'newest';
+export type QueueSort =
+  'score_desc' | 'score_asc' | 'ref_asc' | 'ref_desc' | 'title_asc' | 'newest';
 
 export type QueueRow = {
   id: string;
@@ -1059,7 +1064,11 @@ export type QueueBundle = {
   tags: Array<{ id: string; name: string }>;
 };
 
-const STATUS_TABS: Array<{ id: string; label: string; statuses: SubmissionStatus[] }> = [
+const STATUS_TABS: Array<{
+  id: string;
+  label: string;
+  statuses: SubmissionStatus[];
+}> = [
   { id: 'all', label: 'All', statuses: [] },
   { id: 'pending', label: 'Pending', statuses: ['submitted', 'under_review'] },
   { id: 'accepted', label: 'Accepted', statuses: ['accepted'] },
@@ -1096,7 +1105,8 @@ export function sortQueue(rows: QueueRow[], sort: QueueSort = 'score_desc'): Que
       return copy.sort((a, b) => a.title.localeCompare(b.title));
     case 'newest':
       return copy.sort(
-        (a, b) => (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0) || b.ref - a.ref,
+        (a, b) =>
+          (b.submittedAt?.getTime() ?? 0) - (a.submittedAt?.getTime() ?? 0) || b.ref - a.ref,
       );
     case 'score_desc':
     default:
@@ -1148,8 +1158,7 @@ export function reviewResultsCsv(
     'Review status',
     'Reviewer score (1-5)',
     ...orderedCriteria.map(
-      (criterion) =>
-        `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
+      (criterion) => `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
     ),
     'Reviewer comment',
     'Review completed at',
@@ -1177,9 +1186,7 @@ export function reviewResultsCsv(
           : [null];
 
       return reviewers.map((reviewer) => {
-        const reviewerAggregate = reviewer
-          ? aggregateScorecard(criteria, reviewer.scores)
-          : null;
+        const reviewerAggregate = reviewer ? aggregateScorecard(criteria, reviewer.scores) : null;
         const scoreByCriterion = new Map(
           reviewer?.scores.map((entry) => [entry.criterionId, entry.value]) ?? [],
         );
@@ -1390,7 +1397,10 @@ export async function loadQueue(
   const [tagRows, assignmentRows, scoreRows, aiRows] = await Promise.all([
     ids.length
       ? db
-          .select({ submissionId: submissionTag.submissionId, tagId: submissionTag.tagId })
+          .select({
+            submissionId: submissionTag.submissionId,
+            tagId: submissionTag.tagId,
+          })
           .from(submissionTag)
           .where(inArray(submissionTag.submissionId, ids))
       : Promise.resolve([]),
@@ -1435,7 +1445,11 @@ export async function loadQueue(
       : Promise.resolve([]),
   ]);
 
-  const tagsBySubmission = groupBy(tagRows, (row) => row.submissionId, (row) => row.tagId);
+  const tagsBySubmission = groupBy(
+    tagRows,
+    (row) => row.submissionId,
+    (row) => row.tagId,
+  );
   const scoresByAssignment = new Map<string, ScoreValue[]>();
   for (const row of scoreRows) {
     const list = scoresByAssignment.get(row.assignmentId) ?? [];
@@ -1627,7 +1641,9 @@ export async function loadSubmissionReview(
         ? db.query.track.findFirst({ where: eq(trackTable.id, row.trackId) })
         : Promise.resolve(undefined),
       row.formatId
-        ? db.query.sessionFormat.findFirst({ where: eq(sessionFormat.id, row.formatId) })
+        ? db.query.sessionFormat.findFirst({
+            where: eq(sessionFormat.id, row.formatId),
+          })
         : Promise.resolve(undefined),
       db
         .select({ id: tagTable.id, name: tagTable.name })
@@ -1783,7 +1799,10 @@ export async function loadSubmissionReview(
 // Decisions — `V-2`
 // ---------------------------------------------------------------------------
 
-export type DecisionResult = { updated: number; skipped: Array<{ id: string; reason: string }> };
+export type DecisionResult = {
+  updated: number;
+  skipped: Array<{ id: string; reason: string }>;
+};
 
 /**
  * The transition that makes a session eligible for the agenda, so it is deliberately the only way
@@ -1812,7 +1831,10 @@ export async function decideSubmissions(
       nextStatusForDecision(row.status, decision);
       eligible.push(row.id);
     } catch (error) {
-      skipped.push({ id: row.id, reason: error instanceof Error ? error.message : 'Not eligible' });
+      skipped.push({
+        id: row.id,
+        reason: error instanceof Error ? error.message : 'Not eligible',
+      });
     }
   }
   if (eligible.length === 0) return { updated: 0, skipped };
@@ -1824,7 +1846,7 @@ export async function decideSubmissions(
     .set({
       status,
       decidedAt: decision === 'reset' ? null : now,
-      decisionNote: note === undefined ? undefined : (note?.trim() || null),
+      decisionNote: note === undefined ? undefined : note?.trim() || null,
       updatedAt: now,
     })
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, eligible)));
@@ -1849,10 +1871,7 @@ export type WorkloadRow = {
   lastActivityAt: Date | null;
 };
 
-export async function reviewerWorkload(
-  ctx: EventContext,
-  roundId: string,
-): Promise<WorkloadRow[]> {
+export async function reviewerWorkload(ctx: EventContext, roundId: string): Promise<WorkloadRow[]> {
   requireCapability(ctx, 'submission:review');
   await requireRound(ctx, roundId);
   const db = getDb();
@@ -1983,7 +2002,10 @@ export type NewSubmissionInput = {
 async function allocateRef(eventId: string): Promise<number> {
   const [row] = await getDb()
     .update(event)
-    .set({ submissionSeq: sql`${event.submissionSeq} + 1`, updatedAt: new Date() })
+    .set({
+      submissionSeq: sql`${event.submissionSeq} + 1`,
+      updatedAt: new Date(),
+    })
     .where(eq(event.id, eventId))
     .returning({ ref: event.submissionSeq });
   if (!row) throw notFound('That event');
@@ -2012,15 +2034,13 @@ export async function createSubmissionAsOrganizer(
     });
   }
 
-  const existingUser = await db.query.user.findFirst({ where: eq(user.email, email) });
+  const speakerName = parseSpeakerName(input.speakerName);
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(user.email, email),
+  });
   const speaker =
-    existingUser ??
-    (
-      await db
-        .insert(user)
-        .values({ email, name: input.speakerName?.trim() || null })
-        .returning()
-    )[0];
+    existingUser ?? (await db.insert(user).values({ email, name: speakerName }).returning())[0];
 
   const now = new Date();
   const status = input.status ?? 'submitted';
@@ -2045,7 +2065,7 @@ export async function createSubmissionAsOrganizer(
   const participantId = await ensureParticipant(
     ctx.eventId,
     speaker.id,
-    input.speakerName?.trim() || speaker.name,
+    speakerName ?? speaker.name,
   );
   await linkPrimarySpeaker(created.id, participantId);
 
@@ -2151,7 +2171,11 @@ const IMPORT_ALIASES: Record<string, keyof ImportRow> = {
 export function parseSubmissionImport(text: string): ImportParse {
   const table = parseCsv(text);
   if (table.length === 0) {
-    return { rows: [], headers: [], errors: [{ line: 0, message: 'That file is empty' }] };
+    return {
+      rows: [],
+      headers: [],
+      errors: [{ line: 0, message: 'That file is empty' }],
+    };
   }
 
   const headers = table[0].map((header) => header.trim());
@@ -2179,7 +2203,10 @@ export function parseSubmissionImport(text: string): ImportParse {
       return;
     }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(record.speakerEmail ?? '')) {
-      errors.push({ line, message: `Invalid speaker email for "${record.title}"` });
+      errors.push({
+        line,
+        message: `Invalid speaker email for "${record.title}"`,
+      });
       return;
     }
 
@@ -2198,7 +2225,10 @@ export function parseSubmissionImport(text: string): ImportParse {
   return { rows, headers, errors };
 }
 
-export type ImportResult = { created: number; failed: Array<{ title: string; message: string }> };
+export type ImportResult = {
+  created: number;
+  failed: Array<{ title: string; message: string }>;
+};
 
 export async function importSubmissions(
   ctx: EventContext,
@@ -2293,7 +2323,11 @@ export async function listSubmissionFiles(
   const db = getDb();
 
   const rows = await db
-    .select({ id: submission.id, ref: submission.ref, answers: submission.answers })
+    .select({
+      id: submission.id,
+      ref: submission.ref,
+      answers: submission.answers,
+    })
     .from(submission)
     .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.id, submissionIds)));
 
@@ -2330,12 +2364,20 @@ export async function listSubmissionFiles(
 
 export const QUEUE_SURFACE = 'submissions';
 
-export type SavedViewRecord = { id: string; name: string; filters: Record<string, unknown> };
+export type SavedViewRecord = {
+  id: string;
+  name: string;
+  filters: Record<string, unknown>;
+};
 
 export async function listSavedViews(ctx: EventContext): Promise<SavedViewRecord[]> {
   requireCapability(ctx, 'submission:read_all');
   const rows = await getDb()
-    .select({ id: savedView.id, name: savedView.name, filters: savedView.filters })
+    .select({
+      id: savedView.id,
+      name: savedView.name,
+      filters: savedView.filters,
+    })
     .from(savedView)
     .where(
       and(
@@ -2345,7 +2387,11 @@ export async function listSavedViews(ctx: EventContext): Promise<SavedViewRecord
       ),
     )
     .orderBy(asc(savedView.name));
-  return rows.map((row) => ({ id: row.id, name: row.name, filters: row.filters }));
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    filters: row.filters,
+  }));
 }
 
 export async function saveView(
@@ -2600,9 +2646,7 @@ export async function loadReviewerQueue(
       average: aggregate.average,
       scoredCount: aggregate.scoredCount,
     };
-    return authorHidden
-      ? { ...built, submitterName: ANONYMOUS_AUTHOR }
-      : built;
+    return authorHidden ? { ...built, submitterName: ANONYMOUS_AUTHOR } : built;
   });
 
   const active = all.filter((row) => row.status !== 'declined');
@@ -2614,7 +2658,8 @@ export async function loadReviewerQueue(
     authorHidden,
     // Unscored first: the point of the dashboard is the work that is left.
     assignments: [...active].sort(
-      (a, b) => Number(a.status === 'completed') - Number(b.status === 'completed') || a.ref - b.ref,
+      (a, b) =>
+        Number(a.status === 'completed') - Number(b.status === 'completed') || a.ref - b.ref,
     ),
     recused: all.filter((row) => row.status === 'declined'),
     pendingCount: active.filter((row) => row.status !== 'completed').length,

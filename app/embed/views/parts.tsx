@@ -53,7 +53,7 @@ export function ShowMore({
       ) : (
         <p className={styles.truncated}>{`${text.slice(0, limit).trimEnd()}…`}</p>
       )}
-      <button type="button" className={styles.showMore} onClick={() => setExpanded(!expanded)}>
+      <button type='button' className={styles.showMore} onClick={() => setExpanded(!expanded)}>
         {expanded ? lessLabel : moreLabel}
       </button>
     </>
@@ -75,7 +75,7 @@ export function SearchField({
     <span className={styles.searchField}>
       <Search size={14} aria-hidden />
       <input
-        type="search"
+        type='search'
         className={styles.searchInput}
         value={value}
         placeholder={placeholder}
@@ -162,17 +162,20 @@ export function FacetPanel({
   if (groups.length === 0) return null;
 
   return (
-    <div className={styles.filterPanel} role="group" aria-label="Filters">
+    <div className={styles.filterPanel} role='group' aria-label='Filters'>
       {groups.map((group) => (
         <div key={group.key} className={styles.facetGroup}>
           <span className={styles.facetTitle}>{group.title}</span>
           {group.options.map((option) => (
             <label key={option.value} className={styles.facetOption}>
               <input
-                type="checkbox"
+                type='checkbox'
                 checked={facets[group.key].includes(option.value)}
                 onChange={() =>
-                  onChange({ ...facets, [group.key]: toggle(facets[group.key], option.value) })
+                  onChange({
+                    ...facets,
+                    [group.key]: toggle(facets[group.key], option.value),
+                  })
                 }
               />
               <span>{option.label}</span>
@@ -184,7 +187,7 @@ export function FacetPanel({
       {countSessionFacets(facets) > 0 ? (
         <div className={styles.filterFooter}>
           <button
-            type="button"
+            type='button'
             className={styles.controlButton}
             onClick={() => onChange(EMPTY_SESSION_FACETS)}
           >
@@ -206,13 +209,13 @@ export function SessionChips({
   return (
     <div className={styles.metaRow}>
       {options.showTrack && session.track ? (
-        <span className={styles.chip} data-kind="track">
+        <span className={styles.chip} data-kind='track'>
           {session.track}
         </span>
       ) : null}
       {session.format ? <span className={styles.chip}>{session.format}</span> : null}
       {session.tags.map((tag) => (
-        <span key={tag.id} className={styles.chip} data-kind="topic">
+        <span key={tag.id} className={styles.chip} data-kind='topic'>
           {tag.name}
         </span>
       ))}
@@ -256,7 +259,7 @@ export function SpeakerRoster({
         const role = speakerLine(person);
         return (
           <span key={person.id}>
-            <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`}>
+            <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`} dir='auto'>
               {person.name}
             </a>
             {role ? ` — ${role}` : null}
@@ -286,7 +289,7 @@ export function SpeakerAvatar({
     <Image
       className={styles.avatar}
       src={speaker.headshotUrl}
-      alt=""
+      alt=''
       width={48}
       height={48}
       unoptimized
@@ -335,7 +338,11 @@ export function SpeakerProfile({
           )
         ) : null}
         <div className={styles.detailIdentity}>
-          {showName ? <h2 className={styles.detailName}>{speaker.name}</h2> : null}
+          {showName ? (
+            <h2 className={styles.detailName} dir='auto'>
+              {speaker.name}
+            </h2>
+          ) : null}
           {speaker.pronouns ? <p className={styles.speakerRole}>{speaker.pronouns}</p> : null}
           {speaker.jobTitle ? <p className={styles.speakerRole}>{speaker.jobTitle}</p> : null}
           {speaker.company ? <p className={styles.speakerRole}>{speaker.company}</p> : null}
@@ -347,8 +354,8 @@ export function SpeakerProfile({
                   key={link.url}
                   className={styles.speakerLink}
                   href={link.url}
-                  rel="nofollow ugc noopener"
-                  target="_blank"
+                  rel='nofollow ugc noopener'
+                  target='_blank'
                 >
                   {link.label || link.url}
                 </a>

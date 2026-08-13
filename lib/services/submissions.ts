@@ -29,6 +29,7 @@ import {
 } from '../forms/contract';
 import { formatRef } from '../ids';
 import { markdownToText } from '../markdown';
+import { parseSpeakerName } from '../speaker-name';
 
 /**
  * The public CFP runtime's service half. Everything here is callable from a Server Action, a route
@@ -180,7 +181,10 @@ function asIdList(value: AnswerValue): string[] {
  * become `submission_tag` rows, and every other answer stays in `answers`. Hidden answers are
  * dropped first so a question the submitter never saw cannot reach either destination.
  */
-export function prepareSubmission(fields: RuntimeField[], rawValues: AnswerMap): PreparedSubmission {
+export function prepareSubmission(
+  fields: RuntimeField[],
+  rawValues: AnswerMap,
+): PreparedSubmission {
   const values = clearHiddenAnswers(fields, rawValues);
   validateAnswers(fields, values);
 
@@ -243,7 +247,11 @@ export function remainingSubmissions(
 
 /** `F-10`: a form only takes answers while it is open and inside its window. */
 export function isAcceptingSubmissions(
-  form: { status: 'draft' | 'open' | 'closed'; opensAt: Date | null; closesAt: Date | null },
+  form: {
+    status: 'draft' | 'open' | 'closed';
+    opensAt: Date | null;
+    closesAt: Date | null;
+  },
   now = new Date(),
 ): boolean {
   if (form.status !== 'open') return false;
@@ -256,7 +264,11 @@ export function isAcceptingSubmissions(
 // Loading the public form
 // ---------------------------------------------------------------------------
 
-export type OpenCallSummary = { slug: string; name: string; closesAt: Date | null };
+export type OpenCallSummary = {
+  slug: string;
+  name: string;
+  closesAt: Date | null;
+};
 
 /**
  * The open calls for speakers on an event's public front door. A call nobody can find is a call
@@ -305,7 +317,9 @@ export async function loadPublicForm(
 ): Promise<PublicFormBundle | null> {
   const db = getDb();
 
-  const eventRow = await db.query.event.findFirst({ where: eq(event.slug, eventSlug) });
+  const eventRow = await db.query.event.findFirst({
+    where: eq(event.slug, eventSlug),
+  });
   if (!eventRow) return null;
 
   const formRow = await db.query.form.findFirst({
@@ -326,7 +340,10 @@ export async function loadPublicForm(
       where: eq(trackTable.eventId, eventRow.id),
       orderBy: [asc(trackTable.position)],
     }),
-    db.query.tag.findMany({ where: eq(tagTable.eventId, eventRow.id), orderBy: [asc(tagTable.name)] }),
+    db.query.tag.findMany({
+      where: eq(tagTable.eventId, eventRow.id),
+      orderBy: [asc(tagTable.name)],
+    }),
   ]);
 
   const taxonomy: Taxonomy = {
@@ -378,7 +395,8 @@ export async function loadPublicForm(
   };
 }
 
-export async function countSubmissionsForUser(formId: string, userId: string): Promise<number> {  const db = getDb();
+export async function countSubmissionsForUser(formId: string, userId: string): Promise<number> {
+  const db = getDb();
   const rows = await db
     .select({ id: submission.id, status: submission.status })
     .from(submission)
@@ -472,7 +490,9 @@ export async function loadDraftValues(
   fields: RuntimeField[],
 ): Promise<LoadedDraft | null> {
   const db = getDb();
-  const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
+  const row = await db.query.submission.findFirst({
+    where: eq(submission.id, submissionId),
+  });
   if (!row || row.submitterUserId !== userId) return null;
 
   const tagRows = await db
@@ -486,7 +506,11 @@ export async function loadDraftValues(
     fields,
   );
 
-  return { id: row.id, values, fileNames: await resolveFileNames(fields, values) };
+  return {
+    id: row.id,
+    values,
+    fileNames: await resolveFileNames(fields, values),
+  };
 }
 
 async function resolveFileNames(
@@ -539,7 +563,10 @@ async function allocateRef(eventId: string): Promise<number> {
   const db = getDb();
   const [row] = await db
     .update(event)
-    .set({ submissionSeq: sql`${event.submissionSeq} + 1`, updatedAt: new Date() })
+    .set({
+      submissionSeq: sql`${event.submissionSeq} + 1`,
+      updatedAt: new Date(),
+    })
     .where(eq(event.id, eventId))
     .returning({ ref: event.submissionSeq });
   if (!row) throw notFound('That event');
@@ -559,7 +586,9 @@ export async function saveSubmission(input: SaveSubmissionInput): Promise<SavedS
       : prepareDraft(input.fields, input.values);
 
   const existing = input.submissionId
-    ? await db.query.submission.findFirst({ where: eq(submission.id, input.submissionId) })
+    ? await db.query.submission.findFirst({
+        where: eq(submission.id, input.submissionId),
+      })
     : undefined;
 
   if (input.submissionId && !existing) throw notFound('That submission');
@@ -652,14 +681,15 @@ export async function ensureParticipant(
   displayName: string | null,
 ): Promise<string> {
   const db = getDb();
+  const safeDisplayName = parseSpeakerName(displayName);
   const existing = await db.query.participant.findFirst({
     where: and(eq(participant.eventId, eventId), eq(participant.userId, userId)),
   });
   if (existing) {
-    if (!existing.displayName && displayName) {
+    if (!existing.displayName && safeDisplayName) {
       await db
         .update(participant)
-        .set({ displayName, updatedAt: new Date() })
+        .set({ displayName: safeDisplayName, updatedAt: new Date() })
         .where(eq(participant.id, existing.id));
     }
     return existing.id;
@@ -667,7 +697,7 @@ export async function ensureParticipant(
 
   const [created] = await db
     .insert(participant)
-    .values({ eventId, userId, displayName })
+    .values({ eventId, userId, displayName: safeDisplayName })
     .onConflictDoNothing()
     .returning();
   if (created) return created.id;
@@ -685,14 +715,22 @@ export async function linkPrimarySpeaker(
 ): Promise<void> {
   await getDb()
     .insert(participantRole)
-    .values({ submissionId, participantId, kind: 'speaker', isPrimary: true, position: 0 })
+    .values({
+      submissionId,
+      participantId,
+      kind: 'speaker',
+      isPrimary: true,
+      position: 0,
+    })
     .onConflictDoNothing();
 }
 
 /** `S-9`. A speaker withdraws their own talk; the row stays for the organizer's record. */
 export async function withdrawSubmission(submissionId: string, userId: string): Promise<void> {
   const db = getDb();
-  const row = await db.query.submission.findFirst({ where: eq(submission.id, submissionId) });
+  const row = await db.query.submission.findFirst({
+    where: eq(submission.id, submissionId),
+  });
   if (!row) throw notFound('That submission');
   if (row.submitterUserId !== userId) throw forbidden('That submission belongs to someone else');
   if (row.status === 'withdrawn') return;
@@ -797,13 +835,17 @@ export function buildCsv(
   return `${lines.join('\r\n')}\r\n`;
 }
 
-export async function exportFormSubmissionsCsv(formId: string): Promise<{ filename: string; body: string }> {
+export async function exportFormSubmissionsCsv(
+  formId: string,
+): Promise<{ filename: string; body: string }> {
   const db = getDb();
 
   const formRow = await db.query.form.findFirst({ where: eq(form.id, formId) });
   if (!formRow) throw notFound('That form');
 
-  const eventRow = await db.query.event.findFirst({ where: eq(event.id, formRow.eventId) });
+  const eventRow = await db.query.event.findFirst({
+    where: eq(event.id, formRow.eventId),
+  });
   if (!eventRow) throw notFound('That event');
 
   const bundle = await loadPublicForm(eventRow.slug, formRow.slug);
@@ -831,7 +873,10 @@ export async function exportFormSubmissionsCsv(formId: string): Promise<{ filena
 
   const tagRows = rows.length
     ? await db
-        .select({ submissionId: submissionTag.submissionId, tagId: submissionTag.tagId })
+        .select({
+          submissionId: submissionTag.submissionId,
+          tagId: submissionTag.tagId,
+        })
         .from(submissionTag)
         .where(
           inArray(
