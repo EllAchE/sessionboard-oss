@@ -28,21 +28,7 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  color: var(--text-strong);
-  font: var(--weight-medium) var(--text-xl) / 1 var(--font-display);
   text-decoration: none;
-}
-
-.brandMark {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  color: var(--text-on-accent);
-  background: var(--accent);
-  border-radius: var(--radius-md);
-  box-shadow: 4px 4px 0 color-mix(in srgb, var(--border-accent) 35%, transparent);
 }
 
 .navLinks {

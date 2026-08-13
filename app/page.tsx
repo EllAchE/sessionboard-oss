@@ -5,9 +5,9 @@ import {
   FileCheck,
   Github,
   ListChecks,
-  Mic,
   UserPlus,
 } from 'lucide-react';
+import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
@@ -42,10 +42,7 @@ export default function Home() {
     <main className={styles.root}>
       <nav className={styles.nav} aria-label="Primary navigation">
         <a className={styles.brand} href="/" aria-label="Cicero home">
-          <span className={styles.brandMark} aria-hidden="true">
-            <Mic size={18} />
-          </span>
-          <span>Cicero</span>
+          <CiceroBrand markSize={34} />
         </a>
         <div className={styles.navLinks}>
           <a className={styles.productLink} href="#product">
