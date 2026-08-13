@@ -39,7 +39,9 @@ import {
   inviteReviewerAction,
   releaseAssignmentAction,
   remindReviewersAction,
+  type ReviewerInviteOutcome,
 } from './actions';
+import { inviteDeliveryCopy } from './invite-delivery';
 import { assignedReviewerIds } from './reviewer-pool';
 import {
   UNROUTED_REASON_LABEL,
@@ -220,7 +222,7 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [reminderNote, setReminderNote] = useState('');
   const [reviewerName, setReviewerName] = useState('');
   const [reviewerEmail, setReviewerEmail] = useState('');
-  const [reviewerAccessLink, setReviewerAccessLink] = useState<string | null>(null);
+  const [reviewerInvite, setReviewerInvite] = useState<ReviewerInviteOutcome | null>(null);
 
   const [criterionLabel, setCriterionLabel] = useState('');
   const [criterionWeight, setCriterionWeight] = useState('1');
@@ -297,14 +299,23 @@ export function RoundsManager(props: RoundsManagerProps) {
 
   const selectRound = (roundId: string) => router.push(`/admin/submissions/rounds?round=${roundId}`);
 
-  const inviteReviewer = () => {
+  /**
+   * `resendTo` is the affordance for a refused send. The invite is idempotent — the same address
+   * re-grants nothing and mints a fresh link — so a bounce leaves the organizer with a real second
+   * try rather than a dead end. What it deliberately does not leave them with is the link itself:
+   * `inviteReviewerAction` decides that from `lib/demo-access.ts` alone, never from the outcome of
+   * the send.
+   */
+  const inviteReviewer = (resendTo?: string) => {
+    const email = (resendTo ?? reviewerEmail).trim();
+    if (!email) return;
     setError(null);
     setMessage(null);
-    setReviewerAccessLink(null);
+    setReviewerInvite(null);
     startTransition(async () => {
       const result = await inviteReviewerAction({
-        email: reviewerEmail,
-        name: reviewerName || null,
+        email,
+        name: resendTo ? null : reviewerName || null,
       });
       if (!result.ok) {
         setError(result.message);
@@ -312,12 +323,8 @@ export function RoundsManager(props: RoundsManagerProps) {
       }
       setReviewerName('');
       setReviewerEmail('');
-      setReviewerAccessLink(result.data.accessLink);
-      setMessage(
-        result.data.accessLink
-          ? `${result.data.reviewer.name} can review this event. Copy their access link below.`
-          : `Invitation sent to ${result.data.reviewer.email}.`,
-      );
+      setReviewerInvite(result.data);
+      setMessage(inviteDeliveryCopy(result.data.delivery, result.data.reviewer).message);
       router.refresh();
     });
   };
@@ -834,7 +841,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                     iconLeft={<UserPlus size={14} />}
                     loading={pending}
                     disabled={!reviewerEmail.trim()}
-                    onClick={inviteReviewer}
+                    onClick={() => inviteReviewer()}
                   >
                     Invite reviewer
                   </Button>
@@ -843,16 +850,32 @@ export function RoundsManager(props: RoundsManagerProps) {
                   Invited reviewers receive a passwordless link to their event-scoped review queue.
                   Inviting the same address again sends a fresh link without duplicating access.
                 </p>
-                {reviewerAccessLink ? (
+                {reviewerInvite && reviewerInvite.delivery !== 'email' ? (
                   <div className={styles.inlineStack}>
-                    <span className={styles.aiNote}>Email is logged in this environment.</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => navigator.clipboard.writeText(reviewerAccessLink)}
-                    >
-                      Copy reviewer access link
-                    </Button>
+                    <span className={styles.aiNote}>
+                      {inviteDeliveryCopy(reviewerInvite.delivery, reviewerInvite.reviewer).note}
+                    </span>
+                    {reviewerInvite.accessLink ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          navigator.clipboard.writeText(reviewerInvite.accessLink as string)
+                        }
+                      >
+                        Copy reviewer access link
+                      </Button>
+                    ) : null}
+                    {reviewerInvite.delivery === 'undelivered' ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        loading={pending}
+                        onClick={() => inviteReviewer(reviewerInvite.reviewer.email)}
+                      >
+                        Send the invitation again
+                      </Button>
+                    ) : null}
                   </div>
                 ) : null}
 
