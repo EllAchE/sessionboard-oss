@@ -79,6 +79,22 @@ export type EventWire = {
   bannerUrl: string | null;
 };
 
+/**
+ * `S-11`. The speaker portal's dressing — a different table and a different audience from the
+ * `logoUrl`/`bannerUrl` above, which are `E-3` and brand the public event pages.
+ *
+ * Every field is nullable because the `portal_theme` row may not exist at all: it is created the
+ * first time this panel is saved, and an event nobody has dressed reads back as all nulls rather
+ * than as an error.
+ */
+export type PortalAppearanceWire = {
+  /** The URL that serves the uploaded logo back to an organizer, or null when there is none. */
+  logoUrl: string | null;
+  accentColor: string | null;
+  welcomeMarkdown: string | null;
+  supportEmail: string | null;
+};
+
 export type NotificationsWire = {
   phone: string | null;
   notifyEmail: boolean;

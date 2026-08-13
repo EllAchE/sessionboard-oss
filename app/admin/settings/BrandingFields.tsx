@@ -17,9 +17,11 @@ import styles from './settings.module.css';
  * whose effect is deferred is a way to lose an image, and there is nothing to reconcile with the
  * form beside it because the slot holds exactly one file.
  *
- * `portal_theme` has the same problem — inserted by the seeds, writable by nothing — but that is the
- * speaker portal's branding (`S-11`) rather than the event's, and it belongs with the portal
- * surfaces rather than here.
+ * `portal_theme` had the same problem — inserted by the seeds, writable by nothing — but that is the
+ * speaker portal's branding (`S-11`) rather than the event's. It has its own writer now, under the
+ * Speaker portal tab, and is deliberately not merged into this section: the two logos dress
+ * different surfaces for different audiences, and two unexplained logo uploaders in one settings
+ * area is worse than two clearly separated ones.
  */
 
 const ENDPOINT = '/admin/settings/branding/upload';
@@ -124,7 +126,8 @@ export function BrandingFields({ event, canManage }: { event: EventWire; canMana
       <h2 className={styles.subTitle}>Branding</h2>
       <p className={styles.hint}>
         Both appear on the public event pages. The banner sits behind the title; the logo sits beside
-        the event name in the header.
+        the event name in the header. The portal a speaker signs in to is dressed separately, under
+        Speaker portal.
       </p>
       <div className={styles.formGrid}>
         <Slot kind="logo" url={event.logoUrl} canManage={canManage} />

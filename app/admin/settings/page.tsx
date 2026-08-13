@@ -1,8 +1,14 @@
 import { can } from '@/lib/context';
 import { eventBrandingUrl } from '@/lib/event-branding';
 import { utcToLocalInput } from '@/lib/event-dates';
+import { portalLogoAdminUrl } from '@/lib/portal-appearance';
 import { currentEventContext, getEvent } from '@/lib/services/events';
-import { FIELD_TYPE_VALUES, getNotificationPrefs, loadSettings } from '@/lib/services/settings';
+import {
+  FIELD_TYPE_VALUES,
+  getNotificationPrefs,
+  getPortalAppearance,
+  loadSettings,
+} from '@/lib/services/settings';
 import { SettingsScreen } from './SettingsScreen';
 import type { EntityKind, EntityRow } from './types';
 
@@ -27,9 +33,10 @@ export default async function SettingsPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const [ctx, resolved] = await Promise.all([currentEventContext(), searchParams]);
-  const [snapshot, event, notifications] = await Promise.all([
+  const [snapshot, event, portal, notifications] = await Promise.all([
     loadSettings(ctx),
     getEvent(ctx.eventId),
+    getPortalAppearance(ctx.eventId),
     getNotificationPrefs(ctx.actor.userId),
   ]);
 
@@ -94,6 +101,12 @@ export default async function SettingsPage({
         venueAddress: event.venueAddress,
         logoUrl: eventBrandingUrl(event.slug, event.logoFileId),
         bannerUrl: eventBrandingUrl(event.slug, event.bannerFileId),
+      }}
+      portal={{
+        logoUrl: portalLogoAdminUrl(portal.logoFileId),
+        accentColor: portal.accentColor,
+        welcomeMarkdown: portal.welcomeMarkdown,
+        supportEmail: portal.supportEmail,
       }}
       notifications={notifications}
       rows={rows}

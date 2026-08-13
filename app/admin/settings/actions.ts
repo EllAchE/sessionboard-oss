@@ -271,6 +271,47 @@ export async function clearEventBrandingAction(kind: EventBrandingKind): Promise
 }
 
 // ---------------------------------------------------------------------------
+// Portal appearance — S-11
+// ---------------------------------------------------------------------------
+
+/**
+ * `S-11`. The speaker portal's own dressing, which had no writer at all: `portal_theme` was read by
+ * the portal layout and by the branded email wrapper and inserted only by the seeds, so on an event
+ * nobody seeded there was nothing to read. `savePortalAppearance` creates the row on first save.
+ *
+ * This is not `E-3`. That is `updateEventAction` above, and it dresses the public event pages; this
+ * dresses the signed-in portal and the mail sent from it.
+ */
+export async function savePortalAppearanceAction(
+  patch: settings.PortalAppearanceInput,
+): Promise<ActionResult<settings.PortalAppearance>> {
+  return run(async () => {
+    const ctx = await manageContext();
+    return settings.savePortalAppearance(ctx, patch);
+  });
+}
+
+/**
+ * Detaches the logo and then deletes the bytes: nothing else points at a portal logo, so keeping it
+ * would only grow the bucket. Same reasoning as `clearEventBrandingAction`, and the upload beside it
+ * is a route handler for the same reason that one is.
+ */
+export async function clearPortalLogoAction(): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await manageContext();
+    const { previousFileId } = await settings.setPortalLogo(ctx, null);
+    if (!previousFileId) return null;
+    try {
+      await deleteFile(ctx, previousFileId);
+    } catch (error) {
+      // The portal no longer references it, which is the half the organizer can see.
+      console.error(`portal logo cleanup failed: ${String(error)}`);
+    }
+    return null;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Notifications — the signed-in organizer's own row, not event configuration.
 // No `event:manage` check: every organizer, regardless of role, edits their own alert prefs.
 // ---------------------------------------------------------------------------

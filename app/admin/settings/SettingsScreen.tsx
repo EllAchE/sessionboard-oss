@@ -5,12 +5,14 @@ import { Badge, Tabs, TabsList, TabsPanel, TabsTrigger } from '@/components/ui';
 import { CollectionPanel } from './CollectionPanel';
 import { EventPanel } from './EventPanel';
 import { NotificationsPanel } from './NotificationsPanel';
+import { PortalPanel } from './PortalPanel';
 import {
   buildSpecs,
   type EntityKind,
   type EntityRow,
   type EventWire,
   type NotificationsWire,
+  type PortalAppearanceWire,
 } from './types';
 import styles from './settings.module.css';
 
@@ -23,6 +25,8 @@ import styles from './settings.module.css';
 
 type Props = {
   event: EventWire;
+  /** `S-11`. The speaker portal's own dressing — a different table from the event branding. */
+  portal: PortalAppearanceWire;
   notifications: NotificationsWire;
   rows: Record<EntityKind, EntityRow[]>;
   fieldTypes: string[];
@@ -32,6 +36,7 @@ type Props = {
 
 export function SettingsScreen({
   event,
+  portal,
   notifications,
   rows,
   fieldTypes,
@@ -39,7 +44,7 @@ export function SettingsScreen({
   canManage,
 }: Props) {
   const specs = buildSpecs(fieldTypes);
-  const valid = ['event', 'notifications', ...specs.map((spec) => spec.kind)];
+  const valid = ['event', 'portal', 'notifications', ...specs.map((spec) => spec.kind)];
   const [tab, setTab] = useState(valid.includes(initialTab) ? initialTab : 'event');
 
   const selectTab = (next: string) => {
@@ -67,6 +72,7 @@ export function SettingsScreen({
       <Tabs value={tab} onValueChange={selectTab}>
         <TabsList>
           <TabsTrigger value="event">Event</TabsTrigger>
+          <TabsTrigger value="portal">Speaker portal</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           {specs.map((spec) => (
             <TabsTrigger key={spec.kind} value={spec.kind}>
@@ -80,6 +86,10 @@ export function SettingsScreen({
 
         <TabsPanel value="event">
           <EventPanel event={event} canManage={canManage} />
+        </TabsPanel>
+
+        <TabsPanel value="portal">
+          <PortalPanel appearance={portal} eventName={event.name} canManage={canManage} />
         </TabsPanel>
 
         <TabsPanel value="notifications">

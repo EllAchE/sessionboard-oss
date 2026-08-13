@@ -202,6 +202,52 @@
   object-fit: cover;
 }
 
+/* ---- Portal appearance — S-11 ---- */
+
+.accentRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.accentRow .swatch {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
+.accentPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/*
+ * A literal `background` from `ACCENT_PRESETS` is set inline, which is the point of the control —
+ * it is the only place a colour reaches this screen without a token, and the same exception the
+ * portal masthead makes.
+ */
+.accentPreset {
+  width: var(--space-5);
+  height: var(--space-5);
+  padding: 0;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.accentPreset:hover {
+  border-color: var(--border-strong);
+}
+
+.accentPreset:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.accentPreset[aria-pressed='true'] {
+  box-shadow: var(--ring-focus);
+}
+
 .switchRow {
   display: flex;
   align-items: center;
