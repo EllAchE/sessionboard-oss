@@ -142,6 +142,7 @@ export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
   'published',
   'cancelled',
 ]);
+export const sessionRecordingSource = pgEnum('session_recording_source', ['upload', 'external']);
 export const prospectStage = pgEnum('prospect_stage', [
   'researching',
   'identified',
@@ -1014,6 +1015,40 @@ export const file = pgTable(
   (t) => ({
     byEvent: index('file_event_idx').on(t.eventId),
     byRoot: index('file_root_idx').on(t.rootFileId),
+  }),
+);
+
+/**
+ * A post-conference recording is deliberately separate from the agenda's publication state. An
+ * organizer may attach and review media while the programme remains public, then publish the
+ * recording only after the session has ended. Exactly one source is retained: either an
+ * event-scoped `file` row or a validated external HTTPS URL for recordings too large for the
+ * application's bounded upload path.
+ */
+export const sessionRecording = pgTable(
+  'session_recording',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => scheduledSession.id, { onDelete: 'cascade' }),
+    source: sessionRecordingSource('source').notNull(),
+    fileId: uuid('file_id').references(() => file.id, { onDelete: 'restrict' }),
+    externalUrl: text('external_url'),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    onePerSession: unique('session_recording_session_unique').on(t.sessionId),
+    byEvent: index('session_recording_event_idx').on(t.eventId),
+    exactlyOneSource: check(
+      'session_recording_exactly_one_source',
+      sql`(${t.source} = 'upload' AND ${t.fileId} IS NOT NULL AND ${t.externalUrl} IS NULL) OR (${t.source} = 'external' AND ${t.fileId} IS NULL AND ${t.externalUrl} IS NOT NULL)`,
+    ),
   }),
 );
 

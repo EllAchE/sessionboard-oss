@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Play } from 'lucide-react';
 import { Search } from 'lucide-react';
 import {
   EMPTY_SESSION_FACETS,
@@ -241,6 +242,21 @@ export function SessionFacts({
   );
 }
 
+export function RecordingLink({ session }: { session: PublicSession }) {
+  if (!session.recordingUrl) return null;
+  return (
+    <a
+      className={styles.recordingLink}
+      href={session.recordingUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <Play size={14} aria-hidden fill="currentColor" />
+      Watch recording
+    </a>
+  );
+}
+
 /** `EMB-01`, `EMB-09`: every speaker, each with the job title and company beside the name. */
 export function SpeakerRoster({
   session,
@@ -391,6 +407,7 @@ export function SpeakerProfile({
               <span className={styles.speakerRole}>
                 {[session.track, session.format].filter(Boolean).join(' · ')}
               </span>
+              <RecordingLink session={session} />
             </div>
           ))
         )}

@@ -203,6 +203,12 @@ portal pages, group access.
 clashes and — the one the brief doesn't ask for — **speaker double-booking**, which is the clash
 that fails publicly on the day.
 
+**Post-conference recordings.** **Admin → Recordings** attaches a bounded video upload, an existing
+event video, or an HTTPS streaming URL to a session. Media stays draft until an organizer publishes
+it after the session ends; only then do public programme pages and embeds show **Watch recording**.
+Replacing the source unpublishes it automatically. Full-length recordings should use a streaming
+host—the through-app upload is intentionally capped at 25 MB.
+
 ![The agenda grid, with the unscheduled rail on the left and a clash banner above it](docs/images/agenda.jpg)
 
 **Comms.** Branded templates, a send log, and a real `.ics` `METHOD:REQUEST` that bumps `SEQUENCE`

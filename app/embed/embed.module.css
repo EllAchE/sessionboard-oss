@@ -315,6 +315,21 @@
   background: var(--accent-subtle);
 }
 
+.recordingLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: fit-content;
+  margin-top: var(--space-2);
+  color: var(--text-accent);
+  font: var(--type-label);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.recordingLink:hover { text-decoration: underline; }
+.recordingLink:focus-visible { outline: none; box-shadow: var(--ring-focus); border-radius: var(--radius-xs); }
+
 .filterPanel {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--space-32), 1fr));

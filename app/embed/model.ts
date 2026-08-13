@@ -12,6 +12,8 @@ export type PublicEvent = {
   timezone: string;
   startsOn: string | null;
   endsOn: string | null;
+  /** Exact event end, used to gate historical recordings when a session has no end time. */
+  endsAt?: string;
   websiteUrl: string | null;
   venueName: string | null;
   /**
@@ -52,6 +54,8 @@ export type PublicSession = {
   trackId: string | null;
   format: string | null;
   ceuCredits: string | null;
+  /** Present only after the organizer publishes the post-conference recording. */
+  recordingUrl?: string | null;
   tags: { id: string; name: string }[];
   speakers: {
     id: string;
