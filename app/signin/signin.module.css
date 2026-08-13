@@ -149,6 +149,25 @@
   color: var(--text-muted);
 }
 
+/* The demo way in, offered under the form only where a deployment has opted into it. */
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.demo p {
+  margin: 0;
+}
+
+.demo strong {
+  color: var(--text-strong);
+  font-weight: var(--weight-semibold);
+}
+
 .switchMode {
   margin: var(--space-5) 0 0;
   text-align: center;

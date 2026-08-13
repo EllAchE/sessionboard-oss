@@ -8,7 +8,7 @@ const { getCloudflareContext } = vi.hoisted(() => ({
 
 vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext }));
 
-import { resolveMailTransport } from './config';
+import { resolveMailTransport, undeliverableRecipient } from './config';
 
 /**
  * `T-6`. The bug this covers is not a crash — it is `MAIL_TRANSPORT=smtp` with no server behind it
@@ -102,5 +102,54 @@ describe('transport selection', () => {
     const resolved = resolveMailTransport();
     expect(resolved.transport).toBe('log');
     expect(resolved.warning).toMatch(/not a transport this build knows/);
+  });
+});
+
+/**
+ * What makes the deployed demo one secret away from real mail instead of one commit away: `auto`
+ * takes whichever transport has credentials, so `wrangler secret put RESEND_API_KEY` is the flip.
+ */
+describe('auto', () => {
+  it('is the dev mailbox with nothing configured, and does not call that a mistake', () => {
+    vi.stubEnv('MAIL_TRANSPORT', 'auto');
+    expect(resolveMailTransport()).toEqual({ transport: 'log', warning: null });
+  });
+
+  it('becomes resend the moment a key exists', () => {
+    vi.stubEnv('MAIL_TRANSPORT', 'auto');
+    vi.stubEnv('RESEND_API_KEY', 're_123');
+    expect(resolveMailTransport()).toEqual({ transport: 'resend', apiKey: 're_123', warning: null });
+  });
+
+  it('falls to a configured SMTP server when there is no Resend key', () => {
+    vi.stubEnv('MAIL_TRANSPORT', 'auto');
+    vi.stubEnv('SMTP_URL', 'smtp://localhost:1025');
+    expect(resolveMailTransport()).toMatchObject({ transport: 'smtp' });
+  });
+});
+
+/**
+ * The property the demo's security rests on: these domains are reserved by RFC 2606 / 6761 and can
+ * never have a mailbox behind them, which is why the seed uses them and why an on-screen magic link
+ * for one cannot lock a real person out of anything.
+ */
+describe('recipients nothing can be delivered to', () => {
+  it('recognises the reserved domains the seed is built from', () => {
+    expect(undeliverableRecipient('organizer@example.com')).toBe(true);
+    expect(undeliverableRecipient('octavian@first-settlement.example')).toBe(true);
+    expect(undeliverableRecipient('someone@example.NET')).toBe(true);
+    expect(undeliverableRecipient('someone@example.org')).toBe(true);
+    expect(undeliverableRecipient('dev@app.localhost')).toBe(true);
+    expect(undeliverableRecipient('qa@thing.invalid')).toBe(true);
+    expect(undeliverableRecipient('reviewer@example.test')).toBe(true);
+  });
+
+  it('does not mistake a real domain for a reserved one', () => {
+    expect(undeliverableRecipient('speaker@acme.com')).toBe(false);
+    expect(undeliverableRecipient('speaker@example.com.attacker.net')).toBe(false);
+    expect(undeliverableRecipient('speaker@notexample.com')).toBe(false);
+    expect(undeliverableRecipient('speaker@example.computer')).toBe(false);
+    expect(undeliverableRecipient('not-an-address')).toBe(false);
+    expect(undeliverableRecipient('trailing@')).toBe(false);
   });
 });

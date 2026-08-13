@@ -1,3 +1,4 @@
+import { demoSignInEmail } from '@/lib/demo-access';
 import { SignInForm } from './SignInForm';
 import { authRedirect } from './redirect';
 import styles from './signin.module.css';
@@ -15,7 +16,7 @@ export default async function SignInPage({
 
   return (
     <main className={styles.root}>
-      <SignInForm next={safeNext} defaultEmail={email ?? ''} />
+      <SignInForm next={safeNext} defaultEmail={email ?? ''} demoEmail={demoSignInEmail()} />
     </main>
   );
 }

@@ -20,14 +20,14 @@ one-command self-host that needs no API key from anyone.
 
 **<https://cicero.lhar8771.workers.dev>** is deployed and seeded.
 
-Sign in as `organizer@example.com` and you land in the organizer dashboard. That deployment records
-mail instead of sending it, so the sign-in link comes straight back on the page and you never need
-an inbox; every message it would have sent is readable at
+Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
+account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
+page and you never need one; every message the demo sends to a demo identity is readable at
 [`/admin/mail`](https://cicero.lhar8771.workers.dev/admin/mail).
 
-Type your own address instead and it works the same way — an account is created on the spot and you
-are dropped at "create an event," which is the cold path this was built to survive. Your event and
-the seeded demo cannot see each other.
+Type your own address instead and an account is created on the spot and the link is mailed to you —
+you land at "create an event," which is the cold path this was built to survive. Your event and the
+seeded demo cannot see each other.
 
 Without signing in at all: the [public event page](https://cicero.lhar8771.workers.dev/demo), the
 [programme](https://cicero.lhar8771.workers.dev/demo/agenda), an
@@ -99,9 +99,7 @@ from it.
 
 Out of the box `MAIL_TRANSPORT=log`: every message is written to `email_log` and rendered at
 `/admin/mail`, sign-in links included, and nothing is delivered. That is the right default for a
-clone and for the hosted demo — which is why `wrangler.jsonc` pins `MAIL_TRANSPORT: log` for the
-deployed worker, so a judge clicking around a public demo can never mail a real speaker. Leave it
-that way unless you are running your own event.
+clone, and nothing in the walkthrough needs more than it.
 
 To actually send, pick a transport:
 
@@ -109,6 +107,7 @@ To actually send, pick a transport:
 |---|---|---|
 | **Resend** | `MAIL_TRANSPORT=resend`, `RESEND_API_KEY` | HTTP, so it works on Workers and self-hosted alike. The only option on Cloudflare. |
 | **SMTP** | `MAIL_TRANSPORT=smtp`, and either `SMTP_URL` or `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`) | Self-host only — Workers has no raw TCP. `SMTP_ALLOW_INSECURE=true` accepts a self-signed certificate, for MailHog and other local catchers. |
+| **Auto** | `MAIL_TRANSPORT=auto` | Takes whichever of the two has credentials, and the dev mailbox when neither does. Lets an instance be switched on by adding a key rather than by editing its configuration; it is what the deployed demo runs. |
 
 Both paths need **`MAIL_FROM` set to an address at a domain the provider has verified** (Resend:
 Domains → add and complete the DNS records; SMTP: whatever your relay's envelope rules allow).
@@ -119,6 +118,45 @@ Naming a transport you have not configured — `MAIL_TRANSPORT=smtp` with no ser
 to `log` and warns on the server console. Mail keeps working and stays readable at `/admin/mail`;
 it just is not delivered. Check that console line first if sends look successful and no one is
 receiving anything.
+
+Addresses at domains the IANA has reserved — `example.com`, anything under `.example`, `.test`,
+`.invalid`, `.localhost` — are always handled by the log transport, whatever else is configured.
+Nothing can be delivered to them; a real provider would hard-bounce the seeded demo's six hundred
+fictional senators and charge every bounce against your sending reputation. Real recipients in the
+same run still get real mail.
+
+#### Turning on mail for the hosted demo
+
+The deployment runs `MAIL_TRANSPORT: auto` with no key, so it is on the dev mailbox and one secret
+away from real sending. To flip it, in this order:
+
+1. **Verify a sender domain in Resend** — Domains → Add Domain, then publish the DKIM/SPF records it
+   gives you and wait for the status to go green. Nothing below works without this.
+2. **Point `MAIL_FROM` at that domain** in `wrangler.jsonc`, e.g. `Cicero <cicero@your-domain.tld>`.
+   The placeholder there is `onboarding@resend.dev`, Resend's shared test sender: it delivers only
+   to the Resend account owner and returns 403 for everyone else. Leave it in place with a key set
+   and the app says so on the server console on the first send.
+3. **`wrangler secret put RESEND_API_KEY`** and paste the key. A secret, never a `var` — vars in
+   `wrangler.jsonc` are committed.
+4. Deploy (`npm run cf:deploy`), then confirm the banner at `/admin/mail` names `resend` and send
+   yourself something from `/admin/comms`.
+
+Step 3 alone is what changes behaviour, so a key without step 1 sends nothing and a key without
+step 2 sends only to you.
+
+#### Letting a visitor in without an inbox
+
+Under a real transport the sign-in page keeps the magic link to itself — printing it is handing out
+a session for whatever address was typed in. That would leave a public demo unusable for anyone
+without an account, so `DEMO_ONSCREEN_MAGIC_LINKS=1` (set as a var on the deployment, off
+everywhere else) re-opens exactly one narrow path: the link is shown on screen only for an account
+that already exists, is at one of the reserved domains above, holds membership on a seeded demo
+event, and holds membership on no other event it does not itself own. Every real organizer,
+reviewer and speaker fails the domain test, so no real account is reachable through it at any
+setting. The sign-in page offers `DEMO_SIGNIN_EMAIL` (default `organizer@example.com`) as the way
+in. `lib/demo-access.ts` carries the full threat model.
+
+Leave it off on any instance running a real event.
 
 ## What's in it
 

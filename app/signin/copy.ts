@@ -1,6 +1,11 @@
 export type AuthIntent = 'sign-in' | 'sign-up';
 
-type DeliveryState = 'email' | 'logged' | 'failed';
+/**
+ * `email` — the message left the instance, and the link is only inside it.
+ * `logged` — this instance delivers nothing to anybody, so the link comes back on the page.
+ * `demo` — real mail is live, and this is a seeded demo identity with no inbox to send it to.
+ */
+export type DeliveryState = 'email' | 'logged' | 'demo';
 
 const COPY = {
   'sign-in': {
@@ -40,8 +45,8 @@ export function deliveryCopy(intent: AuthIntent, delivery: DeliveryState, email:
   return {
     lead: intent === 'sign-up' ? 'Your account is ready.' : 'Your secure sign-in link is ready.',
     hint:
-      delivery === 'failed'
-        ? 'The mail provider could not deliver to that address on this demo. Use the link above to continue.'
+      delivery === 'demo'
+        ? 'This is a seeded demo account, at a reserved domain with no inbox behind it. Use the link above to continue.'
         : 'Email delivery is disabled on this demo. Use the link above to continue.',
   };
 }
