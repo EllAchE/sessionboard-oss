@@ -26,6 +26,12 @@ const createdAt = () => timestamp('created_at', { withTimezone: true }).notNull(
 const updatedAt = () => timestamp('updated_at', { withTimezone: true }).notNull().defaultNow();
 
 export const membershipRole = pgEnum('membership_role', ['organizer', 'reviewer', 'speaker']);
+export const apiKeyScope = pgEnum('api_key_scope', ['read', 'write']);
+export const webhookDeliveryStatus = pgEnum('webhook_delivery_status', [
+  'queued',
+  'delivered',
+  'failed',
+]);
 export const formKind = pgEnum('form_kind', ['cfp', 'portal']);
 /**
  * `F-4`. Orthogonal to `kind`, which says what the form is *for*. This says what a completed
@@ -1312,6 +1318,8 @@ export const apiKey = pgTable(
       .notNull()
       .references(() => event.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    /** `write` includes reads. Existing unscoped keys migrate to `write` to avoid a silent outage. */
+    scope: apiKeyScope('scope').notNull().default('write'),
     prefix: text('prefix').notNull(),
     keyHash: text('key_hash').notNull(),
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
@@ -1319,6 +1327,75 @@ export const apiKey = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ byPrefix: index('api_key_prefix_idx').on(t.prefix) }),
+);
+
+/**
+ * One current fixed-window counter per caller identity. The row count is bounded per observed
+ * identity rather than per request, and the upsert in `lib/rate-limit.ts` makes increments atomic
+ * across Worker isolates and self-hosted processes. Operators may prune rows whose `updatedAt` is
+ * older than their longest policy window; deletion is safe because the next request recreates one.
+ */
+export const inboundRateLimit = pgTable('inbound_rate_limit', {
+  keyHash: text('key_hash').primaryKey(),
+  windowStartedAt: timestamp('window_started_at', { withTimezone: true }).notNull(),
+  requestCount: integer('request_count').notNull().default(1),
+  updatedAt: updatedAt(),
+});
+
+export type WebhookEventType =
+  | 'submission.received'
+  | 'submission.decision_made'
+  | 'session.scheduled';
+
+export const webhookEndpoint = pgTable(
+  'webhook_endpoint',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    url: text('url').notNull(),
+    /** Required to sign deliveries, and never returned after the create response. */
+    signingSecret: text('signing_secret').notNull(),
+    secretPrefix: text('secret_prefix').notNull(),
+    eventTypes: jsonb('event_types').$type<WebhookEventType[]>().notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    byEvent: index('webhook_endpoint_event_idx').on(t.eventId),
+    uniqueUrl: unique('webhook_endpoint_event_url').on(t.eventId, t.url),
+  }),
+);
+
+export const webhookDelivery = pgTable(
+  'webhook_delivery',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    endpointId: uuid('endpoint_id')
+      .notNull()
+      .references(() => webhookEndpoint.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').$type<WebhookEventType>().notNull(),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+    status: webhookDeliveryStatus('status').notNull().default('queued'),
+    attempts: integer('attempts').notNull().default(0),
+    responseStatus: integer('response_status'),
+    error: text('error'),
+    deliveredAt: timestamp('delivered_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byEventCreated: index('webhook_delivery_event_created_idx').on(t.eventId, t.createdAt),
+    byEndpointCreated: index('webhook_delivery_endpoint_created_idx').on(
+      t.endpointId,
+      t.createdAt,
+    ),
+  }),
 );
 
 export const accelevantsSync = pgTable(

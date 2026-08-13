@@ -1,5 +1,5 @@
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getDb } from '../db/client';
 import { event, magicToken, membership, sessionCookie, user } from '../db/schema';
 import type { Actor, EventContext, MembershipRole } from './context';
@@ -15,6 +15,12 @@ import { forbidden, invalid, notFound, unauthorized } from './errors';
 import { hashToken, randomToken } from './ids';
 import { activeTransportName, sendMail } from './mail';
 import { escapeMarkdownText, renderMarkdown } from './markdown';
+import {
+  consumeRateLimit,
+  enforceMagicLinkRateLimit,
+  MAGIC_LINK_IP_RATE_LIMIT,
+  requestClientAddress,
+} from './rate-limit';
 
 /**
  * Magic links everywhere, passwords nowhere (`T-4a`). A speaker touches this product perhaps four
@@ -84,6 +90,13 @@ export type MagicLinkRequest = {
 export async function requestMagicLink(
   request: MagicLinkRequest,
 ): Promise<{ email: string; link: string; delivered: boolean }> {
+  await Promise.all([
+    enforceMagicLinkRateLimit(normalizeEmail(request.email)),
+    consumeRateLimit(
+      requestClientAddress({ headers: await headers() }),
+      MAGIC_LINK_IP_RATE_LIMIT,
+    ),
+  ]);
   const db = getDb();
   const account = await ensureUserAccount(request.email, request.name);
   const token = randomToken();

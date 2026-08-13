@@ -37,7 +37,15 @@ export function errorJson(error: unknown): Response {
   if (publicError.code === 'internal') {
     console.error(error instanceof Error ? error.message : String(error));
   }
-  return json({ error: publicError }, { status: httpStatus(error) });
+  const retryAfter =
+    publicError.code === 'rate_limited' ? publicError.details?.retryAfterSeconds : undefined;
+  return json(
+    { error: publicError },
+    {
+      status: httpStatus(error),
+      headers: retryAfter ? { 'retry-after': retryAfter } : undefined,
+    },
+  );
 }
 
 /** Every handler is this shape, so a thrown `AppError` never escapes as a 500 with a stack trace. */

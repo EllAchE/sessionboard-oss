@@ -99,6 +99,13 @@
       "when": 1786647510357,
       "tag": "0013_dazzling_scarlet_spider",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1786648298357,
+      "tag": "0014_classy_paper_doll",
+      "breakpoints": true
     }
   ]
 }

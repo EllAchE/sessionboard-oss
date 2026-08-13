@@ -36,6 +36,7 @@ import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
 import { DECISION_TEMPLATES, loadCommsContext, sendDecisionNotice, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
+import { emitWebhook } from '../webhooks';
 
 /**
  * `V-1`–`V-12`. The review half of the admin: the queue, the scorecard, rounds and assignment, and
@@ -2643,6 +2644,19 @@ export async function decideSubmissions(
     ? await notifyDecided(transitioned)
     : { notified: 0, notifyFailed: 0 };
 
+  if (decision !== 'reset') {
+    await Promise.all(
+      transitioned.map((submissionId) =>
+        emitWebhook(ctx.eventId, 'submission.decision_made', {
+          submissionId,
+          decision: status,
+          note: note?.trim() || null,
+          decidedAt: now.toISOString(),
+        }),
+      ),
+    );
+  }
+
   return { updated: eligible.length, skipped, ...notices };
 }
 
@@ -2895,6 +2909,23 @@ export async function createSubmissionAsOrganizer(
       .insert(submissionTag)
       .values(input.tagIds.map((tagId) => ({ submissionId: created.id, tagId })))
       .onConflictDoNothing();
+  }
+
+  await emitWebhook(ctx.eventId, 'submission.received', {
+    submissionId: created.id,
+    ref: formatRef('submission', created.ref),
+    title: created.title,
+    status: created.status,
+    formId: created.formId,
+  });
+  if (created.status === 'accepted') {
+    await emitWebhook(ctx.eventId, 'submission.decision_made', {
+      submissionId: created.id,
+      decision: created.status,
+      note: null,
+      decidedAt: created.decidedAt?.toISOString() ?? now.toISOString(),
+      automatic: true,
+    });
   }
 
   return { id: created.id, displayRef: formatRef('submission', created.ref) };
