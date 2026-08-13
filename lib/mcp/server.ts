@@ -9,6 +9,12 @@ import { z, type ZodTypeAny } from 'zod';
 import { toJsonSchema } from '@/app/api/v1/_lib/openapi';
 import { programReconcileBody } from '@/app/api/v1/_lib/schemas';
 import { forbidden, isAppError, toPublicError } from '@/lib/errors';
+import {
+  listAgentMailDeliveries,
+  listAgentMailTemplates,
+  previewAgentMail,
+  sendConfirmedAgentMail,
+} from '@/lib/services/agent-mail';
 import { reconcileProgram } from '@/lib/services/program-reconcile';
 import {
   groupByDay,
@@ -18,7 +24,13 @@ import {
   requireEvent,
   toEventPayload,
 } from '@/lib/services/public-api';
-import { MCP_TOOL_DEFINITIONS, type McpToolName } from './tools';
+import {
+  agentMailDeliveriesInput,
+  agentMailPreviewInput,
+  agentMailSendInput,
+  MCP_TOOL_DEFINITIONS,
+  type McpToolName,
+} from './tools';
 
 export type McpEventKey = {
   keyId: string;
@@ -133,6 +145,35 @@ export function createCiceroMcpServer(key: McpEventKey): McpServer {
     const input = toolDefinition('cicero_submissions_list').inputSchema.parse(raw);
     const data = await listSubmissions(key.eventId, input);
     return { data, total: data.length };
+  });
+
+  registerTool(server, 'cicero_mail_templates_list', async (raw) => {
+    z.object({}).strict().parse(raw);
+    return { templates: await listAgentMailTemplates(key.eventId) };
+  });
+
+  registerTool(server, 'cicero_mail_deliveries_list', async (raw) => {
+    const input = agentMailDeliveriesInput.parse(raw);
+    return await listAgentMailDeliveries(key.eventId, input.limit);
+  });
+
+  registerTool(server, 'cicero_mail_preview', async (raw) => {
+    const input = agentMailPreviewInput.parse(raw);
+    return (await previewAgentMail({ ...input, eventId: key.eventId })) as unknown as Record<
+      string,
+      unknown
+    >;
+  });
+
+  registerTool(server, 'cicero_mail_send', async (raw) => {
+    if (!key.scopes.includes('write')) {
+      throw forbidden('This API key does not have write access');
+    }
+    const input = agentMailSendInput.parse(raw);
+    return (await sendConfirmedAgentMail({ ...input, eventId: key.eventId })) as unknown as Record<
+      string,
+      unknown
+    >;
   });
 
   registerTool(server, 'cicero_program_reconcile', async (raw) => {

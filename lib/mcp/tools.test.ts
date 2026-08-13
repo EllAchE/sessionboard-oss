@@ -15,9 +15,14 @@ describe('MCP tool manifest', () => {
       'cicero_speakers_list',
       'cicero_agenda_get',
       'cicero_submissions_list',
+      'cicero_mail_templates_list',
+      'cicero_mail_deliveries_list',
+      'cicero_mail_preview',
+      'cicero_mail_send',
       'cicero_program_reconcile',
     ]);
     expect(manifest.tools.filter((tool) => tool.access === 'write').map((tool) => tool.name)).toEqual([
+      'cicero_mail_send',
       'cicero_program_reconcile',
     ]);
   });

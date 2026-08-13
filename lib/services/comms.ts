@@ -1291,6 +1291,135 @@ export type PreviewResult = {
   unknown: string[];
 };
 
+export type ParticipantEmailPreview = {
+  recipient: Pick<Recipient, 'participantId' | 'userId' | 'email' | 'name' | 'notifyEmail'>;
+  message: RenderedMessage;
+  unknown: string[];
+  /** A real credential is minted only during dispatch, never while an agent is previewing copy. */
+  dynamicFields: string[];
+};
+
+async function requireParticipantEmailRecipient(
+  eventId: string,
+  participantId: string,
+): Promise<Recipient> {
+  const [recipient] = await resolveRecipients(eventId, {
+    kind: 'manual',
+    participantIds: [participantId],
+  });
+  if (!recipient) throw notFound('Recipient');
+  if (!recipient.notifyEmail) {
+    throw invalid('That recipient has email notifications disabled');
+  }
+  if (!recipient.email) throw invalid('That recipient does not have an email address');
+  return recipient;
+}
+
+/**
+ * The event-scoped, email-only boundary used by agent mail.
+ *
+ * It deliberately does not call `previewCampaign(..., { channel: 'email' })`: a forced organizer
+ * campaign may override the email preference, while an autonomous sender must fail closed when the
+ * person has disabled email. The target is a participant id already associated with the event, not
+ * an address supplied by the caller, so this cannot become an arbitrary-address relay.
+ */
+export async function previewParticipantEmail(input: {
+  eventId: string;
+  participantId: string;
+  subject: string;
+  bodyMarkdown: string;
+}): Promise<ParticipantEmailPreview> {
+  const [{ branding }, recipient] = await Promise.all([
+    loadCommsContext(input.eventId),
+    requireParticipantEmailRecipient(input.eventId, input.participantId),
+  ]);
+  const requestsCredential = requestsPortalLink(input.subject, input.bodyMarkdown, null);
+  const vars = {
+    ...recipient.vars,
+    // Never mint a live sign-in token for an agent preview. The source and rendered copy are bound
+    // into the confirmation digest; the credential itself is filled only inside the send boundary.
+    'portal.link': `${appUrl()}/portal`,
+  };
+  return {
+    recipient: {
+      participantId: recipient.participantId,
+      userId: recipient.userId,
+      email: recipient.email,
+      name: recipient.name,
+      notifyEmail: recipient.notifyEmail,
+    },
+    message: renderMessage(branding, input.subject, input.bodyMarkdown, vars),
+    unknown: [
+      ...unknownVariables(input.subject),
+      ...unknownVariables(input.bodyMarkdown),
+    ].filter((path, index, all) => all.indexOf(path) === index),
+    dynamicFields: requestsCredential ? ['portal.link'] : [],
+  };
+}
+
+/**
+ * Dispatches one confirmed agent message through the ordinary mail boundary. `sendMail` owns the
+ * audit row, transport selection, and live-transport magic-link redaction. The participant and
+ * preference are resolved again here so a stale preview cannot send after either has changed.
+ */
+export async function sendParticipantEmail(input: {
+  eventId: string;
+  participantId: string;
+  subject: string;
+  bodyMarkdown: string;
+  templateKey: string;
+  expectedRecipientEmail: string;
+  expectedPreviewSubject: string;
+  expectedPreviewBodyText: string;
+}): Promise<{
+  recipient: Pick<Recipient, 'participantId' | 'email' | 'name'>;
+  message: Pick<RenderedMessage, 'subject' | 'text'>;
+  logId: string;
+  sent: boolean;
+}> {
+  const [{ branding, event }, recipient] = await Promise.all([
+    loadCommsContext(input.eventId),
+    requireParticipantEmailRecipient(input.eventId, input.participantId),
+  ]);
+  const previewMessage = renderMessage(branding, input.subject, input.bodyMarkdown, {
+    ...recipient.vars,
+    'portal.link': `${appUrl()}/portal`,
+  });
+  if (
+    recipient.email !== input.expectedRecipientEmail ||
+    previewMessage.subject !== input.expectedPreviewSubject ||
+    previewMessage.text !== input.expectedPreviewBodyText
+  ) {
+    throw invalid('The recipient or rendered message changed after confirmation; preview it again');
+  }
+  const vars = await withPortalLink(
+    recipient,
+    input.eventId,
+    input.subject,
+    input.bodyMarkdown,
+    null,
+  );
+  const message = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
+  const result = await sendMail({
+    to: recipient.email,
+    subject: message.subject,
+    html: message.html,
+    text: message.text,
+    eventId: event.id,
+    templateKey: input.templateKey,
+  });
+  return {
+    recipient: {
+      participantId: recipient.participantId,
+      email: recipient.email,
+      name: recipient.name,
+    },
+    message: { subject: message.subject, text: message.text },
+    logId: result.id,
+    sent: result.sent,
+  };
+}
+
 /** Preview renders against a *real* recipient, so an empty merge field is visible before send. */
 export async function previewCampaign(input: {
   eventId: string;

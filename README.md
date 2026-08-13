@@ -231,8 +231,12 @@ undocumented live Accelevents capabilities.
 
 An MCP client connects to `/api/v1/events/{event-slug}/mcp` with an event API key as its Bearer
 token. The endpoint exposes event, session, speaker, agenda, and submission reads plus program
-reconciliation. A read-only key can discover every tool but the server refuses the reconciliation
-write; issue a write key only to an agent that must mutate the program. `bun run docs:mcp`
+reconciliation and an event-scoped agent-mail surface. Mail tools can inspect templates and
+redacted delivery metadata, then preview one existing participant against one template. Sending
+requires a write key, the preview's exact target-specific confirmation literal, and its
+content-bound digest; the service rechecks the recipient, template and email preference before an
+email enters the ordinary audited transport. It never accepts an arbitrary address or sends SMS.
+A read-only key can discover every tool but the server refuses both writes. `bun run docs:mcp`
 regenerates the checked-in manifest from the same Zod schemas used at runtime.
 
 ### Bonus: use Cicero through role-scoped agents

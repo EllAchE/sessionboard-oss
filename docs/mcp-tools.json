@@ -1017,6 +1017,514 @@
       }
     },
     {
+      "name": "cicero_mail_templates_list",
+      "title": "List agent mail templates",
+      "description": "Inspect effective email templates for this event, including exact source copy and whether the agent send flow may use each one.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "bodyMarkdown": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "attachIcs": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "event",
+                    "default"
+                  ]
+                },
+                "updatedAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "agentSendable": {
+                  "type": "boolean"
+                },
+                "agentSendBlockedReason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "name",
+                "subject",
+                "bodyMarkdown",
+                "enabled",
+                "attachIcs",
+                "source",
+                "updatedAt",
+                "agentSendable",
+                "agentSendBlockedReason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "templates"
+        ]
+      }
+    },
+    {
+      "name": "cicero_mail_deliveries_list",
+      "title": "List recent email deliveries",
+      "description": "Read recent event-scoped delivery metadata. Bodies and attachments stay redacted because they can contain one-click credentials.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "contentRedacted": {
+            "const": true
+          },
+          "deliveries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "toEmail": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "fromEmail": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "templateKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "queued",
+                    "sent",
+                    "failed"
+                  ]
+                },
+                "error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sentAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "toEmail",
+                "fromEmail",
+                "subject",
+                "templateKey",
+                "status",
+                "error",
+                "sentAt",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "contentRedacted",
+          "deliveries"
+        ]
+      }
+    },
+    {
+      "name": "cicero_mail_preview",
+      "title": "Preview one participant email",
+      "description": "Resolve one existing event participant against an enabled email template without sending or minting a live portal credential. Returns exact copy plus the confirmation required by send.",
+      "access": "read",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "participantId": {
+            "type": "string",
+            "description": "Participant id from this event; arbitrary email addresses are never accepted"
+          },
+          "templateKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "participantId",
+          "templateKey"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "const": "email"
+          },
+          "recipient": {
+            "type": "object",
+            "properties": {
+              "participantId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              },
+              "notifyEmail": {
+                "const": true
+              }
+            },
+            "required": [
+              "participantId",
+              "name",
+              "email",
+              "notifyEmail"
+            ]
+          },
+          "template": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "bodyMarkdown": {
+                "type": "string"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "attachIcs": {
+                "type": "boolean"
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "event",
+                  "default"
+                ]
+              },
+              "updatedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time"
+              },
+              "agentSendable": {
+                "type": "boolean"
+              },
+              "agentSendBlockedReason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "name",
+              "subject",
+              "bodyMarkdown",
+              "enabled",
+              "attachIcs",
+              "source",
+              "updatedAt",
+              "agentSendable",
+              "agentSendBlockedReason"
+            ]
+          },
+          "rendered": {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "string"
+              },
+              "bodyText": {
+                "type": "string"
+              },
+              "missingVariables": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unknownVariables": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "dynamicFields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "subject",
+              "bodyText",
+              "missingVariables",
+              "unknownVariables",
+              "dynamicFields"
+            ]
+          },
+          "confirmation": {
+            "type": "object",
+            "properties": {
+              "literal": {
+                "type": "string"
+              },
+              "digest": {
+                "type": "string"
+              },
+              "sendArguments": {
+                "type": "object",
+                "properties": {
+                  "participantId": {
+                    "type": "string"
+                  },
+                  "recipientEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Exact event-participant address returned by preview; arbitrary addresses are rejected"
+                  },
+                  "templateKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "subject": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "bodyMarkdown": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "renderedSubject": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "renderedBodyText": {
+                    "type": "string",
+                    "maxLength": 100000
+                  },
+                  "confirmation": {
+                    "type": "string",
+                    "description": "Copy the exact target-specific confirmation literal returned by preview"
+                  },
+                  "confirmationDigest": {
+                    "type": "string",
+                    "description": "Copy the content-bound digest returned by preview"
+                  }
+                },
+                "required": [
+                  "participantId",
+                  "recipientEmail",
+                  "templateKey",
+                  "subject",
+                  "bodyMarkdown",
+                  "renderedSubject",
+                  "renderedBodyText",
+                  "confirmation",
+                  "confirmationDigest"
+                ]
+              }
+            },
+            "required": [
+              "literal",
+              "digest",
+              "sendArguments"
+            ]
+          }
+        },
+        "required": [
+          "channel",
+          "recipient",
+          "template",
+          "rendered",
+          "confirmation"
+        ]
+      }
+    },
+    {
+      "name": "cicero_mail_send",
+      "title": "Send one confirmed participant email",
+      "description": "DESTRUCTIVE: send the exact previewed event template to one existing participant. Requires a write key, exact target-specific confirmation, and the content-bound preview digest. Email preference is rechecked; SMS is never sent.",
+      "access": "write",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "participantId": {
+            "type": "string"
+          },
+          "recipientEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Exact event-participant address returned by preview; arbitrary addresses are rejected"
+          },
+          "templateKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "bodyMarkdown": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "renderedSubject": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "renderedBodyText": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "confirmation": {
+            "type": "string",
+            "description": "Copy the exact target-specific confirmation literal returned by preview"
+          },
+          "confirmationDigest": {
+            "type": "string",
+            "description": "Copy the content-bound digest returned by preview"
+          }
+        },
+        "required": [
+          "participantId",
+          "recipientEmail",
+          "templateKey",
+          "subject",
+          "bodyMarkdown",
+          "renderedSubject",
+          "renderedBodyText",
+          "confirmation",
+          "confirmationDigest"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "const": "email"
+          },
+          "recipient": {
+            "type": "object",
+            "properties": {
+              "participantId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string",
+                "format": "email"
+              }
+            },
+            "required": [
+              "participantId",
+              "name",
+              "email"
+            ]
+          },
+          "templateKey": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "bodyText": {
+            "type": "string"
+          },
+          "logId": {
+            "type": "string"
+          },
+          "sent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "channel",
+          "recipient",
+          "templateKey",
+          "subject",
+          "bodyText",
+          "logId",
+          "sent"
+        ]
+      }
+    },
+    {
       "name": "cicero_program_reconcile",
       "title": "Reconcile program",
       "description": "Preview or apply an Accelevents-shaped program reconciliation. Preview with apply=false before writing.",
