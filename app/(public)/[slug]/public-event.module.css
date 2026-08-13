@@ -35,6 +35,9 @@
   line-height: var(--leading-tight);
   color: var(--text-strong);
   text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brandMeta {
@@ -245,6 +248,24 @@
 }
 
 @media (max-width: 640px) {
+  .barInner {
+    align-items: stretch;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .nav {
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navLink {
+    flex: none;
+  }
+
   .hero {
     padding: var(--space-8) var(--space-4) var(--space-6);
   }

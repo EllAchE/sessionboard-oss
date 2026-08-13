@@ -143,6 +143,8 @@ function Block({
         gridColumn: column,
         gridRow: `${offsetSlots + 2} / span ${spanSlots}`,
       }}
+      data-compact={spanSlots <= 3}
+      aria-label={`${entry.title}, ${formatZonedRange(entry.startsAt, entry.endsAt, timeZone)}`}
       {...listeners}
       {...attributes}
     >
@@ -230,70 +232,87 @@ export function DayGrid({
     );
   }
 
+  const scrollHintId = `agenda-scroll-hint-${dayKey.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  const needsScrollHint = rooms.length > 4;
+
   return (
-    <div className={styles.gridWrap}>
+    <>
+      {needsScrollHint ? (
+        <p id={scrollHintId} className={styles.scrollHint}>
+          Scroll across and down to explore all {rooms.length} rooms. Room names and times stay in
+          view.
+        </p>
+      ) : null}
       <div
-        className={styles.grid}
-        style={{
-          gridTemplateColumns: `64px repeat(${rooms.length}, minmax(150px, 1fr))`,
-          gridTemplateRows: `auto repeat(${slots.length}, ${slotHeight}px)`,
-        }}
+        className={styles.gridWrap}
+        role="region"
+        tabIndex={0}
+        aria-label={`Schedule for ${dayKey}, ${rooms.length} rooms`}
+        aria-describedby={needsScrollHint ? scrollHintId : undefined}
       >
-        <div className={styles.gutterHead} style={{ gridColumn: 1, gridRow: 1 }} />
-        {rooms.map((room, index) => (
-          <div
-            key={room.id}
-            className={styles.roomHead}
-            style={{ gridColumn: index + 2, gridRow: 1 }}
-          >
-            <span className={styles.roomName}>{room.name}</span>
-            {room.capacity ? (
-              <span className={styles.roomMeta}>seats {room.capacity}</span>
-            ) : null}
-          </div>
-        ))}
+        <div
+          className={styles.grid}
+          style={{
+            gridTemplateColumns: `64px repeat(${rooms.length}, minmax(150px, 1fr))`,
+            gridTemplateRows: `auto repeat(${slots.length}, ${slotHeight}px)`,
+          }}
+        >
+          <div className={styles.gutterHead} style={{ gridColumn: 1, gridRow: 1 }} />
+          {rooms.map((room, index) => (
+            <div
+              key={room.id}
+              className={styles.roomHead}
+              style={{ gridColumn: index + 2, gridRow: 1 }}
+            >
+              <span className={styles.roomName}>{room.name}</span>
+              {room.capacity ? (
+                <span className={styles.roomMeta}>seats {room.capacity}</span>
+              ) : null}
+            </div>
+          ))}
 
-        {slots.map((slot, rowIndex) => (
-          <div
-            key={`label:${slot.minute}`}
-            className={`${styles.timeLabel} ${slot.major ? '' : styles.timeLabelMinor}`}
-            style={{ gridRow: rowIndex + 2 }}
-          >
-            {slot.label}
-          </div>
-        ))}
+          {slots.map((slot, rowIndex) => (
+            <div
+              key={`label:${slot.minute}`}
+              className={`${styles.timeLabel} ${slot.major ? '' : styles.timeLabelMinor}`}
+              style={{ gridRow: rowIndex + 2 }}
+            >
+              {slot.label}
+            </div>
+          ))}
 
-        {rooms.map((room, columnIndex) =>
-          slots.map((slot, rowIndex) => (
-            <Cell
-              key={`${room.id}:${slot.minute}`}
-              roomId={room.id}
-              minute={slot.minute}
-              dayKey={dayKey}
-              column={columnIndex + 2}
-              row={rowIndex + 2}
-              major={slot.major}
-            />
-          )),
-        )}
+          {rooms.map((room, columnIndex) =>
+            slots.map((slot, rowIndex) => (
+              <Cell
+                key={`${room.id}:${slot.minute}`}
+                roomId={room.id}
+                minute={slot.minute}
+                dayKey={dayKey}
+                column={columnIndex + 2}
+                row={rowIndex + 2}
+                major={slot.major}
+              />
+            )),
+          )}
 
-        {onDay.map((entry) => {
-          const columnIndex = rooms.findIndex((room) => room.id === entry.roomId);
-          if (columnIndex === -1) return null;
-          return (
-            <Block
-              key={entry.id}
-              entry={entry}
-              timeZone={timeZone}
-              grid={grid}
-              column={columnIndex + 2}
-              conflicts={conflictsBySessionId.get(entry.id) ?? []}
-              onOpen={onOpen}
-            />
-          );
-        })}
+          {onDay.map((entry) => {
+            const columnIndex = rooms.findIndex((room) => room.id === entry.roomId);
+            if (columnIndex === -1) return null;
+            return (
+              <Block
+                key={entry.id}
+                entry={entry}
+                timeZone={timeZone}
+                grid={grid}
+                column={columnIndex + 2}
+                conflicts={conflictsBySessionId.get(entry.id) ?? []}
+                onOpen={onOpen}
+              />
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
