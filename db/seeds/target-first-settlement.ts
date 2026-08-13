@@ -1,7 +1,7 @@
 export const FIRST_SETTLEMENT_SLUG = "first-settlement";
 export const FIRST_SETTLEMENT_ORGANIZER = {
   email: "organizer@example.com",
-  name: "Robin Alcott",
+  name: "Tullia Ciceronis",
 } as const;
 
 export type TargetSeedOptions = {

@@ -62,8 +62,8 @@ docker compose exec app npm run db:seed
 
 The seed creates two idempotent cases:
 
-- **Cicero Demo Conf** — 14 submissions mid-review, 7 accepted speakers, 4 tracks, 3 rooms, and a
-  two-day agenda with gaps still in it.
+- **Cicero Forum** — a fictional Roman-themed conference with 14 submissions mid-review, 7
+  historically inspired speakers, 4 tracks, 3 rooms, and a two-day agenda with gaps still in it.
 - **The First Settlement** — a Roman Senate-themed programme inspired by the sessions of
   13–16 January 27 BCE, with motions, consular review, a partly scheduled agenda, and outstanding
   speaker tasks.
