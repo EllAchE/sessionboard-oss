@@ -28,6 +28,7 @@ import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
 import { loadCommsContext, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
@@ -384,6 +385,7 @@ export async function createRound(
   requireCapability(ctx, 'submission:decide');
   const name = input.name.trim();
   if (!name) throw invalid('A round needs a name', { name: 'Name is required' });
+  assertRoundDateOrder(input.opensAt, input.closesAt);
 
   const db = getDb();
   const existing = await listRounds(ctx);
@@ -434,7 +436,7 @@ export async function updateRound(
   patch: RoundPatch,
 ): Promise<ReviewRoundRecord> {
   requireCapability(ctx, 'submission:decide');
-  await requireRound(ctx, roundId);
+  const existing = await requireRound(ctx, roundId);
 
   const values: Record<string, unknown> = {};
   if (patch.name !== undefined) {
@@ -448,10 +450,11 @@ export async function updateRound(
   if (patch.opensAt !== undefined) values.opensAt = patch.opensAt;
   if (patch.closesAt !== undefined) values.closesAt = patch.closesAt;
 
-  if (Object.keys(values).length === 0) {
-    const current = await requireRound(ctx, roundId);
-    return current;
-  }
+  const opensAt = patch.opensAt !== undefined ? patch.opensAt : existing.opensAt;
+  const closesAt = patch.closesAt !== undefined ? patch.closesAt : existing.closesAt;
+  assertRoundDateOrder(opensAt, closesAt);
+
+  if (Object.keys(values).length === 0) return existing;
 
   const [updated] = await getDb()
     .update(reviewRound)
@@ -889,9 +892,8 @@ export function hidesAuthorship(
 }
 
 /**
- * Answer keys whose value names or locates a human. Custom form fields are free text, so this is a
- * word list rather than a schema — an over-redacted answer costs a reviewer some context, while an
- * under-redacted one defeats the round.
+ * Form metadata that names or locates a human. Custom fields have no profile schema, so an
+ * over-redacted field costs a reviewer some context while an under-redacted one defeats the round.
  */
 const IDENTITY_WORDS = new Set([
   'affiliation',
@@ -935,8 +937,8 @@ const IDENTITY_WORDS = new Set([
   'website',
 ]);
 
-export function carriesIdentity(answerKey: string): boolean {
-  return answerKey
+export function carriesIdentity(fieldMetadata: string): boolean {
+  return fieldMetadata
     .split(/[^a-zA-Z0-9]+/)
     .some((word) => IDENTITY_WORDS.has(word.toLowerCase()));
 }
@@ -952,15 +954,44 @@ export type AuthoredSubject = {
   submitterEmail: string;
   speakers: ReviewSpeaker[];
   answers: Record<string, unknown>;
+  answerLabels: Record<string, string>;
 };
+
+export type ReviewAnswerField = Pick<
+  typeof formField.$inferSelect,
+  'key' | 'label' | 'type' | 'builtinKey'
+>;
+
+function answerCarriesIdentity(
+  answerFields: Map<string, ReviewAnswerField>,
+  key: string,
+): boolean {
+  const field = answerFields.get(key);
+  return (
+    carriesIdentity(key) ||
+    field?.type === 'email' ||
+    carriesIdentity(field?.label ?? '') ||
+    carriesIdentity(field?.builtinKey ?? '')
+  );
+}
 
 /**
  * Strips every handle on the author: the submitter, each speaker's name, address, affiliation and
- * bio, the participant ids that would let an adjacent route re-resolve them, and any free-text
- * answer whose key names a person.
+ * bio, the participant ids that would let an adjacent route re-resolve them, and any questionnaire
+ * field whose stored key or human-facing metadata identifies a person.
  */
-export function redactAuthorship<T extends AuthoredSubject>(subject: T): T {
+export function redactAuthorship<T extends AuthoredSubject>(
+  subject: T,
+  fields: ReviewAnswerField[],
+): T {
   const many = subject.speakers.length > 1;
+  const answerFields = new Map(fields.map((field) => [field.key, field]));
+  const visibleAnswers = Object.entries(subject.answers).filter(
+    ([key]) => !answerCarriesIdentity(answerFields, key),
+  );
+  const visibleLabels = Object.entries(subject.answerLabels).filter(
+    ([key]) => !answerCarriesIdentity(answerFields, key),
+  );
   return {
     ...redactSubmitter(subject),
     speakers: subject.speakers.map((speaker, index) => ({
@@ -972,9 +1003,8 @@ export function redactAuthorship<T extends AuthoredSubject>(subject: T): T {
       company: null,
       bioMarkdown: null,
     })),
-    answers: Object.fromEntries(
-      Object.entries(subject.answers).filter(([key]) => !carriesIdentity(key)),
-    ),
+    answers: Object.fromEntries(visibleAnswers),
+    answerLabels: Object.fromEntries(visibleLabels),
   };
 }
 
@@ -1410,7 +1440,12 @@ export async function loadSubmissionReview(
         orderBy: [desc(aiReview.createdAt)],
       }),
       db
-        .select({ key: formField.key, label: formField.label })
+        .select({
+          key: formField.key,
+          label: formField.label,
+          type: formField.type,
+          builtinKey: formField.builtinKey,
+        })
         .from(formField)
         .where(eq(formField.formId, row.formId)),
     ]);
@@ -1504,7 +1539,7 @@ export async function loadSubmissionReview(
       : null,
   };
 
-  return authorHidden ? redactAuthorship(detail) : detail;
+  return authorHidden ? redactAuthorship(detail, fieldRows) : detail;
 }
 
 // ---------------------------------------------------------------------------

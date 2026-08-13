@@ -17,6 +17,7 @@ import {
   type DataTableColumn,
 } from '@/components/ui';
 import { recuseAction } from './actions';
+import { reviewerSubmissionHref } from './links';
 import type { AssignmentWire, RoundWire } from './types';
 import styles from './review.module.css';
 
@@ -48,8 +49,9 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
   const percent = total === 0 ? 0 : Math.round((props.completedCount / total) * 100);
 
   const open = useCallback(
-    (row: AssignmentWire) => router.push(`/review/${row.submissionId}`),
-    [router],
+    (row: AssignmentWire) =>
+      router.push(reviewerSubmissionHref(row.submissionId, props.round?.id ?? null)),
+    [props.round?.id, router],
   );
 
   const confirmRecusal = useCallback(() => {

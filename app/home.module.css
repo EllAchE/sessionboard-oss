@@ -1,13 +1,45 @@
 .root {
+  --surface-page: #f8f7f3;
+  --surface-card: #ffffff;
+  --surface-sunken: #f1efe9;
+  --surface-hover: #f2eee7;
+  --text-strong: #211f1b;
+  --text-body: #33302a;
+  --text-muted: #625d53;
+  --text-faint: #81796b;
+  --text-accent: #982f1a;
+  --border-hairline: #e3dfd6;
+  --border-default: #cfc8bb;
+  --border-strong: #9f9687;
+  --border-accent: #b7391f;
+  --accent: #b7391f;
+  --accent-hover: #9c2e17;
+  --accent-press: #7c2412;
+  --accent-subtle: #fdf4f1;
   min-height: 100vh;
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
+  color-scheme: light;
   background:
-    radial-gradient(circle at 86% 6%, var(--accent-subtle), transparent 26rem),
-    var(--surface-page);
+    linear-gradient(rgba(255, 255, 255, 0.76), rgba(248, 247, 243, 0.91)),
+    url('/assets/roman/materials/carrara-marble.webp') center top / 760px 760px repeat;
+}
+
+.root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('/assets/roman/artifacts/mosaic-floor.webp') center top / 680px auto repeat;
+  filter: saturate(0.62) contrast(0.9);
+  opacity: 0.055;
 }
 
 .nav,
 .hero,
+.mosaicRule,
 .product,
 .programme,
 .finalCta,
@@ -17,12 +49,20 @@
 }
 
 .nav {
-  min-height: 76px;
+  min-height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
-  border-bottom: var(--border-width) solid color-mix(in srgb, var(--border-hairline) 80%, transparent);
+  margin-top: var(--space-4);
+  padding-inline: var(--space-5);
+  border: var(--border-width) solid color-mix(in srgb, var(--border-default) 78%, transparent);
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 10px 30px rgba(52, 47, 39, 0.06),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px);
 }
 
 .brand {
@@ -63,7 +103,7 @@
 }
 
 .hero {
-  min-height: calc(100vh - 76px);
+  min-height: calc(100vh - 88px);
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
   align-items: center;
@@ -81,11 +121,22 @@
 }
 
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
   margin: 0;
   color: var(--text-accent);
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 26px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
 }
 
 .hero h1 {
@@ -94,6 +145,7 @@
   color: var(--text-strong);
   font: var(--weight-regular) clamp(3.1rem, 6vw, 5.4rem) / 0.98 var(--font-display);
   letter-spacing: var(--tracking-tighter);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .heroLead {
@@ -113,10 +165,15 @@
 
 .heroVisual {
   position: relative;
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
-  box-shadow: 0 28px 70px rgba(33, 31, 27, 0.16), 0 0 0 10px rgba(255, 255, 255, 0.45);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.88)),
+    url('/assets/roman/materials/carrara-marble.webp') center / 360px 360px;
+  box-shadow:
+    0 28px 70px rgba(45, 40, 33, 0.15),
+    0 0 0 7px rgba(255, 255, 255, 0.72),
+    0 0 0 8px rgba(116, 106, 91, 0.26);
 }
 
 .windowBar {
@@ -126,12 +183,13 @@
   gap: 6px;
   padding-inline: var(--space-3);
   border-bottom: var(--border-width) solid var(--border-hairline);
+  background: rgba(255, 255, 255, 0.46);
 }
 
 .windowBar span {
   width: 8px;
   height: 8px;
-  border-radius: var(--radius-full);
+  border-radius: 1px;
   background: var(--stone-300);
 }
 
@@ -142,7 +200,7 @@
 .heroImage {
   width: 100%;
   height: auto;
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  border-radius: 0;
 }
 
 .callout {
@@ -153,9 +211,13 @@
   max-width: 220px;
   padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.89), rgba(255, 255, 255, 0.89)),
+    url('/assets/roman/materials/carrara-marble.webp') center / 220px 220px;
+  box-shadow:
+    0 12px 28px rgba(45, 40, 33, 0.14),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.72);
   color: var(--text-body);
   font: var(--weight-medium) var(--text-sm) / var(--leading-snug) var(--font-ui);
   backdrop-filter: blur(10px);
@@ -175,9 +237,21 @@
   top: 62px;
 }
 
+.mosaicRule {
+  height: 54px;
+  border-block: var(--border-width) solid rgba(94, 84, 70, 0.5);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.38)),
+    url('/assets/roman/artifacts/mosaic-floor.webp') center 46% / 760px auto;
+  box-shadow:
+    inset 0 5px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -5px 0 rgba(255, 255, 255, 0.62);
+  filter: saturate(0.7) contrast(0.86);
+  opacity: 0.82;
+}
+
 .product {
   padding-block: var(--space-24) var(--space-32);
-  border-top: var(--border-width) solid var(--border-hairline);
 }
 
 .sectionHeading {
@@ -208,7 +282,7 @@
 .features {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-10);
+  gap: var(--space-6);
   margin-top: var(--space-20);
 }
 
@@ -217,8 +291,15 @@
   grid-template-columns: auto 1fr;
   gap: var(--space-3) var(--space-4);
   align-content: start;
-  padding-top: var(--space-5);
-  border-top: var(--border-width) solid var(--border-default);
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.92)),
+    url('/assets/roman/materials/carrara-marble.webp') center / 280px 280px;
+  box-shadow:
+    0 12px 28px rgba(52, 47, 39, 0.07),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6);
 }
 
 .featureIcon {
@@ -227,9 +308,10 @@
   height: 40px;
   display: grid;
   place-items: center;
-  border: var(--border-width) solid color-mix(in srgb, var(--border-accent) 55%, var(--border-default));
-  border-radius: var(--radius-md);
-  background: var(--accent-subtle);
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--border-accent) 55%, var(--border-default));
+  border-radius: var(--radius-xs);
+  background: rgba(253, 244, 241, 0.84);
   color: var(--text-accent);
 }
 
@@ -250,13 +332,21 @@
   grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
   align-items: center;
   gap: clamp(var(--space-10), 7vw, var(--space-24));
-  padding-block: var(--space-24);
+  padding: var(--space-12);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.91)),
+    url('/assets/roman/materials/carrara-marble.webp') center / 520px 520px;
+  box-shadow:
+    0 18px 42px rgba(52, 47, 39, 0.08),
+    inset 0 0 0 5px rgba(255, 255, 255, 0.62);
 }
 
 .programmeVisual {
   overflow: hidden;
   border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xs);
   background: var(--surface-card);
   box-shadow: var(--shadow-lg);
 }
@@ -291,10 +381,15 @@
 .finalCta {
   align-items: center;
   padding: var(--space-24) var(--space-10);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-sm);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.9)),
+    url('/assets/roman/artifacts/mosaic-floor.webp') center / 760px auto;
+  box-shadow:
+    0 18px 42px rgba(52, 47, 39, 0.09),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.6),
+    inset 0 0 0 7px rgba(116, 106, 91, 0.2);
   text-align: center;
 }
 
@@ -310,7 +405,7 @@
   justify-content: space-between;
   gap: var(--space-5);
   margin-top: var(--space-20);
-  border-top: var(--border-width) solid var(--border-hairline);
+  border-top: var(--border-width) solid rgba(111, 101, 87, 0.34);
   color: var(--text-faint);
   font: var(--type-label);
 }
@@ -371,6 +466,8 @@
 
   .nav {
     min-height: 64px;
+    margin-top: var(--space-2);
+    padding-inline: var(--space-3);
   }
 
   .navLinks {
@@ -423,7 +520,7 @@
   }
 
   .calloutSchedule {
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    border-radius: 0;
   }
 
   .heroImage {
@@ -433,6 +530,10 @@
   .product,
   .programme {
     padding-block: var(--space-20);
+  }
+
+  .programme {
+    padding-inline: var(--space-5);
   }
 
   .features {
@@ -447,6 +548,11 @@
     padding: var(--space-16) var(--space-5);
   }
 
+  .mosaicRule {
+    height: 42px;
+    background-size: 560px auto;
+  }
+
   .footer {
     min-height: 104px;
     margin-top: var(--space-12);
@@ -454,11 +560,6 @@
 }
 
 @media (max-width: 390px) {
-  .brandMark {
-    width: 30px;
-    height: 30px;
-  }
-
   .navLinks {
     gap: var(--space-3);
   }

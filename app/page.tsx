@@ -124,6 +124,8 @@ export default function Home() {
         </div>
       </section>
 
+      <div className={styles.mosaicRule} aria-hidden="true" />
+
       <section className={styles.product} id="product">
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>One calm workspace</p>

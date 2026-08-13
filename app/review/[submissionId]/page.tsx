@@ -3,6 +3,7 @@ import { currentActor } from '@/lib/auth';
 import { renderMarkdown } from '@/lib/markdown';
 import * as review from '@/lib/services/review';
 import { reviewerSession } from '../context';
+import { reviewerSubmissionHref } from '../links';
 import { ReviewerScorecard } from './ReviewerScorecard';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,9 @@ export default async function ReviewerSubmissionPage({
   const order = queue.assignments.map((row) => row.submissionId);
   const position = order.indexOf(submissionId);
   const href = (index: number) =>
-    index >= 0 && index < order.length ? `/review/${order[index]}` : null;
+    index >= 0 && index < order.length
+      ? reviewerSubmissionHref(order[index], detail.round?.id ?? null)
+      : null;
 
   return (
     <ReviewerScorecard
