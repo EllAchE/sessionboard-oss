@@ -64,6 +64,13 @@
       "when": 1786609052455,
       "tag": "0008_tiny_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786610788696,
+      "tag": "0009_robust_misty_knight",
+      "breakpoints": true
     }
   ]
 }

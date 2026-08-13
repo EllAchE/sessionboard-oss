@@ -119,14 +119,26 @@ export async function deleteCriterionAction(criterionId: string): Promise<Action
   }, '/admin/submissions/rounds');
 }
 
+/** `F-3`/`V-5`: routing chooses the pool, the balancing spreads inside it, gaps come back named. */
 export async function autoAssignAction(
   roundId: string,
   input: review.AutoAssignInput,
-): Promise<ActionResult<{ created: number }>> {
+): Promise<ActionResult<review.AutoAssignOutcome>> {
   return run(async () => {
     const ctx = await decideContext();
-    const created = await review.autoAssignRound(ctx, roundId, input);
-    return { created };
+    return review.autoAssignRound(ctx, roundId, input);
+  }, '/admin/submissions/rounds');
+}
+
+/** Replaces the reviewers covering one track. The set is the unit an organizer edits. */
+export async function setTrackReviewersAction(
+  trackId: string,
+  reviewerUserIds: string[],
+): Promise<ActionResult<{ reviewerUserIds: string[] }>> {
+  return run(async () => {
+    const ctx = await decideContext();
+    const saved = await review.setTrackReviewers(ctx, trackId, reviewerUserIds);
+    return { reviewerUserIds: saved };
   }, '/admin/submissions/rounds');
 }
 

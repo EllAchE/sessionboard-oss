@@ -18,6 +18,7 @@ import {
   submissionTag,
   tag as tagTable,
   track as trackTable,
+  trackReviewer,
   user,
 } from '../../db/schema';
 import { ensureUserAccount, grantRole, requestMagicLink } from '../auth';
@@ -211,15 +212,125 @@ export function isAgendaEligible(status: SubmissionStatus): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Assignment planning — `V-5`
+// Assignment planning and category routing — `F-3`, `V-5`
 // ---------------------------------------------------------------------------
 
 export type AssignmentPair = { submissionId: string; reviewerUserId: string };
 
+/** A submission as the router sees it: an id, and the category that decides who reads it. */
+export type RoutableSubmission = { submissionId: string; trackId: string | null };
+
+/** Why a submission came out of the router with nobody on it. Never silently swallowed. */
+export type UnroutableReason = 'no_track' | 'track_uncovered' | 'all_conflicted';
+
+export type UnroutableSubmission = { submissionId: string; reason: UnroutableReason };
+
+export type RoutedPlan = { pairs: AssignmentPair[]; unroutable: UnroutableSubmission[] };
+
+export type RoutingPlanInput = {
+  submissions: RoutableSubmission[];
+  /** The reviewers the organizer put in play for this round. */
+  pool: string[];
+  /** `trackId` → reviewers covering it. An empty map means the event has no routing configured. */
+  coverage: Map<string, string[]>;
+  reviewersPerSubmission: number;
+  existing?: AssignmentPair[];
+  /** Reviewers who must never be given a submission — its submitter and its co-speakers. */
+  conflicts?: Map<string, ReadonlySet<string>>;
+  /** Set when the organizer explicitly sends what routing cannot place to the whole pool. */
+  fallbackToPool?: boolean;
+};
+
 /**
- * Balanced round-robin: each submission is topped up to `reviewersPerSubmission` by repeatedly
- * taking the least-loaded reviewer who is not already on it. Existing assignments count towards the
- * load so a second pass after new submissions arrive does not pile everything on one person.
+ * The one routing model `F-3` and `V-5` share, applied. A submission's track picks the candidate
+ * pool; the balanced round-robin that was here before runs *inside* that pool, on one load ledger
+ * shared across every track — so a reviewer who covers four tracks does not end up with four times
+ * the work.
+ *
+ * Three rules earn their keep:
+ *
+ * - **Unconfigured is not the same as uncovered.** An event with no coverage rows at all routes to
+ *   the whole pool, which is exactly what assignment did before this model existed. Cover one
+ *   track and coverage becomes the authority for that event, gaps included.
+ * - **Conflicts are removed after routing, not before.** A track whose only reviewer wrote the
+ *   talk is a real configuration, and the answer is to say so, not to hand the talk to someone
+ *   the organizer never put on that track.
+ * - **A submission that ends with nobody on it is returned, not dropped.** `unroutable` is the
+ *   whole point: routing narrows, and anything it narrows to zero has to reach a human.
+ */
+export function planRoutedAssignments(input: RoutingPlanInput): RoutedPlan {
+  const pool = [...new Set(input.pool)];
+  const inPool = new Set(pool);
+  const conflicts = input.conflicts ?? new Map<string, ReadonlySet<string>>();
+  const configured = input.coverage.size > 0;
+
+  const load = new Map<string, number>(pool.map((reviewerUserId) => [reviewerUserId, 0]));
+  const assigned = new Map<string, Set<string>>();
+  for (const pair of input.existing ?? []) {
+    load.set(pair.reviewerUserId, (load.get(pair.reviewerUserId) ?? 0) + 1);
+    const set = assigned.get(pair.submissionId) ?? new Set<string>();
+    set.add(pair.reviewerUserId);
+    assigned.set(pair.submissionId, set);
+  }
+
+  /** The reviewers this submission may go to, and the reason if that comes out empty. */
+  const candidatesFor = (
+    subject: RoutableSubmission,
+  ): { candidates: string[]; reason: UnroutableReason | null } => {
+    const conflicted = conflicts.get(subject.submissionId) ?? new Set<string>();
+    const clear = (ids: string[]) => ids.filter((id) => !conflicted.has(id));
+
+    const fallback = (reason: UnroutableReason) => {
+      if (!input.fallbackToPool) return { candidates: [], reason };
+      const open = clear(pool);
+      return open.length > 0 ? { candidates: open, reason: null } : { candidates: [], reason };
+    };
+
+    if (!configured) {
+      const open = clear(pool);
+      return open.length > 0 ? { candidates: open, reason: null } : { candidates: [], reason: 'all_conflicted' as const };
+    }
+    if (!subject.trackId) return fallback('no_track');
+
+    const covered = (input.coverage.get(subject.trackId) ?? []).filter((id) => inPool.has(id));
+    if (covered.length === 0) return fallback('track_uncovered');
+
+    const open = clear(covered);
+    return open.length > 0 ? { candidates: open, reason: null } : fallback('all_conflicted');
+  };
+
+  const pairs: AssignmentPair[] = [];
+  const unroutable: UnroutableSubmission[] = [];
+
+  for (const subject of input.submissions) {
+    const already = assigned.get(subject.submissionId) ?? new Set<string>();
+    const { candidates, reason } = candidatesFor(subject);
+    const target = Math.max(1, Math.min(candidates.length, input.reviewersPerSubmission));
+
+    while (already.size < target) {
+      const candidate = candidates
+        .filter((reviewerUserId) => !already.has(reviewerUserId))
+        .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0))[0];
+      if (!candidate) break;
+      already.add(candidate);
+      load.set(candidate, (load.get(candidate) ?? 0) + 1);
+      pairs.push({ submissionId: subject.submissionId, reviewerUserId: candidate });
+    }
+    assigned.set(subject.submissionId, already);
+
+    // Only a submission left with nobody at all is a routing failure. One that an organizer
+    // already assigned by hand is theirs, however thin the automatic pool turned out to be.
+    if (already.size === 0) {
+      unroutable.push({ submissionId: subject.submissionId, reason: reason ?? 'all_conflicted' });
+    }
+  }
+
+  return { pairs, unroutable };
+}
+
+/**
+ * Balanced round-robin with no routing applied: every submission may go to every reviewer. Kept as
+ * the unrouted case of the same planner rather than a second implementation of the balancing.
  */
 export function planAssignments(
   submissionIds: string[],
@@ -227,33 +338,13 @@ export function planAssignments(
   reviewersPerSubmission: number,
   existing: AssignmentPair[] = [],
 ): AssignmentPair[] {
-  if (reviewerUserIds.length === 0 || submissionIds.length === 0) return [];
-  const perSubmission = Math.max(1, Math.min(reviewerUserIds.length, reviewersPerSubmission));
-
-  const load = new Map(reviewerUserIds.map((reviewerUserId) => [reviewerUserId, 0]));
-  const assigned = new Map<string, Set<string>>();
-  for (const pair of existing) {
-    load.set(pair.reviewerUserId, (load.get(pair.reviewerUserId) ?? 0) + 1);
-    const set = assigned.get(pair.submissionId) ?? new Set<string>();
-    set.add(pair.reviewerUserId);
-    assigned.set(pair.submissionId, set);
-  }
-
-  const planned: AssignmentPair[] = [];
-  for (const submissionId of submissionIds) {
-    const already = assigned.get(submissionId) ?? new Set<string>();
-    while (already.size < perSubmission) {
-      const candidate = reviewerUserIds
-        .filter((reviewerUserId) => !already.has(reviewerUserId))
-        .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0))[0];
-      if (!candidate) break;
-      already.add(candidate);
-      load.set(candidate, (load.get(candidate) ?? 0) + 1);
-      planned.push({ submissionId, reviewerUserId: candidate });
-    }
-    assigned.set(submissionId, already);
-  }
-  return planned;
+  return planRoutedAssignments({
+    submissions: submissionIds.map((submissionId) => ({ submissionId, trackId: null })),
+    pool: reviewerUserIds,
+    coverage: new Map(),
+    reviewersPerSubmission,
+    existing,
+  }).pairs;
 }
 
 // ---------------------------------------------------------------------------
@@ -643,6 +734,160 @@ export async function listReviewers(ctx: EventContext): Promise<ReviewerRow[]> {
   return [...byUser.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ---------------------------------------------------------------------------
+// Category routing — the configuration `F-3` and `V-5` both read
+// ---------------------------------------------------------------------------
+
+export type TrackRoutingRule = {
+  trackId: string;
+  trackName: string;
+  color: string | null;
+  reviewerUserIds: string[];
+  /** Submissions in this track still awaiting a verdict — what a gap would strand. */
+  pendingCount: number;
+};
+
+export type RoutingModel = {
+  /** False until a first track is covered; assignment then falls back to the whole pool. */
+  configured: boolean;
+  rules: TrackRoutingRule[];
+  /** Pending submissions with no track at all. Routing has nothing to key on for these. */
+  untrackedPending: number;
+};
+
+/** The event's coverage as the planner wants it: `trackId` → reviewers, gaps omitted. */
+export async function trackCoverage(eventId: string): Promise<Map<string, string[]>> {
+  const rows = await getDb()
+    .select({ trackId: trackReviewer.trackId, reviewerUserId: trackReviewer.reviewerUserId })
+    .from(trackReviewer)
+    .innerJoin(trackTable, eq(trackTable.id, trackReviewer.trackId))
+    .where(eq(trackTable.eventId, eventId));
+
+  const coverage = new Map<string, string[]>();
+  for (const row of rows) {
+    coverage.set(row.trackId, [...(coverage.get(row.trackId) ?? []), row.reviewerUserId]);
+  }
+  return coverage;
+}
+
+/**
+ * Every track, whether or not anyone covers it, with the pending work behind it. The uncovered
+ * rows are the point: a track nobody reads is a queue nobody empties, and the organizer has to see
+ * that before the deadline rather than after.
+ */
+export async function loadRouting(ctx: EventContext): Promise<RoutingModel> {
+  requireCapability(ctx, 'submission:review');
+  const db = getDb();
+  const pending = statusesForTab('pending');
+
+  const [tracks, coverage, counts] = await Promise.all([
+    db
+      .select({ id: trackTable.id, name: trackTable.name, color: trackTable.color })
+      .from(trackTable)
+      .where(eq(trackTable.eventId, ctx.eventId))
+      .orderBy(asc(trackTable.position), asc(trackTable.name)),
+    trackCoverage(ctx.eventId),
+    db
+      .select({ trackId: submission.trackId, total: sql<number>`count(*)::int` })
+      .from(submission)
+      .where(and(eq(submission.eventId, ctx.eventId), inArray(submission.status, pending)))
+      .groupBy(submission.trackId),
+  ]);
+
+  const pendingByTrack = new Map(counts.map((row) => [row.trackId, Number(row.total)]));
+
+  return {
+    configured: coverage.size > 0,
+    rules: tracks.map((row) => ({
+      trackId: row.id,
+      trackName: row.name,
+      color: row.color,
+      reviewerUserIds: [...(coverage.get(row.id) ?? [])].sort(),
+      pendingCount: pendingByTrack.get(row.id) ?? 0,
+    })),
+    untrackedPending: pendingByTrack.get(null) ?? 0,
+  };
+}
+
+/**
+ * Replaces a track's reviewers wholesale rather than adding one at a time: the organizer is
+ * editing a set, and a diff of checkbox events is a slower way to reach the same row.
+ */
+export async function setTrackReviewers(
+  ctx: EventContext,
+  trackId: string,
+  reviewerUserIds: string[],
+): Promise<string[]> {
+  requireCapability(ctx, 'submission:decide');
+  const db = getDb();
+
+  const owned = await db.query.track.findFirst({
+    where: and(eq(trackTable.id, trackId), eq(trackTable.eventId, ctx.eventId)),
+  });
+  if (!owned) throw notFound('That track');
+
+  const eligible = new Set((await listReviewers(ctx)).map((reviewer) => reviewer.userId));
+  const wanted = [...new Set(reviewerUserIds)];
+  const stranger = wanted.find((userId) => !eligible.has(userId));
+  if (stranger) throw invalid('Only reviewers and organizers on this event can cover a track');
+
+  await db.delete(trackReviewer).where(eq(trackReviewer.trackId, trackId));
+  if (wanted.length > 0) {
+    await db
+      .insert(trackReviewer)
+      .values(wanted.map((reviewerUserId) => ({ trackId, reviewerUserId })))
+      .onConflictDoNothing();
+  }
+  return wanted;
+}
+
+/** The track names one reviewer covers — `V-5`, read from the reviewer's side of the same model. */
+export async function reviewerTrackNames(ctx: EventContext, userId: string): Promise<string[]> {
+  const rows = await getDb()
+    .select({ name: trackTable.name })
+    .from(trackReviewer)
+    .innerJoin(trackTable, eq(trackTable.id, trackReviewer.trackId))
+    .where(and(eq(trackReviewer.reviewerUserId, userId), eq(trackTable.eventId, ctx.eventId)))
+    .orderBy(asc(trackTable.position), asc(trackTable.name));
+  return rows.map((row) => row.name);
+}
+
+/**
+ * Who may not review what. The submitter is the obvious one; a co-speaker with an account is the
+ * one that bites, because they are often on the panel too and nothing else in the product would
+ * stop them scoring their own talk.
+ */
+export async function conflictsFor(
+  submissionIds: string[],
+): Promise<Map<string, Set<string>>> {
+  const conflicts = new Map<string, Set<string>>();
+  if (submissionIds.length === 0) return conflicts;
+  const db = getDb();
+
+  const add = (submissionId: string, userId: string | null) => {
+    if (!userId) return;
+    const set = conflicts.get(submissionId) ?? new Set<string>();
+    set.add(userId);
+    conflicts.set(submissionId, set);
+  };
+
+  const [submitters, speakers] = await Promise.all([
+    db
+      .select({ id: submission.id, submitterUserId: submission.submitterUserId })
+      .from(submission)
+      .where(inArray(submission.id, submissionIds)),
+    db
+      .select({ submissionId: participantRole.submissionId, userId: participant.userId })
+      .from(participantRole)
+      .innerJoin(participant, eq(participant.id, participantRole.participantId))
+      .where(inArray(participantRole.submissionId, submissionIds)),
+  ]);
+
+  for (const row of submitters) add(row.id, row.submitterUserId);
+  for (const row of speakers) add(row.submissionId, row.userId);
+  return conflicts;
+}
+
 export async function assignReviewers(
   ctx: EventContext,
   roundId: string,
@@ -670,31 +915,99 @@ export type AutoAssignInput = {
   submissionIds: string[];
   reviewerUserIds: string[];
   reviewersPerSubmission: number;
+  /** The organizer's second click: place what routing could not, across the whole pool. */
+  fallbackToPool?: boolean;
 };
 
+export type UnroutedSubmission = {
+  submissionId: string;
+  displayRef: string;
+  title: string;
+  trackName: string | null;
+  reason: UnroutableReason;
+};
+
+export type AutoAssignOutcome = {
+  /** New assignment rows written. */
+  created: number;
+  /** Submissions the router placed on this pass. */
+  routed: number;
+  /** Submissions that came out with nobody on them, and why. Surfaced, never swallowed. */
+  unrouted: UnroutedSubmission[];
+};
+
+/**
+ * `F-3` + `V-5` in one call: the track on each submission chooses its candidate reviewers, and the
+ * balancing spreads the work inside that choice. What routing cannot place comes back as
+ * `unrouted` for the organizer to look at.
+ */
 export async function autoAssignRound(
   ctx: EventContext,
   roundId: string,
   input: AutoAssignInput,
-): Promise<number> {
+): Promise<AutoAssignOutcome> {
   requireCapability(ctx, 'submission:decide');
   await requireRound(ctx, roundId);
+  if (input.submissionIds.length === 0) return { created: 0, routed: 0, unrouted: [] };
+  const db = getDb();
 
-  const existing = await getDb()
-    .select({
-      submissionId: reviewAssignment.submissionId,
-      reviewerUserId: reviewAssignment.reviewerUserId,
-    })
-    .from(reviewAssignment)
-    .where(eq(reviewAssignment.reviewRoundId, roundId));
+  const [existing, subjects, coverage, conflicts] = await Promise.all([
+    db
+      .select({
+        submissionId: reviewAssignment.submissionId,
+        reviewerUserId: reviewAssignment.reviewerUserId,
+      })
+      .from(reviewAssignment)
+      .where(eq(reviewAssignment.reviewRoundId, roundId)),
+    db
+      .select({
+        id: submission.id,
+        ref: submission.ref,
+        title: submission.title,
+        trackId: submission.trackId,
+        trackName: trackTable.name,
+      })
+      .from(submission)
+      .leftJoin(trackTable, eq(trackTable.id, submission.trackId))
+      .where(
+        and(eq(submission.eventId, ctx.eventId), inArray(submission.id, input.submissionIds)),
+      ),
+    trackCoverage(ctx.eventId),
+    conflictsFor(input.submissionIds),
+  ]);
 
-  const planned = planAssignments(
-    input.submissionIds,
-    input.reviewerUserIds,
-    input.reviewersPerSubmission,
+  // The caller's order is what the organizer sees in the queue; keep it so a rerun is stable.
+  const byId = new Map(subjects.map((row) => [row.id, row]));
+  const ordered = input.submissionIds.flatMap((id) => {
+    const row = byId.get(id);
+    return row ? [row] : [];
+  });
+
+  const plan = planRoutedAssignments({
+    submissions: ordered.map((row) => ({ submissionId: row.id, trackId: row.trackId })),
+    pool: input.reviewerUserIds,
+    coverage,
+    reviewersPerSubmission: input.reviewersPerSubmission,
     existing,
-  );
-  return assignReviewers(ctx, roundId, planned);
+    conflicts,
+    fallbackToPool: input.fallbackToPool,
+  });
+
+  const created = await assignReviewers(ctx, roundId, plan.pairs);
+  return {
+    created,
+    routed: new Set(plan.pairs.map((pair) => pair.submissionId)).size,
+    unrouted: plan.unroutable.map((row) => {
+      const subject = byId.get(row.submissionId);
+      return {
+        submissionId: row.submissionId,
+        displayRef: subject ? formatRef('submission', subject.ref) : row.submissionId,
+        title: subject?.title ?? 'Unknown submission',
+        trackName: subject?.trackName ?? null,
+        reason: row.reason,
+      };
+    }),
+  };
 }
 
 export async function unassignReviewer(ctx: EventContext, assignmentId: string): Promise<void> {
@@ -1700,6 +2013,13 @@ export type SubmissionReview = {
   myComment: string | null;
   myAssignmentId: string | null;
   ai: AiReviewRecord | null;
+  /**
+   * `F-3` on one submission: the reviewers this talk's track routes to, and the ones who can never
+   * have it. Both are organizer-only — a reviewer who could read the conflict list in an anonymized
+   * round could unmask an author by matching it against the panel.
+   */
+  routedReviewerUserIds: string[];
+  conflictedReviewerUserIds: string[];
 };
 
 export async function loadSubmissionReview(
@@ -1825,6 +2145,19 @@ export async function loadSubmissionReview(
   const mine = reviewers.find((reviewer) => reviewer.reviewerUserId === ctx.actor.userId) ?? null;
   const authorHidden = hidesAuthorship(round, ctx);
 
+  const [routedReviewerUserIds, conflicted] = can(ctx, 'submission:decide')
+    ? await Promise.all([
+        row.trackId
+          ? db
+              .select({ reviewerUserId: trackReviewer.reviewerUserId })
+              .from(trackReviewer)
+              .where(eq(trackReviewer.trackId, row.trackId))
+              .then((rows) => rows.map((entry) => entry.reviewerUserId))
+          : Promise.resolve<string[]>([]),
+        conflictsFor([row.id]),
+      ])
+    : [[] as string[], new Map<string, Set<string>>()];
+
   const detail: SubmissionReview = {
     id: row.id,
     ref: row.ref,
@@ -1872,6 +2205,8 @@ export async function loadSubmissionReview(
           createdAt: aiRow.createdAt,
         }
       : null,
+    routedReviewerUserIds,
+    conflictedReviewerUserIds: [...(conflicted.get(row.id) ?? [])],
   };
 
   return authorHidden ? redactAuthorship(detail, fieldRows) : detail;
@@ -2638,6 +2973,12 @@ export type ReviewerQueue = {
   recused: ReviewerAssignmentRow[];
   pendingCount: number;
   completedCount: number;
+  /**
+   * `V-5`: the tracks this reviewer covers, read from the same rows that filled the queue above.
+   * Naming them is what makes the queue explicable — "these arrived because you read the aqueduct
+   * talks" rather than a list somebody handed them.
+   */
+  coveredTracks: string[];
 };
 
 /**
@@ -2652,7 +2993,10 @@ export async function loadReviewerQueue(
   requireCapability(ctx, 'submission:review');
   const db = getDb();
 
-  const rounds = await listRounds(ctx);
+  const [rounds, coveredTracks] = await Promise.all([
+    listRounds(ctx),
+    reviewerTrackNames(ctx, ctx.actor.userId),
+  ]);
   const round =
     rounds.find((candidate) => candidate.id === roundId) ??
     rounds.find((candidate) => candidate.status === 'open') ??
@@ -2668,6 +3012,7 @@ export async function loadReviewerQueue(
     recused: [],
     pendingCount: 0,
     completedCount: 0,
+    coveredTracks,
   };
   if (!round) return empty;
 
@@ -2773,6 +3118,7 @@ export async function loadReviewerQueue(
     recused: all.filter((row) => row.status === 'declined'),
     pendingCount: active.filter((row) => row.status !== 'completed').length,
     completedCount: active.filter((row) => row.status === 'completed').length,
+    coveredTracks,
   };
 }
 

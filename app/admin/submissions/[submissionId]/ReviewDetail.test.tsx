@@ -48,6 +48,8 @@ const props: ReviewDetailProps = {
     { userId: 'reviewer-1', name: 'Reviewer One', email: 'one@example.test' },
     { userId: 'reviewer-2', name: 'Reviewer Two', email: 'two@example.test' },
   ],
+  routedReviewerUserIds: [],
+  conflictedReviewerUserIds: [],
   summary: {
     average: null,
     spread: null,
@@ -76,6 +78,27 @@ describe('ReviewDetail reviewer assignments', () => {
     expect(html).toContain('Reviewer Two · two@example.test');
     expect(html.match(/type="checkbox"/g)).toHaveLength(2);
     expect(html.match(/checked=""/g)).toHaveLength(1);
+  });
+
+  it('marks who the track routes to and who wrote the talk', () => {
+    const html = renderToStaticMarkup(
+      <ReviewDetail
+        {...props}
+        trackName="Infrastructure"
+        routedReviewerUserIds={['reviewer-2']}
+        conflictedReviewerUserIds={['reviewer-1']}
+      />,
+    );
+
+    expect(html).toContain('Covers this track');
+    expect(html).toContain('Speaks on this talk');
+    expect(html).toContain('covering Infrastructure');
+  });
+
+  it('says plainly when a track has nobody covering it', () => {
+    const html = renderToStaticMarkup(<ReviewDetail {...props} trackName="Infrastructure" />);
+
+    expect(html).toContain('Nobody covers Infrastructure yet');
   });
 
   it('does not expose assignment controls without decision permission', () => {

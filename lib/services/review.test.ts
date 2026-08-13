@@ -14,6 +14,7 @@ import {
   nextStatusForDecision,
   parseSubmissionImport,
   planAssignments,
+  planRoutedAssignments,
   redactAuthorship,
   redactSubmitter,
   reminderBody,
@@ -231,6 +232,195 @@ describe('planAssignments', () => {
       { submissionId: 's1', reviewerUserId: 'r1' },
     ]);
     expect(plan).toEqual([{ submissionId: 's1', reviewerUserId: 'r2' }]);
+  });
+});
+
+describe('planRoutedAssignments — the routing model `F-3` and `V-5` share', () => {
+  const infra = 'track-infra';
+  const law = 'track-law';
+  const coverage = new Map([
+    [infra, ['aqueduct-reader', 'generalist']],
+    [law, ['court-reader', 'generalist']],
+  ]);
+  const pool = ['aqueduct-reader', 'court-reader', 'generalist'];
+  const load = (plan: { pairs: Array<{ reviewerUserId: string }> }, reviewerUserId: string) =>
+    plan.pairs.filter((pair) => pair.reviewerUserId === reviewerUserId).length;
+
+  it('sends a submission only to the reviewers covering its track', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: infra }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 2,
+    });
+
+    expect(plan.unroutable).toEqual([]);
+    expect(new Set(plan.pairs.map((pair) => pair.reviewerUserId))).toEqual(
+      new Set(['aqueduct-reader', 'generalist']),
+    );
+  });
+
+  it('balances inside the routed pool rather than across the whole panel', () => {
+    const plan = planRoutedAssignments({
+      submissions: ['s1', 's2', 's3', 's4'].map((submissionId) => ({
+        submissionId,
+        trackId: infra,
+      })),
+      pool,
+      coverage,
+      reviewersPerSubmission: 1,
+    });
+
+    expect(load(plan, 'court-reader')).toBe(0);
+    expect(load(plan, 'aqueduct-reader')).toBe(2);
+    expect(load(plan, 'generalist')).toBe(2);
+  });
+
+  it('keeps one load ledger for a reviewer who covers several tracks', () => {
+    const plan = planRoutedAssignments({
+      submissions: [
+        { submissionId: 'law-1', trackId: law },
+        { submissionId: 'infra-1', trackId: infra },
+        { submissionId: 'infra-2', trackId: infra },
+      ],
+      pool,
+      coverage: new Map([
+        [infra, ['aqueduct-reader', 'generalist']],
+        [law, ['generalist']],
+      ]),
+      reviewersPerSubmission: 1,
+    });
+
+    // The generalist covers both tracks and the law talk could go nowhere else. A ledger kept per
+    // track would forget that and hand them an infrastructure talk as well; one shared ledger
+    // remembers, and the two infrastructure talks go to the reviewer who has done nothing yet.
+    expect(load(plan, 'generalist')).toBe(1);
+    expect(load(plan, 'aqueduct-reader')).toBe(2);
+  });
+
+  it('reports a track nobody covers instead of assigning it to whoever is free', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: 'track-uncovered' }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 2,
+    });
+
+    expect(plan.pairs).toEqual([]);
+    expect(plan.unroutable).toEqual([{ submissionId: 's1', reason: 'track_uncovered' }]);
+  });
+
+  it('reports a submission that arrived without a track', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: null }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 1,
+    });
+
+    expect(plan.pairs).toEqual([]);
+    expect(plan.unroutable).toEqual([{ submissionId: 's1', reason: 'no_track' }]);
+  });
+
+  it('never gives a reviewer their own talk, and says so when that empties the track', () => {
+    const plan = planRoutedAssignments({
+      submissions: [
+        { submissionId: 'own-talk', trackId: infra },
+        { submissionId: 'sole-reader-talk', trackId: law },
+      ],
+      pool,
+      coverage: new Map([
+        [infra, ['aqueduct-reader', 'generalist']],
+        [law, ['court-reader']],
+      ]),
+      reviewersPerSubmission: 2,
+      conflicts: new Map([
+        ['own-talk', new Set(['aqueduct-reader'])],
+        ['sole-reader-talk', new Set(['court-reader'])],
+      ]),
+    });
+
+    expect(plan.pairs).toEqual([{ submissionId: 'own-talk', reviewerUserId: 'generalist' }]);
+    expect(plan.unroutable).toEqual([
+      { submissionId: 'sole-reader-talk', reason: 'all_conflicted' },
+    ]);
+  });
+
+  it('falls back to the whole pool only when asked, and still keeps conflicts out', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: null }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 3,
+      conflicts: new Map([['s1', new Set(['generalist'])]]),
+      fallbackToPool: true,
+    });
+
+    expect(plan.unroutable).toEqual([]);
+    expect(new Set(plan.pairs.map((pair) => pair.reviewerUserId))).toEqual(
+      new Set(['aqueduct-reader', 'court-reader']),
+    );
+  });
+
+  it('routes to the whole pool while no track has been covered at all', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: null }],
+      pool,
+      coverage: new Map(),
+      reviewersPerSubmission: 1,
+    });
+
+    expect(plan.unroutable).toEqual([]);
+    expect(plan.pairs).toHaveLength(1);
+  });
+
+  it('leaves a hand-assigned submission alone rather than calling it unroutable', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: 'track-uncovered' }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 2,
+      existing: [{ submissionId: 's1', reviewerUserId: 'generalist' }],
+    });
+
+    expect(plan.pairs).toEqual([]);
+    expect(plan.unroutable).toEqual([]);
+  });
+
+  it('tops a routed submission up without repeating a reviewer already on it', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: infra }],
+      pool,
+      coverage,
+      reviewersPerSubmission: 2,
+      existing: [{ submissionId: 's1', reviewerUserId: 'aqueduct-reader' }],
+    });
+
+    expect(plan.pairs).toEqual([{ submissionId: 's1', reviewerUserId: 'generalist' }]);
+  });
+
+  it('ignores coverage naming a reviewer the organizer left out of this round', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: infra }],
+      pool: ['court-reader'],
+      coverage,
+      reviewersPerSubmission: 1,
+    });
+
+    expect(plan.pairs).toEqual([]);
+    expect(plan.unroutable).toEqual([{ submissionId: 's1', reason: 'track_uncovered' }]);
+  });
+
+  it('asks for more reviewers than a track has without inventing one', () => {
+    const plan = planRoutedAssignments({
+      submissions: [{ submissionId: 's1', trackId: law }],
+      pool,
+      coverage: new Map([[law, ['court-reader']]]),
+      reviewersPerSubmission: 3,
+    });
+
+    expect(plan.pairs).toEqual([{ submissionId: 's1', reviewerUserId: 'court-reader' }]);
+    expect(plan.unroutable).toEqual([]);
   });
 });
 
