@@ -85,10 +85,15 @@ export default async function SubmissionReviewPage({
     sort,
     roundId: search.round || null,
   };
+  const canDecide = can(ctx, 'submission:decide');
+  const availableReviewerRequest = canDecide
+    ? review.listReviewers(ctx)
+    : Promise.resolve([] as review.ReviewerRow[]);
 
-  const [detail, queue] = await Promise.all([
+  const [detail, queue, availableReviewers] = await Promise.all([
     review.loadSubmissionReview(ctx, submissionId, search.round || null),
     review.loadQueue(ctx, filters),
+    availableReviewerRequest,
   ]);
 
   // A link opened outside the queue's current tab still deserves working j/k, so fall back to the
@@ -167,12 +172,18 @@ export default async function SubmissionReviewPage({
       myAverage={myAggregate.average}
       reviewers={detail.reviewers.map((reviewer) => ({
         assignmentId: reviewer.assignmentId,
+        reviewerUserId: reviewer.reviewerUserId,
         reviewerName: reviewer.reviewerName,
         status: reviewer.status,
         comment: reviewer.comment,
         completedAt: reviewer.completedAt ? reviewer.completedAt.toISOString() : null,
         average: averageByAssignment.get(reviewer.assignmentId) ?? null,
         isMe: reviewer.reviewerUserId === ctx.actor.userId,
+      }))}
+      availableReviewers={availableReviewers.map((reviewer) => ({
+        userId: reviewer.userId,
+        name: reviewer.name,
+        email: reviewer.email,
       }))}
       summary={{
         average: detail.summary.average,
@@ -195,7 +206,7 @@ export default async function SubmissionReviewPage({
       }
       aiEnabled={aiReviewEnabled()}
       aiModelConfigured={aiModelConfigured()}
-      canDecide={can(ctx, 'submission:decide')}
+      canDecide={canDecide}
       prevHref={hrefFor(-1)}
       nextHref={hrefFor(1)}
       position={index >= 0 ? index + 1 : null}

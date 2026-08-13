@@ -1,8 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fileRequest, participant, participantRole, task, taskAssignment } from '../../db/schema';
+import {
+  fileRequest,
+  participant,
+  participantRole,
+  task,
+  taskAssignment,
+  user,
+} from '../../db/schema';
 import { isAppError, type AppError } from '../errors';
 import type { EventContext } from '../context';
-import { assertCompletable, createTask, reconcileStatus } from './tasks';
+import { listTasksForAdmin } from './dashboard';
+import {
+  assertCompletable,
+  createTask,
+  listPortalTasks,
+  reconcileStatus,
+  updateTask,
+} from './tasks';
 
 /**
  * `listPortalTasks` feeds both `/portal/[eventSlug]/tasks` and `/portal/[eventSlug]/files` — they
@@ -86,6 +100,7 @@ type Projection = Record<string, unknown> | undefined;
 type Recorder = {
   rows: Map<unknown, unknown[]>;
   inserted: Array<{ table: unknown; values: unknown }>;
+  deleted: Array<{ table: unknown; ids: string[] }>;
 };
 
 const state = vi.hoisted(() => ({ db: null as unknown }));
@@ -93,23 +108,111 @@ const state = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock('../../db/client', () => ({ getDb: () => state.db }));
 
 function recorder(): Recorder {
-  return { rows: new Map(), inserted: [] };
+  return { rows: new Map(), inserted: [], deleted: [] };
 }
 
 function fakeDb(rec: Recorder) {
+  const parameters = (value: unknown): string[] => {
+    if (Array.isArray(value)) return value.flatMap(parameters);
+    if (!value || typeof value !== 'object') return [];
+    const candidate = value as { value?: unknown; queryChunks?: unknown[] };
+    if (value.constructor.name === 'Param') {
+      return Array.isArray(candidate.value)
+        ? candidate.value.filter((entry): entry is string => typeof entry === 'string')
+        : typeof candidate.value === 'string'
+          ? [candidate.value]
+          : [];
+    }
+    return candidate.queryChunks?.flatMap(parameters) ?? [];
+  };
+
+  const projected = (row: Record<string, unknown>, projection?: Projection) =>
+    projection ? Object.fromEntries(Object.keys(projection).map((key) => [key, row[key]])) : row;
+
   const select = (projection?: Projection) => {
     let table: unknown = null;
+    let filters: string[] = [];
     const builder = {
       from(next: unknown) {
         table = next;
         return builder;
       },
-      where: () => builder,
+      where(condition: unknown) {
+        filters = parameters(condition);
+        return builder;
+      },
       orderBy: () => builder,
       innerJoin: () => builder,
       leftJoin: () => builder,
+      limit: () => builder,
       then: (onOk: (value: unknown[]) => unknown, onErr?: (reason: unknown) => unknown) =>
-        Promise.resolve(rec.rows.get(table) ?? []).then(onOk, onErr),
+        Promise.resolve()
+          .then(() => {
+            const rows = (rec.rows.get(table) ?? []) as Array<Record<string, unknown>>;
+            if (table === participant) {
+              return rows
+                .filter(
+                  (row) =>
+                    !row.eventId || filters.length === 0 || filters.includes(String(row.eventId)),
+                )
+                .map((row) => projected(row, projection));
+            }
+            if (table === task) {
+              return rows
+                .filter(
+                  (row) =>
+                    filters.length === 0 ||
+                    filters.includes(String(row.id)) ||
+                    filters.includes(String(row.eventId)),
+                )
+                .map((row) => projected(row, projection));
+            }
+            if (table === taskAssignment && projection && 'assignment' in projection) {
+              const participantFilter = filters.find((value) =>
+                ((rec.rows.get(participant) ?? []) as Array<{ id: string }>).some(
+                  (row) => row.id === value,
+                ),
+              );
+              return rows.flatMap<unknown>((assignment): unknown[] => {
+                if (participantFilter && assignment.participantId !== participantFilter) return [];
+                const taskRow = ((rec.rows.get(task) ?? []) as Array<Record<string, unknown>>).find(
+                  (row) => row.id === assignment.taskId,
+                );
+                if (
+                  !taskRow ||
+                  (filters.length > 0 && !filters.includes(String(taskRow.eventId)))
+                ) {
+                  return [];
+                }
+                if ('participant' in projection) {
+                  const participantRow = (
+                    (rec.rows.get(participant) ?? []) as Array<Record<string, unknown>>
+                  ).find((row) => row.id === assignment.participantId);
+                  const account = (
+                    (rec.rows.get(user) ?? []) as Array<Record<string, unknown>>
+                  ).find((row) => row.id === participantRow?.userId);
+                  return participantRow && account
+                    ? [
+                        {
+                          assignment,
+                          task: taskRow,
+                          participant: participantRow,
+                          account,
+                        },
+                      ]
+                    : [];
+                }
+                return [{ assignment, task: taskRow, fileRequest: null, form: null }];
+              });
+            }
+            if (table === taskAssignment) {
+              return rows
+                .filter((row) => filters.length === 0 || filters.includes(String(row.taskId)))
+                .map((row) => projected(row, projection));
+            }
+            return rows.map((row) => projected(row, projection));
+          })
+          .then(onOk, onErr),
     };
     return builder;
   };
@@ -137,7 +240,44 @@ function fakeDb(rec: Recorder) {
     return builder;
   };
 
-  return { select, insert };
+  const update = (table: unknown) => ({
+    set(patch: Record<string, unknown>) {
+      return {
+        where(condition: unknown) {
+          const ids = parameters(condition);
+          const rows = (rec.rows.get(table) ?? []) as Array<Record<string, unknown>>;
+          rec.rows.set(
+            table,
+            rows.map((row) => (ids.includes(String(row.id)) ? { ...row, ...patch } : row)),
+          );
+          return Promise.resolve();
+        },
+      };
+    },
+  });
+
+  const remove = (table: unknown) => ({
+    where(condition: unknown) {
+      const ids = parameters(condition);
+      rec.deleted.push({ table, ids });
+      const rows = (rec.rows.get(table) ?? []) as Array<Record<string, unknown>>;
+      rec.rows.set(
+        table,
+        rows.filter((row) => !ids.includes(String(row.id))),
+      );
+      return Promise.resolve();
+    },
+  });
+
+  return {
+    select,
+    insert,
+    update,
+    delete: remove,
+    query: {
+      task: { findMany: () => Promise.resolve(rec.rows.get(task) ?? []) },
+    },
+  };
 }
 
 const EVENT_ID = 'event-1';
@@ -172,6 +312,7 @@ beforeEach(() => {
   rec.rows.set(participant, [{ id: PARTICIPANT_ID }]);
   rec.rows.set(taskAssignment, []);
   rec.rows.set(participantRole, []);
+  rec.rows.set(user, []);
   state.db = fakeDb(rec);
 });
 
@@ -273,5 +414,117 @@ describe('createTask', () => {
     const taskIds = assignments.map((row) => row.taskId);
     expect(taskIds).toContain('task-old-everyone');
     expect(taskIds).not.toContain('task-old-accepted-only');
+  });
+});
+
+describe('selected-speaker assignments', () => {
+  beforeEach(() => {
+    rec.rows.set(task, []);
+    rec.rows.set(participant, [
+      {
+        id: 'participant-1',
+        eventId: EVENT_ID,
+        userId: 'user-1',
+        displayName: 'Ada Lovelace',
+        company: 'Analytical Engines',
+      },
+      {
+        id: 'participant-2',
+        eventId: EVENT_ID,
+        userId: 'user-2',
+        displayName: 'Grace Hopper',
+        company: 'Navy',
+      },
+      {
+        id: 'participant-3',
+        eventId: EVENT_ID,
+        userId: 'user-3',
+        displayName: 'Margaret Hamilton',
+        company: 'NASA',
+      },
+    ]);
+    rec.rows.set(user, [
+      { id: 'user-1', name: 'Ada Lovelace', email: 'ada@example.test' },
+      { id: 'user-2', name: 'Grace Hopper', email: 'grace@example.test' },
+      {
+        id: 'user-3',
+        name: 'Margaret Hamilton',
+        email: 'margaret@example.test',
+      },
+    ]);
+  });
+
+  it('assigns exactly two selected speakers and exposes the same rows to admin and portal reads', async () => {
+    const created = await createTask(context(), {
+      name: 'Confirm travel details',
+      kind: 'acknowledge',
+      audience: 'manual',
+      participantIds: ['participant-1', 'participant-3'],
+    });
+
+    const assignments = (rec.rows.get(taskAssignment) ?? []) as Array<{
+      participantId: string;
+      taskId: string;
+    }>;
+    expect(assignments.map((row) => row.participantId).sort()).toEqual([
+      'participant-1',
+      'participant-3',
+    ]);
+    expect(assignments.every((row) => row.taskId === created.id)).toBe(true);
+
+    const adminRows = await listTasksForAdmin(context());
+    expect(adminRows[0]).toMatchObject({
+      assigned: 2,
+      participantIds: ['participant-1', 'participant-3'],
+    });
+    expect(await listPortalTasks(EVENT_ID, 'participant-1')).toHaveLength(1);
+    expect(await listPortalTasks(EVENT_ID, 'participant-2')).toHaveLength(0);
+  });
+
+  it('reconciles edited membership while preserving an assignment that remains selected', async () => {
+    const created = await createTask(context(), {
+      name: 'Confirm travel details',
+      kind: 'acknowledge',
+      audience: 'manual',
+      participantIds: ['participant-1', 'participant-2'],
+    });
+    const before = (rec.rows.get(taskAssignment) ?? []) as Array<Record<string, unknown>>;
+    const retained = before.find((row) => row.participantId === 'participant-2');
+    if (retained) retained.status = 'completed';
+
+    await updateTask(context(), created.id, {
+      name: 'Confirm travel details',
+      kind: 'acknowledge',
+      audience: 'manual',
+      participantIds: ['participant-2', 'participant-3'],
+    });
+
+    const after = (rec.rows.get(taskAssignment) ?? []) as Array<Record<string, unknown>>;
+    expect(after.map((row) => row.participantId).sort()).toEqual([
+      'participant-2',
+      'participant-3',
+    ]);
+    expect(after.find((row) => row.participantId === 'participant-2')).toMatchObject({
+      id: retained?.id,
+      status: 'completed',
+    });
+    expect(after.find((row) => row.participantId === 'participant-3')).toMatchObject({
+      status: 'not_started',
+    });
+  });
+
+  it('rejects a selected participant id that is outside the current event', async () => {
+    const error = await rejection(
+      createTask(context(), {
+        name: 'Confirm travel details',
+        kind: 'acknowledge',
+        audience: 'manual',
+        participantIds: ['participant-1', 'participant-from-another-event'],
+      }),
+    );
+
+    expect(error.code).toBe('invalid');
+    expect(error.message).toBe('Every selected speaker must belong to this event');
+    expect(rec.inserted.some((entry) => entry.table === task)).toBe(false);
   });
 });
