@@ -27,6 +27,7 @@ import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
 import { loadCommsContext, wrapInBranding } from './comms';
 import { ensureParticipant, linkPrimarySpeaker } from './submissions';
@@ -383,6 +384,7 @@ export async function createRound(
   requireCapability(ctx, 'submission:decide');
   const name = input.name.trim();
   if (!name) throw invalid('A round needs a name', { name: 'Name is required' });
+  assertRoundDateOrder(input.opensAt, input.closesAt);
 
   const db = getDb();
   const existing = await listRounds(ctx);
@@ -433,7 +435,7 @@ export async function updateRound(
   patch: RoundPatch,
 ): Promise<ReviewRoundRecord> {
   requireCapability(ctx, 'submission:decide');
-  await requireRound(ctx, roundId);
+  const existing = await requireRound(ctx, roundId);
 
   const values: Record<string, unknown> = {};
   if (patch.name !== undefined) {
@@ -447,10 +449,11 @@ export async function updateRound(
   if (patch.opensAt !== undefined) values.opensAt = patch.opensAt;
   if (patch.closesAt !== undefined) values.closesAt = patch.closesAt;
 
-  if (Object.keys(values).length === 0) {
-    const current = await requireRound(ctx, roundId);
-    return current;
-  }
+  const opensAt = patch.opensAt !== undefined ? patch.opensAt : existing.opensAt;
+  const closesAt = patch.closesAt !== undefined ? patch.closesAt : existing.closesAt;
+  assertRoundDateOrder(opensAt, closesAt);
+
+  if (Object.keys(values).length === 0) return existing;
 
   const [updated] = await getDb()
     .update(reviewRound)

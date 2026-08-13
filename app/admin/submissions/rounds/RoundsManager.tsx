@@ -1,8 +1,16 @@
 'use client';
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { BellRing, ChevronLeft, Plus, Trash2, UserMinus } from 'lucide-react';
+import {
+  describeRoundDates,
+  fromRoundDateDraft,
+  roundDatesAreOutOfOrder,
+  toRoundDateDraft,
+  type RoundDateDraft,
+  type RoundDateWire,
+} from '../../../../lib/review-round-dates';
 import {
   Badge,
   Button,
@@ -34,6 +42,8 @@ export type RoundWire = {
   status: 'draft' | 'open' | 'closed';
   blindUntilClose: boolean;
   anonymized: boolean;
+  opensAt: string | null;
+  closesAt: string | null;
   assignedCount: number;
   completedCount: number;
   declinedCount: number;
@@ -83,6 +93,90 @@ const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success'> = {
   closed: 'success',
 };
 
+const EMPTY_DATES: RoundDateDraft = { opensAt: '', closesAt: '' };
+const INVALID_DATE_RANGE = 'Close must be after open.';
+
+function RoundDateInputs({
+  draft,
+  invalidRange,
+  labelPrefix,
+  onChange,
+}: {
+  draft: RoundDateDraft;
+  invalidRange: boolean;
+  labelPrefix: string;
+  onChange: (draft: RoundDateDraft) => void;
+}) {
+  return (
+    <>
+      <label className={styles.field}>
+        <span className={styles.fieldLabel}>Opens</span>
+        <Input
+          inputSize="sm"
+          type="datetime-local"
+          aria-label={`${labelPrefix} opens`}
+          value={draft.opensAt}
+          onChange={(event) => onChange({ ...draft, opensAt: event.target.value })}
+        />
+      </label>
+      <label className={styles.field}>
+        <span className={styles.fieldLabel}>Closes</span>
+        <Input
+          inputSize="sm"
+          type="datetime-local"
+          aria-label={`${labelPrefix} closes`}
+          invalid={invalidRange}
+          value={draft.closesAt}
+          onChange={(event) => onChange({ ...draft, closesAt: event.target.value })}
+        />
+      </label>
+    </>
+  );
+}
+
+function RoundDateEditor({
+  round,
+  pending,
+  onSave,
+}: {
+  round: RoundWire;
+  pending: boolean;
+  onSave: (dates: RoundDateWire) => void;
+}) {
+  const [draft, setDraft] = useState<RoundDateDraft>(() => toRoundDateDraft(round));
+
+  useEffect(() => {
+    setDraft(toRoundDateDraft(round));
+  }, [round.opensAt, round.closesAt]);
+
+  const dates = fromRoundDateDraft(draft);
+  const invalidRange = roundDatesAreOutOfOrder(dates.opensAt, dates.closesAt);
+  const changed = dates.opensAt !== round.opensAt || dates.closesAt !== round.closesAt;
+
+  return (
+    <div className={styles.roundDates}>
+      <RoundDateInputs
+        draft={draft}
+        invalidRange={invalidRange}
+        labelPrefix={round.name}
+        onChange={setDraft}
+      />
+      <Button
+        size="sm"
+        variant="secondary"
+        disabled={!changed || invalidRange}
+        loading={pending}
+        onClick={() => onSave(dates)}
+      >
+        Save dates
+      </Button>
+      <span className={invalidRange ? styles.dateError : styles.roundDateSummary}>
+        {invalidRange ? INVALID_DATE_RANGE : describeRoundDates(round)}
+      </span>
+    </div>
+  );
+}
+
 /**
  * Rounds, their scorecard, and who reviews what. Assignment is deliberately one button over the
  * whole pending pile: the balanced round-robin in `planAssignments` is better at spreading load than
@@ -98,6 +192,7 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [newRoundName, setNewRoundName] = useState('');
   const [newRoundBlind, setNewRoundBlind] = useState(true);
   const [newRoundAnonymized, setNewRoundAnonymized] = useState(false);
+  const [newRoundDates, setNewRoundDates] = useState<RoundDateDraft>(EMPTY_DATES);
   const [reminderNote, setReminderNote] = useState('');
 
   const [criterionLabel, setCriterionLabel] = useState('');
@@ -110,6 +205,11 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [perSubmission, setPerSubmission] = useState('2');
 
   const selectedRound = props.rounds.find((round) => round.id === props.selectedRoundId) ?? null;
+  const newRoundDateWire = fromRoundDateDraft(newRoundDates);
+  const newRoundDateRangeIsInvalid = roundDatesAreOutOfOrder(
+    newRoundDateWire.opensAt,
+    newRoundDateWire.closesAt,
+  );
 
   const run = useCallback(
     (work: () => Promise<{ ok: true } | { ok: false; message: string }>, success: string) => {
@@ -205,7 +305,7 @@ export function RoundsManager(props: RoundsManagerProps) {
         </CardHeader>
         <CardBody>
           <div className={styles.stack}>
-            {props.rounds.map((round) => (
+            {props.rounds.flatMap((round) => [
               <div key={round.id} className={styles.criterionEditor}>
                 <button
                   type="button"
@@ -276,8 +376,16 @@ export function RoundsManager(props: RoundsManagerProps) {
                 >
                   Delete
                 </Button>
-              </div>
-            ))}
+              </div>,
+              <RoundDateEditor
+                key={`${round.id}-dates`}
+                round={round}
+                pending={pending}
+                onSave={(dates) =>
+                  run(() => updateRoundAction(round.id, dates), 'Round dates updated.')
+                }
+              />,
+            ])}
             {props.rounds.length === 0 ? (
               <p className={styles.muted}>No rounds yet. Create the first one below.</p>
             ) : null}
@@ -312,6 +420,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                 size="sm"
                 variant="primary"
                 iconLeft={<Plus size={14} />}
+                disabled={newRoundDateRangeIsInvalid}
                 loading={pending}
                 onClick={() =>
                   run(async () => {
@@ -319,14 +428,34 @@ export function RoundsManager(props: RoundsManagerProps) {
                       name: newRoundName,
                       blindUntilClose: newRoundBlind,
                       anonymized: newRoundAnonymized,
+                      ...newRoundDateWire,
                     });
-                    if (result.ok) setNewRoundName('');
+                    if (result.ok) {
+                      setNewRoundName('');
+                      setNewRoundDates(EMPTY_DATES);
+                    }
                     return result;
                   }, 'Round created with the default scorecard.')
                 }
               >
                 Add round
               </Button>
+            </div>
+            <div className={styles.roundDates}>
+              <RoundDateInputs
+                draft={newRoundDates}
+                invalidRange={newRoundDateRangeIsInvalid}
+                labelPrefix="New round"
+                onChange={setNewRoundDates}
+              />
+              <span className={styles.roundDateTimezone}>Browser timezone</span>
+              <span
+                className={newRoundDateRangeIsInvalid ? styles.dateError : styles.roundDateSummary}
+              >
+                {newRoundDateRangeIsInvalid
+                  ? INVALID_DATE_RANGE
+                  : 'Leave either date empty when the round has no boundary.'}
+              </span>
             </div>
             <p className={styles.aiNote}>
               Blind hides other reviewers&rsquo; scores until the round closes. Anonymized hides the

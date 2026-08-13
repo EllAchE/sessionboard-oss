@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { isAppError } from '../../../../lib/errors';
+import { parseRoundDate } from '../../../../lib/review-round-dates';
 import * as review from '../../../../lib/services/review';
 import { decideContext } from '../context';
 import type { ActionResult } from '../types';
@@ -27,10 +28,17 @@ export async function createRoundAction(input: {
   name: string;
   blindUntilClose?: boolean;
   anonymized?: boolean;
+  opensAt?: string | null;
+  closesAt?: string | null;
 }): Promise<ActionResult<{ id: string }>> {
   return run(async () => {
     const ctx = await decideContext();
-    const created = await review.createRound(ctx, { ...input, status: 'open' });
+    const created = await review.createRound(ctx, {
+      ...input,
+      status: 'open',
+      opensAt: parseRoundDate(input.opensAt, 'opensAt'),
+      closesAt: parseRoundDate(input.closesAt, 'closesAt'),
+    });
     return { id: created.id };
   });
 }

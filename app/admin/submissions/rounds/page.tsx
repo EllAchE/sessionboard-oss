@@ -51,6 +51,8 @@ export default async function ReviewRoundsPage({
       status: round.status,
       blindUntilClose: round.blindUntilClose,
       anonymized: round.anonymized,
+      opensAt: round.opensAt?.toISOString() ?? null,
+      closesAt: round.closesAt?.toISOString() ?? null,
       assignedCount: rows.reduce((sum, row) => sum + row.assigned, 0),
       completedCount: rows.reduce((sum, row) => sum + row.completed, 0),
       declinedCount: round.id === selected?.id ? declined.length : 0,

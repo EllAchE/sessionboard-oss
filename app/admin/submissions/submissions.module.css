@@ -531,8 +531,38 @@
   align-items: center;
 }
 
+.roundDates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr)) auto;
+  gap: var(--space-2);
+  align-items: end;
+  padding-bottom: var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-hairline);
+}
+
+.roundDateSummary,
+.dateError {
+  grid-column: 1 / -1;
+  font: var(--type-label);
+}
+
+.roundDateSummary,
+.roundDateTimezone {
+  color: var(--text-faint);
+}
+
+.dateError {
+  color: var(--status-danger-fg);
+}
+
+.roundDateTimezone {
+  align-self: center;
+  font: var(--type-label);
+}
+
 @media (max-width: 720px) {
-  .criterionEditor {
+  .criterionEditor,
+  .roundDates {
     grid-template-columns: minmax(0, 1fr);
   }
 }

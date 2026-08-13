@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { isAppError } from '../../../lib/errors';
 import { renderMarkdown } from '../../../lib/markdown';
+import { parseRoundDate } from '../../../lib/review-round-dates';
 import { aiReviewEnabled, generateAiReview } from '../../../lib/ai/review';
 import * as review from '../../../lib/services/review';
 import { decideContext, reviewContext } from './context';
@@ -64,11 +65,18 @@ export async function createRoundAction(input: {
 
 export async function updateRoundAction(
   roundId: string,
-  patch: review.RoundPatch,
+  patch: Omit<review.RoundPatch, 'opensAt' | 'closesAt'> & {
+    opensAt?: string | null;
+    closesAt?: string | null;
+  },
 ): Promise<ActionResult> {
   return run(async () => {
     const ctx = await decideContext();
-    await review.updateRound(ctx, roundId, patch);
+    await review.updateRound(ctx, roundId, {
+      ...patch,
+      opensAt: parseRoundDate(patch.opensAt, 'opensAt'),
+      closesAt: parseRoundDate(patch.closesAt, 'closesAt'),
+    });
     return null;
   }, '/admin/submissions/rounds');
 }
