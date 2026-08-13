@@ -6,6 +6,8 @@ import { normalizePhoneNumber } from '../phone';
 export type SmsConsentSource =
   | 'organizer_settings'
   | 'speaker_profile'
+  | 'phone_verification'
+  | 'notification_preference'
   | 'twilio_inbound'
   | 'migration_reconsent';
 

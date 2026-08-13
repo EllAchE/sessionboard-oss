@@ -34,8 +34,10 @@ import {
   blockSmsBeforePreferenceChange,
   grantSmsAfterPreferenceChange,
 } from '../sms/consent';
+import { activeSmsTransportName } from '../sms';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
+import { phoneVerificationIsCurrent } from './notification-preferences';
 
 /**
  * `S-1`–`S-13`. Everything the speaker-facing surface reads or writes. The organizer side never
@@ -249,18 +251,33 @@ export async function updateProfile(
     data.notifySms !== undefined
   ) {
     const smsChanged = data.phone !== undefined || data.notifySms !== undefined;
-    let nextSms: { phone: string | null; enabled: boolean } | null = null;
+    let nextSms: { phone: string | null; enabled: boolean; phoneChanged: boolean } | null = null;
     if (smsChanged) {
       const currentUser = await db.query.user.findFirst({
         where: eq(user.id, row.userId),
-        columns: { phone: true, notifySms: true },
+        columns: {
+          phone: true,
+          phoneVerifiedAt: true,
+          phoneVerificationTransport: true,
+          notifySms: true,
+        },
       });
       if (!currentUser) throw notFound('Your account');
       const nextPhone = data.phone !== undefined ? blankToNull(data.phone) : currentUser.phone;
       nextSms = {
         phone: nextPhone,
         enabled: Boolean(nextPhone) && (data.notifySms ?? currentUser.notifySms),
+        phoneChanged: nextPhone !== currentUser.phone,
       };
+      if (
+        nextSms.enabled &&
+        (nextSms.phone !== currentUser.phone ||
+          !phoneVerificationIsCurrent(currentUser, activeSmsTransportName()))
+      ) {
+        throw invalid('Verify this phone number before enabling text messages', {
+          phone: 'Request and enter the verification code first',
+        });
+      }
       await blockSmsBeforePreferenceChange({
         previousPhone: currentUser.phone,
         nextPhone: nextSms.phone,
@@ -281,7 +298,14 @@ export async function updateProfile(
       .update(user)
       .set({
         ...(names ?? {}),
-        ...(nextSms ? { phone: nextSms.phone } : {}),
+        ...(nextSms
+          ? {
+              phone: nextSms.phone,
+              ...(nextSms.phoneChanged
+                ? { phoneVerifiedAt: null, phoneVerificationTransport: null }
+                : {}),
+            }
+          : {}),
         ...(data.notifyEmail !== undefined ? { notifyEmail: data.notifyEmail } : {}),
         ...(nextSms ? { notifySms: nextSms.enabled } : {}),
       })

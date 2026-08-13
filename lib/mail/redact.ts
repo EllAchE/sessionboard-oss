@@ -1,5 +1,5 @@
 /**
- * Sign-in tokens in a message body, and how to take them out of one.
+ * Bearer tokens in a message body, and how to take them out of one.
  *
  * A `/auth/verify?token=…` URL is a credential: `consumeMagicLink` opens an unattributed session as
  * whoever the token was minted for, portable across every event that account can reach. Two things
@@ -17,6 +17,10 @@
  * They share a regex because a second copy of it is a second thing to get wrong: a pattern that
  * misses `&amp;`-encoded query strings on one side and not the other is a credential that survives
  * the redaction nobody noticed was partial.
+ *
+ * A scoped `/unsubscribe?token=…` cannot open an account, but it can still change that account's
+ * preferences without a login. Real transports therefore omit it from the database copy too;
+ * log transport keeps it because the stored row is the recipient's only delivered copy.
  */
 
 /** What a redacted token reads as. Not a valid token, and visibly not one. */
@@ -28,6 +32,7 @@ export const REDACTED = 'redacted';
  * past the end of one URL and `&amp;`-encoded query strings terminate cleanly.
  */
 const MAGIC_LINK_TOKEN = /(\/auth\/verify\?[^"'<>\s]*?\btoken=)([^"'<>\s&]+)/gi;
+const UNSUBSCRIBE_TOKEN = /(\/unsubscribe\?[^"'<>\s]*?\btoken=)([^"'<>\s&]+)/gi;
 
 /** The same pattern without `g`, because a global regex carries `lastIndex` between `test` calls. */
 const HAS_MAGIC_LINK = new RegExp(MAGIC_LINK_TOKEN.source, 'i');
@@ -46,4 +51,9 @@ export function isRedacted(source: string): boolean {
  * a bare `/portal` link — is left exactly as it was; none of those is a credential. */
 export function redactMagicLinks(source: string): string {
   return source.replace(MAGIC_LINK_TOKEN, `$1${REDACTED}`);
+}
+
+/** Bearer links that mutate notification preferences deserve the same at-rest treatment. */
+export function redactSensitiveMailLinks(source: string): string {
+  return redactMagicLinks(source).replace(UNSUBSCRIBE_TOKEN, `$1${REDACTED}`);
 }

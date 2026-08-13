@@ -32,6 +32,59 @@ function selectTransport(): SmsTransport {
   return logTransport();
 }
 
+/**
+ * Verification is the one SMS allowed before consent: it proves ownership so consent can later be
+ * granted. Keeping it separate from `sendSms` means no ordinary caller can bypass the consent gate.
+ * Log mode persists the code in `/admin/sms` and returns it to the signed-in requester; it never
+ * contacts Twilio.
+ */
+export async function sendPhoneVerificationCode(input: {
+  to: string;
+  code: string;
+}): Promise<{ sent: boolean; mode: SmsTransport['name']; logCode?: string }> {
+  const db = getDb();
+  const transport = selectTransport();
+  const from = env('SMS_FROM') ?? '';
+  const to = normalizePhoneNumber(input.to);
+  const body = `Your Cicero verification code is ${input.code}. It expires in 10 minutes.`;
+  const [row] = await db
+    .insert(smsLog)
+    .values({
+      eventId: null,
+      toPhone: to,
+      fromPhone: from,
+      body,
+      templateKey: 'phone.verification',
+      status: 'queued',
+    })
+    .returning({ id: smsLog.id });
+
+  try {
+    const result = await transport.send({ to, from, body });
+    await db
+      .update(smsLog)
+      .set({
+        status: 'sent',
+        sentAt: new Date(),
+        statusUpdatedAt: new Date(),
+        providerMessageId: result.providerMessageId ?? null,
+      })
+      .where(eq(smsLog.id, row.id));
+    return {
+      sent: true,
+      mode: transport.name,
+      ...(transport.name === 'log' ? { logCode: input.code } : {}),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await db
+      .update(smsLog)
+      .set({ status: 'failed', error: message, statusUpdatedAt: new Date() })
+      .where(eq(smsLog.id, row.id));
+    return { sent: false, mode: transport.name };
+  }
+}
+
 export type SendSmsInput = Omit<OutgoingSms, 'from'> & {
   from?: string;
   eventId?: string | null;

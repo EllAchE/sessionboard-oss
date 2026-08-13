@@ -19,6 +19,9 @@ type PersonFixture = {
   phone: string | null;
   notifyEmail: boolean;
   notifySms: boolean;
+  phoneVerifiedAt?: Date | null;
+  phoneVerificationTransport?: 'log' | 'twilio' | null;
+  timezone?: string | null;
 };
 
 const state = vi.hoisted(() => ({
@@ -48,6 +51,7 @@ vi.mock('../mail', () => ({
   },
 }));
 vi.mock('../sms', () => ({
+  activeSmsTransportName: () => 'log',
   sendSms: async (input: (typeof state.sentSms)[number]) => {
     state.sentSms.push(input);
     return { id: `sms-${state.sentSms.length}`, sent: true };
@@ -287,13 +291,13 @@ describe('bulk task reminder merge data', () => {
       expect.objectContaining({
         to: 'one@example.test',
         subject: 'Reminder: Upload headshot and due 12 September 2026',
-        text: 'Hi One, complete Upload headshot and due 12 September 2026.',
+        text: expect.stringContaining('Hi One, complete Upload headshot and due 12 September 2026.'),
         eventId: 'event-one',
       }),
       expect.objectContaining({
         to: 'two@example.test',
         subject: 'Reminder: Upload headshot and due 12 September 2026',
-        text: 'Hi Two, complete Upload headshot and due 12 September 2026.',
+        text: expect.stringContaining('Hi Two, complete Upload headshot and due 12 September 2026.'),
         eventId: 'event-one',
       }),
     ]);
@@ -374,7 +378,7 @@ describe('SMS dual-dispatch and channel override', () => {
 
   it('sends email to an email-preferring recipient and SMS to an SMS-preferring recipient', async () => {
     state.peopleOverride = [
-      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: true, phone: '+15551111111' },
+      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: true, phone: '+15551111111', phoneVerifiedAt: new Date(), phoneVerificationTransport: 'log' },
       { ...PEOPLE['event-one'][1], notifyEmail: true, notifySms: false, phone: null },
     ];
 
@@ -411,7 +415,7 @@ describe('SMS dual-dispatch and channel override', () => {
 
   it('mints and renders a portal link requested only by the SMS body', async () => {
     state.peopleOverride = [
-      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: true, phone: '+15554444444' },
+      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: true, phone: '+15554444444', phoneVerifiedAt: new Date(), phoneVerificationTransport: 'log' },
     ];
 
     await sendCampaign({
@@ -429,7 +433,7 @@ describe('SMS dual-dispatch and channel override', () => {
     expect(state.sentSms[0].body).not.toContain('{{portal.link}}');
   });
 
-  it('forces email for everyone with an address when channel is "email", ignoring notifyEmail', async () => {
+  it('never lets the email channel selector override a recipient opt-out', async () => {
     state.peopleOverride = [
       { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: false, phone: null },
       { ...PEOPLE['event-one'][1], notifyEmail: false, notifySms: false, phone: null },
@@ -443,13 +447,13 @@ describe('SMS dual-dispatch and channel override', () => {
       channel: 'email',
     });
 
-    expect(outcome).toMatchObject({ recipients: 2, sent: 2, failed: 0, sentEmail: 2, sentSms: 0 });
+    expect(outcome).toMatchObject({ recipients: 2, sent: 0, failed: 0, sentEmail: 0, sentSms: 0 });
     expect(state.sentSms).toEqual([]);
   });
 
   it('dispatches both channels for a recipient who opted into both', async () => {
     state.peopleOverride = [
-      { ...PEOPLE['event-one'][0], notifyEmail: true, notifySms: true, phone: '+15553333333' },
+      { ...PEOPLE['event-one'][0], notifyEmail: true, notifySms: true, phone: '+15553333333', phoneVerifiedAt: new Date(), phoneVerificationTransport: 'log' },
       { ...PEOPLE['event-one'][1], notifyEmail: true, notifySms: false, phone: null },
     ];
 
