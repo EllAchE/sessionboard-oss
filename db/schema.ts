@@ -805,6 +805,8 @@ export const reviewRound = pgTable(
     name: text('name').notNull(),
     position: integer('position').notNull().default(0),
     status: reviewRoundStatus('status').notNull().default('draft'),
+    /** Tenths on the shared 1–5 scale; integer storage avoids floating-point boundary drift. */
+    decisionQueueBarTenths: integer('decision_queue_bar_tenths').notNull().default(30),
     /** Reviewers see each other's scores only once the round closes. */
     blindUntilClose: boolean('blind_until_close').notNull().default(true),
     /**
@@ -816,7 +818,13 @@ export const reviewRound = pgTable(
     closesAt: timestamp('closes_at', { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('review_round_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('review_round_event_idx').on(t.eventId),
+    decisionQueueBarRange: check(
+      'review_round_decision_queue_bar_range',
+      sql`${t.decisionQueueBarTenths} between 10 and 50`,
+    ),
+  }),
 );
 
 export const scorecardCriterion = pgTable(

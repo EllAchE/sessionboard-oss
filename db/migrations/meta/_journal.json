@@ -120,6 +120,13 @@
       "when": 1786649746298,
       "tag": "0016_pretty_daredevil",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1786650161677,
+      "tag": "0017_smart_thanos",
+      "breakpoints": true
     }
   ]
 }

@@ -242,8 +242,8 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **V-1 · R · COMPLETE — Exact submission status tabs.** All eight named tabs exist — All,
   Accepted, Accept Queue, Pending, Decline Queue, Declined, Withdrawn, Drafts — plus Waitlist. The
   two queues are **derived and staged**, in that order. By default a submission enters one once every
-  assigned reviewer has answered and its average score falls above or below a fixed midpoint bar, so
-  the queues fill without anyone curating them. On top of that an organizer stages by hand, and a
+  assigned reviewer has answered and its average score falls above or below that round's organizer-
+  configurable 1.0–5.0 bar, so the queues fill without anyone curating them. On top of that an organizer stages by hand, and a
   hand stage wins over the average: `submission.staged_decision` holds `accept`, `decline` or `hold`,
   event-wide rather than per-user so a co-chair reads the same batch. Clearing it returns the row to
   the derived reading rather than to nothing; `hold` is how a row leaves a queue the average put it
@@ -421,11 +421,9 @@ requirement the brief states — they are recorded here so they are not lost.
 uses `magicLinkMayBeShown`, never treats provider failure as permission, and has focused action tests
 covering real recipients, the log transport, and seeded demo identities.
 
-- **`V-1` staging bar is still fixed.** Hand staging exists now — `submission.staged_decision`, and
-  it beats the score — so an organizer can put any undecided proposal in either queue, hold one out,
-  and commit the batch. What is still hardcoded is the *bar*: the derived reading uses the midpoint
-  of the 1–5 scale, and an organizer cannot tune it per event. Everything staged by hand routes
-  around that, so it is a convenience gap rather than a capability one.
+- ~~**`V-1` staging bar is still fixed.**~~ Closed: each review round now stores a 1.0–5.0 queue bar
+  in tenths and exposes it beside the round settings. Completed panel averages at or above that bar
+  enter the accept queue; lower averages enter decline, while hand staging continues to win.
 - **Per-session task reminders may be chattier than intended.** Reminders iterate per *assignment*,
   and a submission-scoped task (`S-16`) creates one assignment per accepted session. A speaker with
   three accepted sessions receives three reminder emails for one task. Correct by the data model,

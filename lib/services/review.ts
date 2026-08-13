@@ -390,6 +390,7 @@ export type ReviewRoundRecord = {
   name: string;
   position: number;
   status: 'draft' | 'open' | 'closed';
+  decisionQueueBar: number;
   blindUntilClose: boolean;
   /** Reviewers score without an author attached; organizers still see one. */
   anonymized: boolean;
@@ -434,6 +435,7 @@ function toRoundRecord(row: typeof reviewRound.$inferSelect): ReviewRoundRecord 
     name: row.name,
     position: row.position,
     status: row.status,
+    decisionQueueBar: row.decisionQueueBarTenths / 10,
     blindUntilClose: row.blindUntilClose,
     anonymized: row.anonymized,
     opensAt: row.opensAt,
@@ -497,6 +499,7 @@ export async function ensureDefaultRound(ctx: EventContext): Promise<ReviewRound
 export type CreateRoundInput = {
   name: string;
   status?: 'draft' | 'open' | 'closed';
+  decisionQueueBar?: number;
   blindUntilClose?: boolean;
   anonymized?: boolean;
   opensAt?: Date | null;
@@ -524,6 +527,8 @@ export async function createRound(
       name,
       position: existing.length,
       status: input.status ?? 'draft',
+      decisionQueueBarTenths:
+        normalizeDecisionQueueBar(input.decisionQueueBar ?? DECISION_QUEUE_BAR) * 10,
       blindUntilClose: input.blindUntilClose ?? true,
       anonymized: input.anonymized ?? false,
       opensAt: input.opensAt ?? null,
@@ -551,6 +556,7 @@ export async function createRound(
 export type RoundPatch = {
   name?: string;
   status?: 'draft' | 'open' | 'closed';
+  decisionQueueBar?: number;
   blindUntilClose?: boolean;
   anonymized?: boolean;
   opensAt?: Date | null;
@@ -572,6 +578,9 @@ export async function updateRound(
     values.name = name;
   }
   if (patch.status !== undefined) values.status = patch.status;
+  if (patch.decisionQueueBar !== undefined) {
+    values.decisionQueueBarTenths = normalizeDecisionQueueBar(patch.decisionQueueBar) * 10;
+  }
   if (patch.blindUntilClose !== undefined) values.blindUntilClose = patch.blindUntilClose;
   if (patch.anonymized !== undefined) values.anonymized = patch.anonymized;
   if (patch.opensAt !== undefined) values.opensAt = patch.opensAt;
@@ -1584,6 +1593,8 @@ export type QueueFilters = {
   search?: string | null;
   sort?: QueueSort;
   roundId?: string | null;
+  /** Internal round setting used while deriving queue membership; defaults to the historical 3.0. */
+  decisionQueueBar?: number;
 };
 
 export type QueueSort = 'score_desc' | 'score_asc' | 'ref_asc' | 'ref_desc' | 'title_asc' | 'newest';
@@ -1659,8 +1670,23 @@ export type StagedDecision = DecisionStage | 'hold';
 /** `unstaged` is what Pending means once the two queues have taken their share of it. */
 export type QueueStage = DecisionStage | 'unstaged';
 
-/** The midpoint of the 1–5 scale every scorecard is reported on, and the queues' only bar. */
+/** The historical midpoint default for a new round. Each round may now tune its own bar. */
 export const DECISION_QUEUE_BAR = (1 + SCORE_SCALE) / 2;
+
+export function normalizeDecisionQueueBar(value: number): number {
+  if (!Number.isFinite(value)) {
+    throw invalid('The queue bar must be a number from 1.0 to 5.0', {
+      decisionQueueBar: 'Choose a score from 1.0 to 5.0',
+    });
+  }
+  const rounded = Math.round(value * 10) / 10;
+  if (rounded < 1 || rounded > SCORE_SCALE) {
+    throw invalid('The queue bar must be between 1.0 and 5.0', {
+      decisionQueueBar: 'Choose a score from 1.0 to 5.0',
+    });
+  }
+  return rounded;
+}
 
 export type StageableRow = Pick<
   QueueRow,
@@ -1672,26 +1698,32 @@ export type StageableRow = Pick<
  * Exported because it is what "clear the staging" falls back to, and the surface that offers that
  * button has to be able to say where the proposal will land.
  */
-export function derivedDecisionStage(row: StageableRow): DecisionStage | null {
+export function derivedDecisionStage(
+  row: StageableRow,
+  decisionQueueBar = DECISION_QUEUE_BAR,
+): DecisionStage | null {
   // Every reviewer has answered — scored it or turned it down — so no outstanding review can move it.
   if (row.assignedCount === 0) return null;
   if (row.completedCount + row.declinedCount < row.assignedCount) return null;
   // Assigned, answered, and still unscored: nothing to read a recommendation off.
   if (row.averageScore === null) return null;
-  return row.averageScore >= DECISION_QUEUE_BAR ? 'accept' : 'decline';
+  return row.averageScore >= decisionQueueBar ? 'accept' : 'decline';
 }
 
 /**
  * Which queue a row is in, or `null` for one no queue has claimed. Reads only what the queue already
  * carries, so the tab, the count and the filter cannot disagree about a single submission.
  */
-export function decisionStage(row: StageableRow): DecisionStage | null {
+export function decisionStage(
+  row: StageableRow,
+  decisionQueueBar = DECISION_QUEUE_BAR,
+): DecisionStage | null {
   // Only an undecided proposal stages. Anything else already has its answer.
   if (row.status !== 'submitted' && row.status !== 'under_review') return null;
   // The organizer's hand beats the average, including the hand that says "not this batch".
   if (row.stagedDecision === 'hold') return null;
   if (row.stagedDecision) return row.stagedDecision;
-  return derivedDecisionStage(row);
+  return derivedDecisionStage(row, decisionQueueBar);
 }
 
 /** Whether a row is where it is because somebody put it there. Drives the queue's own labelling. */
@@ -1716,7 +1748,8 @@ export type QueueTab = {
  * commits to, and Pending holds only what neither queue has claimed, so the undecided work is
  * partitioned rather than counted twice.
  */
-const STATUS_TABS: QueueTab[] = [
+export function statusTabsForBar(decisionQueueBar = DECISION_QUEUE_BAR): QueueTab[] {
+  return [
   { id: 'all', label: 'All', statuses: [] },
   {
     id: 'pending',
@@ -1730,7 +1763,7 @@ const STATUS_TABS: QueueTab[] = [
     label: 'Accept queue',
     statuses: ['submitted', 'under_review'],
     stage: 'accept',
-    hint: `Every review is in and the panel averaged ${DECISION_QUEUE_BAR.toFixed(1)} or better, plus anything you staged here by hand. Nothing is decided until you accept it.`,
+    hint: `Every review is in and the panel averaged ${decisionQueueBar.toFixed(1)} or better, plus anything you staged here by hand. Nothing is decided until you accept it.`,
   },
   { id: 'accepted', label: 'Accepted', statuses: ['accepted'] },
   { id: 'waitlisted', label: 'Waitlist', statuses: ['waitlisted'] },
@@ -1739,12 +1772,15 @@ const STATUS_TABS: QueueTab[] = [
     label: 'Decline queue',
     statuses: ['submitted', 'under_review'],
     stage: 'decline',
-    hint: `Every review is in and the panel averaged under ${DECISION_QUEUE_BAR.toFixed(1)}, plus anything you staged here by hand. Nothing is declined until you decline it.`,
+    hint: `Every review is in and the panel averaged under ${decisionQueueBar.toFixed(1)}, plus anything you staged here by hand. Nothing is declined until you decline it.`,
   },
   { id: 'declined', label: 'Declined', statuses: ['declined'] },
   { id: 'withdrawn', label: 'Withdrawn', statuses: ['withdrawn'] },
   { id: 'drafts', label: 'Drafts', statuses: ['draft'] },
-];
+  ];
+}
+
+const STATUS_TABS: QueueTab[] = statusTabsForBar();
 
 export function statusesForTab(tabId: string): SubmissionStatus[] {
   return STATUS_TABS.find((tab) => tab.id === tabId)?.statuses ?? [];
@@ -2183,7 +2219,9 @@ export async function loadQueue(
   const counts: Record<string, number> = {};
   for (const tab of STATUS_TABS) {
     counts[tab.id] = all.filter(
-      (row) => matchesStatuses(row, tab.statuses) && matchesStage(row, tab.stage),
+      (row) =>
+        matchesStatuses(row, tab.statuses) &&
+        matchesStage(row, tab.stage, round?.decisionQueueBar ?? DECISION_QUEUE_BAR),
     ).length;
   }
 
@@ -2193,7 +2231,13 @@ export async function loadQueue(
   return {
     round,
     criteria,
-    rows: sortQueue(filterQueue(visible, filters), filters.sort),
+    rows: sortQueue(
+      filterQueue(visible, {
+        ...filters,
+        decisionQueueBar: round?.decisionQueueBar ?? DECISION_QUEUE_BAR,
+      }),
+      filters.sort,
+    ),
     counts,
     tracks,
     formats,
@@ -2206,9 +2250,13 @@ function matchesStatuses(row: QueueRow, statuses: SubmissionStatus[]): boolean {
   return statuses.length === 0 ? row.status !== 'draft' : statuses.includes(row.status);
 }
 
-function matchesStage(row: QueueRow, stage: QueueStage | null | undefined): boolean {
+function matchesStage(
+  row: QueueRow,
+  stage: QueueStage | null | undefined,
+  decisionQueueBar = DECISION_QUEUE_BAR,
+): boolean {
   if (!stage) return true;
-  const staged = decisionStage(row);
+  const staged = decisionStage(row, decisionQueueBar);
   return stage === 'unstaged' ? staged === null : staged === stage;
 }
 
@@ -2218,7 +2266,7 @@ export function filterQueue(rows: QueueRow[], filters: QueueFilters): QueueRow[]
 
   return rows.filter((row) => {
     if (!matchesStatuses(row, statuses)) return false;
-    if (!matchesStage(row, filters.stage)) return false;
+    if (!matchesStage(row, filters.stage, filters.decisionQueueBar)) return false;
     if (filters.trackId && row.trackId !== filters.trackId) return false;
     if (filters.formatId && row.formatId !== filters.formatId) return false;
     if (filters.tagId && !row.tagIds.includes(filters.tagId)) return false;
