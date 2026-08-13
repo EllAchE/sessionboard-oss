@@ -7,6 +7,10 @@ its reasoning rather than buried in a table cell.
 
 Goals and context: [`00-goals.md`](00-goals.md). Source: [`reference/source-brief.txt`](reference/source-brief.txt).
 
+**This document is closed to additions.** Requirements the owner added after the brief was frozen
+live in [`05-additional-requirements.md`](05-additional-requirements.md) — keeping them out is what
+lets this file stay a faithful record of what the competition asked for.
+
 **This is a reading of the brief, not a plan for building it.** Rows are grouped by subject and
 numbered for reference, not ordered by build sequence. A tag says whether the entry is incomplete
 without the row — not when to build it, or whether it is affordable. Sequencing lives elsewhere.

@@ -315,7 +315,19 @@ coexist without either seeing the other.
    matrix, current implementation audit, and safe execution gate for adversarial testing
 6. **[`docs/04-demo-runbook.md`](docs/04-demo-runbook.md)** — the presenter-ready walkthrough,
    requirement traceability, API bonus, fallbacks, resets, and go/no-go checks
-7. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+7. **[`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md)** — the actor model,
+   what each role can and cannot do, and the permission matrix
+8. **[`docs/05-additional-requirements.md`](docs/05-additional-requirements.md)** — requirements
+   added by the owner after the brief was frozen, with build status per row and what the optional
+   add-ons cost a self-hoster
+9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+
+Alongside those, two unnumbered companions:
+
+- [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
+  ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
+- [`docs/decisions-long-form.md`](docs/decisions-long-form.md) — the narrative rationale: why the
+  product was scoped, built and named the way it was, including what was deliberately not built
 
 ### Reference material
 
@@ -332,7 +344,9 @@ coexist without either seeing the other.
 `docs/00-goals.md` and `docs/01-requirements.md` are derived **only** from the competition brief and
 its screenshots — nothing is inferred from Sessionboard's own documentation. Where the brief was
 silent or contradicted itself, the requirements doc records the decision and its reasoning under
-*Resolved ambiguities* rather than leaving a hole.
+*Resolved ambiguities* rather than leaving a hole. Anything the owner wanted afterwards lives in
+`docs/05-additional-requirements.md` instead, so the brief-derived reading stays a faithful record
+of what the competition actually asked for.
 
 The survey was produced by a separate agent with no access to the brief or to either spec document,
 working only from Sessionboard's public sources. The two derivations never touched. It exists as a
