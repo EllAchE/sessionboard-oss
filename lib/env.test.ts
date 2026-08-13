@@ -6,7 +6,48 @@ const { getCloudflareContext } = vi.hoisted(() => ({
 
 vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext }));
 
-import { env } from './env';
+import { env, envFlag } from './env';
+
+describe('envFlag', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    getCloudflareContext.mockReset();
+  });
+
+  function stub(value: string | undefined) {
+    vi.stubEnv('NODE_ENV', 'production');
+    getCloudflareContext.mockImplementation(() => {
+      throw new Error('No Cloudflare context');
+    });
+    if (value !== undefined) vi.stubEnv('CICERO_TEST_FLAG', value);
+  }
+
+  it.each(['1', 'true', 'TRUE', ' True '])('reads %o as true', (value) => {
+    stub(value);
+    expect(envFlag('CICERO_TEST_FLAG')).toBe(true);
+  });
+
+  it.each(['0', 'false', 'FALSE', ' False '])('reads %o as false', (value) => {
+    stub(value);
+    expect(envFlag('CICERO_TEST_FLAG', true)).toBe(false);
+  });
+
+  it('falls back when the variable is unset', () => {
+    stub(undefined);
+    expect(envFlag('CICERO_TEST_FLAG')).toBe(false);
+    expect(envFlag('CICERO_TEST_FLAG', true)).toBe(true);
+  });
+
+  /**
+   * The case that motivated this: a typo must not silently disable a flag that defaults to true,
+   * because `S3_FORCE_PATH_STYLE=yes` turning path-style addressing off breaks every MinIO upload.
+   */
+  it.each(['yes', 'no', 'on', 'off', ''])('falls back on the unrecognized value %o', (value) => {
+    stub(value);
+    expect(envFlag('CICERO_TEST_FLAG', true)).toBe(true);
+    expect(envFlag('CICERO_TEST_FLAG', false)).toBe(false);
+  });
+});
 
 describe('env', () => {
   afterEach(() => {
