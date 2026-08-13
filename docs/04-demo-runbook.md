@@ -71,10 +71,12 @@ be:
 
 The seed in [`../db/seeds/first-settlement.ts`](../db/seeds/first-settlement.ts) creates **The First
 Settlement**, a Europe/Rome event around the January 27 BCE settlement. It includes eleven motions,
-six accepted speakers, five published sessions, an unscheduled accepted motion, review, speaker
-tasks, portal resources, recorded communications, and Roman-themed tracks, rooms, and formats. Its
-dates advance to the current or next January anniversary. Fixed 2027 dates in the provisional API
-fixture are demonstration inputs, not a claim that they match the moving seed.
+six accepted speakers, six additional confirmed dummy gallery profiles, five published sessions, an
+unscheduled accepted motion, review, speaker tasks, portal resources, recorded communications, and
+Roman-themed tracks, rooms, and formats. The twelve database-backed gallery profiles are evenly
+split between women and men. Its dates advance to the current or next January anniversary. Fixed
+2027 dates in the provisional API fixture are demonstration inputs, not a claim that they match the
+moving seed.
 
 The committed Roman seed has one configured review round and its CFP does not have a conditional
 field. The existing `demo` seed has the prebuilt conditional form and multiple review rounds. Use
@@ -580,8 +582,8 @@ or remote Accelevents calls to make the screen look right during a demo.
 - [ ] First Settlement is verified live after an approved targeted seed, or fallback wording is in
       the speaker notes.
 - [ ] Event switcher selects the intended event before every write.
-- [ ] Roman event shows eleven motions, six accepted speakers, five published sessions, one
-      accepted unscheduled motion, and outstanding tasks.
+- [ ] Roman event shows eleven motions, six accepted speakers, twelve confirmed gallery profiles,
+      five published sessions, one accepted unscheduled motion, and outstanding tasks.
 - [ ] A disposable cold organizer and disposable speaker/submission are identified.
 - [ ] The `demo` switch for conditional CFP and multi-round review is rehearsed, or approved
       disposable Roman equivalents are prepared.

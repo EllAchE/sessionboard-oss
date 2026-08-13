@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 /**
  * Headshots for the public surfaces. Unauthenticated by necessity — an iframe on somebody else's
  * website carries no session — so access is proven structurally instead: the file id must be the
- * `headshotFileId` of a participant who is already visible through `loadPublicBundle`, i.e. one
- * named on a *published* session. Any other file id in this event 404s, so this route cannot be
- * walked to reach an uploaded slide deck or a contract.
+ * `headshotFileId` of a confirmed participant who is already visible through `loadPublicBundle`.
+ * Any other file id in this event 404s, so this route cannot be walked to reach an uploaded slide
+ * deck or a contract.
  */
 export async function GET(
   _request: Request,

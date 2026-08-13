@@ -26,9 +26,9 @@ import {
 /**
  * The read model behind the embeds and the public event pages. Everything here is unauthenticated,
  * so the filters are structural rather than checked: only `published` scheduled sessions whose
- * submission is `approved` are ever loaded, and a speaker only appears because such a session names
- * them. There is no code path from this module to a draft, an unapproved abstract, a decision note
- * or an email address.
+ * submission is `approved` are ever loaded, and only participant profiles in the `confirmed`
+ * workflow state enter the public speaker directory and gallery. There is no code path from this
+ * module to a draft, an unapproved abstract, a decision note or an email address.
  *
  * All participant-authored text goes through `renderMarkdown`, never `renderTrustedMarkdown` — a
  * speaker bio is untrusted input that a stranger's website will iframe.
@@ -40,6 +40,41 @@ import {
 export * from './model';
 
 const SAFE_LINK = /^https?:\/\//i;
+
+export type ConfirmedParticipantSource = {
+  id: string;
+  accountName: string | null;
+  displayName: string | null;
+  pronouns: string | null;
+  jobTitle: string | null;
+  company: string | null;
+  bioMarkdown: string | null;
+  headshotFileId: string | null;
+  links: { label: string; url: string }[];
+};
+
+export function publicSpeakerFromConfirmedParticipant(
+  eventSlug: string,
+  source: ConfirmedParticipantSource,
+): PublicSpeaker {
+  const name = source.displayName?.trim() || source.accountName?.trim() || 'Speaker';
+  return {
+    id: source.id,
+    slug: speakerSlug(source.id, name),
+    name,
+    pronouns: source.pronouns,
+    jobTitle: source.jobTitle,
+    company: source.company,
+    bioHtml: renderMarkdown(source.bioMarkdown),
+    bioText: markdownToText(source.bioMarkdown).replace(/\s+/g, ' ').trim(),
+    bioExcerpt: excerpt(source.bioMarkdown, 240),
+    headshotUrl: source.headshotFileId
+      ? `/embed/${eventSlug}/headshot/${source.headshotFileId}`
+      : null,
+    links: source.links.filter((link) => SAFE_LINK.test(link.url)),
+    sessionIds: [],
+  };
+}
 
 export async function getPublicEvent(slug: string): Promise<PublicEvent | null> {
   const row = await getDb().query.event.findFirst({ where: eq(eventTable.slug, slug) });
@@ -62,7 +97,7 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
   if (!event) return null;
   const db = getDb();
 
-  const [scheduledRows, tracks, rooms, formats] = await Promise.all([
+  const [scheduledRows, tracks, rooms, formats, publicParticipants] = await Promise.all([
     db
       .select({ session: scheduledSession })
       .from(scheduledSession)
@@ -78,6 +113,24 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
     db.query.track.findMany({ where: eq(trackTable.eventId, event.id) }),
     db.query.room.findMany({ where: eq(roomTable.eventId, event.id) }),
     db.query.sessionFormat.findMany({ where: eq(sessionFormat.eventId, event.id) }),
+    db
+      .select({
+        id: participant.id,
+        accountName: userTable.name,
+        displayName: participant.displayName,
+        pronouns: participant.pronouns,
+        jobTitle: participant.jobTitle,
+        company: participant.company,
+        bioMarkdown: participant.bioMarkdown,
+        headshotFileId: participant.headshotFileId,
+        links: participant.links,
+      })
+      .from(participant)
+      .innerJoin(userTable, eq(participant.userId, userTable.id))
+      .where(
+        and(eq(participant.eventId, event.id), eq(participant.workflowStatus, 'confirmed')),
+      )
+      .orderBy(asc(participant.displayName), asc(userTable.name)),
   ]);
 
   const sessionRows = scheduledRows.map((row) => row.session);
@@ -109,6 +162,7 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
               inArray(participantRole.submissionId, submissionIds),
               eq(submission.eventId, event.id),
               eq(submission.contentStatus, 'approved'),
+              eq(participant.workflowStatus, 'confirmed'),
             ),
           )
           .orderBy(asc(participantRole.position)),
@@ -177,32 +231,16 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
     };
   });
 
-  const speakerIndex = new Map<string, PublicSpeaker>();
+  const speakerIndex = new Map<string, PublicSpeaker>(
+    publicParticipants.map((source) => {
+      const speaker = publicSpeakerFromConfirmedParticipant(event.slug, source);
+      return [speaker.id, speaker];
+    }),
+  );
   for (const session of sessions) {
     for (const speaker of session.speakers) {
       const existing = speakerIndex.get(speaker.id);
-      if (existing) {
-        existing.sessionIds.push(session.id);
-        continue;
-      }
-      const source = roleRows.find((entry) => entry.person.id === speaker.id);
-      if (!source) continue;
-      speakerIndex.set(speaker.id, {
-        id: speaker.id,
-        slug: speakerSlug(speaker.id, speaker.name),
-        name: speaker.name,
-        pronouns: source.person.pronouns,
-        jobTitle: source.person.jobTitle,
-        company: source.person.company,
-        bioHtml: renderMarkdown(source.person.bioMarkdown),
-        bioText: markdownToText(source.person.bioMarkdown).replace(/\s+/g, ' ').trim(),
-        bioExcerpt: excerpt(source.person.bioMarkdown, 240),
-        headshotUrl: source.person.headshotFileId
-          ? `/embed/${event.slug}/headshot/${source.person.headshotFileId}`
-          : null,
-        links: source.person.links.filter((link) => SAFE_LINK.test(link.url)),
-        sessionIds: [session.id],
-      });
+      if (existing && !existing.sessionIds.includes(session.id)) existing.sessionIds.push(session.id);
     }
   }
 

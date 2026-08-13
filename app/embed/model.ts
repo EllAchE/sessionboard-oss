@@ -417,8 +417,12 @@ export function applyFilters(bundle: PublicBundle, options: EmbedOptions): Publi
 
   if (options.limit) sessions = sessions.slice(0, options.limit);
 
+  const restrictSpeakersToSessions =
+    trackFilter.size > 0 || roomFilter.size > 0 || formatFilter.size > 0 || Boolean(options.limit);
   const keep = new Set(sessions.flatMap((session) => session.speakers.map((entry) => entry.id)));
-  let speakers = bundle.speakers.filter((speaker) => keep.has(speaker.id));
+  let speakers = restrictSpeakersToSessions
+    ? bundle.speakers.filter((speaker) => keep.has(speaker.id))
+    : bundle.speakers;
 
   if (options.speaker) {
     const needle = options.speaker.toLowerCase();
