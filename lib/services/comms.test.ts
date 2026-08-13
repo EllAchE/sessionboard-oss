@@ -6,12 +6,29 @@ import {
   renderMessage,
   renderSmsText,
   renderTemplateText,
+  requestsPortalLink,
   speakerFirstName,
   templateVariablesUsed,
+  uniqueSmsRecipientEmail,
   unknownVariables,
   wrapInBranding,
   type TemplateVars,
 } from './comms';
+
+describe('SMS recipient identity', () => {
+  it('resolves exactly one account and fails closed on missing or duplicate phone matches', () => {
+    expect(uniqueSmsRecipientEmail([])).toBeNull();
+    expect(uniqueSmsRecipientEmail([{ email: 'speaker@example.com' }])).toBe(
+      'speaker@example.com',
+    );
+    expect(
+      uniqueSmsRecipientEmail([
+        { email: 'first@example.com' },
+        { email: 'second@example.com' },
+      ]),
+    ).toBeNull();
+  });
+});
 
 /**
  * The merge-field syntax is documented in `tasks/W5-notes.md` and is the contract the template
@@ -63,6 +80,14 @@ describe('merge fields', () => {
 
   it('flags a typo against the documented catalog', () => {
     expect(unknownVariables('{{speaker.nmae}} {{speaker.name}}')).toEqual(['speaker.nmae']);
+  });
+});
+
+describe('one-click portal links', () => {
+  it('mints a credential when any delivered channel asks for one', () => {
+    expect(requestsPortalLink('No link', 'No link', 'Open {{portal.link}}')).toBe(true);
+    expect(requestsPortalLink('Open {{ portal.link }}', 'No link', null)).toBe(true);
+    expect(requestsPortalLink('No link', 'Open {{portal.url}}', null)).toBe(false);
   });
 });
 
@@ -370,10 +395,8 @@ describe('shipped SMS bodies', () => {
 
   /**
    * The one deliberate divergence from the email copy, and a security boundary rather than a style
-   * choice. `{{portal.link}}` is a fourteen-day sign-in credential; `sendSms` writes the body to
-   * `sms_log` before dispatch and `/admin/sms` renders it verbatim to any organizer on the event,
-   * with none of the redaction `/admin/mail` grew in #88. So the text messages use the plain
-   * `{{portal.url}}` instead, and none of them may carry the signed link.
+   * choice. Custom SMS copy may request the guarded `{{portal.link}}`, but the defaults keep the
+   * archive credential-free by using `{{portal.url}}` instead.
    */
   it('never puts a sign-in credential in a body that lands in sms_log', () => {
     for (const template of DEFAULT_TEMPLATES) {

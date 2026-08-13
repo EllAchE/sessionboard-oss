@@ -734,12 +734,10 @@ export type EmailTemplateRow = typeof emailTemplate.$inferSelect;
  *    `form.deadline` is built from its own narrow `vars` map in `runDraftDeadlineReminders`, not
  *    from `buildVars`, so it may only use the event, speaker and form fields.
  *
- * The one place the SMS deliberately differs from its email is `{{portal.url}}` where the email
- * writes `{{portal.link}}`. `portal.link` is a fourteen-day sign-in credential, and `sendSms` writes
- * the body to `sms_log` *before* dispatch, where `/admin/sms` renders it verbatim to any organizer
- * on the event — the same escalation `/admin/mail` closed in #88, which `/admin/sms` has no
- * equivalent gate for. `portal.url` is the plain `/portal` address: one sign-in away rather than
- * one tap, and not a credential sitting in a readable archive. See the note in `magic-links.ts`.
+ * The shipped SMS copy deliberately uses `{{portal.url}}` where the email writes
+ * `{{portal.link}}`. Custom SMS templates may now request the one-click link, and the SMS mailbox
+ * gates it like the mail archive, but the plain URL keeps the default archive credential-free as
+ * defence in depth. See `app/admin/sms/magic-links.ts`.
  */
 export const DEFAULT_TEMPLATES: Array<{
   key: string;
@@ -1051,22 +1049,24 @@ async function mintPortalLink(
 }
 
 /**
- * Matched against the subject and the *email* body only, deliberately. A `smsBody` that asks for
- * `{{portal.link}}` renders it as nothing rather than minting one: `sendSms` writes the body to
- * `sms_log` before dispatch, and `/admin/sms` renders that verbatim to any organizer on the event,
- * with none of the gating `/admin/mail` grew in #88. A fourteen-day sign-in credential does not
- * belong in that archive, so the shipped SMS copy uses `{{portal.url}}` instead; widening this
- * needs the SMS mailbox gated first.
+ * Any channel may request the one-click portal credential. The SMS path was deliberately omitted
+ * until its archive gained the same read-time gate as `/admin/mail`; keeping the test in one helper
+ * prevents a future send path from silently rendering `{{portal.link}}` as an empty string again.
  */
 const PORTAL_LINK_PATTERN = /\{\{\s*portal\.link/;
+
+export function requestsPortalLink(...sources: Array<string | null | undefined>): boolean {
+  return sources.some((source) => Boolean(source && PORTAL_LINK_PATTERN.test(source)));
+}
 
 async function withPortalLink(
   recipient: Recipient,
   eventId: string,
   subject: string,
   body: string,
+  smsBody?: string | null,
 ): Promise<TemplateVars> {
-  if (!PORTAL_LINK_PATTERN.test(subject) && !PORTAL_LINK_PATTERN.test(body)) {
+  if (!requestsPortalLink(subject, body, smsBody)) {
     return recipient.vars;
   }
   return { ...recipient.vars, 'portal.link': await mintPortalLink(recipient.userId, eventId) };
@@ -1194,6 +1194,7 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
       input.eventId,
       input.subject,
       input.bodyMarkdown,
+      input.smsBody,
     );
     const message = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
     // PUBLISH, not REQUEST. An ad-hoc send does not know whether it is a revision, and a REQUEST at
@@ -1271,6 +1272,7 @@ export async function previewCampaign(input: {
   const unknown = [
     ...unknownVariables(input.subject),
     ...unknownVariables(input.bodyMarkdown),
+    ...unknownVariables(input.smsBody ?? ''),
   ].filter((path, index, all) => all.indexOf(path) === index);
 
   const channelCounts = { email: 0, sms: 0, none: 0 };
@@ -1321,7 +1323,7 @@ async function sendTemplated(input: {
   const smsBodyTemplate = stored?.smsBody ?? fallback?.smsBody ?? null;
 
   const base = { ...input.recipient.vars, ...(input.extraVars ?? {}) };
-  const withLink = PORTAL_LINK_PATTERN.test(subject) || PORTAL_LINK_PATTERN.test(body)
+  const withLink = requestsPortalLink(subject, body, smsBodyTemplate)
     ? { ...base, 'portal.link': await mintPortalLink(input.recipient.userId, input.eventId) }
     : base;
 
@@ -2033,6 +2035,27 @@ export async function mailForRecipient(
 // ---------------------------------------------------------------------------
 
 export type SmsMailboxEntry = typeof smsLog.$inferSelect;
+
+/** A duplicated phone number cannot safely identify which account owns a credential. */
+export function uniqueSmsRecipientEmail(rows: ReadonlyArray<{ email: string }>): string | null {
+  return rows.length === 1 ? rows[0].email : null;
+}
+
+/**
+ * Resolves the account whose credential an SMS body could carry. Phone numbers are not unique yet,
+ * so anything other than one exact match is ambiguous and must fail closed at the mailbox reader.
+ * AR-10 will normalize the stored values; exact matching is still correct now because `sms_log`
+ * receives the same value read from `user.phone` when the message is sent.
+ */
+export async function emailForSmsRecipient(phone: string): Promise<string | null> {
+  const db = getDb();
+  const rows = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.phone, phone))
+    .limit(2);
+  return uniqueSmsRecipientEmail(rows);
+}
 
 export async function listSms(options: {
   eventId?: string | null;

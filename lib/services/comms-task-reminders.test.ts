@@ -26,6 +26,7 @@ const state = vi.hoisted(() => ({
   taskRows: [] as TaskFixture[],
   taskScopeChecks: [] as string[],
   peopleOverride: null as PersonFixture[] | null,
+  mintedLinks: [] as Array<Record<string, unknown>>,
   sentMail: [] as Array<{
     to: string;
     subject: string;
@@ -55,6 +56,7 @@ vi.mock('../sms', () => ({
 
 import {
   event as eventTable,
+  magicToken,
   participant,
   participantRole,
   portalTheme,
@@ -241,7 +243,14 @@ function createDb() {
     [sessionFormat, []],
   ]);
 
-  return { select: () => queryForSource(rowsBySource) };
+  return {
+    select: () => queryForSource(rowsBySource),
+    insert: (source: unknown) => ({
+      values: async (values: Record<string, unknown>) => {
+        if (source === magicToken) state.mintedLinks.push(values);
+      },
+    }),
+  };
 }
 
 describe('bulk task reminder merge data', () => {
@@ -345,6 +354,7 @@ describe('SMS dual-dispatch and channel override', () => {
     state.taskScopeChecks = [];
     state.sentMail = [];
     state.sentSms = [];
+    state.mintedLinks = [];
     state.peopleOverride = null;
     state.taskRows = [
       {
@@ -397,6 +407,26 @@ describe('SMS dual-dispatch and channel override', () => {
     expect(outcome).toMatchObject({ recipients: 2, sent: 1, failed: 0, sentEmail: 0, sentSms: 1 });
     expect(state.sentMail).toEqual([]);
     expect(state.sentSms).toEqual([expect.objectContaining({ to: '+15552222222' })]);
+  });
+
+  it('mints and renders a portal link requested only by the SMS body', async () => {
+    state.peopleOverride = [
+      { ...PEOPLE['event-one'][0], notifyEmail: false, notifySms: true, phone: '+15554444444' },
+    ];
+
+    await sendCampaign({
+      eventId: 'event-one',
+      subject: 'Your portal',
+      bodyMarkdown: 'Sign in to your portal.',
+      smsBody: 'Sign in: {{portal.link}}',
+      audience: { kind: 'outstanding_tasks', taskId: 'task-selected' },
+      channel: 'sms',
+    });
+
+    expect(state.mintedLinks).toHaveLength(1);
+    expect(state.sentSms).toHaveLength(1);
+    expect(state.sentSms[0].body).toMatch(/^Sign in: .*\/auth\/verify\?token=.+/);
+    expect(state.sentSms[0].body).not.toContain('{{portal.link}}');
   });
 
   it('forces email for everyone with an address when channel is "email", ignoring notifyEmail', async () => {
