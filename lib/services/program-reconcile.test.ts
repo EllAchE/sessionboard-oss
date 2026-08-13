@@ -357,4 +357,28 @@ describe('program reconciliation execution', () => {
     expect(result).toMatchObject({ applied: false, canApply: false, summary: { error: 1 } });
     expect(state.sessions).toHaveLength(0);
   });
+
+  it('rejects an overlapping room and track collection before any write', async () => {
+    const placement = {
+      startsAt: '2027-01-13T08:00:00.000Z',
+      endsAt: '2027-01-13T08:45:00.000Z',
+      room: 'Curia Julia',
+      track: 'Constitution & Office',
+    };
+
+    await expect(
+      reconcileProgram(
+        'event-1',
+        request({
+          apply: true,
+          sessions: [
+            session('first', 'First motion', placement),
+            session('second', 'Second motion', placement),
+          ],
+        }),
+        database,
+      ),
+    ).rejects.toThrow('both occupy');
+    expect(state.sessions).toHaveLength(0);
+  });
 });

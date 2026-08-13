@@ -27,6 +27,7 @@ import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
 import { parseSpeakerName } from '../speaker-name';
+import { mutateAgendaAtomically } from './agenda-guard';
 
 /**
  * `S-1`–`S-13`. Everything the speaker-facing surface reads or writes. The organizer side never
@@ -135,17 +136,30 @@ const speakerNameInput = z.string().transform((value, ctx) => {
   }
 });
 
-export const profileSchema = z.object({
-  displayName: speakerNameInput.optional(),
-  pronouns: z.string().trim().max(40).optional(),
-  jobTitle: z.string().trim().max(120).optional(),
-  company: z.string().trim().max(120).optional(),
-  bioMarkdown: z.string().max(5000, 'Biography is limited to 5,000 characters').optional(),
-  timezone: z.string().trim().max(64).optional(),
-  dietaryNotes: z.string().trim().max(1000).optional(),
-  accessibilityNotes: z.string().trim().max(1000).optional(),
-  links: z.array(linkSchema).max(8, 'Eight links is plenty').default([]),
-});
+export const profileSchema = z
+  .object({
+    displayName: speakerNameInput.optional(),
+    pronouns: z.string().trim().max(40).optional(),
+    jobTitle: z.string().trim().max(120).optional(),
+    company: z.string().trim().max(120).optional(),
+    bioMarkdown: z.string().max(5000, 'Biography is limited to 5,000 characters').optional(),
+    timezone: z.string().trim().max(64).optional(),
+    dietaryNotes: z.string().trim().max(1000).optional(),
+    accessibilityNotes: z.string().trim().max(1000).optional(),
+    links: z.array(linkSchema).max(8, 'Eight links is plenty').default([]),
+    phone: z.string().trim().max(32).optional(),
+    notifyEmail: z.boolean().optional(),
+    notifySms: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.notifySms && !data.phone?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['phone'],
+        message: 'Add a phone number to receive SMS alerts',
+      });
+    }
+  });
 
 export type ProfileInput = z.input<typeof profileSchema>;
 
@@ -169,7 +183,8 @@ export async function updateProfile(
   }
 
   const data = parsed.data;
-  const [row] = await getDb()
+  const db = getDb();
+  const [row] = await db
     .update(participant)
     .set({
       displayName: blankToNull(data.displayName),
@@ -187,6 +202,21 @@ export async function updateProfile(
     .returning();
 
   if (!row) throw notFound('Your profile');
+
+  // Phone and channel preference live on `user`, not `participant` — they are global to the
+  // person, not per-event, which is what lets an organizer (no `participant` row) set the same
+  // preference from `/admin/settings`.
+  if (data.phone !== undefined || data.notifyEmail !== undefined || data.notifySms !== undefined) {
+    await db
+      .update(user)
+      .set({
+        ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
+        ...(data.notifyEmail !== undefined ? { notifyEmail: data.notifyEmail } : {}),
+        ...(data.notifySms !== undefined ? { notifySms: data.notifySms } : {}),
+      })
+      .where(eq(user.id, ctx.actor.userId));
+  }
+
   return row;
 }
 
@@ -566,53 +596,65 @@ export async function shareSubmissionAccess(
   }
   const { email, name, kind } = parsed.data;
 
-  const db = getDb();
-  let account = await db.query.user.findFirst({ where: eq(user.email, email) });
-  if (!account) {
-    [account] = await db
-      .insert(user)
-      .values({ email, name: name ?? null })
-      .returning();
-  }
+  const { account, invitee } = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+    let account = await transaction.query.user.findFirst({ where: eq(user.email, email) });
+    if (!account) {
+      [account] = await transaction
+        .insert(user)
+        .values({ email, name: name ?? null })
+        .returning();
+    }
 
-  await db
-    .insert(membership)
-    .values({ userId: account.id, eventId: ctx.eventId, role: 'speaker' })
-    .onConflictDoNothing();
+    await transaction
+      .insert(membership)
+      .values({ userId: account.id, eventId: ctx.eventId, role: 'speaker' })
+      .onConflictDoNothing();
 
-  await db
-    .insert(participant)
-    .values({
-      eventId: ctx.eventId,
-      userId: account.id,
-      displayName: parseSpeakerName(name ?? account.name),
-    })
-    .onConflictDoNothing();
+    await transaction
+      .insert(participant)
+      .values({
+        eventId: ctx.eventId,
+        userId: account.id,
+        displayName: parseSpeakerName(name ?? account.name),
+      })
+      .onConflictDoNothing();
 
-  const invitee = await db.query.participant.findFirst({
-    where: and(eq(participant.eventId, ctx.eventId), eq(participant.userId, account.id)),
-  });
-  if (!invitee) throw notFound('That participant');
+    const invitee = await transaction.query.participant.findFirst({
+      where: and(eq(participant.eventId, ctx.eventId), eq(participant.userId, account.id)),
+    });
+    if (!invitee) throw notFound('That participant');
 
-  const existing = await db.query.participantRole.findFirst({
-    where: and(
-      eq(participantRole.submissionId, submissionId),
-      eq(participantRole.participantId, invitee.id),
-    ),
-  });
-  if (existing) throw conflict('They already have access to this session');
+    const existing = await transaction.query.participantRole.findFirst({
+      where: and(
+        eq(participantRole.submissionId, submissionId),
+        eq(participantRole.participantId, invitee.id),
+      ),
+    });
+    if (existing) throw conflict('They already have access to this session');
 
-  const siblings = await db
-    .select({ position: participantRole.position })
-    .from(participantRole)
-    .where(eq(participantRole.submissionId, submissionId));
+    const siblings = await transaction
+      .select({ position: participantRole.position })
+      .from(participantRole)
+      .where(eq(participantRole.submissionId, submissionId));
 
-  await db.insert(participantRole).values({
-    submissionId,
-    participantId: invitee.id,
-    kind,
-    isPrimary: false,
-    position: siblings.length,
+    await transaction.insert(participantRole).values({
+      submissionId,
+      participantId: invitee.id,
+      kind,
+      isPrimary: false,
+      position: siblings.length,
+    });
+
+    const session = await transaction.query.scheduledSession.findFirst({
+      where: and(
+        eq(scheduledSession.eventId, ctx.eventId),
+        eq(scheduledSession.submissionId, submissionId),
+      ),
+    });
+    return {
+      data: { account, invitee },
+      changedSessionIds: session ? [session.id] : [],
+    };
   });
 
   await sendShareInvite(ctx, account.email, account.name, submissionId);

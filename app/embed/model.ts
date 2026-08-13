@@ -318,24 +318,36 @@ export type EmbedOptions = {
 };
 
 const HEX = /^[0-9a-f]{6}$/i;
+const MAX_EMBED_FILTERS = 20;
+const MAX_EMBED_FILTER_LENGTH = 120;
+const MAX_EMBED_QUERY_LENGTH = 200;
 
 /** `G-7`. Every option is a query parameter so a snippet is one copyable line with no state. */
 export function parseEmbedOptions(
   params: Record<string, string | string[] | undefined>,
 ): EmbedOptions {
-  const single = (key: string): string | null => {
+  const single = (key: string, maxLength = MAX_EMBED_FILTER_LENGTH): string | null => {
     const value = params[key];
-    if (Array.isArray(value)) return value[0] ?? null;
-    return value ?? null;
+    if (Array.isArray(value)) return value.length === 1 ? singleValue(value[0], maxLength) : null;
+    return singleValue(value, maxLength);
   };
   const list = (key: string): string[] => {
-    const value = single(key);
-    return value
-      ? value
-          .split(',')
-          .map((entry) => entry.trim())
-          .filter(Boolean)
-      : [];
+    const value = params[key];
+    const values = Array.isArray(value) ? value : value === undefined ? [] : [value];
+    if (values.length > MAX_EMBED_FILTERS) return [];
+
+    const entries: string[] = [];
+    for (const raw of values) {
+      if (raw.length > MAX_EMBED_FILTERS * (MAX_EMBED_FILTER_LENGTH + 1)) return [];
+      for (const part of raw.split(',')) {
+        const entry = part.trim();
+        if (!entry) continue;
+        if (entry.length > MAX_EMBED_FILTER_LENGTH || entries.length === MAX_EMBED_FILTERS)
+          return [];
+        entries.push(entry);
+      }
+    }
+    return entries;
   };
   const flag = (key: string, fallback: boolean): boolean => {
     const value = single(key);
@@ -343,10 +355,11 @@ export function parseEmbedOptions(
     return value !== '0' && value !== 'false' && value !== 'no';
   };
 
-  const accentRaw = (single('accent') ?? '').replace(/^#/, '');
-  const themeRaw = single('theme');
-  const limitRaw = Number.parseInt(single('limit') ?? '', 10);
-  const columnsRaw = Number.parseInt(single('columns') ?? '', 10);
+  const accentRaw = (single('accent', 7) ?? '').replace(/^#/, '');
+  const themeRaw = single('theme', 5);
+  const limitRaw = parseBoundedInteger(single('limit', 3), 200);
+  const columnsRaw = parseBoundedInteger(single('columns', 1), 4);
+  const dayRaw = single('day', 10);
 
   return {
     tracks: list('track'),
@@ -357,15 +370,33 @@ export function parseEmbedOptions(
     showRoom: flag('room_label', true),
     showTrack: flag('track_label', true),
     showDescription: flag('description', true),
-    columns: Number.isFinite(columnsRaw) ? Math.min(Math.max(columnsRaw, 1), 4) : 3,
+    columns: columnsRaw ?? 3,
     accent: HEX.test(accentRaw) ? `#${accentRaw}` : null,
     theme: themeRaw === 'dark' || themeRaw === 'light' ? themeRaw : 'auto',
-    limit: Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : null,
+    limit: limitRaw,
     /** Sessionboard's own parameter name, kept so an existing embed URL ports across (`G-8`). */
     speaker: single('sb-speaker-id') ?? single('speaker'),
-    day: single('day'),
-    query: single('q') ?? '',
+    day: validDay(dayRaw),
+    query: single('q', MAX_EMBED_QUERY_LENGTH) ?? '',
   };
+}
+
+function singleValue(value: string | undefined, maxLength: number): string | null {
+  return value !== undefined && value.length <= maxLength ? value : null;
+}
+
+function parseBoundedInteger(value: string | null, maximum: number): number | null {
+  if (!value || !/^[1-9]\d*$/.test(value)) return null;
+  const parsed = Number(value);
+  return parsed <= maximum ? parsed : null;
+}
+
+function validDay(value: string | null): string | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+    ? value
+    : null;
 }
 
 export function applyFilters(bundle: PublicBundle, options: EmbedOptions): PublicBundle {

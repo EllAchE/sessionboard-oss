@@ -48,4 +48,11 @@ export type AirtablePanel = {
   log: SyncLogRow[];
 };
 
+export type SmsPanel = {
+  /** `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` + `SMS_FROM` all set. */
+  configured: boolean;
+  transport: 'twilio' | 'log';
+  from: string | null;
+};
+
 export type TestResult = { ok: boolean; message: string; extra: string | null };

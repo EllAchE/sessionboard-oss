@@ -124,6 +124,9 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       dietaryNotes: text(formData, 'dietaryNotes'),
       accessibilityNotes: text(formData, 'accessibilityNotes'),
       links,
+      phone: text(formData, 'phone'),
+      notifyEmail: formData.get('notifyEmail') === 'on',
+      notifySms: formData.get('notifySms') === 'on',
     });
 
     refresh(eventSlug);

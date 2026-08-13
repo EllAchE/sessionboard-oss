@@ -66,6 +66,12 @@ export type EventWire = {
   endsOn: string | null;
 };
 
+export type NotificationsWire = {
+  phone: string | null;
+  notifyEmail: boolean;
+  notifySms: boolean;
+};
+
 export function humanizeFieldType(value: string): string {
   const spaced = value.replace(/_/g, ' ');
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);

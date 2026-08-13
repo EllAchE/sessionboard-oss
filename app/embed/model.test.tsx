@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EMPTY_SESSION_FACETS,
   facetValues,
+  parseEmbedOptions,
   sessionMatches,
   sessionMatchesFacets,
   speakerMatches,
@@ -94,6 +95,33 @@ describe('public programme discovery', () => {
     expect(facetValues([session, repeated], (entry) => entry.tags.map((tag) => tag.name))).toEqual([
       { value: 'Stoicism', count: 2 },
     ]);
+  });
+});
+
+describe('embed query boundaries', () => {
+  it('accepts bounded repeated list filters without collapsing them', () => {
+    expect(parseEmbedOptions({ track: ['Platform', 'Design'] }).tracks).toEqual([
+      'Platform',
+      'Design',
+    ]);
+  });
+
+  it('defaults ambiguous scalars and oversized values', () => {
+    const options = parseEmbedOptions({
+      q: ['first', 'second'],
+      limit: '999999',
+      room: 'x'.repeat(121),
+      day: '2026-02-30',
+    });
+    expect(options.query).toBe('');
+    expect(options.limit).toBeNull();
+    expect(options.rooms).toEqual([]);
+    expect(options.day).toBeNull();
+  });
+
+  it('bounds comma-separated filter cardinality', () => {
+    const track = Array.from({ length: 21 }, (_, index) => `track-${index}`).join(',');
+    expect(parseEmbedOptions({ track }).tracks).toEqual([]);
   });
 });
 

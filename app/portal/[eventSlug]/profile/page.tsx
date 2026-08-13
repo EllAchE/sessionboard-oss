@@ -1,3 +1,4 @@
+import { getNotificationPrefs } from '@/lib/services/settings';
 import { headshotUrl, portalSession } from '../context';
 import styles from '../../portal.module.css';
 import { HeadshotPanel } from './HeadshotPanel';
@@ -12,7 +13,8 @@ export default async function ProfilePage({
   params: Promise<{ eventSlug: string }>;
 }) {
   const { eventSlug } = await params;
-  const { me } = await portalSession(eventSlug);
+  const { me, ctx } = await portalSession(eventSlug);
+  const notifications = await getNotificationPrefs(ctx.actor.userId);
 
   return (
     <div className={styles.stack}>
@@ -25,7 +27,7 @@ export default async function ProfilePage({
       </div>
 
       <HeadshotPanel eventSlug={eventSlug} headshotUrl={headshotUrl(eventSlug, me.headshotFileId)} />
-      <ProfileForm eventSlug={eventSlug} me={me} />
+      <ProfileForm eventSlug={eventSlug} me={me} notifications={notifications} />
     </div>
   );
 }

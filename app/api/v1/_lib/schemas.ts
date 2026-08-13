@@ -104,17 +104,47 @@ export const submissionSchema = z
   })
   .describe('A CFP submission. Requires an API key.');
 
-export const sessionListQuery = z.object({
-  status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
-  track: z.string().optional().describe('Track name or id'),
-  room: z.string().optional().describe('Room name or id'),
-});
+const queryFilter = z.string().trim().min(1).max(120);
 
-export const submissionListQuery = z.object({
-  status: z
-    .enum(['draft', 'submitted', 'under_review', 'accepted', 'declined', 'waitlisted', 'withdrawn'])
-    .optional(),
-  limit: z.coerce.number().int().min(1).max(200).optional().describe('Defaults to 100'),
+export const sessionListQuery = z
+  .object({
+    status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
+    track: queryFilter.optional().describe('Track name or id'),
+    room: queryFilter.optional().describe('Room name or id'),
+  })
+  .strict();
+
+export const submissionListQuery = z
+  .object({
+    status: z
+      .enum(['draft', 'submitted', 'under_review', 'accepted', 'declined', 'waitlisted', 'withdrawn'])
+      .optional(),
+    limit: z
+      .preprocess(
+        (value) =>
+          typeof value === 'string' && /^[1-9]\d{0,2}$/.test(value) ? Number(value) : value,
+        z.number().int().min(1).max(200),
+      )
+      .optional()
+      .describe('Defaults to 100'),
+  })
+  .strict();
+
+const answerText = z.string().max(20_000);
+const answerValue = z.union([
+  answerText,
+  z.number(),
+  z.boolean(),
+  z.array(z.string().max(1_000)).max(100),
+  z.null(),
+]);
+const answers = z.record(z.string().min(1).max(120), answerValue).superRefine((value, context) => {
+  if (Object.keys(value).length > 100) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Answers are limited to 100 fields',
+    });
+  }
 });
 
 const speakerNameInput = z.string().transform((value, context) => {
@@ -133,12 +163,11 @@ export const createSubmissionBody = z
   .object({
     email: z.string().email().describe('Submitter email; an account is created if none exists'),
     name: speakerNameInput.optional().describe('Submitter display name'),
-    answers: z
-      .record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]))
-      .describe(
-        'Keyed by the form field key. Built-in keys are title, description, format, track, level, tags.',
-      ),
+    answers: answers.describe(
+      'Keyed by the form field key. Built-in keys are title, description, format, track, level, tags.',
+    ),
   })
+  .strict()
   .describe('A submission to a published form');
 
 export const createSubmissionResponse = z.object({

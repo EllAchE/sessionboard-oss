@@ -75,6 +75,7 @@ export const taskStatus = pgEnum('task_status', [
 ]);
 export const contentRevisionKind = pgEnum('content_revision_kind', ['session', 'participant']);
 export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
+export const smsStatus = pgEnum('sms_status', ['queued', 'sent', 'failed']);
 export const syncStatus = pgEnum('sync_status', ['pending', 'synced', 'failed']);
 export const scheduledSessionStatus = pgEnum('scheduled_session_status', [
   'draft',
@@ -126,6 +127,9 @@ export const user = pgTable('user', {
   id: id(),
   email: text('email').notNull().unique(),
   name: text('name'),
+  phone: text('phone'),
+  notifyEmail: boolean('notify_email').notNull().default(true),
+  notifySms: boolean('notify_sms').notNull().default(false),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -884,6 +888,7 @@ export const emailTemplate = pgTable(
     name: text('name').notNull(),
     subject: text('subject').notNull(),
     bodyMarkdown: text('body_markdown').notNull(),
+    smsBody: text('sms_body'),
     enabled: boolean('enabled').notNull().default(true),
     attachIcs: boolean('attach_ics').notNull().default(false),
     createdAt: createdAt(),
@@ -916,6 +921,24 @@ export const emailLog = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ byEventCreated: index('email_log_event_created_idx').on(t.eventId, t.createdAt) }),
+);
+
+export const smsLog = pgTable(
+  'sms_log',
+  {
+    id: id(),
+    eventId: uuid('event_id').references(() => event.id, { onDelete: 'cascade' }),
+    toPhone: text('to_phone').notNull(),
+    fromPhone: text('from_phone').notNull(),
+    body: text('body').notNull(),
+    templateKey: text('template_key'),
+    status: smsStatus('status').notNull().default('queued'),
+    error: text('error'),
+    providerMessageId: text('provider_message_id'),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => ({ byEventCreated: index('sms_log_event_created_idx').on(t.eventId, t.createdAt) }),
 );
 
 // ---------------------------------------------------------------------------
