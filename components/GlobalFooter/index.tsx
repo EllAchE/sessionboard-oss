@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Columns3, ExternalLink, Gift, Github, Globe2, Linkedin, Twitter } from 'lucide-react';
+import { ExternalLink, Gift, Github, Globe2, Linkedin, Twitter } from 'lucide-react';
+import { CiceroMark } from '@/components/CiceroBrand';
 import styles from './GlobalFooter.module.css';
 
 const SOCIAL_LINKS = [
@@ -35,9 +36,7 @@ export function GlobalFooter() {
       <div className={styles.inner}>
         <div className={styles.identity}>
           <Link className={styles.brand} href="/" aria-label="Cicero home">
-            <span className={styles.brandMark} aria-hidden="true">
-              <Columns3 size={16} />
-            </span>
+            <CiceroMark size={28} />
             <span>Cicero</span>
           </Link>
           <p>Open-source conference operations, from call for speakers to show day.</p>
