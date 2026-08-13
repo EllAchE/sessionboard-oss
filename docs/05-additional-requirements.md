@@ -44,7 +44,8 @@ Rows marked DEFECT each have a fix in flight; where the fix is already decided, 
 which resolution won and why, so the reasoning is not lost in a closed pull request.
 
 Status was assessed against `8489078` on `main` (2026-08-13) by reading the code, not by exercising
-the deployed instance. Line references are to that revision and will drift. These IDs are **not** in
+the deployed instance; §2 was re-verified against `2bd0ce5` after `main` moved. Line references are
+to those revisions and will drift. These IDs are **not** in
 [`requirements-audit-checklist.md`](requirements-audit-checklist.md) — that checklist audits brief
 requirements against a pinned revision and should not be retro-fitted with a different scope.
 
@@ -95,12 +96,14 @@ updated to `sent`/`failed`, and `sendSms()` never throws.
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-8 | **[REQUIRED]** | SHIPPED | **SMS as a delivery channel alongside email**, across all seven templated events (submission confirmation, accept/decline, session invite/cancel, task reminder, form deadline) plus ad-hoc campaigns with an `auto`/`email`/`sms` selector. Admin archive at `/admin/sms`, transport badge on the integrations screen |
+| AR-8 | **[REQUIRED]** | SHIPPED | **SMS as a delivery channel alongside email**, across all eight templated events (submission confirmation, accept/waitlist/decline, session invite/cancel, task reminder, form deadline) plus ad-hoc campaigns with an `auto`/`email`/`sms` selector. Admin archive at `/admin/sms`, transport badge on the integrations screen |
 | AR-9 | **[REQUIRED]** | OUTSTANDING | **Consent and opt-out.** There is no `STOP`/`HELP` handling, no inbound Twilio webhook, and no consent record — only a Zod refusal to enable `notifySms` without a phone number. This is a legal requirement in most jurisdictions Cicero would send into, not a nicety, and it is the single riskiest gap in this document |
 | AR-10 | **[REQUIRED]** | OUTSTANDING | **Normalize and validate phone numbers to E.164.** `user.phone` is `z.string().trim().max(32)` (`lib/services/settings.ts:1033`). Anything a user types is passed to Twilio as-is, so a locally-formatted number fails at dispatch and surfaces as a `failed` row nobody reads |
 | AR-11 | **[IMPORTANT]** | OUTSTANDING | **Verify ownership of a phone number** before sending to it — an OTP round trip on save. Without it, a typo sends a speaker's schedule change to a stranger |
-| AR-12 | **[IMPORTANT]** | OUTSTANDING | **Give the default templates real SMS bodies.** `email_template.sms_body` exists and the editor exposes it, but none of the seven `DEFAULT_TEMPLATES` set one — so out of the box every SMS is the email body with markdown stripped and truncated to `SMS_MAX_LENGTH` (`lib/services/comms.ts:976-995`; `DEFAULT_TEMPLATES` at `:666`). The capability is built and unused |
+| AR-12 | **[IMPORTANT]** | OUTSTANDING | **Give the default templates real SMS bodies.** `email_template.sms_body` exists and the editor exposes it, but none of the eight `DEFAULT_TEMPLATES` set one — so out of the box every SMS is the email body with markdown stripped and truncated to `SMS_MAX_LENGTH` (`lib/services/comms.ts:976-995`; `DEFAULT_TEMPLATES` at `:666`). The capability is built and unused. Bodies must be **GSM-7 only**: one emoji or curly apostrophe re-encodes the message as UCS-2 and takes a 300-character send from 2 segments to 5 (see [§6](#6-what-the-add-ons-cost-a-self-hoster)) |
 | AR-13 | **[IMPORTANT]** | OUTSTANDING | **Record final delivery state.** `sms_log.status` stops at `sent`, meaning "Twilio accepted it". Delivered, undelivered and carrier rejection need Twilio's status callback, which requires the same inbound webhook as AR-9 |
+| AR-13a | **[REQUIRED]** | OUTSTANDING | **Give `/admin/sms` the redaction `/admin/mail` already has.** #88 stopped the mail archive rendering other people's sign-in links; the SMS archive never got the same treatment and prints `selected.body` verbatim in a `<pre>` to any organizer on the event (`app/admin/sms/page.tsx:152`), where `/admin/mail` routes the body through `magicLinkMayBeShown` first. It is latent only because no shipped body carries a credential and `stripMarkdownForSms` happens to drop the URL out of `[text](url)` — neither is a control. Harder than the mail case: `magicLinkMayBeShown` keys on an email address and `sms_log` rows carry `toPhone`, so it needs a phone → user → email resolution first |
+| AR-13b | **[IMPORTANT]** | OUTSTANDING | **Make `{{portal.link}}` behave predictably in an SMS body.** `PORTAL_LINK_PATTERN` is matched only against the subject and the email body, so an organizer who types `{{portal.link}}` into the SMS field via the template editor gets **silently nothing** rather than a link or an error. **Sequenced deliberately after AR-13a**: making it render would start minting 14-day sign-in credentials into `sms_log` rows that the archive above still displays unredacted. Fix the reader first, then the writer |
 | AR-14 | **[OPTIONAL]** | OUTSTANDING | **Quiet hours and rate ceiling per recipient.** Scheduled reminder jobs can fire at any hour in the recipient's timezone; email tolerates that and SMS does not |
 
 ## 3. Notification management in settings
