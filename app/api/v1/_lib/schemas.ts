@@ -202,6 +202,49 @@ const speakerNameInput = z.string().transform((value, context) => {
   }
 });
 
+/**
+ * `F-6`. The same rules the single `name` box gets, except that a participant's halves are not
+ * optional: `PARTICIPANT_BUILTIN_META` locks First Name, Last Name and Email required, because a
+ * person missing one of them is a row nobody can contact or print.
+ */
+const requiredSpeakerNameInput = z.string().transform((value, context) => {
+  try {
+    const parsed = parseSpeakerName(value);
+    if (parsed) return parsed;
+    context.addIssue({ code: 'custom', message: 'This name is required' });
+  } catch (error) {
+    context.addIssue({
+      code: 'custom',
+      message: error instanceof Error ? error.message : 'Invalid speaker name',
+    });
+  }
+  return z.NEVER;
+});
+
+const participantRoleKind = z
+  .enum(['speaker', 'co_speaker', 'moderator', 'panelist'])
+  .describe('Must be a role this form offers; `F-7` counts are enforced against it');
+
+/**
+ * `F-6` / `F-7`. One person on a submission, exactly as the web CFP's participant stage collects
+ * them: the two name halves and the email land on that person's own account, the biography on their
+ * own participant row, and the role is checked against the form's configuration before anything is
+ * written.
+ */
+export const createSubmissionParticipant = z
+  .object({
+    firstName: requiredSpeakerNameInput.describe('Given name'),
+    lastName: requiredSpeakerNameInput.describe('Family name'),
+    email: z
+      .string()
+      .email()
+      .describe("The first person is the submitter, so their address must be the signed-in speaker's"),
+    phone: z.string().max(40).nullish().describe('Mobile number, when the form asks for one'),
+    biography: z.string().max(5_000).nullish().describe('Markdown'),
+    role: participantRoleKind.default('speaker'),
+  })
+  .strict();
+
 export const createSubmissionBody = z
   .object({
     email: z
@@ -217,6 +260,20 @@ export const createSubmissionBody = z
     answers: answers.describe(
       'Keyed by the form field key. Built-in keys are title, description, format, track, level, tags.',
     ),
+    /**
+     * Omitting this keeps the pre-`F-6` behaviour exactly — the signed-in speaker is linked as the
+     * sole primary speaker — but it is still measured against the form's `F-7` minimums, because a
+     * form that asks for a moderator does not stop asking because the submission arrived through a
+     * different door.
+     */
+    participants: z
+      .array(createSubmissionParticipant)
+      .min(1)
+      .max(50)
+      .optional()
+      .describe(
+        'Only accepted by a form with collectsParticipants. The first person is the submitter. Omit to file as the signed-in speaker alone.',
+      ),
   })
   .strict()
   .describe('A submission to a published form');
@@ -224,7 +281,15 @@ export const createSubmissionBody = z
 export const createSubmissionResponse = z.object({
   id: z.string(),
   ref: z.string(),
-  status: z.enum(['draft', 'submitted']),
+  /**
+   * `F-4` is why `accepted` is here. A form whose `targetType` is `session` is collecting the
+   * programme itself rather than proposals to decide on, so a completed submission to it lands
+   * decided and mints its session immediately. Read `targetType` off the form to know which of the
+   * two a submit will return.
+   */
+  status: z
+    .enum(['draft', 'submitted', 'accepted'])
+    .describe('accepted only on a form whose targetType is session'),
   title: z.string(),
 });
 
@@ -234,10 +299,30 @@ const conditionSchema = z.object({
   value: z.union([z.string(), z.number()]).optional(),
 });
 
+/**
+ * `F-6` split `form_field` into two namespaces, so `builtinKey` alone stopped being able to say what
+ * a question is: `title` belongs to the abstract and `firstName` belongs to a person, and the two
+ * sets are read through different metadata tables. `entity` is the discriminator that tells them
+ * apart, and it arrives beside the existing keys rather than replacing any of them.
+ *
+ * `builtinKey` keeps its exact abstract-only enum — widening it to cover participant keys would
+ * retype a shipped field and hand an existing consumer a value its switch has no case for. A
+ * participant question carries `participantKey` instead, and `builtinKey` stays null there.
+ */
 export const formFieldSchema = z.object({
   id: z.string(),
   key: z.string(),
-  builtinKey: z.enum(['title', 'description', 'format', 'track', 'level', 'tags']).nullable(),
+  entity: z
+    .enum(['abstract', 'participant'])
+    .describe('Which entity this question is about. Defaults to abstract, as it always did.'),
+  builtinKey: z
+    .enum(['title', 'description', 'format', 'track', 'level', 'tags'])
+    .nullable()
+    .describe('Abstract built-ins only; always null when entity is participant'),
+  participantKey: z
+    .enum(['firstName', 'lastName', 'email', 'phone', 'biography'])
+    .nullable()
+    .describe('Participant built-ins only; always null when entity is abstract'),
   type: z.enum([
     'short_text',
     'long_text',
@@ -267,22 +352,66 @@ export const formFieldSchema = z.object({
   charLimitGroup: z.string().nullable(),
 });
 
+/**
+ * `F-9` exists because the internal form name was leaking onto public surfaces, and this is a public
+ * surface. `name` therefore carries the same string the web CFP renders — the organizer's
+ * `externalTitle` when they set one, the internal name until they do — which is exactly the fallback
+ * the submit page uses. Nothing is renamed or retyped; a form with no external title set is byte for
+ * byte what it was, and `externalTitle` arrives beside `name` for a consumer that wants the raw
+ * field.
+ */
+const publicFormTitles = {
+  name: z
+    .string()
+    .describe('The public title: externalTitle when the organizer set one, the internal name until then'),
+  externalTitle: z.string().describe('`F-9`: what the submitter sees. Same fallback as `name`.'),
+};
+
 export const openCallSchema = z.object({
   slug: z.string(),
-  name: z.string(),
+  ...publicFormTitles,
   closesAt: z.string().nullable().describe('ISO 8601'),
 });
 
+/** `F-7`. One role this form offers, what the organizer calls it, and how many may hold it. */
+export const formParticipantRoleSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['speaker', 'co_speaker', 'moderator', 'panelist']),
+  label: z.string().describe('The organizer’s name for this role on this form'),
+  position: z.number().int(),
+  minCount: z.number().int().describe('How many must hold it for a submission to be complete'),
+  maxCount: z.number().int().nullable().describe('Null means no ceiling beyond maxParticipants'),
+});
+
+/**
+ * `0008` gave a form a target, a participant block and a welcome screen, and none of it reached this
+ * payload — so an agent reading the contract could not tell a session-target form from an abstract
+ * one, could not know participants were expected, and could not see the participant questions at
+ * all. Every addition sits beside the existing keys; not one of them changes.
+ */
 export const publicFormSchema = z.object({
   id: z.string(),
   slug: z.string(),
-  name: z.string(),
+  ...publicFormTitles,
+  pageHeading: z.string().nullable().describe('`F-9`: the welcome screen heading, at most 15 characters'),
+  showWelcome: z.boolean().describe('`F-9`: false hides the welcome copy without deleting it'),
   introMarkdown: z.string().nullable(),
   opensAt: z.string().nullable().describe('ISO 8601'),
   closesAt: z.string().nullable().describe('ISO 8601'),
   allowDrafts: z.boolean(),
   maxSubmissionsPerUser: z.number().int().nullable(),
-  fields: z.array(formFieldSchema),
+  targetType: z
+    .enum(['abstract', 'session'])
+    .describe('`F-4`: a session-target form lands accepted and mints its session on submit'),
+  collectsParticipants: z
+    .boolean()
+    .describe('`F-4`: true when a submission carries a cast, collected through participantFields'),
+  maxParticipants: z.number().int().nullable().describe('`F-7`: null means no overall cap'),
+  fields: z.array(formFieldSchema).describe('The abstract questions, in running order'),
+  participantFields: z
+    .array(formFieldSchema)
+    .describe('`F-6`: the questions asked about each person. Empty unless collectsParticipants.'),
+  roles: z.array(formParticipantRoleSchema).describe('`F-7`: the roles this form offers'),
 });
 
 export const mySubmissionSchema = z.object({
@@ -402,8 +531,22 @@ export const updateSpeakerProfileBody = z
   })
   .strict();
 
+/**
+ * `S-16` turned one task into several rows — one per session a speaker is on, or one shared row per
+ * session team — and the payload still described the flat "one response per person, ever" world.
+ * Without `taskId` a consumer cannot tell that four rows are four answers to the same question, and
+ * without `scope` / `shared` it cannot tell the row it holds alone from the one its whole panel is
+ * looking at and may already have filled in.
+ */
 export const speakerTaskSchema = z.object({
   assignmentId: z.string(),
+  taskId: z.string().describe('`S-16`: the task these rows answer. Group rows by it.'),
+  scope: z
+    .enum(['contact', 'group', 'submission'])
+    .describe('contact is once per person, submission once per session, group once per session team'),
+  shared: z
+    .boolean()
+    .describe('True when the whole session team reads and completes this one row'),
   name: z.string(),
   descriptionMarkdown: z.string().nullable(),
   kind: z.enum(['form', 'file_upload', 'acknowledge', 'link']),
@@ -415,6 +558,12 @@ export const speakerTaskSchema = z.object({
   linkUrl: z.string().nullable(),
   submissionId: z.string().nullable(),
   submissionTitle: z.string().nullable(),
+  pinnedSubmissionId: z
+    .string()
+    .nullable()
+    .describe(
+      '`S-16`: the session the task itself is pinned to, which a contact-scoped task has without this row having one',
+    ),
   answers: answers.nullable(),
   form: z
     .object({ id: z.string(), name: z.string(), fields: z.array(formFieldSchema) })

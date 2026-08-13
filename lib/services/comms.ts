@@ -32,6 +32,7 @@ import {
 import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail, type OutgoingIcs } from '../mail';
 import { escapeMarkdownText, markdownToText, renderMarkdown } from '../markdown';
+import { splitPersonName } from '../person-name';
 import { sendSms } from '../sms';
 import { listEventsForUser, pickDefaultEvent } from './events';
 
@@ -359,6 +360,8 @@ export async function loadRecipientGraph(eventId: string) {
       notifyEmail: user.notifyEmail,
       notifySms: user.notifySms,
       userName: user.name,
+      /** `F-6`. The real column, so `speaker.firstName` stops guessing at a string. */
+      userFirstName: user.firstName,
       displayName: participant.displayName,
       company: participant.company,
       jobTitle: participant.jobTitle,
@@ -477,7 +480,7 @@ export async function resolveRecipients(
         event,
         branding,
         lookups,
-        person: { ...person, name },
+        person: { ...person, name, firstName: person.userFirstName },
         submission: preferred,
         session,
         openTasks,
@@ -543,11 +546,36 @@ async function loadLookups(eventId: string): Promise<Lookups> {
   };
 }
 
+/**
+ * `F-6`. `speaker.firstName` opens most of the templates in this file, and it used to be
+ * `name.split(' ')[0]` — which is not the first name of "Marcus Tullius Cicero", of anyone with a
+ * two-word given name, or of anyone whose display name is a company. `user.first_name` is a real
+ * column now and it is what the speaker typed into their own profile, so it wins outright.
+ *
+ * The fallback is the same one `getProfileName` gives the portal: an account imported before the
+ * split has no halves, and `splitPersonName` derives them from the one string it does have. Two
+ * surfaces guessing at the same missing value by two different rules is how a greeting and a profile
+ * page end up disagreeing about somebody's name.
+ */
+export function speakerFirstName(
+  firstName: string | null | undefined,
+  displayName: string,
+): string {
+  return firstName?.trim() || splitPersonName(displayName).firstName || displayName;
+}
+
 function buildVars(input: {
   event: EventRow;
   branding: EmailBranding;
   lookups: Lookups;
-  person: { name: string; email: string; company: string | null; jobTitle: string | null; pronouns: string | null };
+  person: {
+    name: string;
+    firstName: string | null;
+    email: string;
+    company: string | null;
+    jobTitle: string | null;
+    pronouns: string | null;
+  };
   submission: RecipientSubmission | null;
   session: typeof scheduledSession.$inferSelect | null;
   openTasks: RecipientTask[];
@@ -581,7 +609,7 @@ function buildVars(input: {
     'event.supportEmail': branding.supportEmail ?? '',
 
     'speaker.name': person.name,
-    'speaker.firstName': person.name.split(' ')[0] ?? person.name,
+    'speaker.firstName': speakerFirstName(person.firstName, person.name),
     'speaker.email': person.email,
     'speaker.company': person.company ?? '',
     'speaker.jobTitle': person.jobTitle ?? '',
@@ -1677,6 +1705,7 @@ export async function runDraftDeadlineReminders(
         id: user.id,
         email: user.email,
         name: user.name,
+        firstName: user.firstName,
         phone: user.phone,
         notifyEmail: user.notifyEmail,
         notifySms: user.notifySms,
@@ -1725,7 +1754,7 @@ export async function runDraftDeadlineReminders(
         'event.name': event.name,
         'event.url': branding.eventUrl,
         'speaker.name': person.name ?? person.email,
-        'speaker.firstName': (person.name ?? person.email).split(' ')[0],
+        'speaker.firstName': speakerFirstName(person.firstName, person.name ?? person.email),
         'speaker.email': person.email,
         'form.name': row.name,
         'form.closesAt': formatInZone(row.closesAt, event.timezone, false),

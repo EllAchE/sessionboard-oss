@@ -10,6 +10,7 @@ import {
 } from '@/lib/services/portal';
 import { ensureAssignments, type PortalTask } from '@/lib/services/tasks';
 import { requireSpeakerSession } from './auth';
+import { formFieldPayload } from './forms';
 
 export type SpeakerApiSession = {
   ctx: EventContext;
@@ -92,9 +93,20 @@ export async function speakerProfilePayload(ctx: EventContext, me: Participant) 
   };
 }
 
+/**
+ * `S-16`. One task now produces several assignment rows — one per session a speaker is on, or a
+ * single shared row per session team — and this payload described none of that. `taskId` is what
+ * lets a consumer read four rows as four answers to one question rather than as four unrelated
+ * chores; `scope` and `shared` are what let it tell the row it holds alone from the one its whole
+ * panel is looking at and may already have completed. All three come off the assignment, which is
+ * where `reconcileAssignments` keeps the task's own scope in step.
+ */
 export function speakerTaskPayload(row: PortalTask) {
   return {
     assignmentId: row.assignmentId,
+    taskId: row.taskId,
+    scope: row.scope,
+    shared: row.shared,
     name: row.name,
     descriptionMarkdown: row.descriptionMarkdown,
     kind: row.kind,
@@ -106,9 +118,16 @@ export function speakerTaskPayload(row: PortalTask) {
     linkUrl: row.linkUrl,
     submissionId: row.submissionId,
     submissionTitle: row.submissionTitle,
+    pinnedSubmissionId: row.pinnedSubmissionId,
     answers: row.answers,
     form: row.form
-      ? { id: row.form.id, name: row.form.name, fields: row.form.fields }
+      ? {
+          id: row.form.id,
+          name: row.form.name,
+          // Through the same projection the public CFP contract uses, so `formFieldSchema` is true
+          // of a task form as well as of a CFP field rather than of only one of them.
+          fields: row.form.fields.map(formFieldPayload),
+        }
       : null,
     fileRequest: row.fileRequest,
     files: row.files.map((file) => ({

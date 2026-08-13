@@ -380,7 +380,17 @@ export function isAcceptingSubmissions(
 // Loading the public form
 // ---------------------------------------------------------------------------
 
-export type OpenCallSummary = { slug: string; name: string; closesAt: Date | null };
+/**
+ * `externalTitle` carries `F-9`'s public title, resolved with the same fallback `loadPublicForm`
+ * uses. `name` is left exactly as it was — the internal label — so the surfaces already reading it
+ * are untouched and a caller that must not leak it has something else to read.
+ */
+export type OpenCallSummary = {
+  slug: string;
+  name: string;
+  externalTitle: string;
+  closesAt: Date | null;
+};
 
 /**
  * The open calls for speakers on an event's public front door. A call nobody can find is a call
@@ -397,7 +407,12 @@ export async function listOpenCalls(eventId: string, now = new Date()): Promise<
   return rows
     .filter((row) => isAcceptingSubmissions(row, now))
     .sort((a, b) => (a.closesAt?.getTime() ?? Infinity) - (b.closesAt?.getTime() ?? Infinity))
-    .map((row) => ({ slug: row.slug, name: row.name, closesAt: row.closesAt }));
+    .map((row) => ({
+      slug: row.slug,
+      name: row.name,
+      externalTitle: row.externalTitle?.trim() || row.name,
+      closesAt: row.closesAt,
+    }));
 }
 
 export type PublicFormBundle = {

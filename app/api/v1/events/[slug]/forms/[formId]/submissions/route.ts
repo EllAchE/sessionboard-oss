@@ -4,12 +4,16 @@ import { form as formTable } from '@/db/schema';
 import { normalizeEmail } from '@/lib/auth';
 import { forbidden, invalid, notFound } from '@/lib/errors';
 import type { AnswerMap } from '@/lib/forms/contract';
+import { assertParticipantLimits } from '@/lib/services/forms';
 import {
   ensureParticipant,
   isAcceptingSubmissions,
   linkPrimarySpeaker,
   loadPublicForm,
+  saveParticipants,
   saveSubmission,
+  validateParticipants,
+  type ParticipantInput,
 } from '@/lib/services/submissions';
 import { requireSpeakerSession } from '../../../../../_lib/auth';
 import { requireEvent } from '../../../../../_lib/queries';
@@ -25,6 +29,12 @@ export const dynamic = 'force-dynamic';
  *
  * `formId` in the path accepts either the form's UUID or its slug, because a caller reading
  * `/api/v1/events/:slug` sees neither and will try whichever they were given.
+ *
+ * `F-4`, `F-6` and `F-7` all reach this handler through the form's own configuration rather than
+ * through anything the caller says. That is deliberate: this route used to call `saveSubmission`
+ * with no `targetType` and no participant stage at all, so a session-target form filed through the
+ * API landed `submitted` with no session minted while the same form filed through the web landed
+ * `accepted` with one — one requirement, two answers, depending on the door.
  */
 export async function POST(
   request: Request,
@@ -47,11 +57,52 @@ export async function POST(
       throw invalid('This form is not accepting submissions right now');
     }
 
-    const participantId = await ensureParticipant(
-      event.id,
-      ctx.actor.userId,
-      body.name ?? ctx.actor.name,
-    );
+    if (body.participants && !bundle.form.collectsParticipants) {
+      throw invalid('This form does not collect participants');
+    }
+    // The first person *is* the account, which is what stops a submission being filed under someone
+    // else's address. The web flow overwrites the address silently because the box is disabled on
+    // screen; an agent sent a different one on purpose and should be told, not corrected.
+    if (body.participants && normalizeEmail(body.participants[0].email) !== ctx.actor.email) {
+      throw forbidden('The first participant must be the signed-in speaker');
+    }
+
+    const people: ParticipantInput[] = (body.participants ?? []).map((person, index) => ({
+      firstName: person.firstName,
+      lastName: person.lastName,
+      email: index === 0 ? ctx.actor.email : person.email,
+      phone: person.phone ?? null,
+      biography: person.biography ?? null,
+      role: person.role,
+    }));
+
+    const collecting = bundle.form.collectsParticipants && people.length > 0;
+    const isSubmit = body.mode === 'submit';
+
+    if (collecting && isSubmit) {
+      validateParticipants(
+        bundle.participantFields,
+        people,
+        bundle.roles,
+        bundle.form.maxParticipants,
+      );
+    }
+
+    /**
+     * `F-7` still applies when the caller sent no cast: the submitter is then the one and only
+     * speaker, and a form asking for a moderator or a second panelist has to say so. Checked before
+     * anything is written, so a request that cannot satisfy the form does not leave a submission —
+     * or, on a session-target form, a session — behind it.
+     */
+    if (!collecting && bundle.form.collectsParticipants && isSubmit) {
+      await assertParticipantLimits(bundle.form.id, ['speaker']);
+    }
+
+    const submitterName = collecting
+      ? [people[0].firstName, people[0].lastName].filter(Boolean).join(' ').trim() || null
+      : (body.name ?? ctx.actor.name);
+
+    const participantId = await ensureParticipant(event.id, ctx.actor.userId, submitterName);
 
     const saved = await saveSubmission({
       eventId: event.id,
@@ -64,9 +115,26 @@ export async function POST(
         maxSubmissionsPerUser: bundle.form.maxSubmissionsPerUser,
       },
       mode: body.mode,
+      targetType: bundle.form.targetType,
     });
 
-    await linkPrimarySpeaker(saved.id, participantId);
+    if (collecting && isSubmit) {
+      const ids = await saveParticipants({
+        eventId: event.id,
+        formId: bundle.form.id,
+        submissionId: saved.id,
+        submitterUserId: ctx.actor.userId,
+        people,
+      });
+      // Measured against what actually landed rather than against what was posted — the same guard,
+      // reading the same configuration, that the web submit and the portal's share flow run.
+      await assertParticipantLimits(
+        bundle.form.id,
+        people.slice(0, ids.length).map((person) => person.role),
+      );
+    } else {
+      await linkPrimarySpeaker(saved.id, participantId);
+    }
 
     return json(
       {
