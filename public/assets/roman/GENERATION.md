@@ -39,9 +39,11 @@ garment details, and optional jewelry rather than being represented only by remo
 Callers can provide an explicit gender for known people, as the historically named First Settlement
 seed does, while generic speaker keys use the balanced deterministic assignment.
 
-Run `bun run verify:headshots` to check all 600 outputs for exact byte duplicates, repeated visual
-signatures, a weighted near-duplicate threshold, and aggregate byte size. The development-only
-`/roman-headshots` gallery alternates square and circular masks for manual crop review.
+Run `bun run verify:headshots` to check all 600 possible outputs for exact byte duplicates, repeated
+visual signatures, a weighted near-duplicate threshold, and aggregate byte size. Portraits shown in
+the product gallery always belong to database participant records; after loading the First
+Settlement seed, `/first-settlement/speakers?view=gallery` shows its twelve confirmed profiles. The
+development-only `/roman-headshots` URL redirects to that same database-backed gallery.
 
 ## Photo cutouts
 

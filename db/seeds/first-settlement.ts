@@ -39,25 +39,7 @@ import {
 const SLUG = 'first-settlement';
 const DAY = 86_400_000;
 
-const SENATE_PEOPLE = [
-  { email: 'octavian@first-settlement.example', name: 'Gaius Octavius' },
-  {
-    email: 'agrippa@first-settlement.example',
-    name: 'Marcus Vipsanius Agrippa',
-  },
-  {
-    email: 'plancus@first-settlement.example',
-    name: 'Lucius Munatius Plancus',
-  },
-  {
-    email: 'messalla@first-settlement.example',
-    name: 'Marcus Valerius Messalla Corvinus',
-  },
-  {
-    email: 'maecenas@first-settlement.example',
-    name: 'Gaius Cilnius Maecenas',
-  },
-  { email: 'taurus@first-settlement.example', name: 'Titus Statilius Taurus' },
+const REVIEWER_PEOPLE = [
   {
     email: 'calvisius@first-settlement.example',
     name: 'Gaius Calvisius Sabinus',
@@ -65,7 +47,12 @@ const SENATE_PEOPLE = [
   { email: 'arruntius@first-settlement.example', name: 'Lucius Arruntius' },
 ] as const;
 
-const REVIEWER_EMAILS = ['calvisius@first-settlement.example', 'arruntius@first-settlement.example'] as const;
+const SENATE_PEOPLE = [
+  ...ROMAN_PROFILE_ART.map(({ email, name }) => ({ email, name })),
+  ...REVIEWER_PEOPLE,
+] as const;
+
+const REVIEWER_EMAILS = REVIEWER_PEOPLE.map((person) => person.email);
 
 const SPEAKER_EMAILS = ROMAN_PROFILE_ART.map((entry) => entry.email);
 
@@ -635,58 +622,21 @@ export async function seedFirstSettlement(
 
   const profileArt = await seedProfileArt(db, senate.id, organizerUserId);
 
-  const profiles: Record<(typeof SPEAKER_EMAILS)[number], { title: string; house: string; bio: string }> = {
-    'octavian@first-settlement.example': {
-      title: 'Consul for the seventh time',
-      house: 'House of Caesar',
-      bio: 'Victor at Actium and principal author of the settlement. Presents himself here as the magistrate returning extraordinary powers to the state.',
-    },
-    'agrippa@first-settlement.example': {
-      title: 'Consul and commander',
-      house: 'Vipsanii',
-      bio: 'Commander, administrator, and Octavian’s closest collaborator. Brings the practical questions of provinces, fleets, and public works.',
-    },
-    'plancus@first-settlement.example': {
-      title: 'Consular senator',
-      house: 'Munatii Planci',
-      bio: 'Senior statesman traditionally credited with proposing the honorific Augustus during the January settlement.',
-    },
-    'messalla@first-settlement.example': {
-      title: 'Senator and orator',
-      house: 'Valerii Messallae',
-      bio: 'Former republican commander reconciled to the new order, with a practiced eye for the language that separates precedence from monarchy.',
-    },
-    'maecenas@first-settlement.example': {
-      title: 'Adviser and patron',
-      house: 'Cilnii',
-      bio: 'An equestrian guest among senators, concerned with diplomacy, civic culture, and how political settlements become public memory.',
-    },
-    'taurus@first-settlement.example': {
-      title: 'Commander and senator',
-      house: 'Statilii Tauri',
-      bio: 'Veteran commander of the civil wars, focused on the military institutions that must outlast them without becoming a new emergency.',
-    },
-  };
-
   const participants = await db
     .insert(participant)
     .values(
-      SPEAKER_EMAILS.map((email) => ({
+      ROMAN_PROFILE_ART.map((profile) => ({
         eventId: senate.id,
-        userId: userByEmail.get(email)!.id,
-        displayName: userByEmail.get(email)!.name ?? SENATE_PEOPLE.find((person) => person.email === email)!.name,
-        jobTitle: profiles[email].title,
-        company: profiles[email].house,
-        bioMarkdown: profiles[email].bio,
-        headshotFileId: profileArt.get(email),
+        userId: userByEmail.get(profile.email)!.id,
+        displayName: profile.name,
+        pronouns: profile.pronouns,
+        jobTitle: profile.title,
+        company: profile.organization,
+        bioMarkdown: profile.bio,
+        headshotFileId: profileArt.get(profile.email),
         timezone: 'Europe/Rome',
         workflowStatus: 'confirmed' as const,
-        links: [
-          {
-            label: 'Historical dossier',
-            url: 'https://example.com/first-settlement/speakers',
-          },
-        ],
+        links: [...profile.links],
       })),
     )
     .returning();
@@ -1028,7 +978,7 @@ export async function seedFirstSettlement(
   return {
     slug: SLUG,
     submissions: submissions.length,
-    speakers: acceptedParticipants.length,
+    speakers: participants.length,
     scheduledSessions: scheduled.length,
     tasks: tasks.length,
   };

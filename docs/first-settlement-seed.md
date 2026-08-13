@@ -34,6 +34,11 @@ Both initial creation and replacement require `--apply` and the exact
 whose slug is `first-settlement`, including its event-scoped database rows and stored profile art,
 then recreates it. It reuses existing Roman fixture users and creates only missing ones.
 
+The seed creates twelve confirmed speaker profiles—six women and six men—with generated portrait
+files stored through Cicero's normal file-storage path. The public speaker directory and gallery
+read those participant rows directly; the six dummy gallery-only profiles do not need placeholder
+sessions or submissions to become visible.
+
 The command does not delete `/demo`, events owned by the organizer or Roman fixture identities,
 unrelated events, global users, or memberships outside `/first-settlement`. Run the dry-run command
 immediately before every apply and verify the displayed database target.

@@ -2,6 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
+  applyFilters,
   EMPTY_SESSION_FACETS,
   facetValues,
   parseEmbedOptions,
@@ -122,6 +123,43 @@ describe('embed query boundaries', () => {
   it('bounds comma-separated filter cardinality', () => {
     const track = Array.from({ length: 21 }, (_, index) => `track-${index}`).join(',');
     expect(parseEmbedOptions({ track }).tracks).toEqual([]);
+  });
+
+  it('keeps confirmed directory profiles without sessions until a session filter is requested', () => {
+    const unplaced: PublicSpeaker = {
+      ...speaker,
+      id: 'speaker-unplaced',
+      slug: 'aemilia-fausta',
+      name: 'Aemilia Fausta',
+      sessionIds: [],
+    };
+    const bundle = {
+      event: {
+        id: 'event-1',
+        slug: 'republic',
+        name: 'The Republic',
+        tagline: null,
+        timezone: 'UTC',
+        startsOn: null,
+        endsOn: null,
+        websiteUrl: null,
+        venueName: null,
+      },
+      sessions: [session],
+      speakers: [speaker, unplaced],
+      tracks: [{ id: 'track-1', name: 'Leadership' }],
+      rooms: [{ id: 'room-1', name: 'Forum' }],
+    };
+
+    expect(applyFilters(bundle, parseEmbedOptions({})).speakers.map((entry) => entry.id)).toEqual([
+      speaker.id,
+      unplaced.id,
+    ]);
+    expect(
+      applyFilters(bundle, parseEmbedOptions({ track: 'Leadership' })).speakers.map(
+        (entry) => entry.id,
+      ),
+    ).toEqual([speaker.id]);
   });
 });
 

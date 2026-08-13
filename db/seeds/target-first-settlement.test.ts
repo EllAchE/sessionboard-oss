@@ -127,7 +127,7 @@ describe("First Settlement replacement boundary", () => {
       "demo",
       "roman-rehearsal",
     ]);
-    expect(users).toHaveLength(10);
+    expect(users).toHaveLength(16);
 
     events.push({
       id: "target-replacement",
@@ -144,7 +144,7 @@ describe("First Settlement replacement boundary", () => {
       "demo",
       "roman-rehearsal",
     ]);
-    expect(users).toHaveLength(10);
+    expect(users).toHaveLength(16);
     expect(users.map((candidate) => candidate.id)).toContain("organizer");
     expect(users.map((candidate) => candidate.id)).toContain("customer");
   });

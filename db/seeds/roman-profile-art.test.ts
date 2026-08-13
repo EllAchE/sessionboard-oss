@@ -31,9 +31,17 @@ describe('Roman profile art', () => {
     expect(
       assignments.every((entry) => {
         const svg = new TextDecoder().decode(entry.bytes);
-        return svg.includes('<svg') && svg.includes('classical man speaker portrait');
+        const profile = ROMAN_PROFILE_ART.find((candidate) => candidate.email === entry.speakerKey);
+        return Boolean(
+          profile && svg.includes('<svg') && svg.includes(`classical ${profile.gender} speaker portrait`),
+        );
       }),
     ).toBe(true);
+    expect(ROMAN_PROFILE_ART.filter((profile) => profile.gender === 'woman')).toHaveLength(6);
+    expect(ROMAN_PROFILE_ART.filter((profile) => profile.gender === 'man')).toHaveLength(6);
+    expect(new Set(ROMAN_PROFILE_ART.map((profile) => profile.name)).size).toBe(
+      ROMAN_PROFILE_ART.length,
+    );
   });
 
   it('produces 600 exact-unique, visually separated, compact assets', () => {
