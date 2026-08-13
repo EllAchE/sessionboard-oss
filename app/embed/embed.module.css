@@ -190,9 +190,9 @@
   font-family: var(--font-display);
   font-size: var(--text-lg);
   line-height: var(--leading-snug);
-  color: var(--text-strong);
   overflow-wrap: anywhere;
   unicode-bidi: plaintext;
+  color: var(--text-strong);
 }
 
 .speakerRole {
@@ -512,9 +512,9 @@
   font-family: var(--font-display);
   font-size: var(--text-lg);
   line-height: var(--leading-snug);
-  color: var(--text-strong);
   overflow-wrap: anywhere;
   unicode-bidi: plaintext;
+  color: var(--text-strong);
 }
 
 .directoryMeta {
@@ -577,9 +577,9 @@
   font-family: var(--font-display);
   font-size: var(--text-3xl);
   line-height: var(--leading-tight);
-  color: var(--text-strong);
   overflow-wrap: anywhere;
   unicode-bidi: plaintext;
+  color: var(--text-strong);
 }
 
 .detailSection {

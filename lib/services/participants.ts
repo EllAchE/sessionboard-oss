@@ -32,10 +32,7 @@ export type SpeakerFieldKey =
 export type SpeakerWorkflowStatus = (typeof speakerWorkflowStatus.enumValues)[number];
 
 /** Pipeline order, so the roster filter and both selects present the same sequence. */
-export const SPEAKER_WORKFLOW_OPTIONS: Array<{
-  value: SpeakerWorkflowStatus;
-  label: string;
-}> = [
+export const SPEAKER_WORKFLOW_OPTIONS: Array<{ value: SpeakerWorkflowStatus; label: string }> = [
   { value: 'invited', label: 'Invited' },
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'declined', label: 'Declined' },
@@ -48,10 +45,7 @@ export const SPEAKER_WORKFLOW_OPTIONS: Array<{
  * at the start of the pipeline, not throw away the row.
  */
 export function toWorkflowStatus(value: string | undefined): SpeakerWorkflowStatus | undefined {
-  const needle = value
-    ?.trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '');
+  const needle = value?.trim().toLowerCase().replace(/[\s_-]+/g, '');
   if (!needle) return undefined;
   return SPEAKER_WORKFLOW_OPTIONS.find((option) => option.value === needle)?.value ?? 'invited';
 }
@@ -255,9 +249,7 @@ export async function listSpeakerProfiles(ctx: EventContext): Promise<SpeakerPro
 
   const [rows, records] = await Promise.all([
     listSpeakers(ctx),
-    getDb().query.participant.findMany({
-      where: eq(participant.eventId, ctx.eventId),
-    }),
+    getDb().query.participant.findMany({ where: eq(participant.eventId, ctx.eventId) }),
   ]);
 
   const byId = new Map(records.map((record) => [record.id, record]));
@@ -323,14 +315,9 @@ function clean(value: string | null | undefined): string | undefined {
 
 function requireEmail(value: string | undefined): string {
   const email = clean(value)?.toLowerCase();
-  if (!email)
-    throw invalid('A speaker needs an email address', {
-      email: 'Email is required',
-    });
+  if (!email) throw invalid('A speaker needs an email address', { email: 'Email is required' });
   if (!EMAIL.test(email)) {
-    throw invalid('That does not look like an email address', {
-      email: 'Enter a valid address',
-    });
+    throw invalid('That does not look like an email address', { email: 'Enter a valid address' });
   }
   return email;
 }
@@ -372,9 +359,7 @@ async function participantRow(eventId: string, participantId: string): Promise<P
 
 async function userIdForEmail(email: string, name: string | null | undefined): Promise<string> {
   const db = getDb();
-  const existing = await db.query.user.findFirst({
-    where: eq(user.email, email),
-  });
+  const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
   if (existing) {
     if (!existing.name && name) {
       await db.update(user).set({ name, updatedAt: new Date() }).where(eq(user.id, existing.id));
@@ -455,9 +440,7 @@ export async function setSpeakerWorkflowStatus(
   requireCapability(ctx, 'event:manage');
 
   if (!SPEAKER_WORKFLOW_OPTIONS.some((option) => option.value === status)) {
-    throw invalid('That is not a speaker status', {
-      workflowStatus: 'Unknown status',
-    });
+    throw invalid('That is not a speaker status', { workflowStatus: 'Unknown status' });
   }
 
   await participantRow(ctx.eventId, participantId);
@@ -568,14 +551,7 @@ export async function planSpeakerImport(
   }
   const sample = table.rows[0] ?? table.headers.map(() => '');
   if (problems.length > 0) {
-    return {
-      headers: table.headers,
-      mapping,
-      sample,
-      rows: [],
-      skipped: [],
-      problems,
-    };
+    return { headers: table.headers, mapping, sample, rows: [], skipped: [], problems };
   }
 
   const db = getDb();
@@ -607,11 +583,7 @@ export async function planSpeakerImport(
       return;
     }
     if (!EMAIL.test(email)) {
-      skipped.push({
-        line,
-        label,
-        reason: `"${email}" is not a valid email address`,
-      });
+      skipped.push({ line, label, reason: `"${email}" is not a valid email address` });
       return;
     }
     const duplicate = seen.get(email);
@@ -639,14 +611,7 @@ export async function planSpeakerImport(
     });
   });
 
-  return {
-    headers: table.headers,
-    mapping,
-    sample,
-    rows,
-    skipped,
-    problems: [],
-  };
+  return { headers: table.headers, mapping, sample, rows, skipped, problems: [] };
 }
 
 export type SpeakerImportResult = {

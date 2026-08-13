@@ -35,14 +35,12 @@ async function openSessionFor(userId: string): Promise<void> {
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86_400_000);
 
-  await getDb()
-    .insert(sessionCookie)
-    .values({
-      tokenHash: await hashToken(token),
-      userId,
-      impersonatedByUserId: null,
-      expiresAt,
-    });
+  await getDb().insert(sessionCookie).values({
+    tokenHash: await hashToken(token),
+    userId,
+    impersonatedByUserId: null,
+    expiresAt,
+  });
 
   const store = await cookies();
   store.set(SESSION_COOKIE, token, {
@@ -69,9 +67,7 @@ async function sendSubmissionEmails(input: {
   title: string;
 }): Promise<void> {
   const db = getDb();
-  const formRow = await db.query.form.findFirst({
-    where: eq(formTable.id, input.formId),
-  });
+  const formRow = await db.query.form.findFirst({ where: eq(formTable.id, input.formId) });
   const portalUrl = `${appUrl()}${portalPath(input.eventSlug)}`;
 
   const tokens = {
@@ -158,7 +154,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
     if (!userId) {
       const requested = await requestMagicLink({
         email: payload.submitterEmail,
-        name,
+        name: name || null,
         eventId: bundle.event.id,
         redirectTo: portalPath(bundle.event.slug),
       });
@@ -166,10 +162,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
       const account = await getDb().query.user.findFirst({
         where: eq(userTable.email, normalizeEmail(requested.email)),
       });
-      if (!account)
-        throw invalid('We could not create your account', {
-          submitterEmail: 'Try again',
-        });
+      if (!account) throw invalid('We could not create your account', { submitterEmail: 'Try again' });
       userId = account.id;
       openedSession = true;
     }
@@ -197,12 +190,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
     if (openedSession) await openSessionFor(userId);
 
     if (payload.mode === 'draft') {
-      return {
-        ok: true,
-        mode: 'draft',
-        submissionId: saved.id,
-        displayRef: saved.displayRef,
-      };
+      return { ok: true, mode: 'draft', submissionId: saved.id, displayRef: saved.displayRef };
     }
 
     await sendSubmissionEmails({
@@ -211,7 +199,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
       eventSlug: bundle.event.slug,
       formId: bundle.form.id,
       toEmail: email,
-      toName: name,
+      toName: name || null,
       displayRef: saved.displayRef,
       title: saved.title,
     });
@@ -225,10 +213,6 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
   } catch (error) {
     if (!isAppError(error)) console.error(error instanceof Error ? error.message : String(error));
     const publicError = toPublicError(error);
-    return {
-      ok: false,
-      message: publicError.message,
-      errors: publicError.details ?? {},
-    };
+    return { ok: false, message: publicError.message, errors: publicError.details ?? {} };
   }
 }

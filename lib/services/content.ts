@@ -77,9 +77,7 @@ export type DeliverableRow = {
 
 function fileIdsOf(answers: Record<string, unknown> | null): string[] {
   const raw = answers?.[FILE_IDS_KEY];
-  return Array.isArray(raw)
-    ? raw.filter((entry): entry is string => typeof entry === 'string')
-    : [];
+  return Array.isArray(raw) ? raw.filter((entry): entry is string => typeof entry === 'string') : [];
 }
 
 /**
@@ -141,11 +139,7 @@ export async function listDeliverableStatus(ctx: EventContext): Promise<Delivera
   ];
   const submissions = submissionIds.length
     ? await db
-        .select({
-          id: submission.id,
-          ref: submission.ref,
-          title: submission.title,
-        })
+        .select({ id: submission.id, ref: submission.ref, title: submission.title })
         .from(submission)
         .where(inArray(submission.id, submissionIds))
     : [];
@@ -176,11 +170,7 @@ export async function listDeliverableStatus(ctx: EventContext): Promise<Delivera
       ? submissionById.get(row.assignment.submissionId)
       : undefined;
     const state: DeliverableState =
-      row.assignment.status === 'waived'
-        ? 'waived'
-        : files.length > 0
-          ? 'submitted'
-          : 'outstanding';
+      row.assignment.status === 'waived' ? 'waived' : files.length > 0 ? 'submitted' : 'outstanding';
 
     return {
       assignmentId: row.assignment.id,
@@ -374,7 +364,9 @@ export async function replaceDeliverable(
     const [mine] = await getDb()
       .select({ id: participant.id })
       .from(participant)
-      .where(and(eq(participant.eventId, ctx.eventId), eq(participant.userId, ctx.actor.userId)));
+      .where(
+        and(eq(participant.eventId, ctx.eventId), eq(participant.userId, ctx.actor.userId)),
+      );
     if (!owner.participantId || owner.participantId !== mine?.id) {
       throw forbidden('That deliverable belongs to someone else');
     }
@@ -406,10 +398,7 @@ async function repoint(eventId: string, previousId: string, nextId: string): Pro
       .update(taskAssignment)
       .set({
         answers: holdsFile
-          ? {
-              ...(assignment.answers ?? {}),
-              [FILE_IDS_KEY]: ids.map((id) => (id === previousId ? nextId : id)),
-            }
+          ? { ...(assignment.answers ?? {}), [FILE_IDS_KEY]: ids.map((id) => (id === previousId ? nextId : id)) }
           : assignment.answers,
         fileId: holdsPointer ? nextId : assignment.fileId,
         updatedAt: new Date(),
@@ -503,20 +492,14 @@ async function readEntity(
       where: and(eq(submission.id, entityId), eq(submission.eventId, eventId)),
     });
     if (!row) throw notFound('That session');
-    return {
-      snapshot: pick(row, kind),
-      label: `${formatRef('submission', row.ref)} ${row.title}`,
-    };
+    return { snapshot: pick(row, kind), label: `${formatRef('submission', row.ref)} ${row.title}` };
   }
 
   const row = await db.query.participant.findFirst({
     where: and(eq(participant.id, entityId), eq(participant.eventId, eventId)),
   });
   if (!row) throw notFound('That speaker');
-  return {
-    snapshot: pick(row, kind),
-    label: row.displayName ?? 'Speaker profile',
-  };
+  return { snapshot: pick(row, kind), label: row.displayName ?? 'Speaker profile' };
 }
 
 /**
@@ -546,17 +529,15 @@ export async function recordRevision(
     .limit(1);
   if (latest && diff(kind, latest.snapshot, snapshot).length === 0) return;
 
-  await getDb()
-    .insert(contentRevision)
-    .values({
-      eventId: ctx.eventId,
-      entityKind: kind,
-      entityId,
-      snapshot,
-      summary,
-      editorUserId: ctx.actor.impersonatedByUserId ?? ctx.actor.userId,
-      editorName: editorLabel(ctx),
-    });
+  await getDb().insert(contentRevision).values({
+    eventId: ctx.eventId,
+    entityKind: kind,
+    entityId,
+    snapshot,
+    summary,
+    editorUserId: ctx.actor.impersonatedByUserId ?? ctx.actor.userId,
+    editorName: editorLabel(ctx),
+  });
 }
 
 function editorLabel(ctx: EventContext): string {
@@ -564,12 +545,7 @@ function editorLabel(ctx: EventContext): string {
   return ctx.actor.impersonatedByUserId ? `${name} (via an organizer)` : name;
 }
 
-export type ContentFieldChange = {
-  field: string;
-  label: string;
-  before: string;
-  after: string;
-};
+export type ContentFieldChange = { field: string; label: string; before: string; after: string };
 
 export type ContentRevisionEntry = {
   id: string;
@@ -929,30 +905,34 @@ export async function listEditableContent(ctx: EventContext): Promise<EditableEn
   ]);
 
   return [
-    ...sessions.map((row): EditableEntity => ({
-      kind: 'session',
-      id: row.id,
-      label: `${formatRef('submission', row.ref)} ${row.title}`,
-      secondary: row.status,
-      fields: {
-        title: row.title,
-        descriptionMarkdown: row.descriptionMarkdown ?? '',
-        level: row.level ?? '',
-      },
-      contentStatus: row.contentStatus,
-    })),
-    ...speakers.map((row): EditableEntity => ({
-      kind: 'participant',
-      id: row.id,
-      label: row.displayName ?? row.email,
-      secondary: row.email,
-      fields: {
-        displayName: row.displayName ?? '',
-        jobTitle: row.jobTitle ?? '',
-        company: row.company ?? '',
-        bioMarkdown: row.bioMarkdown ?? '',
-      },
-      contentStatus: null,
-    })),
+    ...sessions.map(
+      (row): EditableEntity => ({
+        kind: 'session',
+        id: row.id,
+        label: `${formatRef('submission', row.ref)} ${row.title}`,
+        secondary: row.status,
+        fields: {
+          title: row.title,
+          descriptionMarkdown: row.descriptionMarkdown ?? '',
+          level: row.level ?? '',
+        },
+        contentStatus: row.contentStatus,
+      }),
+    ),
+    ...speakers.map(
+      (row): EditableEntity => ({
+        kind: 'participant',
+        id: row.id,
+        label: row.displayName ?? row.email,
+        secondary: row.email,
+        fields: {
+          displayName: row.displayName ?? '',
+          jobTitle: row.jobTitle ?? '',
+          company: row.company ?? '',
+          bioMarkdown: row.bioMarkdown ?? '',
+        },
+        contentStatus: null,
+      }),
+    ),
   ];
 }

@@ -46,10 +46,10 @@ export default async function PublicSpeakerPage({
   const options = parseEmbedOptions(search);
 
   return (
-    <PublicChrome event={bundle.event} active='speakers'>
+    <PublicChrome event={bundle.event} active="speakers">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle} dir='auto'>
+          <h2 className={styles.sectionTitle} dir="auto">
             {speaker.name}
           </h2>
           <Link href={`/${bundle.event.slug}/speakers`} className={styles.sectionLink}>

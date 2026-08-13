@@ -105,7 +105,7 @@ describe('public programme relation links', () => {
 
   it('links a talk speaker to the standalone profile', () => {
     const html = renderToStaticMarkup(
-      <SpeakerRoster session={session} speakerBase='/republic/speakers' />,
+      <SpeakerRoster session={session} speakerBase="/republic/speakers" />,
     );
 
     expect(html).toContain(`href="/republic/speakers/${session.speakers[0].slug}"`);
@@ -118,8 +118,8 @@ describe('public programme relation links', () => {
       <SpeakerProfile
         speaker={speaker}
         sessions={[session]}
-        timezone='UTC'
-        sessionBase='/republic/sessions'
+        timezone="UTC"
+        sessionBase="/republic/sessions"
       />,
     );
 

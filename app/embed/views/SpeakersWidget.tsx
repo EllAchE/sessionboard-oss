@@ -41,7 +41,7 @@ export function SpeakersWidget({
     return (
       <div>
         <div className={styles.backRow}>
-          <button type='button' className={styles.controlButton} onClick={() => setOpenId(null)}>
+          <button type="button" className={styles.controlButton} onClick={() => setOpenId(null)}>
             <ArrowLeft size={14} aria-hidden />
             Back to speakers
           </button>
@@ -68,10 +68,10 @@ export function SpeakersWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label='Search speakers, companies, or talks'
-          placeholder='Search speakers, companies, or talks…'
+          label="Search speakers, companies, or talks"
+          placeholder="Search speakers, companies, or talks…"
         />
-        <span className={styles.resultCount} role='status'>
+        <span className={styles.resultCount} role="status">
           {visible.length} of {ordered.length} speakers
         </span>
       </div>
@@ -87,14 +87,14 @@ export function SpeakersWidget({
           {visible.map((speaker) => (
             <button
               key={speaker.id}
-              type='button'
+              type="button"
               className={styles.directoryRow}
               id={`speaker-${speaker.slug}`}
               onClick={() => setOpenId(speaker.id)}
             >
               <SpeakerAvatar speaker={speaker} show={options.showPhoto} />
               <span className={styles.directoryBody}>
-                <span className={styles.directoryName} dir='auto'>
+                <span className={styles.directoryName} dir="auto">
                   {speaker.name}
                 </span>
                 {speaker.jobTitle ? (
@@ -105,8 +105,7 @@ export function SpeakersWidget({
                 ) : null}
               </span>
               <span className={styles.directoryMeta}>
-                {speaker.sessionIds.length} session
-                {speaker.sessionIds.length === 1 ? '' : 's'}
+                {speaker.sessionIds.length} session{speaker.sessionIds.length === 1 ? '' : 's'}
               </span>
               <ChevronRight size={16} aria-hidden />
             </button>

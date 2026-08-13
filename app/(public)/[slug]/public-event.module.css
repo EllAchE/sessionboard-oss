@@ -208,9 +208,9 @@
   font-family: var(--font-display);
   font-size: var(--text-3xl);
   line-height: var(--leading-tight);
-  color: var(--text-strong);
   overflow-wrap: anywhere;
   unicode-bidi: plaintext;
+  color: var(--text-strong);
 }
 
 .sectionLink {

@@ -1,5 +1,3 @@
-import { speakerInitials } from '@/lib/speaker-name';
-
 /**
  * The embed read model, minus the database. Everything here is pure so the interactive widgets can
  * import it from a client component — a value import out of `queries.ts` would drag `pg` into the
@@ -129,11 +127,7 @@ export function initialsOf(name: string): string {
   return speakerInitials(name);
 }
 
-export type AgendaDay = {
-  date: string;
-  label: string;
-  sessions: PublicSession[];
-};
+export type AgendaDay = { date: string; label: string; sessions: PublicSession[] };
 
 export function dayKeyOf(iso: string, timezone: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date(iso));
@@ -157,11 +151,7 @@ export function groupByDay(sessions: PublicSession[], timezone: string): AgendaD
     }
     const when = new Date(session.startsAt);
     const key = dayKeyOf(session.startsAt, timezone);
-    const bucket = days.get(key) ?? {
-      date: key,
-      label: labelFormat.format(when),
-      sessions: [],
-    };
+    const bucket = days.get(key) ?? { date: key, label: labelFormat.format(when), sessions: [] };
     bucket.sessions.push(session);
     days.set(key, bucket);
   }
@@ -171,11 +161,7 @@ export function groupByDay(sessions: PublicSession[], timezone: string): AgendaD
     day.sessions.sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? ''));
   }
   if (undated.length > 0) {
-    ordered.push({
-      date: 'tbd',
-      label: 'Time to be announced',
-      sessions: undated,
-    });
+    ordered.push({ date: 'tbd', label: 'Time to be announced', sessions: undated });
   }
   return ordered;
 }
@@ -468,3 +454,4 @@ export function sessionMatchesFacets(
   if (facets.rooms.length > 0 && !facets.rooms.includes(session.room ?? '')) return false;
   return true;
 }
+import { speakerInitials } from '@/lib/speaker-name';

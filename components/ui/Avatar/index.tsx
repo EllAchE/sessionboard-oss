@@ -17,17 +17,17 @@ function Avatar({ name, src, size = 'md', className, ...rest }: AvatarProps) {
 
   return (
     <span
-      role='img'
+      role="img"
       aria-label={name}
-      dir='auto'
+      dir="auto"
       className={cn(styles.root, styles[size], className)}
       {...rest}
     >
-      <span className={styles.initials} aria-hidden='true'>
+      <span className={styles.initials} aria-hidden="true">
         {initials}
       </span>
       {src && (
-        <Image className={styles.image} src={src} alt='' width={48} height={48} unoptimized />
+        <Image className={styles.image} src={src} alt="" width={48} height={48} unoptimized />
       )}
     </span>
   );

@@ -44,10 +44,10 @@ export function GalleryWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label='Search speakers, companies, or talks'
-          placeholder='Search speakers, companies, or talks…'
+          label="Search speakers, companies, or talks"
+          placeholder="Search speakers, companies, or talks…"
         />
-        <span className={styles.resultCount} role='status'>
+        <span className={styles.resultCount} role="status">
           {visible.length} of {ordered.length} speakers
         </span>
       </div>
@@ -63,7 +63,7 @@ export function GalleryWidget({
           {visible.map((speaker) => (
             <button
               key={speaker.id}
-              type='button'
+              type="button"
               className={styles.galleryCard}
               id={`speaker-${speaker.slug}`}
               onClick={() => setOpenId(speaker.id)}
@@ -73,7 +73,7 @@ export function GalleryWidget({
                   <Image
                     className={styles.headshot}
                     src={speaker.headshotUrl}
-                    alt=''
+                    alt=""
                     width={640}
                     height={640}
                     unoptimized
@@ -84,7 +84,7 @@ export function GalleryWidget({
                   </span>
                 )
               ) : null}
-              <span className={styles.speakerName} dir='auto'>
+              <span className={styles.speakerName} dir="auto">
                 {speaker.name}
               </span>
               {speaker.jobTitle ? (
@@ -104,7 +104,7 @@ export function GalleryWidget({
           if (!next) setOpenId(null);
         }}
         title={open?.name ?? ''}
-        size='lg'
+        size="lg"
       >
         {open ? (
           <div className={styles.modalBody}>
