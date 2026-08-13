@@ -26,7 +26,7 @@
   // mailbox can exist behind, holding no membership outside the demo events it does not own. Real
   // accounts are unreachable through it at any setting; `lib/demo-access.ts` states the boundary.
   "vars": {
-    "APP_URL": "https://cicero.lhar8771.workers.dev",
+    "APP_URL": "https://cicero.elehche.workers.dev",
     "MAIL_TRANSPORT": "auto",
     "MAIL_FROM": "Cicero <onboarding@resend.dev>",
     "DEMO_ONSCREEN_MAGIC_LINKS": "1"
