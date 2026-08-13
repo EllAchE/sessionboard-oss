@@ -1,5 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { env, requireEnv } from '../env';
+import { env, envFlag, requireEnv } from '../env';
 import { notFound } from '../errors';
 
 export type StoredObject = {
@@ -73,7 +73,9 @@ function s3Storage(): Storage {
     return new S3Client({
       region: env('S3_REGION') ?? 'us-east-1',
       endpoint: env('S3_ENDPOINT'),
-      forcePathStyle: true,
+      // MinIO — the compose stack and the usual self-host — only answers path-style, so that stays
+      // the default. A host that requires virtual-hosted addressing sets S3_FORCE_PATH_STYLE=false.
+      forcePathStyle: envFlag('S3_FORCE_PATH_STYLE', true),
       credentials: {
         accessKeyId: requireEnv('S3_ACCESS_KEY_ID'),
         secretAccessKey: requireEnv('S3_SECRET_ACCESS_KEY'),
