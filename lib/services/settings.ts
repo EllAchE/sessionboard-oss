@@ -296,8 +296,8 @@ export async function trackDependents(trackId: string): Promise<Dependent[]> {
     countRows(scheduledSession, eq(scheduledSession.trackId, trackId)),
   ]);
   return [
-    { noun: 'submission', count: submissions },
-    { noun: 'scheduled session', count: sessions },
+    { noun: 'petition', count: submissions },
+    { noun: 'inscribed oration', count: sessions },
   ];
 }
 
@@ -310,7 +310,7 @@ export async function removeTrack(
   await requireTrack(ctx, trackId);
 
   if (options.reassignTo) {
-    if (options.reassignTo === trackId) throw invalid('Choose a different track to move them to');
+    if (options.reassignTo === trackId) throw invalid('Choose a different theme for these records');
     await requireTrack(ctx, options.reassignTo);
     const db = getDb();
     await db
@@ -434,7 +434,7 @@ export async function updateRoom(
 
 export async function roomDependents(roomId: string): Promise<Dependent[]> {
   const sessions = await countRows(scheduledSession, eq(scheduledSession.roomId, roomId));
-  return [{ noun: 'scheduled session', count: sessions }];
+  return [{ noun: 'inscribed oration', count: sessions }];
 }
 
 export async function removeRoom(
@@ -446,7 +446,7 @@ export async function removeRoom(
   await requireRoom(ctx, roomId);
 
   if (options.reassignTo) {
-    if (options.reassignTo === roomId) throw invalid('Choose a different room to move them to');
+    if (options.reassignTo === roomId) throw invalid('Choose a different chamber for these records');
     await requireRoom(ctx, options.reassignTo);
     await getDb()
       .update(scheduledSession)
@@ -510,7 +510,7 @@ async function requireFormat(ctx: EventContext, formatId: string) {
   const row = await getDb().query.sessionFormat.findFirst({
     where: and(eq(sessionFormat.id, formatId), eq(sessionFormat.eventId, ctx.eventId)),
   });
-  if (!row) throw notFound('That session format');
+  if (!row) throw notFound('That form of address');
   return row;
 }
 
@@ -564,8 +564,8 @@ export async function formatDependents(formatId: string): Promise<Dependent[]> {
     countRows(scheduledSession, eq(scheduledSession.formatId, formatId)),
   ]);
   return [
-    { noun: 'submission', count: submissions },
-    { noun: 'scheduled session', count: sessions },
+    { noun: 'petition', count: submissions },
+    { noun: 'inscribed oration', count: sessions },
   ];
 }
 
@@ -578,7 +578,7 @@ export async function removeFormat(
   await requireFormat(ctx, formatId);
 
   if (options.reassignTo) {
-    if (options.reassignTo === formatId) throw invalid('Choose a different format to move them to');
+    if (options.reassignTo === formatId) throw invalid('Choose a different oration format');
     await requireFormat(ctx, options.reassignTo);
     const db = getDb();
     await db
@@ -590,7 +590,7 @@ export async function removeFormat(
       .set({ formatId: options.reassignTo })
       .where(eq(scheduledSession.formatId, formatId));
   } else {
-    assertRemovable('session format', await formatDependents(formatId), options);
+    assertRemovable('form of address', await formatDependents(formatId), options);
   }
 
   await getDb().delete(sessionFormat).where(eq(sessionFormat.id, formatId));
@@ -686,7 +686,7 @@ export async function updateTag(
 
 export async function tagDependents(tagId: string): Promise<Dependent[]> {
   const tagged = await countRows(submissionTag, eq(submissionTag.tagId, tagId));
-  return [{ noun: 'tagged submission', count: tagged }];
+  return [{ noun: 'marked petition', count: tagged }];
 }
 
 /**
@@ -703,7 +703,7 @@ export async function removeTag(
   await requireTag(ctx, tagId);
 
   if (options.reassignTo) {
-    if (options.reassignTo === tagId) throw invalid('Choose a different tag to move them to');
+    if (options.reassignTo === tagId) throw invalid('Choose a different mark for these petitions');
     await requireTag(ctx, options.reassignTo);
     const db = getDb();
     const [from, to] = await Promise.all([
@@ -815,7 +815,7 @@ export async function updatePersona(
 
 export async function personaDependents(personaId: string): Promise<Dependent[]> {
   const submissions = await countRows(submission, eq(submission.personaId, personaId));
-  return [{ noun: 'submission', count: submissions }];
+  return [{ noun: 'petition', count: submissions }];
 }
 
 export async function removePersona(
@@ -828,7 +828,7 @@ export async function removePersona(
 
   if (options.reassignTo) {
     if (options.reassignTo === personaId) {
-      throw invalid('Choose a different persona to move them to');
+      throw invalid('Choose a different citizen persona');
     }
     await requirePersona(ctx, options.reassignTo);
     await getDb()
@@ -997,7 +997,7 @@ export async function updateFieldEntry(
 
 export async function fieldEntryDependents(entryId: string): Promise<Dependent[]> {
   const fields = await countRows(formField, eq(formField.libraryEntryId, entryId));
-  return [{ noun: 'form field', count: fields }];
+  return [{ noun: 'scroll prompt', count: fields }];
 }
 
 /**
@@ -1039,7 +1039,7 @@ export const notificationPrefsInput = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['phone'],
-        message: 'Add a phone number to receive SMS alerts',
+        message: 'Inscribe a courier number to receive SMS summons',
       });
     }
   });
@@ -1050,7 +1050,7 @@ export async function getNotificationPrefs(userId: string): Promise<Notification
     where: eq(user.id, userId),
     columns: { phone: true, notifyEmail: true, notifySms: true },
   });
-  if (!row) throw notFound('Your account');
+  if (!row) throw notFound('Your citizen account');
   return row;
 }
 
@@ -1068,7 +1068,7 @@ export async function saveNotificationPrefs(
     })
     .where(eq(user.id, userId))
     .returning({ phone: user.phone, notifyEmail: user.notifyEmail, notifySms: user.notifySms });
-  if (!updated) throw notFound('Your account');
+  if (!updated) throw notFound('Your citizen account');
   return updated;
 }
 

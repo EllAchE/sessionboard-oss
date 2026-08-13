@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const roundId = new URL(request.url).searchParams.get('round');
-    if (!roundId) throw invalid('Choose a review round to export');
+    if (!roundId) throw invalid('Choose a council round to export');
     const ctx = await decideContext();
     const result = await buildReviewResultsExport(ctx, roundId);
     return new Response(result.csv, {

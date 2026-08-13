@@ -73,7 +73,7 @@ export function SpeakerStatus({
         selectSize={compact ? 'sm' : 'md'}
         value={value}
         disabled={pending}
-        aria-label="Speaker status"
+        aria-label="Orator standing"
         onChange={(event) => save(event.target.value as SpeakerWorkflowStatus)}
       >
         {options.map((option) => (

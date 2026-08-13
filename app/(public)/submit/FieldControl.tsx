@@ -141,7 +141,7 @@ export function FieldControl({
           />
           {asString(value).trim() !== '' && (
             <div className={styles.preview}>
-              <p className={styles.previewLabel}>Preview</p>
+              <p className={styles.previewLabel}>Wax preview</p>
               <div dangerouslySetInnerHTML={{ __html: renderMarkdown(asString(value)) }} />
             </div>
           )}
@@ -156,7 +156,7 @@ export function FieldControl({
           value={asString(value)}
           onChange={(nextEvent) => onChange(nextEvent.target.value)}
         >
-          <option value="">Choose…</option>
+          <option value="">Choose from the rolls…</option>
           {(field.options ?? []).map((option) => (
             <option key={option} value={option}>
               {optionLabel(field, option)}
@@ -216,7 +216,7 @@ export function FieldControl({
             </label>
           ))}
           {(field.options ?? []).length === 0 && (
-            <p className={styles.help}>The organizers have not set up any choices for this yet.</p>
+            <p className={styles.help}>The organizers have not inscribed any choices here.</p>
           )}
         </div>
       );
@@ -250,7 +250,7 @@ export function FieldControl({
               if (picked) onUpload(picked);
             }}
           />
-          {uploading && <span className={styles.fileName}>Uploading…</span>}
+          {uploading && <span className={styles.fileName}>Entering the archive…</span>}
           {!uploading && fileName && <span className={styles.fileName}>{fileName}</span>}
           {!uploading && fileName && (
             <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>

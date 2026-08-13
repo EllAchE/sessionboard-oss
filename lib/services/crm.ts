@@ -53,11 +53,11 @@ export const PROSPECT_STAGES: readonly ProspectStage[] = [
 ];
 
 export const STAGE_LABELS: Record<ProspectStage, string> = {
-  researching: 'Researching',
-  identified: 'Identified',
-  contacted: 'Contacted',
-  interested: 'Interested',
-  confirmed: 'Confirmed',
+  researching: 'Seeking intelligence',
+  identified: 'Named in the census',
+  contacted: 'Courier sent',
+  interested: 'Answer received',
+  confirmed: 'Sworn in',
   declined: 'Declined',
 };
 
@@ -235,7 +235,7 @@ export async function getContactProfile(actor: Actor, contactId: string): Promis
   const row = await db.query.contact.findFirst({
     where: and(eq(contact.id, contactId), eq(contact.ownerUserId, actor.userId)),
   });
-  if (!row) throw notFound('Contact');
+  if (!row) throw notFound('Census record');
 
   const [notes, activity, links, cards, fields] = await Promise.all([
     db.query.contactNote.findMany({
@@ -342,7 +342,7 @@ function validateContact(input: ContactInput): { name: string; email: string } {
   const details: Record<string, string> = {};
   if (name === '') details.name = 'A name is required';
   if (!isEmail(email)) details.email = 'Enter a valid email address';
-  if (Object.keys(details).length > 0) throw invalid('Check the contact details', details);
+  if (Object.keys(details).length > 0) throw invalid('Inspect the citizen record', details);
   return { name, email };
 }
 
@@ -394,7 +394,7 @@ export async function updateContact(
   const current = await db.query.contact.findFirst({
     where: and(eq(contact.id, contactId), eq(contact.ownerUserId, actor.userId)),
   });
-  if (!current) throw notFound('Contact');
+  if (!current) throw notFound('Census record');
 
   const next: Partial<typeof contact.$inferInsert> = { updatedAt: new Date() };
   const changed: string[] = [];
@@ -459,7 +459,7 @@ export async function addNote(
   const owned = await db.query.contact.findFirst({
     where: and(eq(contact.id, input.contactId), eq(contact.ownerUserId, actor.userId)),
   });
-  if (!owned) throw notFound('Contact');
+  if (!owned) throw notFound('Census record');
 
   const [row] = await db
     .insert(contactNote)
@@ -504,12 +504,12 @@ export async function createField(
   input: { label: string; type: CrmFieldType; options?: string[] },
 ): Promise<CrmFieldRow> {
   const label = input.label.trim();
-  if (label === '') throw invalid('Name the field', { label: 'A label is required' });
+  if (label === '') throw invalid('Name the inscription', { label: 'An inscription needs a name' });
 
   const options = fieldTakesOptions(input.type) ? normalizeTags(input.options) : [];
   if (fieldTakesOptions(input.type) && options.length === 0) {
-    throw invalid('A dropdown needs at least one option', {
-      options: 'Add an option',
+    throw invalid('A choice list needs at least one response', {
+      options: 'Add a response',
     });
   }
 
@@ -729,11 +729,11 @@ export async function mergeContacts(
     ),
   });
   const primary = rows.find((row) => row.id === input.primaryId);
-  if (!primary) throw notFound('Contact');
+  if (!primary) throw notFound('Census record');
   const losers = loserIds
     .map((id) => rows.find((row) => row.id === id))
     .filter((row): row is ContactRow => Boolean(row));
-  if (losers.length === 0) throw notFound('Contact');
+  if (losers.length === 0) throw notFound('Census record');
 
   const merged = mergeContactValues(primary, losers, input.choices);
 
@@ -892,7 +892,7 @@ export async function enrollProspect(
   const person = await db.query.contact.findFirst({
     where: and(eq(contact.id, input.contactId), eq(contact.ownerUserId, actor.userId)),
   });
-  if (!person) throw notFound('Contact');
+  if (!person) throw notFound('Census record');
 
   const stage = input.stage ?? 'researching';
   if (input.score !== null && input.score !== undefined) {
@@ -1059,13 +1059,13 @@ export async function pushContactToEvent(
       ),
     }),
   ]);
-  if (!person) throw notFound('Contact');
+  if (!person) throw notFound('Census record');
   if (!target) throw notFound('An event you can manage');
 
   const targetEvent = await db.query.event.findFirst({
     where: eq(event.id, input.eventId),
   });
-  if (!targetEvent) throw notFound('Event');
+  if (!targetEvent) throw notFound('Assembly');
 
   let account = await db.query.user.findFirst({
     where: eq(user.email, person.email),
@@ -1252,8 +1252,8 @@ export async function sendCampaign(
   const details: Record<string, string> = {};
   if (subject === '') details.subject = 'A subject is required';
   if (body === '') details.body = 'Write a message first';
-  if (input.contactIds.length < 2) details.recipients = 'Pick at least two contacts';
-  if (Object.keys(details).length > 0) throw invalid('Check the campaign', details);
+  if (input.contactIds.length < 2) details.recipients = 'Choose at least two citizens';
+  if (Object.keys(details).length > 0) throw invalid('Inspect the summons', details);
 
   const db = getDb();
   const rows = await db.query.contact.findMany({
@@ -1263,7 +1263,7 @@ export async function sendCampaign(
       inArray(contact.id, input.contactIds),
     ),
   });
-  if (rows.length === 0) throw notFound('Those contacts');
+  if (rows.length === 0) throw notFound('Those citizens');
 
   const [campaign] = await db
     .insert(contactCampaign)
@@ -1324,25 +1324,25 @@ export type ImportField = {
 export const IMPORT_FIELDS: ImportField[] = [
   {
     key: 'name',
-    label: 'Name',
+    label: 'Citizen name',
     required: true,
     aliases: ['name', 'full name', 'speaker', 'contact', 'first name'],
   },
   {
     key: 'email',
-    label: 'Email',
+    label: 'Dispatch address',
     required: true,
     aliases: ['email', 'email address', 'e mail'],
   },
   {
     key: 'jobTitle',
-    label: 'Job title',
+    label: 'Office or title',
     required: false,
     aliases: ['job title', 'title', 'role', 'position'],
   },
   {
     key: 'company',
-    label: 'Company',
+    label: 'House or company',
     required: false,
     aliases: ['company', 'organisation', 'organization', 'employer'],
   },
@@ -1452,7 +1452,7 @@ export function buildImportPreview(
         severity: 'error',
         message: `“${values.email}” is not an email address`,
       });
-    else if (seen.has(email)) issues.push({ severity: 'error', message: 'Repeated in this file' });
+    else if (seen.has(email)) issues.push({ severity: 'error', message: 'Repeated on this tablet' });
     else if (known.has(email))
       issues.push({
         severity: 'warning',
@@ -1489,7 +1489,7 @@ export async function previewImport(
   mapping?: ImportMapping,
 ): Promise<ImportPreview> {
   const table = parseCsvTable(csv);
-  if (table.headers.length === 0) throw invalid('That file has no header row');
+  if (table.headers.length === 0) throw invalid('That tablet has no heading row');
   const existing = await ownedContacts(actor);
   const resolved = mapping ?? suggestMapping(table.headers);
   return buildImportPreview(
@@ -1578,7 +1578,7 @@ export async function importContacts(
       {
         contactId: inserted.id,
         kind: 'imported',
-        summary: 'Imported from CSV',
+        summary: 'Entered from a census tablet',
       },
     ]);
     created += 1;

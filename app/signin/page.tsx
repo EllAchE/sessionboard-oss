@@ -2,7 +2,7 @@ import { SignInForm } from './SignInForm';
 import { authRedirect } from './redirect';
 import styles from './signin.module.css';
 
-export const metadata = { title: 'Sign in · Cicero' };
+export const metadata = { title: 'Enter the Forum · Cicero' };
 
 export default async function SignInPage({
   searchParams,

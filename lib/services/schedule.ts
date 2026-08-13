@@ -134,7 +134,7 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
           sessionIds: pair(a, b),
           subjectId: speaker.participantId,
           subjectName: speaker.name,
-          message: `${speaker.name} is scheduled in ${a.title} and ${b.title} at the same time`,
+          message: `${speaker.name} must address ${a.title} and ${b.title} at the same hour`,
         });
       }
     }

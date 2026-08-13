@@ -47,7 +47,7 @@ export default async function SubmissionDetailPage({
     <div className={styles.stack}>
       <div>
         <Link href={`/portal/${eventSlug}/submissions`} className={styles.metaLine}>
-          <ChevronLeft size={14} aria-hidden /> All my sessions
+          <ChevronLeft size={14} aria-hidden /> All my orations
         </Link>
         <div className={styles.rowBetween} style={{ marginTop: 'var(--space-3)' }}>
           <div>
@@ -58,7 +58,7 @@ export default async function SubmissionDetailPage({
               {submission.trackName && <span className={styles.dot}>{submission.trackName}</span>}
               <span className={styles.dot}>
                 You are the {ROLE_LABEL[submission.myRole] ?? submission.myRole}
-                {submission.isPrimary ? ' and primary contact' : ''}
+                {submission.isPrimary ? ' and principal orator' : ''}
               </span>
             </div>
           </div>
@@ -92,7 +92,7 @@ export default async function SubmissionDetailPage({
             </div>
             {!submission.scheduled.published && (
               <p className={styles.hint}>
-                The schedule is not public yet, so this slot could still move.
+                The fasti remain under seal, so this hour may still move.
               </p>
             )}
           </CardBody>
@@ -102,28 +102,27 @@ export default async function SubmissionDetailPage({
       {submission.status === 'draft' ? (
         <Card>
           <CardHeader>
-            <CardTitle>This one has not been sent yet</CardTitle>
+            <CardTitle>This petition remains on your desk</CardTitle>
           </CardHeader>
           <CardBody>
             {submission.editable ? (
               <>
                 <p className={styles.muted}>
-                  Organizers cannot see a draft, and it still counts against how many sessions you
-                  may submit to “{submission.formName}”. Picking it up again opens the form with
-                  everything you typed still in place.
+                  Organizers cannot see a draft, though it still holds one place among the petitions
+                  allowed by “{submission.formName}”. Unroll it again and every word remains.
                 </p>
                 <div className={styles.taskActions} style={{ marginTop: 'var(--space-4)' }}>
                   <Link
                     href={`/submit/${eventSlug}/${submission.formSlug}?draft=${submission.id}`}
                   >
-                    <Button variant="primary">Finish and submit</Button>
+                    <Button variant="primary">Finish and file the petition</Button>
                   </Link>
                 </div>
               </>
             ) : (
               <p className={styles.muted}>
-                “{submission.formName}” has closed, so this draft can no longer be sent. Discard it
-                below if you want the slot back for another event.
+                “{submission.formName}” is sealed, so this draft can no longer reach the council.
+                Discard it below to reclaim the place it holds.
               </p>
             )}
           </CardBody>
@@ -133,7 +132,7 @@ export default async function SubmissionDetailPage({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Your submission</CardTitle>
+            <CardTitle>Your petition</CardTitle>
           </CardHeader>
           <CardBody>
             <div
@@ -142,7 +141,7 @@ export default async function SubmissionDetailPage({
             />
             <p className={styles.hint} style={{ marginTop: 'var(--space-4)' }}>
               {submission.formStatus === 'open'
-                ? 'This session can no longer be edited from the portal. Email the organizers if something needs changing.'
+                ? 'This oration can no longer be revised from the atrium. Dispatch the organizers if a word must change.'
                 : `“${submission.formName}” closed${
                     submission.formClosesAt
                       ? ` on ${formatDate(submission.formClosesAt, event.timezone)}`
@@ -156,7 +155,7 @@ export default async function SubmissionDetailPage({
       <GroupPanel
         eventSlug={eventSlug}
         submissionId={submission.id}
-        title="Who is on this session"
+        title="Who stands for this oration"
         members={members}
         canManage={submission.isPrimary}
       />
@@ -169,8 +168,8 @@ export default async function SubmissionDetailPage({
           <CardBody>
             <p className={styles.muted}>
               {submission.status === 'draft'
-                ? 'Discarding a draft frees the slot it holds against your submission limit. Nothing reaches the organizers either way.'
-                : 'Withdrawing tells the organizers straight away and takes the session out of the programme. It is not deleted, so they can see what happened.'}
+                ? 'Burning this draft frees the place it holds among your allowed petitions. Nothing reaches the organizers.'
+                : 'Withdrawing sends word to the organizers and removes the oration from the programme. The annals retain what happened.'}
             </p>
             <WithdrawForm
               eventSlug={eventSlug}

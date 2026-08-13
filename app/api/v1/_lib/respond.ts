@@ -110,7 +110,7 @@ export async function parseBody<T extends z.ZodTypeAny>(
     if (error instanceof JsonBodyTooDeepError) throw invalid('That JSON body is nested too deeply');
     if (error instanceof DuplicateJsonKeyError)
       throw invalid('Duplicate JSON object keys are not allowed');
-    throw invalid('Send a JSON body');
+    throw invalid('Send a valid JSON body for the petition');
   }
 
   const parsed = schema.safeParse(raw);

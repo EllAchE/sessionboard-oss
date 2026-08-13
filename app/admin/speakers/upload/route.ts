@@ -9,7 +9,7 @@ import { manageSpeakersContext } from '../context';
  * this is transport and nothing else.
  */
 
-const HEADSHOT = adhocSpec('Speaker photo', {
+const HEADSHOT = adhocSpec('Orator portrait', {
   acceptedTypes: ['image/*'],
   maxSizeMb: 10,
   allowMultiple: false,
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const ctx = await manageSpeakersContext();
     const body = await request.formData();
     const picked = body.get('photo');
-    if (!(picked instanceof File) || picked.size === 0) throw invalid('Choose an image to upload');
+    if (!(picked instanceof File) || picked.size === 0) throw invalid('Choose a portrait to lodge');
 
     const candidate = {
       filename: picked.name,

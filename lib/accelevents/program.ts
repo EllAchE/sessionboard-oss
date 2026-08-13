@@ -36,7 +36,7 @@ export async function reconcilePublishedProgram(
 ): Promise<ProgramSyncSummary> {
   if (accelEventsMode() !== 'fake') {
     throw conflict(
-      'Full program reconciliation is fixture-only. Live Accelevents supports the documented accepted-speaker push.',
+      'Full programme reconciliation belongs to the fixture province. Live Accelevents supports only the documented accepted-orator crossing.',
     );
   }
 
@@ -73,7 +73,7 @@ export async function reconcileProgram(
         status: options.mode === 'preview' ? 'planned' : 'unchanged',
         message:
           operation.action === 'delete'
-            ? 'Preview only; apply mode also requires allowDeletes=true'
+            ? 'Preview only; apply mode also requires the deletion decree'
             : null,
       });
       continue;
@@ -83,7 +83,7 @@ export async function reconcileProgram(
       results.push({
         ...operation,
         status: 'blocked',
-        message: 'Delete was not applied because allowDeletes is false',
+        message: 'The remote inscription remains because the deletion decree is absent',
       });
       continue;
     }

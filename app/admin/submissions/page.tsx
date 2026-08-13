@@ -6,7 +6,7 @@ import { SubmissionQueue, type QueueRowWire } from './SubmissionQueue';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Submissions · Cicero' };
+export const metadata = { title: 'Petitions · Cicero' };
 
 const SORTS: review.QueueSort[] = [
   'score_desc',

@@ -16,18 +16,18 @@ import styles from './home.module.css';
 const FEATURES = [
   {
     icon: <FileCheck size={20} aria-hidden="true" />,
-    title: 'Collect and decide',
-    body: 'Publish your call for speakers, route proposals to the right reviewers, and make confident decisions without spreadsheet archaeology.',
+    title: 'Receive petitions. Reach a verdict.',
+    body: 'Proclaim your call for orators, send each proposal before the right council, and record every decision without excavating a spreadsheet ruin.',
   },
   {
     icon: <CalendarCheck size={20} aria-hidden="true" />,
-    title: 'Build a schedule that holds up',
-    body: 'Place sessions across rooms and tracks while conflicts surface before they become show-day problems.',
+    title: 'Set the imperial calendar',
+    body: 'Marshal orations across chambers and themes while Cicero exposes every clash before the gates open.',
   },
   {
     icon: <ListChecks size={20} aria-hidden="true" />,
-    title: 'Keep every speaker moving',
-    body: 'See outstanding bios, headshots, slides, and approvals at a glance, then follow up from the same place.',
+    title: 'Ready every orator for the Forum',
+    body: 'Survey missing biographies, portraits, scrolls, and approvals at a glance, then send a dispatch from the same command post.',
   },
 ];
 
@@ -40,10 +40,10 @@ export default function Home() {
         </a>
         <div className={styles.navLinks}>
           <a className={styles.aboutLink} href="#about">
-            About
+            About the Forum
           </a>
           <a className={styles.demoLink} href="/demo">
-            Live demo
+            Tour the empire
           </a>
           <a
             className={styles.githubLink}
@@ -54,7 +54,7 @@ export default function Home() {
             <span>GitHub</span>
           </a>
           <a className={styles.signInLink} href="/signin">
-            Sign in
+            Enter
           </a>
           <Button
             className={styles.navCta}
@@ -62,18 +62,18 @@ export default function Home() {
             variant="primary"
             size="sm"
           >
-            Sign up
+            Join Cicero
           </Button>
         </div>
       </nav>
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>From call for speakers to show day</p>
-          <h1>Conference operations that stay out of the way.</h1>
+          <p className={styles.eyebrow}>From first proclamation to final ovation</p>
+          <h1>Convene the crowd. Command the programme.</h1>
           <p className={styles.heroLead}>
-            Cicero brings proposals, reviews, schedules, speaker tasks, and communications into one
-            calm workspace, so organizers can focus on the programme.
+            Cicero gathers petitions, councils, fasti, orator duties, and dispatches in one
+            Forum, so organizers can govern the programme instead of chasing it.
           </p>
           <div className={styles.actions}>
             <Button
@@ -82,19 +82,19 @@ export default function Home() {
               size="lg"
               iconRight={<UserPlus size={17} aria-hidden="true" />}
             >
-              Create your event
+              Convene your event
             </Button>
             <Button
               href="/signin?email=organizer@example.com&next=/admin"
               size="lg"
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
-              Try the organizer demo
+              Enter the organizer Forum
             </Button>
           </div>
         </div>
 
-        <div className={styles.heroVisual} aria-label="Cicero organizer dashboard preview">
+        <div className={styles.heroVisual} aria-label="Cicero organizer Forum preview">
           <div className={styles.windowBar} aria-hidden="true">
             <span />
             <span />
@@ -103,17 +103,17 @@ export default function Home() {
           <Image
             className={styles.heroImage}
             src={dashboardImage}
-            alt="Cicero organizer dashboard showing event progress and next actions"
+            alt="Cicero organizer Forum showing imperial progress and next duties"
             priority
             sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1080px"
           />
           <div className={`${styles.callout} ${styles.calloutTasks}`}>
             <ListChecks size={17} aria-hidden="true" />
-            <span>Every outstanding task, in one view</span>
+            <span>Every outstanding duty, on one tablet</span>
           </div>
           <div className={`${styles.callout} ${styles.calloutSchedule}`}>
             <CalendarCheck size={17} aria-hidden="true" />
-            <span>Conflicts surfaced before show day</span>
+            <span>Every clash exposed before the gates open</span>
           </div>
         </div>
       </section>
@@ -122,19 +122,18 @@ export default function Home() {
 
       <section className={styles.about} id="about" aria-labelledby="about-title">
         <div className={styles.aboutHeading}>
-          <p className={styles.eyebrow}>About Cicero</p>
-          <h2 id="about-title">Built for the people who make conferences happen.</h2>
+          <p className={styles.eyebrow}>The charter of Cicero</p>
+          <h2 id="about-title">Built for the magistrates who make assemblies happen.</h2>
         </div>
         <div className={styles.aboutBody}>
           <p>
-            Cicero is an open-source conference operations platform for the work between a call for
-            speakers and show day. It connects proposals, reviews, schedules, speaker tasks,
-            communications, and public programmes without turning the organizer into a systems
-            integrator.
+            Cicero is an open-source Forum for the work between a proclamation for orators and the
+            day the gates open. It unites petitions, councils, fasti, orator duties, dispatches, and
+            the public programme without making the organizer govern a tangle of systems.
           </p>
           <p>
-            Organizers keep control: run it on your own infrastructure, adapt the workflow, and
-            publish an agenda anyone can read without an account.
+            Magistrates retain command: raise it on your own infrastructure, adapt the customs, and
+            proclaim fasti that any citizen may read without presenting a seal.
           </p>
           <dl className={styles.aboutFacts}>
             <div>
@@ -142,23 +141,23 @@ export default function Home() {
               <dd>MIT, open source</dd>
             </div>
             <div>
-              <dt>Hosting</dt>
+              <dt>Province</dt>
               <dd>Your infrastructure</dd>
             </div>
             <div>
-              <dt>Public access</dt>
-              <dd>No account required</dd>
+              <dt>Public Forum</dt>
+              <dd>No seal required</dd>
             </div>
           </dl>
           <div className={styles.aboutLinks}>
             <a className={styles.textLink} href="#product">
-              Explore the product <ArrowRight size={16} aria-hidden="true" />
+              Enter the Forum <ArrowRight size={16} aria-hidden="true" />
             </a>
             <a
               className={styles.textLink}
               href="https://github.com/EllAchE/sessionboard-oss"
             >
-              View the source <Github size={16} aria-hidden="true" />
+              Read the source scrolls <Github size={16} aria-hidden="true" />
             </a>
           </div>
         </div>
@@ -166,11 +165,11 @@ export default function Home() {
 
       <section className={styles.product} id="product">
         <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>One calm workspace</p>
-          <h2>Move every speaker from proposal to stage.</h2>
+          <p className={styles.eyebrow}>One commanding Forum</p>
+          <h2>All roads lead from proposal to stage.</h2>
           <p>
-            The full programme stays connected, from the first submission through the final public
-            schedule.
+            The whole programme travels together, from the first petition to the final public
+            calendar.
           </p>
         </div>
         <div className={styles.features}>
@@ -188,29 +187,29 @@ export default function Home() {
         <div className={styles.programmeVisual}>
           <Image
             src={publicAgendaImage}
-            alt="A public Cicero conference agenda laid out by time and room"
+            alt="A public Cicero fasti laid out by hour and chamber"
             sizes="(max-width: 820px) 94vw, 58vw"
           />
         </div>
         <div className={styles.programmeCopy}>
-          <p className={styles.eyebrow}>Ready for the audience</p>
-          <h2>A public programme people can actually use.</h2>
+          <p className={styles.eyebrow}>Published from the Forum</p>
+          <h2>A public programme worthy of the city.</h2>
           <p>
-            Publish a clear agenda, session list, and speaker gallery without duplicating work or
-            waiting on another handoff.
+            Proclaim clear fasti, a roll of orations, and a gallery of orators without copying a
+            single record or awaiting another courier.
           </p>
           <a className={styles.textLink} href="/demo/agenda">
-            Browse the demo programme <ArrowRight size={16} aria-hidden="true" />
+            Consult the demo programme <ArrowRight size={16} aria-hidden="true" />
           </a>
         </div>
       </section>
 
       <section className={styles.finalCta}>
-        <p className={styles.eyebrow}>See the whole workflow</p>
-        <h2>Start with a conference already in motion.</h2>
+        <p className={styles.eyebrow}>Take command</p>
+        <h2>Enter a conference already in motion.</h2>
         <p>
-          The live demo is filled with proposals, speakers, pending tasks, and a two-day programme
-          you can explore.
+          The live province is filled with petitions, orators, unfinished duties, and a two-day
+          programme ready for inspection.
         </p>
         <Button
           href="/signin?email=organizer@example.com&next=/admin"
@@ -218,7 +217,7 @@ export default function Home() {
           size="lg"
           iconRight={<ArrowRight size={17} aria-hidden="true" />}
         >
-          Open the organizer demo
+          Open the organizer Forum
         </Button>
       </section>
 

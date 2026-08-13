@@ -22,13 +22,13 @@ export function HeadshotPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Headshot</CardTitle>
+        <CardTitle>Portrait</CardTitle>
       </CardHeader>
       <CardBody>
         <div className={styles.headshotPanel}>
           {headshotUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className={styles.headshotImage} src={headshotUrl} alt="Your headshot" />
+            <img className={styles.headshotImage} src={headshotUrl} alt="Your public portrait" />
           ) : (
             <div className={styles.headshotPlaceholder}>
               <ImageIcon size={24} aria-hidden />
@@ -41,15 +41,15 @@ export function HeadshotPanel({
               accept="image/*"
               acceptedLabel="JPEG, PNG, GIF, WebP"
               maxSizeMb={10}
-              buttonLabel={headshotUrl ? 'Replace headshot' : 'Upload headshot'}
-              helpText="A square image works best."
+              buttonLabel={headshotUrl ? 'Replace portrait' : 'Commission portrait'}
+              helpText="A square likeness fits the gallery best."
               compact
             />
             {headshotUrl && (
               <form action={action}>
                 <input type="hidden" name="eventSlug" value={eventSlug} />
                 <Button type="submit" variant="ghost" size="sm">
-                  Remove
+                  Remove from the gallery
                 </Button>
               </form>
             )}

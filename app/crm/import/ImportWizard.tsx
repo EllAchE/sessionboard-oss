@@ -91,7 +91,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
         return;
       }
       toast({
-        title: `Imported ${result.data.created} contacts`,
+        title: `Entered ${result.data.created} names in the census`,
         description: `${result.data.updated} updated, ${result.data.skipped} skipped.`,
         tone: 'success',
       });
@@ -115,7 +115,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
     },
     {
       id: 'email',
-      header: 'Email',
+      header: 'Dispatch address',
       width: '24%',
       mono: true,
       render: (row) => row.values.email || '—',
@@ -160,11 +160,11 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>Organization</p>
-          <h1 className={styles.title}>Import contacts</h1>
+          <p className={styles.eyebrow}>The census</p>
+          <h1 className={styles.title}>Import the rolls</h1>
           <p className={styles.subtitle}>
-            Upload a CSV or paste one in. Every row is mapped and checked before anything is
-            written.
+            Present a CSV tablet or paste its rows. Every citizen is mapped and inspected before
+            entering the census.
           </p>
         </div>
       </div>
@@ -173,8 +173,8 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>1. The file</CardTitle>
-          <CardDescription>The first row must be the header row.</CardDescription>
+          <CardTitle>I. The source scroll</CardTitle>
+          <CardDescription>The first line must name each inscription.</CardDescription>
         </CardHeader>
         <CardBody>
           <div className={styles.stack}>
@@ -183,14 +183,14 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
                 ref={fileRef}
                 type="file"
                 accept=".csv,text/csv"
-                aria-label="CSV file"
+                aria-label="CSV tablet"
                 onChange={(entry) => {
                   const file = entry.currentTarget.files?.[0];
                   if (file) readFile(file);
                 }}
               />
               <span className={styles.hint}>
-                No file handy? Paste the rows below instead — the two paths run the same check.
+                No tablet at hand? Paste the rows below—the two roads reach the same inspection.
               </span>
             </div>
             <Textarea
@@ -216,7 +216,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
                   runPreview(sampleCsv);
                 }}
               >
-                Use a sample file
+                Use a sample tablet
               </Button>
             </div>
           </div>
@@ -227,7 +227,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>2. Column mapping</CardTitle>
+              <CardTitle>II. Match the inscriptions</CardTitle>
               <CardDescription>
                 Guessed from the header names. Change any of them and the preview re-runs.
               </CardDescription>
@@ -261,7 +261,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
 
           <Card>
             <CardHeader>
-              <CardTitle>3. Validation</CardTitle>
+              <CardTitle>III. Inspect the rolls</CardTitle>
               <CardDescription>
                 {preview.counts.create} new, {preview.counts.update} updates, {preview.counts.skip}{' '}
                 skipped.
@@ -286,8 +286,8 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
                     columns={columns}
                     rows={preview.rows}
                     getRowId={(row) => String(row.line)}
-                    label="Import preview"
-                    emptyState="That file has a header row but no data rows."
+                    label="Census preview"
+                    emptyState="That tablet has headings but no citizens."
                   />
                 </div>
                 <div>

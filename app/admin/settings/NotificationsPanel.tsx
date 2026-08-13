@@ -35,21 +35,21 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
         toast({ title: result.message, tone: 'danger' });
         return;
       }
-      toast({ title: 'Notification preferences saved', tone: 'success' });
+      toast({ title: 'Courier edicts sealed', tone: 'success' });
       router.refresh();
     });
   };
 
   return (
-    <section className={styles.panel} aria-label="Notifications">
+    <section className={styles.panel} aria-label="Courier edicts">
       <p className={styles.lede}>
-        How Cicero reaches you — reminders, decisions and anything else addressed to your account,
-        across every event you organize.
+        How Cicero reaches you—reminders, verdicts, and every other summons addressed to your
+        citizen account across all the assemblies you govern.
       </p>
 
       <div className={styles.formGrid}>
         <label className={styles.field}>
-          <span className={styles.label}>Phone number</span>
+          <span className={styles.label}>Courier number</span>
           <Input
             type="tel"
             value={phone}
@@ -63,33 +63,33 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
 
       <div className={styles.switchRow}>
         <span className={styles.switchText}>
-          <span className={styles.switchLabel}>Email</span>
-          <span className={styles.hint}>Reminders, decisions and session details by email.</span>
+          <span className={styles.switchLabel}>Email courier</span>
+          <span className={styles.hint}>Reminders, verdicts, and oration details by email.</span>
         </span>
-        <Switch checked={notifyEmail} aria-label="Email alerts" onCheckedChange={setNotifyEmail} />
+        <Switch checked={notifyEmail} aria-label="Email summons" onCheckedChange={setNotifyEmail} />
       </div>
       <div className={styles.switchRow}>
         <span className={styles.switchText}>
-          <span className={styles.switchLabel}>Text message</span>
+          <span className={styles.switchLabel}>SMS courier</span>
           <span className={styles.hint}>
             {phone.trim()
-              ? 'The same alerts, sent to your phone as a text.'
-              : 'Add a phone number above to turn this on.'}
+              ? 'The same summons, dispatched to your phone by SMS.'
+              : 'Inscribe a courier number above to summon this route.'}
           </span>
         </span>
         <Switch
           checked={notifySms}
           disabled={!phone.trim()}
-          aria-label="Text message alerts"
+          aria-label="SMS summons"
           onCheckedChange={setNotifySms}
         />
       </div>
 
       <div className={styles.formActions}>
         <Button variant="primary" loading={pending} disabled={!dirty} onClick={save}>
-          Save
+          Seal edicts
         </Button>
-        {dirty ? <span className={styles.hint}>Unsaved changes</span> : null}
+        {dirty ? <span className={styles.hint}>Unsealed changes</span> : null}
       </div>
     </section>
   );

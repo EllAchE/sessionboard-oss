@@ -68,19 +68,19 @@ export const EMBED_VIEWS = ['agenda', 'itinerary', 'sessions', 'speakers', 'gall
 export type EmbedView = (typeof EMBED_VIEWS)[number];
 
 export const EMBED_VIEW_LABEL: Record<EmbedView, string> = {
-  agenda: 'Agenda grid',
-  itinerary: 'Schedule itinerary',
-  sessions: 'Sessions list',
-  speakers: 'Speakers list',
-  gallery: 'Speaker gallery',
+  agenda: 'Fasti grid',
+  itinerary: 'Route through the Forum',
+  sessions: 'Roll of orations',
+  speakers: 'Roll of orators',
+  gallery: 'Gallery of orators',
 };
 
 export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
-  agenda: 'A per-day grid with room columns and a time gutter.',
-  itinerary: 'Chronological cards inside day tabs, with a personal schedule.',
-  sessions: 'Searchable, filterable session cards.',
-  speakers: 'An alphabetical speaker directory that drills into a profile.',
-  gallery: 'A photo grid of speakers with a detail panel.',
+  agenda: 'A per-day fasti with chamber columns and a time gutter.',
+  itinerary: 'Chronological tablets inside day tabs, with a personal route.',
+  sessions: 'A searchable, filterable roll of orations.',
+  speakers: 'An alphabetical census of orators that opens each public likeness.',
+  gallery: 'A portrait gallery of orators with a detail tablet.',
 };
 
 export function isEmbedView(value: string): value is EmbedView {
@@ -166,7 +166,7 @@ export function groupByDay(sessions: PublicSession[], timezone: string): AgendaD
     day.sessions.sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? ''));
   }
   if (undated.length > 0) {
-    ordered.push({ date: 'tbd', label: 'Time to be announced', sessions: undated });
+    ordered.push({ date: 'tbd', label: 'Hour yet to be proclaimed', sessions: undated });
   }
   return ordered;
 }

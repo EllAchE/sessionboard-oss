@@ -17,7 +17,7 @@ export function EventSwitcher({
   return (
     <Select
       selectSize="sm"
-      aria-label="Current event"
+      aria-label="Current assembly"
       value={currentEventId}
       disabled={pending}
       onChange={(e) => {
@@ -36,7 +36,7 @@ export function EventSwitcher({
           {item.name}
         </option>
       ))}
-      <option value="__new">+ New event…</option>
+      <option value="__new">+ Convene an event…</option>
     </Select>
   );
 }

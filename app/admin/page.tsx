@@ -14,7 +14,7 @@ import { Dashboard } from './dashboard/Dashboard';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Dashboard · Cicero' };
+export const metadata = { title: 'The Curia · Cicero' };
 
 /**
  * `B-1` leads. The prior edition for `B-6` is picked as the operator's next-most-recent event,

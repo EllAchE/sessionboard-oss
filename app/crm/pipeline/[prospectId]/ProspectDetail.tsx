@@ -110,17 +110,17 @@ export function ProspectDetail({ prospect, contact, stages, notes, history }: Pr
       <div className={styles.pageHead}>
         <div>
           <p className={styles.eyebrow}>
-            <Link href="/crm/pipeline">Sourcing pipeline</Link>
+            <Link href="/crm/pipeline">Summoning campaign</Link>
           </p>
           <h1 className={styles.title}>{contact.name}</h1>
           <p className={styles.subtitle}>
             {[contact.jobTitle, contact.company].filter(Boolean).join(' · ') || contact.email} ·{' '}
-            {prospect.eventName ?? 'No event yet'}
+            {prospect.eventName ?? 'No assembly yet'}
           </p>
         </div>
         <div className={styles.headActions}>
           <Button size="sm" variant="secondary" href={`/crm/${contact.id}`}>
-            Open contact
+            Open citizen record
           </Button>
           <Button
             size="sm"
@@ -129,7 +129,7 @@ export function ProspectDetail({ prospect, contact, stages, notes, history }: Pr
             loading={pending}
             onClick={remove}
           >
-            Remove from pipeline
+            Withdraw summons
           </Button>
         </div>
       </div>
@@ -140,14 +140,14 @@ export function ProspectDetail({ prospect, contact, stages, notes, history }: Pr
         <div className={styles.stack}>
           <Card>
             <CardHeader>
-              <CardTitle>Internal notes</CardTitle>
+              <CardTitle>Summons notes</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
                 <Textarea
                   rows={3}
                   aria-label="Internal note"
-                  placeholder="What happened on the last touch?"
+                  placeholder="What word returned from the last envoy?"
                   value={note}
                   onChange={(entry) => setNote(entry.currentTarget.value)}
                 />
@@ -159,11 +159,11 @@ export function ProspectDetail({ prospect, contact, stages, notes, history }: Pr
                     loading={pending}
                     onClick={saveNote}
                   >
-                    Save note
+                    Seal note
                   </Button>
                 </div>
                 {notes.length === 0 ? (
-                  <p className={styles.hint}>No notes on this card yet.</p>
+                  <p className={styles.hint}>No notes have entered the annals for this name.</p>
                 ) : (
                   notes.map((entry) => (
                     <div key={entry.id} className={styles.note}>
@@ -180,11 +180,11 @@ export function ProspectDetail({ prospect, contact, stages, notes, history }: Pr
 
           <Card>
             <CardHeader>
-              <CardTitle>Stage history</CardTitle>
+              <CardTitle>Campaign annals</CardTitle>
             </CardHeader>
             <CardBody>
               {history.length === 0 ? (
-                <p className={styles.hint}>No transitions recorded.</p>
+                <p className={styles.hint}>No change of standing is recorded.</p>
               ) : (
                 <div className={styles.timeline}>
                   {history.map((entry) => (
@@ -206,7 +206,7 @@ export function ProspectDetail({ prospect, contact, stages, notes, history }: Pr
 
         <Card>
           <CardHeader>
-            <CardTitle>Sourcing</CardTitle>
+            <CardTitle>Summoning</CardTitle>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>

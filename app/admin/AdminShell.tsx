@@ -27,39 +27,39 @@ type NavEntry = { id: string; label: string; href: string; icon: React.ReactNode
 const NAV: { id: string; title: string; items: NavEntry[] }[] = [
   {
     id: 'program',
-    title: 'Program',
+    title: 'The Curia',
     items: [
-      { id: 'overview', label: 'Overview', href: '/admin', icon: <LayoutDashboard size={15} /> },
-      { id: 'submissions', label: 'Submissions', href: '/admin/submissions', icon: <ClipboardList size={15} /> },
-      { id: 'agenda', label: 'Agenda', href: '/admin/agenda', icon: <CalendarDays size={15} /> },
-      { id: 'speakers', label: 'Speakers', href: '/admin/speakers', icon: <Users size={15} /> },
-      { id: 'crm', label: 'Speaker CRM', href: '/crm', icon: <Contact size={15} /> },
+      { id: 'overview', label: 'Forum', href: '/admin', icon: <LayoutDashboard size={15} /> },
+      { id: 'submissions', label: 'Petitions', href: '/admin/submissions', icon: <ClipboardList size={15} /> },
+      { id: 'agenda', label: 'Fasti', href: '/admin/agenda', icon: <CalendarDays size={15} /> },
+      { id: 'speakers', label: 'Orators', href: '/admin/speakers', icon: <Users size={15} /> },
+      { id: 'crm', label: 'Orator census', href: '/crm', icon: <Contact size={15} /> },
     ],
   },
   {
     id: 'collect',
-    title: 'Collect',
+    title: 'Gather',
     items: [
-      { id: 'forms', label: 'Forms', href: '/admin/forms', icon: <FileText size={15} /> },
-      { id: 'tasks', label: 'Tasks', href: '/admin/tasks', icon: <ClipboardList size={15} /> },
+      { id: 'forms', label: 'Scrolls', href: '/admin/forms', icon: <FileText size={15} /> },
+      { id: 'tasks', label: 'Duties', href: '/admin/tasks', icon: <ClipboardList size={15} /> },
     ],
   },
   {
     id: 'reach',
-    title: 'Reach',
+    title: 'Proclaim',
     items: [
-      { id: 'comms', label: 'Comms', href: '/admin/comms', icon: <Mail size={15} /> },
-      { id: 'mail', label: 'Mailbox', href: '/admin/mail', icon: <Mail size={15} /> },
-      { id: 'sms', label: 'SMS', href: '/admin/sms', icon: <MessageSquare size={15} /> },
-      { id: 'embeds', label: 'Embeds', href: '/admin/embeds', icon: <Plug size={15} /> },
+      { id: 'comms', label: 'Dispatches', href: '/admin/comms', icon: <Mail size={15} /> },
+      { id: 'mail', label: 'Courier archive', href: '/admin/mail', icon: <Mail size={15} /> },
+      { id: 'sms', label: 'SMS courier archive', href: '/admin/sms', icon: <MessageSquare size={15} /> },
+      { id: 'embeds', label: 'Inscriptions', href: '/admin/embeds', icon: <Plug size={15} /> },
     ],
   },
   {
     id: 'setup',
-    title: 'Setup',
+    title: 'Govern',
     items: [
-      { id: 'settings', label: 'Settings', href: '/admin/settings', icon: <Settings size={15} /> },
-      { id: 'integrations', label: 'Integrations', href: '/admin/integrations', icon: <Plug size={15} /> },
+      { id: 'settings', label: 'Edicts', href: '/admin/settings', icon: <Settings size={15} /> },
+      { id: 'integrations', label: 'Alliances', href: '/admin/integrations', icon: <Plug size={15} /> },
     ],
   },
 ];
@@ -101,11 +101,11 @@ export function AdminShell({
       ),
       {
         id: 'new-event',
-        label: 'Create an event',
-        group: 'Actions',
+        label: 'Convene an event',
+        group: 'Commands',
         onSelect: () => router.push('/events/new'),
       },
-      { id: 'portal', label: 'Open the speaker portal', group: 'Actions', onSelect: () => router.push('/portal') },
+      { id: 'portal', label: 'Enter the orator atrium', group: 'Commands', onSelect: () => router.push('/portal') },
     ],
     [router],
   );
@@ -138,7 +138,7 @@ export function AdminShell({
         open={commandOpen}
         onOpenChange={setCommandOpen}
         hotkey
-        placeholder="Jump to…"
+        placeholder="Search the empire…"
       />
     </div>
   );

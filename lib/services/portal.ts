@@ -143,7 +143,7 @@ export const profileSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['phone'],
-        message: 'Add a phone number to receive SMS alerts',
+        message: 'Inscribe a courier number to receive SMS summons',
       });
     }
   });
@@ -225,12 +225,12 @@ export type ProfileGap = { key: string; label: string };
 /** What the home screen leads with. Ordered by what an organizer chases speakers about. */
 export function profileGaps(row: Participant): ProfileGap[] {
   const gaps: ProfileGap[] = [];
-  if (!row.bioMarkdown?.trim()) gaps.push({ key: 'bio', label: 'Add a biography' });
-  if (!row.headshotFileId) gaps.push({ key: 'headshot', label: 'Upload a headshot' });
+  if (!row.bioMarkdown?.trim()) gaps.push({ key: 'bio', label: 'Inscribe your biography' });
+  if (!row.headshotFileId) gaps.push({ key: 'headshot', label: 'Commission your portrait' });
   if (!row.jobTitle?.trim() || !row.company?.trim()) {
-    gaps.push({ key: 'role', label: 'Add your job title and company' });
+    gaps.push({ key: 'role', label: 'Add your office and house' });
   }
-  if (row.links.length === 0) gaps.push({ key: 'links', label: 'Add a link to your work' });
+  if (row.links.length === 0) gaps.push({ key: 'links', label: 'Add a road to your work' });
   return gaps;
 }
 
@@ -407,7 +407,7 @@ export async function getMySubmission(
 ): Promise<PortalSubmission> {
   const all = await listMySubmissions(participantId);
   const found = all.find((row) => row.id === submissionId);
-  if (!found) throw notFound('That session');
+  if (!found) throw notFound('That oration');
   return found;
 }
 
@@ -438,7 +438,7 @@ export async function submissionFields(formId: string): Promise<FormFieldSpec[]>
 }
 
 export const submissionEditSchema = z.object({
-  title: z.string().trim().min(3, 'Give the session a title').max(255),
+  title: z.string().trim().min(3, 'Give the oration a title').max(255),
   descriptionMarkdown: z.string().max(5000, 'Description is limited to 5,000 characters').optional(),
   level: z.string().trim().max(60).optional(),
 });
@@ -452,7 +452,7 @@ async function requireMyRole(participantId: string, submissionId: string) {
       eq(participantRole.submissionId, submissionId),
     ),
   });
-  if (!row) throw notFound('That session');
+  if (!row) throw notFound('That oration');
   return row;
 }
 
@@ -467,8 +467,8 @@ export async function updateMySubmission(
   if (!current.editable) {
     throw conflict(
       current.formStatus === 'open'
-        ? 'That form has closed, so this session can no longer be edited'
-        : 'This session can no longer be edited from the portal',
+        ? 'That scroll has closed, so this oration can no longer be amended'
+        : 'This oration can no longer be amended from the atrium',
     );
   }
 
@@ -507,10 +507,10 @@ export async function withdrawSubmission(
 ): Promise<void> {
   const role = await requireMyRole(participantId, submissionId);
   if (!role.isPrimary && !can(ctx, 'submission:decide')) {
-    throw forbidden('Only the primary speaker can withdraw this session');
+    throw forbidden('Only the principal orator can withdraw this oration');
   }
   const current = await getMySubmission(participantId, submissionId);
-  if (current.status === 'withdrawn') throw conflict('That session is already withdrawn');
+  if (current.status === 'withdrawn') throw conflict('That oration has already been withdrawn');
 
   await getDb()
     .update(submission)
@@ -572,7 +572,7 @@ export async function shareSubmissionAccess(
 ): Promise<GroupMember> {
   const role = await requireMyRole(participantId, submissionId);
   if (!role.isPrimary && !can(ctx, 'task:manage')) {
-    throw forbidden('Only the primary speaker can share this session');
+    throw forbidden('Only the principal orator can share this oration');
   }
 
   const parsed = shareSchema.safeParse(input);
@@ -605,7 +605,7 @@ export async function shareSubmissionAccess(
     const invitee = await transaction.query.participant.findFirst({
       where: and(eq(participant.eventId, ctx.eventId), eq(participant.userId, account.id)),
     });
-    if (!invitee) throw notFound('That participant');
+    if (!invitee) throw notFound('That orator');
 
     const existing = await transaction.query.participantRole.findFirst({
       where: and(
@@ -613,7 +613,7 @@ export async function shareSubmissionAccess(
         eq(participantRole.participantId, invitee.id),
       ),
     });
-    if (existing) throw conflict('They already have access to this session');
+    if (existing) throw conflict('They already have access to this oration');
 
     const siblings = await transaction
       .select({ position: participantRole.position })
@@ -673,16 +673,16 @@ async function sendShareInvite(
   const body = [
     `Hi${name ? ` ${name}` : ''},`,
     '',
-    `You have been added to **${session.title}** at ${eventRow.name}. Your speaker portal is where you add your bio, headshot and anything else the organizers need.`,
+    `You have been named among the orators for **${session.title}** at ${eventRow.name}. Your private atrium is where you add your biography, portrait, and anything else the organizers require.`,
     '',
-    `[Open the ${eventRow.name} speaker portal](${link})`,
+    `[Enter the ${eventRow.name} orator atrium](${link})`,
   ].join('\n');
 
   await sendMail({
     to: email,
-    subject: `You have been added to ${session.title}`,
+    subject: `You have been named an orator for ${session.title}`,
     html: renderMarkdown(body),
-    text: markdownToText(body).replace(`Open the ${eventRow.name} speaker portal`, link),
+    text: markdownToText(body).replace(`Enter the ${eventRow.name} orator atrium`, link),
     eventId: ctx.eventId,
     templateKey: 'portal.access_shared',
   });
@@ -696,7 +696,7 @@ export async function revokeSubmissionAccess(
 ): Promise<void> {
   const role = await requireMyRole(participantId, submissionId);
   if (!role.isPrimary && !can(ctx, 'task:manage')) {
-    throw forbidden('Only the primary speaker can change who has access');
+    throw forbidden('Only the principal orator can change who has access');
   }
   if (targetParticipantId === participantId) throw invalid('You cannot remove yourself');
 
@@ -706,8 +706,8 @@ export async function revokeSubmissionAccess(
       eq(participantRole.participantId, targetParticipantId),
     ),
   });
-  if (!target) throw notFound('That co-speaker');
-  if (target.isPrimary) throw conflict('The primary speaker cannot be removed');
+  if (!target) throw notFound('That fellow orator');
+  if (target.isPrimary) throw conflict('The principal orator cannot be removed');
 
   await getDb().delete(participantRole).where(eq(participantRole.id, target.id));
 }
@@ -737,22 +737,22 @@ export function portalTypes(
   return [
     {
       id: 'contact',
-      label: 'My portal',
-      description: 'Your profile, tasks and deadlines',
+      label: 'My atrium',
+      description: 'Your public likeness, duties, and deadlines',
       href: `/portal/${eventSlug}`,
       count: null,
     },
     {
       id: 'submission',
-      label: 'Sessions',
-      description: 'Everything attached to a talk you are speaking on',
+      label: 'Orations',
+      description: 'Every petition and oration bearing your name',
       href: `/portal/${eventSlug}/submissions`,
       count: submissions.length,
     },
     {
       id: 'group',
-      label: 'Group',
-      description: 'Co-speakers and shared access',
+      label: 'Delegation',
+      description: 'Fellow orators and shared access',
       href: `/portal/${eventSlug}/group`,
       count: groupSize,
     },

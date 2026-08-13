@@ -10,7 +10,7 @@ import { filtersFromSearchParams, toContactWire, toFieldWire } from './serialize
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Speaker directory · Cicero' };
+export const metadata = { title: 'Census of orators · Cicero' };
 
 /**
  * The whole directory is handed to the client and narrowed there, so clearing a filter restores the

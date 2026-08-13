@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import styles from './files.module.css';
 
 const TABS = [
-  { href: '/admin/submissions/files', label: 'All files' },
-  { href: '/admin/submissions/files/deliverables', label: 'Deliverables' },
-  { href: '/admin/submissions/files/history', label: 'Content history' },
+  { href: '/admin/submissions/files', label: 'The archive' },
+  { href: '/admin/submissions/files/deliverables', label: 'Required scrolls' },
+  { href: '/admin/submissions/files/history', label: 'The annals' },
 ];
 
 /** The admin sidebar is owned elsewhere, so the three content screens carry their own switcher. */
@@ -15,7 +15,7 @@ export function FilesNav() {
   const pathname = usePathname();
 
   return (
-    <nav className={styles.nav} aria-label="Content and files">
+    <nav className={styles.nav} aria-label="Scrolls and annals">
       {TABS.map((tab) => (
         <Link
           key={tab.href}

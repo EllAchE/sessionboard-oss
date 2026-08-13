@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Cicero API",
+    "title": "Cicero Public Aqueduct",
     "version": "1.0.0",
-    "description": "Read the public program of a Cicero event, and submit to an open call for speakers.\n\nPublic reads need no credential. `GET /events/{slug}/submissions` is scoped to an API key\nissued for that event under Admin → Integrations, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and shown once, at creation.\nProgram reconciliation writes use the same event-scoped Bearer keys and preview by default.",
+    "description": "Read the public programme of a Cicero assembly and answer an open proclamation for orators.\n\nPublic reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key\nissued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and revealed only once, when forged.\nProgramme reconciliation writes use the same assembly-scoped Bearer seals and preview by default.",
     "license": {
       "name": "MIT"
     }
@@ -15,16 +15,16 @@
   ],
   "tags": [
     {
-      "name": "Events",
-      "description": "Event metadata"
+      "name": "Assemblies",
+      "description": "Founding charters and public records"
     },
     {
-      "name": "Program",
-      "description": "Sessions, speakers and the agenda"
+      "name": "Programme",
+      "description": "Orations, orators, and the fasti"
     },
     {
-      "name": "Submissions",
-      "description": "The call for speakers"
+      "name": "Petitions",
+      "description": "The proclamation for orators"
     }
   ],
   "components": {
@@ -32,7 +32,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "A per-event API key. Public read endpoints do not require it."
+        "description": "An aqueduct key for one assembly. Public reads do not require it."
       }
     },
     "schemas": {
@@ -48,14 +48,14 @@
           },
           "allowDeletes": {
             "type": "boolean",
-            "description": "Must be true with apply mode before remote-only fixture records are deleted"
+            "description": "Must be true with apply mode before remote-only fixture inscriptions are erased"
           },
           "resetFixture": {
             "const": "drifted",
-            "description": "Fixture mode only: reset the remote collection to a repeatable drifted demo state"
+            "description": "Fixture province only: reset the remote rolls to a repeatable drifted demo state"
           }
         },
-        "description": "Controls a one-way published-program sync to the fixture Accelevents adapter"
+        "description": "Controls a one-way proclaimed-programme crossing to the fixture Accelevents road"
       },
       "AcceleventsProgramSyncResult": {
         "type": "object",
@@ -246,7 +246,7 @@
           "venueName",
           "venueAddress"
         ],
-        "description": "A conference or event"
+        "description": "An assembly charter"
       },
       "Session": {
         "type": "object",
@@ -366,7 +366,7 @@
           "ceuCredits",
           "speakers"
         ],
-        "description": "A scheduled session on the agenda"
+        "description": "An oration inscribed in the fasti"
       },
       "Speaker": {
         "type": "object",
@@ -457,7 +457,7 @@
           "links",
           "sessions"
         ],
-        "description": "A speaker with at least one accepted session"
+        "description": "An orator named on at least one accepted petition"
       },
       "Agenda": {
         "type": "object",
@@ -534,7 +534,7 @@
               "venueName",
               "venueAddress"
             ],
-            "description": "A conference or event"
+            "description": "An assembly charter"
           },
           "days": {
             "type": "array",
@@ -665,7 +665,7 @@
                       "ceuCredits",
                       "speakers"
                     ],
-                    "description": "A scheduled session on the agenda"
+                    "description": "An oration inscribed in the fasti"
                   }
                 }
               },
@@ -795,7 +795,7 @@
                 "ceuCredits",
                 "speakers"
               ],
-              "description": "A scheduled session on the agenda"
+              "description": "An oration inscribed in the fasti"
             }
           }
         },
@@ -804,7 +804,7 @@
           "days",
           "unscheduled"
         ],
-        "description": "The published agenda, grouped by day"
+        "description": "The proclaimed fasti, grouped by day"
       },
       "Submission": {
         "type": "object",
@@ -884,7 +884,7 @@
           "answers": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Custom form answers, keyed by field key"
+            "description": "Custom scroll answers, keyed by prompt key"
           },
           "submittedAt": {
             "type": [
@@ -916,7 +916,7 @@
           "submittedAt",
           "decidedAt"
         ],
-        "description": "A CFP submission. Requires an API key."
+        "description": "A petition from the call for orators. Requires an aqueduct key."
       },
       "NewSubmission": {
         "type": "object",
@@ -924,11 +924,11 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Submitter email; an account is created if none exists"
+            "description": "Petitioner dispatch address; Cicero creates an account if none exists"
           },
           "name": {
             "type": "string",
-            "description": "Submitter display name"
+            "description": "Petitioner name for the rolls"
           },
           "answers": {
             "type": "object",
@@ -956,7 +956,7 @@
                 }
               ]
             },
-            "description": "Keyed by the form field key. Built-in keys are title, description, format, track, level, tags."
+            "description": "Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags."
           }
         },
         "additionalProperties": false,
@@ -964,7 +964,7 @@
           "email",
           "answers"
         ],
-        "description": "A submission to a published form"
+        "description": "A petition filed through a proclaimed scroll"
       },
       "NewSubmissionResult": {
         "type": "object",
@@ -1005,15 +1005,15 @@
               "merge",
               "replace"
             ],
-            "description": "merge upserts listed records; replace also deletes managed records that are absent"
+            "description": "merge inscribes or revises listed records; replace also erases absent managed records"
           },
           "apply": {
             "type": "boolean",
-            "description": "False previews the exact operations without writing"
+            "description": "False previews the exact acts without altering the rolls"
           },
           "confirmDeleteMissing": {
             "const": "DELETE_MISSING_SESSIONS",
-            "description": "Required to apply replace mode when missing managed sessions would be deleted"
+            "description": "Required to enact replace mode when missing managed orations would be erased"
           },
           "sessions": {
             "type": "array",
@@ -1024,7 +1024,7 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 200,
-                  "description": "Stable Accelevents session id; unique within this event"
+                  "description": "Stable Accelevents oration id; unique within this assembly"
                 },
                 "title": {
                   "type": "string",
@@ -1037,7 +1037,7 @@
                     "null"
                   ],
                   "maxLength": 50000,
-                  "description": "Required Markdown field; null or blank clears the description"
+                  "description": "Required Markdown inscription; null or blank clears the description"
                 },
                 "status": {
                   "type": "string",
@@ -1068,7 +1068,7 @@
                   ],
                   "minLength": 1,
                   "maxLength": 200,
-                  "description": "Event room id or exact name (case-insensitive)"
+                  "description": "Assembly chamber id or exact name (case-insensitive)"
                 },
                 "track": {
                   "type": [
@@ -1077,7 +1077,7 @@
                   ],
                   "minLength": 1,
                   "maxLength": 200,
-                  "description": "Event track id or exact name (case-insensitive)"
+                  "description": "Assembly theme id or exact name (case-insensitive)"
                 },
                 "format": {
                   "type": [
@@ -1086,7 +1086,7 @@
                   ],
                   "minLength": 1,
                   "maxLength": 200,
-                  "description": "Event format id or exact name (case-insensitive)"
+                  "description": "Assembly oration format id or exact name (case-insensitive)"
                 },
                 "ceuCredits": {
                   "type": [
@@ -1117,13 +1117,13 @@
               "minLength": 1,
               "maxLength": 200
             },
-            "description": "Explicit source-managed sessions to delete in merge mode"
+            "description": "Source-managed orations to erase explicitly in merge mode"
           }
         },
         "required": [
           "source"
         ],
-        "description": "An Accelevents-shaped program snapshot or patch"
+        "description": "An Accelevents-shaped programme snapshot or petition"
       },
       "ProgramReconcileResult": {
         "type": "object",
@@ -1278,16 +1278,16 @@
     "/events/{slug}": {
       "get": {
         "tags": [
-          "Events"
+          "Assemblies"
         ],
-        "summary": "Fetch one event",
+        "summary": "Read one assembly charter",
         "operationId": "getEvent",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1295,7 +1295,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The event",
+            "description": "The assembly",
             "content": {
               "application/json": {
                 "schema": {
@@ -1305,7 +1305,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1320,17 +1320,17 @@
     "/events/{slug}/sessions": {
       "get": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "List sessions",
-        "description": "Published sessions only. Filters accept a track or room name, or its id.",
+        "summary": "List proclaimed orations",
+        "description": "Proclaimed orations only. Filters accept a theme or chamber name, or its id.",
         "operationId": "listSessions",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1354,30 +1354,30 @@
             "name": "track",
             "in": "query",
             "required": false,
-            "description": "Track name or id",
+            "description": "Theme name or id",
             "schema": {
               "type": "string",
               "minLength": 1,
               "maxLength": 120,
-              "description": "Track name or id"
+              "description": "Theme name or id"
             }
           },
           {
             "name": "room",
             "in": "query",
             "required": false,
-            "description": "Room name or id",
+            "description": "Chamber name or id",
             "schema": {
               "type": "string",
               "minLength": 1,
               "maxLength": 120,
-              "description": "Room name or id"
+              "description": "Chamber name or id"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Matching sessions",
+            "description": "Matching orations",
             "content": {
               "application/json": {
                 "schema": {
@@ -1402,7 +1402,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1412,7 +1412,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1427,17 +1427,17 @@
     "/events/{slug}/speakers": {
       "get": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "List speakers",
-        "description": "Everyone on an accepted submission. Emails are not included.",
+        "summary": "List orators",
+        "description": "Every orator named on an accepted petition. Dispatch addresses are withheld.",
         "operationId": "listSpeakers",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1445,7 +1445,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The speakers",
+            "description": "The orators",
             "content": {
               "application/json": {
                 "schema": {
@@ -1470,7 +1470,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1485,17 +1485,17 @@
     "/events/{slug}/agenda": {
       "get": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "Fetch the agenda",
-        "description": "Published sessions grouped by day in the event's timezone.",
+        "summary": "Read the fasti",
+        "description": "The proclaimed fasti grouped by day in the event's timezone.",
         "operationId": "getAgenda",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1503,7 +1503,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The agenda",
+            "description": "The fasti",
             "content": {
               "application/json": {
                 "schema": {
@@ -1513,7 +1513,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1528,10 +1528,10 @@
     "/events/{slug}/program/reconcile": {
       "post": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "Preview or apply an Accelevents program collection",
-        "description": "Requires an API key issued for this event. `apply: false` is a side-effect-free preview. `merge` upserts listed sessions and honors explicit `deleteExternalIds`. `replace` also reports source-managed sessions missing from the collection; applying those deletes requires `confirmDeleteMissing: \"DELETE_MISSING_SESSIONS\"`. Any per-record error prevents the entire request from being applied.",
+        "summary": "Preview or apply an Accelevents programme collection",
+        "description": "Requires an aqueduct key issued for this assembly. `apply: false` previews without altering the rolls. `merge` inscribes or updates the listed orations and honors explicit `deleteExternalIds`. `replace` also reports source-managed orations missing from the collection; erasing those inscriptions requires `confirmDeleteMissing: \"DELETE_MISSING_SESSIONS\"`. Any error in one record prevents the entire petition from being enacted.",
         "operationId": "reconcileProgram",
         "security": [
           {
@@ -1543,7 +1543,7 @@
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1561,7 +1561,7 @@
         },
         "responses": {
           "200": {
-            "description": "The preview or apply report",
+            "description": "The preview or enacted report",
             "content": {
               "application/json": {
                 "schema": {
@@ -1579,7 +1579,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid aqueduct seal",
             "content": {
               "application/json": {
                 "schema": {
@@ -1589,7 +1589,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1604,10 +1604,10 @@
     "/events/{slug}/submissions": {
       "get": {
         "tags": [
-          "Submissions"
+          "Petitions"
         ],
-        "summary": "List submissions",
-        "description": "Requires an API key issued for this event.",
+        "summary": "List petitions",
+        "description": "Requires an aqueduct key issued for this assembly.",
         "operationId": "listSubmissions",
         "security": [
           {
@@ -1619,7 +1619,7 @@
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1656,7 +1656,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching submissions",
+            "description": "Matching petitions",
             "content": {
               "application/json": {
                 "schema": {
@@ -1681,7 +1681,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid aqueduct seal",
             "content": {
               "application/json": {
                 "schema": {
@@ -1691,7 +1691,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1701,7 +1701,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1716,17 +1716,17 @@
     "/events/{slug}/forms/{formId}/submissions": {
       "post": {
         "tags": [
-          "Submissions"
+          "Petitions"
         ],
-        "summary": "Submit to a call for speakers",
-        "description": "No API key required — an open CFP takes submissions from anyone. An account is created for the email address if none exists, and a sign-in link is emailed. This POST is non-idempotent: a retry may create another submission when the form allows multiple submissions per person.",
+        "summary": "Answer a proclamation for orators",
+        "description": "No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link. This POST is non-idempotent: a retry may create another petition when the scroll allows multiple petitions per citizen.",
         "operationId": "createSubmission",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1735,7 +1735,7 @@
             "name": "formId",
             "in": "path",
             "required": true,
-            "description": "The form's id or slug",
+            "description": "The scroll's id or slug",
             "schema": {
               "type": "string"
             }
@@ -1753,7 +1753,7 @@
         },
         "responses": {
           "201": {
-            "description": "The submission",
+            "description": "The petition",
             "content": {
               "application/json": {
                 "schema": {
@@ -1763,7 +1763,7 @@
             }
           },
           "404": {
-            "description": "No such event, form or resource",
+            "description": "No such assembly, scroll, or record",
             "content": {
               "application/json": {
                 "schema": {
@@ -1773,7 +1773,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with an existing record",
+            "description": "Conflicts with a record already on the rolls",
             "content": {
               "application/json": {
                 "schema": {
@@ -1783,7 +1783,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1798,10 +1798,10 @@
     "/events/{slug}/integrations/accelevents/program": {
       "post": {
         "tags": [
-          "Program"
+          "Programme"
         ],
-        "summary": "Preview or apply the fixture Accelevents program sync",
-        "description": "Bonus fixture capability for deterministic demos. It reconciles the published event, sessions and accepted speakers with create, update, delete and no-op results. Live Accelevents remains limited to the documented accepted-speaker push.",
+        "summary": "Preview or command the fixture Accelevents programme crossing",
+        "description": "A fixture-province capability for deterministic demonstrations. It reconciles the proclaimed assembly, orations, and accepted orators with inscribe, revise, erase, and unchanged results. Live Accelevents remains limited to the documented accepted-orator crossing.",
         "operationId": "syncAcceleventsProgramFixture",
         "security": [
           {
@@ -1813,7 +1813,7 @@
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "The event's URL slug",
+            "description": "The assembly's URL slug",
             "schema": {
               "type": "string"
             }
@@ -1831,7 +1831,7 @@
         },
         "responses": {
           "200": {
-            "description": "The reconciliation plan or applied result",
+            "description": "The reconciliation plan or commanded result",
             "content": {
               "application/json": {
                 "schema": {
@@ -1841,7 +1841,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key",
+            "description": "Missing or invalid aqueduct seal",
             "content": {
               "application/json": {
                 "schema": {
@@ -1851,7 +1851,7 @@
             }
           },
           "409": {
-            "description": "Conflicts with an existing record",
+            "description": "Conflicts with a record already on the rolls",
             "content": {
               "application/json": {
                 "schema": {
@@ -1861,7 +1861,7 @@
             }
           },
           "422": {
-            "description": "The request failed validation",
+            "description": "The petition failed validation",
             "content": {
               "application/json": {
                 "schema": {
@@ -1876,7 +1876,7 @@
     "/openapi.json": {
       "get": {
         "tags": [
-          "Events"
+          "Assemblies"
         ],
         "summary": "This document",
         "operationId": "getOpenApi",

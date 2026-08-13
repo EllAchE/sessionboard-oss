@@ -55,7 +55,7 @@ function fail(error: unknown): FormState {
     return { status: 'error', message: error.message, details: error.details };
   }
   console.error(error instanceof Error ? error.message : String(error));
-  return { status: 'error', message: 'Something went wrong. Try again.' };
+  return { status: 'error', message: 'The Forum hit a snag. Try once more.' };
 }
 
 function text(formData: FormData, key: string): string {
@@ -105,7 +105,7 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
   try {
     const { ctx, me, eventSlug } = await actionSession(formData);
 
-    await recordRevision(ctx, 'participant', me.id, 'Edited their speaker profile');
+    await recordRevision(ctx, 'participant', me.id, 'Revised their public likeness');
 
     const labels = formData.getAll('linkLabel').map((entry) => String(entry));
     const urls = formData.getAll('linkUrl').map((entry) => String(entry));
@@ -130,7 +130,7 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
     });
 
     refresh(eventSlug);
-    return { status: 'ok', message: 'Profile saved' };
+    return { status: 'ok', message: 'Public likeness inscribed' };
   } catch (error) {
     return fail(error);
   }
@@ -143,7 +143,7 @@ export async function removeHeadshotAction(_prev: FormState, formData: FormData)
     await setHeadshot(ctx, me.id, null);
     if (fileId) await deleteFile(ctx, fileId);
     refresh(eventSlug);
-    return { status: 'ok', message: 'Headshot removed' };
+    return { status: 'ok', message: 'Portrait removed from the gallery' };
   } catch (error) {
     return fail(error);
   }
@@ -158,7 +158,7 @@ export async function completeTaskAction(_prev: FormState, formData: FormData): 
     const { ctx, me, eventSlug } = await actionSession(formData);
     await completeSimpleTask(ctx, me.id, text(formData, 'assignmentId'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'Marked as done' };
+    return { status: 'ok', message: 'Duty entered as settled' };
   } catch (error) {
     return fail(error);
   }
@@ -169,7 +169,7 @@ export async function reopenTaskAction(_prev: FormState, formData: FormData): Pr
     const { ctx, me, eventSlug } = await actionSession(formData);
     await reopenTask(ctx, me.id, text(formData, 'assignmentId'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'Reopened' };
+    return { status: 'ok', message: 'Duty returned to the ledger' };
   } catch (error) {
     return fail(error);
   }
@@ -180,7 +180,7 @@ export async function removeTaskFileAction(_prev: FormState, formData: FormData)
     const { ctx, me, eventSlug } = await actionSession(formData);
     await removeTaskFile(ctx, me.id, text(formData, 'assignmentId'), text(formData, 'fileId'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'File removed' };
+    return { status: 'ok', message: 'Record removed from the archive' };
   } catch (error) {
     return fail(error);
   }
@@ -195,13 +195,13 @@ export async function saveTaskFormAction(_prev: FormState, formData: FormData): 
 
     const tasks = await listPortalTasks(ctx.eventId, me.id);
     const entry = tasks.find((row) => row.assignmentId === assignmentId);
-    if (!entry?.form) throw notFound('That form');
+    if (!entry?.form) throw notFound('That scroll');
 
     await saveTaskForm(ctx, me.id, assignmentId, readAnswers(entry.form.fields, formData), submit);
     refresh(eventSlug);
     return {
       status: 'ok',
-      message: submit ? 'Submitted — check your email for a copy' : 'Progress saved',
+      message: submit ? 'Response lodged—a copy is traveling to your dispatch address' : 'Response set aside for later',
     };
   } catch (error) {
     return fail(error);
@@ -225,7 +225,7 @@ export async function postDeliverableCommentAction(
     const deliverable = await myDeliverable(ctx, me, text(formData, 'fileId'));
     await addFileComment(ctx, deliverable.current.id, text(formData, 'body'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'Comment posted — the organizers can see it' };
+    return { status: 'ok', message: 'Note dispatched—the organizers can see it' };
   } catch (error) {
     return fail(error);
   }
@@ -243,8 +243,8 @@ export async function saveSubmissionAction(_prev: FormState, formData: FormData)
     const fields = formId ? await submissionFields(formId) : [];
 
     const mine = await listMySubmissions(me.id);
-    if (!mine.some((entry) => entry.id === submissionId)) throw notFound('That session');
-    await recordRevision(ctx, 'session', submissionId, 'Edited the session content');
+    if (!mine.some((entry) => entry.id === submissionId)) throw notFound('That oration');
+    await recordRevision(ctx, 'session', submissionId, 'Revised the oration');
 
     await updateMySubmission(ctx, me.id, submissionId, {
       title: text(formData, 'title'),
@@ -254,7 +254,7 @@ export async function saveSubmissionAction(_prev: FormState, formData: FormData)
     });
 
     refresh(eventSlug);
-    return { status: 'ok', message: 'Session updated' };
+    return { status: 'ok', message: 'Oration revised' };
   } catch (error) {
     return fail(error);
   }
@@ -268,7 +268,7 @@ export async function withdrawSubmissionAction(
     const { ctx, me, eventSlug } = await actionSession(formData);
     await withdrawSubmission(ctx, me.id, text(formData, 'submissionId'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'Session withdrawn' };
+    return { status: 'ok', message: 'Oration withdrawn from the programme' };
   } catch (error) {
     return fail(error);
   }
@@ -288,7 +288,7 @@ export async function shareAccessAction(_prev: FormState, formData: FormData): P
       kind: kind === '' ? undefined : (kind as 'co_speaker' | 'moderator' | 'panelist' | 'speaker'),
     });
     refresh(eventSlug);
-    return { status: 'ok', message: `${member.email} now has their own portal for this session` };
+    return { status: 'ok', message: `${member.email} now has a private atrium for this oration` };
   } catch (error) {
     return fail(error);
   }
@@ -304,7 +304,7 @@ export async function revokeAccessAction(_prev: FormState, formData: FormData): 
       text(formData, 'targetParticipantId'),
     );
     refresh(eventSlug);
-    return { status: 'ok', message: 'Access removed' };
+    return { status: 'ok', message: 'Name removed from the delegation' };
   } catch (error) {
     return fail(error);
   }

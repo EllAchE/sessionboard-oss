@@ -30,6 +30,6 @@ export async function requestLinkAction(_prev: SignInState, formData: FormData):
       ? { sent: true, email: address }
       : { sent: true, email: address, link, undelivered: true };
   } catch (error) {
-    return { sent: false, error: isAppError(error) ? error.message : 'Something went wrong. Try again.' };
+    return { sent: false, error: isAppError(error) ? error.message : 'The Forum hit a snag. Try once more.' };
   }
 }

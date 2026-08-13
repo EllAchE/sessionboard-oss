@@ -303,7 +303,7 @@ describe('parseSubmissionImport', () => {
   it('reports the missing columns rather than importing half a file', () => {
     const parsed = parseSubmissionImport('Title\nOn Engines');
     expect(parsed.rows).toEqual([]);
-    expect(parsed.errors.some((error) => /Speaker email/i.test(error.message))).toBe(true);
+    expect(parsed.errors.some((error) => /Orator email/i.test(error.message))).toBe(true);
   });
 
   it('skips a bad row and keeps the good ones', () => {
@@ -475,8 +475,8 @@ describe('reminderBody', () => {
       'Please finish before the programme meeting.',
     );
 
-    expect(body).toContain('Hi Grace,');
-    expect(body).toContain('2 submissions still waiting');
+    expect(body).toContain('Salve Grace,');
+    expect(body).toContain('2 petitions still awaiting judgment');
     expect(body).toContain('ABS-12 — On Engines');
     expect(body).toContain('https://cicero.test/review');
     expect(body).toContain('2026-09-01');
@@ -489,6 +489,6 @@ describe('reminderBody', () => {
       { name: 'Round one', closesAt: null },
       'https://cicero.test/review',
     );
-    expect(body).toContain('1 submission still waiting');
+    expect(body).toContain('1 petition still awaiting judgment');
   });
 });

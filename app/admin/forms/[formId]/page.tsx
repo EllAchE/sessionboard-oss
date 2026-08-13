@@ -8,7 +8,7 @@ import type { BuilderFieldView, FormView, LibraryEntryView } from './builder-typ
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Form builder · Cicero' };
+export const metadata = { title: 'Scroll builder · Cicero' };
 
 function iso(value: Date | null): string | null {
   return value ? value.toISOString() : null;

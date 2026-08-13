@@ -44,19 +44,19 @@ export function GalleryWidget({
         <SearchField
           value={query}
           onChange={setQuery}
-          label="Search speakers, companies, or talks"
-          placeholder="Search speakers, companies, or talks…"
+          label="Search orators, houses, or orations"
+          placeholder="Search orators, houses, or orations…"
         />
         <span className={styles.resultCount} role="status">
-          {visible.length} of {ordered.length} speakers
+          {visible.length} of {ordered.length} orators
         </span>
       </div>
 
       {visible.length === 0 ? (
         <p className={styles.empty}>
           {ordered.length === 0
-            ? 'No speakers have been announced yet.'
-            : 'No speaker matches that search.'}
+            ? 'No orator portrait has been unveiled yet.'
+            : 'No orator answers that search.'}
         </p>
       ) : (
         <div className={styles.gallery}>

@@ -61,7 +61,7 @@ function placementTimes(input: PlacementInput): { startsAt: Date; endsAt: Date }
     throw invalid('That slot is not a valid time');
   }
   if (endsAt.getTime() <= startsAt.getTime()) {
-    throw invalid('A session has to end after it starts');
+    throw invalid('An oration must conclude after it begins');
   }
   return { startsAt, endsAt };
 }
@@ -77,7 +77,7 @@ async function placeSession(
     const existing = await transaction.query.scheduledSession.findFirst({
       where: and(eq(scheduledSession.id, input.targetId), eq(scheduledSession.eventId, eventId)),
     });
-    if (!existing) throw conflict('That session is no longer on this agenda');
+    if (!existing) throw conflict('That oration is no longer inscribed in the fasti');
 
     await transaction
       .update(scheduledSession)
@@ -89,7 +89,7 @@ async function placeSession(
   const source = await transaction.query.submission.findFirst({
     where: and(eq(submission.id, input.targetId), eq(submission.eventId, eventId)),
   });
-  if (!source) throw conflict('That submission is no longer available');
+  if (!source) throw conflict('That petition is no longer before the Forum');
 
   const already = await transaction.query.scheduledSession.findFirst({
     where: and(
@@ -155,7 +155,7 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
     const existing = await db.query.scheduledSession.findFirst({
       where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
     });
-    if (!existing) return { ok: false, error: 'That session is no longer on this agenda' };
+    if (!existing) return { ok: false, error: 'That oration is no longer inscribed in the fasti' };
 
     // Pulling a published talk off the grid is a cancellation as far as an attendee's calendar is
     // concerned, and has to be sent before the times are cleared — a row with no start cannot
@@ -204,7 +204,7 @@ export async function saveManualSessionAction(
     const ctx = await authorize();
 
     const title = input.title.trim();
-    if (!title) return { ok: false, error: 'A session needs a title' };
+    if (!title) return { ok: false, error: 'An oration needs a title' };
 
     const startsAt = input.startsAt ? new Date(input.startsAt) : null;
     const endsAt = input.endsAt ? new Date(input.endsAt) : null;
@@ -214,9 +214,9 @@ export async function saveManualSessionAction(
     ) {
       return { ok: false, error: 'That slot is not a valid time' };
     }
-    if (!startsAt && endsAt) return { ok: false, error: 'Give the session a start time' };
+    if (!startsAt && endsAt) return { ok: false, error: 'Give the oration an opening hour' };
     if (startsAt && endsAt && endsAt.getTime() <= startsAt.getTime()) {
-      return { ok: false, error: 'A session has to end after it starts' };
+      return { ok: false, error: 'An oration must conclude after it begins' };
     }
 
     const sessionId = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
@@ -255,7 +255,7 @@ export async function saveManualSessionAction(
             eq(scheduledSession.eventId, ctx.eventId),
           ),
         });
-        if (!existing) throw conflict('That session is no longer on this agenda');
+        if (!existing) throw conflict('That oration is no longer inscribed in the fasti');
 
         await transaction
           .update(scheduledSession)
@@ -276,7 +276,7 @@ export async function saveManualSessionAction(
           })
         : null;
       if (input.sourceSubmissionId && !source) {
-        throw conflict('That accepted proposal is no longer available');
+        throw conflict('That accepted petition is no longer on the rolls');
       }
 
       if (source) {
@@ -286,7 +286,7 @@ export async function saveManualSessionAction(
             eq(scheduledSession.submissionId, source.id),
           ),
         });
-        if (existing) throw conflict('That proposal is already on the agenda');
+        if (existing) throw conflict('That petition is already inscribed in the fasti');
       }
 
       const [created] = await transaction
@@ -323,7 +323,7 @@ export async function setSessionStatusAction(
       const existing = await transaction.query.scheduledSession.findFirst({
         where: and(eq(scheduledSession.id, sessionId), eq(scheduledSession.eventId, ctx.eventId)),
       });
-      if (!existing) throw conflict('That session is no longer on this agenda');
+      if (!existing) throw conflict('That oration is no longer inscribed in the fasti');
       if (existing.status === status) {
         return {
           data: { changed: false, wasVisible: existing.status === 'published' },
@@ -332,7 +332,7 @@ export async function setSessionStatusAction(
       }
 
       if (status === 'published' && (!existing.startsAt || !existing.endsAt || !existing.roomId)) {
-        throw invalid('Give it a room and a time before publishing it');
+        throw invalid('Give the oration a chamber and an hour before proclaiming it');
       }
 
       await transaction
@@ -344,7 +344,6 @@ export async function setSessionStatusAction(
         changedSessionIds: [sessionId],
       };
     });
-
     if (outcome.changed && status === 'published') await notifyIfPublished(sessionId, {}, graph);
     else if (outcome.changed && outcome.wasVisible) {
       await notifyIfPublished(sessionId, { cancel: true }, graph);
@@ -369,7 +368,7 @@ export async function publishAllAction(
     const ctx = await authorize();
     const uniqueSessionIds = [...new Set(sessionIds)];
     if (uniqueSessionIds.length > MAX_PUBLISH_SESSION_COUNT) {
-      throw invalid(`Publish at most ${MAX_PUBLISH_SESSION_COUNT} sessions at once`);
+      throw invalid(`Proclaim at most ${MAX_PUBLISH_SESSION_COUNT} orations at once`);
     }
 
     const publishedSessionIds = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
@@ -379,11 +378,11 @@ export async function publishAllAction(
         });
         if (!existing || existing.status !== 'draft') {
           throw conflict(
-            'The agenda changed while this day was being published; refresh and try again',
+            'The fasti changed while this day was being proclaimed; refresh and try again',
           );
         }
         if (!existing.startsAt || !existing.endsAt || !existing.roomId) {
-          throw invalid('Every session needs a room and a time before publishing the day');
+          throw invalid('Every oration needs a chamber and an hour before proclaiming the day');
         }
 
         await transaction

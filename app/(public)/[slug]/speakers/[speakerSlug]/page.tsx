@@ -17,12 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { slug, speakerSlug } = await params;
   const bundle = await loadPublicBundle(slug);
   const speaker = bundle?.speakers.find((entry) => entry.slug === speakerSlug);
-  if (!bundle || !speaker) return { title: 'Speaker not found' };
+  if (!bundle || !speaker) return { title: 'Orator absent from the rolls' };
   return createSocialMetadata({
     origin: appUrl(),
     path: `/${bundle.event.slug}/speakers/${speaker.slug}`,
     title: `${speaker.name} · ${bundle.event.name}`,
-    description: speaker.bioExcerpt || `${speaker.name} is speaking at ${bundle.event.name}.`,
+    description: speaker.bioExcerpt || `${speaker.name} is an orator at ${bundle.event.name}.`,
   });
 }
 
@@ -51,7 +51,7 @@ export default async function PublicSpeakerPage({
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>{speaker.name}</h2>
           <Link href={`/${bundle.event.slug}/speakers`} className={styles.sectionLink}>
-            ← All speakers
+            ← All orators
           </Link>
         </div>
         <div className={embedStyles.detail}>

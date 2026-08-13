@@ -153,7 +153,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
     if (target < 0 || target >= rows.length) return;
     const ordered = rows.map((row) => row.id);
     [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
-    run(() => reorderRowsAction(spec.kind, ordered), 'Order saved');
+    run(() => reorderRowsAction(spec.kind, ordered), 'Order entered in the edicts');
   };
 
   const deleteRow = (row: EntityRow) => {
@@ -163,7 +163,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
     }
     run(
       () => removeRowAction(spec.kind, row.id),
-      `${row.values[nameKey] || 'Row'} deleted`,
+      `${row.values[nameKey] || 'Record'} erased from the tablet`,
     );
   };
 
@@ -179,8 +179,8 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
           reassignTo ? { reassignTo } : { force: true },
         ),
       reassignTo
-        ? `Moved ${row.usage} across and deleted ${row.values[nameKey]}`
-        : `${row.values[nameKey]} deleted`,
+        ? `Moved ${row.usage} records and erased ${row.values[nameKey]}`
+        : `${row.values[nameKey]} erased from the tablet`,
     );
   };
 
@@ -214,7 +214,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
               onCommit(event.target.value);
             }}
           >
-            <option value="">No colour</option>
+            <option value="">Uncoloured stone</option>
             {COLOR_TOKENS.map((entry) => (
               <option key={entry.token} value={entry.token}>
                 {entry.label}
@@ -285,12 +285,12 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
 
     cells.push({
       id: 'usage',
-      header: 'In use',
+      header: 'Invoked',
       width: '10%',
       align: 'right',
       render: (row) =>
         row.usage > 0 ? (
-          <Badge tone="info" title={`Used by ${row.usage} ${spec.usageNoun}`}>
+          <Badge tone="info" title={`Invoked by ${row.usage} ${spec.usageNoun}`}>
             {row.usage}
           </Badge>
         ) : (
@@ -300,7 +300,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
 
     cells.push({
       id: 'actions',
-      header: <span className={styles.visuallyHidden}>Actions</span>,
+      header: <span className={styles.visuallyHidden}>Edicts</span>,
       width: 'calc(var(--control-md) * 3.4)',
       align: 'right',
       render: (row, index) => (
@@ -308,7 +308,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
           {spec.orderable ? (
             <>
               <IconButton
-                label={`Move ${row.values[nameKey]} up`}
+                label={`Raise ${row.values[nameKey]}`}
                 size="xs"
                 disabled={!canManage || index === 0 || pending}
                 onKeyDown={stopGridKeys}
@@ -317,7 +317,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
                 <ChevronUp size={14} />
               </IconButton>
               <IconButton
-                label={`Move ${row.values[nameKey]} down`}
+                label={`Lower ${row.values[nameKey]}`}
                 size="xs"
                 disabled={!canManage || index === rows.length - 1 || pending}
                 onKeyDown={stopGridKeys}
@@ -328,7 +328,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
             </>
           ) : null}
           <IconButton
-            label={`Delete ${row.values[nameKey]}`}
+            label={`Erase ${row.values[nameKey]}`}
             size="xs"
             variant="danger"
             disabled={!canManage || pending}
@@ -355,7 +355,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
         rows={rows}
         getRowId={(row) => row.id}
         label={spec.label}
-        emptyState={`No ${spec.label.toLowerCase()} yet. Add the first one below.`}
+        emptyState={`No ${spec.label.toLowerCase()} have been decreed. Inscribe the first below.`}
       />
 
       {canManage ? (
@@ -369,7 +369,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
                 draft[column.key] ?? '',
                 (next) => setDraft((current) => ({ ...current, [column.key]: next })),
                 () => undefined,
-                `New ${spec.singular} ${column.label.toLowerCase()}`,
+                `New ${spec.singular}: ${column.label.toLowerCase()}`,
               )}
             </label>
           ))}
@@ -380,7 +380,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
             loading={pending}
             onClick={addRow}
           >
-            Add {spec.singular}
+            Inscribe {spec.singular}
           </Button>
         </div>
       ) : null}
@@ -388,24 +388,24 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
       <Dialog
         open={confirming !== null}
         onOpenChange={(open) => (open ? undefined : setConfirming(null))}
-        title={`Delete ${confirming?.row.values[nameKey] ?? ''}?`}
+        title={`Erase ${confirming?.row.values[nameKey] ?? ''}?`}
         description={
           spec.reassignable
-            ? `${confirming?.row.usage ?? 0} ${spec.usageNoun} still point at this ${spec.singular}. Move them somewhere first, or delete anyway and leave the field empty on each one.`
-            : `${confirming?.row.usage ?? 0} ${spec.usageNoun} were built from this ${spec.singular}. They keep their question; they only lose the link back to the library.`
+            ? `${confirming?.row.usage ?? 0} ${spec.usageNoun} still invoke this ${spec.singular}. Move them first, or erase it and leave each record blank.`
+            : `${confirming?.row.usage ?? 0} ${spec.usageNoun} were made from this ${spec.singular}. They keep their prompt and lose only the road back to the library.`
         }
         footer={
           <>
-            <Button onClick={() => setConfirming(null)}>Keep it</Button>
+            <Button onClick={() => setConfirming(null)}>Keep the record</Button>
             <Button variant="danger" onClick={confirmDelete}>
-              {confirming?.reassignTo ? 'Move and delete' : 'Delete anyway'}
+              {confirming?.reassignTo ? 'Move and erase' : 'Erase anyway'}
             </Button>
           </>
         }
       >
         {spec.reassignable ? (
           <label className={styles.field}>
-            <span className={styles.label}>Move them to</span>
+            <span className={styles.label}>Move the records to</span>
             <Select
               value={confirming?.reassignTo ?? ''}
               onChange={(event) =>
@@ -414,7 +414,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
                 )
               }
             >
-              <option value="">Nothing — leave the field empty</option>
+              <option value="">Nowhere—leave the inscription blank</option>
               {siblings.map((row) => (
                 <option key={row.id} value={row.id}>
                   {row.values[nameKey]}

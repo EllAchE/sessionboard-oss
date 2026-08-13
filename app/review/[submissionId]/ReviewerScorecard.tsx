@@ -86,7 +86,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
   const save = useCallback(
     (complete: boolean) => {
       if (!props.round) {
-        setError('No review round is open, so there is nothing to score against.');
+        setError('No council is open, so there is no decree by which to judge this petition.');
         return;
       }
       setError(null);
@@ -106,7 +106,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
           setError(result.message);
           return;
         }
-        setMessage(complete ? 'Review submitted.' : 'Draft saved.');
+        setMessage(complete ? 'Judgment cast.' : 'Judgment set aside for later.');
         router.refresh();
       });
     },
@@ -177,7 +177,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
         <div className={styles.detailMain}>
           <Card>
             <CardHeader>
-              <CardTitle>Proposal</CardTitle>
+              <CardTitle>Petition</CardTitle>
             </CardHeader>
             <CardBody>
               <div
@@ -190,7 +190,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
           {props.answers.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle>Questionnaire</CardTitle>
+                <CardTitle>Answers on the scroll</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className={styles.answerList}>
@@ -207,13 +207,13 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>{props.authorHidden ? 'Author' : 'Speakers'}</CardTitle>
+              <CardTitle>{props.authorHidden ? 'Petitioner' : 'Orators'}</CardTitle>
             </CardHeader>
             <CardBody>
               {props.authorHidden ? (
                 <p className={styles.muted}>
-                  <EyeOff size={13} aria-hidden /> This round is anonymized. Names, contact details,
-                  affiliations and bios are withheld so you score the proposal on its own terms.
+                  <EyeOff size={13} aria-hidden /> This council veils its petitioners. Names,
+                  affiliations, and biographies are withheld so the petition stands on its own.
                 </p>
               ) : (
                 <div className={styles.answerList}>
@@ -243,18 +243,18 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
         <div className={styles.detailSide}>
           <Card>
             <CardHeader>
-              <CardTitle>Your scorecard</CardTitle>
+              <CardTitle>Your judgment</CardTitle>
             </CardHeader>
             <CardBody>
               <div className={styles.metaRow}>
                 {props.round ? <Badge tone="info">{props.round.name}</Badge> : null}
-                {props.mySubmitted ? <Badge tone="success">Submitted</Badge> : null}
+                {props.mySubmitted ? <Badge tone="success">Judgment cast</Badge> : null}
                 {props.authorHidden ? <Badge tone="warning">Anonymized</Badge> : null}
-                {props.blinded ? <Badge>Peer scores hidden until close</Badge> : null}
+                {props.blinded ? <Badge>Other ballots sealed until close</Badge> : null}
               </div>
 
               {props.round ? null : (
-                <p className={styles.muted}>No review round is open yet.</p>
+                <p className={styles.muted}>No council is open for deliberation.</p>
               )}
 
               {props.criteria.map((criterion) => (
@@ -287,7 +287,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
 
               {props.criteria.length === 0 ? (
                 <p className={styles.muted}>
-                  The organizer has not added scoring criteria to this round yet.
+                  The magistrates have not inscribed measures for this council yet.
                 </p>
               ) : null}
 
@@ -299,7 +299,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                   id="reviewer-comment"
                   rows={4}
                   value={comment}
-                  placeholder="What would help the programme committee decide?"
+                  placeholder="What should the council weigh before its verdict?"
                   onChange={(event) => setComment(event.target.value)}
                 />
               </div>
@@ -309,7 +309,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                   {preview === null ? '—' : preview.toFixed(1)}
                 </span>
                 <span className={styles.scoreOutOf}>
-                  out of 5 · {scoredCount}/{props.criteria.length} criteria scored
+                  out of 5 · {scoredCount}/{props.criteria.length} measures judged
                 </span>
               </div>
 
@@ -321,7 +321,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                   disabled={!props.round}
                   onClick={() => save(false)}
                 >
-                  Save draft
+                  Set judgment aside
                 </Button>
                 <Button
                   variant="primary"
@@ -330,11 +330,11 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                   disabled={!props.round || !allScored}
                   onClick={() => save(true)}
                 >
-                  Submit review
+                  Cast judgment
                 </Button>
               </div>
               {!allScored && props.criteria.length > 0 ? (
-                <p className={styles.hint}>Score every criterion to submit.</p>
+                <p className={styles.hint}>Judge every measure before casting your ballot.</p>
               ) : null}
             </CardBody>
           </Card>
@@ -365,8 +365,8 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
 
           {props.blinded ? (
             <p className={styles.hint}>
-              {props.peerCount} other {props.peerCount === 1 ? 'reviewer is' : 'reviewers are'} on
-              this submission. Their scores stay hidden until the round closes.
+              {props.peerCount} other {props.peerCount === 1 ? 'councillor is' : 'councillors are'}
+              judging this petition. Their ballots stay sealed until the council closes.
             </p>
           ) : null}
         </div>
@@ -375,7 +375,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
       <Dialog
         open={recusalOpen}
         onOpenChange={setRecusalOpen}
-        title="Recuse yourself from this submission"
+        title="Withdraw from judgment on this petition"
         description={`${props.displayRef} — ${props.title}`}
         footer={
           <>
@@ -396,7 +396,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
             id="recusal-reason-detail"
             rows={3}
             value={reason}
-            placeholder="A conflict of interest, or simply no capacity."
+            placeholder="A conflict of interest, prior allegiance, or simply no capacity."
             onChange={(event) => setReason(event.target.value)}
           />
         </div>

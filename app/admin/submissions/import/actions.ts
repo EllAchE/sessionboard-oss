@@ -20,6 +20,6 @@ export async function previewImportAction(csv: string): Promise<ActionResult<Imp
   } catch (error) {
     if (isAppError(error)) return { ok: false, message: error.message, details: error.details };
     console.error(`import preview failed: ${String(error)}`);
-    return { ok: false, message: 'Something went wrong. Try again.' };
+    return { ok: false, message: 'The Forum hit a snag. Try once more.' };
   }
 }

@@ -34,7 +34,7 @@ export function SubmissionEditor({
 
       <Card>
         <CardHeader>
-          <CardTitle>Session details</CardTitle>
+          <CardTitle>Words of the oration</CardTitle>
         </CardHeader>
         <CardBody>
           <div className={styles.stackTight}>
@@ -71,7 +71,7 @@ export function SubmissionEditor({
                 <FieldError state={state} field="descriptionMarkdown" />
               </div>
               <div className={styles.field}>
-                <span className={styles.label}>Preview</span>
+                <span className={styles.label}>Wax preview</span>
                 <div
                   className={`${styles.previewPane} ${styles.prose}`}
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(description) }}
@@ -103,7 +103,7 @@ export function SubmissionEditor({
 
       <FormNotice state={state} />
       <div className={styles.taskActions}>
-        <SubmitButton variant="primary">Save changes</SubmitButton>
+        <SubmitButton variant="primary">Inscribe changes</SubmitButton>
       </div>
     </form>
   );
@@ -129,7 +129,7 @@ export function WithdrawForm({
       {confirming ? (
         <div className={styles.taskActions}>
           <SubmitButton variant="danger" size="sm">
-            {draft ? 'Yes, discard this draft' : 'Yes, withdraw this session'}
+            {draft ? 'Yes, discard this draft' : 'Yes, withdraw this oration'}
           </SubmitButton>
           <button type="button" className={styles.checkLink} onClick={() => setConfirming(false)}>
             Keep it
@@ -138,7 +138,7 @@ export function WithdrawForm({
       ) : (
         <div className={styles.taskActions}>
           <button type="button" className={styles.checkLink} onClick={() => setConfirming(true)}>
-            {draft ? 'Discard this draft' : 'Withdraw this session'}
+            {draft ? 'Discard this draft' : 'Withdraw this oration'}
           </button>
         </div>
       )}

@@ -163,7 +163,7 @@ export function SessionDialog({
 
   const submit = () => {
     if (!form.title.trim()) {
-      setError('Give the session a title.');
+      setError('Every oration needs a title.');
       return;
     }
 
@@ -179,7 +179,7 @@ export function SessionDialog({
       return;
     }
     if (startMinute !== null && endMinute !== null && endMinute <= startMinute) {
-      setError('A session has to end after it starts.');
+      setError('An oration must end after it begins.');
       return;
     }
 
@@ -213,40 +213,40 @@ export function SessionDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={form.sessionId ? 'Edit session' : 'Add a session'}
+      title={form.sessionId ? 'Revise the oration' : 'Add an oration'}
       description={
         form.sessionId
-          ? 'Times are in the event timezone.'
+          ? 'Hours follow the assembly’s local clock.'
           : form.sourceSubmissionId
-            ? 'Schedule this accepted proposal. Its speakers and submission stay linked.'
-          : 'For anything without a submission behind it — a keynote, a break, lunch.'
+            ? 'Inscribe this accepted petition. Its orators and petition remain linked.'
+            : 'For anything with no petition behind it—a keynote, recess, or feast.'
       }
       size="lg"
       footer={
         <div className={styles.detailActions}>
           <Button variant="primary" onClick={submit} loading={pending}>
-            Save
+            Inscribe
           </Button>
           {form.sessionId && status !== 'published' && (
             <Button
               onClick={() => form.sessionId && onStatusChange(form.sessionId, 'published')}
             >
-              Publish
+              Proclaim
             </Button>
           )}
           {form.sessionId && status === 'published' && (
             <Button onClick={() => form.sessionId && onStatusChange(form.sessionId, 'draft')}>
-              Return to draft
+              Return under seal
             </Button>
           )}
           {form.sessionId && (
             <Button onClick={() => form.sessionId && onUnschedule(form.sessionId)}>
-              Unschedule
+              Remove from the fasti
             </Button>
           )}
           {form.sessionId && (
             <Button variant="danger" onClick={() => form.sessionId && onDelete(form.sessionId)}>
-              Delete
+              Strike from the fasti
             </Button>
           )}
         </div>
@@ -294,7 +294,7 @@ export function SessionDialog({
               value={form.roomId}
               onChange={(fired) => set('roomId', fired.target.value)}
             >
-              <option value="">No room</option>
+              <option value="">No chamber</option>
               {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.name}
@@ -311,7 +311,7 @@ export function SessionDialog({
               value={form.trackId}
               onChange={(fired) => set('trackId', fired.target.value)}
             >
-              <option value="">No track</option>
+              <option value="">No theme</option>
               {tracks.map((track) => (
                 <option key={track.id} value={track.id}>
                   {track.name}
@@ -347,7 +347,7 @@ export function SessionDialog({
               value={form.formatId}
               onChange={(fired) => set('formatId', fired.target.value)}
             >
-              <option value="">No format</option>
+              <option value="">No oration format</option>
               {formats.map((format) => (
                 <option key={format.id} value={format.id}>
                   {format.name} ({format.durationMinutes} min)

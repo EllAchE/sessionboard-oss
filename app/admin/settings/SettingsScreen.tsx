@@ -54,20 +54,20 @@ export function SettingsScreen({
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Settings</p>
+          <p className={styles.eyebrow}>Edicts of the Forum</p>
           <h1 className={styles.title}>{event.name}</h1>
           <p className={styles.lede}>
-            The lists every other screen picks from. A CFP form can only offer the tracks, formats
-            and personas that exist here, and the agenda can only place a session in a room that
-            does.
+            These decrees supply every other chamber. A proclamation can offer only the themes,
+            forms of address and personas inscribed here, and the fasti can place an oration only
+            in a named chamber.
           </p>
         </div>
       </header>
 
-      <Tabs value={tab} onValueChange={selectTab}>
-        <TabsList>
-          <TabsTrigger value="event">Event</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+        <Tabs value={tab} onValueChange={selectTab}>
+          <TabsList>
+          <TabsTrigger value="event">Founding charter</TabsTrigger>
+          <TabsTrigger value="notifications">Courier edicts</TabsTrigger>
           {specs.map((spec) => (
             <TabsTrigger key={spec.kind} value={spec.kind}>
               {spec.label}

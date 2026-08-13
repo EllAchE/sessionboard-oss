@@ -237,7 +237,7 @@ export async function pushAcceptedSpeakers(
     name: row.displayName,
     status: 'skipped_duplicate' as const,
     remoteId: null,
-    message: 'Another accepted speaker on this event uses the same email address',
+    message: 'Another proclaimed orator in this assembly uses the same dispatch address',
   }));
 
   let authHeaderUsed: string | null = null;
@@ -254,7 +254,7 @@ export async function pushAcceptedSpeakers(
         participantId: candidate.participantId,
         remoteId: pushed.remoteId,
         status: 'synced',
-        error: pushed.outcome === 'duplicate' ? 'Speaker already exists in Accelevents' : null,
+        error: pushed.outcome === 'duplicate' ? 'Orator already stands on the Accelevents rolls' : null,
         requestBody: dto,
         responseBody: pushed.response as Record<string, unknown>,
         syncedAt: new Date(),
@@ -272,7 +272,7 @@ export async function pushAcceptedSpeakers(
             : null,
       });
     } catch (error) {
-      const message = isAppError(error) ? error.message : 'Accelevents rejected this speaker';
+      const message = isAppError(error) ? error.message : 'Accelevents refused this orator';
       if (!isAppError(error)) console.error(error instanceof Error ? error.message : String(error));
 
       await db.insert(accelevantsSync).values({
@@ -351,7 +351,7 @@ export async function testConnection(): Promise<{
   if (!gateway) {
     return {
       ok: false,
-      message: 'Set ACCELEVENTS_API_KEY and ACCELEVENTS_EVENT_URL to enable this',
+      message: 'Forge the Accelevents alliance with ACCELEVENTS_API_KEY and ACCELEVENTS_EVENT_URL',
     };
   }
 
@@ -365,7 +365,7 @@ export async function testConnection(): Promise<{
   } catch (error) {
     return {
       ok: false,
-      message: isAppError(error) ? error.message : 'Could not reach Accelevents',
+      message: isAppError(error) ? error.message : 'The road to Accelevents is closed',
     };
   }
 }

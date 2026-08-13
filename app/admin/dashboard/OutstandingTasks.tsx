@@ -19,10 +19,10 @@ const URGENCY_ORDER: Record<TaskUrgency, number> = {
 };
 
 const STATUS_LABEL: Record<OutstandingTaskRow['status'], string> = {
-  not_started: 'Not started',
-  in_progress: 'In progress',
-  completed: 'Completed',
-  waived: 'Waived',
+  not_started: 'Not begun',
+  in_progress: 'In hand',
+  completed: 'Fulfilled',
+  waived: 'Waived by decree',
 };
 
 const STATUS_TONE: Record<OutstandingTaskRow['status'], 'neutral' | 'info' | 'success'> = {
@@ -33,14 +33,14 @@ const STATUS_TONE: Record<OutstandingTaskRow['status'], 'neutral' | 'info' | 'su
 };
 
 const KIND_LABEL: Record<OutstandingTaskRow['taskKind'], string> = {
-  form: 'Form',
-  file_upload: 'Upload',
-  acknowledge: 'Acknowledge',
-  link: 'Link',
+  form: 'Scroll',
+  file_upload: 'Archive scroll',
+  acknowledge: 'Oath',
+  link: 'Road',
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return 'No deadline';
+  if (!iso) return 'No appointed day';
   // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
   return new Date(iso).toLocaleDateString('en-US', {
     timeZone: 'UTC',
@@ -62,7 +62,7 @@ function lateness(row: OutstandingTaskRow): { text: string; tone: 'danger' | 'wa
       tone: row.urgency === 'due_soon' ? 'warning' : 'muted',
     };
   }
-  return { text: 'No deadline', tone: 'muted' };
+  return { text: 'No appointed day', tone: 'muted' };
 }
 
 function compare(a: OutstandingTaskRow, b: OutstandingTaskRow, key: SortKey): number {
@@ -91,7 +91,7 @@ function compare(a: OutstandingTaskRow, b: OutstandingTaskRow, key: SortKey): nu
 }
 
 function downloadCsv(rows: OutstandingTaskRow[]): void {
-  const header = ['Speaker', 'Email', 'Company', 'Task', 'Kind', 'Status', 'Due', 'Days overdue'];
+  const header = ['Orator', 'Dispatch address', 'House or company', 'Duty', 'Kind', 'Standing', 'Appointed day', 'Days overdue'];
   const body = rows.map((row) => [
     row.participantName,
     row.participantEmail,
@@ -111,7 +111,7 @@ function downloadCsv(rows: OutstandingTaskRow[]): void {
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = 'outstanding-tasks.csv';
+  anchor.download = 'unsettled-duties.csv';
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -188,7 +188,7 @@ export function OutstandingTasks({
   const columns: Array<DataTableColumn<OutstandingTaskRow>> = [
     {
       id: 'person',
-      header: heading('Speaker', 'person'),
+      header: heading('Orator', 'person'),
       width: '26%',
       render: (row) => (
         <div className={styles.person}>
@@ -202,7 +202,7 @@ export function OutstandingTasks({
     },
     {
       id: 'task',
-      header: heading('Task', 'task'),
+      header: heading('Duty', 'task'),
       width: '26%',
       render: (row) => (
         <div className={styles.taskCell}>
@@ -238,7 +238,7 @@ export function OutstandingTasks({
     },
     {
       id: 'sessions',
-      header: 'Sessions',
+      header: 'Orations',
       width: '19%',
       render: (row) =>
         row.sessionTitles.length === 0 ? (
@@ -255,8 +255,8 @@ export function OutstandingTasks({
         <Input
           inputSize="sm"
           value={query}
-          placeholder="Search speaker, company or task…"
-          aria-label="Filter outstanding tasks"
+          placeholder="Search orator, house, or duty…"
+          aria-label="Filter unsettled duties"
           onChange={(e) => setQuery(e.target.value)}
         />
         <Select
@@ -268,17 +268,17 @@ export function OutstandingTasks({
           <option value="outstanding">Outstanding</option>
           <option value="overdue">Overdue only</option>
           <option value="due_soon">Due within a week</option>
-          <option value="open">No deadline pressure</option>
+          <option value="open">No appointed-day pressure</option>
           <option value="done">Completed or waived</option>
           <option value="all">Everything</option>
         </Select>
         <Select
           selectSize="sm"
           value={taskId}
-          aria-label="Filter by task"
+          aria-label="Filter by duty"
           onChange={(e) => setTaskId(e.target.value)}
         >
-          <option value="all">All tasks</option>
+          <option value="all">All duties</option>
           {tasks.map(([id, name]) => (
             <option key={id} value={id}>
               {name}
@@ -290,7 +290,7 @@ export function OutstandingTasks({
           variant={acceptedOnly ? 'primary' : 'secondary'}
           onClick={() => setAcceptedOnly(!acceptedOnly)}
         >
-          Accepted speakers
+          Accepted orators
         </Button>
         <span className={styles.toolbarSpacer} />
         <span className={styles.filterLabel}>{visible.length} rows</span>
@@ -304,15 +304,15 @@ export function OutstandingTasks({
         </Button>
       </div>
       <DataTable
-        label="Outstanding speaker tasks"
+        label="Outstanding orator duties"
         columns={columns}
         rows={compact ? visible.slice(0, 10) : visible}
         getRowId={(row) => row.id}
-        emptyState="Nothing outstanding. Every assigned task is complete."
+        emptyState="The ledger is clear. Every assigned duty is settled."
       />
       {compact && visible.length > 10 ? (
         <p className={styles.counterHint}>
-          Showing 10 of {visible.length}. <Link href="/admin/tasks">See every task</Link>.
+          Showing 10 of {visible.length}. <Link href="/admin/tasks">Open the full duty ledger</Link>.
         </p>
       ) : null}
     </div>

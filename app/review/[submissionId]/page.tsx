@@ -8,7 +8,7 @@ import { ReviewerScorecard } from './ReviewerScorecard';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Score a submission · Cicero' };
+export const metadata = { title: 'Judge a petition · Cicero' };
 
 export default async function ReviewerSubmissionPage({
   params,

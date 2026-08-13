@@ -7,7 +7,7 @@ import styles from '../crm.module.css';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'CRM dashboard · Cicero' };
+export const metadata = { title: 'Census forum · Cicero' };
 
 function Counter({ value, label }: { value: number; label: string }) {
   return (
@@ -74,23 +74,23 @@ export default async function CrmDashboardPage() {
     <div className={styles.page}>
       <div className={styles.pageHead}>
         <div>
-          <p className={styles.eyebrow}>Organization</p>
-          <h1 className={styles.title}>CRM dashboard</h1>
+          <p className={styles.eyebrow}>The census</p>
+          <h1 className={styles.title}>Census forum</h1>
           <p className={styles.subtitle}>
-            The speaker database at a glance, across every event you run.
+            The orator census at a glance, across every assembly you govern.
           </p>
         </div>
       </div>
 
       <div className={styles.counterGrid}>
-        <Counter value={data.totals.contacts} label="Total contacts" />
+        <Counter value={data.totals.contacts} label="Names on the rolls" />
         <Counter value={data.totals.companies} label="Companies" />
-        <Counter value={data.totals.prospects} label="In the pipeline" />
+        <Counter value={data.totals.prospects} label="Under recruitment" />
         <Counter value={data.totals.confirmed} label="Confirmed" />
-        <Counter value={data.totals.segments} label="Segments" />
+        <Counter value={data.totals.segments} label="Cohorts" />
         <Counter value={data.totals.eventLinks} label="Event placements" />
         <Counter value={data.totals.withBio} label="With a bio" />
-        <Counter value={data.totals.emailsSent} label="Emails sent" />
+        <Counter value={data.totals.emailsSent} label="Dispatches sent" />
       </div>
 
       <div className={styles.split}>
@@ -103,7 +103,7 @@ export default async function CrmDashboardPage() {
             <Bars
               rows={data.topCompanies}
               href={(label) => query('company', label)}
-              empty="No company recorded on any contact yet."
+              empty="No affiliation is inscribed for any citizen yet."
             />
           </CardBody>
         </Card>
@@ -111,7 +111,7 @@ export default async function CrmDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Areas of focus</CardTitle>
-            <CardDescription>The tags carried by the most contacts.</CardDescription>
+            <CardDescription>The marks carried by the most citizens.</CardDescription>
           </CardHeader>
           <CardBody>
             <Bars rows={data.topTags} href={(label) => query('tag', label)} empty="No tags yet." />
@@ -147,8 +147,8 @@ export default async function CrmDashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Sourcing pipeline</CardTitle>
-          <CardDescription>Prospects by stage.</CardDescription>
+          <CardTitle>Summoning campaign</CardTitle>
+          <CardDescription>Prospective orators by rank.</CardDescription>
         </CardHeader>
         <CardBody>
           <Bars rows={data.byStage} href={() => '/crm/pipeline'} empty="Nobody is being sourced." />

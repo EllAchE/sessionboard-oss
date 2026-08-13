@@ -98,7 +98,7 @@ function FieldControl({
             checked={value === true}
             onChange={(event) => onChange(event.target.checked)}
           />
-          <span>{field.placeholder ?? 'Yes'}</span>
+          <span>{field.placeholder ?? 'I affirm'}</span>
         </label>
       );
     case 'file':
@@ -171,12 +171,13 @@ export function FormPreview({
 
           {steps.length > 1 ? (
             <p className={styles.stepTitle}>
-              Step {steps.indexOf(currentStep) + 1} of {steps.length}
+              Tablet {steps.indexOf(currentStep) + 1} of {steps.length}
             </p>
           ) : null}
 
           {onThisStep.length === 0 ? (
-            <p className={styles.help}>Nothing is visible on this step for the answers so far.</p>
+            <p className={styles.help}>This tablet reveals nothing for the answers inscribed so far.
+            </p>
           ) : null}
 
           {onThisStep.map((spec) => {
@@ -224,7 +225,7 @@ export function FormPreview({
                 data-over={usage.used > usage.limit}
               >
                 {group.fields.map((field) => field.label).join(' + ')}: {usage.used} /{' '}
-                {usage.limit} characters combined
+                {usage.limit} characters under one decree
               </p>
             );
           })}

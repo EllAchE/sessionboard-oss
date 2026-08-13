@@ -17,19 +17,19 @@ import {
 export type FieldTypeOption = { value: FieldType; label: string; hint: string };
 
 export const FIELD_TYPE_OPTIONS: readonly FieldTypeOption[] = [
-  { value: 'short_text', label: 'Short text', hint: 'One line' },
-  { value: 'long_text', label: 'Long text', hint: 'Plain paragraph' },
-  { value: 'markdown', label: 'Rich text', hint: 'Markdown, rendered' },
-  { value: 'select', label: 'Dropdown', hint: 'Pick one' },
-  { value: 'multi_select', label: 'Multi-select', hint: 'Pick several' },
-  { value: 'radio', label: 'Radio buttons', hint: 'Pick one, all visible' },
-  { value: 'checkbox', label: 'Checkbox', hint: 'Yes or no' },
+  { value: 'short_text', label: 'Short inscription', hint: 'One line' },
+  { value: 'long_text', label: 'Long passage', hint: 'Plain paragraph' },
+  { value: 'markdown', label: 'Illuminated text', hint: 'Markdown, rendered' },
+  { value: 'select', label: 'Choice list', hint: 'Choose one' },
+  { value: 'multi_select', label: 'Multiple choice', hint: 'Choose several' },
+  { value: 'radio', label: 'Open choices', hint: 'Choose one; all remain visible' },
+  { value: 'checkbox', label: 'Affirmation', hint: 'Affirm or leave blank' },
   { value: 'number', label: 'Number', hint: '' },
-  { value: 'email', label: 'Email', hint: '' },
-  { value: 'url', label: 'URL', hint: '' },
+  { value: 'email', label: 'Dispatch address', hint: '' },
+  { value: 'url', label: 'Road to the web', hint: '' },
   { value: 'date', label: 'Date', hint: '' },
-  { value: 'file', label: 'File upload', hint: '' },
-  { value: 'section_break', label: 'Section break', hint: 'A heading, collects nothing' },
+  { value: 'file', label: 'Lodged scroll', hint: '' },
+  { value: 'section_break', label: 'Tablet heading', hint: 'A heading; collects nothing' },
 ];
 
 export function fieldTypeLabel(type: FieldType): string {
@@ -57,8 +57,8 @@ export function lockReason(field: Pick<FormFieldSpec, 'builtinKey'>): string | n
   if (!isBuiltinKey(field.builtinKey)) return null;
   const meta = BUILTIN_META[field.builtinKey];
   return meta.column
-    ? `Built-in field. Its answer is stored on submission.${meta.column}, which the review queue, agenda and embeds all read, so it cannot be removed or given a different type. You can rename it, reorder it or make it optional.`
-    : 'Built-in field. Its answers are stored as real submission tags, which the review queue and embeds filter on, so it cannot be removed or given a different type. You can rename it, reorder it or make it optional.';
+    ? `Foundational inscription. Its answer is stored on submission.${meta.column}, which the petition queue, fasti, and public inscriptions all read, so it cannot be removed or given a different type. You may rename it, reorder it, or make it optional.`
+    : 'Foundational inscription. Its answers are stored as petition marks, which the queue and public inscriptions filter on, so it cannot be removed or given a different type. You may rename it, reorder it, or make it optional.';
 }
 
 export function canDeleteField(field: Pick<FormFieldSpec, 'builtinKey'>): boolean {
@@ -132,11 +132,11 @@ export function opNeedsValue(op: ConditionOp): boolean {
 }
 
 export function describeCondition(condition: Condition, target: FormFieldSpec | undefined): string {
-  const label = target?.label ?? 'a removed question';
+  const label = target?.label ?? 'a removed prompt';
   const op = CONDITION_OP_LABELS[condition.op];
   return opNeedsValue(condition.op)
-    ? `Shown when “${label}” ${op} “${condition.value ?? ''}”`
-    : `Shown when “${label}” ${op}`;
+    ? `Revealed when “${label}” ${op} “${condition.value ?? ''}”`
+    : `Revealed when “${label}” ${op}`;
 }
 
 /** Answer keys are what land in `submission.answers`, so they are snake_case and stable. */

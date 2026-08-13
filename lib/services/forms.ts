@@ -78,7 +78,7 @@ async function loadForm(ctx: EventContext, formId: string): Promise<FormRecord> 
   const row = await getDb().query.form.findFirst({
     where: and(eq(form.id, formId), eq(form.eventId, ctx.eventId)),
   });
-  if (!row) throw notFound('That form');
+  if (!row) throw notFound('That scroll');
   return row;
 }
 
@@ -160,7 +160,7 @@ export async function createForm(
 ): Promise<FormRecord> {
   requireCapability(ctx, 'form:manage');
   const name = input.name.trim();
-  if (!name) throw invalid('Give the form a name', { name: 'A name is required' });
+  if (!name) throw invalid('Give the scroll a name', { name: 'A name is required' });
 
   const db = getDb();
   const slug = await uniqueFormSlug(ctx.eventId, input.slug?.trim() || name);
@@ -216,7 +216,7 @@ export async function updateForm(
 
   if (patch.name !== undefined) {
     const name = patch.name.trim();
-    if (!name) throw invalid('Give the form a name', { name: 'A name is required' });
+    if (!name) throw invalid('Give the scroll a name', { name: 'A name is required' });
     values.name = name;
   }
   if (patch.slug !== undefined) {
@@ -228,7 +228,7 @@ export async function updateForm(
   if (patch.closesAt !== undefined) values.closesAt = patch.closesAt;
   if (patch.maxSubmissionsPerUser !== undefined) {
     if (patch.maxSubmissionsPerUser !== null && patch.maxSubmissionsPerUser < 1) {
-      throw invalid('A submission limit has to be at least 1', {
+      throw invalid('A petition limit has to be at least 1', {
         maxSubmissionsPerUser: 'Use 1 or more, or leave it blank for no limit',
       });
     }
@@ -351,7 +351,7 @@ export async function deleteForm(ctx: EventContext, formId: string): Promise<voi
   const submissions = await submissionCount(formId);
   if (submissions > 0) {
     throw conflict(
-      `This form has ${submissions} submission${submissions === 1 ? '' : 's'}. Close it instead — deleting it would take their answers with it.`,
+      `This scroll holds ${submissions} petition${submissions === 1 ? '' : 's'}. Seal it instead — destroying it would erase their answers.`,
     );
   }
   await getDb().delete(form).where(eq(form.id, formId));
@@ -367,14 +367,14 @@ export async function publishForm(ctx: EventContext, formId: string): Promise<Fo
   const fields = await loadFields(formId);
 
   if (!fields.some((field) => collectsAnswer(field.type))) {
-    throw invalid('A form needs at least one question before it can open');
+    throw invalid('A scroll needs at least one prompt before it can be unsealed');
   }
 
   const missingOptions = fields.find(
     (field) => supportsOptions(field.type) && !field.builtinKey && (field.options ?? []).length === 0,
   );
   if (missingOptions) {
-    throw invalid(`“${missingOptions.label}” needs at least one choice before the form can open`);
+    throw invalid(`“${missingOptions.label}” needs at least one choice before the scroll can be unsealed`);
   }
 
   if (record.kind === 'cfp') {
@@ -382,7 +382,7 @@ export async function publishForm(ctx: EventContext, formId: string): Promise<Fo
     const missing = BUILTIN_FIELDS.filter((key) => !present.has(key));
     if (missing.length > 0) {
       throw invalid(
-        `This call for speakers is missing built-in field${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}`,
+        `This call for orators is missing required prompt${missing.length === 1 ? '' : 's'}: ${missing.join(', ')}`,
       );
     }
   }
@@ -448,7 +448,7 @@ export async function addField(
   const fields = await loadFields(formId);
 
   const label = input.label.trim();
-  if (!label) throw invalid('Give the question a label', { label: 'A label is required' });
+  if (!label) throw invalid('Give the prompt an inscription', { label: 'Every prompt needs an inscription' });
 
   const key = uniqueFieldKey(
     fields.map((field) => field.key),
@@ -523,7 +523,7 @@ export async function updateField(
 
   if (patch.label !== undefined) {
     const label = patch.label.trim();
-    if (!label) throw invalid('Give the question a label', { label: 'A label is required' });
+    if (!label) throw invalid('Give the prompt an inscription', { label: 'Every prompt needs an inscription' });
     values.label = label;
   }
 
@@ -651,12 +651,12 @@ export async function reorderFields(
   const fields = await loadFields(formId);
 
   if (order.length !== fields.length) {
-    throw invalid('That ordering does not cover every question on the form');
+    throw invalid('That order does not cover every prompt on the scroll');
   }
   const byId = new Map(fields.map((field) => [field.id, field]));
   const next: BuilderField[] = order.map((item, index) => {
     const field = byId.get(item.id);
-    if (!field) throw invalid('That ordering refers to a question that is not on this form');
+    if (!field) throw invalid('That order names a prompt absent from this scroll');
     return { ...field, position: index, step: Math.max(0, item.step) };
   });
 
@@ -697,7 +697,7 @@ export async function saveFieldToLibrary(
   const field = fields.find((entry) => entry.id === fieldId);
   if (!field) throw notFound('That question');
   if (field.builtinKey) {
-    throw invalid('Built-in fields are already on every call for speakers — there is nothing to save.');
+    throw invalid('The customary prompts already appear on every call for orators — nothing needs archiving.');
   }
   if (!collectsAnswer(field.type)) {
     throw invalid('A section break collects no answers, so it is not worth saving to the library.');

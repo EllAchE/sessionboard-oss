@@ -14,12 +14,12 @@ type Search = Record<string, string | string[] | undefined>;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Event not found' };
+  if (!bundle) return { title: 'Assembly absent from the annals' };
   return createSocialMetadata({
     origin: appUrl(),
     path: `/${bundle.event.slug}/sessions`,
-    title: `Sessions · ${bundle.event.name}`,
-    description: bundle.event.tagline ?? `Explore published sessions from ${bundle.event.name}.`,
+    title: `Orations · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Hear the proclaimed orations of ${bundle.event.name}.`,
   });
 }
 
@@ -41,8 +41,8 @@ export default async function PublicSessionsPage({
     <PublicChrome event={bundle.event} active="sessions">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>Sessions</h2>
-          <span className={styles.sectionLink}>{bundle.sessions.length} published</span>
+          <h2 className={styles.sectionTitle}>Orations</h2>
+          <span className={styles.sectionLink}>{bundle.sessions.length} proclaimed</span>
         </div>
         <EmbedBody
           view="sessions"

@@ -86,19 +86,19 @@ export function matchesAcceptedType(candidate: UploadCandidate, pattern: string)
  */
 export function validateUpload(spec: FileRequestSpec, candidate: UploadCandidate): void {
   if (candidate.sizeBytes <= 0) {
-    throw invalid(`${candidate.filename} is empty`);
+    throw invalid(`${candidate.filename} is an empty record`);
   }
 
   const maxBytes = Math.max(1, spec.maxSizeMb) * BYTES_PER_MB;
   if (candidate.sizeBytes > maxBytes) {
     throw invalid(
-      `${candidate.filename} is ${(candidate.sizeBytes / BYTES_PER_MB).toFixed(1)} MB. ${spec.label} accepts files up to ${spec.maxSizeMb} MB.`,
+      `${candidate.filename} is ${(candidate.sizeBytes / BYTES_PER_MB).toFixed(1)} MB. ${spec.label} accepts records up to ${spec.maxSizeMb} MB.`,
     );
   }
 
   const types = spec.acceptedTypes.filter((entry) => entry.trim().length > 0);
   if (types.length > 0 && !types.some((pattern) => matchesAcceptedType(candidate, pattern))) {
-    throw invalid(`${candidate.filename} is not an accepted file type. ${spec.label} accepts ${types.join(', ')}.`);
+    throw invalid(`${candidate.filename} is not an accepted kind of record. ${spec.label} accepts ${types.join(', ')}.`);
   }
 }
 
@@ -112,10 +112,10 @@ export function validateUploadBatch(
   existingCount = 0,
 ): void {
   if (candidates.length === 0) {
-    throw invalid('Choose a file to upload');
+    throw invalid('Choose a scroll to lodge');
   }
   if (!spec.allowMultiple && existingCount + candidates.length > 1) {
-    throw conflict(`${spec.label} accepts one file. Remove the current file before uploading another.`);
+    throw conflict(`${spec.label} accepts one record. Remove the present record before lodging another.`);
   }
   for (const candidate of candidates) {
     validateUpload(spec, candidate);
@@ -126,7 +126,7 @@ export async function getFileRequest(eventId: string, fileRequestId: string): Pr
   const row = await getDb().query.fileRequest.findFirst({
     where: and(eq(fileRequest.id, fileRequestId), eq(fileRequest.eventId, eventId)),
   });
-  if (!row) throw notFound('That file request');
+  if (!row) throw notFound('That request for records');
   return {
     id: row.id,
     label: row.label,
@@ -190,7 +190,7 @@ export async function getFileRecord(eventId: string, fileId: string): Promise<Fi
   const row = await getDb().query.file.findFirst({
     where: and(eq(file.id, fileId), eq(file.eventId, eventId)),
   });
-  if (!row) throw notFound('That file');
+  if (!row) throw notFound('That record');
   return row;
 }
 
@@ -625,4 +625,3 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
     };
   });
 }
-

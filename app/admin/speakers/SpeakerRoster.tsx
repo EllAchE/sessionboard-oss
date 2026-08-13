@@ -15,7 +15,7 @@ const FACETS: Array<{ id: Facet; label: string }> = [
   { id: 'all', label: 'All' },
   { id: 'incomplete', label: 'Incomplete profile' },
   { id: 'travel', label: 'Missing travel info' },
-  { id: 'overdue', label: 'Overdue tasks' },
+  { id: 'overdue', label: 'Overdue duties' },
 ];
 
 function matchesFacet(row: SpeakerProfile, facet: Facet): boolean {
@@ -51,7 +51,7 @@ function columns(
   return [
     {
       id: 'name',
-      header: 'Speaker',
+      header: 'Orator',
       width: '28%',
       render: (row) => (
         <span className={styles.person}>
@@ -100,9 +100,9 @@ function columns(
       width: '14%',
       render: (row) => (
         <span className={styles.badgeRow}>
-          <Badge tone={row.hasBio ? 'success' : 'warning'}>{row.hasBio ? 'Bio' : 'No bio'}</Badge>
+          <Badge tone={row.hasBio ? 'success' : 'warning'}>{row.hasBio ? 'Biography' : 'No biography'}</Badge>
           <Badge tone={row.hasHeadshot ? 'success' : 'warning'}>
-            {row.hasHeadshot ? 'Photo' : 'No photo'}
+            {row.hasHeadshot ? 'Portrait' : 'No portrait'}
           </Badge>
         </span>
       ),
@@ -119,7 +119,7 @@ function columns(
             {row.accessibilityNotes ? <Badge tone="neutral">Accessibility</Badge> : null}
           </span>
         ) : (
-          <span className={styles.muted}>Nothing on file</span>
+          <span className={styles.muted}>Nothing in the annals</span>
         ),
     },
     ...(canManage
@@ -137,7 +137,7 @@ function columns(
       : []),
     {
       id: 'sessions',
-      header: 'Sessions',
+      header: 'Orations',
       width: '12%',
       render: (row) => (
         <span className={styles.personText}>
@@ -199,14 +199,14 @@ export function SpeakerRoster({
           inputSize="sm"
           type="search"
           value={query}
-          placeholder="Search name, email, company, bio, dietary needs…"
-          aria-label="Search speakers"
+          placeholder="Search orator, dispatch address, house, biography, dietary needs…"
+          aria-label="Search orators"
           onChange={(event) => setQuery(event.target.value)}
         />
         <Select
           selectSize="sm"
           value={status}
-          aria-label="Filter by status"
+          aria-label="Filter by standing"
           onChange={(event) => setStatus(event.target.value as SpeakerWorkflowStatus | '')}
         >
           <option value="">Any status</option>
@@ -219,7 +219,7 @@ export function SpeakerRoster({
         <Select
           selectSize="sm"
           value={company}
-          aria-label="Filter by company"
+          aria-label="Filter by house or company"
           onChange={(event) => setCompany(event.target.value)}
         >
           <option value="">Any company</option>
@@ -229,7 +229,7 @@ export function SpeakerRoster({
             </option>
           ))}
         </Select>
-        <div className={styles.chips} role="group" aria-label="Filter speakers">
+        <div className={styles.chips} role="group" aria-label="Filter orators">
           {FACETS.map((entry) => (
             <button
               key={entry.id}
@@ -251,15 +251,15 @@ export function SpeakerRoster({
         </span>
       </div>
       <DataTable
-        label="Speakers"
+        label="Orators"
         columns={columns(statuses, canManage)}
         rows={rows}
         getRowId={(row) => row.id}
         onRowActivate={(row) => router.push(`/admin/speakers/${row.id}`)}
         emptyState={
           speakers.length === 0
-            ? 'No speakers yet. Add one manually or import a CSV.'
-            : 'No speaker matches those filters.'
+            ? 'No orators stand on the rolls. Summon one or import a census tablet.'
+            : 'No orator answers those filters.'
         }
       />
     </div>

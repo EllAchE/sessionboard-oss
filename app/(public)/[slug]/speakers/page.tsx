@@ -16,12 +16,12 @@ type Search = Record<string, string | string[] | undefined>;
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const bundle = await loadPublicBundle(slug);
-  if (!bundle) return { title: 'Event not found' };
+  if (!bundle) return { title: 'Assembly absent from the annals' };
   return createSocialMetadata({
     origin: appUrl(),
     path: `/${bundle.event.slug}/speakers`,
-    title: `Speakers · ${bundle.event.name}`,
-    description: bundle.event.tagline ?? `Meet the speakers at ${bundle.event.name}.`,
+    title: `Orators · ${bundle.event.name}`,
+    description: bundle.event.tagline ?? `Meet the orators of ${bundle.event.name}.`,
   });
 }
 
@@ -42,9 +42,9 @@ export default async function PublicSpeakersPage({
     <PublicChrome event={bundle.event} active="speakers">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>Speakers</h2>
+          <h2 className={styles.sectionTitle}>Orators</h2>
           <div className={styles.sectionActions}>
-            <span className={styles.sectionLink}>{bundle.speakers.length} announced</span>
+            <span className={styles.sectionLink}>{bundle.speakers.length} proclaimed</span>
             <SpeakerViewToggle slug={bundle.event.slug} active={view} search={search} />
           </div>
         </div>
