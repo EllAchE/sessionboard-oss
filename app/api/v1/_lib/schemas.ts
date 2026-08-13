@@ -336,9 +336,29 @@ const profileLinkSchema = z.object({
   url: z.string().trim().min(1).max(2_000),
 });
 
+/**
+ * `S-2`, `F-6`. Both landed on `participant` / `user` and on the portal form without reaching this
+ * payload, so the public contract described a narrower speaker than the one the app stores. The
+ * additions are additive in the same sense `startsAt` / `endsAt` were on `eventSchema`: every field
+ * a consumer already reads keeps its name, type and nullability.
+ *
+ * `firstName` / `lastName` are the halves `F-6` captures; the display name every other surface
+ * renders is their join, held on `user.name` and not writable here — an independent third value
+ * would be the exact disagreement `lib/person-name.ts` exists to prevent. `displayName` is a
+ * different thing again: the event-scoped override on `participant`, which is why it stays writable.
+ */
 export const speakerProfileSchema = z.object({
-  displayName: z.string().nullable(),
+  displayName: z.string().nullable().describe('Event-scoped override of the account name'),
+  firstName: z.string().nullable().describe('Given name on the account'),
+  lastName: z.string().nullable().describe('Family name on the account'),
+  name: z
+    .string()
+    .nullable()
+    .describe('Read-only join of firstName and lastName; edit the halves instead'),
+  salutation: z.string().nullable().describe('How a letter opens, e.g. Ada'),
+  honorific: z.string().nullable().describe('Title before the name on the programme, e.g. Dr'),
   pronouns: z.string().nullable(),
+  gender: z.string().nullable().describe('Free text; organizers report on it'),
   jobTitle: z.string().nullable(),
   company: z.string().nullable(),
   bioMarkdown: z.string().nullable(),
@@ -352,10 +372,23 @@ export const speakerProfileSchema = z.object({
   notifySms: z.boolean(),
 });
 
+/**
+ * Every field is optional and an omitted one is left alone — `updateProfile` writes only the keys it
+ * is handed. That is what lets these five arrive without breaking a caller that has never heard of
+ * them. An empty string clears a field, which is how the portal form clears one too.
+ *
+ * The caps match `profileSchema` in `lib/services/portal.ts`, which validates again and owns the
+ * real name rules; this outer gate only keeps an oversized paste from reaching the service.
+ */
 export const updateSpeakerProfileBody = z
   .object({
     displayName: z.string().max(200).optional(),
+    firstName: z.string().max(200).optional(),
+    lastName: z.string().max(200).optional(),
+    salutation: z.string().max(40).optional(),
+    honorific: z.string().max(40).optional(),
     pronouns: z.string().max(40).optional(),
+    gender: z.string().max(60).optional(),
     jobTitle: z.string().max(120).optional(),
     company: z.string().max(120).optional(),
     bioMarkdown: z.string().max(5_000).optional(),

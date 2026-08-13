@@ -4,6 +4,7 @@ import { user } from '@/db/schema';
 import type { EventContext } from '@/lib/context';
 import {
   ensureParticipant,
+  getProfileName,
   type Participant,
   type PortalSubmission,
 } from '@/lib/services/portal';
@@ -58,10 +59,25 @@ export function mySubmissionPayload(row: PortalSubmission) {
 }
 
 export async function speakerProfilePayload(ctx: EventContext, me: Participant) {
-  const account = await getDb().query.user.findFirst({ where: eq(user.id, ctx.actor.userId) });
+  /**
+   * `getProfileName` rather than reading `firstName` / `lastName` off the row: a user imported
+   * before `F-6` has `name` and neither half, and the derived guess is what the portal profile page
+   * shows them. Two surfaces reading one row through two different rules is how they drift.
+   */
+  const [account, name] = await Promise.all([
+    getDb().query.user.findFirst({ where: eq(user.id, ctx.actor.userId) }),
+    getProfileName(ctx.actor.userId),
+  ]);
   return {
     displayName: me.displayName,
+    // `getProfileName` returns '' for a half it has no value for; the payload says null.
+    firstName: name.firstName || null,
+    lastName: name.lastName || null,
+    name: account?.name ?? null,
+    salutation: me.salutation,
+    honorific: me.honorific,
     pronouns: me.pronouns,
+    gender: me.gender,
     jobTitle: me.jobTitle,
     company: me.company,
     bioMarkdown: me.bioMarkdown,
