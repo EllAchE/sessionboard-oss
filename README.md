@@ -243,7 +243,9 @@ coexist without either seeing the other.
 3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
    API layers, and the form-engine and integration decisions
 4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
-5. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+5. **[`docs/04-demo-runbook.md`](docs/04-demo-runbook.md)** — the presenter-ready walkthrough,
+   requirement traceability, API bonus, fallbacks, resets, and go/no-go checks
+6. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 
 ### Reference material
 
