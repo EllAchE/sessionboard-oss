@@ -19,9 +19,16 @@ secondary target, not the thing the architecture bends around.
 | DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** |
 | File storage | Postgres by default, R2 binding when bound | MinIO, or any S3 endpoint |
 | Email | Resend HTTP API | SMTP via nodemailer |
-| Scheduled sends | Cron Triggers → `/api/cron` | any cron hitting `/api/cron` |
+| Scheduled sends | Hourly Cron Trigger → custom Worker → `/api/cron` in-process | any cron hitting `/api/cron` |
 
-`wrangler.jsonc` sets `main: ".open-next/worker.js"`, `nodejs_compat`, and an `[assets]` binding.
+`wrangler.jsonc` points at `custom-worker.ts`, which preserves OpenNext's generated `fetch` handler
+and adds Cloudflare's module-format `scheduled` handler. The hourly trigger calls that fetch handler
+in-process at `/api/cron`; this establishes OpenNext's request-local Hyperdrive context without a
+public loopback request. The same route remains the self-hosted scheduler contract. Reminder jobs
+carry durable idempotency guards because Cron Trigger delivery is at least once. This is the
+documented [OpenNext custom Worker](https://opennext.js.org/cloudflare/howtos/custom-worker) shape
+with a [`triggers.crons`](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+schedule owned by Wrangler.
 
 **File storage defaults to the database, not R2.** `lib/storage` resolves in three steps — the `FILES`
 R2 binding if present, then an `S3_BUCKET` if configured, then a `file_blob` row. R2 would be the

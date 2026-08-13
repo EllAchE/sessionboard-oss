@@ -284,6 +284,12 @@ R2 is off by default, because enabling it requires a payment method on the Cloud
 that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
 database until you turn it on; `wrangler.jsonc` says exactly how.
 
+The Worker also has an hourly Cron Trigger. `custom-worker.ts` keeps OpenNext's generated request
+handler and adds a scheduled handler that dispatches task and draft-deadline reminders through
+`/api/cron` in-process. Self-hosters can call that route from their own timer; set `CRON_SECRET` and
+send it as a bearer token when the route is exposed publicly. Each reminder job is idempotent, so
+Cloudflare's at-least-once delivery does not intentionally duplicate messages.
+
 Two things to know before you deploy this yourself. The free plan's 10ms CPU limit is real and you
 will notice it — see the last section. And **`next build` reads `.env` and inlines what it finds
 into the bundle**, so a `.env` sitting in the working directory at build time ships to Cloudflare
