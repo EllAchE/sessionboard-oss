@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Search } from 'lucide-react';
 import {
   EMPTY_SESSION_FACETS,
@@ -281,7 +282,16 @@ export function SpeakerAvatar({
       </span>
     );
   }
-  return <img className={styles.avatar} src={speaker.headshotUrl} alt="" loading="lazy" />;
+  return (
+    <Image
+      className={styles.avatar}
+      src={speaker.headshotUrl}
+      alt=""
+      width={48}
+      height={48}
+      unoptimized
+    />
+  );
 }
 
 /**
@@ -310,7 +320,14 @@ export function SpeakerProfile({
       <div className={styles.detailHead}>
         {showPhoto ? (
           speaker.headshotUrl ? (
-            <img className={styles.detailPhoto} src={speaker.headshotUrl} alt={speaker.name} />
+            <Image
+              className={styles.detailPhoto}
+              src={speaker.headshotUrl}
+              alt={speaker.name}
+              width={128}
+              height={128}
+              unoptimized
+            />
           ) : (
             <span className={styles.detailPhotoFallback} aria-hidden>
               {initialsOf(speaker.name)}

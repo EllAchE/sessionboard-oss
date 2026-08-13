@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 208 64" fill="none">
+  <path d="M50 9H34C19.6 9 8 19.3 8 32s11.6 23 26 23h16v-6H35c-10.9 0-20-7.6-20-17s9.1-17 20-17h15V9Z" fill="#292621"/>
+  <path d="M45 21H35c-7.2 0-13 4.9-13 11s5.8 11 13 11h10v-5H35c-4.2 0-7-2.7-7-6s2.8-6 7-6h10v-5Z" fill="#292621"/>
+  <path d="M43 27h11v10H43z" fill="#B7391F"/>
+  <text x="72" y="43" fill="#292621" font-family="Spectral, Georgia, serif" font-size="36" font-weight="500" letter-spacing="-1">Cicero</text>
+</svg>

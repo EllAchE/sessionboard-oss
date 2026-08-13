@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 /**
  * Shapes transcribed from the Accelevents ReadMe pages for `create-speaker` and `get-all-speakers`
- * (`docs/02-architecture.md` §7). There is no downloadable OpenAPI file, so these are the contract
- * as far as it is verifiable, and the fixtures in `./fixtures` are the recorded form of it.
+ * (`docs/reference/accelevents-api.md`). There is no combined OpenAPI file, so these are the
+ * contract as far as it is verifiable, and the fixtures in `./fixtures` are its recorded form.
  *
  * `linkedIn` is documented as a boolean on the create page and as a string on the list page. The
  * string reading is the only one that can carry a profile URL, so we send a string and accept
@@ -130,7 +130,7 @@ export interface AccelEventsGateway {
   }): Promise<ListSpeakersResult>;
   /**
    * Experimental. The five-call order flow is documented as a sequence with no complimentary flag,
-   * so this is behind the same interface but never on the required path — see §7.
+   * so this is behind the same interface but never on the required path — see the API reference.
    */
   createAttendeeOrder(input: AttendeeOrderInput): Promise<AttendeeOrderResult>;
 }

@@ -325,10 +325,10 @@ comped tickets and badges. The direction is program → registration.
 | Fact | Value |
 | --- | --- |
 | REST base URL | `https://api.accelevents.com/rest/` |
-| Auth | API key in a header whose name the docs give three ways — see `docs/02-architecture.md` §7 |
+| Auth | Raw API key in a contradictory `Key` / `Authorization` header — see the [Accelevents API contract](reference/accelevents-api.md) |
 | Key generation | Manage Enterprise → Integrations → API Key, **Owner only** |
 | Plan gating | **Enterprise and White Label plans only** |
-| Other surfaces | Webhooks (ticket purchase, attendee check-in); `llms.txt` index. The docs render a spec that is not published as a downloadable file |
+| Other surfaces | Webhooks (ticket purchase, attendee check-in); `llms.txt` index; per-endpoint OpenAPI fragments, but no combined specification |
 | Docs | https://developer.accelevents.com/docs/accelevents-api-documentation |
 
 > **Lack of a key does not block this requirement.** The contract is public enough — rendered
@@ -336,7 +336,8 @@ comped tickets and badges. The direction is program → registration.
 > the push logic can all be written and unit-tested against it. What a key would add is a live
 > end-to-end run (N-1c), and no competitor is likely to have one either. Build N-1a for real, demo
 > it through N-1b. The documentation's real gaps — the ambiguous auth header, undocumented rate
-> limits, and unpublished webhook schemas — are catalogued in `docs/02-architecture.md` §7.
+> limits, and unpublished webhook schemas — are catalogued in the
+> [Accelevents API contract](reference/accelevents-api.md).
 
 ---
 

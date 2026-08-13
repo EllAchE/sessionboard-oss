@@ -335,11 +335,12 @@ type Lookups = {
  * One pass over the event rather than a query per recipient. At the scale this product assumes
  * (hundreds of submissions) the whole graph is a few thousand rows and fits comfortably in memory,
  * which keeps audience filtering readable instead of spread across eight SQL variants.
+ *
+ * Loading it is the expensive part, so callers resolving many recipients in one request (a publish
+ * batch notifying every session on a day) should load it once with `loadRecipientGraph` and pass it
+ * to every `resolveRecipients`/`recipientForParticipant` call instead of letting each call reload it.
  */
-export async function resolveRecipients(
-  eventId: string,
-  spec: AudienceSpec,
-): Promise<Recipient[]> {
+export async function loadRecipientGraph(eventId: string) {
   const db = getDb();
   const { event, branding } = await loadCommsContext(eventId);
 
@@ -396,6 +397,19 @@ export async function resolveRecipients(
     );
 
   const lookups = await loadLookups(eventId);
+
+  return { event, branding, people, submissionRows, sessionRows, taskRows, lookups };
+}
+
+export type RecipientGraph = Awaited<ReturnType<typeof loadRecipientGraph>>;
+
+export async function resolveRecipients(
+  eventId: string,
+  spec: AudienceSpec,
+  graph?: RecipientGraph,
+): Promise<Recipient[]> {
+  const { event, branding, people, submissionRows, sessionRows, taskRows, lookups } =
+    graph ?? (await loadRecipientGraph(eventId));
 
   const submissionsByParticipant = new Map<string, RecipientSubmission[]>();
   for (const row of submissionRows) {
@@ -1026,11 +1040,13 @@ async function sendTemplated(input: {
 async function recipientForParticipant(
   eventId: string,
   participantId: string,
+  graph?: RecipientGraph,
 ): Promise<Recipient | null> {
-  const recipients = await resolveRecipients(eventId, {
-    kind: 'manual',
-    participantIds: [participantId],
-  });
+  const recipients = await resolveRecipients(
+    eventId,
+    { kind: 'manual', participantIds: [participantId] },
+    graph,
+  );
   return recipients[0] ?? null;
 }
 
@@ -1220,13 +1236,14 @@ export async function sessionCalendarDownload(
  * Scoped to the two invite templates on purpose: an ad-hoc campaign that attached the plain
  * add-to-calendar copy carries the same UID but is not a revision of anything.
  */
-async function inviteAlreadySent(uid: string): Promise<boolean> {
+async function inviteAlreadySent(uid: string, eventId: string): Promise<boolean> {
   const db = getDb();
   const [row] = await db
     .select({ id: emailLog.id })
     .from(emailLog)
     .where(
       and(
+        eq(emailLog.eventId, eventId),
         isNotNull(emailLog.icsBody),
         like(emailLog.icsBody, `%${uid}%`),
         inArray(emailLog.templateKey, ['session.invite', 'session.cancelled']),
@@ -1254,6 +1271,7 @@ export type SessionNotifyResult = SendOutcome & {
 export async function sendSessionInvites(
   sessionId: string,
   options: { cancel?: boolean } = {},
+  graph?: RecipientGraph,
 ): Promise<SessionNotifyResult> {
   const db = getDb();
   const empty: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
@@ -1266,7 +1284,7 @@ export async function sendSessionInvites(
     return { ...empty, sequence: session.icsSequence, skipped: 'unscheduled' };
   }
 
-  const alreadySent = await inviteAlreadySent(session.icsUid);
+  const alreadySent = await inviteAlreadySent(session.icsUid, event.id);
   const sequence = alreadySent ? session.icsSequence + 1 : session.icsSequence;
   if (sequence !== session.icsSequence) {
     await db
@@ -1292,7 +1310,7 @@ export async function sendSessionInvites(
   const outcome: SendOutcome = { recipients: 0, sent: 0, failed: 0, logIds: [] };
 
   for (const participantId of participantIds) {
-    const recipient = await recipientForParticipant(event.id, participantId);
+    const recipient = await recipientForParticipant(event.id, participantId, graph);
     if (!recipient) continue;
     outcome.recipients += 1;
     const result = await sendTemplated({

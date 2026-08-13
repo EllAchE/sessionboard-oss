@@ -1,7 +1,8 @@
 /**
  * `N-1b`. Recorded request and response shapes for every Accelevents call we make, transcribed
- * from the ReadMe reference pages listed in `docs/02-architecture.md` §7. Both the fake gateway
- * and the live client's tests read from here, so a change to the contract is a change in one file.
+ * from the ReadMe reference pages listed in `docs/reference/accelevents-api.md`. Both the fake
+ * gateway and the live client's tests read from here, so a change to the contract is a change in
+ * one file.
  *
  * These are fixtures, not mocks: the bodies are what the documentation says the API returns,
  * including the duplicate-email reject that shapes our dedupe.
