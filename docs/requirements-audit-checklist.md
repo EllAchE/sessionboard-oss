@@ -6,21 +6,28 @@ the scrollable source of truth for what is complete and what still needs work.
 
 ## Audit snapshot
 
-- Audited source revision: `a52c87c20fd049fa56db0c6b6011fbc741d1309e` on `main`
-- Audited at: 2026-08-12 23:26 EDT / 20:26 PT
-- Live deployment checked: `https://cicero.lhar8771.workers.dev`
-- Live routes returning HTTP 200: `/`, `/demo`, `/demo/agenda`, `/submit/demo/speak`, and
-  `/api/v1/events/demo/agenda`
-- Uncommitted changes and unmerged branches were not credited
+- Audited source revision: `58d4c941d1e12ae1f41ec9ed5e89834dbd6a3d56` on `main`
+- Audited at: 2026-08-13 07:00 EDT / 04:00 PT
+- Previous audit: `a52c87c20fd049fa56db0c6b6011fbc741d1309e`, 2026-08-12 23:26 EDT. Every row below
+  was re-checked against source on the new revision rather than carried forward.
+- What was checked this run: schema and all eleven migrations, service layer, organizer and speaker
+  UI, the public CFP flow, the `/api/v1` contract and generated OpenAPI, mail transports and ICS
+  generation, `wrangler.jsonc`, and the full test suite.
+- **The live deployment was not reachable from the audit host.** `cicero.lhar8771.workers.dev` does
+  not resolve from this machine (`getent hosts` returns nothing; all five sampled paths fail to
+  connect), the same DNS gap [`performance-benchmark.md`](performance-benchmark.md) records. The
+  previous audit's HTTP 200 result on those five routes is therefore **not** re-verified here; where
+  a row depends on the deployment being reachable, it says so.
+- Uncommitted changes and unmerged branches were not credited.
 
 | Priority | Complete | Partial | Outstanding | Excluded | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Required | 43 | 9 | 6 | — | 58 |
-| Important | 21 | 5 | 1 | — | 27 |
-| Optional / nice-to-have | 28 | 0 | 3 | — | 31 |
+| Required | 54 | 2 | 2 | — | 58 |
+| Important | 25 | 2 | 0 | — | 27 |
+| Optional / nice-to-have | 28 | 1 | 2 | — | 31 |
 | Bonus | 3 | 1 | 1 | — | 5 |
 | Explicitly excluded | — | — | — | 3 | 3 |
-| **Total** | **95** | **15** | **11** | **3** | **124** |
+| **Total** | **110** | **6** | **5** | **3** | **124** |
 
 Legend:
 
@@ -32,12 +39,19 @@ Legend:
 
 ## Release-critical remainder
 
-- [ ] Wire category/track-based reviewer routing (`F-3`, `V-5`).
-- [ ] Complete CFP participant modeling and form targeting (`F-4`, `F-6`, `F-7`, `P-2`).
-- [ ] Send acceptance and decline notices automatically (`C-2`).
-- [ ] Configure real outbound transactional email on the deployed instance (`T-6`, affecting `C-3`).
-- [ ] Add the remaining required speaker profile fields (`S-2`).
-- [ ] Verify and complete the competition entry and deadline delivery (`D-1`, `D-4`).
+Four REQUIRED rows are not COMPLETE. Two are external to the repository and two are the same
+deployment switch.
+
+- [ ] Configure real outbound transactional email on the deployed instance (`T-6`). The code is
+  finished; what is missing is a verified Resend sender domain, a `RESEND_API_KEY` secret on the
+  Worker, and a `MAIL_FROM` that is not Resend's shared test sender.
+- [ ] `C-3` clears the moment `T-6` does — the ICS itself is correct and tested, but nothing leaves
+  the deployed instance today, so no invite lands on a speaker's calendar.
+- [ ] Verify the competition entry and its delivery (`D-1`, `D-4`). Neither can be closed from
+  inside the repository.
+
+Nothing else at REQUIRED priority is outstanding. The remaining gaps are two IMPORTANT rows
+(`F-9`, `S-17`), one OPTIONAL row (`S-11`), and the bonus rows `Z-3`/`Z-4`.
 
 ## 1. Competition deliverables
 
@@ -45,28 +59,40 @@ Legend:
   repository; verify externally.
 - [x] **D-2 · R · COMPLETE — Public open-source repository.** The source is public at
   `EllAchE/sessionboard-oss`.
-- [x] **D-3 · R · COMPLETE — Deployed, live, testable site.** All five sampled public and API routes
-  returned HTTP 200 at the audit time.
-- [ ] **D-4 · R · OUTSTANDING — Deliver by Wed Aug 12, 10:00 PM PT.** No competition-delivery evidence
-  was found; verify externally before the deadline.
+- [x] **D-3 · R · COMPLETE — Deployed, live, testable site.** Workers deployment and configuration
+  are present and were reachable at the 2026-08-12 audit. **Not re-verified on this run** — the
+  audit host has no DNS route to `cicero.lhar8771.workers.dev`, which is a limitation of this
+  machine and not evidence that the deployment is down.
+- [ ] **D-4 · R · OUTSTANDING — Deliver by Wed Aug 12, 10:00 PM PT.** The stated deadline has passed
+  as of this audit. The submission window is reported to still be open; that report is recorded here
+  as a fact and not interpreted. No competition-delivery evidence is stored in the repository.
 - [ ] **D-5 · O · OUTSTANDING — Token-spend receipts.** No receipts were found; this is external to
   the product.
 
 ## 2. Event configuration
 
-- [ ] **E-1 · R · PARTIAL — Create an event with name, slug, start, end, and timezone.** Event creation
-  has all concepts, but start and end are optional date-only fields rather than required timestamps.
-- [ ] **E-2 · I · PARTIAL — Optional event metadata.** Website, venue, and description columns exist,
-  but the create/settings UI does not expose them; Event Type and Theme are absent.
-- [ ] **E-3 · I · OUTSTANDING — Event logo and banner uploads.** A logo column exists, but there is no
-  event-branding upload surface and no banner model.
+- [x] **E-1 · R · COMPLETE — Create an event with name, slug, start, end, and timezone.** `startsAt`
+  and `endsAt` are `NOT NULL` timestamps with timezone, added by migration `0007` with a real
+  backfill that derives instants from the old date-only columns before setting `NOT NULL`. Both the
+  create form and event settings take wall-clock date *and* time, and a date-only value is rejected.
+  `startsOn`/`endsOn` survive only as a derived projection.
+- [x] **E-2 · I · COMPLETE — Optional event metadata.** Event type, website URL (scheme-restricted to
+  http/https), venue and address, and a long-text theme all have columns, validation, and writers in
+  event settings. Theme and venue address are settings-only rather than also on the create form.
+- [x] **E-3 · I · COMPLETE — Event logo and banner uploads.** Both slots exist with size guidance
+  matching the brief (~300×300, ~1500×500), an upload/replace/remove surface in settings, a
+  branding-scoped serve route that refuses any file that is not a current branding slot, and public
+  rendering on the event page, chrome, and embeds.
 - [x] **E-4 · R · COMPLETE — Event-scoped tracks, rooms, tags, and formats.** All four collections are
   configurable; tags are multi-select while track, format, level, and room are single-select.
 - [x] **E-5 · O · COMPLETE — Personas and custom field library.** Both are available in settings.
 - [x] **E-6 · O · COMPLETE — Multi-event support and event switcher.** Data is event-scoped and users
   can create and switch events.
-- [ ] **E-7 · O · OUTSTANDING — Exhibitor / sponsor entities.** No such entity model or organizer
-  surface exists on `main`.
+- [x] **E-7 · O · COMPLETE — Exhibitor / sponsor entities.** Migration `0011` adds a `sponsor` table
+  with a `sponsor_kind` enum of `sponsor`/`exhibitor`, and organizer CRUD is complete: list, create,
+  edit, remove, drag reorder, logo upload and serve, all capability-gated. **There is deliberately no
+  public sponsor wall** — no public page, embed, or API exposure — which the ledger row does not ask
+  for; it is recorded under [Follow-ups](#follow-ups) instead.
 - [x] **E-8 · X · EXCLUDED — Event-team permission grid.** Explicitly outside the requested scope.
 
 ## 3. Call-for-speakers forms
@@ -75,21 +101,36 @@ Legend:
   forms can be created independently.
 - [x] **F-2 · R · COMPLETE — Conditional question logic.** Earlier answers can control later field
   visibility, with publish-time validation.
-- [ ] **F-3 · R · OUTSTANDING — Category-based reviewer routing.** Tracks can be filtered and
-  reviewers can be assigned, but no track/category-to-reviewer routing model exists.
-- [ ] **F-4 · R · OUTSTANDING — Abstract/session target and participant toggle.** Form kinds are CFP
-  and portal; the required targets and participants-on/off setting do not exist.
-- [ ] **F-5 · R · PARTIAL — Complete abstract field set and constraints.** Six locked fields are
-  reorderable and can be required, but the exact 255/5,000 limits and required defaults do not match
-  the specification.
-- [ ] **F-6 · R · PARTIAL — Complete participant field set.** Cold submission captures display name
-  and email, but lacks locked first/last name, mobile phone, and dedicated participant biography.
-- [ ] **F-7 · R · OUTSTANDING — Participant roles and count limits.** There is no per-form role
-  configuration, role minimum/maximum, or overall participant cap.
+- [x] **F-3 · R · COMPLETE — Category-based reviewer routing.** Migration `0009` adds a single
+  `track_reviewer` table, and both halves read it: the assignment planner routes a submission by its
+  track, and an uncovered or absent track is reported rather than silently assigned to the whole
+  pool. Organizers configure the mapping from a track-routing panel that also surfaces coverage gaps.
+  Routing is applied when auto-assign runs on a round, not at the instant of submission.
+- [x] **F-4 · R · COMPLETE — Abstract/session target and participant toggle.** Migration `0008` adds
+  a `form_target_type` enum (`abstract`/`session`) and a `collects_participants` flag, both exposed
+  in the builder. Turning participants off removes the participant stage from the public flow, and
+  the API rejects participants on a form that does not collect them.
+- [x] **F-5 · R · COMPLETE — Complete abstract field set and constraints.** The six built-ins carry
+  the brief's exact constraints — Title 255, Description 5,000 markdown, Format/Track/Tags required,
+  Level optional — as shared constants that are written onto the rows, enforced at submit time, and
+  clamped if an organizer tries to raise them. Fields remain drag-reorderable with an independent
+  required toggle.
+- [x] **F-6 · R · COMPLETE — Complete participant field set.** First name, last name, and email are
+  locked-required; mobile phone and a 5,000-character markdown biography are toggleable. `user.name`
+  is split into `first_name`/`last_name` (migration `0008`, backfilled) and `name` is kept as the
+  derived join every other surface renders, recomputed on each write.
+- [x] **F-7 · R · COMPLETE — Participant roles and count limits.** `form_participant_role` carries
+  per-role min/max with a unique key per form, and `form.max_participants` is the overall cap. The
+  builder configures all three, satisfiability is checked at config time and on publish, and one
+  shared validator enforces the counts across the public flow, the API, and the portal share path.
 - [x] **F-8 · R · COMPLETE — Custom field types and character limits.** Text, rich text/Markdown,
   selection, file, and other types are supported with field limits.
-- [ ] **F-9 · I · PARTIAL — Welcome-screen configuration.** Internal name and welcome copy exist;
-  separate external title, 15-character heading, and visibility toggle do not.
+- [ ] **F-9 · I · PARTIAL — Welcome-screen configuration.** All four pieces now exist — internal name,
+  external form title, page heading with the 15-character cap genuinely enforced server-side, and a
+  show/hide toggle that drops the welcome stage end to end. What is not satisfied is the brief's
+  asterisks: external title and page heading are nullable with silent fallbacks and no server-side
+  required check, so only the internal name is actually mandatory. The welcome message is a markdown
+  textarea rather than a rich-text editor, consistent with the rest of the app.
 - [x] **F-10 · I · COMPLETE — Close date.** The close date gates submission and drives draft reminders.
 - [x] **F-11 · I · COMPLETE — Success page and portal redirect.** Final submission lands on a success
   page and redirects into the speaker portal.
@@ -107,8 +148,10 @@ Legend:
 
 - [x] **P-1 · R · COMPLETE — Public unauthenticated URL per form.** Published forms have shareable
   public routes.
-- [ ] **P-2 · R · PARTIAL — Welcome → Account → Submission → Participant → Review flow.** The flow is
-  multi-step, but Welcome and Participant are not distinct stages.
+- [x] **P-2 · R · COMPLETE — Welcome → Account → Submission → Participant → Review flow.** Five
+  distinct stages exist as a testable data model, not just as rendering. Stages drop only for a
+  stated reason — welcome when hidden, account when already signed in, participant when the form
+  does not collect them — and the "Step N of M" counter is derived from the surviving set.
 - [x] **P-3 · R · COMPLETE — Account creation in the flow.** A cold submitter leaves with an account
   and participant record.
 - [x] **P-4 · R · COMPLETE — Mobile-friendly CFP.** Responsive form styling is present.
@@ -120,8 +163,10 @@ Legend:
 
 - [x] **S-1 · R · COMPLETE — Authenticated Home, Submissions, Profile, and Tasks tabs.** All specified
   portal surfaces exist.
-- [ ] **S-2 · R · PARTIAL — Self-edited bio and profile fields.** Biography and pronouns exist;
-  Salutation, Honorific, and Gender are absent.
+- [x] **S-2 · R · COMPLETE — Self-edited bio and profile fields.** Salutation, honorific, pronouns,
+  and gender are columns (migration `0010`) with speaker-editable inputs in the portal profile form,
+  alongside a 5,000-character biography with a live counter. All five are accepted and returned by
+  the `/api/v1` profile contract.
 - [x] **S-3 · R · COMPLETE — Headshot upload.** Speakers can upload and replace their headshot.
 - [x] **S-4 · R · COMPLETE — Slides and supporting documents.** Versioned uploads are attached through
   submission/task assignments.
@@ -134,8 +179,13 @@ Legend:
 - [x] **S-9 · I · COMPLETE — View and edit submitted proposals.** Speakers have a post-submit editor.
 - [x] **S-10 · R · COMPLETE — Full admin impersonation.** Organizers can act as a speaker, complete
   writes, and return to admin mode.
-- [x] **S-11 · O · COMPLETE — Portal appearance settings.** Logo, accent, welcome copy, and support
-  email can be configured.
+- [ ] **S-11 · O · PARTIAL — Portal appearance settings.** *Corrected from COMPLETE.* The
+  `portal_theme` table holds logo, accent colour, welcome markdown, and support email, and both the
+  portal layout and the branded email wrapper read it — but **nothing writes it except the seeds**.
+  There is no organizer page, server action, or API route that upserts a portal theme, so on any
+  non-seeded event the settings do not exist. The previous audit credited the read path as the
+  feature. What is missing is a portal-appearance panel next to the portal surfaces; the event
+  branding under settings is `E-3`, a different table.
 - [x] **S-12 · O · COMPLETE — Multiple portal types.** Contact, group, and submission views exist.
 - [x] **S-13 · O · COMPLETE — Group access sharing.** Co-speaker/group access is supported.
 
@@ -144,11 +194,16 @@ Legend:
 - [x] **S-14 · R · COMPLETE — Organizer tasks for accepted speakers.** Tasks can target accepted or
   manually selected speakers.
 - [x] **S-15 · R · COMPLETE — Shared task-completion state.** Speakers and organizers see progress.
-- [ ] **S-16 · I · PARTIAL — Per-contact, per-group, and per-submission task scope.** Contact/manual
-  assignment and accepted-submission links exist, but explicit group and submission scoping are not
-  configurable.
-- [ ] **S-17 · I · PARTIAL — Portal form tasks for contacts, groups, and submissions.** Portal forms
-  satisfy tasks, but the form itself does not expose those three explicit target types.
+- [x] **S-16 · I · COMPLETE — Per-contact, per-group, and per-submission task scope.** Migration
+  `0010` adds a `task_scope` enum of exactly those three values, a pinned `submission_id`, partial
+  unique indexes per scope, and a backfill. Assignment resolution branches per scope — one row per
+  person, one per accepted session, or one per session team — reconciliation rewrites scope in place
+  without destroying completed status, and the task editor exposes the choice.
+- [ ] **S-17 · I · PARTIAL — Portal form tasks for contacts, groups, and submissions.** Completing an
+  organizer-built form still satisfies a task, and the contact/group/submission triple now exists —
+  but it lives on `task.scope`, set when the form is attached to a task. The form builder's own two
+  axes are `cfp`/`portal` and `abstract`/`session`; a form author cannot declare or constrain which
+  of the three targets the form is for. Partial by design, recorded so it is not mistaken for done.
 - [x] **S-18 · I · COMPLETE — Named file requests.** Files are collected and versioned against a
   request/task assignment.
 - [x] **S-19 · O · COMPLETE — Portal-form confirmation email.** Completion sends configurable copy
@@ -157,16 +212,24 @@ Legend:
 
 ## 6. Review, scoring, and evaluation
 
-- [ ] **V-1 · R · PARTIAL — Exact submission status tabs.** All, Pending, Accepted, Waitlist,
-  Declined, Withdrawn, and Draft exist; Accept Queue and Decline Queue do not.
+- [x] **V-1 · R · COMPLETE — Exact submission status tabs.** All eight named tabs exist — All,
+  Accepted, Accept Queue, Pending, Decline Queue, Declined, Withdrawn, Drafts — plus Waitlist. The
+  two queues are **derived, not staged**: a submission enters one once every assigned reviewer has
+  answered and its average score falls above or below a fixed midpoint bar, and Pending is the
+  un-staged remainder, so the three tabs partition rather than overlap. There is no persisted staging
+  column and no organizer-driven manual staging; see [Follow-ups](#follow-ups).
 - [x] **V-2 · R · COMPLETE — Inline accept/decline.** Inline and bulk decision actions are available.
 - [x] **V-3 · R · COMPLETE — Named reviewer scoring.** Reviewer identities, assignments, weighted
   criteria, and scorecards exist.
 - [x] **V-4 · R · COMPLETE — Multiple review rounds.** Rounds have dates, modes, criteria, and status.
-- [ ] **V-5 · R · PARTIAL — Evaluation plans.** Criteria, invitation, balanced distribution, and
-  per-submission assignment exist; category-driven routing does not.
-- [ ] **V-6 · I · PARTIAL — Configurable columns, sort, filter, and saved views.** Sort and filters are
-  surfaced; saved-view services lack UI and queue columns remain fixed.
+- [x] **V-5 · R · COMPLETE — Evaluation plans.** The reviewer side reads the same `track_reviewer`
+  table `F-3` writes: the queue's working set is the assignments the track-driven planner created,
+  and the reviewer's covered tracks are read back from that table. Per-round criteria and scorecards
+  are unchanged. One routing model, not two.
+- [x] **V-6 · I · COMPLETE — Configurable columns, sort, filter, and saved views.** The queue now has
+  a saved-views selector with save and delete, and a column chooser. A saved view captures tab,
+  filters, sort, and column selection together. Outside a saved view the column choice persists in
+  `localStorage` only, so it is per-browser rather than per-user.
 - [x] **V-7 · I · COMPLETE — Manually add a submission.** Organizer entry supports details and
   participants.
 - [x] **V-8 · I · COMPLETE — Export submissions to CSV/XLSX.** Selected review results can be exported
@@ -196,12 +259,23 @@ Legend:
 
 - [x] **C-1 · R · COMPLETE — Editable email templates and merge fields.** Organizer template CRUD and
   merge rendering are implemented.
-- [ ] **C-2 · R · PARTIAL — All required triggered sends.** Confirmation, task reminders, and draft
-  reminders are wired; accept/decline templates exist but the decision action does not invoke them.
-- [ ] **C-3 · R · PARTIAL — Calendar invites delivered to speakers' calendars.** Correct ICS request,
-  update, and cancellation behavior is implemented, but the deployed instance does not send outbound
-  email.
-- [x] **C-3a · R · COMPLETE — Add-to-calendar link.** Portal sessions expose an ICS download.
+- [x] **C-2 · R · COMPLETE — All required triggered sends.** *Corrected from PARTIAL.* The decision
+  action now sends notices: it notifies only rows that genuinely transitioned, skips a reset, and
+  isolates failures per recipient, with acceptance, decline, and a new waitlist template all mapped.
+  Confirmation, organizer notification, calendar invite and cancellation, task reminders, and
+  draft-deadline reminders are all wired and tested. One deployment caveat: the two *scheduled*
+  senders run through the cron job route, and `wrangler.jsonc` declares no `triggers`/`crons` block,
+  so on the deployed instance reminders fire only when that route is called or an organizer presses
+  the button. Everything else is event-driven and unaffected.
+- [ ] **C-3 · R · PARTIAL — Calendar invites delivered to speakers' calendars.** The ICS itself is now
+  fully correct and pinned by golden-byte tests: `METHOD:REQUEST` with real organizer and attendees,
+  a stable UID with a `SEQUENCE` that increments only when an invite was already sent, RFC 5545
+  escaping and 75-octet folding, and — the recent fix — a MIME `method=` parameter re-read from the
+  body so a `METHOD:CANCEL` is not mislabelled on either the Resend or SMTP transport. It stays
+  PARTIAL for one reason: delivery depends on `T-6`, and under the deployed log transport the ICS is
+  stored in the mail log rather than landing on anyone's calendar.
+- [x] **C-3a · R · COMPLETE — Add-to-calendar link.** Portal sessions expose an ICS download using
+  `METHOD:PUBLISH` with no attendees, which is the correct shape for a download.
 - [x] **C-4 · R · COMPLETE — Manual send to filtered audiences.** Organizer composition supports
   relevant participant, submission, session, and task audiences.
 - [x] **C-5 · I · COMPLETE — Send log.** Per-recipient status, timestamps, and content are retained.
@@ -246,51 +320,127 @@ Legend:
 - [x] **N-1b · R · COMPLETE — Interface and fixture-backed fake.** Tests and demo mode exercise the
   same contract without credentials.
 - [ ] **N-1c · O · OUTSTANDING — Live Accelevents end-to-end run.** No successful run against a real
-  customer account is recorded.
+  customer account is recorded. External; nothing in the repository can close it.
 - [x] **N-2 · O · COMPLETE — Additional integration.** A one-way Airtable mirror is implemented.
 
 ## 12. Platform and non-functional requirements
 
 - [x] **T-1 · R · COMPLETE — Open-source license.** The repository contains an MIT license.
-- [x] **T-2 · R · COMPLETE — Publicly reachable deployment.** All five sampled routes returned 200.
+- [x] **T-2 · R · COMPLETE — Publicly reachable deployment.** Deployment configuration is present and
+  the routes were reachable at the previous audit. As with `D-3`, this was **not** re-verified on
+  this run because the audit host cannot resolve the Workers hostname.
 - [x] **T-3 · R · COMPLETE — Self-hostable.** Docker Compose starts the app, Postgres, and object
   storage with documented setup.
 - [x] **T-4 · R · COMPLETE — Organizer and speaker roles.** Organizer, reviewer, and speaker roles are
   distinct.
-- [x] **T-4a · R · COMPLETE — Magic-link auth for every role.** Signed, short-lived, single-use links
-  are exchanged for sessions; there are no passwords.
+- [x] **T-4a · R · COMPLETE — Magic-link auth for every role.** No password column or check exists
+  anywhere. Tokens are stored only as a hash, expire in 30 minutes, are single-use on redemption, and
+  are exchanged for a 30-day httpOnly session cookie. The recent per-recipient transport work altered
+  only *where a link may be displayed*, not minting, expiry, or single use.
 - [x] **T-4b · I · COMPLETE — Long-lived speaker sessions.** Sessions last 30 days.
 - [x] **T-5 · R · COMPLETE — Headshot, slide, and document storage.** Database and S3-compatible
   backends are supported.
-- [ ] **T-6 · R · OUTSTANDING — Outbound transactional email on the deployed instance.** The demo
-  deliberately sets `MAIL_TRANSPORT=log`, so mail is recorded but not externally delivered.
+- [ ] **T-6 · R · PARTIAL — Outbound transactional email on the deployed instance.** *Upgraded from
+  OUTSTANDING; the code is done, the deployment is not.* Three transports exist — log, SMTP with a
+  full set of configuration variables for self-hosting, and Resend over HTTP for Workers — behind an
+  `auto` resolver that degrades to log and warns rather than failing silently. `wrangler.jsonc`
+  deliberately stays on a safe default: `MAIL_TRANSPORT: "auto"` with no `RESEND_API_KEY` secret and
+  `MAIL_FROM` set to Resend's shared `onboarding@resend.dev` test sender, which delivers only to the
+  Resend account owner. So the deployed instance resolves to log and delivers nothing externally.
+  Closing this needs a verified sender domain, one `wrangler secret put RESEND_API_KEY`, and a
+  matching `MAIL_FROM` — no code change.
 - [x] **T-7 · I · COMPLETE — Seedable demo event.** Idempotent demo conferences can be loaded.
-- [x] **T-7a · R · COMPLETE — Demo magic links without an inbox.** Links appear on screen and in the
-  admin mailbox when log transport is active.
+- [x] **T-7a · R · COMPLETE — Demo magic links without an inbox.** Mail routing is now **per
+  recipient**: an address at a reserved TLD or domain (`test`, `example`, `invalid`, `localhost`,
+  `example.com/.net/.org`) is forced onto the log transport inside the same run that delivers real
+  mail to real addresses, so enabling a provider does not take the demo offline. On-screen links are
+  gated by a single predicate requiring all of an explicit deployment flag, a reserved domain, an
+  existing seeded demo membership, and no non-demo membership. **A failed send no longer qualifies**
+  — the sign-in path's `!delivered` reveal was removed and the reasoning is stated in the code. One
+  instance of the same pattern survives elsewhere; see [Follow-ups](#follow-ups).
 - [x] **T-8 · I · COMPLETE — Self-host setup documentation.** README, architecture, decision, API, and
   event-management instructions are present.
 
 ## 13. Bonus criteria
 
 - [x] **Z-1 · B · COMPLETE — Cloudflare deployment.** Workers configuration and deployment tooling
-  are present, and the audited deployment is reachable.
+  are present.
 - [x] **Z-2 · B · COMPLETE — Airtable persistence.** Speakers, submissions, and agenda data can be
   mirrored one-way into a configured Airtable base.
 - [ ] **Z-3 · B · OUTSTANDING — Forge hosting.** Source is hosted on GitHub rather than Forge.
-- [ ] **Z-4 · B · PARTIAL — Speed and performance.** The five-route health check passes and the latest
-  revision removes a publish-day fan-out crash, but the README still documents free-plan Worker CPU
-  failures and no representative load benchmark proves the bonus.
+  External; nothing in the repository can close it.
+- [ ] **Z-4 · B · PARTIAL — Speed and performance.** A real benchmark now exists — `bun run bench`,
+  with captured numbers in [`performance-benchmark.md`](performance-benchmark.md) — and it
+  **confirms the concern rather than clearing it**. Across 7,000 requests the self-hosted target was
+  fast and returned zero errors, but the server-rendered public pages cost **29–46ms of CPU each**
+  against the Workers free plan's **10ms** ceiling, three to four times over on the most favourable
+  reading; the JSON API at ~8ms is the exception, which matches the observation that the API
+  health-check passes while navigation intermittently 503s. The deployed Worker itself could not be
+  reached from the benchmarking host and remains unmeasured. Measuring a problem is progress, but a
+  bonus for speed is not earned by a number that says the public pages exceed the plan's budget.
 - [x] **Z-5 · B · COMPLETE — Public API.** Versioned REST routes, API-key auth, and generated OpenAPI
   documentation exist.
 
+## Follow-ups
+
+Discovered during this audit. None of these blocks a row above on its own, and none is a
+requirement the brief states — they are recorded here so they are not lost.
+
+**Security — highest priority of this list.** The reviewer-invite server action still returns the
+raw magic link to the organizer's UI when a send *fails*
+(`app/admin/submissions/rounds/actions.ts`, `activeTransportName() === 'log' || !invited.delivered`).
+This is the same class of bypass that was deliberately removed from the sign-in path, on a surface
+the removal did not touch. It is latent today because the deployed instance is on the log transport,
+but it becomes live the moment `T-6` is switched on — and with the current shared test sender,
+Resend rejects every non-owner recipient, so `delivered` would be `false` for *every* invite. The
+invite path creates an account for an arbitrary typed address, so the leaked link is a session as
+that address. **Not fixed here — this audit owns `docs/` only.**
+
+- **`V-1` manual staging.** The accept and decline queues are computed from review completeness and
+  a hardcoded score midpoint. An organizer cannot stage a submission into a queue by hand, cannot
+  move one out, and cannot tune the bar; a submission with no assigned reviewers never stages at all.
+  A persisted staging column would make the queues organizer-driven as well as derived.
+- **A released recusal leaves no trace.** A recusal is kept as a `declined` assignment precisely so
+  the organizer can see the gap — but releasing that assignment *deletes the row*, and the conflict
+  check that auto-assign consults covers only submitters and speakers. The same reviewer can
+  therefore be re-offered the talk they recused from. Recording the recusal separately from the
+  assignment would fix it.
+- **Per-session task reminders may be chattier than intended.** Reminders iterate per *assignment*,
+  and a submission-scoped task (`S-16`) creates one assignment per accepted session. A speaker with
+  three accepted sessions receives three reminder emails for one task. Correct by the data model,
+  probably not what an organizer expects.
+- **No public sponsor wall (`E-7`).** Sponsors and exhibitors are fully manageable by organizers but
+  invisible to attendees: no public page, no embed widget, no `/api/v1` exposure, and the logo serve
+  route sits behind the admin gate, so a public surface would need its own route too. Deliberately
+  scoped out, not forgotten.
+- **`S-17` form-builder target.** The contact/group/submission triple should arguably be declarable
+  on the form itself rather than only at the moment a form is attached to a task.
+- **No `crons` trigger in `wrangler.jsonc`.** Task reminders and draft-deadline reminders are
+  implemented and correct but are only dispatched by an external call to the cron route or an
+  organizer pressing the button. A scheduled trigger would make them autonomous on the deployment.
+- **`F-5` caps are not backfilled onto pre-`0008` rows.** Migration `0008` inserts *missing* fields
+  but does not write the 255/5,000 limits onto title and description rows that already existed, so an
+  upgraded database keeps `max_length = NULL` on those two until an organizer edits the field. New
+  forms are correct.
+- **`F-4` participants toggle on a live form.** Turning `collectsParticipants` on for an already
+  published form does not seed the default roles, producing a participant stage where nobody can be
+  added until the form is republished.
+
 ## Verification evidence
 
-- Source inspection covered the form contract, schemas, services, route inventory, organizer and
-  public UI, deployment configuration, and tests.
-- `bun run test`: 35 test files and 381 tests passed.
+- Source inspection covered the schema and all eleven migrations, the service layer, organizer and
+  speaker UI, the public CFP flow, the `/api/v1` contract and generated OpenAPI, mail transports and
+  ICS generation, deployment configuration, and tests.
+- `bun run test`: **75 test files, 825 tests, all passed** (up from 35 files / 381 tests at the
+  previous audit).
 - `bun run typecheck`: passed.
 - `bun run lint`: passed.
 - `bun run build`: production build passed.
-- The live health check returned HTTP 200 for all five sampled paths at the audit time.
+- `bun run bench`: not re-run for this audit; the captured numbers in
+  [`performance-benchmark.md`](performance-benchmark.md) are read as evidence for `Z-4` rather than
+  reproduced.
+- **The live deployment was not health-checked.** `cicero.lhar8771.workers.dev` does not resolve from
+  the audit host, so all five sampled paths failed to connect. This is a limitation of the machine,
+  not a finding about the deployment; `D-3` and `T-2` rest on the previous audit's check and say so.
 - Real outbound mail and a real Accelevents account were not available, so `T-6` and `N-1c` remain
-  unchecked rather than inferred from interfaces or mocks.
+  judged on configuration and code rather than inferred from interfaces or mocks.

@@ -225,8 +225,14 @@ they are simply not built yet, and belong here as a running to-do rather than a 
 | Agent mail | Not started | No agent (reviewer, scheduler) sends or manages mail on its own. `lib/mail` and `lib/services/comms.ts` are template-driven transactional email triggered by organizer actions, consistent with the advisory-only AI stance in §2 — an agent that owns its own mailbox is a bigger commitment than "propose, never decide." |
 | Video uploads / post-conference assets | Partially covered | The task/deliverable uploader already accepts video as a file kind (`app/admin/submissions/files/kind.ts`), so a speaker can attach a video file during CFP or the portal task flow today. What's missing is anything **post-conference**: no session-recording field, no publish-after-the-event flow, and no public surface (e.g. "watch the recording") on the program page. |
 
-Not on this list: Speaker CRM. `docs/01-requirements.md` §14 still marks it `[EXCLUDED]`, but that
-line is stale — see `docs/decisions-long-form.md` ("The largest functional expansion is the speaker
-CRM"), which documents the exclusion being deliberately reversed and a full CRM (`app/crm/*`) built
-above the event layer. It shipped; the non-goals table needs a follow-up correction, tracked
-separately from this to-do.
+Both rows were re-checked against `main` on 2026-08-13 and are still accurate. Nothing an agent owns
+sends or manages its own mail — the `.agents/skills/*` surfaces added since drive the public API and
+never reach `lib/mail`. And the only "recording" in the codebase is a CFP question asking for a link
+to a *prior* talk; there is still no session-recording field, no publish-after-the-event flow, and no
+public surface for one.
+
+Not on this list: Speaker CRM. It shipped — a full CRM at `app/crm/*` above the event layer, as
+`docs/decisions-long-form.md` records ("The largest functional expansion is the speaker CRM"). The
+stale `[EXCLUDED]` line this section used to flag has now been **corrected**: `01-requirements.md`
+§14 marks that row **BUILT ‡**, along with the sponsor/exhibitor row it always contradicted `E-7`
+over. No follow-up remains.

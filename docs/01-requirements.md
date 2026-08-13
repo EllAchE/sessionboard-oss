@@ -32,9 +32,11 @@ The author's own priority markers are the strongest signal available, and there 
    they tag individual controls rather than whole features. Full list in
    [Appendix A](#appendix-a-verbatim-author-annotations).
 
-A **†** on a row means the tag is a judgment call rather than something the brief states. Seven rows
+A **†** on a row means the tag is a judgment call rather than something the brief states. Six rows
 carry one; the reasoning for each is in [Resolved ambiguities](#resolved-ambiguities) or in the row
-itself. Everything unmarked traces to brief text or an annotation.
+itself. Everything unmarked traces to brief text or an annotation. A **‡** in
+[Explicit non-goals](#14-explicit-non-goals) marks the opposite case: an exclusion this document made
+and later reversed by building the thing.
 
 ### Couplings that a single row does not reveal
 
@@ -379,11 +381,15 @@ Orthogonal to product value. The brief lists these with its own weighting langua
 | --- | --- | --- |
 | **[EXCLUDED]** | Payments, fees, invoicing | *"NOT NEEDED"* on the Payments & Fees screenshot |
 | **[EXCLUDED]** | Design fidelity to Sessionboard | *"Cloning the exact design is not a requirement"* |
-| **[EXCLUDED]** | Speaker CRM | Brief calls these "extra features optional" |
-| **[EXCLUDED]** † | Contacts & data / import / history | The one un-boxed section on the author's annotated doc index. Inference from *absence* of a red box, so the weakest-evidence call in this document — re-checked against the survey and upheld, see [Coverage check](#coverage-check-against-the-incumbent) |
+| ~~**[EXCLUDED]**~~ **BUILT** ‡ | Speaker CRM, and with it Contacts & data / import / history | The brief calls these "extra features optional", and the first pass excluded them. **That exclusion was deliberately reversed and a full CRM shipped** at `app/crm/*` — contacts above the event layer, custom fields, import, duplicate handling, saved segments, campaigns, and a sourcing pipeline. See [`decisions-long-form.md`](decisions-long-form.md) ("The largest functional expansion is the speaker CRM") for the reasoning. Both rows are kept here rather than deleted so the reversal is legible |
 | **[EXCLUDED]** | Awards, Studio, Marketing modules | Present in Sessionboard, absent from the brief |
 | **[EXCLUDED]** | AI agents (Reviewer, Scheduler, Coordinator, Team Lead) | Sessionboard markets them; the brief asks for none |
-| **[EXCLUDED]** | Exhibitor / sponsor management | Visible in screenshots, never requested |
+| ~~**[EXCLUDED]**~~ **BUILT** ‡ | Exhibitor / sponsor management | Never requested by the brief, but this table always contradicted `E-7` above, which lists sponsor/exhibitor entities as **[OPTIONAL]**. `E-7` is the row that governs: the entities and organizer CRUD shipped. There is deliberately no public sponsor wall |
+
+‡ Rows marked **BUILT** were excluded by the first requirements pass and later, deliberately, built
+anyway. They are corrections to this table, not new exclusions — the audit
+([`requirements-audit-checklist.md`](requirements-audit-checklist.md)) is the current record of what
+exists.
 
 ---
 
@@ -411,6 +417,10 @@ area is import mechanics, dedup, bulk edit, and event cloning. Nothing in it is 
 brief's nine features. The one item worth a second look is event cloning — organizers run the
 conference annually — but the brief never mentions a second edition, and `E-6` already covers
 multi-event as OPTIONAL.
+
+That verdict is about *what the brief requires*, and it still stands. It is not a statement about
+what Cicero contains: the CRM was subsequently built anyway, import and dedup included, as the
+**BUILT ‡** rows above record.
 
 ---
 

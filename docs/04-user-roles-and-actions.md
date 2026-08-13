@@ -238,12 +238,18 @@ Organizers control the program from event setup through publication.
 
 An organizer can:
 
-- Create an event with a name, public slug, start and end dates, and timezone.
+- Create an event with a name, public slug, a start and end instant, and timezone. Start and end are
+  required and carry a time of day, not only a date.
 - Add website, location, event-type, and theme metadata.
 - Upload a logo and banner or background image.
 - Configure event-scoped tracks, rooms, tags, and session formats.
 - Define room capacities and the values speakers or admins select on submissions and sessions.
+- Record sponsors and exhibitors with logos and a display order. These are organizer-facing only;
+  there is no public sponsor listing.
 - Switch between events when multi-event support is enabled.
+
+An organizer cannot currently set the speaker portal's own appearance — logo, accent colour, welcome
+copy, and support address exist per event but are written by the seeds alone.
 
 ### Build and publish the CFP
 
@@ -269,12 +275,15 @@ An organizer can:
 
 - Browse proposals by pending, accept queue, accepted, decline queue, declined, withdrawn, or draft
   state.
-- Search, sort, filter, and configure the submission list.
+- Search, sort, and filter the submission list, choose which columns it shows, and save a tab,
+  filter, sort, and column selection together as a named view.
 - Define evaluation plans that route categories or tracks to reviewer pools.
 - Create multiple independent review rounds.
 - Define weighted or otherwise structured scorecard criteria.
 - Inspect scores and reviewer progress.
-- Stage and commit accept or decline decisions.
+- Commit accept, waitlist, or decline decisions, individually or in bulk. The accept and decline
+  queues are derived from review completeness and score rather than staged by hand; an organizer
+  cannot currently place a submission in a queue manually.
 - Manually add invited talks that did not enter through the public CFP.
 - Import sessions and export submission data when the corresponding optional tools are enabled.
 - Download submitted files in bulk when the optional tool is enabled.
@@ -341,7 +350,9 @@ Those would be additional product features rather than required interpretations 
 An organizer can:
 
 - Create and edit reusable email templates with merge fields.
-- Trigger submission confirmation, acceptance, decline, task reminder, and draft-deadline messages.
+- Trigger submission confirmation, acceptance, waitlist, decline, task reminder, and draft-deadline
+  messages. Confirmation and decision notices fire from the action itself; the two reminder jobs run
+  on the scheduled-job route, which the deployment does not yet call on a timer.
 - Send an ad hoc message to a filtered audience, such as all accepted speakers or everyone with an
   open task.
 - Inspect the send log to determine what was sent to whom and when.
@@ -478,11 +489,17 @@ The requirements deliberately exclude:
 - Ticket sales, payments, fees, and invoicing.
 - Full attendee registration and check-in.
 - Design fidelity to Sessionboard.
-- Full speaker CRM.
 - Awards, studio, and marketing modules.
-- Exhibitor and sponsor management.
 - Sessionboard-style autonomous AI agents.
 - Complex event-team role and permission administration.
+
+Two items this list previously carried were later built on purpose, and are called out rather than
+quietly deleted:
+
+- **Speaker CRM.** Excluded by the first requirements pass, then reversed — a full contact database
+  lives above the event layer at `app/crm/*`. See [`decisions-long-form.md`](decisions-long-form.md).
+- **Sponsor and exhibitor entities.** Organizer-facing CRUD exists; only the public-facing half was
+  scoped out. `E-7` in [`01-requirements.md`](01-requirements.md) is the governing row.
 
 Optional capabilities should not displace the required end-to-end journey. A plain workflow that
 gets an organizer and speaker from CFP through publication without a dead end is more important than
