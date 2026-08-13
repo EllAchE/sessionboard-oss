@@ -10,6 +10,7 @@ import {
 } from '../../db/schema';
 import { appUrl, env } from '../env';
 import { isAppError, notFound } from '../errors';
+import { publicSpeakerHeadshotUrl } from '../speaker-headshot';
 import { AccelEventsClient, liveClientConfig } from './client';
 import { FakeAccelEventsGateway } from './fake';
 import { dedupeByEmail, toSpeakerDto, type SpeakerSource } from './mapping';
@@ -89,7 +90,8 @@ export async function listAcceptedSpeakers(eventId: string): Promise<SpeakerCand
   if (roles.length === 0) return [];
   const participantIds = [...new Set(roles.map((row) => row.participantId))];
 
-  const [people, syncRows] = await Promise.all([
+  const [eventRow, people, syncRows] = await Promise.all([
+    db.query.event.findFirst({ where: eq(eventTable.id, eventId) }),
     db
       .select({
         id: participant.id,
@@ -99,6 +101,7 @@ export async function listAcceptedSpeakers(eventId: string): Promise<SpeakerCand
         company: participant.company,
         bioMarkdown: participant.bioMarkdown,
         headshotFileId: participant.headshotFileId,
+        workflowStatus: participant.workflowStatus,
         links: participant.links,
         email: userTable.email,
         userName: userTable.name,
@@ -139,7 +142,7 @@ export async function listAcceptedSpeakers(eventId: string): Promise<SpeakerCand
         company: person.company,
         bioMarkdown: person.bioMarkdown,
         pronouns: person.pronouns,
-        headshotUrl: headshotUrl(person.headshotFileId),
+        headshotUrl: headshotUrl(eventRow?.slug, person),
         links: person.links ?? [],
         position: index,
         sessionTitles: titlesByParticipant.get(person.id) ?? [],
@@ -157,11 +160,26 @@ export async function listAcceptedSpeakers(eventId: string): Promise<SpeakerCand
 }
 
 /**
- * Accelevents fetches this itself, so it must be absolute and publicly reachable. The route is
- * another workstream's; when it is absent the speaker still pushes without a headshot.
+ * The headshot Accelevents is given is the public one — `/embed/{slug}/headshot/{fileId}`, the same
+ * URL the embeds and the public speaker directory serve. Accelevents fetches the image from their
+ * own infrastructure with no session of ours, so it has to be absolute and reachable without one,
+ * and that route is the only one in the app that is both by design.
+ *
+ * It serves confirmed participants only, so `publicSpeakerHeadshotUrl` returns `null` for a speaker
+ * whose talk is accepted but whose profile is not confirmed yet. That speaker still pushes, without
+ * a headshot — which is the behaviour that was already documented here, now reached honestly rather
+ * than by handing over a link that 404s.
  */
-function headshotUrl(fileId: string | null): string | null {
-  return fileId ? `${appUrl()}/api/files/${fileId}` : null;
+function headshotUrl(
+  eventSlug: string | undefined,
+  person: { workflowStatus: string; headshotFileId: string | null },
+): string | null {
+  return publicSpeakerHeadshotUrl({
+    origin: appUrl(),
+    eventSlug,
+    workflowStatus: person.workflowStatus,
+    headshotFileId: person.headshotFileId,
+  });
 }
 
 export type PushOutcome = {

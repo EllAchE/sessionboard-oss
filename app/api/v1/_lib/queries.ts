@@ -16,6 +16,7 @@ import {
 import { appUrl } from '@/lib/env';
 import { notFound } from '@/lib/errors';
 import { formatRef } from '@/lib/ids';
+import { publicSpeakerHeadshotUrl } from '@/lib/speaker-headshot';
 import type { EventPayload, SessionPayload, SpeakerPayload, SubmissionPayload } from './schemas';
 
 /**
@@ -261,11 +262,16 @@ export function speakerMatchesSearch(row: SpeakerPayload, filters: SpeakerFilter
   );
 }
 
+/**
+ * Takes the event row rather than its id because a headshot URL is slug-scoped: the route that
+ * serves one proves access by the event named in its path, so there is no id-only form of it.
+ */
 export async function listSpeakers(
-  eventId: string,
+  event: Pick<EventRow, 'id' | 'slug'>,
   filters: SpeakerFilters = {},
 ): Promise<ListResult<SpeakerPayload>> {
   const db = getDb();
+  const eventId = event.id;
 
   const accepted = await db
     .select({
@@ -291,6 +297,7 @@ export async function listSpeakers(
       company: participant.company,
       bio: participant.bioMarkdown,
       headshotFileId: participant.headshotFileId,
+      workflowStatus: participant.workflowStatus,
       links: participant.links,
       userName: userTable.name,
       email: userTable.email,
@@ -314,7 +321,12 @@ export async function listSpeakers(
       jobTitle: person.jobTitle,
       company: person.company,
       bio: person.bio,
-      headshotUrl: person.headshotFileId ? `${appUrl()}/api/files/${person.headshotFileId}` : null,
+      headshotUrl: publicSpeakerHeadshotUrl({
+        origin: appUrl(),
+        eventSlug: event.slug,
+        workflowStatus: person.workflowStatus,
+        headshotFileId: person.headshotFileId,
+      }),
       links: person.links ?? [],
       sessions: sessionsByParticipant.get(person.id) ?? [],
     }))

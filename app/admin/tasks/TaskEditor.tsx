@@ -30,6 +30,16 @@ const AUDIENCES: Array<{ value: AdminTaskRow['audience']; label: string }> = [
 /**
  * `S-16`. The second axis. "Assign to" says which people; this says what each of them owes — one
  * answer as a person, one for each of their sessions, or one shared answer per speaking team.
+ *
+ * It is also all of `S-17`'s "Types: Contacts / Groups / Submissions". The two rows name the same
+ * triple from two directions — `S-16` asks that tasks be scopable, `S-17` that a portal form be
+ * usable at each scope — and one control satisfies both, because a portal form has no URL of its own
+ * and reaches a speaker only by being attached to a task. Which of the three a form is for is
+ * therefore a fact about *this* attachment, decided in this dialog beside the form picker below, and
+ * not a property the form builder could know: the same "Travel and logistics" form is per-contact at
+ * one event and per-session at the next. Adding the triple to the form as well would make it
+ * single-use, and would let a form and its task disagree with no correct way to settle it — see the
+ * note on `FormTargetType` in `lib/services/forms.ts`.
  */
 const SCOPES: Array<{ value: AdminTaskRow['scope']; label: string; hint: string }> = [
   {
