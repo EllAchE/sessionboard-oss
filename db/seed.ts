@@ -73,17 +73,34 @@ const db = getDb();
 // ---------------------------------------------------------------------------
 
 const PEOPLE = [
-  { email: 'organizer@example.com', name: 'Robin Alcott' },
-  { email: 'reviewer.chen@example.com', name: 'Wei Chen' },
-  { email: 'reviewer.okafor@example.com', name: 'Ngozi Okafor' },
-  { email: 'sam.rivera@example.com', name: 'Sam Rivera' },
-  { email: 'priya.nair@example.com', name: 'Priya Nair' },
-  { email: 'jonas.holm@example.com', name: 'Jonas Holm' },
-  { email: 'mei.tanaka@example.com', name: 'Mei Tanaka' },
-  { email: 'diego.ferrer@example.com', name: 'Diego Ferrer' },
-  { email: 'amara.osei@example.com', name: 'Amara Osei' },
-  { email: 'tomas.novak@example.com', name: 'Tomas Novak' },
+  { email: 'organizer@example.com', name: 'Tullia Ciceronis' },
+  { email: 'reviewer.cicero@example.com', name: 'Marcus Tullius Cicero' },
+  { email: 'reviewer.hortensius@example.com', name: 'Quintus Hortensius Hortalus' },
+  { email: 'vitruvius@example.com', name: 'Marcus Vitruvius Pollio' },
+  { email: 'sulpicia@example.com', name: 'Sulpicia' },
+  { email: 'varro@example.com', name: 'Marcus Terentius Varro' },
+  { email: 'tiro@example.com', name: 'Marcus Tullius Tiro' },
+  { email: 'cornelia@example.com', name: 'Cornelia Africana' },
+  { email: 'marius@example.com', name: 'Gaius Marius' },
+  { email: 'servilia@example.com', name: 'Servilia Caepionis' },
 ] as const;
+
+// Keep reseeds clean after the fixture rename; these addresses can otherwise survive as global users.
+const LEGACY_DEMO_EMAILS = [
+  'reviewer.chen@example.com',
+  'reviewer.okafor@example.com',
+  'sam.rivera@example.com',
+  'priya.nair@example.com',
+  'jonas.holm@example.com',
+  'mei.tanaka@example.com',
+  'diego.ferrer@example.com',
+  'amara.osei@example.com',
+  'tomas.novak@example.com',
+] as const;
+const DEMO_IDENTITY_EMAILS = [
+  ...PEOPLE.map((person) => person.email),
+  ...LEGACY_DEMO_EMAILS,
+];
 
 const [existing] = await db.select().from(event).where(eq(event.slug, SLUG));
 if (existing) await db.delete(event).where(eq(event.id, existing.id));
@@ -97,7 +114,7 @@ const demoUsers = await db
   .where(
     inArray(
       user.email,
-      PEOPLE.map((person) => person.email),
+      DEMO_IDENTITY_EMAILS,
     ),
   );
 if (demoUsers.length > 0) {
@@ -112,7 +129,7 @@ if (demoUsers.length > 0) {
 await db.delete(user).where(
   inArray(
     user.email,
-    PEOPLE.map((person) => person.email),
+    DEMO_IDENTITY_EMAILS,
   ),
 );
 
@@ -127,23 +144,27 @@ const users = await db
 
 const byEmail = new Map(users.map((row) => [row.email, row]));
 const organizer = byEmail.get('organizer@example.com')!;
-const reviewers = [byEmail.get('reviewer.chen@example.com')!, byEmail.get('reviewer.okafor@example.com')!];
+const reviewers = [
+  byEmail.get('reviewer.cicero@example.com')!,
+  byEmail.get('reviewer.hortensius@example.com')!,
+];
 
 const [demo] = await db
   .insert(event)
   .values({
     slug: SLUG,
-    name: 'Cicero Demo Conf 2026',
-    tagline: 'A two-day, single-city conference for people who build things',
+    name: 'Cicero Forum 2026',
+    tagline: 'Infrastructure, governance, and public life in the Roman world',
     descriptionMarkdown:
-      'A worked example with a call for speakers mid-review, a half-built agenda, and speakers ' +
-      'partway through their onboarding tasks. Everything here is editable — break it freely.',
+      'A fictional Roman-themed conference with a call for speakers mid-review, a half-built ' +
+      'agenda, and speakers partway through their onboarding tasks. The programme is historically ' +
+      'inspired rather than a literal reconstruction. Everything here is editable — break it freely.',
     timezone: 'America/Los_Angeles',
     startsOn: isoDate(day1),
     endsOn: isoDate(day2),
-    websiteUrl: 'https://example.com',
-    venueName: 'Pier 27 Pavilion',
-    venueAddress: 'The Embarcadero, San Francisco, CA',
+    websiteUrl: 'https://example.com/cicero-forum',
+    venueName: 'The Getty Villa',
+    venueAddress: '17985 Pacific Coast Highway, Pacific Palisades, CA',
     ownerUserId: organizer.id,
   })
   .returning();
@@ -169,19 +190,19 @@ await db.insert(membership).values([
 const tracks = await db
   .insert(track)
   .values([
-    { eventId: demo.id, name: 'Platform', color: 'lapis', position: 0 },
-    { eventId: demo.id, name: 'Applied AI', color: 'vermilion', position: 1 },
-    { eventId: demo.id, name: 'Developer Experience', color: 'verdigris', position: 2 },
-    { eventId: demo.id, name: 'Operations', color: 'ochre', position: 3 },
+    { eventId: demo.id, name: 'Infrastructure', color: 'lapis', position: 0 },
+    { eventId: demo.id, name: 'Governance', color: 'vermilion', position: 1 },
+    { eventId: demo.id, name: 'Knowledge & Communication', color: 'verdigris', position: 2 },
+    { eventId: demo.id, name: 'Logistics & Operations', color: 'ochre', position: 3 },
   ])
   .returning();
 
 const rooms = await db
   .insert(room)
   .values([
-    { eventId: demo.id, name: 'Main Hall', capacity: 600, floor: 'Ground', position: 0 },
-    { eventId: demo.id, name: 'Studio A', capacity: 180, floor: 'Ground', position: 1 },
-    { eventId: demo.id, name: 'Workshop B', capacity: 60, floor: 'Mezzanine', position: 2 },
+    { eventId: demo.id, name: 'Outer Peristyle', capacity: 600, floor: 'Ground', position: 0 },
+    { eventId: demo.id, name: 'Basilica Gallery', capacity: 180, floor: 'Ground', position: 1 },
+    { eventId: demo.id, name: 'Villa Workshop', capacity: 60, floor: 'Lower level', position: 2 },
   ])
   .returning();
 
@@ -198,7 +219,7 @@ const tags = await db
   .insert(tag)
   .values([
     { eventId: demo.id, name: 'first-time speaker', color: 'verdigris' },
-    { eventId: demo.id, name: 'case study', color: 'lapis' },
+    { eventId: demo.id, name: 'historical case study', color: 'lapis' },
     { eventId: demo.id, name: 'needs A/V check', color: 'ochre' },
   ])
   .returning();
@@ -206,14 +227,24 @@ const tags = await db
 const personas = await db
   .insert(persona)
   .values([
-    { eventId: demo.id, name: 'Practitioner', description: 'Builds and ships daily', position: 0 },
-    { eventId: demo.id, name: 'Team lead', description: 'Decides what the team adopts', position: 1 },
+    {
+      eventId: demo.id,
+      name: 'Public works engineer',
+      description: 'Builds and maintains the city',
+      position: 0,
+    },
+    {
+      eventId: demo.id,
+      name: 'Civic leader',
+      description: 'Makes policy and coordinates institutions',
+      position: 1,
+    },
   ])
   .returning();
 
 const [keynote, talk, workshop] = formats;
-const [platform, appliedAi, devEx, operations] = tracks;
-const [mainHall, studioA, workshopB] = rooms;
+const [infrastructure, governance, knowledge, logistics] = tracks;
+const [outerPeristyle, basilicaGallery, villaWorkshop] = rooms;
 
 // ---------------------------------------------------------------------------
 // The call for speakers. Four of the six built-ins are placed explicitly so the
@@ -226,18 +257,19 @@ const [cfp] = await db
   .values({
     eventId: demo.id,
     kind: 'cfp',
-    name: 'Call for Speakers 2026',
+    name: 'Cicero Forum 2026 call for speakers',
     slug: 'speak',
     status: 'open',
     introMarkdown:
-      'We are looking for talks that show the work, not the pitch. Sessions are 30 minutes ' +
-      'unless you pick a workshop. Submissions close six weeks before the event.',
+      'We are looking for practical talks rooted in Roman infrastructure, governance, knowledge, ' +
+      'or logistics. Show the work rather than the legend. Sessions are 30 minutes unless you ' +
+      'pick a workshop. Submissions close six weeks before the event.',
     closesAt: new Date(day1.getTime() - 21 * DAY),
     maxSubmissionsPerUser: 3,
     notifyEmails: ['organizer@example.com'],
     confirmationSubject: 'We have your talk: {{submission.title}}',
     confirmationBodyMarkdown:
-      'Thanks for submitting to Cicero Demo Conf. Your reference is **{{submission.ref}}**.\n\n' +
+      'Thanks for submitting to Cicero Forum 2026. Your reference is **{{submission.ref}}**.\n\n' +
       'Reviews finish in about three weeks and you will hear from us either way.',
   })
   .returning();
@@ -357,172 +389,197 @@ type SeedSubmission = {
 
 const SUBMISSIONS: SeedSubmission[] = [
   {
-    email: 'sam.rivera@example.com',
-    title: 'Running Postgres for people who would rather not',
+    email: 'vitruvius@example.com',
+    title: 'Keeping an aqueduct running for a million people',
     abstract:
-      'The five operational decisions that account for most self-hosted Postgres pain, and what ' +
-      'to pick for each when nobody on the team wants to be the database person.',
+      'The design and maintenance choices that keep a gravity-fed water network reliable as a ' +
+      'city grows, from gradients and settling tanks to inspection access and redundant routes.',
     format: talk,
-    track: platform,
+    track: infrastructure,
     level: 'Intermediate',
     status: 'accepted',
-    takeaways: 'Pick a connection pooler early\nBackups you have not restored are not backups\nWhen to stop tuning',
+    takeaways:
+      'Design every section for inspection\nBuild alternate routes before they are needed\nMaintenance is part of the architecture',
     daysAgo: 26,
   },
   {
-    email: 'priya.nair@example.com',
-    title: 'What we learned shipping an agent to 40,000 people',
+    email: 'cornelia@example.com',
+    title: 'Building public trust without holding office',
     abstract:
-      'A candid account of an agentic feature in production: what the evaluation harness caught, ' +
-      'what it did not, and the two incidents that changed how we scope tool access.',
+      'A practical account of building legitimacy through education, patronage, and visible public ' +
+      'service when formal authority belongs to someone else.',
     format: keynote,
-    track: appliedAi,
+    track: governance,
     level: 'Intermediate',
     status: 'accepted',
-    takeaways: 'Evaluate on real traffic\nScope tools narrowly\nLog every tool call',
+    takeaways:
+      'Make outcomes visible\nInvest in institutions that outlast you\nInfluence is strongest when it is accountable',
     givenBefore: true,
     daysAgo: 30,
   },
   {
-    email: 'jonas.holm@example.com',
-    title: 'Your build is slow because of four things',
+    email: 'varro@example.com',
+    title: 'An archive that outlives its builders',
     abstract:
-      'A profiling walkthrough of a monorepo build that went from eleven minutes to ninety ' +
-      'seconds, with the measurements that justified each change.',
+      'A tour of the classification rules, cross-references, and copying practices that let a ' +
+      'large public archive remain useful across generations of librarians.',
     format: talk,
-    track: devEx,
+    track: knowledge,
     level: 'Intermediate',
     status: 'accepted',
-    takeaways: 'Measure before changing\nCache keys are the whole game\nDelete more than you add',
+    takeaways:
+      'Classify for future readers\nRecord provenance beside the claim\nPlan for formats to change',
     daysAgo: 24,
   },
   {
-    email: 'mei.tanaka@example.com',
-    title: 'Designing for the keyboard first',
+    email: 'tiro@example.com',
+    title: 'Capturing every word without slowing the room',
     abstract:
-      'Dense, keyboard-driven interfaces are a minority taste that turns out to serve everyone. ' +
-      'How to add a command palette without it becoming a junk drawer.',
+      'How a shorthand system can preserve fast-moving debate accurately, remain readable to ' +
+      'other scribes, and become a durable record after the meeting ends.',
     format: talk,
-    track: devEx,
+    track: knowledge,
     level: 'Introductory',
     status: 'accepted',
-    takeaways: 'Shortcuts need a home\nDiscoverability beats memorability\nTest with the mouse unplugged',
+    takeaways:
+      'Optimize for common phrases\nTeach a system, not personal tricks\nReview notes while context is fresh',
     daysAgo: 21,
   },
   {
-    email: 'diego.ferrer@example.com',
-    title: 'Incident review as a design tool',
+    email: 'marius@example.com',
+    title: 'Moving an army without starving a province',
     abstract:
-      'Treating postmortems as a source of product requirements rather than a compliance ritual, ' +
-      'with three examples where the fix was a UI change rather than an alert.',
+      'What supply lines, standardized equipment, and regional purchasing teach about scaling a ' +
+      'large organization without exhausting the communities around it.',
     format: talk,
-    track: operations,
+    track: logistics,
     level: 'Intermediate',
     status: 'accepted',
-    takeaways: 'Blameless is not toothless\nCount repeat causes\nShip a fix within the week',
+    takeaways:
+      'Standardize what must move quickly\nBuy locally without stripping local supply\nTreat roads as operational infrastructure',
     daysAgo: 19,
   },
   {
-    email: 'amara.osei@example.com',
-    title: 'A workshop on schema migrations that do not lock',
+    email: 'servilia@example.com',
+    title: 'Planning a city that can survive a siege',
     abstract:
-      'Hands-on: take a table with sixty million rows through four migrations without downtime. ' +
-      'Bring a laptop with Docker.',
+      'A hands-on planning exercise covering water, grain, communications, and political alliances ' +
+      'when every normal route into the city may be cut off.',
     format: workshop,
-    track: platform,
+    track: logistics,
     level: 'Advanced',
     status: 'accepted',
-    takeaways: 'Expand then contract\nBackfill in batches\nNever add a NOT NULL default in one step',
+    takeaways:
+      'Inventory dependencies before the crisis\nCreate more than one route for essentials\nInclude political risk in the plan',
     daysAgo: 28,
   },
   {
-    email: 'tomas.novak@example.com',
-    title: 'Retrieval is not the hard part',
+    email: 'sulpicia@example.com',
+    title: 'Writing for a city, not a court',
     abstract:
-      'Most retrieval systems fail on chunking and evaluation, not on the vector store. What to ' +
-      'measure, and the three chunking strategies worth trying first.',
+      'How to keep a distinctive human voice when patrons, conventions, and public expectations ' +
+      'all exert pressure on what can be said and who is expected to say it.',
     format: talk,
-    track: appliedAi,
+    track: knowledge,
     level: 'Intermediate',
     status: 'accepted',
-    takeaways: 'Evaluate retrieval separately\nChunk on structure\nHybrid search usually wins',
+    takeaways:
+      'Write for a real reader\nUse convention deliberately\nProtect the voice the record usually omits',
     daysAgo: 22,
   },
   {
-    email: 'sam.rivera@example.com',
-    title: 'Read replicas will not save you',
-    abstract: 'A short, opinionated tour of the read-replica failure modes that surprise teams.',
+    email: 'vitruvius@example.com',
+    title: 'Redundancy on the Appian Way',
+    abstract:
+      'A short, opinionated tour of road, bridge, and staging-post failures that can isolate a ' +
+      'network even when every individual section looks sound.',
     format: talk,
-    track: platform,
+    track: infrastructure,
     level: 'Advanced',
     status: 'under_review',
-    takeaways: 'Replication lag is user-visible\nRoute reads deliberately\nMonitor lag, not CPU',
+    takeaways:
+      'A route is only as strong as its bottleneck\nPlan detours before repairs begin\nInspect bridges, not just roads',
     daysAgo: 12,
   },
   {
-    email: 'priya.nair@example.com',
-    title: 'Evaluation harnesses for teams without ML engineers',
-    abstract: 'Building a useful eval suite with the people you already have.',
+    email: 'cornelia@example.com',
+    title: 'Decision records for councils that disagree',
+    abstract:
+      'A workshop on documenting choices, dissent, and follow-up responsibilities without turning ' +
+      'the record into propaganda for whichever faction prevailed.',
     format: workshop,
-    track: appliedAi,
+    track: governance,
     level: 'Introductory',
     status: 'under_review',
-    takeaways: 'Start with twenty examples\nDisagreement is signal\nVersion your prompts',
+    takeaways:
+      'Record the rejected options\nName who owns the next action\nPreserve principled disagreement',
     daysAgo: 10,
   },
   {
-    email: 'mei.tanaka@example.com',
-    title: 'Type systems as documentation',
-    abstract: 'Where types earn their keep as a communication tool rather than a correctness one.',
+    email: 'tiro@example.com',
+    title: 'A practical system for indexing correspondence',
+    abstract:
+      'How names, dates, subjects, and cross-references turn a lifetime of letters into a collection ' +
+      'that another person can navigate without its author standing beside them.',
     format: talk,
-    track: devEx,
+    track: knowledge,
     level: 'Intermediate',
     status: 'under_review',
-    takeaways: 'Name your types after the domain\nParse, do not validate\nTypes rot without tests',
+    takeaways:
+      'Index for the questions people ask\nKeep original order recoverable\nCross-reference people and events',
     daysAgo: 9,
   },
   {
-    email: 'jonas.holm@example.com',
-    title: 'Ten years of yak shaving',
-    abstract: 'A retrospective on tooling investments that paid off and the ones that did not.',
+    email: 'varro@example.com',
+    title: 'Ten years cataloguing the known world',
+    abstract:
+      'A retrospective on classification systems that clarified a sprawling body of knowledge and ' +
+      'the elegant schemes that collapsed as soon as real material arrived.',
     format: talk,
-    track: devEx,
+    track: knowledge,
     level: 'Introductory',
     status: 'waitlisted',
-    takeaways: 'Tooling compounds\nMeasure adoption\nRetire things loudly',
+    takeaways:
+      'Categories are arguments\nTest a scheme against awkward cases\nRetire dead classifications clearly',
     daysAgo: 20,
   },
   {
-    email: 'diego.ferrer@example.com',
-    title: 'Why we moved back off Kubernetes',
-    abstract: 'A migration away from an orchestrator, the numbers behind it, and what we gave up.',
+    email: 'marius@example.com',
+    title: 'Why we abandoned the giant siege engine',
+    abstract:
+      'The field numbers behind retiring an impressive machine whose transport, staffing, and ' +
+      'repair costs outweighed the narrow situations where it helped.',
     format: talk,
-    track: operations,
+    track: logistics,
     level: 'Intermediate',
     status: 'declined',
-    takeaways: 'Match the tool to team size\nCount the operator burden\nReversibility is a feature',
+    takeaways:
+      'Count the transport cost\nMatch equipment to the campaign\nPrestige is not operational value',
     daysAgo: 23,
   },
   {
-    email: 'tomas.novak@example.com',
-    title: 'Notes on prompt versioning',
+    email: 'sulpicia@example.com',
+    title: 'Notes on patronage and independence',
     abstract: 'Still drafting this one.',
     format: talk,
-    track: appliedAi,
+    track: governance,
     level: 'Introductory',
     status: 'draft',
     takeaways: 'TBD',
     daysAgo: 2,
   },
   {
-    email: 'amara.osei@example.com',
-    title: 'The case for boring infrastructure',
-    abstract: 'An argument for choosing the least interesting option that meets the requirement.',
+    email: 'servilia@example.com',
+    title: 'The case for boring alliances',
+    abstract:
+      'An argument for durable agreements with clear mutual obligations instead of dramatic ' +
+      'coalitions that collapse when the immediate crisis passes.',
     format: talk,
-    track: platform,
+    track: governance,
     level: 'Introductory',
     status: 'submitted',
-    takeaways: 'Novelty has a carrying cost\nCount the on-call hours\nBoring scales',
+    takeaways:
+      'Write down mutual obligations\nPrefer repeatable cooperation\nLeave room for peaceful exit',
     daysAgo: 5,
   },
 ];
@@ -573,43 +630,43 @@ await db.insert(submissionTag).values([
 // ---------------------------------------------------------------------------
 
 const PROFILES: Record<string, { title: string; company: string; bio: string; pronouns?: string }> = {
-  'sam.rivera@example.com': {
-    title: 'Staff Engineer',
-    company: 'Meridian Data',
-    bio: 'Spends most days keeping other people out of the database. Previously ran platform at two startups that no longer exist.',
+  'vitruvius@example.com': {
+    title: 'Architect and engineer',
+    company: 'Office of Public Works',
+    bio: 'Designs buildings, machines, and water systems. Believes durable infrastructure begins with proportion, inspection, and maintenance.',
   },
-  'priya.nair@example.com': {
-    title: 'Head of Product Engineering',
-    company: 'Halcyon',
-    bio: 'Builds assistive tooling for support teams. Interested in the boundary between evaluation and product research.',
-    pronouns: 'she/her',
-  },
-  'jonas.holm@example.com': {
-    title: 'Build Systems Engineer',
-    company: 'Nordwerk',
-    bio: 'Has strong opinions about caches and will share them unprompted.',
-  },
-  'mei.tanaka@example.com': {
-    title: 'Design Engineer',
+  'sulpicia@example.com': {
+    title: 'Poet',
     company: 'Independent',
-    bio: 'Works on dense interfaces for people who use one tool all day.',
+    bio: 'Writes about public life, private obligation, and whose voice survives in the historical record.',
     pronouns: 'she/her',
   },
-  'diego.ferrer@example.com': {
-    title: 'SRE Lead',
-    company: 'Cobalt Logistics',
-    bio: 'On call more than he would like. Writes the postmortems nobody else volunteers for.',
+  'varro@example.com': {
+    title: 'Scholar and archivist',
+    company: 'Public Libraries',
+    bio: 'Catalogues language, agriculture, history, and almost everything else. Has never met a subject that could not use an index.',
   },
-  'amara.osei@example.com': {
-    title: 'Principal Engineer',
-    company: 'Ostrea',
-    bio: 'Migrations, mostly. Has moved more rows than she cares to total up.',
+  'tiro@example.com': {
+    title: 'Secretary and author',
+    company: 'House of Cicero',
+    bio: 'Developed a shorthand system for fast debate and maintains a large correspondence archive.',
+  },
+  'cornelia@example.com': {
+    title: 'Civic patron and educator',
+    company: 'Rome',
+    bio: 'Builds durable public influence through education, patronage, and a formidable network of civic relationships.',
     pronouns: 'she/her',
   },
-  'tomas.novak@example.com': {
-    title: 'ML Engineer',
-    company: 'Brnolab',
-    bio: 'Retrieval systems and the evaluation of same.',
+  'marius@example.com': {
+    title: 'General and reformer',
+    company: 'Roman Army',
+    bio: 'Focuses on recruitment, standardized equipment, and the logistics required to keep a large force moving.',
+  },
+  'servilia@example.com': {
+    title: 'Political strategist',
+    company: 'Servilian House',
+    bio: 'Works across competing factions and plans for the second-order consequences of every alliance.',
+    pronouns: 'she/her',
   },
 };
 
@@ -644,7 +701,7 @@ await db.insert(participantRole).values(
 /** One co-speaker, because a session with two people is where the interesting bugs live. */
 await db.insert(participantRole).values({
   submissionId: submissions[5].id,
-  participantId: participantByUser.get(byEmail.get('sam.rivera@example.com')!.id)!.id,
+  participantId: participantByUser.get(byEmail.get('vitruvius@example.com')!.id)!.id,
   kind: 'co_speaker',
   position: 1,
 });
@@ -726,7 +783,7 @@ const firstAssignments = await db
         reviewerUserId: reviewer.id,
         status: 'completed' as const,
         comment:
-          'Clear scope and a concrete example. Would want the demo tightened before the day.',
+          'Clear scope and a concrete historical example. Tighten the demonstration before the event.',
         completedAt: ago(6),
       })),
     ),
@@ -762,7 +819,7 @@ const secondAssignments = await db
         submissionId: row.id,
         reviewerUserId: reviewers[0].id,
         status: 'completed' as const,
-        comment: 'Worth a slot if the schedule allows a third devex talk.',
+        comment: 'Worth a slot if the schedule allows a third knowledge talk.',
         completedAt: ago(1),
       },
       {
@@ -799,11 +856,11 @@ const placements: Array<{
   start: Date;
   minutes: number;
 }> = [
-  { submission: accepted[1], room: mainHall, start: at(day1, 9, 30), minutes: 45 },
-  { submission: accepted[0], room: studioA, start: at(day1, 11, 0), minutes: 30 },
-  { submission: accepted[2], room: studioA, start: at(day1, 13, 30), minutes: 30 },
-  { submission: accepted[5], room: workshopB, start: at(day1, 14, 30), minutes: 90 },
-  { submission: accepted[3], room: mainHall, start: at(day2, 10, 0), minutes: 30 },
+  { submission: accepted[1], room: outerPeristyle, start: at(day1, 9, 30), minutes: 45 },
+  { submission: accepted[0], room: basilicaGallery, start: at(day1, 11, 0), minutes: 30 },
+  { submission: accepted[2], room: basilicaGallery, start: at(day1, 13, 30), minutes: 30 },
+  { submission: accepted[5], room: villaWorkshop, start: at(day1, 14, 30), minutes: 90 },
+  { submission: accepted[3], room: outerPeristyle, start: at(day2, 10, 0), minutes: 30 },
 ];
 
 const scheduled = await db
@@ -986,9 +1043,9 @@ await db.insert(portalTheme).values({
   eventId: demo.id,
   accentColor: 'vermilion',
   welcomeMarkdown:
-    'Welcome, and thank you for speaking. Everything we need from you is on this page, in the ' +
-    'order we need it.',
-  supportEmail: 'speakers@example.com',
+    'Welcome to Cicero Forum, and thank you for speaking. Everything we need from you is on this ' +
+    'page, in the order we need it.',
+  supportEmail: 'speakers@cicero.example',
 });
 
 await db.insert(portalPage).values([
@@ -997,9 +1054,9 @@ await db.insert(portalPage).values([
     slug: 'handbook',
     title: 'Speaker handbook',
     bodyMarkdown:
-      '## Getting here\n\nThe venue is a ten minute walk from the Embarcadero station.\n\n' +
-      '## On the day\n\nFind the speaker desk in the lobby an hour before your session. We will ' +
-      'have your slides loaded and a mic fitted before you go on.\n\n' +
+      '## Getting here\n\nThe event shuttle leaves Santa Monica for the Getty Villa every thirty minutes.\n\n' +
+      '## On the day\n\nFind the speaker desk by the Outer Peristyle an hour before your session. ' +
+      'We will have your slides loaded and a mic fitted before you go on.\n\n' +
       '## A/V\n\n16:9, HDMI. Bring your own adapter if you present from a laptop.',
     published: true,
     position: 0,
@@ -1028,20 +1085,22 @@ await ensureDefaultTemplates(demo.id);
 await db.insert(emailLog).values([
   {
     eventId: demo.id,
-    toEmail: 'priya.nair@example.com',
-    fromEmail: 'speakers@example.com',
-    subject: 'Your talk was accepted: What we learned shipping an agent to 40,000 people',
-    bodyHtml: '<p>We would love to have you. Your session is on day one at 9:30am.</p>',
-    bodyText: 'We would love to have you. Your session is on day one at 9:30am.',
+    toEmail: 'cornelia@example.com',
+    fromEmail: 'speakers@cicero.example',
+    subject: 'Your talk was accepted: Building public trust without holding office',
+    bodyHtml:
+      '<p>We would love to have you. Your session is on day one at 9:30am in the Outer Peristyle.</p>',
+    bodyText:
+      'We would love to have you. Your session is on day one at 9:30am in the Outer Peristyle.',
     templateKey: 'submission.accepted',
     status: 'sent',
     sentAt: ago(4),
   },
   {
     eventId: demo.id,
-    toEmail: 'diego.ferrer@example.com',
-    fromEmail: 'speakers@example.com',
-    subject: 'About your submission to Cicero Demo Conf 2026',
+    toEmail: 'marius@example.com',
+    fromEmail: 'speakers@cicero.example',
+    subject: 'About your submission to Cicero Forum 2026',
     bodyHtml: '<p>We could not fit this one in this year. We hope you will submit again.</p>',
     bodyText: 'We could not fit this one in this year. We hope you will submit again.',
     templateKey: 'submission.declined',
@@ -1050,8 +1109,8 @@ await db.insert(emailLog).values([
   },
   {
     eventId: demo.id,
-    toEmail: 'amara.osei@example.com',
-    fromEmail: 'speakers@example.com',
+    toEmail: 'servilia@example.com',
+    fromEmail: 'speakers@cicero.example',
     subject: 'Reminder: send us your slides',
     bodyHtml: '<p>The A/V check is 48 hours before your workshop.</p>',
     bodyText: 'The A/V check is 48 hours before your workshop.',
