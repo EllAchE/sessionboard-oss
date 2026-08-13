@@ -56,7 +56,14 @@ def default_state() -> dict[str, Any]:
 
 
 def state_path(root: str) -> Path:
-    return Path(root).expanduser().resolve() / STATE_DIR / STATE_FILE
+    caller_root = Path(root).expanduser().resolve()
+    if not caller_root.is_dir():
+        raise StateError(f"caller root is not an existing directory: {caller_root}")
+    state_dir = caller_root / STATE_DIR
+    path = state_dir / STATE_FILE
+    if state_dir.is_symlink() or path.is_symlink():
+        raise StateError("onboarding state must not be stored through a symbolic link")
+    return path
 
 
 def next_milestone(completed: list[str]) -> str | None:
@@ -121,6 +128,11 @@ def reopen_from(state: dict[str, Any], milestone: str) -> None:
 def require_mark_preconditions(state: dict[str, Any], milestones: list[str]) -> None:
     requested = set(milestones)
     completed = set(state["progress"]["completed"]) | requested
+    for milestone in requested:
+        prerequisites = set(MILESTONES[: MILESTONES.index(milestone)])
+        if not prerequisites.issubset(completed):
+            missing = next(item for item in MILESTONES if item in prerequisites - completed)
+            raise StateError(f"{milestone} requires earlier milestone {missing}")
     if "hosting-ready" in requested and (
         not state["base_url"] or state["hosting"]["mode"] == "unknown"
     ):
@@ -153,6 +165,7 @@ def save(path: Path, state: dict[str, Any]) -> None:
     state = normalize(state)
     state["updated_at"] = now()
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    os.chmod(path.parent, 0o700)
     payload = json.dumps(state, indent=2, sort_keys=True) + "\n"
     temporary: str | None = None
     try:
