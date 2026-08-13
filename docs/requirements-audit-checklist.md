@@ -117,12 +117,15 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **F-4 · R · COMPLETE — Abstract/session target and participant toggle.** Migration `0008` adds
   a `form_target_type` enum (`abstract`/`session`) and a `collects_participants` flag, both exposed
   in the builder. Turning participants off removes the participant stage from the public flow, and
-  the API rejects participants on a form that does not collect them.
+  the API rejects participants on a form that does not collect them. Turning the stage on now seeds
+  the permissive default role set when an existing form has none, including when the form is already
+  open; migration `0013` repairs any enabled empty role sets already stored.
 - [x] **F-5 · R · COMPLETE — Complete abstract field set and constraints.** The six built-ins carry
   the brief's exact constraints — Title 255, Description 5,000 markdown, Format/Track/Tags required,
   Level optional — as shared constants that are written onto the rows, enforced at submit time, and
-  clamped if an organizer tries to raise them. Fields remain drag-reorderable with an independent
-  required toggle.
+  clamped if an organizer tries to raise them. Migration `0013` fills missing caps and clamps only
+  over-limit legacy Title/Description rows while preserving any tighter organizer choice. Fields
+  remain drag-reorderable with an independent required toggle.
 - [x] **F-6 · R · COMPLETE — Complete participant field set.** First name, last name, and email are
   locked-required; mobile phone and a 5,000-character markdown biography are toggleable. `user.name`
   is split into `first_name`/`last_name` (migration `0008`, backfilled) and `name` is kept as the
@@ -442,13 +445,11 @@ covering real recipients, the log transport, and seeded demo identities.
 - ~~**No `crons` trigger in `wrangler.jsonc`.**~~ Resolved. `custom-worker.ts` preserves OpenNext's
   generated fetch handler and adds a scheduled handler, while `wrangler.jsonc` runs it hourly. The
   handler calls `/api/cron` in-process so Hyperdrive still receives OpenNext's request context.
-- **`F-5` caps are not backfilled onto pre-`0008` rows.** Migration `0008` inserts *missing* fields
-  but does not write the 255/5,000 limits onto title and description rows that already existed, so an
-  upgraded database keeps `max_length = NULL` on those two until an organizer edits the field. New
-  forms are correct.
-- **`F-4` participants toggle on a live form.** Turning `collectsParticipants` on for an already
-  published form does not seed the default roles, producing a participant stage where nobody can be
-  added until the form is republished.
+- ~~**`F-5` caps are not backfilled onto pre-`0008` rows.**~~ Resolved. Migration `0018` fills or
+  clamps only the legacy CFP title/description built-ins, preserving any tighter organizer limit.
+- ~~**`F-4` participants toggle on a live form.**~~ Resolved. Enabling participants seeds the
+  default roles only when the form has none, and the upgrade migration repairs already-enabled CFP
+  forms without replacing an organizer's configured role set.
 
 ## Verification evidence
 

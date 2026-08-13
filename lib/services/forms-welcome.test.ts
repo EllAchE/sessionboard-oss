@@ -48,6 +48,7 @@ function fakeDb() {
         inserted.push(...(Array.isArray(values) ? values : [values]));
         return this;
       },
+      onConflictDoNothing: async () => undefined,
       returning: async () => [{ id: 'form-new', ...inserted[inserted.length - 1] }],
     }),
     update: () => ({
@@ -220,6 +221,42 @@ describe('updateForm', () => {
     rows.form = formRow({ kind: 'portal', externalTitle: null, pageHeading: null });
     await updateForm(ctx, 'form-1', { externalTitle: null, pageHeading: null });
     expect(updates[0]).toMatchObject({ externalTitle: null, pageHeading: null });
+  });
+
+  it('seeds default roles when participants are enabled on an already-open form', async () => {
+    rows.form = formRow({ status: 'open', collectsParticipants: false });
+
+    const updated = await updateForm(ctx, 'form-1', { collectsParticipants: true });
+
+    expect(updated.collectsParticipants).toBe(true);
+    expect(inserted.map((row) => row.kind)).toEqual(['speaker', 'co_speaker']);
+  });
+
+  it('keeps an existing organizer-configured role set when participants are enabled', async () => {
+    rows.form = formRow({ status: 'open', collectsParticipants: false });
+    rows.formParticipantRole = [
+      {
+        id: 'role-1',
+        formId: 'form-1',
+        kind: 'moderator',
+        label: 'Host',
+        position: 0,
+        minCount: 1,
+        maxCount: 1,
+      },
+    ];
+
+    await updateForm(ctx, 'form-1', { collectsParticipants: true });
+
+    expect(inserted).toEqual([]);
+  });
+
+  it('does not seed roles when participants are turned off', async () => {
+    rows.form = formRow({ status: 'open', collectsParticipants: true });
+
+    await updateForm(ctx, 'form-1', { collectsParticipants: false });
+
+    expect(inserted).toEqual([]);
   });
 });
 
