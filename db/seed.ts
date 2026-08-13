@@ -2,6 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { newIcsUid } from '../lib/ics';
 import { ensureDefaultTemplates } from '../lib/services/comms';
 import { getDb } from './client';
+import { seedFirstSettlement } from './seeds/first-settlement';
 import {
   emailLog,
   event,
@@ -1060,9 +1061,16 @@ await db.insert(emailLog).values([
   },
 ]);
 
+const firstSettlement = await seedFirstSettlement(db, organizer.id, now);
+
 console.log(
   `Seeded /${SLUG}: ${submissions.length} submissions, ${uniqueAccepted.length} speakers, ` +
     `${scheduled.length} scheduled sessions, ${tasks.length} tasks. ` +
     `Sign in as ${organizer.email} and read the link at /admin/mail.`,
+);
+console.log(
+  `Seeded /${firstSettlement.slug}: ${firstSettlement.submissions} submissions, ` +
+    `${firstSettlement.speakers} speakers, ${firstSettlement.scheduledSessions} scheduled sessions, ` +
+    `${firstSettlement.tasks} tasks.`,
 );
 process.exit(0);

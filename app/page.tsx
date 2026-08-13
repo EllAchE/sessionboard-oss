@@ -5,8 +5,8 @@ import {
   FileCheck,
   Github,
   ListChecks,
-  LogIn,
   Mic,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/dashboard.jpg';
@@ -62,14 +62,16 @@ export default function Home() {
             <Github size={17} aria-hidden="true" />
             <span>GitHub</span>
           </a>
+          <a className={styles.signInLink} href="/signin">
+            Sign in
+          </a>
           <Button
             className={styles.navCta}
-            href="/signin"
+            href="/signup"
             variant="primary"
             size="sm"
-            iconRight={<LogIn size={15} aria-hidden="true" />}
           >
-            Sign in
+            Sign up
           </Button>
         </div>
       </nav>
@@ -84,12 +86,12 @@ export default function Home() {
           </p>
           <div className={styles.actions}>
             <Button
-              href="/signin"
+              href="/signup"
               variant="primary"
               size="lg"
-              iconRight={<LogIn size={17} aria-hidden="true" />}
+              iconRight={<UserPlus size={17} aria-hidden="true" />}
             >
-              Sign in to Cicero
+              Create your event
             </Button>
             <Button
               href="/signin?email=organizer@example.com&next=/admin"
