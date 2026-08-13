@@ -664,6 +664,9 @@ export type AdminTaskRow = {
   name: string;
   kind: TaskKindValue;
   audience: (typeof task.$inferSelect)['audience'];
+  /** `S-16`. What one assignment row is, and the session the task is pinned to if any. */
+  scope: (typeof task.$inferSelect)['scope'];
+  submissionId: string | null;
   required: boolean;
   dueAt: string | null;
   descriptionMarkdown: string | null;
@@ -703,13 +706,18 @@ export async function listTasksForAdmin(
         name: row.name,
         kind: row.kind,
         audience: row.audience,
+        scope: row.scope,
+        submissionId: row.submissionId,
         required: row.required,
         dueAt: row.dueAt ? row.dueAt.toISOString() : null,
         descriptionMarkdown: row.descriptionMarkdown,
         linkUrl: row.linkUrl,
         formId: row.formId,
         reminderDaysBefore: row.reminderDaysBefore ?? [],
-        participantIds: mine.map((entry) => entry.participantId),
+        // `S-16`. A submission-scoped task gives one speaker a row per session, so the same person
+        // legitimately appears more than once here. The manual-selection picker wants each of them
+        // named once.
+        participantIds: [...new Set(mine.map((entry) => entry.participantId))],
         assigned: mine.length,
         notStarted: mine.filter((entry) => entry.status === 'not_started').length,
         inProgress: mine.filter((entry) => entry.status === 'in_progress').length,

@@ -116,6 +116,11 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
 
     await updateProfile(ctx, me.id, {
       displayName: text(formData, 'displayName'),
+      firstName: text(formData, 'firstName'),
+      lastName: text(formData, 'lastName'),
+      salutation: text(formData, 'salutation'),
+      honorific: text(formData, 'honorific'),
+      gender: text(formData, 'gender'),
       pronouns: text(formData, 'pronouns'),
       jobTitle: text(formData, 'jobTitle'),
       company: text(formData, 'company'),

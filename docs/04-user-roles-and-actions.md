@@ -144,7 +144,10 @@ A speaker can:
 A speaker can:
 
 - Edit their biography and other profile information.
-- Maintain salutation, honorific, pronouns, and gender when those fields are enabled.
+- Maintain salutation, honorific, pronouns, and gender. All four are always available and none is
+  required.
+- Correct their own first and last name, which the call for speakers captures as two fields and
+  which the name every other surface renders is recomposed from.
 - Add LinkedIn, X, Facebook, personal website, and other profile links.
 - Upload or replace their headshot.
 
@@ -285,7 +288,9 @@ An organizer can:
   absent deliverables.
 - Create, edit, and assign tasks.
 - Assign tasks to all participants, accepted speakers, or selected individuals in the current
-  implementation.
+  implementation, and independently choose whether each of them owes one answer as a contact, one
+  per session, or one shared across a session's speaking team.
+- Pin a task to a single named session, so only that session's speakers are asked for it.
 - Create portal forms and file requests.
 - Author portal information and wiki pages, including trusted HTML embeds.
 - View task completion state.

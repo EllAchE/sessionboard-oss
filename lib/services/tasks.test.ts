@@ -305,9 +305,25 @@ let rec: Recorder;
 
 beforeEach(() => {
   rec = recorder();
+  // `scope` is NOT NULL on the real table, so the fixtures carry it rather than leaving the
+  // resolver to interpret a row shape the database cannot produce.
   rec.rows.set(task, [
-    { id: 'task-old-accepted-only', eventId: EVENT_ID, audience: 'accepted_participants', position: 0 },
-    { id: 'task-old-everyone', eventId: EVENT_ID, audience: 'all_participants', position: 1 },
+    {
+      id: 'task-old-accepted-only',
+      eventId: EVENT_ID,
+      audience: 'accepted_participants',
+      scope: 'contact',
+      submissionId: null,
+      position: 0,
+    },
+    {
+      id: 'task-old-everyone',
+      eventId: EVENT_ID,
+      audience: 'all_participants',
+      scope: 'contact',
+      submissionId: null,
+      position: 1,
+    },
   ]);
   rec.rows.set(participant, [{ id: PARTICIPANT_ID }]);
   rec.rows.set(taskAssignment, []);

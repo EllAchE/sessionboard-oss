@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   customType,
@@ -9,6 +10,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -79,6 +81,24 @@ export const taskAudience = pgEnum('task_audience', [
   'accepted_participants',
   'manual',
 ]);
+/**
+ * `S-16` / `S-17`. Orthogonal to `audience`, which picks the *people*. This picks what one
+ * assignment row *is*, and therefore how many of them a task produces and what its answers are
+ * about:
+ *
+ * - `contact` — one row per person, attached to nobody's session. Today's behaviour, and the
+ *   default, so every task written before this enum existed keeps meaning exactly what it meant.
+ * - `submission` — one row per person *per session*. "Fill this in once for each accepted talk"
+ *   was not representable before: a speaker with two accepted sessions got a single row pinned to
+ *   whichever one the query happened to return first.
+ * - `group` — one row per session's *speaking team*, shared. Every co-speaker sees and can complete
+ *   the same row, and the answers belong to the team rather than to whoever got there first.
+ *
+ * A group is deliberately not a new entity. The only membership fact this schema holds is
+ * `participant_role` — who speaks on what — and `S-12` already defines the portal's "Group" as the
+ * co-speaker set of a session. A second membership table would drift from the first within a week.
+ */
+export const taskScope = pgEnum('task_scope', ['contact', 'group', 'submission']);
 export const taskKind = pgEnum('task_kind', ['form', 'file_upload', 'acknowledge', 'link']);
 export const taskStatus = pgEnum('task_status', [
   'not_started',
@@ -574,7 +594,20 @@ export const participant = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     displayName: text('display_name'),
+    /**
+     * `S-2`. Four separate things the brief names, and they are separate because they answer
+     * different questions: `salutation` is how a letter opens ("Dear Ada"), `honorific` is the
+     * title that precedes the name on the programme ("Dr", "Prof"), `pronouns` is how the MC
+     * refers to them, and `gender` is what the organizer reports on.
+     *
+     * All free text. An enum would be wrong for `gender` on its face, and wrong for the other
+     * three too — honorifics are unbounded across languages and professions, and a fixed list is
+     * how a speaker ends up filed under the closest available lie.
+     */
+    salutation: text('salutation'),
+    honorific: text('honorific'),
     pronouns: text('pronouns'),
+    gender: text('gender'),
     jobTitle: text('job_title'),
     company: text('company'),
     bioMarkdown: text('bio_markdown'),
@@ -920,6 +953,14 @@ export const task = pgTable(
     descriptionMarkdown: text('description_markdown'),
     kind: taskKind('kind').notNull(),
     audience: taskAudience('audience').notNull().default('accepted_participants'),
+    /** `S-16`. What one assignment row is. See `taskScope`. */
+    scope: taskScope('scope').notNull().default('contact'),
+    /**
+     * `S-16`. Pins the task to one session — "this applies to SESS-4" — which the audience enum
+     * alone could never say. Setting it also narrows the audience to that session's speakers,
+     * because a task about a talk is not owed by people who are not on it.
+     */
+    submissionId: uuid('submission_id').references(() => submission.id, { onDelete: 'cascade' }),
     formId: uuid('form_id').references(() => form.id, { onDelete: 'set null' }),
     fileRequestId: uuid('file_request_id').references(() => fileRequest.id, {
       onDelete: 'set null',
@@ -942,11 +983,24 @@ export const taskAssignment = pgTable(
     taskId: uuid('task_id')
       .notNull()
       .references(() => task.id, { onDelete: 'cascade' }),
+    /**
+     * Who holds the row. On a `group` assignment this is the session's primary speaker — the row
+     * still belongs to somebody so that the `B-1` dashboard, the reminder run and the deliverables
+     * board keep working unchanged — but every co-speaker on that session can read and complete it.
+     */
     participantId: uuid('participant_id')
       .notNull()
       .references(() => participant.id, { onDelete: 'cascade' }),
     status: taskStatus('status').notNull().default('not_started'),
+    /** Null on a `contact` assignment. The session this row is about on the other two scopes. */
     submissionId: uuid('submission_id').references(() => submission.id, { onDelete: 'cascade' }),
+    /**
+     * Copied from `task.scope` at fan-out. Denormalised for exactly two reasons: the group
+     * uniqueness rule below is a partial index, and a partial index cannot reach into another
+     * table; and the portal's read has to find a co-speaker's shared rows without joining `task`
+     * twice. `reconcileAssignments` rewrites it whenever the task's own scope changes.
+     */
+    scope: taskScope('scope').notNull().default('contact'),
     fileId: uuid('file_id').references(() => file.id, { onDelete: 'set null' }),
     answers: jsonb('answers').$type<Record<string, unknown>>(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
@@ -955,8 +1009,29 @@ export const taskAssignment = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => ({
-    uniquePair: unique('task_assignment_pair').on(t.taskId, t.participantId),
+    /**
+     * `S-16` widened this. It used to be a flat `unique(task_id, participant_id)` — one response
+     * per person, ever — which is why "fill this in once per accepted session" could not be said.
+     *
+     * The replacement is two partial indexes rather than one three-column constraint, because a
+     * plain `UNIQUE(task_id, participant_id, submission_id)` would stop constraining anything at
+     * all on the contact scope: Postgres treats NULLs as distinct, so it would happily take two
+     * `(task, person, NULL)` rows. `UNIQUE NULLS NOT DISTINCT` says it in one line but needs
+     * Postgres 15, and this schema is deployed against whatever Postgres sits behind a customer's
+     * Hyperdrive. Two partial indexes are exact and run anywhere.
+     */
+    uniqueContact: uniqueIndex('task_assignment_contact_key')
+      .on(t.taskId, t.participantId)
+      .where(sql`${t.submissionId} is null`),
+    uniqueSession: uniqueIndex('task_assignment_session_key')
+      .on(t.taskId, t.participantId, t.submissionId)
+      .where(sql`${t.submissionId} is not null`),
+    /** One shared row per session's speaking team, whoever happens to hold it. */
+    uniqueGroup: uniqueIndex('task_assignment_group_key')
+      .on(t.taskId, t.submissionId)
+      .where(sql`${t.scope} = 'group'`),
     byParticipant: index('task_assignment_participant_idx').on(t.participantId),
+    bySubmission: index('task_assignment_submission_idx').on(t.submissionId),
     byStatus: index('task_assignment_status_idx').on(t.status),
   }),
 );

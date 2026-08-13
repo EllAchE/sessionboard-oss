@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, or } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -13,6 +13,7 @@ import {
   taskAssignment,
   taskStatus as taskStatusEnum,
   taskKind as taskKindEnum,
+  taskScope as taskScopeEnum,
   user,
 } from '../../db/schema';
 import type { EventContext } from '../context';
@@ -21,6 +22,7 @@ import { appUrl } from '../env';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import type { AnswerMap, FormFieldSpec } from '../forms/contract';
 import { clearHiddenAnswers, validateAnswers } from '../forms/contract';
+import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
 import type { FileRecord, FileRequestSpec, UploadInput } from './files';
@@ -34,6 +36,7 @@ import { deleteFile, listFiles, uploadForRequest } from './files';
 
 export type TaskStatus = (typeof taskStatusEnum.enumValues)[number];
 export type TaskKind = (typeof taskKindEnum.enumValues)[number];
+export type TaskScope = (typeof taskScopeEnum.enumValues)[number];
 
 /**
  * What a speaker can do to their own assignment. `waive` is deliberately absent: waiving is an
@@ -134,6 +137,9 @@ export type PortalTask = {
   descriptionMarkdown: string | null;
   descriptionHtml: string;
   kind: TaskKind;
+  scope: TaskScope;
+  /** True when this row is the whole session team's, so the portal can say so before they type. */
+  shared: boolean;
   status: TaskStatus;
   required: boolean;
   position: number;
@@ -172,74 +178,117 @@ function formAnswersOf(answers: Record<string, unknown> | null): AnswerMap | nul
   return entries.length === 0 ? null : (Object.fromEntries(entries) as AnswerMap);
 }
 
-async function acceptedSubmissionIds(participantId: string): Promise<{ id: string; title: string }[]> {
-  const rows = await getDb()
-    .select({ id: submission.id, title: submission.title, status: submission.status })
-    .from(participantRole)
-    .innerJoin(submission, eq(submission.id, participantRole.submissionId))
-    .where(eq(participantRole.participantId, participantId));
-  return rows.filter((row) => row.status === 'accepted').map(({ id, title }) => ({ id, title }));
-}
-
 /**
- * Materialises the assignments an audience rule implies. `B-1` counts assignment rows, so a task
- * that exists only as an audience rule is invisible to the organizer until someone opens the portal
- * — which is exactly the reporting gap the dashboard was built to close.
+ * Materialises the assignments the scoping rules imply, for the whole event. `B-1` counts assignment
+ * rows, so a task that exists only as a rule is invisible to the organizer until someone opens the
+ * portal — which is exactly the reporting gap the dashboard was built to close.
+ *
+ * It resolves every task against the same pure function the organizer's own save path uses, so a
+ * row created lazily on a portal visit and a row created eagerly on a task edit cannot disagree
+ * about who owes what. `manual` tasks are still left alone here: their membership is a list the
+ * organizer typed, and only the save path knows it.
  */
-export async function ensureAssignments(eventId: string, participantId: string): Promise<void> {
+export async function ensureAssignments(eventId: string, participantId?: string): Promise<void> {
   const db = getDb();
   const tasks = await db.select().from(task).where(eq(task.eventId, eventId));
   if (tasks.length === 0) return;
 
+  const { participantIds, roles } = await eventRoster(eventId);
   const existing = await db
-    .select({ taskId: taskAssignment.taskId })
+    .select({
+      taskId: taskAssignment.taskId,
+      participantId: taskAssignment.participantId,
+      submissionId: taskAssignment.submissionId,
+    })
     .from(taskAssignment)
     .where(
-      and(
-        eq(taskAssignment.participantId, participantId),
-        inArray(
-          taskAssignment.taskId,
-          tasks.map((row) => row.id),
-        ),
+      inArray(
+        taskAssignment.taskId,
+        tasks.map((row) => row.id),
       ),
     );
-  const assigned = new Set(existing.map((row) => row.taskId));
-  const accepted = await acceptedSubmissionIds(participantId);
+  const held = new Set(existing.map((row) => `${row.taskId} ${targetKey(row)}`));
 
-  const missing = tasks.filter((row) => {
-    if (assigned.has(row.id)) return false;
-    if (row.audience === 'all_participants') return true;
-    if (row.audience === 'accepted_participants') return accepted.length > 0;
-    return false;
-  });
+  /**
+   * A group row is held by the session's primary speaker but read by the whole team, so a
+   * co-speaker opening their portal has to be able to bring one into being — otherwise the task is
+   * invisible until the lead signs in, which on a panel of four is three people who cannot start.
+   */
+  const mySubmissions = participantId
+    ? new Set(
+        roles.filter((role) => role.participantId === participantId).map((role) => role.submissionId),
+      )
+    : null;
+  const mine = (row: AssignmentTarget) =>
+    !participantId ||
+    row.participantId === participantId ||
+    (row.scope === 'group' && row.submissionId !== null && mySubmissions!.has(row.submissionId));
+
+  const missing = tasks
+    .filter((row) => row.audience !== 'manual')
+    .flatMap((row) =>
+      resolveAssignmentTargets({
+        scope: row.scope,
+        audience: row.audience,
+        pinnedSubmissionId: row.submissionId,
+        selectedParticipantIds: [],
+        participantIds,
+        roles,
+      })
+        .filter((target) => mine(target) && !held.has(`${row.id} ${targetKey(target)}`))
+        .map((target) => ({
+          taskId: row.id,
+          participantId: target.participantId,
+          submissionId: target.submissionId,
+          scope: target.scope,
+          status: 'not_started' as const,
+        })),
+    );
   if (missing.length === 0) return;
 
-  await db
-    .insert(taskAssignment)
-    .values(
-      missing.map((row) => ({
-        taskId: row.id,
-        participantId,
-        status: 'not_started' as const,
-        submissionId: accepted[0]?.id ?? null,
-      })),
-    )
-    .onConflictDoNothing();
+  await db.insert(taskAssignment).values(missing).onConflictDoNothing();
 }
 
 // ---------------------------------------------------------------------------
 // Organizer-authored task types
 // ---------------------------------------------------------------------------
 
+/** The sessions this participant speaks on, which is what makes a group task theirs to see. */
+async function mySubmissionIds(participantId: string): Promise<string[]> {
+  const rows = await getDb()
+    .select({ id: participantRole.submissionId })
+    .from(participantRole)
+    .where(eq(participantRole.participantId, participantId));
+  return rows.map((row) => row.id);
+}
+
 export async function listPortalTasks(eventId: string, participantId: string): Promise<PortalTask[]> {
   const db = getDb();
+  const mySubmissions = await mySubmissionIds(participantId);
+  /**
+   * `S-16`. Two ways a row reaches a speaker: it is theirs, or it is their session's. A group
+   * assignment is held by the primary speaker and shown to every co-speaker, so filtering on
+   * `participantId` alone — which is all this read ever did — would hide the shared row from
+   * everyone but the lead.
+   */
+  const visible =
+    mySubmissions.length > 0
+      ? or(
+          eq(taskAssignment.participantId, participantId),
+          and(
+            eq(taskAssignment.scope, 'group'),
+            inArray(taskAssignment.submissionId, mySubmissions),
+          ),
+        )
+      : eq(taskAssignment.participantId, participantId);
+
   const rows = await db
     .select({ assignment: taskAssignment, task, fileRequest, form })
     .from(taskAssignment)
     .innerJoin(task, eq(task.id, taskAssignment.taskId))
     .leftJoin(fileRequest, eq(fileRequest.id, task.fileRequestId))
     .leftJoin(form, eq(form.id, task.formId))
-    .where(and(eq(taskAssignment.participantId, participantId), eq(task.eventId, eventId)))
+    .where(and(visible, eq(task.eventId, eventId)))
     .orderBy(asc(task.position), asc(task.createdAt));
 
   const formIds = rows.map((row) => row.form?.id).filter((id): id is string => Boolean(id));
@@ -280,6 +329,8 @@ export async function listPortalTasks(eventId: string, participantId: string): P
       descriptionMarkdown: row.descriptionMarkdown,
       descriptionHtml: renderMarkdown(row.descriptionMarkdown),
       kind: row.kind,
+      scope: assignment.scope,
+      shared: assignment.scope === 'group',
       status,
       required: row.required,
       position: row.position,
@@ -390,9 +441,25 @@ async function loadAssignment(
     .where(and(eq(taskAssignment.id, assignmentId), eq(task.eventId, ctx.eventId)));
 
   if (!row) throw notFound('That task');
-  if (row.assignment.participantId !== participantId && !can(ctx, 'task:manage')) {
-    throw forbidden('That task belongs to someone else');
-  }
+  if (row.assignment.participantId === participantId || can(ctx, 'task:manage')) return row;
+
+  /**
+   * `S-16`. A group assignment is one row for a whole speaking team, so "is it yours" is answered
+   * by the session rather than by the row's holder — otherwise the three co-speakers who are not
+   * the primary could see the shared task and not touch it.
+   */
+  const shared =
+    row.assignment.scope === 'group' &&
+    row.assignment.submissionId !== null &&
+    Boolean(
+      await getDb().query.participantRole.findFirst({
+        where: and(
+          eq(participantRole.participantId, participantId),
+          eq(participantRole.submissionId, row.assignment.submissionId),
+        ),
+      }),
+    );
+  if (!shared) throw forbidden('That task belongs to someone else');
   return row;
 }
 
@@ -676,6 +743,10 @@ export async function copyTasksFromEvent(
         descriptionMarkdown: row.descriptionMarkdown,
         kind: row.kind,
         audience: row.audience,
+        scope: row.scope,
+        // The pin names a session on the *source* event, which does not exist over here. The scope
+        // carries over; the session it was about is this year's organizer to choose again.
+        submissionId: null,
         formId: null,
         fileRequestId: row.fileRequestId ? (requestMap.get(row.fileRequestId) ?? null) : null,
         linkUrl: row.linkUrl,
@@ -702,6 +773,35 @@ export async function copyableEvents(ctx: EventContext): Promise<{ id: string; n
   return rows.filter((row) => row.id !== ctx.eventId);
 }
 
+export type ScopableSubmission = { id: string; ref: string; title: string; accepted: boolean };
+
+/**
+ * `S-16`. The sessions an organizer can pin a task to. Everything with somebody speaking on it,
+ * not only the accepted ones — "send the panel their briefing pack" is a thing to do while a talk
+ * is still under review, and a picker that hid it would send the organizer back to the queue to
+ * find out why.
+ */
+export async function listScopableSubmissions(ctx: EventContext): Promise<ScopableSubmission[]> {
+  if (!can(ctx, 'task:manage')) return [];
+  const rows = await getDb()
+    .selectDistinct({
+      id: submission.id,
+      ref: submission.ref,
+      title: submission.title,
+      status: submission.status,
+    })
+    .from(submission)
+    .innerJoin(participantRole, eq(participantRole.submissionId, submission.id))
+    .where(eq(submission.eventId, ctx.eventId))
+    .orderBy(asc(submission.ref));
+  return rows.map((row) => ({
+    id: row.id,
+    ref: formatRef('submission', row.ref),
+    title: row.title,
+    accepted: row.status === 'accepted',
+  }));
+}
+
 export { FILE_IDS_KEY };
 
 // ---------------------------------------------------------------------------
@@ -715,6 +815,10 @@ export type TaskInput = {
   descriptionMarkdown?: string | null;
   kind: TaskKind;
   audience: TaskAudience;
+  /** `S-16`. Defaults to `contact`, which is what every task meant before scoping existed. */
+  scope?: TaskScope;
+  /** `S-16`. The session this task is about, when the organizer named one. */
+  submissionId?: string | null;
   participantIds?: string[];
   dueAt?: Date | null;
   required?: boolean;
@@ -726,6 +830,8 @@ export type TaskInput = {
 function normalizeTaskInput(input: TaskInput): TaskInput {
   const name = input.name.trim();
   const participantIds = [...new Set(input.participantIds?.filter(Boolean) ?? [])];
+  const scope = input.scope ?? 'contact';
+  const submissionId = input.submissionId?.trim() || null;
   if (!name) throw invalid('Give the task a name');
   if (input.kind === 'link' && !input.linkUrl?.trim()) {
     throw invalid('A link task needs the URL the speaker should open');
@@ -736,9 +842,19 @@ function normalizeTaskInput(input: TaskInput): TaskInput {
   if (input.audience === 'manual' && participantIds.length === 0) {
     throw invalid('Choose at least one speaker for this task');
   }
+  /**
+   * A contact-scoped task is about the person, so a session on it would be decorative at best and
+   * misleading at worst — which is precisely how the old auto-populated `submissionId` behaved.
+   * Refusing it is kinder than quietly dropping it.
+   */
+  if (scope === 'contact' && submissionId) {
+    throw invalid('Scope this task to a session or to a group before pinning it to one');
+  }
   return {
     ...input,
     name,
+    scope,
+    submissionId,
     participantIds: input.audience === 'manual' ? participantIds : [],
     descriptionMarkdown: input.descriptionMarkdown?.trim() || null,
     linkUrl: input.kind === 'link' ? (input.linkUrl?.trim() ?? null) : null,
@@ -755,80 +871,198 @@ function normalizeTaskInput(input: TaskInput): TaskInput {
  * for every speaker to sign in.
  */
 async function fanOutAssignments(eventId: string): Promise<void> {
-  const participants = await getDb()
-    .select({ id: participant.id })
-    .from(participant)
-    .where(eq(participant.eventId, eventId));
-  await Promise.all(participants.map((row) => ensureAssignments(eventId, row.id)));
+  await ensureAssignments(eventId);
 }
 
-type AssignmentTarget = { participantId: string; submissionId: string | null };
+export type AssignmentTarget = {
+  participantId: string;
+  submissionId: string | null;
+  scope: TaskScope;
+};
 
-async function assignmentTargets(eventId: string, input: TaskInput): Promise<AssignmentTarget[]> {
+/** One speaking role on this event: who, on what, and whether that talk was accepted. */
+export type SpeakingRole = {
+  participantId: string;
+  submissionId: string;
+  accepted: boolean;
+  isPrimary: boolean;
+  position: number;
+};
+
+export type ScopeResolution = {
+  scope: TaskScope;
+  audience: TaskAudience;
+  /** `task.submissionId`. Null unless the organizer pinned the task to one session. */
+  pinnedSubmissionId: string | null;
+  /** Only consulted for the `manual` audience. */
+  selectedParticipantIds: string[];
+  participantIds: string[];
+  roles: SpeakingRole[];
+};
+
+/**
+ * `S-16`. The whole of task scoping, as one pure function — no database, no context, nothing to
+ * stub. It is pure because it is the part that is easy to get subtly wrong and hard to notice:
+ * whether a co-speaker on two accepted panels owes a task once or twice is not something a page
+ * render makes obvious, and it was wrong here for as long as `audience` was the only axis.
+ *
+ * The two axes are independent and both are needed:
+ *
+ * - `audience` picks the **people** — everyone, everyone with an accepted talk, or a hand-picked
+ *   list. Unchanged, and it still means exactly what it meant.
+ * - `scope` picks **what a row is about**, and therefore how many rows those people generate.
+ *
+ * Pinning a task to a session narrows *both*. A task about `SESS-4` is not owed by speakers who are
+ * not on `SESS-4`, whatever the audience says, so the pin intersects the audience rather than
+ * sitting beside it. Without the pin, "the sessions in play" means the accepted ones — the pin is
+ * the organizer naming a talk explicitly, so its status is their business rather than ours.
+ */
+export function resolveAssignmentTargets(input: ScopeResolution): AssignmentTarget[] {
+  const { scope, audience, pinnedSubmissionId, selectedParticipantIds, participantIds } = input;
+  const known = new Set(participantIds);
+  const roles = input.roles.filter((role) => known.has(role.participantId));
+
+  const inPlay = roles.filter((role) =>
+    pinnedSubmissionId ? role.submissionId === pinnedSubmissionId : role.accepted,
+  );
+
+  const audienceIds =
+    audience === 'all_participants'
+      ? participantIds
+      : audience === 'accepted_participants'
+        ? roles.filter((role) => role.accepted).map((role) => role.participantId)
+        : selectedParticipantIds;
+
+  const onPinnedSession = pinnedSubmissionId
+    ? new Set(inPlay.map((role) => role.participantId))
+    : null;
+  const people = [...new Set(audienceIds)].filter(
+    (id) => known.has(id) && (!onPinnedSession || onPinnedSession.has(id)),
+  );
+  const audienceSet = new Set(people);
+
+  if (scope === 'contact') {
+    return people.map((participantId) => ({ participantId, submissionId: null, scope }));
+  }
+
+  const relevant = inPlay.filter((role) => audienceSet.has(role.participantId));
+
+  if (scope === 'submission') {
+    return relevant.map((role) => ({
+      participantId: role.participantId,
+      submissionId: role.submissionId,
+      scope,
+    }));
+  }
+
+  /**
+   * One shared row per session, held by that session's primary speaker. The holder is picked by a
+   * total order rather than by whatever the query returned first, because `reconcileAssignments`
+   * diffs on it: a holder that moved between two saves would delete a completed group answer and
+   * write a blank one in its place.
+   */
+  const bySubmission = new Map<string, SpeakingRole[]>();
+  for (const role of relevant) {
+    bySubmission.set(role.submissionId, [...(bySubmission.get(role.submissionId) ?? []), role]);
+  }
+  return [...bySubmission.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([submissionId, members]) => {
+      const holder = [...members].sort(
+        (a, b) =>
+          Number(b.isPrimary) - Number(a.isPrimary) ||
+          a.position - b.position ||
+          a.participantId.localeCompare(b.participantId),
+      )[0];
+      return { participantId: holder.participantId, submissionId, scope };
+    });
+}
+
+/** Everything `resolveAssignmentTargets` needs about one event, read once. */
+async function eventRoster(
+  eventId: string,
+): Promise<{ participantIds: string[]; roles: SpeakingRole[] }> {
   const db = getDb();
-  const [participants, accepted] = await Promise.all([
+  const [participants, roles] = await Promise.all([
     db.select({ id: participant.id }).from(participant).where(eq(participant.eventId, eventId)),
     db
       .select({
         participantId: participantRole.participantId,
         submissionId: submission.id,
+        status: submission.status,
+        isPrimary: participantRole.isPrimary,
+        position: participantRole.position,
       })
       .from(participantRole)
       .innerJoin(submission, eq(submission.id, participantRole.submissionId))
-      .where(and(eq(submission.eventId, eventId), eq(submission.status, 'accepted'))),
+      .where(eq(submission.eventId, eventId)),
   ]);
 
-  const eventParticipantIds = new Set(participants.map((row) => row.id));
-  const selectedIds = input.participantIds ?? [];
-  if (input.audience === 'manual' && selectedIds.some((id) => !eventParticipantIds.has(id))) {
-    throw invalid('Every selected speaker must belong to this event');
-  }
-
-  const acceptedSubmissionByParticipant = new Map<string, string>();
-  for (const row of accepted) {
-    if (
-      eventParticipantIds.has(row.participantId) &&
-      !acceptedSubmissionByParticipant.has(row.participantId)
-    ) {
-      acceptedSubmissionByParticipant.set(row.participantId, row.submissionId);
-    }
-  }
-
-  const targetIds =
-    input.audience === 'all_participants'
-      ? participants.map((row) => row.id)
-      : input.audience === 'accepted_participants'
-        ? [...acceptedSubmissionByParticipant.keys()]
-        : selectedIds;
-
-  return targetIds.map((participantId) => ({
-    participantId,
-    submissionId:
-      input.audience === 'manual'
-        ? null
-        : (acceptedSubmissionByParticipant.get(participantId) ?? null),
-  }));
+  return {
+    participantIds: participants.map((row) => row.id),
+    roles: roles.map((row) => ({
+      participantId: row.participantId,
+      submissionId: row.submissionId,
+      accepted: row.status === 'accepted',
+      isPrimary: row.isPrimary,
+      position: row.position,
+    })),
+  };
 }
 
-function assignmentMembershipChanges(
-  existing: Array<{ id: string; participantId: string; submissionId: string | null }>,
+async function assignmentTargets(eventId: string, input: TaskInput): Promise<AssignmentTarget[]> {
+  const { participantIds, roles } = await eventRoster(eventId);
+
+  const selectedIds = input.participantIds ?? [];
+  const known = new Set(participantIds);
+  if (input.audience === 'manual' && selectedIds.some((id) => !known.has(id))) {
+    throw invalid('Every selected speaker must belong to this event');
+  }
+  if (input.submissionId && !roles.some((role) => role.submissionId === input.submissionId)) {
+    throw invalid('That session has nobody speaking on it yet');
+  }
+
+  return resolveAssignmentTargets({
+    scope: input.scope ?? 'contact',
+    audience: input.audience,
+    pinnedSubmissionId: input.submissionId ?? null,
+    selectedParticipantIds: selectedIds,
+    participantIds,
+    roles,
+  });
+}
+
+/** Identity of an assignment row under the widened key: a person, and the session it is about. */
+function targetKey(row: { participantId: string; submissionId: string | null }): string {
+  return `${row.participantId} ${row.submissionId ?? ''}`;
+}
+
+export function assignmentMembershipChanges(
+  existing: Array<{
+    id: string;
+    participantId: string;
+    submissionId: string | null;
+    scope: TaskScope;
+  }>,
   targets: AssignmentTarget[],
 ): {
   removeIds: string[];
   additions: AssignmentTarget[];
-  updates: Array<{ id: string; submissionId: string | null }>;
+  updates: Array<{ id: string; scope: TaskScope }>;
 } {
-  const targetByParticipant = new Map(targets.map((row) => [row.participantId, row]));
-  const targetIds = new Set(targets.map((row) => row.participantId));
-  const existingIds = new Set(existing.map((row) => row.participantId));
+  const byKey = new Map(targets.map((row) => [targetKey(row), row]));
+  const existingKeys = new Set(existing.map(targetKey));
   return {
-    removeIds: existing.filter((row) => !targetIds.has(row.participantId)).map((row) => row.id),
-    additions: targets.filter((row) => !existingIds.has(row.participantId)),
+    removeIds: existing.filter((row) => !byKey.has(targetKey(row))).map((row) => row.id),
+    additions: targets.filter((row) => !existingKeys.has(targetKey(row))),
+    /**
+     * A row whose person and session both still match is kept rather than replaced, so a completed
+     * status, an uploaded file and a set of answers all survive an organizer renaming the task or
+     * moving it between scopes. Only the denormalised `scope` needs writing back.
+     */
     updates: existing.flatMap((row) => {
-      const target = targetByParticipant.get(row.participantId);
-      return target && target.submissionId !== row.submissionId
-        ? [{ id: row.id, submissionId: target.submissionId }]
-        : [];
+      const target = byKey.get(targetKey(row));
+      return target && target.scope !== row.scope ? [{ id: row.id, scope: target.scope }] : [];
     }),
   };
 }
@@ -840,15 +1074,20 @@ async function reconcileAssignments(taskId: string, targets: AssignmentTarget[])
       id: taskAssignment.id,
       participantId: taskAssignment.participantId,
       submissionId: taskAssignment.submissionId,
+      scope: taskAssignment.scope,
     })
     .from(taskAssignment)
     .where(eq(taskAssignment.taskId, taskId));
   const { removeIds, additions, updates } = assignmentMembershipChanges(existing, targets);
 
+  // Removals go first and alone: a task moved from one scope to another can produce an addition
+  // that collides with a row being dropped in the same pass, and the widened unique indexes would
+  // reject the insert if the two raced.
+  if (removeIds.length > 0) {
+    await db.delete(taskAssignment).where(inArray(taskAssignment.id, removeIds));
+  }
+
   await Promise.all([
-    removeIds.length > 0
-      ? db.delete(taskAssignment).where(inArray(taskAssignment.id, removeIds))
-      : Promise.resolve(),
     additions.length > 0
       ? db
           .insert(taskAssignment)
@@ -857,16 +1096,14 @@ async function reconcileAssignments(taskId: string, targets: AssignmentTarget[])
               taskId,
               participantId: row.participantId,
               submissionId: row.submissionId,
+              scope: row.scope,
               status: 'not_started' as const,
             })),
           )
           .onConflictDoNothing()
       : Promise.resolve(),
     ...updates.map((row) =>
-      db
-        .update(taskAssignment)
-        .set({ submissionId: row.submissionId })
-        .where(eq(taskAssignment.id, row.id)),
+      db.update(taskAssignment).set({ scope: row.scope }).where(eq(taskAssignment.id, row.id)),
     ),
   ]);
 }
@@ -906,6 +1143,8 @@ export async function createTask(ctx: EventContext, input: TaskInput): Promise<{
       descriptionMarkdown: clean.descriptionMarkdown,
       kind: clean.kind,
       audience: clean.audience,
+      scope: clean.scope ?? 'contact',
+      submissionId: clean.submissionId ?? null,
       formId: clean.formId ?? null,
       fileRequestId: requestId,
       linkUrl: clean.linkUrl ?? null,
@@ -952,6 +1191,8 @@ export async function updateTask(
       descriptionMarkdown: clean.descriptionMarkdown,
       kind: clean.kind,
       audience: clean.audience,
+      scope: clean.scope ?? 'contact',
+      submissionId: clean.submissionId ?? null,
       formId: clean.formId ?? null,
       fileRequestId: requestId,
       linkUrl: clean.linkUrl ?? null,

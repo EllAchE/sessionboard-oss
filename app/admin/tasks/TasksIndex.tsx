@@ -42,6 +42,13 @@ const AUDIENCE_LABEL: Record<AdminTaskRow['audience'], string> = {
   manual: 'Manually assigned',
 };
 
+/** `S-16`. Only worth a word in the row when it is not the default one-per-person. */
+const SCOPE_LABEL: Record<AdminTaskRow['scope'], string> = {
+  contact: '',
+  submission: 'per session',
+  group: 'shared per group',
+};
+
 function formatDate(iso: string | null): string {
   if (!iso) return 'No deadline';
   // Pinned locale and zone: this renders on a UTC Worker and rehydrates in the reader's own zone.
@@ -58,6 +65,7 @@ const COLUMNS: Array<DataTableColumn<AdminTaskRow>> = [
         <span className={styles.taskName}>{row.name}</span>
         <span className={styles.personMeta}>
           {KIND_LABEL[row.kind]} · {AUDIENCE_LABEL[row.audience]}
+          {SCOPE_LABEL[row.scope] ? ` · ${SCOPE_LABEL[row.scope]}` : ''}
           {row.required ? ' · required' : ''}
         </span>
       </div>
@@ -110,6 +118,7 @@ export function TasksIndex({
   speakerCount,
   speakers,
   forms,
+  submissions,
   copyableEvents,
   canManage,
 }: {
@@ -119,6 +128,7 @@ export function TasksIndex({
   speakerCount: number;
   speakers: Array<{ id: string; name: string; email: string }>;
   forms: Array<{ id: string; name: string }>;
+  submissions: Array<{ id: string; ref: string; title: string; accepted: boolean }>;
   copyableEvents: Array<{ id: string; name: string }>;
   canManage: boolean;
 }) {
@@ -314,6 +324,7 @@ export function TasksIndex({
         editing={editing}
         forms={forms}
         speakers={speakers}
+        submissions={submissions}
         onClose={() => setEditorOpen(false)}
       />
 
