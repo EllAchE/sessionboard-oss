@@ -50,10 +50,18 @@ export function requireEnv(key: string): string {
   return value;
 }
 
+/**
+ * An unrecognized value falls back rather than reading as false. That distinction only starts to
+ * matter once a flag defaults to `true` — as `S3_FORCE_PATH_STYLE` does — because there a typo
+ * would otherwise silently turn the flag off and break the setup it exists to protect. Callers that
+ * default to `false` are unaffected either way: unrecognized and false reach the same answer.
+ */
 export function envFlag(key: string, fallback = false): boolean {
-  const value = env(key);
-  if (value === undefined) return fallback;
-  return value === '1' || value.toLowerCase() === 'true';
+  const value = env(key)?.trim().toLowerCase();
+  if (value === undefined || value === '') return fallback;
+  if (value === '1' || value === 'true') return true;
+  if (value === '0' || value === 'false') return false;
+  return fallback;
 }
 
 /**
