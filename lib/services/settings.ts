@@ -246,6 +246,7 @@ async function requireTrack(ctx: EventContext, trackId: string) {
 export async function createTrack(ctx: EventContext, input: TrackInput): Promise<TrackRecord> {
   requireCapability(ctx, 'event:manage');
   const values = parse(trackInput, input);
+  await assertTrackNameFree(ctx, values.name);
   const [created] = await getDb()
     .insert(track)
     .values({
@@ -273,6 +274,7 @@ export async function updateTrack(
   requireCapability(ctx, 'event:manage');
   await requireTrack(ctx, trackId);
   const values = parse(trackInput.partial(), patch);
+  if (values.name !== undefined) await assertTrackNameFree(ctx, values.name, trackId);
   const [updated] = await getDb()
     .update(track)
     .set(values)
@@ -390,6 +392,7 @@ async function requireRoom(ctx: EventContext, roomId: string) {
 export async function createRoom(ctx: EventContext, input: RoomInput): Promise<RoomRecord> {
   requireCapability(ctx, 'event:manage');
   const values = parse(roomInput, input);
+  await assertRoomNameFree(ctx, values.name);
   const [created] = await getDb()
     .insert(room)
     .values({
@@ -417,6 +420,7 @@ export async function updateRoom(
   requireCapability(ctx, 'event:manage');
   await requireRoom(ctx, roomId);
   const values = parse(roomInput.partial(), patch);
+  if (values.name !== undefined) await assertRoomNameFree(ctx, values.name, roomId);
   const [updated] = await getDb().update(room).set(values).where(eq(room.id, roomId)).returning();
   return {
     id: updated.id,
@@ -623,6 +627,26 @@ async function requireTag(ctx: EventContext, tagId: string) {
   });
   if (!row) throw notFound('That tag');
   return row;
+}
+
+/** `track_event_name` is unique, so the collision is caught here and reported against the field. */
+async function assertTrackNameFree(ctx: EventContext, value: string, exceptId?: string) {
+  const clash = await getDb().query.track.findFirst({
+    where: and(eq(track.eventId, ctx.eventId), eq(track.name, value)),
+  });
+  if (clash && clash.id !== exceptId) {
+    throw conflict(`A track called ${value} already exists`, { name: 'Already in use' });
+  }
+}
+
+/** `room_event_name` is unique, so the collision is caught here and reported against the field. */
+async function assertRoomNameFree(ctx: EventContext, value: string, exceptId?: string) {
+  const clash = await getDb().query.room.findFirst({
+    where: and(eq(room.eventId, ctx.eventId), eq(room.name, value)),
+  });
+  if (clash && clash.id !== exceptId) {
+    throw conflict(`A room called ${value} already exists`, { name: 'Already in use' });
+  }
 }
 
 /** `tag_event_name` is unique, so the collision is caught here and reported against the field. */
