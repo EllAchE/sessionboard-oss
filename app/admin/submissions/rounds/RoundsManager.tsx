@@ -148,10 +148,17 @@ function RoundDateEditor({
   pending: boolean;
   onSave: (dates: RoundDateWire) => void;
 }) {
-  const [draft, setDraft] = useState<RoundDateDraft>(() => toRoundDateDraft(round));
+  const [draft, setDraft] = useState<RoundDateDraft>(EMPTY_DATES);
+  const [hydrated, setHydrated] = useState(false);
 
+  /**
+   * Both the inputs and the summary read the browser's timezone, which the server does not know. A
+   * round rendered on a Worker in UTC and re-rendered in the reviewer's zone disagree on every
+   * date, so they stay empty until mount rather than hydrating into a contradiction.
+   */
   useEffect(() => {
     setDraft(toRoundDateDraft(round));
+    setHydrated(true);
   }, [round.opensAt, round.closesAt]);
 
   const dates = fromRoundDateDraft(draft);
@@ -176,7 +183,7 @@ function RoundDateEditor({
         Save dates
       </Button>
       <span className={invalidRange ? styles.dateError : styles.roundDateSummary}>
-        {invalidRange ? INVALID_DATE_RANGE : describeRoundDates(round)}
+        {invalidRange ? INVALID_DATE_RANGE : hydrated ? describeRoundDates(round) : ''}
       </span>
     </div>
   );
