@@ -1,7 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cicero",
-  "main": ".open-next/worker.js",
+  // OpenNext generates the fetch implementation; this small custom entry point preserves it and
+  // adds the scheduled handler used by the hourly reminder Cron Trigger below.
+  "main": "custom-worker.ts",
   "compatibility_date": "2025-03-25",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 
@@ -39,6 +41,12 @@
 
   "observability": {
     "enabled": true
+  },
+
+  // Reminder jobs are idempotent and evaluate their own due times, so an hourly trigger keeps
+  // delivery timely without duplicate mail. Cron expressions are evaluated in UTC by Cloudflare.
+  "triggers": {
+    "crons": ["0 * * * *"]
   },
 
   // Pooled Neon connection, created with

@@ -370,8 +370,9 @@ An organizer can:
 
 - Create and edit reusable email templates with merge fields.
 - Trigger submission confirmation, acceptance, waitlist, decline, task reminder, and draft-deadline
-  messages. Confirmation and decision notices fire from the action itself; the two reminder jobs run
-  on the scheduled-job route, which the deployment does not yet call on a timer.
+  messages. Confirmation and decision notices fire from the action itself; an hourly Cloudflare
+  Cron Trigger runs the two reminder jobs autonomously through the same scheduled-job route that a
+  self-hosted timer can call.
 - Send an ad hoc message to a filtered audience, such as all accepted speakers or everyone with an
   open task.
 - Reach speakers by SMS as well as email where a Twilio-style provider is configured. Templates

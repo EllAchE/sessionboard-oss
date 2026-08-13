@@ -294,10 +294,9 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   action now sends notices: it notifies only rows that genuinely transitioned, skips a reset, and
   isolates failures per recipient, with acceptance, decline, and a new waitlist template all mapped.
   Confirmation, organizer notification, calendar invite and cancellation, task reminders, and
-  draft-deadline reminders are all wired and tested. One deployment caveat: the two *scheduled*
-  senders run through the cron job route, and `wrangler.jsonc` declares no `triggers`/`crons` block,
-  so on the deployed instance reminders fire only when that route is called or an organizer presses
-  the button. Everything else is event-driven and unaffected.
+  draft-deadline reminders are all wired and tested. The two scheduled senders run autonomously
+  from an hourly Cloudflare Cron Trigger through the same idempotent route available to self-hosted
+  timers. Everything else is event-driven and unaffected.
 - [ ] **C-3 · R · PARTIAL — Calendar invites delivered to speakers' calendars.** The ICS itself is now
   fully correct and pinned by golden-byte tests: `METHOD:REQUEST` with real organizer and attendees,
   a stable UID with a `SEQUENCE` that increments only when an invite was already sent, RFC 5545
@@ -442,9 +441,9 @@ covering real recipients, the log transport, and seeded demo identities.
 - ~~**`S-17` form-builder target.**~~ Withdrawn. Declaring the contact/group/submission triple on the
   form as well as on the task would make a reusable form single-use and create a disagreement with no
   correct resolution. See the `S-17` row.
-- **No `crons` trigger in `wrangler.jsonc`.** Task reminders and draft-deadline reminders are
-  implemented and correct but are only dispatched by an external call to the cron route or an
-  organizer pressing the button. A scheduled trigger would make them autonomous on the deployment.
+- ~~**No `crons` trigger in `wrangler.jsonc`.**~~ Resolved. `custom-worker.ts` preserves OpenNext's
+  generated fetch handler and adds a scheduled handler, while `wrangler.jsonc` runs it hourly. The
+  handler calls `/api/cron` in-process so Hyperdrive still receives OpenNext's request context.
 - **`F-5` caps are not backfilled onto pre-`0008` rows.** Migration `0008` inserts *missing* fields
   but does not write the 255/5,000 limits onto title and description rows that already existed, so an
   upgraded database keeps `max_length = NULL` on those two until an organizer edits the field. New
