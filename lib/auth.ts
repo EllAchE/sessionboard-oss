@@ -1,12 +1,18 @@
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { getDb } from '../db/client';
-import { magicToken, membership, sessionCookie, user } from '../db/schema';
+import { event, magicToken, membership, sessionCookie, user } from '../db/schema';
 import type { Actor, EventContext, MembershipRole } from './context';
+import {
+  demoEventSlugs,
+  magicLinkPrecheck,
+  membershipsAreDemoOnly,
+  type LinkVisibility,
+} from './demo-access';
 import { appUrl } from './env';
 import { forbidden, invalid, notFound, unauthorized } from './errors';
 import { hashToken, randomToken } from './ids';
-import { sendMail } from './mail';
+import { activeTransportName, sendMail } from './mail';
 import { escapeMarkdownText, renderMarkdown } from './markdown';
 
 /**
@@ -116,6 +122,41 @@ export async function requestMagicLink(
   });
 
   return { email: account.email, link, delivered: sent };
+}
+
+// ---------------------------------------------------------------------------
+// `T-7a`: a magic link obtainable without an inbox — and the boundary that keeps
+// that from being an authentication bypass once `T-6` mail is real.
+// ---------------------------------------------------------------------------
+
+/**
+ * Conditions 3 and 4: an existing account, holding demo-event membership and no membership on any
+ * event outside the demo it does not own itself. The rule these are numbered against, the threat
+ * model, and why both requirements can hold at once are in `lib/demo-access.ts` — read it first.
+ */
+async function isSeededDemoAccount(email: string): Promise<boolean> {
+  const db = getDb();
+  const account = await db.query.user.findFirst({ where: eq(user.email, normalizeEmail(email)) });
+  if (!account) return false;
+
+  const rows = await db
+    .select({ slug: event.slug, ownerUserId: event.ownerUserId })
+    .from(membership)
+    .innerJoin(event, eq(membership.eventId, event.id))
+    .where(eq(membership.userId, account.id));
+
+  return membershipsAreDemoOnly(account.id, rows, demoEventSlugs());
+}
+
+/**
+ * The one place that decides whether a freshly minted link may be rendered to an unauthenticated
+ * visitor. Every caller that puts a link on a public page goes through this and nothing else.
+ * Returns why it is allowed — the two reasons want different words on screen — or `null`.
+ */
+export async function magicLinkMayBeShown(email: string): Promise<LinkVisibility> {
+  const precheck = magicLinkPrecheck(activeTransportName(), email);
+  if (precheck !== 'ask-the-database') return precheck;
+  return (await isSeededDemoAccount(email)) ? 'seeded-demo-account' : null;
 }
 
 /**

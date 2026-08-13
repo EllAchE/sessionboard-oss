@@ -13,16 +13,17 @@ export function SignInForm({
   next,
   defaultEmail,
   intent = 'sign-in',
+  demoEmail = null,
 }: {
   next: string;
   defaultEmail: string;
   intent?: AuthIntent;
+  /** Set only where the deployment has opted into on-screen links for seeded demo identities. */
+  demoEmail?: string | null;
 }) {
   const [state, action, pending] = useActionState(requestLinkAction, INITIAL);
   const copy = authCopy(intent);
-  const delivery = state.sent
-    ? deliveryCopy(intent, state.link ? (state.undelivered ? 'failed' : 'logged') : 'email', state.email)
-    : null;
+  const delivery = state.sent ? deliveryCopy(intent, state.delivery, state.email) : null;
 
   return (
     <div className={styles.shell}>
@@ -73,6 +74,21 @@ export function SignInForm({
               </Button>
             </form>
           )}
+          {!state.sent && demoEmail ? (
+            <div className={styles.demo}>
+              <p className={styles.hint}>
+                Only here to look? <strong>{demoEmail}</strong> is a seeded demo account. It has no
+                inbox, so its link comes back on this page.
+              </p>
+              <form action={action}>
+                <input type="hidden" name="next" value={next} />
+                <input type="hidden" name="email" value={demoEmail} />
+                <Button type="submit" variant="secondary" fullWidth>
+                  Explore the demo event
+                </Button>
+              </form>
+            </div>
+          ) : null}
           <p className={styles.switchMode}>
             {copy.switchPrompt} <a href={copy.switchHref}>{copy.switchLabel}</a>
           </p>

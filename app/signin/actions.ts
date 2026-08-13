@@ -1,12 +1,12 @@
 'use server';
 
-import { requestMagicLink } from '@/lib/auth';
+import { magicLinkMayBeShown, requestMagicLink } from '@/lib/auth';
 import { isAppError } from '@/lib/errors';
-import { activeTransportName } from '@/lib/mail';
+import type { DeliveryState } from './copy';
 
 export type SignInState =
   | { sent: false; error?: string }
-  | { sent: true; email: string; link?: string; undelivered?: boolean };
+  | { sent: true; email: string; delivery: DeliveryState; link?: string };
 
 export async function requestLinkAction(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const email = String(formData.get('email') ?? '').trim();
@@ -14,21 +14,25 @@ export async function requestLinkAction(_prev: SignInState, formData: FormData):
   if (!email) return { sent: false, error: 'Enter your email address' };
 
   try {
-    const { email: address, link, delivered } = await requestMagicLink({ email, redirectTo: next });
+    const { email: address, link } = await requestMagicLink({ email, redirectTo: next });
     /**
-     * The link goes on screen in exactly two cases: an instance that only logs mail, where there is
-     * no inbox to check, and a send the provider refused, where the alternative is a dead end. On a
-     * send that succeeded it belongs only in the message — putting it here would let anyone sign in
-     * as anyone who has an account.
+     * A link on this page is a session for whoever was typed into the box, so exactly one predicate
+     * decides it — `lib/demo-access.ts`, which states the boundary in full. It says yes for an
+     * instance that delivers nothing to anyone, and — only where the deployment has explicitly
+     * enabled it — for a seeded demo identity at a domain no mailbox can exist behind.
      *
-     * The refused case is not hypothetical. This deployment sends from Resend's shared test domain,
-     * which 403s every recipient except the account owner, so a judge signing in cold would
-     * otherwise be told to check an inbox that will never receive anything.
+     * Note what is deliberately absent: a failed send does not qualify. Revealing the link whenever
+     * the provider says no would hand an attacker the account of any real user, on any address a
+     * provider happens to reject, throttle or greylist.
      */
-    if (activeTransportName() === 'log') return { sent: true, email: address, link };
-    return delivered
-      ? { sent: true, email: address }
-      : { sent: true, email: address, link, undelivered: true };
+    const visible = await magicLinkMayBeShown(address);
+    if (!visible) return { sent: true, email: address, delivery: 'email' };
+    return {
+      sent: true,
+      email: address,
+      link,
+      delivery: visible === 'seeded-demo-account' ? 'demo' : 'logged',
+    };
   } catch (error) {
     return { sent: false, error: isAppError(error) ? error.message : 'Something went wrong. Try again.' };
   }

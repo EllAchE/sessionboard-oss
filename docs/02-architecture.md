@@ -154,6 +154,27 @@ With `MAIL_TRANSPORT=log` — or alongside any real transport — every send is 
 `/admin/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
 single point of failure during judging. A judge who never receives a message can still see it.
 
+### Reserved recipients are why `T-6` and `T-7a` can both hold
+
+`T-6` wants real mail leaving the deployed instance. `T-7a` wants a visitor with no mailbox on it to
+sign in anyway, which the product does by printing the magic link on the sign-in page — and printing
+a magic link is handing out a session for whatever address was typed into the box. Under a real
+transport those two are in direct conflict, which is what kept the deployment on `log`.
+
+The resolution is that the demo identities are undeliverable *by construction*, rather than delivery
+being off for everyone. Both seeds are built entirely from IANA-reserved domains
+(`organizer@example.com`, the senate at `@first-settlement.example`), and `sendMail` routes any
+recipient at a reserved domain to the log transport whatever else is configured — real addresses in
+the same run still get real mail, and the provider is never asked to bounce six hundred fictional
+senators. An on-screen link for such an address therefore cannot lock a real person out of anything,
+because no mailbox behind it can exist.
+
+That property is one of four conditions. `lib/demo-access.ts` is the single place the decision is
+made and carries the threat model in full: an explicit default-off flag, the reserved-domain test,
+an existing account holding demo-event membership, and no membership on any event outside the demo
+it does not own. A failed send is deliberately *not* a condition — revealing the link whenever a
+provider says no would be an authentication bypass triggerable by a stranger with a bounce.
+
 ## 4. Design system
 
 The Cicero design system is landed by a separate session before any feature work starts, driven

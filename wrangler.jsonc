@@ -9,18 +9,27 @@
   // a calendar client, or someone else's website — so a relative path is never enough and this has
   // to be the real origin. Self-hosters set APP_URL in the environment instead.
   //
-  // MAIL_TRANSPORT is `log` on the demo deployment on purpose. Resend is wired up and works — the
-  // key is a secret (`wrangler secret put RESEND_API_KEY`), never a var — but the only sender domain
-  // available here is Resend's shared test domain, which delivers to the Resend account owner and
-  // nobody else (https://resend.com/docs/knowledge-base/403-error-resend-dev-domain). Under a real
-  // transport the sign-in page withholds the magic link, so anyone but that one address would be
-  // told to check an inbox that never receives anything. `log` puts every message in /admin/mail
-  // and the link on screen, which is the flow the product documents. Flip this to `resend` once
-  // MAIL_FROM points at a domain verified in Resend.
+  // MAIL_TRANSPORT is `auto`: whichever transport has credentials wins, and with none it is the dev
+  // mailbox at /admin/mail. So turning this deployment's mail on is two operator steps and no
+  // commit — verify a domain in Resend, point MAIL_FROM at it, then
+  // `wrangler secret put RESEND_API_KEY` (a secret, never a var). Until then nothing is delivered
+  // and every message is still readable at /admin/mail, which is what the demo has always done.
+  //
+  // MAIL_FROM below is Resend's shared test sender, which delivers to the Resend account owner and
+  // 403s every other recipient (https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).
+  // It is a placeholder: with a key present the app warns loudly on the server console until it is
+  // replaced with an address at a verified domain. See "Sending real email" in the README.
+  //
+  // DEMO_ONSCREEN_MAGIC_LINKS is what lets a visitor into the seeded demo without an inbox once
+  // real mail is live (`T-7a` alongside `T-6`). It is off everywhere else, and even here it only
+  // ever reveals a link for a pre-existing seeded demo identity at an IANA-reserved domain that no
+  // mailbox can exist behind, holding no membership outside the demo events it does not own. Real
+  // accounts are unreachable through it at any setting; `lib/demo-access.ts` states the boundary.
   "vars": {
     "APP_URL": "https://cicero.lhar8771.workers.dev",
-    "MAIL_TRANSPORT": "log",
-    "MAIL_FROM": "Cicero <onboarding@resend.dev>"
+    "MAIL_TRANSPORT": "auto",
+    "MAIL_FROM": "Cicero <onboarding@resend.dev>",
+    "DEMO_ONSCREEN_MAGIC_LINKS": "1"
   },
 
   "assets": {

@@ -17,6 +17,13 @@ describe('authentication copy', () => {
     });
   });
 
+  it('explains why a seeded demo identity gets its link on screen', () => {
+    expect(deliveryCopy('sign-in', 'demo', 'organizer@example.com')).toEqual({
+      lead: 'Your secure sign-in link is ready.',
+      hint: 'This is a seeded demo account, at a reserved domain with no inbox behind it. Use the link above to continue.',
+    });
+  });
+
   it('only tells users to check email when a message was delivered', () => {
     expect(deliveryCopy('sign-in', 'email', 'person@example.com')).toEqual({
       lead: 'Check person@example.com for your sign-in link.',
