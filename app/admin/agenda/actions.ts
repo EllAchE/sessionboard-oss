@@ -1,14 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
-import { event, scheduledSession, sessionFormat, submission } from '@/db/schema';
+import { scheduledSession, sessionFormat, submission } from '@/db/schema';
 import { requireCapability } from '@/lib/context';
-import { appUrl } from '@/lib/env';
 import { conflict, invalid, toPublicError } from '@/lib/errors';
 import { mutateAgendaAtomically, type AgendaTransaction } from '@/lib/services/agenda-guard';
 import { loadRecipientGraph, sendSessionInvites, type RecipientGraph } from '@/lib/services/comms';
+import {
+  allocateSessionRef,
+  mintIcsUid,
+  notifyIfPublished,
+} from '@/lib/services/agenda-mutations';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_SESSION_MINUTES } from '@/lib/services/schedule';
 
@@ -39,46 +43,6 @@ async function authorize() {
   const ctx = await currentEventContext();
   requireCapability(ctx, 'agenda:manage');
   return ctx;
-}
-
-/** `S-5`: the per-event counter is read and bumped in one statement so two drops cannot share a ref. */
-async function allocateSessionRef(
-  transaction: AgendaTransaction,
-  eventId: string,
-): Promise<number> {
-  const [row] = await transaction
-    .update(event)
-    .set({ sessionSeq: sql`${event.sessionSeq} + 1`, updatedAt: new Date() })
-    .where(eq(event.id, eventId))
-    .returning({ ref: event.sessionSeq });
-  if (!row) throw new Error('That event could not be found');
-  return row.ref;
-}
-
-/**
- * Minted once, at insert, and never again. A regenerated UID makes every calendar treat the talk as
- * a brand-new event, leaving the old one stranded on the speaker's calendar — the `C-3` failure.
- */
-function mintIcsUid(): string {
-  const host = appUrl().replace(/^https?:\/\//, '').split('/')[0] || 'cicero.local';
-  return `${crypto.randomUUID()}@${host}`;
-}
-
-async function notifyIfPublished(
-  sessionId: string,
-  options: { cancel?: boolean } = {},
-  graph?: RecipientGraph,
-) {
-  const row = await getDb().query.scheduledSession.findFirst({
-    where: eq(scheduledSession.id, sessionId),
-  });
-  if (!row) return;
-  if (options.cancel) {
-    await sendSessionInvites(sessionId, { cancel: true }, graph);
-    return;
-  }
-  if (row.status !== 'published') return;
-  await sendSessionInvites(sessionId, {}, graph);
 }
 
 export type PlacementInput = {
@@ -146,7 +110,7 @@ async function placeSession(
     .values({
       eventId,
       submissionId: source.id,
-      ref: await allocateSessionRef(transaction, eventId),
+      ref: await allocateSessionRef(eventId, transaction),
       title: source.title,
       descriptionMarkdown: source.descriptionMarkdown,
       roomId: input.roomId,
@@ -330,7 +294,7 @@ export async function saveManualSessionAction(
         .values({
           eventId: ctx.eventId,
           submissionId: source?.id ?? null,
-          ref: await allocateSessionRef(transaction, ctx.eventId),
+          ref: await allocateSessionRef(ctx.eventId, transaction),
           status: 'draft',
           icsUid: mintIcsUid(),
           ...patch,
