@@ -30,6 +30,7 @@ import {
 } from '../forms/contract';
 import { formatRef } from '../ids';
 import { markdownToText } from '../markdown';
+import { parseSpeakerName } from '../speaker-name';
 
 /**
  * The public CFP runtime's service half. Everything here is callable from a Server Action, a route
@@ -653,14 +654,15 @@ export async function ensureParticipant(
   displayName: string | null,
 ): Promise<string> {
   const db = getDb();
+  const safeDisplayName = parseSpeakerName(displayName);
   const existing = await db.query.participant.findFirst({
     where: and(eq(participant.eventId, eventId), eq(participant.userId, userId)),
   });
   if (existing) {
-    if (!existing.displayName && displayName) {
+    if (!existing.displayName && safeDisplayName) {
       await db
         .update(participant)
-        .set({ displayName, updatedAt: new Date() })
+        .set({ displayName: safeDisplayName, updatedAt: new Date() })
         .where(eq(participant.id, existing.id));
     }
     return existing.id;
@@ -668,7 +670,7 @@ export async function ensureParticipant(
 
   const [created] = await db
     .insert(participant)
-    .values({ eventId, userId, displayName })
+    .values({ eventId, userId, displayName: safeDisplayName })
     .onConflictDoNothing()
     .returning();
   if (created) return created.id;

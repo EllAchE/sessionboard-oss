@@ -84,7 +84,9 @@ export function GalleryWidget({
                   </span>
                 )
               ) : null}
-              <span className={styles.speakerName}>{speaker.name}</span>
+              <span className={styles.speakerName} dir="auto">
+                {speaker.name}
+              </span>
               {speaker.jobTitle ? (
                 <span className={styles.speakerRole}>{speaker.jobTitle}</span>
               ) : null}

@@ -94,7 +94,9 @@ export function SpeakersWidget({
             >
               <SpeakerAvatar speaker={speaker} show={options.showPhoto} />
               <span className={styles.directoryBody}>
-                <span className={styles.directoryName}>{speaker.name}</span>
+                <span className={styles.directoryName} dir="auto">
+                  {speaker.name}
+                </span>
                 {speaker.jobTitle ? (
                   <span className={styles.speakerRole}>{speaker.jobTitle}</span>
                 ) : null}

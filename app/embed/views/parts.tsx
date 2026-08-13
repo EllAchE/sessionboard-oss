@@ -256,7 +256,7 @@ export function SpeakerRoster({
         const role = speakerLine(person);
         return (
           <span key={person.id}>
-            <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`}>
+            <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`} dir="auto">
               {person.name}
             </a>
             {role ? ` — ${role}` : null}
@@ -335,7 +335,11 @@ export function SpeakerProfile({
           )
         ) : null}
         <div className={styles.detailIdentity}>
-          {showName ? <h2 className={styles.detailName}>{speaker.name}</h2> : null}
+          {showName ? (
+            <h2 className={styles.detailName} dir="auto">
+              {speaker.name}
+            </h2>
+          ) : null}
           {speaker.pronouns ? <p className={styles.speakerRole}>{speaker.pronouns}</p> : null}
           {speaker.jobTitle ? <p className={styles.speakerRole}>{speaker.jobTitle}</p> : null}
           {speaker.company ? <p className={styles.speakerRole}>{speaker.company}</p> : null}

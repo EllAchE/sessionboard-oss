@@ -126,6 +126,11 @@ describe('embed query boundaries', () => {
 });
 
 describe('public programme relation links', () => {
+  it('keeps identical display names independently addressable by id', () => {
+    expect(speakerSlug('aaaaaaaa-1111', 'Alex Kim')).toBe('alex-kim-aaaaaaaa');
+    expect(speakerSlug('bbbbbbbb-2222', 'Alex Kim')).toBe('alex-kim-bbbbbbbb');
+  });
+
   it('links a talk speaker to the standalone profile', () => {
     const html = renderToStaticMarkup(
       <SpeakerRoster session={session} speakerBase="/republic/speakers" />,
@@ -133,6 +138,7 @@ describe('public programme relation links', () => {
 
     expect(html).toContain(`href="/republic/speakers/${session.speakers[0].slug}"`);
     expect(html).toContain(speaker.name);
+    expect(html).toContain('dir="auto"');
   });
 
   it('links a profile session back to the talks browser', () => {

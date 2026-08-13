@@ -4,6 +4,7 @@ import { participant, speakerWorkflowStatus, user } from '../../db/schema';
 import { requireCapability, type EventContext } from '../context';
 import { invalid, notFound } from '../errors';
 import { normalizeHeader, parseCsvTable, toCsv } from '../csv';
+import { parseSpeakerName } from '../speaker-name';
 import { listSpeakers, type SpeakerRow } from './dashboard';
 import { setHeadshot, updateProfile, type Participant, type ProfileInput } from './portal';
 import { ensureParticipant } from './submissions';
@@ -356,7 +357,7 @@ async function participantRow(eventId: string, participantId: string): Promise<P
   return row;
 }
 
-async function userIdForEmail(email: string, name: string | undefined): Promise<string> {
+async function userIdForEmail(email: string, name: string | null | undefined): Promise<string> {
   const db = getDb();
   const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
   if (existing) {
@@ -389,7 +390,7 @@ export async function createSpeaker(
   requireCapability(ctx, 'event:manage');
 
   const email = requireEmail(input.email);
-  const name = clean(input.name);
+  const name = parseSpeakerName(input.name);
   const userId = await userIdForEmail(email, name);
 
   const before = await getDb().query.participant.findFirst({

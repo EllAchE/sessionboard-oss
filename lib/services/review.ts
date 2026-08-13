@@ -29,6 +29,7 @@ import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef, slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { parseSpeakerName } from '../speaker-name';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
 import { loadCommsContext, wrapInBranding } from './comms';
@@ -2012,13 +2013,15 @@ export async function createSubmissionAsOrganizer(
     });
   }
 
+  const speakerName = parseSpeakerName(input.speakerName);
+
   const existingUser = await db.query.user.findFirst({ where: eq(user.email, email) });
   const speaker =
     existingUser ??
     (
       await db
         .insert(user)
-        .values({ email, name: input.speakerName?.trim() || null })
+        .values({ email, name: speakerName })
         .returning()
     )[0];
 
@@ -2045,7 +2048,7 @@ export async function createSubmissionAsOrganizer(
   const participantId = await ensureParticipant(
     ctx.eventId,
     speaker.id,
-    input.speakerName?.trim() || speaker.name,
+    speakerName ?? speaker.name,
   );
   await linkPrimarySpeaker(created.id, participantId);
 

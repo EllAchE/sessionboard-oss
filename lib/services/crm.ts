@@ -21,6 +21,7 @@ import { conflict, invalid, notFound } from '../errors';
 import { slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { parseSpeakerName } from '../speaker-name';
 
 /**
  * The speaker CRM's domain half. Every row here hangs off an organizer's account rather than an
@@ -1067,13 +1068,15 @@ export async function pushContactToEvent(
   });
   if (!targetEvent) throw notFound('Event');
 
+  const displayName = parseSpeakerName(person.name);
+
   let account = await db.query.user.findFirst({
     where: eq(user.email, person.email),
   });
   if (!account) {
     [account] = await db
       .insert(user)
-      .values({ email: person.email, name: person.name })
+      .values({ email: person.email, name: displayName })
       .returning();
   }
 
@@ -1103,7 +1106,7 @@ export async function pushContactToEvent(
     await db
       .update(participant)
       .set({
-        displayName: existing.displayName ?? person.name,
+        displayName: existing.displayName ?? displayName,
         jobTitle: existing.jobTitle ?? person.jobTitle,
         company: existing.company ?? person.company,
         bioMarkdown: existing.bioMarkdown ?? person.bioMarkdown,
@@ -1116,7 +1119,7 @@ export async function pushContactToEvent(
       .values({
         eventId: input.eventId,
         userId: account.id,
-        displayName: person.name,
+        displayName,
         jobTitle: person.jobTitle,
         company: person.company,
         bioMarkdown: person.bioMarkdown,

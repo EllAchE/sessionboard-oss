@@ -190,6 +190,8 @@
   font-family: var(--font-display);
   font-size: var(--text-lg);
   line-height: var(--leading-snug);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
   color: var(--text-strong);
 }
 
@@ -419,6 +421,8 @@
   font-weight: var(--weight-semibold);
   text-decoration: underline;
   text-underline-offset: 0.15em;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
 }
 
 .rosterName:hover,
@@ -508,6 +512,8 @@
   font-family: var(--font-display);
   font-size: var(--text-lg);
   line-height: var(--leading-snug);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
   color: var(--text-strong);
 }
 
@@ -571,6 +577,8 @@
   font-family: var(--font-display);
   font-size: var(--text-3xl);
   line-height: var(--leading-tight);
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
   color: var(--text-strong);
 }
 

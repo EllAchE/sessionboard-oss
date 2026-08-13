@@ -18,6 +18,7 @@ import { forbidden, invalid, notFound } from '../errors';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { parseSpeakerName } from '../speaker-name';
 import {
   countCommentsByLineage,
   getFileRecord,
@@ -727,6 +728,12 @@ export async function restoreContentRevision(
   if (!row) throw notFound('That revision');
 
   const kind = row.entityKind as ContentEntityKind;
+  const restored = pick(row.snapshot, kind);
+  // Validate before `recordRevision` snapshots the pre-restore state, so a name that predates the
+  // safe-name policy can't leave behind a revision entry claiming a restore happened when it didn't.
+  const displayName =
+    kind === 'participant' ? parseSpeakerName(asText(restored.displayName)) : null;
+
   const { label } = await readEntity(ctx.eventId, kind, row.entityId);
   await recordRevision(
     ctx,
@@ -735,7 +742,6 @@ export async function restoreContentRevision(
     `Restored ${label} to the version from ${row.createdAt.toISOString().slice(0, 16).replace('T', ' ')}`,
   );
 
-  const restored = pick(row.snapshot, kind);
   if (kind === 'session') {
     await db
       .update(submission)
@@ -754,7 +760,7 @@ export async function restoreContentRevision(
     await db
       .update(participant)
       .set({
-        displayName: asText(restored.displayName),
+        displayName,
         pronouns: asText(restored.pronouns),
         jobTitle: asText(restored.jobTitle),
         company: asText(restored.company),
@@ -845,13 +851,16 @@ export async function updateSpeakerContent(
   patch: SpeakerContentPatch,
 ): Promise<void> {
   requireCapability(ctx, 'submission:decide');
+  // Validate before `recordRevision` snapshots the pre-edit state, so a rejected name can't leave
+  // behind a revision entry claiming an edit happened when the write never ran.
+  const displayName = parseSpeakerName(patch.displayName);
   const { label } = await readEntity(ctx.eventId, 'participant', participantId);
   await recordRevision(ctx, 'participant', participantId, `Edited ${label}`);
 
   await getDb()
     .update(participant)
     .set({
-      displayName: patch.displayName.trim() || null,
+      displayName,
       jobTitle: patch.jobTitle.trim() || null,
       company: patch.company.trim() || null,
       bioMarkdown: patch.bioMarkdown.trim() || null,

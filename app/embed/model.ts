@@ -124,12 +124,7 @@ export function sortSpeakers<T extends { name: string }>(speakers: T[]): T[] {
 }
 
 export function initialsOf(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0] ?? '')
-    .join('')
-    .toUpperCase();
+  return speakerInitials(name);
 }
 
 export type AgendaDay = { date: string; label: string; sessions: PublicSession[] };
@@ -490,3 +485,4 @@ export function sessionMatchesFacets(
   if (facets.rooms.length > 0 && !facets.rooms.includes(session.room ?? '')) return false;
   return true;
 }
+import { speakerInitials } from '@/lib/speaker-name';

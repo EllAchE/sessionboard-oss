@@ -11,6 +11,7 @@ import type { AnswerMap } from '@/lib/forms/contract';
 import { hashToken, randomToken } from '@/lib/ids';
 import { sendMail } from '@/lib/mail';
 import { escapeMarkdownText, renderTrustedMarkdown, markdownToText } from '@/lib/markdown';
+import { parseSpeakerName } from '@/lib/speaker-name';
 import {
   ensureParticipant,
   isAcceptingSubmissions,
@@ -138,7 +139,14 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
     }
 
     const actor = await currentActor();
-    const name = payload.submitterName.trim();
+    let name: string | null;
+    try {
+      name = parseSpeakerName(payload.submitterName);
+    } catch (error) {
+      throw invalid('Some of your details need attention', {
+        submitterName: error instanceof Error ? error.message : 'That name is not valid',
+      });
+    }
     let userId = actor?.userId;
     let email = actor?.email ?? '';
     let openedSession = false;
@@ -160,7 +168,7 @@ export async function submitPublicForm(payload: SubmitPayload): Promise<SubmitRe
     }
 
     await grantRole(userId, bundle.event.id, 'speaker');
-    const participantId = await ensureParticipant(bundle.event.id, userId, name || null);
+    const participantId = await ensureParticipant(bundle.event.id, userId, name);
 
     const saved = await saveSubmission({
       eventId: bundle.event.id,

@@ -26,6 +26,7 @@ import { clearHiddenAnswers, validateAnswers } from '../forms/contract';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
+import { parseSpeakerName } from '../speaker-name';
 import { mutateAgendaAtomically } from './agenda-guard';
 
 /**
@@ -70,7 +71,7 @@ export async function ensureParticipant(ctx: EventContext): Promise<Participant>
     .values({
       eventId: ctx.eventId,
       userId: ctx.actor.userId,
-      displayName: ctx.actor.name,
+      displayName: parseSpeakerName(ctx.actor.name),
     })
     .onConflictDoNothing();
 
@@ -123,9 +124,21 @@ const linkSchema = z.object({
     .refine((value) => /^https?:\/\/[^\s]+$/i.test(value), 'Links must be http or https'),
 });
 
+const speakerNameInput = z.string().transform((value, ctx) => {
+  try {
+    return parseSpeakerName(value);
+  } catch (error) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: error instanceof Error ? error.message : 'That speaker name is not valid',
+    });
+    return z.NEVER;
+  }
+});
+
 export const profileSchema = z
   .object({
-    displayName: z.string().trim().max(120).optional(),
+    displayName: speakerNameInput.optional(),
     pronouns: z.string().trim().max(40).optional(),
     jobTitle: z.string().trim().max(120).optional(),
     company: z.string().trim().max(120).optional(),
@@ -150,7 +163,7 @@ export const profileSchema = z
 
 export type ProfileInput = z.input<typeof profileSchema>;
 
-function blankToNull(value: string | undefined): string | null {
+function blankToNull(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 }
@@ -555,7 +568,7 @@ export async function listGroupMembers(
 
 export const shareSchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email address'),
-  name: z.string().trim().max(120).optional(),
+  name: speakerNameInput.optional(),
   kind: z.enum(['co_speaker', 'moderator', 'panelist', 'speaker']).default('co_speaker'),
 });
 
@@ -599,7 +612,11 @@ export async function shareSubmissionAccess(
 
     await transaction
       .insert(participant)
-      .values({ eventId: ctx.eventId, userId: account.id, displayName: name ?? account.name })
+      .values({
+        eventId: ctx.eventId,
+        userId: account.id,
+        displayName: parseSpeakerName(name ?? account.name),
+      })
       .onConflictDoNothing();
 
     const invitee = await transaction.query.participant.findFirst({
