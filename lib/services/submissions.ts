@@ -15,6 +15,7 @@ import {
   user,
 } from '../../db/schema';
 import { conflict, forbidden, invalid, notFound } from '../errors';
+import { spreadsheetSafeCellText } from '../csv';
 import {
   BUILTIN_META,
   clearHiddenAnswers,
@@ -761,8 +762,9 @@ export type ExportRow = {
 };
 
 function csvCell(value: string): string {
-  const needsQuotes = /[",\n\r]/.test(value);
-  const escaped = value.replace(/"/g, '""');
+  const text = spreadsheetSafeCellText(value);
+  const needsQuotes = /[",\n\r]/.test(text);
+  const escaped = text.replace(/"/g, '""');
   return needsQuotes ? `"${escaped}"` : escaped;
 }
 
