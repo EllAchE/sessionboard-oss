@@ -415,15 +415,9 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 Discovered during this audit. None of these blocks a row above on its own, and none is a
 requirement the brief states — they are recorded here so they are not lost.
 
-**Security — highest priority of this list.** The reviewer-invite server action still returns the
-raw magic link to the organizer's UI when a send *fails*
-(`app/admin/submissions/rounds/actions.ts`, `activeTransportName() === 'log' || !invited.delivered`).
-This is the same class of bypass that was deliberately removed from the sign-in path, on a surface
-the removal did not touch. It is latent today because the deployed instance is on the log transport,
-but it becomes live the moment `T-6` is switched on — and with the current shared test sender,
-Resend rejects every non-owner recipient, so `delivered` would be `false` for *every* invite. The
-invite path creates an account for an arbitrary typed address, so the leaked link is a session as
-that address. **Not fixed here — this audit owns `docs/` only.**
+~~**Security — reviewer invite failure leaked a magic link.**~~ Fixed in `ad61df8`: the action now
+uses `magicLinkMayBeShown`, never treats provider failure as permission, and has focused action tests
+covering real recipients, the log transport, and seeded demo identities.
 
 - **`V-1` staging bar is still fixed.** Hand staging exists now — `submission.staged_decision`, and
   it beats the score — so an organizer can put any undecided proposal in either queue, hold one out,

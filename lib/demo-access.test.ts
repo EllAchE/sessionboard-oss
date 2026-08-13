@@ -31,6 +31,7 @@ describe('which addresses may be shown a magic link', () => {
     vi.stubEnv('NODE_ENV', 'development');
     expect(magicLinkPrecheck('resend', 'organizer@example.com')).toBeNull();
     expect(magicLinkPrecheck('smtp', 'organizer@example.com')).toBeNull();
+    expect(magicLinkPrecheck('twilio', 'organizer@example.com')).toBeNull();
   });
 
   it('refuses every deliverable address even with the flag on', () => {
@@ -56,6 +57,7 @@ describe('which addresses may be shown a magic link', () => {
       'reviewer@example.test',
     ]) {
       expect(magicLinkPrecheck('resend', address), address).toBe('ask-the-database');
+      expect(magicLinkPrecheck('twilio', address), address).toBe('ask-the-database');
     }
   });
 });

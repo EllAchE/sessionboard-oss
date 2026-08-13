@@ -7,6 +7,7 @@ import {
   demoEventSlugs,
   magicLinkPrecheck,
   membershipsAreDemoOnly,
+  type LinkDeliveryTransport,
   type LinkVisibility,
 } from './demo-access';
 import { appUrl } from './env';
@@ -149,12 +150,18 @@ async function isSeededDemoAccount(email: string): Promise<boolean> {
 }
 
 /**
- * The one place that decides whether a freshly minted link may be rendered to an unauthenticated
- * visitor. Every caller that puts a link on a public page goes through this and nothing else.
+ * The one place that decides whether a freshly minted link may be rendered outside the recipient's
+ * delivered copy. Every caller that puts a link on a public or organizer-readable page goes through
+ * this and nothing else. `transport` names the channel carrying that copy; mail is the default, and
+ * the SMS archive supplies its own transport so a live Twilio send cannot inherit mail's log-mode
+ * exception.
  * Returns why it is allowed — the two reasons want different words on screen — or `null`.
  */
-export async function magicLinkMayBeShown(email: string): Promise<LinkVisibility> {
-  const precheck = magicLinkPrecheck(activeTransportName(), email);
+export async function magicLinkMayBeShown(
+  email: string,
+  transport: LinkDeliveryTransport = activeTransportName(),
+): Promise<LinkVisibility> {
+  const precheck = magicLinkPrecheck(transport, email);
   if (precheck !== 'ask-the-database') return precheck;
   return (await isSeededDemoAccount(email)) ? 'seeded-demo-account' : null;
 }

@@ -1,12 +1,19 @@
 import Link from 'next/link';
-import { Inbox } from 'lucide-react';
+import { Inbox, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui';
-import { requireCurrentActor } from '@/lib/auth';
+import { magicLinkMayBeShown, requireCurrentActor } from '@/lib/auth';
 import { currentEventIdHint } from '@/lib/services/events';
 import { activeSmsTransportName } from '@/lib/sms';
-import { getSms, listSms, resolveAdminEvent } from '@/lib/services/comms';
+import {
+  emailForSmsRecipient,
+  getSms,
+  listSms,
+  resolveAdminEvent,
+  type SmsMailboxEntry,
+} from '@/lib/services/comms';
 import { CommsTabs } from '../comms/CommsTabs';
 import { EventPicker } from '../comms/EventPicker';
+import { carriesMagicLink, smsMailboxBody, type SmsMailboxBody } from './magic-links';
 import { SmsSearch } from './SmsSearch';
 import styles from '../comms/comms.module.css';
 
@@ -27,6 +34,23 @@ function when(date: Date): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date);
+}
+
+/**
+ * A token in an SMS is a session as the phone's owner. Resolve exactly one owner, then ask the same
+ * demo-access policy as the mail archive using the channel that actually carried this message.
+ * Missing and duplicate phone matches both fail closed inside `emailForSmsRecipient`.
+ */
+async function renderableBody(
+  entry: SmsMailboxEntry,
+  transport: ReturnType<typeof activeSmsTransportName>,
+): Promise<SmsMailboxBody> {
+  if (!carriesMagicLink(entry)) return smsMailboxBody(entry, null);
+  const recipientEmail = await emailForSmsRecipient(entry.toPhone);
+  const visibility = recipientEmail
+    ? await magicLinkMayBeShown(recipientEmail, transport)
+    : null;
+  return smsMailboxBody(entry, visibility);
 }
 
 export default async function SmsMailboxPage({
@@ -52,6 +76,7 @@ export default async function SmsMailboxPage({
   const selected = event && selectedId ? await getSms(event.id, selectedId) : undefined;
 
   const transport = activeSmsTransportName();
+  const body = selected ? await renderableBody(selected, transport) : undefined;
   const query = (id: string) => {
     const next = new URLSearchParams();
     if (event) next.set('event', event.slug);
@@ -106,7 +131,8 @@ export default async function SmsMailboxPage({
                 <span className={styles.mailTo}>{message.toPhone}</span>
                 <span className={styles.mailWhen}>{when(message.createdAt)}</span>
               </span>
-              <span className={styles.mailSubject}>{message.body}</span>
+              {/* The list has no per-recipient visibility check; never put a credential in it. */}
+              <span className={styles.mailSubject}>{smsMailboxBody(message, null).body}</span>
               <span className={styles.mailBadges}>
                 <Badge tone={STATUS_TONE[message.status]}>{message.status}</Badge>
                 {message.templateKey && <Badge>{message.templateKey}</Badge>}
@@ -123,7 +149,7 @@ export default async function SmsMailboxPage({
             </p>
           )}
 
-          {selected && (
+          {selected && body && (
             <>
               <div>
                 <h2 className={styles.previewSubject}>{selected.toPhone}</h2>
@@ -149,7 +175,19 @@ export default async function SmsMailboxPage({
                 <p className={`${styles.warning} ${styles.danger}`}>{selected.error}</p>
               )}
 
-              <pre className={styles.plainText}>{selected.body}</pre>
+              {body.redacted && (
+                <p className={styles.notice}>
+                  <ShieldCheck size={16} />
+                  <span>
+                    This text carried a sign-in link for {selected.toPhone}, and it has been
+                    withheld. That link is a session as that person, so this archive shows it only
+                    when Cicero can identify the recipient and the configured delivery policy
+                    permits it.
+                  </span>
+                </p>
+              )}
+
+              <pre className={styles.plainText}>{body.body}</pre>
             </>
           )}
         </div>

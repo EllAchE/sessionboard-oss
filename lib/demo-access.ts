@@ -93,13 +93,16 @@ export function membershipsAreDemoOnly(
 
 export type LinkVisibility = 'instance-delivers-nothing' | 'seeded-demo-account' | null;
 
+/** Every delivery backend that can carry a sign-in link. Only `log` leaves no recipient copy. */
+export type LinkDeliveryTransport = 'log' | 'smtp' | 'resend' | 'twilio';
+
 /**
  * Conditions 1 and 2, which need nothing but the environment and the address. `ask-the-database` is
  * the only answer that goes on to look an account up — a real address never reaches a query, let
  * alone a link.
  */
 export function magicLinkPrecheck(
-  transport: 'log' | 'smtp' | 'resend',
+  transport: LinkDeliveryTransport,
   email: string,
 ): 'instance-delivers-nothing' | 'ask-the-database' | null {
   if (transport === 'log') return 'instance-delivers-nothing';
