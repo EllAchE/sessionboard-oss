@@ -66,7 +66,7 @@ const REVIEWER_EMAILS = ['calvisius@first-settlement.example', 'arruntius@first-
 
 const SPEAKER_EMAILS = ROMAN_PROFILE_ART.map((entry) => entry.email);
 
-type SenateUser = { id: string; email: string };
+type SenateUser = { id: string; email: string; name: string };
 
 export type FirstSettlementSeedStore = {
   findTargetEvent: () => Promise<{ id: string } | undefined>;
@@ -161,14 +161,14 @@ export async function seedFirstSettlement(
     },
     findSenatePeople: (emails) =>
       db
-        .select({ id: user.id, email: user.email })
+        .select({ id: user.id, email: user.email, name: user.name })
         .from(user)
         .where(inArray(user.email, [...emails])),
     createSenatePeople: (people) =>
       db
         .insert(user)
         .values([...people])
-        .returning({ id: user.id, email: user.email }),
+        .returning({ id: user.id, email: user.email, name: user.name }),
   });
   const reviewers = REVIEWER_EMAILS.map((email) => userByEmail.get(email)!);
 
