@@ -107,10 +107,7 @@ const queryFilter = z.string().trim().min(1).max(120);
 
 export const sessionListQuery = z
   .object({
-    status: z
-      .enum(['draft', 'published', 'cancelled'])
-      .optional()
-      .describe('Defaults to published'),
+    status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
     track: queryFilter.optional().describe('Track name or id'),
     room: queryFilter.optional().describe('Room name or id'),
   })
@@ -119,15 +116,7 @@ export const sessionListQuery = z
 export const submissionListQuery = z
   .object({
     status: z
-      .enum([
-        'draft',
-        'submitted',
-        'under_review',
-        'accepted',
-        'declined',
-        'waitlisted',
-        'withdrawn',
-      ])
+      .enum(['draft', 'submitted', 'under_review', 'accepted', 'declined', 'waitlisted', 'withdrawn'])
       .optional(),
     limit: z
       .preprocess(

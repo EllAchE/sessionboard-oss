@@ -73,10 +73,6 @@ describe('toParameters', () => {
     const limit = toParameters(submissionListQuery, 'query').find(
       (parameter) => parameter.name === 'limit',
     );
-    expect(limit?.schema).toMatchObject({
-      type: 'integer',
-      minimum: 1,
-      maximum: 200,
-    });
+    expect(limit?.schema).toMatchObject({ type: 'integer', minimum: 1, maximum: 200 });
   });
 });
