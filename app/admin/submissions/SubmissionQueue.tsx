@@ -3,17 +3,30 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Check, Clock, Download, Plus, Sparkles, Upload, X } from 'lucide-react';
+import {
+  BookmarkPlus,
+  Check,
+  Clock,
+  Columns3,
+  Download,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react';
 import {
   Badge,
   Button,
+  Checkbox,
   DataTable,
+  Dialog,
   Input,
   Kbd,
   Select,
   type DataTableColumn,
 } from '../../../components/ui';
-import { decideAction } from './actions';
+import { decideAction, deleteViewAction, listViewsAction, saveViewAction } from './actions';
 import styles from './submissions.module.css';
 
 export type QueueRowWire = {
@@ -35,6 +48,8 @@ export type QueueRowWire = {
   hasAiReview: boolean;
 };
 
+export type SavedViewWire = { id: string; name: string; filters: Record<string, unknown> };
+
 export type QueueProps = {
   rows: QueueRowWire[];
   counts: Record<string, number>;
@@ -52,6 +67,7 @@ export type QueueProps = {
   roundId: string | null;
   canDecide: boolean;
   aiEnabled: boolean;
+  savedViews: SavedViewWire[];
 };
 
 const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'danger'> = {
@@ -84,6 +100,42 @@ const SORTS: Array<{ id: string; label: string }> = [
 ];
 
 /**
+ * `V-6`. The full column set in its canonical order. Everything is on by default, so an organizer
+ * who never opens the picker sees exactly the queue they saw before it existed.
+ */
+export const COLUMNS: Array<{ id: string; label: string }> = [
+  { id: 'ref', label: 'Ref' },
+  { id: 'title', label: 'Title' },
+  { id: 'submitter', label: 'Speaker' },
+  { id: 'track', label: 'Track' },
+  { id: 'format', label: 'Format' },
+  { id: 'status', label: 'Status' },
+  { id: 'progress', label: 'Reviews' },
+  { id: 'score', label: 'Score' },
+];
+
+export const DEFAULT_COLUMNS = COLUMNS.map((column) => column.id);
+
+/**
+ * Column choice rides along in a saved view's `filters` JSON, which is what makes this feature
+ * migration-free. This key is the second half: it remembers the picker between navigations for
+ * someone who never names a view, since every filter change is a fresh page load.
+ */
+const COLUMN_STORAGE_KEY = 'cicero.submissions.columns';
+
+function viewString(filters: Record<string, unknown>, key: string): string {
+  const value = filters[key];
+  return typeof value === 'string' ? value : '';
+}
+
+/** Anything unrecognised falls back to the full set rather than rendering an empty table. */
+export function viewColumns(value: unknown): string[] {
+  if (!Array.isArray(value)) return DEFAULT_COLUMNS;
+  const chosen = DEFAULT_COLUMNS.filter((id) => value.includes(id));
+  return chosen.length > 0 ? chosen : DEFAULT_COLUMNS;
+}
+
+/**
  * The queue is where an organizer spends the most time, so it is keyboard-first: `j`/`k` move,
  * `x` selects, `a`/`d`/`w` decide the row under the cursor or the whole selection, `Enter` opens.
  * The legend under the table is the discoverability half — a hidden shortcut is not a feature.
@@ -95,8 +147,46 @@ export function SubmissionQueue(props: QueueProps) {
   const [active, setActive] = useState(0);
   const [search, setSearch] = useState(props.search);
   const [message, setMessage] = useState<string | null>(null);
+  const [savedViews, setSavedViews] = useState<SavedViewWire[]>(props.savedViews);
+  const [viewId, setViewId] = useState('');
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [viewName, setViewName] = useState('');
+  const [columnsOpen, setColumnsOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_COLUMNS);
 
   const rows = props.rows;
+
+  useEffect(() => setSavedViews(props.savedViews), [props.savedViews]);
+
+  // Read once on mount so the server-rendered table and the first client paint agree.
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(COLUMN_STORAGE_KEY);
+      if (stored) setVisibleColumns(viewColumns(JSON.parse(stored)));
+    } catch {
+      // A corrupt entry just means the default eight.
+    }
+  }, []);
+
+  const chooseColumns = useCallback((next: string[]) => {
+    setVisibleColumns(next);
+    try {
+      window.localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Private browsing or a full quota: the choice holds for this page, just not the next.
+    }
+  }, []);
+
+  const toggleColumn = useCallback(
+    (id: string) => {
+      const next = visibleColumns.includes(id)
+        ? visibleColumns.filter((entry) => entry !== id)
+        : [...visibleColumns, id];
+      if (next.length === 0) return;
+      chooseColumns(next);
+    },
+    [chooseColumns, visibleColumns],
+  );
 
   useEffect(() => {
     setSelected([]);
@@ -124,6 +214,83 @@ export function SubmissionQueue(props: QueueProps) {
     [props.formatId, props.roundId, props.search, props.sort, props.tab, props.tagId, props.trackId, router],
   );
 
+  const refreshViews = useCallback(async () => {
+    const result = await listViewsAction();
+    if (result.ok) setSavedViews(result.data);
+  }, []);
+
+  /** A saved view is a complete filter state, so every field is written — blanks included. */
+  const applyView = useCallback(
+    (id: string) => {
+      setViewId(id);
+      const view = savedViews.find((entry) => entry.id === id);
+      if (!view) return;
+      chooseColumns(viewColumns(view.filters.columns));
+      const q = viewString(view.filters, 'q');
+      setSearch(q);
+      navigate({
+        tab: viewString(view.filters, 'tab'),
+        sort: viewString(view.filters, 'sort'),
+        track: viewString(view.filters, 'track'),
+        format: viewString(view.filters, 'format'),
+        tag: viewString(view.filters, 'tag'),
+        q,
+      });
+    },
+    [chooseColumns, navigate, savedViews],
+  );
+
+  const saveCurrentView = useCallback(() => {
+    const name = viewName.trim();
+    if (!name) return;
+    setMessage(null);
+    startTransition(async () => {
+      const result = await saveViewAction(name, {
+        tab: props.tab,
+        sort: props.sort,
+        track: props.trackId,
+        format: props.formatId,
+        tag: props.tagId,
+        q: props.search,
+        columns: visibleColumns,
+      });
+      if (!result.ok) {
+        setMessage(result.message);
+        return;
+      }
+      setSaveOpen(false);
+      setViewName('');
+      setViewId(result.data.id);
+      await refreshViews();
+      setMessage(`Saved “${result.data.name}”.`);
+    });
+  }, [
+    props.formatId,
+    props.search,
+    props.sort,
+    props.tab,
+    props.tagId,
+    props.trackId,
+    refreshViews,
+    viewName,
+    visibleColumns,
+  ]);
+
+  const removeView = useCallback(() => {
+    if (!viewId) return;
+    setMessage(null);
+    startTransition(async () => {
+      const result = await deleteViewAction(viewId);
+      if (!result.ok) {
+        setMessage(result.message);
+        return;
+      }
+      setViewId('');
+      await refreshViews();
+      setMessage('View deleted.');
+    });
+  }, [refreshViews, viewId]);
+
   const decide = useCallback(
     (ids: string[], decision: 'accept' | 'decline' | 'waitlist' | 'reset') => {
       if (ids.length === 0 || !props.canDecide) return;
@@ -134,10 +301,15 @@ export function SubmissionQueue(props: QueueProps) {
           setMessage(result.message);
           return;
         }
+        const { updated, notified, notifyFailed } = result.data;
         const skipped = result.data.skipped.length;
-        setMessage(
-          `${result.data.updated} updated${skipped > 0 ? `, ${skipped} skipped` : ''}.`,
-        );
+        const parts = [`${updated} updated`];
+        if (skipped > 0) parts.push(`${skipped} skipped`);
+        if (notified > 0) parts.push(`${notified} notified`);
+        // Best-effort sending: the decision stuck either way, so this is the organizer's cue to
+        // resend rather than a reason to think nothing happened.
+        if (notifyFailed > 0) parts.push(`${notifyFailed} could not be notified`);
+        setMessage(`${parts.join(', ')}.`);
         setSelected([]);
         router.refresh();
       });
@@ -161,6 +333,8 @@ export function SubmissionQueue(props: QueueProps) {
 
     const onKey = (event: KeyboardEvent) => {
       if (isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
+      // A dialog owns the keyboard while it is open; `a` in the columns panel must not accept.
+      if (saveOpen || columnsOpen) return;
       if (rows.length === 0) return;
       const row = rows[Math.max(0, Math.min(rows.length - 1, active))];
 
@@ -208,9 +382,9 @@ export function SubmissionQueue(props: QueueProps) {
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [active, decide, rows, router, selected]);
+  }, [active, columnsOpen, decide, rows, router, saveOpen, selected]);
 
-  const columns = useMemo<Array<DataTableColumn<QueueRowWire>>>(
+  const allColumns = useMemo<Array<DataTableColumn<QueueRowWire>>>(
     () => [
       {
         id: 'ref',
@@ -294,6 +468,12 @@ export function SubmissionQueue(props: QueueProps) {
       },
     ],
     [],
+  );
+
+  // Filtering the canonical list keeps column order stable no matter what order they were toggled.
+  const columns = useMemo(
+    () => allColumns.filter((column) => visibleColumns.includes(column.id)),
+    [allColumns, visibleColumns],
   );
 
   return (
@@ -444,6 +624,50 @@ export function SubmissionQueue(props: QueueProps) {
         ) : null}
       </div>
 
+      <div className={styles.viewBar}>
+        <Select
+          className={styles.viewSelect}
+          selectSize="sm"
+          value={viewId}
+          onChange={(event) => applyView(event.target.value)}
+          aria-label="Saved views"
+        >
+          <option value="">Saved views</option>
+          {savedViews.map((view) => (
+            <option key={view.id} value={view.id}>
+              {view.name}
+            </option>
+          ))}
+        </Select>
+        <Button
+          size="sm"
+          variant="ghost"
+          iconLeft={<BookmarkPlus size={14} />}
+          onClick={() => setSaveOpen(true)}
+        >
+          Save view
+        </Button>
+        {viewId ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            iconLeft={<Trash2 size={14} />}
+            loading={pending}
+            onClick={removeView}
+          >
+            Delete view
+          </Button>
+        ) : null}
+        <Button
+          size="sm"
+          variant="ghost"
+          iconLeft={<Columns3 size={14} />}
+          onClick={() => setColumnsOpen(true)}
+        >
+          Columns ({visibleColumns.length}/{COLUMNS.length})
+        </Button>
+      </div>
+
       {message ? <p className={styles.notice}>{message}</p> : null}
 
       {selected.length > 0 && props.canDecide ? (
@@ -525,6 +749,69 @@ export function SubmissionQueue(props: QueueProps) {
           <Kbd>esc</Kbd> clear selection
         </span>
       </div>
+
+      <Dialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        title="Save this view"
+        description="Keeps the current tab, filters, sort and columns under a name you can come back to."
+        size="sm"
+        footer={
+          <>
+            <Button variant="primary" loading={pending} onClick={saveCurrentView}>
+              Save view
+            </Button>
+            <Button variant="ghost" onClick={() => setSaveOpen(false)}>
+              Cancel
+            </Button>
+          </>
+        }
+      >
+        <Input
+          inputSize="sm"
+          placeholder="Unscored keynotes"
+          value={viewName}
+          onChange={(event) => setViewName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') saveCurrentView();
+          }}
+          aria-label="View name"
+        />
+      </Dialog>
+
+      <Dialog
+        open={columnsOpen}
+        onOpenChange={setColumnsOpen}
+        title="Columns"
+        description="Choose what the queue shows. At least one column stays on."
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => chooseColumns(DEFAULT_COLUMNS)}>
+              Reset
+            </Button>
+            <Button variant="primary" onClick={() => setColumnsOpen(false)}>
+              Done
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.columnPicker}>
+          {COLUMNS.map((column) => {
+            const checked = visibleColumns.includes(column.id);
+            return (
+              <label className={styles.columnOption} key={column.id}>
+                <Checkbox
+                  checked={checked}
+                  disabled={checked && visibleColumns.length === 1}
+                  onChange={() => toggleColumn(column.id)}
+                />
+                <span>{column.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </Dialog>
     </div>
   );
 }

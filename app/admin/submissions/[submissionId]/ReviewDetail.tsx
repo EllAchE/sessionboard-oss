@@ -218,7 +218,14 @@ export function ReviewDetail(props: ReviewDetailProps) {
           setError(result.data.skipped[0].reason);
           return;
         }
-        setMessage('Decision recorded.');
+        // The decision is recorded either way; the notice is best-effort and says so plainly.
+        setMessage(
+          result.data.notifyFailed > 0
+            ? 'Decision recorded, but the speaker could not be notified.'
+            : result.data.notified > 0
+              ? 'Decision recorded and the speaker was notified.'
+              : 'Decision recorded.',
+        );
         router.refresh();
       });
     },
