@@ -4,6 +4,7 @@ import {
   contactMatches,
   duplicateGroups,
   mergeContactValues,
+  mergeValuesFor,
   normalizeName,
   parseTagList,
   previewCampaign,
@@ -216,5 +217,20 @@ describe('merge tags', () => {
 
   it('renders an unknown tag as nothing rather than leaving braces in an inbox', () => {
     expect(renderMergeTags('Hi {{ nope }}!', {})).toBe('Hi !');
+  });
+
+  /**
+   * `F-6`. A contact carries one `name` string, so there is no `first_name` column to read here —
+   * but there is exactly one rule in this app for cutting a name in half, and this tag used to use a
+   * different one. The greeting a prospect gets from a campaign is now the same given name their
+   * account will show them once they accept and sign in.
+   */
+  it('cuts a first name the same way every other surface does', () => {
+    expect(mergeValuesFor({ ...AMARA_A, name: 'Marcus Tullius Cicero' }).first_name).toBe(
+      'Marcus Tullius',
+    );
+    expect(mergeValuesFor({ ...AMARA_A, name: 'Cicero' }).first_name).toBe('Cicero');
+    expect(mergeValuesFor({ ...AMARA_A, name: '  Ada   Lovelace ' }).first_name).toBe('Ada');
+    expect(mergeValuesFor({ ...AMARA_A, name: '   ' }).first_name).toBe('');
   });
 });

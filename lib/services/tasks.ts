@@ -149,17 +149,37 @@ export type PortalTask = {
   linkUrl: string | null;
   submissionId: string | null;
   submissionTitle: string | null;
+  /**
+   * `S-16`. The session the *task* is pinned to — "this applies to SESS-4" — which is not always the
+   * session this row is about: a `contact`-scoped task pinned to a session narrows its audience to
+   * that session's speakers while still producing one row per person, with no `submissionId` of its
+   * own. Without this the pin is invisible to anything reading an assignment.
+   */
+  pinnedSubmissionId: string | null;
   answers: AnswerMap | null;
   fileRequest: FileRequestSpec | null;
   files: FileRecord[];
   form: PortalTaskForm | null;
 };
 
+/**
+ * The presentation columns a `form_field` row actually carries. This read used to drop them, so an
+ * organizer's help text and placeholder were written in the builder, stored on the row, and then
+ * silently absent from the task form the speaker was looking at. `optionLabels` stays null here
+ * because a task form has no event taxonomy behind its choices — the value→label map only exists
+ * for the abstract built-ins that resolve to a foreign key.
+ */
+export type PortalTaskField = FormFieldSpec & {
+  helpText: string | null;
+  placeholder: string | null;
+  optionLabels: Record<string, string> | null;
+};
+
 export type PortalTaskForm = {
   id: string;
   name: string;
   introMarkdown: string | null;
-  fields: FormFieldSpec[];
+  fields: PortalTaskField[];
   confirmationSubject: string | null;
   confirmationBodyMarkdown: string | null;
 };
@@ -340,6 +360,7 @@ export async function listPortalTasks(eventId: string, participantId: string): P
       linkUrl: row.linkUrl,
       submissionId: assignment.submissionId,
       submissionTitle: assignment.submissionId ? (titleById.get(assignment.submissionId) ?? null) : null,
+      pinnedSubmissionId: row.submissionId,
       answers,
       fileRequest: request
         ? {
@@ -362,16 +383,21 @@ export async function listPortalTasks(eventId: string, participantId: string): P
             fields: fields
               .filter((field) => field.formId === portalForm.id)
               .map(
-                (field): FormFieldSpec => ({
+                (field): PortalTaskField => ({
                   id: field.id,
                   key: field.key,
+                  entity: field.entity,
                   builtinKey: null,
+                  participantKey: null,
                   type: field.type,
                   label: field.label,
+                  helpText: field.helpText,
+                  placeholder: field.placeholder,
                   position: field.position,
                   step: field.step,
                   required: field.required,
                   options: field.options ?? null,
+                  optionLabels: null,
                   showIf: field.showIf ?? null,
                   minLength: field.minLength,
                   maxLength: field.maxLength,

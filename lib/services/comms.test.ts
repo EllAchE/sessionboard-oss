@@ -5,6 +5,7 @@ import {
   renderMessage,
   renderSmsText,
   renderTemplateText,
+  speakerFirstName,
   templateVariablesUsed,
   unknownVariables,
   wrapInBranding,
@@ -172,5 +173,35 @@ describe('branded layout', () => {
 
   it('keeps the caller-rendered content verbatim', () => {
     expect(wrapInBranding(branding, '<p>hello</p>')).toContain('<p>hello</p>');
+  });
+});
+
+/**
+ * `F-6` gave `user` real `first_name` / `last_name` columns; this merge field kept taking the first
+ * whitespace-separated token of the display name, which is not the given name of "Marcus Tullius
+ * Cicero", of anyone with a two-word first name, or of anyone whose display name is their company.
+ */
+describe('speaker.firstName', () => {
+  it('prefers the column the speaker filled in themselves', () => {
+    expect(speakerFirstName('Marcus Tullius', 'Cicero of Arpinum')).toBe('Marcus Tullius');
+  });
+
+  it('ignores a column that is only whitespace', () => {
+    expect(speakerFirstName('   ', 'Ada Lovelace')).toBe('Ada');
+  });
+
+  /**
+   * An account imported before the split has no halves. The guess is `splitPersonName`'s, which is
+   * the same one `getProfileName` shows that speaker on their own profile page — one derived value,
+   * not two that disagree.
+   */
+  it('derives the same halves the portal shows an account with none', () => {
+    expect(speakerFirstName(null, 'Marcus Tullius Cicero')).toBe('Marcus Tullius');
+    expect(speakerFirstName(undefined, 'Ada Lovelace')).toBe('Ada');
+  });
+
+  it('falls back to the whole string when there is nothing to split', () => {
+    expect(speakerFirstName(null, 'Cicero')).toBe('Cicero');
+    expect(speakerFirstName(null, '')).toBe('');
   });
 });

@@ -3,6 +3,7 @@ import { getDb } from '@/db/client';
 import { form as formTable } from '@/db/schema';
 import { notFound } from '@/lib/errors';
 import { isAcceptingSubmissions, loadPublicForm } from '@/lib/services/submissions';
+import { formFieldPayload, formParticipantRolePayload } from '../../../../_lib/forms';
 import { requireEvent } from '../../../../_lib/queries';
 import { PUBLIC_CACHE, handle, isoOrNull, json } from '../../../../_lib/respond';
 
@@ -27,13 +28,27 @@ export async function GET(
         data: {
           id: bundle.form.id,
           slug: bundle.form.slug,
-          name: bundle.form.name,
+          /**
+           * `F-9`. The internal name is an organizer's own label — "CFP v3 (final)" — and this is
+           * the public contract, so `name` carries the same string the submit page renders.
+           * `loadPublicForm` already resolves the fallback, so a form whose organizer never set an
+           * external title is unchanged. The raw field ships beside it for anyone who wants it.
+           */
+          name: bundle.form.externalTitle,
+          externalTitle: bundle.form.externalTitle,
+          pageHeading: bundle.form.pageHeading,
+          showWelcome: bundle.form.showWelcome,
           introMarkdown: bundle.form.introMarkdown,
           opensAt: isoOrNull(bundle.form.opensAt),
           closesAt: isoOrNull(bundle.form.closesAt),
           allowDrafts: bundle.form.allowDrafts,
           maxSubmissionsPerUser: bundle.form.maxSubmissionsPerUser,
-          fields: bundle.fields,
+          targetType: bundle.form.targetType,
+          collectsParticipants: bundle.form.collectsParticipants,
+          maxParticipants: bundle.form.maxParticipants,
+          fields: bundle.fields.map(formFieldPayload),
+          participantFields: bundle.participantFields.map(formFieldPayload),
+          roles: bundle.roles.map(formParticipantRolePayload),
         },
       },
       { headers: PUBLIC_CACHE },

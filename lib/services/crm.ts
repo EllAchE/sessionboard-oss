@@ -21,6 +21,7 @@ import { conflict, invalid, notFound } from '../errors';
 import { slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { personNameColumns, splitPersonName } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 
 /**
@@ -1074,9 +1075,15 @@ export async function pushContactToEvent(
     where: eq(user.email, person.email),
   });
   if (!account) {
+    /**
+     * `F-6`. An account created from a contact used to land with `name` set and both halves null,
+     * which is the exact state every later reader has to guess its way out of. Writing all three
+     * through `personNameColumns` means the guess is made once, here, where the string is — and the
+     * speaker can correct either half from their portal the moment they sign in.
+     */
     [account] = await db
       .insert(user)
-      .values({ email: person.email, name: displayName })
+      .values({ email: person.email, ...personNameColumns(splitPersonName(displayName)) })
       .returning();
   }
 
@@ -1160,9 +1167,16 @@ export async function pushContactToEvent(
 
 export const MERGE_TAGS = ['first_name', 'name', 'company', 'job_title', 'email'] as const;
 
+/**
+ * `F-6`. `contact` is an organizer's own address book and holds one `name` string, so there is no
+ * `first_name` column to read here — but there is exactly one rule in this app for cutting a name in
+ * half, and it lives in `lib/person-name.ts`. Using it means the greeting a prospect gets from a
+ * campaign is the same given name their account shows once they accept and sign in, instead of the
+ * first whitespace-separated token: "Marcus Tullius Cicero" is Marcus Tullius, not Marcus.
+ */
 export function mergeValuesFor(row: Pick<ContactRow, 'name' | 'email' | 'company' | 'jobTitle'>) {
   return {
-    first_name: row.name.trim().split(/\s+/)[0] ?? '',
+    first_name: splitPersonName(row.name).firstName ?? '',
     name: row.name,
     company: row.company ?? '',
     job_title: row.jobTitle ?? '',

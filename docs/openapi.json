@@ -298,6 +298,14 @@
           "key": {
             "type": "string"
           },
+          "entity": {
+            "type": "string",
+            "enum": [
+              "abstract",
+              "participant"
+            ],
+            "description": "Which entity this question is about. Defaults to abstract, as it always did."
+          },
           "builtinKey": {
             "type": [
               "string",
@@ -310,7 +318,22 @@
               "track",
               "level",
               "tags"
-            ]
+            ],
+            "description": "Abstract built-ins only; always null when entity is participant"
+          },
+          "participantKey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "firstName",
+              "lastName",
+              "email",
+              "phone",
+              "biography"
+            ],
+            "description": "Participant built-ins only; always null when entity is abstract"
           },
           "type": {
             "type": "string",
@@ -431,7 +454,9 @@
         "required": [
           "id",
           "key",
+          "entity",
           "builtinKey",
+          "participantKey",
           "type",
           "label",
           "helpText",
@@ -454,7 +479,12 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The public title: externalTitle when the organizer set one, the internal name until then"
+          },
+          "externalTitle": {
+            "type": "string",
+            "description": "`F-9`: what the submitter sees. Same fallback as `name`."
           },
           "closesAt": {
             "type": [
@@ -467,6 +497,7 @@
         "required": [
           "slug",
           "name",
+          "externalTitle",
           "closesAt"
         ]
       },
@@ -480,7 +511,23 @@
             "type": "string"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "The public title: externalTitle when the organizer set one, the internal name until then"
+          },
+          "externalTitle": {
+            "type": "string",
+            "description": "`F-9`: what the submitter sees. Same fallback as `name`."
+          },
+          "pageHeading": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`F-9`: the welcome screen heading, at most 15 characters"
+          },
+          "showWelcome": {
+            "type": "boolean",
+            "description": "`F-9`: false hides the welcome copy without deleting it"
           },
           "introMarkdown": {
             "type": [
@@ -511,6 +558,25 @@
               "null"
             ]
           },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "abstract",
+              "session"
+            ],
+            "description": "`F-4`: a session-target form lands accepted and mints its session on submit"
+          },
+          "collectsParticipants": {
+            "type": "boolean",
+            "description": "`F-4`: true when a submission carries a cast, collected through participantFields"
+          },
+          "maxParticipants": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "`F-7`: null means no overall cap"
+          },
           "fields": {
             "type": "array",
             "items": {
@@ -521,6 +587,14 @@
                 },
                 "key": {
                   "type": "string"
+                },
+                "entity": {
+                  "type": "string",
+                  "enum": [
+                    "abstract",
+                    "participant"
+                  ],
+                  "description": "Which entity this question is about. Defaults to abstract, as it always did."
                 },
                 "builtinKey": {
                   "type": [
@@ -534,7 +608,22 @@
                     "track",
                     "level",
                     "tags"
-                  ]
+                  ],
+                  "description": "Abstract built-ins only; always null when entity is participant"
+                },
+                "participantKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "phone",
+                    "biography"
+                  ],
+                  "description": "Participant built-ins only; always null when entity is abstract"
                 },
                 "type": {
                   "type": "string",
@@ -655,7 +744,9 @@
               "required": [
                 "id",
                 "key",
+                "entity",
                 "builtinKey",
+                "participantKey",
                 "type",
                 "label",
                 "helpText",
@@ -670,19 +761,262 @@
                 "maxLength",
                 "charLimitGroup"
               ]
-            }
+            },
+            "description": "The abstract questions, in running order"
+          },
+          "participantFields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "key": {
+                  "type": "string"
+                },
+                "entity": {
+                  "type": "string",
+                  "enum": [
+                    "abstract",
+                    "participant"
+                  ],
+                  "description": "Which entity this question is about. Defaults to abstract, as it always did."
+                },
+                "builtinKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "title",
+                    "description",
+                    "format",
+                    "track",
+                    "level",
+                    "tags"
+                  ],
+                  "description": "Abstract built-ins only; always null when entity is participant"
+                },
+                "participantKey": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "phone",
+                    "biography"
+                  ],
+                  "description": "Participant built-ins only; always null when entity is abstract"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "short_text",
+                    "long_text",
+                    "markdown",
+                    "select",
+                    "multi_select",
+                    "radio",
+                    "checkbox",
+                    "number",
+                    "email",
+                    "url",
+                    "date",
+                    "file",
+                    "section_break"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "helpText": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "placeholder": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "position": {
+                  "type": "integer"
+                },
+                "step": {
+                  "type": "integer"
+                },
+                "required": {
+                  "type": "boolean"
+                },
+                "options": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "optionLabels": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "showIf": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "fieldId": {
+                      "type": "string"
+                    },
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "eq",
+                        "neq",
+                        "includes",
+                        "gt",
+                        "lt",
+                        "is_empty",
+                        "not_empty"
+                      ]
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "fieldId",
+                    "op"
+                  ]
+                },
+                "minLength": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "maxLength": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "charLimitGroup": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "key",
+                "entity",
+                "builtinKey",
+                "participantKey",
+                "type",
+                "label",
+                "helpText",
+                "placeholder",
+                "position",
+                "step",
+                "required",
+                "options",
+                "optionLabels",
+                "showIf",
+                "minLength",
+                "maxLength",
+                "charLimitGroup"
+              ]
+            },
+            "description": "`F-6`: the questions asked about each person. Empty unless collectsParticipants."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "speaker",
+                    "co_speaker",
+                    "moderator",
+                    "panelist"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "description": "The organizer’s name for this role on this form"
+                },
+                "position": {
+                  "type": "integer"
+                },
+                "minCount": {
+                  "type": "integer",
+                  "description": "How many must hold it for a submission to be complete"
+                },
+                "maxCount": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Null means no ceiling beyond maxParticipants"
+                }
+              },
+              "required": [
+                "id",
+                "kind",
+                "label",
+                "position",
+                "minCount",
+                "maxCount"
+              ]
+            },
+            "description": "`F-7`: the roles this form offers"
           }
         },
         "required": [
           "id",
           "slug",
           "name",
+          "externalTitle",
+          "pageHeading",
+          "showWelcome",
           "introMarkdown",
           "opensAt",
           "closesAt",
           "allowDrafts",
           "maxSubmissionsPerUser",
-          "fields"
+          "targetType",
+          "collectsParticipants",
+          "maxParticipants",
+          "fields",
+          "participantFields",
+          "roles"
         ]
       },
       "Session": {
@@ -1368,6 +1702,23 @@
           "assignmentId": {
             "type": "string"
           },
+          "taskId": {
+            "type": "string",
+            "description": "`S-16`: the task these rows answer. Group rows by it."
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "contact",
+              "group",
+              "submission"
+            ],
+            "description": "contact is once per person, submission once per session, group once per session team"
+          },
+          "shared": {
+            "type": "boolean",
+            "description": "True when the whole session team reads and completes this one row"
+          },
           "name": {
             "type": "string"
           },
@@ -1433,6 +1784,13 @@
               "null"
             ]
           },
+          "pinnedSubmissionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`S-16`: the session the task itself is pinned to, which a contact-scoped task has without this row having one"
+          },
           "answers": {
             "type": [
               "object",
@@ -1486,6 +1844,14 @@
                     "key": {
                       "type": "string"
                     },
+                    "entity": {
+                      "type": "string",
+                      "enum": [
+                        "abstract",
+                        "participant"
+                      ],
+                      "description": "Which entity this question is about. Defaults to abstract, as it always did."
+                    },
                     "builtinKey": {
                       "type": [
                         "string",
@@ -1498,7 +1864,22 @@
                         "track",
                         "level",
                         "tags"
-                      ]
+                      ],
+                      "description": "Abstract built-ins only; always null when entity is participant"
+                    },
+                    "participantKey": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "firstName",
+                        "lastName",
+                        "email",
+                        "phone",
+                        "biography"
+                      ],
+                      "description": "Participant built-ins only; always null when entity is abstract"
                     },
                     "type": {
                       "type": "string",
@@ -1619,7 +2000,9 @@
                   "required": [
                     "id",
                     "key",
+                    "entity",
                     "builtinKey",
+                    "participantKey",
                     "type",
                     "label",
                     "helpText",
@@ -1717,6 +2100,9 @@
         },
         "required": [
           "assignmentId",
+          "taskId",
+          "scope",
+          "shared",
           "name",
           "descriptionMarkdown",
           "kind",
@@ -1728,6 +2114,7 @@
           "linkUrl",
           "submissionId",
           "submissionTitle",
+          "pinnedSubmissionId",
           "answers",
           "form",
           "fileRequest",
@@ -2305,6 +2692,60 @@
               ]
             },
             "description": "Keyed by the form field key. Built-in keys are title, description, format, track, level, tags."
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "firstName": {
+                  "type": "string",
+                  "description": "Given name"
+                },
+                "lastName": {
+                  "type": "string",
+                  "description": "Family name"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "The first person is the submitter, so their address must be the signed-in speaker's"
+                },
+                "phone": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 40,
+                  "description": "Mobile number, when the form asks for one"
+                },
+                "biography": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 5000,
+                  "description": "Markdown"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "speaker",
+                    "co_speaker",
+                    "moderator",
+                    "panelist"
+                  ],
+                  "description": "Must be a role this form offers; `F-7` counts are enforced against it"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "firstName",
+                "lastName",
+                "email"
+              ]
+            },
+            "description": "Only accepted by a form with collectsParticipants. The first person is the submitter. Omit to file as the signed-in speaker alone."
           }
         },
         "additionalProperties": false,
@@ -2326,8 +2767,10 @@
             "type": "string",
             "enum": [
               "draft",
-              "submitted"
-            ]
+              "submitted",
+              "accepted"
+            ],
+            "description": "accepted only on a form whose targetType is session"
           },
           "title": {
             "type": "string"
