@@ -288,6 +288,22 @@
   color: var(--text-faint);
 }
 
+.cardAction {
+  align-self: flex-start;
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: var(--type-label);
+  font-weight: var(--weight-medium);
+}
+
+.cardAction:hover {
+  text-decoration: underline;
+}
+
 /* ---- Grid ---- */
 
 .gridWrap {

@@ -538,6 +538,7 @@ export type QueueItem = {
   id: string;
   ref: string;
   title: string;
+  descriptionMarkdown: string | null;
   trackId: string | null;
   formatId: string | null;
   durationMinutes: number;
