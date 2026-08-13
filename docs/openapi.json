@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "https://cicero.lhar8771.workers.dev/api/v1"
+      "url": "https://cicero.elehche.workers.dev/api/v1"
     }
   ],
   "tags": [

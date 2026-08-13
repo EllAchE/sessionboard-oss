@@ -14,11 +14,10 @@ the scrollable source of truth for what is complete and what still needs work.
 - What was checked this run: schema and all thirteen migrations, service layer, organizer and speaker
   UI, the public CFP flow, the `/api/v1` contract and generated OpenAPI, mail transports and ICS
   generation, `wrangler.jsonc`, and the full test suite.
-- **The live deployment was not reachable from the audit host.** `cicero.lhar8771.workers.dev` does
-  not resolve from this machine (`getent hosts` returns nothing; all five sampled paths fail to
-  connect), the same DNS gap [`performance-benchmark.md`](performance-benchmark.md) records. The
-  previous audit's HTTP 200 result on those five routes is therefore **not** re-verified here; where
-  a row depends on the deployment being reachable, it says so.
+- **The live deployment URL was corrected and re-verified on 2026-08-13.** Cloudflare reports the
+  account subdomain as `elehche`, not `lhar8771`; the Worker is live at
+  `cicero.elehche.workers.dev`. The home page, seeded demo agenda, and OpenAPI return HTTP 200. The
+  First Settlement routes remain unseeded and return 404, as the demo runbook records.
 - Uncommitted changes and unmerged branches were not credited.
 
 | Priority | Complete | Partial | Outstanding | Excluded | Total |
@@ -67,9 +66,8 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **D-2 · R · COMPLETE — Public open-source repository.** The source is public at
   `EllAchE/sessionboard-oss`.
 - [x] **D-3 · R · COMPLETE — Deployed, live, testable site.** Workers deployment and configuration
-  are present and were reachable at the 2026-08-12 audit. **Not re-verified on this run** — the
-  audit host has no DNS route to `cicero.lhar8771.workers.dev`, which is a limitation of this
-  machine and not evidence that the deployment is down.
+  are present. Re-verified on 2026-08-13 at the corrected hostname: the home page and public demo
+  agenda both return HTTP 200.
 - [ ] **D-4 · R · OUTSTANDING — Deliver by Wed Aug 12, 10:00 PM PT.** The stated deadline has passed
   as of this audit. The submission window is reported to still be open; that report is recorded here
   as a fact and not interpreted. No competition-delivery evidence is stored in the repository.
@@ -474,8 +472,8 @@ that address. **Not fixed here — this audit owns `docs/` only.**
 - `bun run bench`: not re-run for this audit; the captured numbers in
   [`performance-benchmark.md`](performance-benchmark.md) are read as evidence for `Z-4` rather than
   reproduced.
-- **The live deployment was not health-checked.** `cicero.lhar8771.workers.dev` does not resolve from
-  the audit host, so all five sampled paths failed to connect. This is a limitation of the machine,
-  not a finding about the deployment; `D-3` and `T-2` rest on the previous audit's check and say so.
+- **The live deployment was health-checked again on 2026-08-13.** The corrected hostname resolves,
+  and the home page, public demo agenda, and generated OpenAPI return HTTP 200. The Roman demo is
+  still not seeded in production and its sampled public routes return 404.
 - Real outbound mail and a real Accelevents account were not available, so `T-6` and `N-1c` remain
   judged on configuration and code rather than inferred from interfaces or mocks.
