@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { e164PhoneInput } from '@/lib/phone';
 import { parseSpeakerName } from '@/lib/speaker-name';
 
 /**
@@ -244,7 +245,7 @@ export const createSubmissionParticipant = z
       .string()
       .email()
       .describe("The first person is the submitter, so their address must be the signed-in speaker's"),
-    phone: z.string().max(40).nullish().describe('Mobile number, when the form asks for one'),
+    phone: e164PhoneInput.nullish().describe('Mobile number, normalized to E.164'),
     biography: z.string().max(5_000).nullish().describe('Markdown'),
     role: participantRoleKind.default('speaker'),
   })
@@ -530,7 +531,7 @@ export const updateSpeakerProfileBody = z
     dietaryNotes: z.string().max(1_000).optional(),
     accessibilityNotes: z.string().max(1_000).optional(),
     links: z.array(profileLinkSchema).max(8).optional(),
-    phone: z.string().max(32).optional(),
+    phone: e164PhoneInput.optional().describe('Mobile number; national input is stored as E.164'),
     notifyEmail: z.boolean().optional(),
     notifySms: z.boolean().optional(),
   })

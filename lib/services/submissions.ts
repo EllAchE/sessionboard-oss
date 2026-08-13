@@ -42,6 +42,7 @@ import {
 import { formatRef } from '../ids';
 import { markdownToText } from '../markdown';
 import { personNameColumns } from '../person-name';
+import { normalizePhoneNumber } from '../phone';
 import { parseSpeakerName } from '../speaker-name';
 
 /**
@@ -242,6 +243,15 @@ export function validateParticipants(
       if (!isAppError(error) || !error.details) throw error;
       for (const [key, message] of Object.entries(error.details)) {
         errors[`participants.${index}.${key}`] = message;
+      }
+    }
+
+    if (person.phone?.trim()) {
+      try {
+        normalizePhoneNumber(person.phone);
+      } catch (error) {
+        errors[`participants.${index}.phone`] =
+          error instanceof Error ? error.message : 'Enter a valid phone number';
       }
     }
 
@@ -900,7 +910,7 @@ async function upsertPerson(
   const db = getDb();
   const email = person.email.trim().toLowerCase();
   const columns = personNameColumns(person);
-  const phone = person.phone?.trim() || null;
+  const phone = person.phone?.trim() ? normalizePhoneNumber(person.phone) : null;
 
   const existing = await db.query.user.findFirst({ where: eq(user.email, email) });
   const userId = existing

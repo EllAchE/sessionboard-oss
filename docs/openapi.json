@@ -1465,7 +1465,8 @@
           },
           "phone": {
             "type": "string",
-            "maxLength": 32
+            "maxLength": 40,
+            "description": "Mobile number; national input is stored as E.164"
           },
           "notifyEmail": {
             "type": "boolean"
@@ -2718,7 +2719,7 @@
                     "null"
                   ],
                   "maxLength": 40,
-                  "description": "Mobile number, when the form asks for one"
+                  "description": "Mobile number, normalized to E.164"
                 },
                 "biography": {
                   "type": [

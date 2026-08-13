@@ -526,6 +526,7 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
             <li className={styles.env}>TWILIO_ACCOUNT_SID</li>
             <li className={styles.env}>TWILIO_AUTH_TOKEN</li>
             <li className={styles.env}>SMS_FROM</li>
+            <li className={styles.env}>APP_URL (public HTTPS)</li>
           </ul>
         </div>
       </div>
@@ -542,12 +543,16 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
             manual composer&apos;s channel selector. Every send is logged at{' '}
             <code>/admin/sms</code>, the way email is at <code>/admin/mail</code>.
           </p>
+          <p className={styles.note}>
+            Configure Twilio&apos;s inbound webhook at <code>/api/webhooks/twilio/sms</code>.
+            Delivery callbacks are attached to every outbound message automatically.
+          </p>
         </div>
         <div className={styles.actions}>
           {panel.transport === 'twilio' ? (
             <Badge tone="success">Live — Twilio</Badge>
           ) : (
-            <Badge tone="warning">Dev mailbox — SMS_TRANSPORT=log</Badge>
+            <Badge tone="warning">Safe mailbox — check transport and APP_URL</Badge>
           )}
         </div>
       </div>

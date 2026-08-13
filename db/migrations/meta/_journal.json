@@ -92,6 +92,13 @@
       "when": 1786629670262,
       "tag": "0012_tan_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786647510357,
+      "tag": "0013_dazzling_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

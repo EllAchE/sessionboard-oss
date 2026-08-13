@@ -176,6 +176,7 @@ export function ProfileForm({
                 id="phone"
                 name="phone"
                 type="tel"
+                autoComplete="tel"
                 value={phone}
                 onChange={(untrusted) => setPhone(untrusted.target.value)}
                 placeholder="+1 555 123 4567"
@@ -206,7 +207,7 @@ export function ProfileForm({
                 <span className={styles.switchLabel}>Text message</span>
                 <span className={styles.hint}>
                   {phone.trim()
-                    ? 'The same alerts, sent to your phone as a text.'
+                    ? 'Turning this on records your consent. Message rates may apply; reply STOP to opt out or HELP for help.'
                     : 'Add a phone number above to turn this on.'}
                 </span>
               </span>
