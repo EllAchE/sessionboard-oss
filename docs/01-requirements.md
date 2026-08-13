@@ -384,7 +384,7 @@ Orthogonal to product value. The brief lists these with its own weighting langua
 | ~~**[EXCLUDED]**~~ **BUILT** ‡ | Speaker CRM, and with it Contacts & data / import / history | The brief calls these "extra features optional", and the first pass excluded them. **That exclusion was deliberately reversed and a full CRM shipped** at `app/crm/*` — contacts above the event layer, custom fields, import, duplicate handling, saved segments, campaigns, and a sourcing pipeline. See [`decisions-long-form.md`](decisions-long-form.md) ("The largest functional expansion is the speaker CRM") for the reasoning. Both rows are kept here rather than deleted so the reversal is legible |
 | **[EXCLUDED]** | Awards, Studio, Marketing modules | Present in Sessionboard, absent from the brief |
 | **[EXCLUDED]** | AI agents (Reviewer, Scheduler, Coordinator, Team Lead) | Sessionboard markets them; the brief asks for none |
-| ~~**[EXCLUDED]**~~ **BUILT** ‡ | Exhibitor / sponsor management | Never requested by the brief, but this table always contradicted `E-7` above, which lists sponsor/exhibitor entities as **[OPTIONAL]**. `E-7` is the row that governs: the entities and organizer CRUD shipped. There is deliberately no public sponsor wall |
+| ~~**[EXCLUDED]**~~ **BUILT** ‡ | Exhibitor / sponsor management | Never requested by the brief, but this table always contradicted `E-7` above, which lists sponsor/exhibitor entities as **[OPTIONAL]**. `E-7` is the row that governs: the entities, the organizer CRUD, and the public wall at `/{slug}/sponsors` all shipped |
 
 ‡ Rows marked **BUILT** were excluded by the first requirements pass and later, deliberately, built
 anyway. They are corrections to this table, not new exclusions — the audit

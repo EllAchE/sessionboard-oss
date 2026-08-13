@@ -247,8 +247,9 @@ An organizer can:
 - Configure event-scoped tracks, rooms, tags, session formats, personas, and the reusable custom
   field library. All six are managed from the same settings surface.
 - Define room capacities and the values speakers or admins select on submissions and sessions.
-- Record sponsors and exhibitors with logos and a display order. These are organizer-facing only;
-  there is no public sponsor listing.
+- Record sponsors and exhibitors with logos and a display order. Both appear on the public wall at
+  `/{slug}/sponsors`, grouped by tier in that order. A sponsor row has no draft state, so it is
+  public from the moment it is saved.
 - Switch between events when multi-event support is enabled.
 
 An organizer cannot currently set the speaker portal's own appearance — logo, accent colour, welcome
@@ -525,8 +526,8 @@ quietly deleted:
 
 - **Speaker CRM.** Excluded by the first requirements pass, then reversed — a full contact database
   lives above the event layer at `app/crm/*`. See [`decisions-long-form.md`](decisions-long-form.md).
-- **Sponsor and exhibitor entities.** Organizer-facing CRUD exists; only the public-facing half was
-  scoped out. `E-7` in [`01-requirements.md`](01-requirements.md) is the governing row.
+- **Sponsor and exhibitor entities.** Organizer-facing CRUD and the public wall at `/{slug}/sponsors`
+  both exist. `E-7` in [`01-requirements.md`](01-requirements.md) is the governing row.
 
 Optional capabilities should not displace the required end-to-end journey. A plain workflow that
 gets an organizer and speaker from CFP through publication without a dead end is more important than

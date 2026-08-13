@@ -93,9 +93,12 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   can create and switch events.
 - [x] **E-7 · O · COMPLETE — Exhibitor / sponsor entities.** Migration `0011` adds a `sponsor` table
   with a `sponsor_kind` enum of `sponsor`/`exhibitor`, and organizer CRUD is complete: list, create,
-  edit, remove, drag reorder, logo upload and serve, all capability-gated. **There is deliberately no
-  public sponsor wall** — no public page, embed, or API exposure — which the ledger row does not ask
-  for; it is recorded under [Follow-ups](#follow-ups) instead.
+  edit, remove, drag reorder, logo upload and serve, all capability-gated. The public wall at
+  `/{slug}/sponsors` groups both kinds by tier in the organizer's order, behind a nav tab that only
+  appears for events that have rows, and serves logos from an unauthenticated route that proves
+  access structurally — the file id must currently occupy a sponsor logo slot on that event. There is
+  still no embed widget or `/api/v1` exposure, and **a sponsor row has no published column**, so it
+  is public as soon as it is saved; both are recorded under [Follow-ups](#follow-ups).
 - [x] **E-8 · X · EXCLUDED — Event-team permission grid.** Explicitly outside the requested scope.
 
 ## 3. Call-for-speakers forms
@@ -429,10 +432,17 @@ that address. **Not fixed here — this audit owns `docs/` only.**
   and a submission-scoped task (`S-16`) creates one assignment per accepted session. A speaker with
   three accepted sessions receives three reminder emails for one task. Correct by the data model,
   probably not what an organizer expects.
-- **No public sponsor wall (`E-7`).** Sponsors and exhibitors are fully manageable by organizers but
-  invisible to attendees: no public page, no embed widget, no `/api/v1` exposure, and the logo serve
-  route sits behind the admin gate, so a public surface would need its own route too. Deliberately
-  scoped out, not forgotten.
+- **No `published` column on `sponsor` (`E-7`).** The public wall now exists, and every other public
+  surface in the app is gated by an explicit state column — `scheduled_session.status`,
+  `submission.content_status`, `participant.workflow_status`. A sponsor row has none, so saving one
+  publishes it, and an organizer who wants to stage a wall before an announcement cannot. The admin
+  page says so before they type, which is the honest interim answer, not a substitute for the column.
+  Adding it is a migration plus a filter in `listPublicSponsors`, the same filter in
+  `eventHasSponsors` and `isPublicSponsorLogo` so an unpublished sponsor's logo stops being servable,
+  and a toggle on the board.
+- **No sponsor embed widget or `/api/v1` exposure (`E-7`).** The wall is a microsite page only.
+  `app/embed/**` has no sponsor view, so a sponsor block cannot be iframed onto an organizer's own
+  site the way the agenda and speaker directory can.
 - ~~**`S-17` form-builder target.**~~ Withdrawn. Declaring the contact/group/submission triple on the
   form as well as on the task would make a reusable form single-use and create a disagreement with no
   correct resolution. See the `S-17` row.
