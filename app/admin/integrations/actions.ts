@@ -4,9 +4,14 @@ import { revalidatePath } from 'next/cache';
 import * as accelevents from '@/lib/accelevents';
 import * as airtable from '@/lib/airtable';
 import { isAppError } from '@/lib/errors';
-import { issueApiKey, revokeApiKey } from '../../api/v1/_lib/auth';
+import { issueApiKey, revokeApiKey, type ApiKeyScope } from '../../api/v1/_lib/auth';
 import { integrationContext } from './context';
 import type { ActionResult, TestResult } from './types';
+import {
+  createWebhookEndpoint,
+  disableWebhookEndpoint,
+  WEBHOOK_EVENT_TYPES,
+} from '@/lib/webhooks';
 
 /**
  * Thin by construction, like the rest of `/admin`: resolve the event, check the capability, call
@@ -34,16 +39,24 @@ async function run<T>(work: () => Promise<T>): Promise<ActionResult<T>> {
  */
 export async function createApiKeyAction(
   name: string,
-): Promise<ActionResult<{ id: string; name: string; prefix: string; plaintext: string }>> {
+  scope: ApiKeyScope,
+): Promise<
+  ActionResult<{ id: string; name: string; prefix: string; plaintext: string; scope: ApiKeyScope }>
+> {
   return run(async () => {
     const ctx = await integrationContext();
     const trimmed = name.trim();
-    const issued = await issueApiKey(ctx.eventId, trimmed.length > 0 ? trimmed : 'Untitled key');
+    const issued = await issueApiKey(
+      ctx.eventId,
+      trimmed.length > 0 ? trimmed : 'Untitled key',
+      scope,
+    );
     return {
       id: issued.id,
       name: issued.name,
       prefix: issued.prefix,
       plaintext: issued.plaintext,
+      scope: issued.scope,
     };
   });
 }
@@ -52,6 +65,34 @@ export async function revokeApiKeyAction(keyId: string): Promise<ActionResult> {
   return run(async () => {
     const ctx = await integrationContext();
     await revokeApiKey(ctx.eventId, keyId);
+    return null;
+  });
+}
+
+export async function createWebhookAction(
+  name: string,
+  url: string,
+): Promise<ActionResult<{ id: string; name: string; url: string; signingSecret: string }>> {
+  return run(async () => {
+    const ctx = await integrationContext();
+    const endpoint = await createWebhookEndpoint(ctx.eventId, {
+      name,
+      url,
+      eventTypes: [...WEBHOOK_EVENT_TYPES],
+    });
+    return {
+      id: endpoint.id,
+      name: endpoint.name,
+      url: endpoint.url,
+      signingSecret: endpoint.signingSecret,
+    };
+  });
+}
+
+export async function disableWebhookAction(endpointId: string): Promise<ActionResult> {
+  return run(async () => {
+    const ctx = await integrationContext();
+    await disableWebhookEndpoint(ctx.eventId, endpointId);
     return null;
   });
 }

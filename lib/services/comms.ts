@@ -33,8 +33,14 @@ import { formatRef, hashToken, randomToken } from '../ids';
 import { sendMail, type OutgoingIcs } from '../mail';
 import { escapeMarkdownText, markdownToText, renderMarkdown } from '../markdown';
 import { splitPersonName } from '../person-name';
-import { sendSms } from '../sms';
+import { activeSmsTransportName, sendSms } from '../sms';
 import { listEventsForUser, pickDefaultEvent } from './events';
+import {
+  maySendSmsNow,
+  phoneVerificationIsCurrent,
+  resolveRecipientDelivery,
+  type ResolvedDelivery,
+} from './notification-preferences';
 
 /**
  * `C-1`–`C-7`. Everything between an organizer pressing Send and a row in `email_log`: what the
@@ -336,6 +342,8 @@ export type Recipient = {
   phone: string | null;
   notifyEmail: boolean;
   notifySms: boolean;
+  phoneVerified?: boolean;
+  timezone?: string | null;
   name: string;
   submissions: RecipientSubmission[];
   openTasks: RecipientTask[];
@@ -370,6 +378,8 @@ export async function loadRecipientGraph(eventId: string) {
       phone: user.phone,
       notifyEmail: user.notifyEmail,
       notifySms: user.notifySms,
+      phoneVerifiedAt: user.phoneVerifiedAt,
+      phoneVerificationTransport: user.phoneVerificationTransport,
       userName: user.name,
       /** `F-6`. The real column, so `speaker.firstName` stops guessing at a string. */
       userFirstName: user.firstName,
@@ -377,6 +387,7 @@ export async function loadRecipientGraph(eventId: string) {
       company: participant.company,
       jobTitle: participant.jobTitle,
       pronouns: participant.pronouns,
+      timezone: participant.timezone,
     })
     .from(participant)
     .innerJoin(user, eq(user.id, participant.userId))
@@ -492,6 +503,8 @@ export async function resolveRecipients(
       phone: person.phone,
       notifyEmail: person.notifyEmail,
       notifySms: person.notifySms,
+      phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
+      timezone: person.timezone,
       name,
       submissions,
       openTasks,
@@ -734,12 +747,10 @@ export type EmailTemplateRow = typeof emailTemplate.$inferSelect;
  *    `form.deadline` is built from its own narrow `vars` map in `runDraftDeadlineReminders`, not
  *    from `buildVars`, so it may only use the event, speaker and form fields.
  *
- * The one place the SMS deliberately differs from its email is `{{portal.url}}` where the email
- * writes `{{portal.link}}`. `portal.link` is a fourteen-day sign-in credential, and `sendSms` writes
- * the body to `sms_log` *before* dispatch, where `/admin/sms` renders it verbatim to any organizer
- * on the event — the same escalation `/admin/mail` closed in #88, which `/admin/sms` has no
- * equivalent gate for. `portal.url` is the plain `/portal` address: one sign-in away rather than
- * one tap, and not a credential sitting in a readable archive. See the note in `magic-links.ts`.
+ * The shipped SMS copy deliberately uses `{{portal.url}}` where the email writes
+ * `{{portal.link}}`. Custom SMS templates may now request the one-click link, and the SMS mailbox
+ * gates it like the mail archive, but the plain URL keeps the default archive credential-free as
+ * defence in depth. See `app/admin/sms/magic-links.ts`.
  */
 export const DEFAULT_TEMPLATES: Array<{
   key: string;
@@ -1051,22 +1062,24 @@ async function mintPortalLink(
 }
 
 /**
- * Matched against the subject and the *email* body only, deliberately. A `smsBody` that asks for
- * `{{portal.link}}` renders it as nothing rather than minting one: `sendSms` writes the body to
- * `sms_log` before dispatch, and `/admin/sms` renders that verbatim to any organizer on the event,
- * with none of the gating `/admin/mail` grew in #88. A fourteen-day sign-in credential does not
- * belong in that archive, so the shipped SMS copy uses `{{portal.url}}` instead; widening this
- * needs the SMS mailbox gated first.
+ * Any channel may request the one-click portal credential. The SMS path was deliberately omitted
+ * until its archive gained the same read-time gate as `/admin/mail`; keeping the test in one helper
+ * prevents a future send path from silently rendering `{{portal.link}}` as an empty string again.
  */
 const PORTAL_LINK_PATTERN = /\{\{\s*portal\.link/;
+
+export function requestsPortalLink(...sources: Array<string | null | undefined>): boolean {
+  return sources.some((source) => Boolean(source && PORTAL_LINK_PATTERN.test(source)));
+}
 
 async function withPortalLink(
   recipient: Recipient,
   eventId: string,
   subject: string,
   body: string,
+  smsBody?: string | null,
 ): Promise<TemplateVars> {
-  if (!PORTAL_LINK_PATTERN.test(subject) && !PORTAL_LINK_PATTERN.test(body)) {
+  if (!requestsPortalLink(subject, body, smsBody)) {
     return recipient.vars;
   }
   return { ...recipient.vars, 'portal.link': await mintPortalLink(recipient.userId, eventId) };
@@ -1156,9 +1169,28 @@ function wantsChannel(
   hasContact: boolean,
 ): boolean {
   if (!hasContact) return false;
+  // A channel selector chooses among channels the recipient allowed; it never overrides opt-outs.
+  if (!preferred) return false;
   if (channel === 'auto') return preferred;
   return channel === forced;
 }
+
+async function recipientDelivery(
+  recipient: Recipient,
+  eventId: string,
+  templateKey: string,
+): Promise<ResolvedDelivery> {
+  return resolveRecipientDelivery({
+    userId: recipient.userId,
+    eventId,
+    templateKey,
+    baseEmail: recipient.notifyEmail,
+    baseSms: recipient.notifySms,
+    phoneVerified: Boolean(recipient.phoneVerified),
+    participantTimezone: recipient.timezone,
+  });
+}
+
 
 export type CampaignInput = {
   eventId: string;
@@ -1168,7 +1200,7 @@ export type CampaignInput = {
   templateKey?: string | null;
   /** `C-3`: attach the calendar invite for each recipient's scheduled session, where they have one. */
   attachIcs?: boolean;
-  /** `auto` (default) follows each recipient's stored preference; `email`/`sms` forces that channel. */
+  /** `auto` follows preferences; `sms` selects opted-in recipients and never overrides an opt-out. */
   channel?: ChannelSelection;
   smsBody?: string | null;
 };
@@ -1189,13 +1221,16 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
   };
 
   for (const recipient of recipients) {
+    const templateKey = input.templateKey ?? 'adhoc';
+    const delivery = await recipientDelivery(recipient, event.id, templateKey);
     const vars = await withPortalLink(
       recipient,
       input.eventId,
       input.subject,
       input.bodyMarkdown,
+      input.smsBody,
     );
-    const message = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
+    const rendered = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
     // PUBLISH, not REQUEST. An ad-hoc send does not know whether it is a revision, and a REQUEST at
     // a sequence the speaker's calendar already holds is discarded as a duplicate — silently
     // undoing the invite. Real invitations go through `sendSessionInvites`, which owns the bump.
@@ -1209,14 +1244,15 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
 
     let emailId: string | null = null;
     let emailSent = false;
-    if (wantsChannel(channel, 'email', recipient.notifyEmail, Boolean(recipient.email))) {
+    if (wantsChannel(channel, 'email', delivery.notifyEmail, Boolean(recipient.email))) {
+      const message = rendered;
       const result = await sendMail({
         to: recipient.email,
         subject: message.subject,
         html: message.html,
         text: message.text,
         eventId: event.id,
-        templateKey: input.templateKey ?? 'adhoc',
+        templateKey,
         ics,
       });
       emailId = result.id;
@@ -1225,13 +1261,16 @@ export async function sendCampaign(input: CampaignInput): Promise<SendOutcome> {
 
     let smsId: string | null = null;
     let smsSent = false;
-    if (wantsChannel(channel, 'sms', recipient.notifySms, Boolean(recipient.phone))) {
+    if (
+      wantsChannel(channel, 'sms', delivery.notifySms, Boolean(recipient.phone)) &&
+      (await maySendSmsNow(recipient.phone!, delivery))
+    ) {
       const smsText = renderSmsText(input.smsBody, input.bodyMarkdown, vars);
       const result = await sendSms({
         to: recipient.phone!,
         body: smsText,
         eventId: event.id,
-        templateKey: input.templateKey ?? 'adhoc',
+        templateKey,
       });
       smsId = result.id;
       smsSent = result.sent;
@@ -1252,6 +1291,135 @@ export type PreviewResult = {
   unknown: string[];
 };
 
+export type ParticipantEmailPreview = {
+  recipient: Pick<Recipient, 'participantId' | 'userId' | 'email' | 'name' | 'notifyEmail'>;
+  message: RenderedMessage;
+  unknown: string[];
+  /** A real credential is minted only during dispatch, never while an agent is previewing copy. */
+  dynamicFields: string[];
+};
+
+async function requireParticipantEmailRecipient(
+  eventId: string,
+  participantId: string,
+): Promise<Recipient> {
+  const [recipient] = await resolveRecipients(eventId, {
+    kind: 'manual',
+    participantIds: [participantId],
+  });
+  if (!recipient) throw notFound('Recipient');
+  if (!recipient.notifyEmail) {
+    throw invalid('That recipient has email notifications disabled');
+  }
+  if (!recipient.email) throw invalid('That recipient does not have an email address');
+  return recipient;
+}
+
+/**
+ * The event-scoped, email-only boundary used by agent mail.
+ *
+ * It deliberately does not call `previewCampaign(..., { channel: 'email' })`: a forced organizer
+ * campaign may override the email preference, while an autonomous sender must fail closed when the
+ * person has disabled email. The target is a participant id already associated with the event, not
+ * an address supplied by the caller, so this cannot become an arbitrary-address relay.
+ */
+export async function previewParticipantEmail(input: {
+  eventId: string;
+  participantId: string;
+  subject: string;
+  bodyMarkdown: string;
+}): Promise<ParticipantEmailPreview> {
+  const [{ branding }, recipient] = await Promise.all([
+    loadCommsContext(input.eventId),
+    requireParticipantEmailRecipient(input.eventId, input.participantId),
+  ]);
+  const requestsCredential = requestsPortalLink(input.subject, input.bodyMarkdown, null);
+  const vars = {
+    ...recipient.vars,
+    // Never mint a live sign-in token for an agent preview. The source and rendered copy are bound
+    // into the confirmation digest; the credential itself is filled only inside the send boundary.
+    'portal.link': `${appUrl()}/portal`,
+  };
+  return {
+    recipient: {
+      participantId: recipient.participantId,
+      userId: recipient.userId,
+      email: recipient.email,
+      name: recipient.name,
+      notifyEmail: recipient.notifyEmail,
+    },
+    message: renderMessage(branding, input.subject, input.bodyMarkdown, vars),
+    unknown: [
+      ...unknownVariables(input.subject),
+      ...unknownVariables(input.bodyMarkdown),
+    ].filter((path, index, all) => all.indexOf(path) === index),
+    dynamicFields: requestsCredential ? ['portal.link'] : [],
+  };
+}
+
+/**
+ * Dispatches one confirmed agent message through the ordinary mail boundary. `sendMail` owns the
+ * audit row, transport selection, and live-transport magic-link redaction. The participant and
+ * preference are resolved again here so a stale preview cannot send after either has changed.
+ */
+export async function sendParticipantEmail(input: {
+  eventId: string;
+  participantId: string;
+  subject: string;
+  bodyMarkdown: string;
+  templateKey: string;
+  expectedRecipientEmail: string;
+  expectedPreviewSubject: string;
+  expectedPreviewBodyText: string;
+}): Promise<{
+  recipient: Pick<Recipient, 'participantId' | 'email' | 'name'>;
+  message: Pick<RenderedMessage, 'subject' | 'text'>;
+  logId: string;
+  sent: boolean;
+}> {
+  const [{ branding, event }, recipient] = await Promise.all([
+    loadCommsContext(input.eventId),
+    requireParticipantEmailRecipient(input.eventId, input.participantId),
+  ]);
+  const previewMessage = renderMessage(branding, input.subject, input.bodyMarkdown, {
+    ...recipient.vars,
+    'portal.link': `${appUrl()}/portal`,
+  });
+  if (
+    recipient.email !== input.expectedRecipientEmail ||
+    previewMessage.subject !== input.expectedPreviewSubject ||
+    previewMessage.text !== input.expectedPreviewBodyText
+  ) {
+    throw invalid('The recipient or rendered message changed after confirmation; preview it again');
+  }
+  const vars = await withPortalLink(
+    recipient,
+    input.eventId,
+    input.subject,
+    input.bodyMarkdown,
+    null,
+  );
+  const message = renderMessage(branding, input.subject, input.bodyMarkdown, vars);
+  const result = await sendMail({
+    to: recipient.email,
+    subject: message.subject,
+    html: message.html,
+    text: message.text,
+    eventId: event.id,
+    templateKey: input.templateKey,
+  });
+  return {
+    recipient: {
+      participantId: recipient.participantId,
+      email: recipient.email,
+      name: recipient.name,
+    },
+    message: { subject: message.subject, text: message.text },
+    logId: result.id,
+    sent: result.sent,
+  };
+}
+
 /** Preview renders against a *real* recipient, so an empty merge field is visible before send. */
 export async function previewCampaign(input: {
   eventId: string;
@@ -1271,12 +1439,14 @@ export async function previewCampaign(input: {
   const unknown = [
     ...unknownVariables(input.subject),
     ...unknownVariables(input.bodyMarkdown),
+    ...unknownVariables(input.smsBody ?? ''),
   ].filter((path, index, all) => all.indexOf(path) === index);
 
   const channelCounts = { email: 0, sms: 0, none: 0 };
   for (const row of recipients) {
-    const wantEmail = wantsChannel(channel, 'email', row.notifyEmail, Boolean(row.email));
-    const wantSms = wantsChannel(channel, 'sms', row.notifySms, Boolean(row.phone));
+    const delivery = await recipientDelivery(row, input.eventId, 'adhoc');
+    const wantEmail = wantsChannel(channel, 'email', delivery.notifyEmail, Boolean(row.email));
+    const wantSms = wantsChannel(channel, 'sms', delivery.notifySms, Boolean(row.phone));
     if (wantEmail) channelCounts.email += 1;
     if (wantSms) channelCounts.sms += 1;
     if (!wantEmail && !wantSms) channelCounts.none += 1;
@@ -1321,13 +1491,14 @@ async function sendTemplated(input: {
   const smsBodyTemplate = stored?.smsBody ?? fallback?.smsBody ?? null;
 
   const base = { ...input.recipient.vars, ...(input.extraVars ?? {}) };
-  const withLink = PORTAL_LINK_PATTERN.test(subject) || PORTAL_LINK_PATTERN.test(body)
+  const withLink = requestsPortalLink(subject, body, smsBodyTemplate)
     ? { ...base, 'portal.link': await mintPortalLink(input.recipient.userId, input.eventId) }
     : base;
+  const delivery = await recipientDelivery(input.recipient, input.eventId, input.key);
 
   let emailId: string | null = null;
   let emailSent = false;
-  if (input.recipient.notifyEmail && input.recipient.email) {
+  if (delivery.notifyEmail && input.recipient.email) {
     const message = renderMessage(branding, subject, body, withLink);
     const result = await sendMail({
       to: input.recipient.email,
@@ -1344,7 +1515,10 @@ async function sendTemplated(input: {
 
   let smsId: string | null = null;
   let smsSent = false;
-  if (input.recipient.notifySms && input.recipient.phone) {
+  if (
+    input.recipient.phone &&
+    (await maySendSmsNow(input.recipient.phone, delivery))
+  ) {
     const result = await sendSms({
       to: input.recipient.phone,
       body: renderSmsText(smsBodyTemplate, body, withLink),
@@ -1855,6 +2029,8 @@ export async function runDraftDeadlineReminders(
         name: user.name,
         firstName: user.firstName,
         phone: user.phone,
+        phoneVerifiedAt: user.phoneVerifiedAt,
+        phoneVerificationTransport: user.phoneVerificationTransport,
         notifyEmail: user.notifyEmail,
         notifySms: user.notifySms,
       })
@@ -1867,7 +2043,15 @@ export async function runDraftDeadlineReminders(
     const bodyMarkdown = stored?.bodyMarkdown ?? fallback.bodyMarkdown;
 
     for (const person of people) {
-      const alreadyEmailed = person.notifyEmail
+      const delivery = await resolveRecipientDelivery({
+        userId: person.id,
+        eventId: row.eventId,
+        templateKey: 'form.deadline',
+        baseEmail: person.notifyEmail,
+        baseSms: person.notifySms,
+        phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
+      });
+      const alreadyEmailed = delivery.notifyEmail
         ? await db
             .select({ id: emailLog.id })
             .from(emailLog)
@@ -1880,7 +2064,7 @@ export async function runDraftDeadlineReminders(
             )
             .limit(1)
         : [];
-      const alreadyTexted = person.notifySms && person.phone
+      const alreadyTexted = delivery.notifySms && person.phone
         ? await db
             .select({ id: smsLog.id })
             .from(smsLog)
@@ -1894,8 +2078,11 @@ export async function runDraftDeadlineReminders(
             .limit(1)
         : [];
 
-      const wantEmail = person.notifyEmail && alreadyEmailed.length === 0;
-      const wantSms = person.notifySms && Boolean(person.phone) && alreadyTexted.length === 0;
+      const wantEmail = delivery.notifyEmail && alreadyEmailed.length === 0;
+      const wantSms =
+        Boolean(person.phone) &&
+        alreadyTexted.length === 0 &&
+        (await maySendSmsNow(person.phone!, delivery, now));
       if (!wantEmail && !wantSms) continue;
 
       const vars: TemplateVars = {
@@ -2033,6 +2220,26 @@ export async function mailForRecipient(
 // ---------------------------------------------------------------------------
 
 export type SmsMailboxEntry = typeof smsLog.$inferSelect;
+
+/** A duplicated phone number cannot safely identify which account owns a credential. */
+export function uniqueSmsRecipientEmail(rows: ReadonlyArray<{ email: string }>): string | null {
+  return rows.length === 1 ? rows[0].email : null;
+}
+
+/**
+ * Resolves the account whose credential an SMS body could carry. Phone numbers are normalized but
+ * deliberately not unique, so anything other than one exact match is ambiguous and must fail
+ * closed at the mailbox reader. `sms_log` receives the same E.164 value read from `user.phone`.
+ */
+export async function emailForSmsRecipient(phone: string): Promise<string | null> {
+  const db = getDb();
+  const rows = await db
+    .select({ email: user.email })
+    .from(user)
+    .where(eq(user.phone, phone))
+    .limit(2);
+  return uniqueSmsRecipientEmail(rows);
+}
 
 export async function listSms(options: {
   eventId?: string | null;

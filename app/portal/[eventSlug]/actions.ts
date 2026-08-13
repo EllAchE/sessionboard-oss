@@ -6,6 +6,10 @@ import type { EventContext } from '@/lib/context';
 import { isAppError, notFound } from '@/lib/errors';
 import type { AnswerMap, AnswerValue, FormFieldSpec } from '@/lib/forms/contract';
 import { recordRevision } from '@/lib/services/content';
+import {
+  NOTIFICATION_CATEGORIES,
+  saveDeliveryPreferences,
+} from '@/lib/services/notification-preferences';
 import { addFileComment, deleteFile } from '@/lib/services/files';
 import {
   ensureParticipant,
@@ -61,6 +65,11 @@ function fail(error: unknown): FormState {
 function text(formData: FormData, key: string): string {
   const value = formData.get(key);
   return typeof value === 'string' ? value : '';
+}
+
+function channelOverride(formData: FormData, key: string): boolean | null {
+  const value = text(formData, key);
+  return value === 'on' ? true : value === 'off' ? false : null;
 }
 
 /**
@@ -132,6 +141,24 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       phone: text(formData, 'phone'),
       notifyEmail: formData.get('notifyEmail') === 'on',
       notifySms: formData.get('notifySms') === 'on',
+    });
+
+    await saveDeliveryPreferences(ctx.actor.userId, ctx.eventId, {
+      timezone: text(formData, 'notificationTimezone').trim() || null,
+      quietStart: text(formData, 'quietStart') || null,
+      quietEnd: text(formData, 'quietEnd') || null,
+      smsHourlyLimit: Number(text(formData, 'smsHourlyLimit')),
+      eventNotifyEmail: channelOverride(formData, 'eventNotifyEmail'),
+      eventNotifySms: channelOverride(formData, 'eventNotifySms'),
+      categories: Object.fromEntries(
+        NOTIFICATION_CATEGORIES.map((category) => [
+          category,
+          {
+            notifyEmail: channelOverride(formData, `category:${category}:email`),
+            notifySms: channelOverride(formData, `category:${category}:sms`),
+          },
+        ]),
+      ),
     });
 
     refresh(eventSlug);

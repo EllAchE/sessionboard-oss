@@ -30,6 +30,7 @@ export async function createRoundAction(input: {
   name: string;
   blindUntilClose?: boolean;
   anonymized?: boolean;
+  decisionQueueBar?: number;
   opensAt?: string | null;
   closesAt?: string | null;
 }): Promise<ActionResult<{ id: string }>> {

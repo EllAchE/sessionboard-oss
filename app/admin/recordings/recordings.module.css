@@ -1,0 +1,24 @@
+.page { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
+.eyebrow { font: var(--type-label); text-transform: uppercase; letter-spacing: var(--tracking-eyebrow); color: var(--text-faint); }
+.title { font: var(--type-title); color: var(--text-strong); letter-spacing: var(--tracking-tight); }
+.subtitle { font: var(--type-body); color: var(--text-muted); margin-top: var(--space-1); max-width: var(--prose-max); }
+.list { display: flex; flex-direction: column; gap: var(--space-4); }
+.row { display: flex; flex-direction: column; gap: var(--space-4); }
+.rowHead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+.titleLine { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.ref { font: var(--type-mono); font-size: var(--text-2xs); color: var(--text-faint); }
+.sessionTitle { font: var(--type-heading); color: var(--text-strong); }
+.meta, .hint { font: var(--type-label); color: var(--text-faint); margin-top: var(--space-1); }
+.source { font: var(--type-body); color: var(--text-muted); margin-top: var(--space-2); overflow-wrap: anywhere; }
+.source a { color: var(--text-accent); }
+.gate { font: var(--type-label); color: var(--status-warning-fg); margin-top: var(--space-2); }
+.rowActions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.attachGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.attachPanel { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); min-width: 0; padding: var(--space-3); border: var(--border-width) solid var(--border-hairline); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.label { font: var(--type-label); color: var(--text-strong); }
+.inline { display: flex; align-items: center; gap: var(--space-2); width: 100%; }
+.inline > :first-child { flex: 1 1 auto; min-width: 0; }
+.fileInput { display: none; }
+.empty { display: flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--space-24); color: var(--text-muted); font: var(--type-body); }
+@media (max-width: 900px) { .attachGrid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .inline, .rowActions { align-items: stretch; flex-direction: column; } }

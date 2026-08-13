@@ -497,9 +497,10 @@ before send. Speaker-authored values pass through the untrusted Markdown rendere
 an email.
 
 Reminder jobs are idempotent. Task reminders compare the configured cadence with
-`last_reminded_at`; deadline reminders check the mail log. Cloudflare Cron can call the same route a
-self-hoster invokes from an ordinary crontab. At-least-once scheduling should not produce duplicate
-mail.
+`last_reminded_at`; deadline reminders check the mail log. Cloudflare's hourly Cron Trigger enters
+through a custom Worker handler and calls OpenNext's generated fetch handler at `/api/cron`
+in-process. A self-hoster invokes the same route from an ordinary crontab. At-least-once scheduling
+should not produce duplicate mail.
 
 One cold-path rehearsal found a serious event-boundary bug: the communications pages trusted an
 event query parameter, and an organizer could see another event's mailbox or trigger its reminders.

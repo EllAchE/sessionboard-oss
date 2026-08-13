@@ -1,5 +1,5 @@
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getDb } from '../db/client';
 import { event, magicToken, membership, sessionCookie, user } from '../db/schema';
 import type { Actor, EventContext, MembershipRole } from './context';
@@ -7,6 +7,7 @@ import {
   demoEventSlugs,
   magicLinkPrecheck,
   membershipsAreDemoOnly,
+  type LinkDeliveryTransport,
   type LinkVisibility,
 } from './demo-access';
 import { appUrl } from './env';
@@ -14,6 +15,12 @@ import { forbidden, invalid, notFound, unauthorized } from './errors';
 import { hashToken, randomToken } from './ids';
 import { activeTransportName, sendMail } from './mail';
 import { escapeMarkdownText, renderMarkdown } from './markdown';
+import {
+  consumeRateLimit,
+  enforceMagicLinkRateLimit,
+  MAGIC_LINK_IP_RATE_LIMIT,
+  requestClientAddress,
+} from './rate-limit';
 
 /**
  * Magic links everywhere, passwords nowhere (`T-4a`). A speaker touches this product perhaps four
@@ -83,6 +90,13 @@ export type MagicLinkRequest = {
 export async function requestMagicLink(
   request: MagicLinkRequest,
 ): Promise<{ email: string; link: string; delivered: boolean }> {
+  await Promise.all([
+    enforceMagicLinkRateLimit(normalizeEmail(request.email)),
+    consumeRateLimit(
+      requestClientAddress({ headers: await headers() }),
+      MAGIC_LINK_IP_RATE_LIMIT,
+    ),
+  ]);
   const db = getDb();
   const account = await ensureUserAccount(request.email, request.name);
   const token = randomToken();
@@ -149,12 +163,18 @@ async function isSeededDemoAccount(email: string): Promise<boolean> {
 }
 
 /**
- * The one place that decides whether a freshly minted link may be rendered to an unauthenticated
- * visitor. Every caller that puts a link on a public page goes through this and nothing else.
+ * The one place that decides whether a freshly minted link may be rendered outside the recipient's
+ * delivered copy. Every caller that puts a link on a public or organizer-readable page goes through
+ * this and nothing else. `transport` names the channel carrying that copy; mail is the default, and
+ * the SMS archive supplies its own transport so a live Twilio send cannot inherit mail's log-mode
+ * exception.
  * Returns why it is allowed — the two reasons want different words on screen — or `null`.
  */
-export async function magicLinkMayBeShown(email: string): Promise<LinkVisibility> {
-  const precheck = magicLinkPrecheck(activeTransportName(), email);
+export async function magicLinkMayBeShown(
+  email: string,
+  transport: LinkDeliveryTransport = activeTransportName(),
+): Promise<LinkVisibility> {
+  const precheck = magicLinkPrecheck(transport, email);
   if (precheck !== 'ask-the-database') return precheck;
   return (await isSeededDemoAccount(email)) ? 'seeded-demo-account' : null;
 }

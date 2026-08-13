@@ -603,6 +603,13 @@ describe('accept and decline queues', () => {
     expect(decisionStage(row({ id: 'low', averageScore: 2.9 }))).toBe('decline');
   });
 
+  it('uses the selected round bar instead of a hard-coded midpoint', () => {
+    const borderline = row({ id: 'borderline', averageScore: 3.4 });
+    expect(decisionStage(borderline, 3.5)).toBe('decline');
+    expect(decisionStage(borderline, 3.4)).toBe('accept');
+    expect(decisionStage(borderline, 2.5)).toBe('accept');
+  });
+
   it('waits for every review before staging anything', () => {
     expect(decisionStage(row({ id: 'half', completedCount: 1 }))).toBeNull();
     expect(decisionStage(row({ id: 'none', assignedCount: 0, completedCount: 0 }))).toBeNull();

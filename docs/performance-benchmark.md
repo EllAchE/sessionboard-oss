@@ -77,12 +77,13 @@ went green.
 Three limits on what these numbers can be used for. They are stated first because they matter more
 than the tables.
 
-**The deployed Worker at `cicero.lhar8771.workers.dev` was not measured.** The machine running this
-benchmark has no DNS route to it — `curl` fails to resolve the name, sandboxed and unsandboxed alike.
-So there are no deployed numbers here, and none have been extrapolated from the local ones. The
-free-plan `error code: 1102` behaviour the README describes remains, as far as this document is
-concerned, an unmeasured claim. What follows says something about how much CPU the app needs; it says
-nothing directly about how Cloudflare meters it.
+**The deployed Worker at `cicero.elehche.workers.dev` was not measured during this benchmark.** The
+original run targeted an incorrect Workers account subdomain, so its DNS failure says nothing about
+the live deployment. The corrected host was health-checked separately, but there are still no
+deployed latency numbers here and none have been extrapolated from the local ones. The free-plan
+`error code: 1102` behaviour the README describes remains, as far as this document is concerned, an
+unmeasured production observation rather than something reproduced by this run. What follows says
+something about how much CPU the app needs; it says nothing directly about how Cloudflare meters it.
 
 **The benchmarking machine was busy and shared.** Load average sat between 3 and 5 on four cores
 throughout, from unrelated work, and the load generator itself competes with the server and with

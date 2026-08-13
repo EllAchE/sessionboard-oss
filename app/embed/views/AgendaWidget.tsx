@@ -16,7 +16,7 @@ import {
   type PublicBundle,
   type PublicSession,
 } from '../model';
-import { SessionChips, ShowMore, SpeakerRoster } from './parts';
+import { RecordingLink, SessionChips, ShowMore, SpeakerRoster } from './parts';
 import styles from '../embed.module.css';
 
 /** One row of the grid is a quarter hour; the gutter is labelled on the half hour. */
@@ -180,6 +180,7 @@ export function AgendaWidget({
               Topics: {open.tags.map((tag) => tag.name).join(', ') || 'Not specified'}
             </p>
           </div>
+          <RecordingLink session={open} />
           {open.speakers.length > 0 ? (
             <div className={styles.detailSection}>
               <span className={styles.detailSectionTitle}>Speakers</span>
@@ -334,6 +335,7 @@ export function AgendaWidget({
               <h3 className={styles.sessionTitle}>{session.title}</h3>
               <SessionChips session={session} options={options} />
               <SpeakerRoster session={session} speakerBase={speakerBase} />
+              <RecordingLink session={session} />
               {options.showDescription ? (
                 <ShowMore text={session.descriptionText} html={session.descriptionHtml} />
               ) : null}

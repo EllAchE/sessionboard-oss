@@ -15,6 +15,7 @@ function row(partial: Partial<SponsorRecord> & { name: string }): SponsorRecord 
   return {
     id: `sponsor-${seq}`,
     kind: 'sponsor' as SponsorKind,
+    status: 'published',
     tier: null,
     websiteUrl: null,
     description: null,

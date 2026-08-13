@@ -7,6 +7,7 @@ import {
   EMPTY_FACETS,
   FacetPanel,
   SearchField,
+  RecordingLink,
   SessionChips,
   SessionFacts,
   ShowMore,
@@ -90,6 +91,7 @@ export function SessionsWidget({
               />
               <SessionChips session={session} options={options} />
               <SpeakerRoster session={session} speakerBase={speakerBase} />
+              <RecordingLink session={session} />
               {options.showDescription ? (
                 <ShowMore
                   text={session.descriptionText}

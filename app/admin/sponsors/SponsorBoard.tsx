@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, ChevronUp, ImagePlus, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, EyeOff, ImagePlus, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -24,6 +24,7 @@ import {
   createSponsorAction,
   removeSponsorAction,
   reorderSponsorsAction,
+  setSponsorStatusAction,
   updateSponsorAction,
 } from './actions';
 import type { ActionResult, SponsorGroup, SponsorWire } from './types';
@@ -192,6 +193,14 @@ export function SponsorBoard({
                     onEdit={() => openEdit(row)}
                     onRemove={() => setConfirming(row)}
                     onMove={(delta) => move(group, index, delta)}
+                    onStatusChange={(status) => {
+                      startTransition(async () => {
+                        settle(
+                          await setSponsorStatusAction(row.id, status),
+                          status === 'published' ? `${row.name} published` : `${row.name} unpublished`,
+                        );
+                      });
+                    }}
                     onChanged={() => router.refresh()}
                     onError={(message) => toast({ title: message, tone: 'danger' })}
                   />
@@ -352,6 +361,7 @@ function SponsorRow({
   onEdit,
   onRemove,
   onMove,
+  onStatusChange,
   onChanged,
   onError,
 }: {
@@ -363,6 +373,7 @@ function SponsorRow({
   onEdit: () => void;
   onRemove: () => void;
   onMove: (delta: number) => void;
+  onStatusChange: (status: SponsorWire['status']) => void;
   onChanged: () => void;
   onError: (message: string) => void;
 }) {
@@ -430,6 +441,9 @@ function SponsorRow({
       <div className={styles.rowMain}>
         <div className={styles.rowTitle}>
           <span className={styles.rowName}>{row.name}</span>
+          <Badge tone={row.status === 'published' ? 'success' : 'neutral'}>
+            {row.status === 'published' ? 'Published' : 'Draft'}
+          </Badge>
           {row.tier ? <Badge>{row.tier}</Badge> : null}
           {row.boothLocation ? (
             <span className={styles.rowMeta}>Booth {row.boothLocation}</span>
@@ -445,6 +459,14 @@ function SponsorRow({
 
       {canManage ? (
         <div className={styles.rowActions}>
+          <Button
+            variant={row.status === 'published' ? 'secondary' : 'primary'}
+            disabled={busy}
+            iconLeft={row.status === 'published' ? <EyeOff size={15} /> : <Eye size={15} />}
+            onClick={() => onStatusChange(row.status === 'published' ? 'draft' : 'published')}
+          >
+            {row.status === 'published' ? 'Unpublish' : 'Publish'}
+          </Button>
           <IconButton
             label={`Move ${row.name} up`}
             disabled={busy || index === 0}

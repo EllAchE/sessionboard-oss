@@ -545,7 +545,7 @@ export function EmbedStudio({
             <CardHeader>
               <CardTitle>Every widget type</CardTitle>
               <CardDescription>
-                The same filters, styling, and field choices applied to each of the five widgets.
+                The same filters, styling, and field choices applied to each widget.
                 Copy the snippet or the shareable URL for whichever ones your site needs.
               </CardDescription>
             </CardHeader>

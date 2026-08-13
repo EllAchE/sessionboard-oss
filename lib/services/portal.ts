@@ -27,10 +27,17 @@ import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
 import { personNameColumns, splitPersonName } from '../person-name';
+import { e164PhoneInput } from '../phone';
 import { normalizeAccent } from '../portal-appearance';
 import { parseSpeakerName } from '../speaker-name';
+import {
+  blockSmsBeforePreferenceChange,
+  grantSmsAfterPreferenceChange,
+} from '../sms/consent';
+import { activeSmsTransportName } from '../sms';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
+import { phoneVerificationIsCurrent } from './notification-preferences';
 
 /**
  * `S-1`–`S-13`. Everything the speaker-facing surface reads or writes. The organizer side never
@@ -163,7 +170,7 @@ export const profileSchema = z
     dietaryNotes: z.string().trim().max(1000).optional(),
     accessibilityNotes: z.string().trim().max(1000).optional(),
     links: z.array(linkSchema).max(8, 'Eight links is plenty').default([]),
-    phone: z.string().trim().max(32).optional(),
+    phone: e164PhoneInput.optional(),
     notifyEmail: z.boolean().optional(),
     notifySms: z.boolean().optional(),
   })
@@ -243,6 +250,41 @@ export async function updateProfile(
     data.notifyEmail !== undefined ||
     data.notifySms !== undefined
   ) {
+    const smsChanged = data.phone !== undefined || data.notifySms !== undefined;
+    let nextSms: { phone: string | null; enabled: boolean; phoneChanged: boolean } | null = null;
+    if (smsChanged) {
+      const currentUser = await db.query.user.findFirst({
+        where: eq(user.id, row.userId),
+        columns: {
+          phone: true,
+          phoneVerifiedAt: true,
+          phoneVerificationTransport: true,
+          notifySms: true,
+        },
+      });
+      if (!currentUser) throw notFound('Your account');
+      const nextPhone = data.phone !== undefined ? blankToNull(data.phone) : currentUser.phone;
+      nextSms = {
+        phone: nextPhone,
+        enabled: Boolean(nextPhone) && (data.notifySms ?? currentUser.notifySms),
+        phoneChanged: nextPhone !== currentUser.phone,
+      };
+      if (
+        nextSms.enabled &&
+        (nextSms.phone !== currentUser.phone ||
+          !phoneVerificationIsCurrent(currentUser, activeSmsTransportName()))
+      ) {
+        throw invalid('Verify this phone number before enabling text messages', {
+          phone: 'Request and enter the verification code first',
+        });
+      }
+      await blockSmsBeforePreferenceChange({
+        previousPhone: currentUser.phone,
+        nextPhone: nextSms.phone,
+        nextEnabled: nextSms.enabled,
+        source: 'speaker_profile',
+      });
+    }
     /**
      * `name` is recomputed from the halves rather than edited beside them. Writing all three
      * through one helper is what keeps the join honest: forty read sites still read `user.name`,
@@ -256,13 +298,23 @@ export async function updateProfile(
       .update(user)
       .set({
         ...(names ?? {}),
-        ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
+        ...(nextSms
+          ? {
+              phone: nextSms.phone,
+              ...(nextSms.phoneChanged
+                ? { phoneVerifiedAt: null, phoneVerificationTransport: null }
+                : {}),
+            }
+          : {}),
         ...(data.notifyEmail !== undefined ? { notifyEmail: data.notifyEmail } : {}),
-        ...(data.notifySms !== undefined ? { notifySms: data.notifySms } : {}),
+        ...(nextSms ? { notifySms: nextSms.enabled } : {}),
       })
       // The account behind *this participant*, not behind whoever is holding the session. They are
       // the same person on the portal's own path, and are not when an organizer edits the roster.
       .where(eq(user.id, row.userId));
+    if (nextSms) {
+      await grantSmsAfterPreferenceChange(nextSms.phone, nextSms.enabled, 'speaker_profile');
+    }
   }
 
   return row;

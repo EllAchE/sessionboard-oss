@@ -25,7 +25,7 @@
   })();
 
   var RESERVED = { ciceroEmbed: 1, event: 1, height: 1 };
-  var VIEWS = { agenda: 1, itinerary: 1, sessions: 1, speakers: 1, gallery: 1 };
+  var VIEWS = { agenda: 1, itinerary: 1, sessions: 1, speakers: 1, gallery: 1, sponsors: 1 };
 
   function buildSrc(node) {
     var view = node.getAttribute('data-cicero-embed') || 'agenda';

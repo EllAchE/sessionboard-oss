@@ -324,3 +324,12 @@ export async function saveMyNotificationPrefsAction(
     return settings.saveNotificationPrefs(ctx.actor.userId, patch);
   });
 }
+
+export async function saveMyNotificationDeliveryPrefsAction(
+  patch: settings.DeliveryPreferenceInput,
+): Promise<ActionResult<settings.NotificationPrefs>> {
+  return run(async () => {
+    const ctx = await currentEventContext();
+    return settings.saveNotificationDeliveryPrefs(ctx.actor.userId, ctx.eventId, patch);
+  });
+}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { e164PhoneInput } from '@/lib/phone';
 import { parseSpeakerName } from '@/lib/speaker-name';
 
 /**
@@ -79,6 +80,23 @@ export const speakerSchema = z
     sessions: z.array(z.object({ id: z.string(), title: z.string() })),
   })
   .describe('A speaker with at least one accepted session');
+
+export const sponsorSchema = z
+  .object({
+    id: z.string().describe('UUID'),
+    kind: z.enum(['sponsor', 'exhibitor']),
+    status: z.literal('published').describe('Public reads never expose drafts'),
+    name: z.string(),
+    tier: z.string().nullable(),
+    websiteUrl: z.string().nullable(),
+    description: z.string().nullable(),
+    boothLocation: z.string().nullable(),
+    logoUrl: z
+      .string()
+      .nullable()
+      .describe('Absolute URL of the logo for this published sponsor or exhibitor'),
+  })
+  .describe('A published sponsor or exhibitor');
 
 export const agendaSchema = z
   .object({
@@ -169,6 +187,16 @@ export const speakerListQuery = z
   })
   .strict();
 
+export const sponsorListQuery = z
+  .object({
+    kind: z.enum(['sponsor', 'exhibitor']).optional(),
+    q: queryFilter.optional().describe('Search name, tier, description, booth, and website'),
+    tier: queryFilter.optional().describe('Tier name'),
+    limit: listLimit,
+    offset: listOffset,
+  })
+  .strict();
+
 export const submissionListQuery = z
   .object({
     status: z
@@ -244,7 +272,7 @@ export const createSubmissionParticipant = z
       .string()
       .email()
       .describe("The first person is the submitter, so their address must be the signed-in speaker's"),
-    phone: z.string().max(40).nullish().describe('Mobile number, when the form asks for one'),
+    phone: e164PhoneInput.nullish().describe('Mobile number, normalized to E.164'),
     biography: z.string().max(5_000).nullish().describe('Markdown'),
     role: participantRoleKind.default('speaker'),
   })
@@ -530,7 +558,7 @@ export const updateSpeakerProfileBody = z
     dietaryNotes: z.string().max(1_000).optional(),
     accessibilityNotes: z.string().max(1_000).optional(),
     links: z.array(profileLinkSchema).max(8).optional(),
-    phone: z.string().max(32).optional(),
+    phone: e164PhoneInput.optional().describe('Mobile number; national input is stored as E.164'),
     notifyEmail: z.boolean().optional(),
     notifySms: z.boolean().optional(),
   })
@@ -754,5 +782,6 @@ export const errorResponse = z
 export type EventPayload = z.infer<typeof eventSchema>;
 export type SessionPayload = z.infer<typeof sessionSchema>;
 export type SpeakerPayload = z.infer<typeof speakerSchema>;
+export type SponsorPayload = z.infer<typeof sponsorSchema>;
 export type AgendaPayload = z.infer<typeof agendaSchema>;
 export type SubmissionPayload = z.infer<typeof submissionSchema>;

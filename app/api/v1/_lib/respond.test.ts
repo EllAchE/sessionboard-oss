@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { parseBody, parseQuery } from './respond';
+import { errorJson, parseBody, parseQuery } from './respond';
+import { rateLimited } from '@/lib/errors';
 import {
   createSubmissionBody,
   sessionListQuery,
@@ -144,5 +145,16 @@ describe('published request schemas', () => {
     expect(createSubmissionBody.safeParse({ email: 'ada@example.com', answers }).success).toBe(
       false,
     );
+  });
+});
+
+describe('rate-limit responses', () => {
+  it('returns the standard error and Retry-After header', async () => {
+    const response = errorJson(rateLimited('Slow down', 18));
+    expect(response.status).toBe(429);
+    expect(response.headers.get('retry-after')).toBe('18');
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'rate_limited', details: { retryAfterSeconds: '18' } },
+    });
   });
 });

@@ -272,7 +272,7 @@ export function Composer(props: ComposerProps) {
                 >
                   <option value="auto">Auto — each recipient&rsquo;s own preference</option>
                   <option value="email">Force email, for everyone with an address</option>
-                  <option value="sms">Force SMS, for everyone with a phone number</option>
+                  <option value="sms">SMS, for everyone who opted in</option>
                 </Select>
               </div>
 
