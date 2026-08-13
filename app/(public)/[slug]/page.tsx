@@ -38,10 +38,18 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
 
   return (
     <PublicChrome event={event} active="home">
+      {/* `E-3`. Decorative: everything it carries is in the heading directly beneath it. */}
+      {event.bannerUrl ? (
+        <div className={styles.banner}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- a route handler serves this, not the image optimiser */}
+          <img src={event.bannerUrl} alt="" className={styles.bannerImage} />
+        </div>
+      ) : null}
       <section className={styles.hero}>
         <h1 className={styles.heroTitle}>{event.name}</h1>
         {event.tagline ? <p className={styles.heroTagline}>{event.tagline}</p> : null}
         <div className={styles.heroMeta}>
+          {event.eventType ? <span>{event.eventType}</span> : null}
           {dates ? <span>{dates}</span> : null}
           {event.venueName ? <span>{event.venueName}</span> : null}
           <span>{event.timezone.replace('_', ' ')}</span>

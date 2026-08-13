@@ -61,9 +61,22 @@ export type EventWire = {
   name: string;
   slug: string;
   tagline: string | null;
+  descriptionMarkdown: string | null;
+  eventType: string | null;
+  theme: string | null;
   timezone: string;
-  startsOn: string | null;
-  endsOn: string | null;
+  /**
+   * Wall clock in `timezone`, `YYYY-MM-DDTHH:mm` — what a `datetime-local` input reads and writes.
+   * The panel never handles the instant, so it cannot accidentally render one in the browser's zone.
+   */
+  startsAt: string;
+  endsAt: string;
+  websiteUrl: string | null;
+  venueName: string | null;
+  venueAddress: string | null;
+  /** `E-3`. Branding already uploaded, as the URL that serves it. */
+  logoUrl: string | null;
+  bannerUrl: string | null;
 };
 
 export type NotificationsWire = {

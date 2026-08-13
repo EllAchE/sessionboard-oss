@@ -10,15 +10,26 @@ import { parseSpeakerName } from '@/lib/speaker-name';
  * lives next to the validation rather than in a separate file that nobody updates.
  */
 
+/**
+ * `E-1` turned the event window into a required pair of instants. This payload is already shipped,
+ * so the change is additive rather than a replacement: `startsOn` / `endsOn` keep their exact shape
+ * — a date-only string, still declared nullable — and the instants arrive beside them as
+ * `startsAt` / `endsAt`. Anything reading the old two fields sees no difference; anything that needs
+ * the time of day now has it.
+ */
 export const eventSchema = z
   .object({
     slug: z.string().describe('URL-safe identifier for the event'),
     name: z.string(),
     tagline: z.string().nullable(),
     description: z.string().nullable().describe('Markdown'),
+    eventType: z.string().nullable().describe('Organizer-set, e.g. Conference'),
+    theme: z.string().nullable().describe('The theme of this edition, long form'),
     timezone: z.string().describe('IANA timezone, e.g. America/Los_Angeles'),
-    startsOn: z.string().nullable().describe('ISO date'),
-    endsOn: z.string().nullable().describe('ISO date'),
+    startsOn: z.string().nullable().describe('ISO date, in the event timezone'),
+    endsOn: z.string().nullable().describe('ISO date, in the event timezone'),
+    startsAt: z.string().describe('ISO 8601 instant the event starts'),
+    endsAt: z.string().describe('ISO 8601 instant the event ends'),
     websiteUrl: z.string().nullable(),
     venueName: z.string().nullable(),
     venueAddress: z.string().nullable(),

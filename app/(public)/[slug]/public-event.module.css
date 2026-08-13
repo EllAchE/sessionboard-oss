@@ -23,6 +23,38 @@
   flex-wrap: wrap;
 }
 
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+/* E-3 — the square mark, beside the event name in the header. */
+.brandLogo {
+  flex: 0 0 auto;
+  width: var(--space-8);
+  height: var(--space-8);
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+/* E-3 — the wide image, roughly 3:1, above the hero. */
+.banner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.bannerImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: var(--border-width) solid var(--border-hairline);
+}
+
 .brand {
   display: flex;
   flex-direction: column;

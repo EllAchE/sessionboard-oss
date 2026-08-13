@@ -25,15 +25,22 @@ export function PublicChrome({
     <div className={styles.page}>
       <header className={styles.bar}>
         <div className={styles.barInner}>
-          <span className={styles.brand}>
-            <Link href={`/${event.slug}`} className={styles.brandName}>
-              {event.name}
-            </Link>
-            {dates || event.venueName ? (
-              <span className={styles.brandMeta}>
-                {[dates, event.venueName].filter(Boolean).join(' · ')}
-              </span>
+          <span className={styles.brandRow}>
+            {/* `E-3`. Decorative: the event name is right beside it and reads the same. */}
+            {event.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- a route handler serves this, not the image optimiser
+              <img src={event.logoUrl} alt="" className={styles.brandLogo} />
             ) : null}
+            <span className={styles.brand}>
+              <Link href={`/${event.slug}`} className={styles.brandName}>
+                {event.name}
+              </Link>
+              {dates || event.venueName ? (
+                <span className={styles.brandMeta}>
+                  {[dates, event.venueName].filter(Boolean).join(' · ')}
+                </span>
+              ) : null}
+            </span>
           </span>
           <nav className={styles.nav}>
             {TABS.map((tab) => (

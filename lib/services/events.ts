@@ -1,5 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { z } from 'zod';
 import { getDb } from '@/db/client';
 import { event, membership } from '@/db/schema';
 import { grantRole, requireCurrentActor } from '@/lib/auth';
@@ -7,6 +8,13 @@ import { requireEventContext } from '@/lib/auth';
 import type { EventContext, MembershipRole } from '@/lib/context';
 import { requireCapability } from '@/lib/context';
 import { conflict, invalid, notFound } from '@/lib/errors';
+import {
+  DEFAULT_TIMEZONE,
+  isValidTimezone,
+  resolveEventWindow,
+  utcToLocalInput,
+  type EventWindow,
+} from '@/lib/event-dates';
 import { slugify } from '@/lib/ids';
 
 /**
@@ -22,8 +30,11 @@ export type EventSummary = {
   name: string;
   tagline: string | null;
   timezone: string;
-  startsOn: string | null;
-  endsOn: string | null;
+  /** The instants. `startsOn` / `endsOn` are their date-only projection into `timezone`. */
+  startsAt: Date;
+  endsAt: Date;
+  startsOn: string;
+  endsOn: string;
   roles: MembershipRole[];
 };
 
@@ -48,6 +59,8 @@ export async function listEventsForUser(userId: string): Promise<EventSummary[]>
     name: row.name,
     tagline: row.tagline,
     timezone: row.timezone,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
     startsOn: row.startsOn,
     endsOn: row.endsOn,
     roles: byEvent.get(row.id) ?? [],
@@ -126,6 +139,8 @@ export async function listPublicEvents(limit = 8): Promise<EventSummary[]> {
     name: row.name,
     tagline: row.tagline,
     timezone: row.timezone,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
     startsOn: row.startsOn,
     endsOn: row.endsOn,
     roles: [],
@@ -144,14 +159,176 @@ export async function getEventBySlug(slug: string) {
   return row;
 }
 
+// ---------------------------------------------------------------------------
+// `E-1`, `E-2` — what an event write may say
+// ---------------------------------------------------------------------------
+
+/**
+ * There was no validation on this path at all: `createEvent` checked a name and a slug, the settings
+ * action carried a lone `endsOn < startsOn` comparison that a blank date skipped, and the create form
+ * had neither. Both paths now run the same schema, so a rule cannot hold on one screen and not the
+ * other.
+ *
+ * `startsAt` / `endsAt` arrive as wall-clock readings — `2026-10-12T09:00`, exactly what a
+ * `datetime-local` input submits — and are interpreted in the event's own timezone rather than the
+ * browser's. `resolveEventWindow` turns the pair into the two instants and their date-only
+ * projection; nothing else in the codebase writes those four columns.
+ */
+
+/** Blank means "clear it". A field the caller omitted is left alone; see `updateEvent`. */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Keep this under ${max} characters`)
+    .transform((value) => value || null)
+    .nullable()
+    .transform((value) => value ?? null);
+
+const WALL_CLOCK = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/;
+
+const wallClock = (what: string) =>
+  z
+    .string()
+    .trim()
+    .regex(WALL_CLOCK, `Give a ${what} date and time`);
+
+/**
+ * `websiteUrl` gets a scheme when the organizer omitted one — people type `example.com` — and is
+ * then held to `http`/`https`, because the value is rendered as a link on the public page and a
+ * `javascript:` URL there is a stored XSS.
+ */
+const websiteUrl = z
+  .string()
+  .trim()
+  .transform((value) => (value && !/^[a-z][a-z0-9+.-]*:/i.test(value) ? `https://${value}` : value))
+  .refine((value) => {
+    if (!value) return true;
+    try {
+      return ['http:', 'https:'].includes(new URL(value).protocol);
+    } catch {
+      return false;
+    }
+  }, 'Give a full web address, like https://example.com')
+  .transform((value) => value || null)
+  .nullable()
+  .transform((value) => value ?? null);
+
+const timezoneField = z
+  .string()
+  .trim()
+  .refine(isValidTimezone, 'Use an IANA timezone name, like America/Los_Angeles');
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const fileRef = z
+  .string()
+  .trim()
+  .nullable()
+  .transform((value) => value || null)
+  .refine((value) => value === null || UUID.test(value), 'That is not a file reference');
+
+const eventName = z
+  .string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(200, 'Keep the name under 200 characters');
+
+/** The metadata half of `E-2`. Shared by create and update; every field is optional on both. */
+const metadataShape = {
+  tagline: optionalText(200),
+  descriptionMarkdown: optionalText(20_000),
+  eventType: optionalText(80),
+  theme: optionalText(4_000),
+  websiteUrl,
+  venueName: optionalText(200),
+  venueAddress: optionalText(400),
+  logoFileId: fileRef,
+  bannerFileId: fileRef,
+};
+
+/** Every key `metadataShape` covers, for the patch builder. */
+const METADATA_KEYS = Object.keys(metadataShape);
+
+const createEventSchema = z.object({
+  name: eventName,
+  slug: z.string().trim().max(200).nullable().optional(),
+  timezone: timezoneField.default(DEFAULT_TIMEZONE),
+  startsAt: wallClock('start'),
+  endsAt: wallClock('end'),
+  tagline: metadataShape.tagline.optional(),
+  descriptionMarkdown: metadataShape.descriptionMarkdown.optional(),
+  eventType: metadataShape.eventType.optional(),
+  theme: metadataShape.theme.optional(),
+  websiteUrl: metadataShape.websiteUrl.optional(),
+  venueName: metadataShape.venueName.optional(),
+  venueAddress: metadataShape.venueAddress.optional(),
+  logoFileId: metadataShape.logoFileId.optional(),
+  bannerFileId: metadataShape.bannerFileId.optional(),
+});
+
+const updateEventSchema = z
+  .object({
+    name: eventName,
+    timezone: timezoneField,
+    startsAt: wallClock('start'),
+    endsAt: wallClock('end'),
+    ...metadataShape,
+  })
+  .partial();
+
+/** Exported for the tests: the write path's rules should be checkable without a database. */
+export const eventWriteSchemas = { create: createEventSchema, update: updateEventSchema };
+
 export type CreateEventInput = {
   name: string;
   slug?: string | null;
-  tagline?: string | null;
   timezone?: string | null;
-  startsOn?: string | null;
-  endsOn?: string | null;
+  /** Wall clock in `timezone`, `YYYY-MM-DDTHH:mm`. Required — `E-1`. */
+  startsAt: string;
+  endsAt: string;
+  tagline?: string | null;
+  descriptionMarkdown?: string | null;
+  eventType?: string | null;
+  theme?: string | null;
+  websiteUrl?: string | null;
+  venueName?: string | null;
+  venueAddress?: string | null;
+  logoFileId?: string | null;
+  bannerFileId?: string | null;
 };
+
+export type UpdateEventInput = Partial<CreateEventInput>;
+
+/** Zod's field-keyed issues become `AppError.details`, which the panels show under the field. */
+function parse<T extends z.ZodTypeAny>(schema: T, input: unknown): z.output<T> {
+  const result = schema.safeParse(input);
+  if (result.success) return result.data;
+  const details: Record<string, string> = {};
+  for (const issue of result.error.issues) {
+    const key = issue.path[0];
+    if (typeof key === 'string' && !details[key]) details[key] = issue.message;
+  }
+  const first = result.error.issues[0];
+  throw invalid(first?.message ?? 'That is not valid', details);
+}
+
+/** Only the keys the caller actually sent, so an update patches rather than blanks. */
+function metadataPatch(values: Record<string, unknown>): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  for (const key of METADATA_KEYS) {
+    if (values[key] !== undefined) patch[key] = values[key];
+  }
+  return patch;
+}
+
+function windowOrThrow(timezone: string, startsAt: string, endsAt: string): EventWindow {
+  const resolved = resolveEventWindow(timezone, startsAt, endsAt);
+  if (!resolved.ok) {
+    throw invalid(resolved.problem.message, { [resolved.problem.field]: resolved.problem.message });
+  }
+  return resolved.window;
+}
 
 /**
  * The cold-start path: a judge arrives with no account, signs in, and lands here. The creator is
@@ -159,24 +336,27 @@ export type CreateEventInput = {
  */
 export async function createEvent(userId: string, input: CreateEventInput) {
   const db = getDb();
-  const name = input.name.trim();
-  if (!name) throw invalid('An event needs a name', { name: 'Name is required' });
+  const values = parse(createEventSchema, input);
 
-  const slug = slugify(input.slug?.trim() || name);
+  const slug = slugify(values.slug?.trim() || values.name);
   if (!slug) throw invalid('That name does not make a usable URL', { slug: 'Choose a different name' });
 
   const taken = await db.query.event.findFirst({ where: eq(event.slug, slug) });
   if (taken) throw conflict(`The URL /${slug} is already taken`, { slug: 'Already in use' });
 
+  const window = windowOrThrow(values.timezone, values.startsAt, values.endsAt);
+
   const [created] = await db
     .insert(event)
     .values({
-      name,
+      ...metadataPatch(values),
+      name: values.name,
       slug,
-      tagline: input.tagline?.trim() || null,
-      timezone: input.timezone?.trim() || 'America/Los_Angeles',
-      startsOn: input.startsOn || null,
-      endsOn: input.endsOn || null,
+      timezone: window.timezone,
+      startsAt: window.startsAt,
+      endsAt: window.endsAt,
+      startsOn: window.startsOn,
+      endsOn: window.endsOn,
       ownerUserId: userId,
     })
     .returning();
@@ -185,15 +365,34 @@ export async function createEvent(userId: string, input: CreateEventInput) {
   return created;
 }
 
-export async function updateEvent(ctx: EventContext, input: Partial<CreateEventInput>) {
+/**
+ * Changing only the timezone keeps the wall clock, not the instant: an organizer who corrects
+ * `America/Denver` to `America/Chicago` means "the doors still open at 09:00", not "shift the
+ * conference an hour". The same reading is therefore re-resolved in the new zone.
+ */
+export async function updateEvent(ctx: EventContext, input: UpdateEventInput) {
   requireCapability(ctx, 'event:manage');
-  const patch: Record<string, unknown> = {};
-  if (input.name !== undefined) patch.name = input.name.trim();
-  if (input.tagline !== undefined) patch.tagline = input.tagline?.trim() || null;
-  if (input.timezone !== undefined) patch.timezone = input.timezone?.trim() || 'America/Los_Angeles';
-  if (input.startsOn !== undefined) patch.startsOn = input.startsOn || null;
-  if (input.endsOn !== undefined) patch.endsOn = input.endsOn || null;
-  if (Object.keys(patch).length === 0) return getEvent(ctx.eventId);
+  const values = parse(updateEventSchema, input);
+  const current = await getEvent(ctx.eventId);
+
+  const patch: Record<string, unknown> = metadataPatch(values);
+  if (values.name !== undefined) patch.name = values.name;
+
+  if (values.timezone !== undefined || values.startsAt !== undefined || values.endsAt !== undefined) {
+    const timezone = values.timezone ?? current.timezone;
+    const window = windowOrThrow(
+      timezone,
+      values.startsAt ?? utcToLocalInput(current.startsAt, current.timezone),
+      values.endsAt ?? utcToLocalInput(current.endsAt, current.timezone),
+    );
+    patch.timezone = window.timezone;
+    patch.startsAt = window.startsAt;
+    patch.endsAt = window.endsAt;
+    patch.startsOn = window.startsOn;
+    patch.endsOn = window.endsOn;
+  }
+
+  if (Object.keys(patch).length === 0) return current;
 
   const [updated] = await getDb().update(event).set(patch).where(eq(event.id, ctx.eventId)).returning();
   return updated;

@@ -14,6 +14,13 @@ export type PublicEvent = {
   endsOn: string | null;
   websiteUrl: string | null;
   venueName: string | null;
+  /**
+   * `E-2`, `E-3`. Optional so anything that builds a `PublicEvent` by hand — a fixture, a widget
+   * test — does not have to know about branding it never renders.
+   */
+  eventType?: string | null;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
 };
 
 export type PublicSpeaker = {

@@ -197,6 +197,20 @@
             ],
             "description": "Markdown"
           },
+          "eventType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Organizer-set, e.g. Conference"
+          },
+          "theme": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The theme of this edition, long form"
+          },
           "timezone": {
             "type": "string",
             "description": "IANA timezone, e.g. America/Los_Angeles"
@@ -206,14 +220,22 @@
               "string",
               "null"
             ],
-            "description": "ISO date"
+            "description": "ISO date, in the event timezone"
           },
           "endsOn": {
             "type": [
               "string",
               "null"
             ],
-            "description": "ISO date"
+            "description": "ISO date, in the event timezone"
+          },
+          "startsAt": {
+            "type": "string",
+            "description": "ISO 8601 instant the event starts"
+          },
+          "endsAt": {
+            "type": "string",
+            "description": "ISO 8601 instant the event ends"
           },
           "websiteUrl": {
             "type": [
@@ -239,9 +261,13 @@
           "name",
           "tagline",
           "description",
+          "eventType",
+          "theme",
           "timezone",
           "startsOn",
           "endsOn",
+          "startsAt",
+          "endsAt",
           "websiteUrl",
           "venueName",
           "venueAddress"
@@ -485,6 +511,20 @@
                 ],
                 "description": "Markdown"
               },
+              "eventType": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Organizer-set, e.g. Conference"
+              },
+              "theme": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The theme of this edition, long form"
+              },
               "timezone": {
                 "type": "string",
                 "description": "IANA timezone, e.g. America/Los_Angeles"
@@ -494,14 +534,22 @@
                   "string",
                   "null"
                 ],
-                "description": "ISO date"
+                "description": "ISO date, in the event timezone"
               },
               "endsOn": {
                 "type": [
                   "string",
                   "null"
                 ],
-                "description": "ISO date"
+                "description": "ISO date, in the event timezone"
+              },
+              "startsAt": {
+                "type": "string",
+                "description": "ISO 8601 instant the event starts"
+              },
+              "endsAt": {
+                "type": "string",
+                "description": "ISO 8601 instant the event ends"
               },
               "websiteUrl": {
                 "type": [
@@ -527,9 +575,13 @@
               "name",
               "tagline",
               "description",
+              "eventType",
+              "theme",
               "timezone",
               "startsOn",
               "endsOn",
+              "startsAt",
+              "endsAt",
               "websiteUrl",
               "venueName",
               "venueAddress"

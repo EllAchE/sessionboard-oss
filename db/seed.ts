@@ -1,4 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
+import { requireEventWindow } from '../lib/event-dates';
 import { newIcsUid } from '../lib/ics';
 import { ensureDefaultTemplates } from '../lib/services/comms';
 import { getDb } from './client';
@@ -44,6 +45,7 @@ import {
  */
 
 const SLUG = 'demo';
+const TIMEZONE = 'America/Los_Angeles';
 
 /** Fixed offsets from the run date, so the demo is always a conference about six weeks out. */
 const DAY = 86_400_000;
@@ -149,6 +151,9 @@ const reviewers = [
   byEmail.get('reviewer.hortensius@example.com')!,
 ];
 
+/** `E-1`: doors at 09:00 on day one, close at 17:00 on day two, both read in the event's own zone. */
+const demoWindow = requireEventWindow(TIMEZONE, `${isoDate(day1)}T09:00`, `${isoDate(day2)}T17:00`);
+
 const [demo] = await db
   .insert(event)
   .values({
@@ -159,9 +164,15 @@ const [demo] = await db
       'A fictional Roman-themed conference with a call for speakers mid-review, a half-built ' +
       'agenda, and speakers partway through their onboarding tasks. The programme is historically ' +
       'inspired rather than a literal reconstruction. Everything here is editable — break it freely.',
-    timezone: 'America/Los_Angeles',
-    startsOn: isoDate(day1),
-    endsOn: isoDate(day2),
+    eventType: 'Conference',
+    theme:
+      'What Rome built and how it was argued over — the aqueducts, the courts, and the public ' +
+      'life that ran between them.',
+    timezone: demoWindow.timezone,
+    startsAt: demoWindow.startsAt,
+    endsAt: demoWindow.endsAt,
+    startsOn: demoWindow.startsOn,
+    endsOn: demoWindow.endsOn,
     websiteUrl: 'https://example.com/cicero-forum',
     venueName: 'The Getty Villa',
     venueAddress: '17985 Pacific Coast Highway, Pacific Palisades, CA',

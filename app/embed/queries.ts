@@ -13,6 +13,7 @@ import {
   track as trackTable,
   user as userTable,
 } from '@/db/schema';
+import { eventBrandingUrl } from '@/lib/event-branding';
 import { excerpt, markdownToText, renderMarkdown } from '@/lib/markdown';
 import {
   sortSpeakers,
@@ -54,6 +55,9 @@ export async function getPublicEvent(slug: string): Promise<PublicEvent | null> 
     endsOn: row.endsOn,
     websiteUrl: row.websiteUrl,
     venueName: row.venueName,
+    eventType: row.eventType,
+    logoUrl: eventBrandingUrl(row.slug, row.logoFileId),
+    bannerUrl: eventBrandingUrl(row.slug, row.bannerFileId),
   };
 }
 

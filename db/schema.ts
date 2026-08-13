@@ -140,13 +140,32 @@ export const event = pgTable('event', {
   name: text('name').notNull(),
   tagline: text('tagline'),
   descriptionMarkdown: text('description_markdown'),
+  /** `E-2`. Organizer-authored rather than an enum — see `lib/services/events.ts`. */
+  eventType: text('event_type'),
+  /** `E-2`. The edition's theme, long form. */
+  theme: text('theme'),
   timezone: text('timezone').notNull().default('America/Los_Angeles'),
-  startsOn: text('starts_on'),
-  endsOn: text('ends_on'),
+  /**
+   * `E-1`. When the event actually runs. Required, and a real instant rather than a date, because a
+   * calendar invite and a countdown both need the time of day and "12 October" is two different
+   * moments in Rome and in Los Angeles.
+   */
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  /**
+   * The date-only projection of `startsAt` / `endsAt` into `timezone`. Derived on every write by
+   * `resolveEventWindow` and never authored directly — it exists because the public pages, the merge
+   * fields and the shipped `/api/v1` payload all read a `YYYY-MM-DD` string, and changing where the
+   * dates are stored should not change a contract somebody has already integrated against.
+   */
+  startsOn: text('starts_on').notNull(),
+  endsOn: text('ends_on').notNull(),
   websiteUrl: text('website_url'),
   venueName: text('venue_name'),
   venueAddress: text('venue_address'),
+  /** `E-3`. Square mark and wide banner, both rows in `file`. */
   logoFileId: uuid('logo_file_id'),
+  bannerFileId: uuid('banner_file_id'),
   ownerUserId: uuid('owner_user_id')
     .notNull()
     .references(() => user.id),
