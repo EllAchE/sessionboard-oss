@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Checkbox, Dialog, Input, Select, Textarea, useToast } from '@/components/ui';
 import type { AdminTaskRow } from '@/lib/services/dashboard';
@@ -21,14 +21,10 @@ const KINDS: Array<{ value: AdminTaskRow['kind']; label: string; hint: string }>
   { value: 'link', label: 'External link', hint: 'The speaker visits a page you link to.' },
 ];
 
-/**
- * `manual` is a real value in the enum, but nothing assigns a manual task to anyone — there is no
- * per-participant "assign this task" surface yet, so offering it would create a task no speaker
- * could ever see. It goes back in alongside that surface.
- */
 const AUDIENCES: Array<{ value: AdminTaskRow['audience']; label: string }> = [
   { value: 'all_participants', label: 'Everyone in the event' },
   { value: 'accepted_participants', label: 'Accepted speakers only' },
+  { value: 'manual', label: 'Selected speakers' },
 ];
 
 const BLANK: TaskFormInput = {
@@ -36,6 +32,7 @@ const BLANK: TaskFormInput = {
   descriptionMarkdown: '',
   kind: 'acknowledge',
   audience: 'accepted_participants',
+  participantIds: [],
   dueAt: '',
   required: true,
   linkUrl: '',
@@ -54,6 +51,7 @@ export function draftFrom(row: AdminTaskRow): TaskFormInput {
     descriptionMarkdown: row.descriptionMarkdown ?? '',
     kind: row.kind,
     audience: row.audience,
+    participantIds: row.participantIds,
     dueAt: toDateInput(row.dueAt),
     required: row.required,
     linkUrl: row.linkUrl ?? '',
@@ -68,20 +66,23 @@ type Props = {
   /** Absent for a new task. */
   editing: AdminTaskRow | null;
   forms: Array<{ id: string; name: string }>;
+  speakers: Array<{ id: string; name: string; email: string }>;
 };
 
-export function TaskEditor({ open, onClose, editing, forms }: Props) {
+export function TaskEditor({ open, onClose, editing, forms, speakers }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
   const [draft, setDraft] = useState<TaskFormInput>(BLANK);
   const [seeded, setSeeded] = useState<string | null>(null);
+  const [speakerQuery, setSpeakerQuery] = useState('');
 
   /** The dialog stays mounted, so the draft is reseeded whenever the row behind it changes. */
   const key = editing ? editing.id : 'new';
   if (open && seeded !== key) {
     setSeeded(key);
     setDraft(editing ? draftFrom(editing) : BLANK);
+    setSpeakerQuery('');
   }
   if (!open && seeded !== null) setSeeded(null);
 
@@ -108,6 +109,21 @@ export function TaskEditor({ open, onClose, editing, forms }: Props) {
   };
 
   const kindHint = KINDS.find((entry) => entry.value === draft.kind)?.hint;
+  const visibleSpeakers = useMemo(() => {
+    const query = speakerQuery.trim().toLocaleLowerCase();
+    if (!query) return speakers;
+    return speakers.filter((speaker) =>
+      `${speaker.name} ${speaker.email}`.toLocaleLowerCase().includes(query),
+    );
+  }, [speakerQuery, speakers]);
+  const toggleSpeaker = (participantId: string) => {
+    set(
+      'participantIds',
+      draft.participantIds.includes(participantId)
+        ? draft.participantIds.filter((id) => id !== participantId)
+        : [...draft.participantIds, participantId],
+    );
+  };
 
   return (
     <Dialog
@@ -175,6 +191,43 @@ export function TaskEditor({ open, onClose, editing, forms }: Props) {
             </Select>
           </label>
         </div>
+
+        {draft.audience === 'manual' ? (
+          <fieldset className={styles.speakerPicker}>
+            <legend className={styles.label}>Selected speakers</legend>
+            <Input
+              type="search"
+              value={speakerQuery}
+              aria-label="Search speakers"
+              placeholder="Search by name or email"
+              onChange={(event) => setSpeakerQuery(event.target.value)}
+            />
+            <span className={styles.hint}>
+              {draft.participantIds.length} of {speakers.length} speakers selected
+            </span>
+            <div
+              className={styles.speakerList}
+              role="group"
+              aria-label="Speakers assigned this task"
+            >
+              {visibleSpeakers.map((speaker) => (
+                <label className={styles.speakerOption} key={speaker.id}>
+                  <Checkbox
+                    checked={draft.participantIds.includes(speaker.id)}
+                    onChange={() => toggleSpeaker(speaker.id)}
+                  />
+                  <span>
+                    <span className={styles.speakerName}>{speaker.name}</span>
+                    <span className={styles.speakerEmail}>{speaker.email}</span>
+                  </span>
+                </label>
+              ))}
+              {visibleSpeakers.length === 0 ? (
+                <span className={styles.speakerEmpty}>No speakers match that search.</span>
+              ) : null}
+            </div>
+          </fieldset>
+        ) : null}
 
         {draft.kind === 'form' ? (
           <label className={styles.field}>
