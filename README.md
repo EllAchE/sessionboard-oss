@@ -54,14 +54,21 @@ configure. Email has no API key in a fresh clone, so every message the app would
 and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
 a real inbox.
 
-To load the demo conference (14 submissions mid-review, 7 accepted speakers, 4 tracks, 3 rooms, and
-a two-day agenda with gaps still in it):
+To load the demo conferences:
 
 ```bash
 docker compose exec app npm run db:seed
 ```
 
-The seed is idempotent — run it twice and you get the same one event, not two.
+The seed creates two idempotent cases:
+
+- **Cicero Demo Conf** — 14 submissions mid-review, 7 accepted speakers, 4 tracks, 3 rooms, and a
+  two-day agenda with gaps still in it.
+- **The First Settlement** — a Roman Senate-themed programme inspired by the sessions of
+  13–16 January 27 BCE, with motions, consular review, a partly scheduled agenda, and outstanding
+  speaker tasks.
+
+Run it twice and you get the same two events, not four.
 
 ## Local development
 
@@ -84,7 +91,7 @@ from it.
 | `npm test` | `vitest run` |
 | `npm run db:generate` | Generate a migration from `db/schema.ts` |
 | `npm run db:migrate` | Apply migrations |
-| `npm run db:seed` | Seed the demo conference (idempotent) |
+| `npm run db:seed` | Seed both demo conferences (idempotent) |
 | `npm run cf:deploy` | Build and deploy to Cloudflare Workers |
 
 ## What's in it
