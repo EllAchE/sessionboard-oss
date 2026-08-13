@@ -27,12 +27,14 @@ import {
   PARTICIPANT_BUILTIN_META,
   PARTICIPANT_ROLE_DEFAULT_LABELS,
   builtinMaxLength,
+  hasWelcomeScreen,
   isBuiltinKey,
   isParticipantBuiltinKey,
   isParticipantRoleKind,
   validateConditions,
   validateParticipantCounts,
   validateRoleConfiguration,
+  welcomeScreenErrors,
   type BuiltinKey,
   type Condition,
   type FieldEntity,
@@ -51,6 +53,20 @@ import { slugify } from '../ids';
 
 export type FormRecord = typeof form.$inferSelect;
 export type FormKind = FormRecord['kind'];
+/**
+ * `F-4`: `abstract` or `session` — what a *submission* to this form becomes, a proposal bound for
+ * review or an entry bound straight for the programme.
+ *
+ * It is not, and deliberately does not become, `S-17`'s Contacts / Groups / Submissions triple.
+ * Those three are a property of the *attachment*, not of the form: a portal form has no address of
+ * its own and reaches a speaker only through a task, so "who owes one of these" is settled by
+ * `task.scope` (`S-16`) at the moment the form is attached — see `app/admin/tasks/TaskEditor.tsx`.
+ * Declaring it a second time here would buy nothing and cost two things. It would make a form
+ * single-use where it is currently reusable, so the same "Travel and logistics" form could not be
+ * per-contact on one event and per-session on the next; and it would let a form say `contacts` while
+ * the task it is attached to says `submission`, a disagreement with no correct resolution, only a
+ * silent override or an error class that exists because two columns answer one question.
+ */
 export type FormTargetType = FormRecord['targetType'];
 export type FormStatus = FormRecord['status'];
 export type FieldLibraryEntry = typeof fieldLibraryEntry.$inferSelect;
@@ -231,6 +247,12 @@ export async function getForm(ctx: EventContext, formId: string): Promise<FormDe
  * A `cfp` form is created with the locked six already in it. They are not optional furniture — the
  * review queue, agenda and embeds read their columns — so an organizer starts from a form that
  * works and removes nothing. A `portal` form has no submission behind it and starts empty.
+ *
+ * `F-9`'s external title is written here rather than left NULL for the runtime's fallback to cover.
+ * The value is the same either way — the public page has always shown the internal name until an
+ * organizer set a title — but writing it means a new form is born satisfying the required check
+ * instead of failing the publish gate the first time it is used, and the organizer edits a filled
+ * field rather than guessing at a blank one.
  */
 export async function createForm(
   ctx: EventContext,
@@ -258,6 +280,7 @@ export async function createForm(
       slug,
       targetType: input.targetType ?? 'abstract',
       collectsParticipants,
+      externalTitle: name,
     })
     .returning();
 
@@ -380,16 +403,34 @@ export async function updateForm(
   if (patch.collectsParticipants !== undefined) {
     values.collectsParticipants = patch.collectsParticipants;
   }
-  if (patch.externalTitle !== undefined) values.externalTitle = patch.externalTitle?.trim() || null;
-  if (patch.pageHeading !== undefined) {
-    const heading = patch.pageHeading?.trim() || null;
-    if (heading && heading.length > PAGE_HEADING_MAX_LENGTH) {
-      throw invalid(`The page heading is limited to ${PAGE_HEADING_MAX_LENGTH} characters`, {
-        pageHeading: `${heading.length} characters — the limit is ${PAGE_HEADING_MAX_LENGTH}`,
-      });
+  /**
+   * `F-9`. Both starred fields are checked here the same way `name` is, and for the same reason: a
+   * value the brief marks required is not something a save is allowed to take away. The check reads
+   * only what the patch actually carries, so a writer touching the close date is not asked about the
+   * welcome screen — the form that has never had one is caught by the publish gate instead, which is
+   * where a legacy row can be repaired without the organizer being locked out of every other setting.
+   */
+  if (hasWelcomeScreen(patch.kind ?? existing.kind)) {
+    const problems = welcomeScreenErrors({
+      externalTitle: patch.externalTitle,
+      pageHeading: patch.pageHeading,
+    });
+    const touched = (['externalTitle', 'pageHeading'] as const).filter(
+      (key) => patch[key] !== undefined && problems[key],
+    );
+    const [first] = touched;
+    if (first) {
+      throw invalid(
+        first === 'externalTitle'
+          ? 'Give the form an external title — speakers read it at the top of the page'
+          : `The page heading is required, and limited to ${PAGE_HEADING_MAX_LENGTH} characters`,
+        Object.fromEntries(touched.map((key) => [key, problems[key]])),
+      );
     }
-    values.pageHeading = heading;
   }
+
+  if (patch.externalTitle !== undefined) values.externalTitle = patch.externalTitle?.trim() || null;
+  if (patch.pageHeading !== undefined) values.pageHeading = patch.pageHeading?.trim() || null;
   if (patch.showWelcome !== undefined) values.showWelcome = patch.showWelcome;
   if (patch.maxParticipants !== undefined) {
     if (patch.maxParticipants !== null && patch.maxParticipants < 1) {
@@ -475,7 +516,9 @@ export async function duplicateForm(
       name: copyName,
       slug: await uniqueFormSlug(ctx.eventId, copyName),
       status: 'draft',
-      externalTitle: source.externalTitle,
+      // `F-9`, same reasoning as `createForm`: a copy of a form written before the welcome screen was
+      // required starts filled in rather than starting one publish attempt behind.
+      externalTitle: source.externalTitle ?? copyName,
       pageHeading: source.pageHeading,
       showWelcome: source.showWelcome,
       maxParticipants: source.maxParticipants,
@@ -643,6 +686,27 @@ export async function publishForm(ctx: EventContext, formId: string): Promise<Fo
 
   if (!fields.some((field) => collectsAnswer(field.type))) {
     throw invalid('A form needs at least one question before it can open');
+  }
+
+  /**
+   * `F-9`. The starred welcome fields are checked here as well as on save, because save-time alone
+   * only ever sees the forms somebody edits: every `cfp` form written before this rule existed
+   * carries NULL in both columns, and the runtime's silent fallback meant nothing ever said so.
+   *
+   * It is a gate rather than a repair — the opposite of `ensureFormBuiltins` above — because the two
+   * failures are not the same shape. A missing built-in was unfixable from the builder, so reporting
+   * it was cruelty; a missing title is two text boxes on the Settings tab, and only the organizer
+   * knows what they should say. Guessing on their behalf is how a public page ends up headed with an
+   * internal note.
+   */
+  if (hasWelcomeScreen(record.kind)) {
+    const problems = welcomeScreenErrors(record);
+    if (Object.keys(problems).length > 0) {
+      throw invalid(
+        'The welcome screen is not finished — fill in the external form title and the page heading under Settings',
+        problems,
+      );
+    }
   }
 
   const missingOptions = fields.find(

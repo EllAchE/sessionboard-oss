@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   BUILTIN_FIELDS,
+  PAGE_HEADING_MAX_LENGTH,
   PARTICIPANT_BUILTIN_FIELDS,
 } from '../lib/forms/contract';
 import { seedBuiltinFields, seedRoles } from '../lib/services/forms';
@@ -45,6 +46,19 @@ describe.each(SEEDS)('%s', (path) => {
 
   it('configures participant roles rather than leaving the form without any', () => {
     expect(text).toContain('formParticipantRole');
+  });
+
+  /**
+   * `F-9`'s starred welcome fields are now a publish-gate requirement on a `cfp` form, and each seed
+   * writes its call for speakers by hand with `status: 'open'` already set — the exact shape of the
+   * built-in-field bug above. Both seeds happen to fill them in; this is what keeps that true, so a
+   * seeded demo cannot go back to hard-failing the first time an organizer presses Publish.
+   */
+  it('fills in the welcome screen its `cfp` form now has to have', () => {
+    expect(text).toMatch(/externalTitle: '[^']+'/);
+    const [, heading] = text.match(/pageHeading: '([^']+)'/) ?? [];
+    expect(heading).toBeDefined();
+    expect(heading!.length).toBeLessThanOrEqual(PAGE_HEADING_MAX_LENGTH);
   });
 });
 

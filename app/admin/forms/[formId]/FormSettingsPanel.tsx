@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { Card, Button, Input, Select, Switch, Textarea } from '../../../../components/ui';
-import { PAGE_HEADING_MAX_LENGTH } from '../../../../lib/forms/contract';
+import {
+  PAGE_HEADING_MAX_LENGTH,
+  hasWelcomeScreen,
+  welcomeScreenErrors,
+} from '../../../../lib/forms/contract';
 import type { FormSettingsInput, FormKind, FormTargetType } from '../types';
 import type { FormView } from './builder-types';
 import styles from './builder.module.css';
@@ -86,6 +90,17 @@ export function FormSettingsPanel({
   }, [form]);
 
   const update = (patch: Partial<Draft>) => setDraft((current) => ({ ...current, ...patch }));
+
+  /**
+   * `F-9`. The same rule the service enforces, read here so the organizer is stopped by the field
+   * rather than by a failed save — and so the message is beside the box that has to change. A form
+   * written before the rule existed arrives with both blank; it is fixed on this panel, where both
+   * boxes already are, rather than anywhere else.
+   */
+  const welcomeProblems = hasWelcomeScreen(draft.kind)
+    ? welcomeScreenErrors({ externalTitle: draft.externalTitle, pageHeading: draft.pageHeading })
+    : {};
+  const blocked = !draft.name.trim() || Object.keys(welcomeProblems).length > 0;
 
   const save = () => {
     const limit = draft.maxSubmissionsPerUser.trim();
@@ -218,14 +233,14 @@ export function FormSettingsPanel({
                 onChange={(event) => update({ externalTitle: event.target.value })}
               />
               <span className={styles.help}>
-                What a speaker reads at the top of the page and what a shared link previews as. Blank
-                falls back to the internal name.
+                {welcomeProblems.externalTitle ??
+                  'What a speaker reads at the top of the page and what a shared link previews as.'}
               </span>
             </div>
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="settings-page-heading">
-                Page heading
+                Page heading *
               </label>
               <Input
                 id="settings-page-heading"
@@ -235,8 +250,8 @@ export function FormSettingsPanel({
                 onChange={(event) => update({ pageHeading: event.target.value })}
               />
               <span className={styles.help}>
-                {draft.pageHeading.length} of {PAGE_HEADING_MAX_LENGTH} characters. A short line above
-                the title on the welcome step.
+                {welcomeProblems.pageHeading ??
+                  `${draft.pageHeading.length} of ${PAGE_HEADING_MAX_LENGTH} characters. A short line above the title on the welcome step.`}
               </span>
             </div>
 
@@ -389,9 +404,16 @@ export function FormSettingsPanel({
       </div>
 
       <div className={styles.actions}>
-        <Button variant="primary" loading={busy} disabled={!draft.name.trim()} onClick={save}>
+        <Button variant="primary" loading={busy} disabled={blocked} onClick={save}>
           Save settings
         </Button>
+        {blocked ? (
+          <span className={styles.help}>
+            {draft.name.trim()
+              ? 'The starred welcome-screen fields are still empty.'
+              : 'The form still needs an internal name.'}
+          </span>
+        ) : null}
       </div>
     </div>
   );

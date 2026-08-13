@@ -178,6 +178,48 @@ export function builtinMaxLength(
 /** `F-9`: the brief caps the welcome screen's page heading at 15 characters. */
 export const PAGE_HEADING_MAX_LENGTH = 15;
 
+/**
+ * `F-9` stars three things — Internal Form Name, External Form Title, Page Heading — and the welcome
+ * screen they configure is a surface of the public submit flow, which only ever serves a `cfp` form.
+ * A portal form is reached through a task assignment and renders none of the three, so requiring
+ * copy for a screen it does not have would be a rule with no reader.
+ *
+ * The kind arrives as a plain string because this file is the contract the builder, the runtime and
+ * the service share, and none of them should have to import a Drizzle enum to ask the question.
+ */
+export function hasWelcomeScreen(kind: string): boolean {
+  return kind === 'cfp';
+}
+
+/**
+ * The whole of `F-9`'s welcome-screen rule, in one place so the builder can grey out Save for the
+ * same reason the service refuses the write and the publish gate refuses to open the form.
+ *
+ * Both starred fields are required whatever `showWelcome` says. That switch is documented as hiding
+ * the welcome step *while keeping the copy* — "getting it back is this switch, not rewriting the
+ * paragraph" — so copy that has to survive being hidden has to exist in the first place. A rule that
+ * lapsed when the toggle went off would mean turning it back on could reveal a blank screen.
+ */
+export function welcomeScreenErrors(input: {
+  externalTitle?: string | null;
+  pageHeading?: string | null;
+}): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  if (!input.externalTitle?.trim()) {
+    errors.externalTitle = 'Speakers see this at the top of the page, so it cannot be blank';
+  }
+
+  const heading = input.pageHeading?.trim() ?? '';
+  if (!heading) {
+    errors.pageHeading = 'The welcome step needs a heading';
+  } else if (heading.length > PAGE_HEADING_MAX_LENGTH) {
+    errors.pageHeading = `${heading.length} characters — the limit is ${PAGE_HEADING_MAX_LENGTH}`;
+  }
+
+  return errors;
+}
+
 export type ConditionOp = 'eq' | 'neq' | 'includes' | 'gt' | 'lt' | 'is_empty' | 'not_empty';
 
 /**

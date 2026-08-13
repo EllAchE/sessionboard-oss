@@ -50,8 +50,10 @@ deployment switch.
 - [ ] Verify the competition entry and its delivery (`D-1`, `D-4`). Neither can be closed from
   inside the repository.
 
-Nothing else at REQUIRED priority is outstanding. The remaining gaps are two IMPORTANT rows
-(`F-9`, `S-17`), one OPTIONAL row (`S-11`), and the bonus rows `Z-3`/`Z-4`.
+Nothing else at REQUIRED priority is outstanding. The remaining gaps are one OPTIONAL row (`S-11`)
+and the bonus rows `Z-3`/`Z-4`. `F-9` closed when its starred fields became genuinely required;
+`S-17` closed on re-examination rather than on new code — see its row for why the
+contact/group/submission triple belongs to `task.scope` and not to the form.
 
 ## 1. Competition deliverables
 
@@ -125,12 +127,16 @@ Nothing else at REQUIRED priority is outstanding. The remaining gaps are two IMP
   shared validator enforces the counts across the public flow, the API, and the portal share path.
 - [x] **F-8 · R · COMPLETE — Custom field types and character limits.** Text, rich text/Markdown,
   selection, file, and other types are supported with field limits.
-- [ ] **F-9 · I · PARTIAL — Welcome-screen configuration.** All four pieces now exist — internal name,
+- [x] **F-9 · I · COMPLETE — Welcome-screen configuration.** All four pieces exist — internal name,
   external form title, page heading with the 15-character cap genuinely enforced server-side, and a
-  show/hide toggle that drops the welcome stage end to end. What is not satisfied is the brief's
-  asterisks: external title and page heading are nullable with silent fallbacks and no server-side
-  required check, so only the internal name is actually mandatory. The welcome message is a markdown
-  textarea rather than a rich-text editor, consistent with the rest of the app.
+  show/hide toggle that drops the welcome stage end to end — and the brief's asterisks are now real.
+  One shared rule (`welcomeScreenErrors`) greys out Save in the builder, refuses an `updateForm`
+  patch that blanks either starred field, and refuses to open a `cfp` form missing either. `createForm`
+  writes the external title from the internal name, so a new form is born satisfying the rule rather
+  than failing its first publish; the split between save-time and publish-time is what keeps a form
+  written before the rule editable in every other respect. Portal forms are out of scope by design —
+  they render no welcome screen. The welcome message is a markdown textarea rather than a rich-text
+  editor, consistent with the rest of the app.
 - [x] **F-10 · I · COMPLETE — Close date.** The close date gates submission and drives draft reminders.
 - [x] **F-11 · I · COMPLETE — Success page and portal redirect.** Final submission lands on a success
   page and redirects into the speaker portal.
@@ -199,11 +205,18 @@ Nothing else at REQUIRED priority is outstanding. The remaining gaps are two IMP
   unique indexes per scope, and a backfill. Assignment resolution branches per scope — one row per
   person, one per accepted session, or one per session team — reconciliation rewrites scope in place
   without destroying completed status, and the task editor exposes the choice.
-- [ ] **S-17 · I · PARTIAL — Portal form tasks for contacts, groups, and submissions.** Completing an
-  organizer-built form still satisfies a task, and the contact/group/submission triple now exists —
-  but it lives on `task.scope`, set when the form is attached to a task. The form builder's own two
-  axes are `cfp`/`portal` and `abstract`/`session`; a form author cannot declare or constrain which
-  of the three targets the form is for. Partial by design, recorded so it is not mistaken for done.
+- [x] **S-17 · I · COMPLETE — Portal form tasks for contacts, groups, and submissions.** Completing
+  an organizer-built form satisfies a task, and the contact/group/submission triple is `task.scope`,
+  chosen in the task editor beside the form picker. Re-examined on this run and closed rather than
+  built out: the triple belongs to the attachment, not to the form. A portal form has no URL of its
+  own and reaches a speaker only through a task, so *which* of the three it is for is not knowable
+  when the form is authored — the same "Travel and logistics" form is per-contact at one event and
+  per-session at the next, and a form-level target would make it single-use. A second declaration
+  would also let a form and its task disagree, with no correct resolution: only a silent override, or
+  an error class that exists because two columns answer one question. `form.target_type` stays
+  `abstract`/`session`, which is `F-4`'s different question — what a submission becomes. The
+  reasoning is recorded at both ends, on `FormTargetType` in `lib/services/forms.ts` and on `SCOPES`
+  in `app/admin/tasks/TaskEditor.tsx`, so the next reader finds it where they look for the gap.
 - [x] **S-18 · I · COMPLETE — Named file requests.** Files are collected and versioned against a
   request/task assignment.
 - [x] **S-19 · O · COMPLETE — Portal-form confirmation email.** Completion sends configurable copy
@@ -413,8 +426,9 @@ that address. **Not fixed here — this audit owns `docs/` only.**
   invisible to attendees: no public page, no embed widget, no `/api/v1` exposure, and the logo serve
   route sits behind the admin gate, so a public surface would need its own route too. Deliberately
   scoped out, not forgotten.
-- **`S-17` form-builder target.** The contact/group/submission triple should arguably be declarable
-  on the form itself rather than only at the moment a form is attached to a task.
+- ~~**`S-17` form-builder target.**~~ Withdrawn. Declaring the contact/group/submission triple on the
+  form as well as on the task would make a reusable form single-use and create a disagreement with no
+  correct resolution. See the `S-17` row.
 - **No `crons` trigger in `wrangler.jsonc`.** Task reminders and draft-deadline reminders are
   implemented and correct but are only dispatched by an external call to the cron route or an
   organizer pressing the button. A scheduled trigger would make them autonomous on the deployment.
