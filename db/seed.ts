@@ -1297,9 +1297,15 @@ await db.insert(taskAssignment).values([
 // Portal content and comms
 // ---------------------------------------------------------------------------
 
+/**
+ * `S-11`. A hex, not the colour's name. `vermilion` is not a CSS colour keyword, so the accent this
+ * seed had been writing since it was first run resolved to nothing in the portal and was dropped on
+ * the way into email — the seeded events looked exactly like the unseeded ones. The panel under
+ * Settings → Speaker portal now writes hex and nothing else, and this is `--vermilion-500`.
+ */
 await db.insert(portalTheme).values({
   eventId: demo.id,
-  accentColor: 'vermilion',
+  accentColor: '#B7391F',
   welcomeMarkdown:
     'Welcome to Cicero Forum, and thank you for speaking. Everything we need from you is on this ' +
     'page, in the order we need it.',

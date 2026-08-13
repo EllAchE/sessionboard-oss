@@ -6,6 +6,7 @@ import {
   fieldType,
   formField,
   persona,
+  portalTheme,
   room,
   scheduledSession,
   sessionFormat,
@@ -18,6 +19,7 @@ import {
 import type { EventContext } from '../context';
 import { requireCapability } from '../context';
 import { conflict, invalid, notFound } from '../errors';
+import { normalizeAccent } from '../portal-appearance';
 
 /**
  * `E-1`–`E-5`: the six lists every other surface picks from. Nothing here is interesting on its
@@ -1014,6 +1016,153 @@ export async function removeFieldEntry(
   await requireFieldEntry(ctx, entryId);
   assertRemovable('library field', await fieldEntryDependents(entryId), options);
   await getDb().delete(fieldLibraryEntry).where(eq(fieldLibraryEntry.id, entryId));
+}
+
+// ---------------------------------------------------------------------------
+// Portal appearance — S-11
+// ---------------------------------------------------------------------------
+
+/**
+ * `S-11`. How the speaker portal is dressed: the masthead logo, the accent, the welcome copy on the
+ * portal's home screen, and the address a stuck speaker is told to write to.
+ *
+ * `portal_theme` had been readable and unwritable since it was created — the portal layout and the
+ * branded email wrapper both read it, the seeds inserted one row per demo event, and no organizer
+ * surface, action or route ever wrote one. On an event nobody seeded, the settings simply did not
+ * exist. The write path is here rather than beside the read in `lib/services/portal.ts` because
+ * this is organizer configuration and `portal.ts` is the speaker's own surface — the same boundary
+ * that keeps task status transitions in `tasks.ts` and out of two places.
+ *
+ * A row is created on first save. Nothing else in the app creates one, so every read treats its
+ * absence as "not configured" rather than as an error.
+ */
+
+export type PortalAppearance = {
+  logoFileId: string | null;
+  accentColor: string | null;
+  welcomeMarkdown: string | null;
+  supportEmail: string | null;
+};
+
+/**
+ * Blank clears. Each key is optional and an absent one means "leave it alone", so the logo — which
+ * the upload route writes on its own, without a save button — is not blanked by a form that never
+ * knew about it.
+ */
+export const portalAppearanceInput = z.object({
+  accentColor: z
+    .string()
+    .trim()
+    .transform((value, issues) => {
+      if (value === '') return null;
+      const normalized = normalizeAccent(value);
+      if (!normalized) {
+        issues.addIssue({ code: z.ZodIssueCode.custom, message: 'Use a hex colour like #B7391F' });
+        return z.NEVER;
+      }
+      return normalized;
+    })
+    .nullable()
+    .optional(),
+  welcomeMarkdown: z
+    .string()
+    .trim()
+    .max(5000, 'The welcome message is limited to 5,000 characters')
+    .transform((value) => value || null)
+    .nullable()
+    .optional(),
+  supportEmail: z
+    .string()
+    .trim()
+    .transform((value, issues) => {
+      if (value === '') return null;
+      if (!z.string().email().safeParse(value).success) {
+        issues.addIssue({ code: z.ZodIssueCode.custom, message: 'That is not an email address' });
+        return z.NEVER;
+      }
+      return value.toLowerCase();
+    })
+    .nullable()
+    .optional(),
+});
+
+export type PortalAppearanceInput = z.input<typeof portalAppearanceInput>;
+
+const EMPTY_APPEARANCE: PortalAppearance = {
+  logoFileId: null,
+  accentColor: null,
+  welcomeMarkdown: null,
+  supportEmail: null,
+};
+
+/** Absent is a valid state, not a 404: an event nobody has dressed yet has nothing to read. */
+export async function getPortalAppearance(eventId: string): Promise<PortalAppearance> {
+  const row = await getDb().query.portalTheme.findFirst({
+    where: eq(portalTheme.eventId, eventId),
+    columns: { logoFileId: true, accentColor: true, welcomeMarkdown: true, supportEmail: true },
+  });
+  if (!row) return { ...EMPTY_APPEARANCE };
+  // Normalised on the way out as well as on the way in: a row a seed or a hand-run `UPDATE` wrote
+  // is not guaranteed to hold something an inline `style` may safely carry.
+  return { ...row, accentColor: normalizeAccent(row.accentColor) };
+}
+
+/**
+ * Create-or-update in one statement. `portal_theme.event_id` is unique, so the conflict clause is
+ * the create path and the update path at once — two organizers saving the panel in the same second
+ * cannot race a read-then-insert into a unique violation.
+ */
+export async function savePortalAppearance(
+  ctx: EventContext,
+  input: PortalAppearanceInput,
+): Promise<PortalAppearance> {
+  requireCapability(ctx, 'event:manage');
+  const values = parse(portalAppearanceInput, input);
+
+  const patch: Partial<PortalAppearance> = {};
+  if (values.accentColor !== undefined) patch.accentColor = values.accentColor;
+  if (values.welcomeMarkdown !== undefined) patch.welcomeMarkdown = values.welcomeMarkdown;
+  if (values.supportEmail !== undefined) patch.supportEmail = values.supportEmail;
+
+  return upsertAppearance(ctx.eventId, patch);
+}
+
+/**
+ * The logo is written on its own rather than through the form, because it commits on selection — a
+ * file input whose effect waits for a Save button is a way to lose an image. Returns the file id it
+ * displaced, so the caller can delete bytes no screen can reach any more.
+ */
+export async function setPortalLogo(
+  ctx: EventContext,
+  logoFileId: string | null,
+): Promise<{ previousFileId: string | null }> {
+  requireCapability(ctx, 'event:manage');
+  const before = await getPortalAppearance(ctx.eventId);
+  await upsertAppearance(ctx.eventId, { logoFileId });
+  return { previousFileId: before.logoFileId };
+}
+
+async function upsertAppearance(
+  eventId: string,
+  patch: Partial<PortalAppearance>,
+): Promise<PortalAppearance> {
+  const [row] = await getDb()
+    .insert(portalTheme)
+    .values({ ...EMPTY_APPEARANCE, ...patch, eventId })
+    .onConflictDoUpdate({
+      target: portalTheme.eventId,
+      // Only the keys the caller sent. The insert fills the rest with nulls because there was
+      // nothing there to keep; the update must not, or saving the copy would drop the logo.
+      set: { ...patch, updatedAt: new Date() },
+    })
+    .returning({
+      logoFileId: portalTheme.logoFileId,
+      accentColor: portalTheme.accentColor,
+      welcomeMarkdown: portalTheme.welcomeMarkdown,
+      supportEmail: portalTheme.supportEmail,
+    });
+  if (!row) throw notFound('That event');
+  return { ...row, accentColor: normalizeAccent(row.accentColor) };
 }
 
 // ---------------------------------------------------------------------------

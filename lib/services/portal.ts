@@ -27,6 +27,7 @@ import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
 import { personNameColumns, splitPersonName } from '../person-name';
+import { normalizeAccent } from '../portal-appearance';
 import { parseSpeakerName } from '../speaker-name';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
@@ -94,22 +95,23 @@ export type PortalBranding = {
 /**
  * `S-11`. `accentColor` is organizer data, so it is injected as a CSS custom property rather than
  * written into a stylesheet — the only route by which a color reaches this surface without a token.
+ *
+ * Every field is optional and an event with no `portal_theme` row at all is the ordinary case, not
+ * an error: the row is created the first time an organizer saves the portal appearance panel, and
+ * plenty of events never will. The layout and the home screen each fall back to their own copy, so
+ * nothing here needs a placeholder — a `null` accent means "keep the design system's".
+ *
+ * `normalizeAccent` runs on the way out, not only on the way in. A row written by a seed or by hand
+ * has been through no validation, and this value is interpolated into a `style` attribute.
  */
 export async function getBranding(eventId: string): Promise<PortalBranding> {
   const row = await getDb().query.portalTheme.findFirst({ where: eq(portalTheme.eventId, eventId) });
   return {
-    accentColor: safeColor(row?.accentColor),
+    accentColor: normalizeAccent(row?.accentColor),
     logoFileId: row?.logoFileId ?? null,
     welcomeHtml: renderTrustedMarkdown(row?.welcomeMarkdown),
     supportEmail: row?.supportEmail ?? null,
   };
-}
-
-/** Anything that is not a plain hex or a bare CSS color keyword is dropped rather than interpolated. */
-function safeColor(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  return /^(#[0-9a-f]{3,8}|[a-z]+)$/i.test(trimmed) ? trimmed : null;
 }
 
 // ---------------------------------------------------------------------------

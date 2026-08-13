@@ -1015,9 +1015,11 @@ export async function seedFirstSettlement(
     ),
   );
 
+  // `S-11`. `--vermilion-500` as a hex: `vermilion` is not a CSS colour keyword, so the name this
+  // seed used to write resolved to nothing on the portal and was dropped on the way into email.
   await db.insert(portalTheme).values({
     eventId: senate.id,
-    accentColor: 'vermilion',
+    accentColor: '#B7391F',
     welcomeMarkdown:
       'Welcome to the Curia. Your motion, speaking order, and every item the clerks still need ' + 'appear below.',
     supportEmail: 'clerks@first-settlement.example',

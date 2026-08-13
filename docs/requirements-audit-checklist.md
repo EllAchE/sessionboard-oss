@@ -50,9 +50,10 @@ deployment switch.
 - [ ] Verify the competition entry and its delivery (`D-1`, `D-4`). Neither can be closed from
   inside the repository.
 
-Nothing else at REQUIRED priority is outstanding. The remaining gaps are one OPTIONAL row (`S-11`)
-and the bonus rows `Z-3`/`Z-4`. `F-9` closed when its starred fields became genuinely required;
-`S-17` closed on re-examination rather than on new code — see its row for why the
+Nothing else at REQUIRED priority is outstanding, and the remaining gaps are the bonus rows
+`Z-3`/`Z-4`. `F-9` closed when its starred fields became genuinely required; `S-11` closed when the
+portal appearance settings gained a writer, having been credited to a read path that no organizer
+surface ever fed; `S-17` closed on re-examination rather than on new code — see its row for why the
 contact/group/submission triple belongs to `task.scope` and not to the form.
 
 ## 1. Competition deliverables
@@ -185,13 +186,19 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 - [x] **S-9 · I · COMPLETE — View and edit submitted proposals.** Speakers have a post-submit editor.
 - [x] **S-10 · R · COMPLETE — Full admin impersonation.** Organizers can act as a speaker, complete
   writes, and return to admin mode.
-- [ ] **S-11 · O · PARTIAL — Portal appearance settings.** *Corrected from COMPLETE.* The
-  `portal_theme` table holds logo, accent colour, welcome markdown, and support email, and both the
-  portal layout and the branded email wrapper read it — but **nothing writes it except the seeds**.
-  There is no organizer page, server action, or API route that upserts a portal theme, so on any
-  non-seeded event the settings do not exist. The previous audit credited the read path as the
-  feature. What is missing is a portal-appearance panel next to the portal surfaces; the event
-  branding under settings is `E-3`, a different table.
+- [x] **S-11 · O · COMPLETE — Portal appearance settings.** *Was PARTIAL: `portal_theme` was read by
+  the portal layout and the branded email wrapper but written by nothing except the seeds, so on any
+  non-seeded event the settings did not exist.* Settings now carries a **Speaker portal** tab that
+  writes all four columns — logo, accent colour, welcome markdown, and support email.
+  `savePortalAppearance`/`setPortalLogo` in `lib/services/settings.ts` upsert on the unique
+  `portal_theme.event_id`, so the first save on an event nobody seeded creates the row and a later
+  one updates it without blanking the columns it was not asked about. The logo uploads through
+  `/admin/settings/portal/upload` on the same `validateUpload`/`storeFile` path as `E-3` and `E-7`.
+  The accent is validated to a literal hex, on the way in and again on the way out, because it is
+  interpolated into a `style` attribute on the portal and into an inline style in email. An event
+  with no row still renders: the masthead, the home screen and the footer each fall back to their
+  own copy. Deliberately its own tab and not merged with the event logo and banner — that is `E-3`,
+  a different table dressing the public pages for a different audience.
 - [x] **S-12 · O · COMPLETE — Multiple portal types.** Contact, group, and submission views exist.
 - [x] **S-13 · O · COMPLETE — Group access sharing.** Co-speaker/group access is supported.
 
