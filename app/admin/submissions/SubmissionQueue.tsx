@@ -53,7 +53,7 @@ export type SavedViewWire = { id: string; name: string; filters: Record<string, 
 export type QueueProps = {
   rows: QueueRowWire[];
   counts: Record<string, number>;
-  tabs: Array<{ id: string; label: string }>;
+  tabs: Array<{ id: string; label: string; hint?: string | null }>;
   tab: string;
   sort: string;
   trackId: string;
@@ -470,6 +470,8 @@ export function SubmissionQueue(props: QueueProps) {
     [],
   );
 
+  const tabHint = props.tabs.find((tab) => tab.id === props.tab)?.hint ?? null;
+
   // Filtering the canonical list keeps column order stable no matter what order they were toggled.
   const columns = useMemo(
     () => allColumns.filter((column) => visibleColumns.includes(column.id)),
@@ -544,6 +546,9 @@ export function SubmissionQueue(props: QueueProps) {
           </button>
         ))}
       </nav>
+
+      {/* A staging queue is derived, so it has to say what put a proposal in it. */}
+      {tabHint ? <p className={styles.tabHint}>{tabHint}</p> : null}
 
       <div className={styles.filters}>
         <Input

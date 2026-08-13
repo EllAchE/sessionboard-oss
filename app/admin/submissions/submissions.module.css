@@ -88,6 +88,12 @@
   color: var(--text-faint);
 }
 
+.tabHint {
+  font: var(--type-label);
+  color: var(--text-muted);
+  margin-top: calc(-1 * var(--space-1));
+}
+
 .filters {
   display: flex;
   align-items: center;

@@ -79,6 +79,39 @@ describe('SubmissionQueue saved views', () => {
   });
 });
 
+describe('SubmissionQueue staging queues', () => {
+  const tabs = [
+    { id: 'pending', label: 'Pending', hint: null },
+    { id: 'accept-queue', label: 'Accept queue', hint: 'Every review is in.' },
+    { id: 'decline-queue', label: 'Decline queue', hint: 'Every review is in.' },
+  ];
+
+  it('renders each queue as its own tab, with its count', () => {
+    const html = renderToStaticMarkup(
+      <SubmissionQueue
+        {...props}
+        tabs={tabs}
+        counts={{ pending: 4, 'accept-queue': 7, 'decline-queue': 2 }}
+      />,
+    );
+
+    expect(html).toContain('Accept queue');
+    expect(html).toContain('Decline queue');
+    expect(html).toContain('>7<');
+    expect(html).toContain('>2<');
+  });
+
+  it('explains a derived queue only while that queue is open', () => {
+    const staged = renderToStaticMarkup(
+      <SubmissionQueue {...props} tabs={tabs} tab="accept-queue" />,
+    );
+    expect(staged).toContain('Every review is in.');
+
+    const pending = renderToStaticMarkup(<SubmissionQueue {...props} tabs={tabs} />);
+    expect(pending).not.toContain('Every review is in.');
+  });
+});
+
 describe('viewColumns', () => {
   it('keeps a stored subset, in the canonical order rather than the stored one', () => {
     expect(viewColumns(['score', 'title', 'ref'])).toEqual(['ref', 'title', 'score']);

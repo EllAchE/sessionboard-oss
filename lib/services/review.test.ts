@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { EventContext, MembershipRole } from '../context';
 import {
   ANONYMOUS_AUTHOR,
+  DECISION_QUEUE_BAR,
+  STATUS_TABS,
   aggregateScorecard,
   carriesIdentity,
+  decisionStage,
   filterQueue,
+  filtersForTab,
   hidesAuthorship,
   isAgendaEligible,
   nextStatusForDecision,
@@ -249,6 +253,7 @@ describe('queue filtering and sorting', () => {
     spread: null,
     assignedCount: 0,
     completedCount: 0,
+    declinedCount: 0,
     hasAiReview: false,
     ...over,
   });
@@ -275,6 +280,95 @@ describe('queue filtering and sorting', () => {
     expect(filterQueue(rows, { statuses: [], trackId: 't1' }).map((e) => e.id)).toEqual(['a']);
     expect(filterQueue(rows, { statuses: [], tagId: 'tag1' }).map((e) => e.id)).toEqual(['c']);
     expect(filterQueue(rows, { statuses: [], search: 'ABS-2' }).map((e) => e.id)).toEqual(['b']);
+  });
+});
+
+/**
+ * `V-1`, `V-4`. The staging queues are read off the panel's own work rather than stored, so these
+ * pin the reading down: what puts a proposal in one, what keeps it out, and the fact that Pending,
+ * the accept queue and the decline queue partition the undecided set instead of overlapping it.
+ */
+describe('accept and decline queues', () => {
+  const row = (over: Partial<QueueRow> & { id: string }): QueueRow => ({
+    ref: 1,
+    displayRef: 'ABS-1',
+    title: over.id,
+    status: 'under_review',
+    submittedAt: null,
+    decidedAt: null,
+    trackId: null,
+    trackName: null,
+    formatId: null,
+    formatName: null,
+    level: null,
+    tagIds: [],
+    submitterName: 'Someone',
+    submitterEmail: 'someone@example.test',
+    averageScore: 4,
+    spread: null,
+    assignedCount: 2,
+    completedCount: 2,
+    declinedCount: 0,
+    hasAiReview: false,
+    ...over,
+  });
+
+  it('stages a finished proposal by which side of the bar it landed on', () => {
+    expect(decisionStage(row({ id: 'high', averageScore: 4.2 }))).toBe('accept');
+    expect(decisionStage(row({ id: 'bar', averageScore: DECISION_QUEUE_BAR }))).toBe('accept');
+    expect(decisionStage(row({ id: 'low', averageScore: 2.9 }))).toBe('decline');
+  });
+
+  it('waits for every review before staging anything', () => {
+    expect(decisionStage(row({ id: 'half', completedCount: 1 }))).toBeNull();
+    expect(decisionStage(row({ id: 'none', assignedCount: 0, completedCount: 0 }))).toBeNull();
+    // Assigned, answered, and nobody put a number on it: there is no recommendation to read.
+    expect(decisionStage(row({ id: 'unscored', averageScore: null }))).toBeNull();
+  });
+
+  it('does not let a reviewer who turned the assignment down hold the queue open', () => {
+    // A declined assignment never completes, so counting it as outstanding would strand the row.
+    expect(decisionStage(row({ id: 'declined-one', completedCount: 1, declinedCount: 1 }))).toBe(
+      'accept',
+    );
+  });
+
+  it('stages only what is still undecided', () => {
+    for (const status of ['accepted', 'declined', 'waitlisted', 'withdrawn', 'draft'] as const) {
+      expect(decisionStage(row({ id: status, status }))).toBeNull();
+    }
+    expect(decisionStage(row({ id: 'submitted', status: 'submitted' }))).toBe('accept');
+  });
+
+  it('splits the undecided set between Pending and the two queues, never counting one twice', () => {
+    const rows = [
+      row({ id: 'accept-me', averageScore: 4.4 }),
+      row({ id: 'decline-me', averageScore: 2.1 }),
+      row({ id: 'still-scoring', completedCount: 1 }),
+      row({ id: 'unassigned', assignedCount: 0, completedCount: 0, averageScore: null }),
+      row({ id: 'already-accepted', status: 'accepted' }),
+    ];
+    const idsForTab = (tab: string) =>
+      filterQueue(rows, filtersForTab(tab)).map((entry) => entry.id);
+
+    expect(idsForTab('accept-queue')).toEqual(['accept-me']);
+    expect(idsForTab('decline-queue')).toEqual(['decline-me']);
+    expect(idsForTab('pending')).toEqual(['still-scoring', 'unassigned']);
+    expect(idsForTab('accepted')).toEqual(['already-accepted']);
+    // `All` still shows everything undecided or decided, queues included.
+    expect(idsForTab('all')).toHaveLength(5);
+  });
+
+  it('gives each queue a tab of its own, ahead of the status it commits to', () => {
+    const ids = STATUS_TABS.map((tab) => tab.id);
+    expect(ids).toContain('accept-queue');
+    expect(ids).toContain('decline-queue');
+    expect(ids.indexOf('accept-queue')).toBeLessThan(ids.indexOf('accepted'));
+    expect(ids.indexOf('decline-queue')).toBeLessThan(ids.indexOf('declined'));
+    // Derived, so each one says what put a proposal in it.
+    for (const id of ['accept-queue', 'decline-queue']) {
+      expect(STATUS_TABS.find((tab) => tab.id === id)?.hint).toBeTruthy();
+    }
   });
 });
 
