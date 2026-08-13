@@ -1,3 +1,4 @@
+import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { currentActor, currentEventId, listEventsForUser, redirect } = vi.hoisted(() => ({
@@ -12,9 +13,13 @@ const { currentActor, currentEventId, listEventsForUser, redirect } = vi.hoisted
 vi.mock('next/navigation', () => ({ redirect }));
 vi.mock('@/lib/auth', () => ({ currentActor }));
 vi.mock('@/lib/services/events', () => ({ currentEventId, listEventsForUser }));
+vi.mock('../admin/AdminShell', () => ({ AdminShell: vi.fn() }));
+vi.mock('./CrmNav', () => ({ CrmNav: vi.fn() }));
 
 import { AdminShell } from '../admin/AdminShell';
 import CrmLayout from './layout';
+
+(globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 const actor = { userId: 'user-1', email: 'person@example.com', name: 'Person' };
 const event = (id: string, roles: string[]) => ({ id, name: id, slug: id, roles });
