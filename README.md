@@ -18,22 +18,22 @@ one-command self-host that needs no API key from anyone.
 
 ## Look at the running one first
 
-**<https://cicero.lhar8771.workers.dev>** is deployed and seeded.
+**<https://cicero.elehche.workers.dev>** is deployed and seeded.
 
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/admin/mail`](https://cicero.lhar8771.workers.dev/admin/mail).
+[`/admin/mail`](https://cicero.elehche.workers.dev/admin/mail).
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
 seeded demo cannot see each other.
 
-Without signing in at all: the [public event page](https://cicero.lhar8771.workers.dev/demo), the
-[programme](https://cicero.lhar8771.workers.dev/demo/agenda), an
-[open call for speakers](https://cicero.lhar8771.workers.dev/submit/demo/speak) you can submit to,
-the [embeddable agenda](https://cicero.lhar8771.workers.dev/embed/demo/agenda) an event site would
-iframe, and the [REST API](https://cicero.lhar8771.workers.dev/api/v1/events/demo/agenda).
+Without signing in at all: the [public event page](https://cicero.elehche.workers.dev/demo), the
+[programme](https://cicero.elehche.workers.dev/demo/agenda), an
+[open call for speakers](https://cicero.elehche.workers.dev/submit/demo/speak) you can submit to,
+the [embeddable agenda](https://cicero.elehche.workers.dev/embed/demo/agenda) an event site would
+iframe, and the [REST API](https://cicero.elehche.workers.dev/api/v1/events/demo/agenda).
 
 ![The organizer dashboard, opening on outstanding speaker tasks](docs/images/dashboard.jpg)
 
