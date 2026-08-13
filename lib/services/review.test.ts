@@ -49,6 +49,23 @@ describe('aggregateScorecard', () => {
     expect(result.scoredCount).toBe(3);
   });
 
+  it('matches the reviewer preview to the persisted weighted average', () => {
+    const result = aggregateScorecard(
+      [
+        criterion({ id: 'relevance', weight: 2 }),
+        criterion({ id: 'depth', weight: 2 }),
+        criterion({ id: 'readiness', weight: 1 }),
+      ],
+      [
+        { criterionId: 'relevance', value: 2 },
+        { criterionId: 'depth', value: 4 },
+        { criterionId: 'readiness', value: 4 },
+      ],
+    );
+
+    expect(result.average).toBe(3.2);
+  });
+
   it('renormalises over the criteria actually scored', () => {
     // Only the 1-weight criterion answered: the average is that score, not that score diluted by
     // implicit zeroes for the two it skipped.

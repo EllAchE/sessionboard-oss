@@ -15,6 +15,7 @@ import {
   Tag,
   Textarea,
 } from '@/components/ui';
+import { weightedScore } from '@/lib/review-scoring';
 import { recuseAction, saveMyScorecardAction } from '../actions';
 import type { CriterionWire, RoundWire, ScoreWire } from '../types';
 import styles from '../review.module.css';
@@ -75,16 +76,11 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
   const allScored = props.criteria.length > 0 && scoredCount === props.criteria.length;
 
   const preview = useMemo(() => {
-    const scored = props.criteria.filter((criterion) => scores[criterion.id]);
-    if (scored.length === 0) return null;
-    const weight = scored.reduce((sum, criterion) => sum + criterion.weight, 0);
-    if (weight === 0) return null;
-    const fraction =
-      scored.reduce(
-        (sum, criterion) => sum + (scores[criterion.id] / criterion.maxScore) * criterion.weight,
-        0,
-      ) / weight;
-    return 1 + fraction * 4;
+    const criteria = props.criteria.map((criterion, position) => ({ ...criterion, position }));
+    const values = criteria
+      .filter((criterion) => scores[criterion.id])
+      .map((criterion) => ({ criterionId: criterion.id, value: scores[criterion.id] }));
+    return weightedScore(criteria, values).average;
   }, [props.criteria, scores]);
 
   const save = useCallback(
