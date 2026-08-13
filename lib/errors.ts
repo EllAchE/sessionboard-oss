@@ -40,7 +40,12 @@ export const invalid = (message: string, details?: Record<string, string>) =>
 export const conflict = (message: string, details?: Record<string, string>) =>
   new AppError('conflict', message, details);
 
-export const rateLimited = (message = 'Too many requests') => new AppError('rate_limited', message);
+export const rateLimited = (message = 'Too many requests', retryAfterSeconds?: number) =>
+  new AppError(
+    'rate_limited',
+    message,
+    retryAfterSeconds ? { retryAfterSeconds: String(retryAfterSeconds) } : undefined,
+  );
 
 export const unavailable = (message: string) => new AppError('unavailable', message);
 

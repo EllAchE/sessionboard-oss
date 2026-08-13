@@ -9,6 +9,7 @@ import {
   notifyIfPublished,
 } from '@/lib/services/agenda-mutations';
 import { detectConflicts, type ScheduleEntry } from '@/lib/services/schedule';
+import { emitSessionScheduled } from '@/lib/webhooks';
 
 export const DELETE_MISSING_CONFIRMATION = 'DELETE_MISSING_SESSIONS' as const;
 
@@ -502,6 +503,13 @@ export async function reconcileProgram(
 
   for (const sessionId of outcome.notifications) {
     await notifyIfPublished(sessionId);
+  }
+  if (outcome.result.applied) {
+    for (const operation of outcome.result.operations) {
+      if ((operation.action === 'create' || operation.action === 'update') && operation.sessionId) {
+        await emitSessionScheduled(eventId, operation.sessionId);
+      }
+    }
   }
   return outcome.result;
 }

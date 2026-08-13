@@ -3,7 +3,7 @@
   "info": {
     "title": "Cicero API",
     "version": "1.0.0",
-    "description": "Read and search the public program of a Cicero event without credentials.\n\nOrganizer integration writes use an event-scoped API key. Speaker proposal, profile, and\ntask operations use that speaker's signed-in session as a cookie or Bearer secret. Every\nmutation is authenticated; public event, program, speaker, agenda, and CFP reads are not.",
+    "description": "Read and search the public program of a Cicero event without credentials.\n\nOrganizer integration writes use an event-scoped API key. Speaker proposal, profile, and\ntask operations use that speaker's signed-in session as a cookie or Bearer secret. Every\nmutation is authenticated; public event, program, speaker, agenda, and CFP reads are not.\n\nPublic reads are limited to 120 requests per caller per minute, speaker sessions to 300,\nand API keys to 600. A 429 response includes `Retry-After`. API keys have `read` or\n`write` scope; write keys include read access.",
     "license": {
       "name": "MIT"
     }
@@ -36,7 +36,7 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "description": "A per-event API key. Public read endpoints do not require it."
+        "description": "A per-event API key. Read scope may inspect protected event data; write scope includes reads and may run organizer mutations. Public read endpoints do not require it."
       },
       "speakerBearerAuth": {
         "type": "http",
@@ -3105,6 +3105,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -3294,6 +3304,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -3412,6 +3432,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -3463,6 +3493,16 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -3530,6 +3570,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -3566,6 +3616,16 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -3640,8 +3700,28 @@
               }
             }
           },
+          "403": {
+            "description": "The credential does not have the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "422": {
             "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -3659,7 +3739,7 @@
           "Submissions"
         ],
         "summary": "List submissions",
-        "description": "Requires an API key issued for this event.",
+        "description": "Requires a read or write API key issued for this event.",
         "operationId": "listSubmissions",
         "security": [
           {
@@ -3754,6 +3834,16 @@
           },
           "422": {
             "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -3861,6 +3951,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -3922,6 +4022,16 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -4015,6 +4125,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -4083,6 +4203,16 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -4160,6 +4290,16 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -4272,6 +4412,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -4359,6 +4509,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -4427,6 +4587,16 @@
           },
           "404": {
             "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -4523,6 +4693,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -4595,6 +4775,16 @@
           },
           "409": {
             "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {
@@ -4701,6 +4891,16 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -4760,6 +4960,16 @@
               }
             }
           },
+          "403": {
+            "description": "The credential does not have the required scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflicts with an existing record",
             "content": {
@@ -4772,6 +4982,16 @@
           },
           "422": {
             "description": "The request failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
             "content": {
               "application/json": {
                 "schema": {

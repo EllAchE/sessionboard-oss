@@ -20,6 +20,7 @@ describe('program reconciliation route', () => {
       eventSlug: 'first-settlement',
       keyId: 'key-1',
       name: 'Demo integration',
+      scope: 'write',
     });
     mockedReconcileProgram.mockReset();
     mockedReconcileProgram.mockResolvedValue({
@@ -51,7 +52,7 @@ describe('program reconciliation route', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mockedRequireApiKey).toHaveBeenCalledWith(request, 'first-settlement');
+    expect(mockedRequireApiKey).toHaveBeenCalledWith(request, 'first-settlement', 'write');
     expect(mockedReconcileProgram).toHaveBeenCalledWith(
       'event-first-settlement',
       expect.objectContaining({ source: 'accelevents', mode: 'merge', apply: false }),

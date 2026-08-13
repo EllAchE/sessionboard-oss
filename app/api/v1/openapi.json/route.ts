@@ -80,6 +80,7 @@ function jsonContent(schema: JsonSchema): JsonSchema {
 function errors(codes: number[]): Record<string, JsonSchema> {
   const descriptions: Record<number, string> = {
     401: 'Missing or invalid credential',
+    403: 'The credential does not have the required scope',
     404: 'No such event, form or resource',
     409: 'Conflicts with an existing record',
     422: 'The request failed validation',
@@ -122,6 +123,10 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         'Organizer integration writes use an event-scoped API key. Speaker proposal, profile, and',
         "task operations use that speaker's signed-in session as a cookie or Bearer secret. Every",
         'mutation is authenticated; public event, program, speaker, agenda, and CFP reads are not.',
+        '',
+        'Public reads are limited to 120 requests per caller per minute, speaker sessions to 300,',
+        'and API keys to 600. A 429 response includes `Retry-After`. API keys have `read` or',
+        '`write` scope; write keys include read access.',
       ].join('\n'),
       license: { name: 'MIT' },
     },
@@ -137,7 +142,8 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          description: 'A per-event API key. Public read endpoints do not require it.',
+          description:
+            'A per-event API key. Read scope may inspect protected event data; write scope includes reads and may run organizer mutations. Public read endpoints do not require it.',
         },
         speakerBearerAuth: {
           type: 'http',
@@ -184,7 +190,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam],
           responses: {
             '200': okResponse('The event', ref('Event')),
-            ...errors([404]),
+            ...errors([404, 429]),
           },
         },
       },
@@ -198,7 +204,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam, ...toParameters(sessionListQuery, 'query')],
           responses: {
             '200': okResponse('Matching sessions', listOf('Session')),
-            ...errors([404, 422]),
+            ...errors([404, 422, 429]),
           },
         },
       },
@@ -211,7 +217,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam, ...toParameters(speakerListQuery, 'query')],
           responses: {
             '200': okResponse('The speakers', listOf('Speaker')),
-            ...errors([404]),
+            ...errors([404, 429]),
           },
         },
       },
@@ -224,7 +230,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam],
           responses: {
             '200': okResponse('Open CFP forms', listOf('OpenCall')),
-            ...errors([404]),
+            ...errors([404, 429]),
           },
         },
       },
@@ -241,7 +247,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('PublicForm') },
               required: ['data'],
             }),
-            ...errors([404]),
+            ...errors([404, 429]),
           },
         },
       },
@@ -254,7 +260,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam],
           responses: {
             '200': okResponse('The agenda', ref('Agenda')),
-            ...errors([404]),
+            ...errors([404, 429]),
           },
         },
       },
@@ -277,7 +283,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('ProgramReconcileResult') },
               required: ['data'],
             }),
-            ...errors([401, 422]),
+            ...errors([401, 403, 422, 429]),
           },
         },
       },
@@ -285,13 +291,13 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         get: {
           tags: ['Submissions'],
           summary: 'List submissions',
-          description: 'Requires an API key issued for this event.',
+          description: 'Requires a read or write API key issued for this event.',
           operationId: 'listSubmissions',
           security: [{ bearerAuth: [] }],
           parameters: [slugParam, ...toParameters(submissionListQuery, 'query')],
           responses: {
             '200': okResponse('Matching submissions', listOf('Submission')),
-            ...errors([401, 404, 422]),
+            ...errors([401, 404, 422, 429]),
           },
         },
       },
@@ -310,7 +316,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           },
           responses: {
             '201': okResponse('The submission', ref('NewSubmissionResult')),
-            ...errors([401, 404, 409, 422]),
+            ...errors([401, 404, 409, 422, 429]),
           },
         },
       },
@@ -327,7 +333,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('SpeakerProfile') },
               required: ['data'],
             }),
-            ...errors([401, 404]),
+            ...errors([401, 404, 429]),
           },
         },
         patch: {
@@ -346,7 +352,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('SpeakerProfile') },
               required: ['data'],
             }),
-            ...errors([401, 404, 422]),
+            ...errors([401, 404, 422, 429]),
           },
         },
       },
@@ -359,7 +365,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam],
           responses: {
             '200': okResponse('The signed-in speaker proposals', listOf('SpeakerSubmission')),
-            ...errors([401, 404]),
+            ...errors([401, 404, 429]),
           },
         },
       },
@@ -376,7 +382,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('SpeakerSubmission') },
               required: ['data'],
             }),
-            ...errors([401, 404]),
+            ...errors([401, 404, 429]),
           },
         },
         put: {
@@ -395,7 +401,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('SpeakerSubmission') },
               required: ['data'],
             }),
-            ...errors([401, 404, 409, 422]),
+            ...errors([401, 404, 409, 422, 429]),
           },
         },
       },
@@ -412,7 +418,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               properties: { data: ref('SpeakerSubmission') },
               required: ['data'],
             }),
-            ...errors([401, 404, 409]),
+            ...errors([401, 404, 409, 429]),
           },
         },
       },
@@ -425,7 +431,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam],
           responses: {
             '200': okResponse('The signed-in speaker tasks', listOf('SpeakerTask')),
-            ...errors([401, 404]),
+            ...errors([401, 404, 429]),
           },
         },
       },
@@ -438,7 +444,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam, assignmentParam],
           responses: {
             '200': okResponse('The changed task state', { type: 'object' }),
-            ...errors([401, 404, 409, 422]),
+            ...errors([401, 404, 409, 422, 429]),
           },
         },
       },
@@ -451,7 +457,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam, assignmentParam],
           responses: {
             '200': okResponse('The changed task state', { type: 'object' }),
-            ...errors([401, 404, 409]),
+            ...errors([401, 404, 409, 429]),
           },
         },
       },
@@ -465,7 +471,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           requestBody: { required: true, content: jsonContent(ref('SpeakerTaskForm')) },
           responses: {
             '200': okResponse('The changed task state', { type: 'object' }),
-            ...errors([401, 404, 409, 422]),
+            ...errors([401, 404, 409, 422, 429]),
           },
         },
       },
@@ -487,7 +493,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
               'The reconciliation plan or applied result',
               ref('AcceleventsProgramSyncResult'),
             ),
-            ...errors([401, 409, 422]),
+            ...errors([401, 403, 409, 422, 429]),
           },
         },
       },
