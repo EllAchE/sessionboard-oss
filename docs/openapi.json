@@ -23,6 +23,10 @@
       "description": "Sessions, speakers and the agenda"
     },
     {
+      "name": "Sponsors",
+      "description": "Published sponsors and exhibitors"
+    },
+    {
       "name": "Submissions",
       "description": "The call for speakers"
     },
@@ -1230,6 +1234,72 @@
           "sessions"
         ],
         "description": "A speaker with at least one accepted session"
+      },
+      "Sponsor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "UUID"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "sponsor",
+              "exhibitor"
+            ]
+          },
+          "status": {
+            "const": "published",
+            "description": "Public reads never expose drafts"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "websiteUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "boothLocation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "logoUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Absolute URL of the logo for this published sponsor or exhibitor"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "name",
+          "tier",
+          "websiteUrl",
+          "description",
+          "boothLocation",
+          "logoUrl"
+        ],
+        "description": "A published sponsor or exhibitor"
       },
       "SpeakerProfile": {
         "type": "object",
@@ -3435,6 +3505,134 @@
           },
           "429": {
             "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/sponsors": {
+      "get": {
+        "tags": [
+          "Sponsors"
+        ],
+        "summary": "List sponsors and exhibitors",
+        "description": "Published rows only. Draft sponsor details and logo URLs are never returned.",
+        "operationId": "listSponsors",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sponsor",
+                "exhibitor"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Search name, tier, description, booth, and website",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Search name, tier, description, booth, and website"
+            }
+          },
+          {
+            "name": "tier",
+            "in": "query",
+            "required": false,
+            "description": "Tier name",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Tier name"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to 100; maximum 200",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Defaults to 100; maximum 200"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Zero-based result offset; defaults to 0",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000,
+              "description": "Zero-based result offset; defaults to 0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The published sponsors and exhibitors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Sponsor"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such event, form or resource",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
             "content": {
               "application/json": {
                 "schema": {

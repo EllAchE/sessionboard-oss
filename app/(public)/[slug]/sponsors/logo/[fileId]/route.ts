@@ -20,8 +20,9 @@ export const dynamic = 'force-dynamic';
  * has already chosen to put on a public page, and `lib/storage`'s no-presigned-URL rule is intact:
  * the bytes still leave through a server-side check.
  *
- * Cached for a year like the event branding, and safe for the same reason — the upload route stores
- * a new `file` row and writes its id into the slot, so a replaced logo is a different URL.
+ * Deliberately not cached. Replacing a logo changes the id, but unpublishing a sponsor does not; a
+ * long-lived browser or CDN cache would keep serving bytes after the status predicate had begun
+ * refusing them. The publication check therefore runs on every request.
  */
 export async function GET(
   _request: Request,
@@ -47,7 +48,7 @@ export async function GET(
     return new Response(object.body, {
       headers: {
         'Content-Type': record.contentType || object.contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'no-store',
         'Content-Security-Policy': 'frame-ancestors *',
       },
     });

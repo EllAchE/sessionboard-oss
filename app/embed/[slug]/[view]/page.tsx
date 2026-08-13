@@ -24,7 +24,7 @@ export async function generateMetadata({
 }
 
 /**
- * `G-1`–`G-3`. One route for all five widgets: they read the same bundle and differ only in layout,
+ * `G-1`–`G-3`. One route for every widget: they read the same bundle and differ only in layout,
  * so a fix to the published-only filter cannot land on four of them and miss the fifth.
  */
 export default async function EmbedViewPage({

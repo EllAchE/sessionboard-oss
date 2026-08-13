@@ -72,20 +72,51 @@ function world() {
       { id: LUDI, slug: 'ludi' },
     ],
     sponsor: [
-      { id: 'sponsor-1', eventId: FORUM, name: 'Aqua Marcia', logoFileId: LOGO },
+      {
+        id: 'sponsor-1',
+        eventId: FORUM,
+        status: 'published',
+        name: 'Aqua Marcia',
+        logoFileId: LOGO,
+      },
       // No logo at all: a sponsor row must not make every file on the event readable.
-      { id: 'sponsor-2', eventId: FORUM, name: 'Via Appia', logoFileId: null },
-      { id: 'sponsor-3', eventId: LUDI, name: 'Circus Maximus', logoFileId: LUDI_LOGO },
+      {
+        id: 'sponsor-2',
+        eventId: FORUM,
+        status: 'published',
+        name: 'Via Appia',
+        logoFileId: null,
+      },
+      {
+        id: 'sponsor-draft',
+        eventId: FORUM,
+        status: 'draft',
+        name: 'Secret negotiation',
+        logoFileId: RETIRED_LOGO,
+      },
+      {
+        id: 'sponsor-3',
+        eventId: LUDI,
+        status: 'published',
+        name: 'Circus Maximus',
+        logoFileId: LUDI_LOGO,
+      },
       /**
        * A sponsor on one event whose logo column names a file stored under another. The upload route
        * cannot produce this, which is the reason to fixture it: the whole point of scoping the slot
        * lookup by event is that this route does not depend on that guarantee holding.
        */
-      { id: 'sponsor-4', eventId: LUDI, name: 'Thermae', logoFileId: STRAY },
+      {
+        id: 'sponsor-4',
+        eventId: LUDI,
+        status: 'published',
+        name: 'Thermae',
+        logoFileId: STRAY,
+      },
     ],
     file: [
       { id: LOGO, eventId: FORUM, storageKey: 'k/logo', contentType: 'image/png' },
-      // Still in `file` after the upload route replaced it, but no slot points at it any more.
+      // Still stored and referenced, but only by a draft row, so public access must fail closed.
       { id: RETIRED_LOGO, eventId: FORUM, storageKey: 'k/old', contentType: 'image/png' },
       // The thing this route must never become a reader for.
       { id: DECK, eventId: FORUM, storageKey: 'k/deck', contentType: 'application/pdf' },
@@ -119,10 +150,10 @@ describe('GET /[slug]/sponsors/logo/[fileId]', () => {
     expect(get).toHaveBeenCalledWith('k/logo');
   });
 
-  /** Content-addressed: the upload route writes a new file id, so the URL is safe to pin. */
-  it('lets the response be cached for a year', async () => {
+  /** Publication is revocable without changing the file id, so cached bytes would leak a draft. */
+  it('does not cache a logo past a later unpublish', async () => {
     const response = await request('forum', LOGO);
-    expect(response.headers.get('Cache-Control')).toBe('public, max-age=31536000, immutable');
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
   });
 
   it('refuses a file on this event that no sponsor points at', async () => {
@@ -132,7 +163,7 @@ describe('GET /[slug]/sponsors/logo/[fileId]', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('refuses a logo that has since been replaced', async () => {
+  it('refuses the logo of a draft sponsor', async () => {
     const response = await request('forum', RETIRED_LOGO);
 
     expect(response.status).toBe(404);

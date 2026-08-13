@@ -8,10 +8,12 @@ import {
   getSponsor,
   removeSponsor,
   reorderSponsors,
+  setSponsorStatus,
   updateSponsor,
   type SponsorInput,
   type SponsorKind,
   type SponsorRecord,
+  type SponsorStatus,
 } from '@/lib/services/sponsors';
 import { manageSponsorsContext } from './context';
 import type { ActionResult } from './types';
@@ -47,6 +49,13 @@ export async function updateSponsorAction(
   patch: Partial<SponsorInput>,
 ): Promise<ActionResult<SponsorRecord>> {
   return run(async () => updateSponsor(await manageSponsorsContext(), sponsorId, patch));
+}
+
+export async function setSponsorStatusAction(
+  sponsorId: string,
+  status: SponsorStatus,
+): Promise<ActionResult<SponsorRecord>> {
+  return run(async () => setSponsorStatus(await manageSponsorsContext(), sponsorId, status));
 }
 
 /**

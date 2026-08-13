@@ -19,6 +19,8 @@ import {
   sessionSchema,
   speakerListQuery,
   speakerProfileSchema,
+  sponsorListQuery,
+  sponsorSchema,
   speakerSchema,
   speakerTaskSchema,
   submissionListQuery,
@@ -134,6 +136,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
     tags: [
       { name: 'Events', description: 'Event metadata' },
       { name: 'Program', description: 'Sessions, speakers and the agenda' },
+      { name: 'Sponsors', description: 'Published sponsors and exhibitors' },
       { name: 'Submissions', description: 'The call for speakers' },
       { name: 'Speaker', description: "The signed-in speaker's own work" },
     ],
@@ -166,6 +169,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         PublicForm: toJsonSchema(publicFormSchema),
         Session: toJsonSchema(sessionSchema),
         Speaker: toJsonSchema(speakerSchema),
+        Sponsor: toJsonSchema(sponsorSchema),
         SpeakerProfile: toJsonSchema(speakerProfileSchema),
         SpeakerProfileUpdate: toJsonSchema(updateSpeakerProfileBody),
         SpeakerSubmission: toJsonSchema(mySubmissionSchema),
@@ -218,6 +222,20 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           responses: {
             '200': okResponse('The speakers', listOf('Speaker')),
             ...errors([404, 429]),
+          },
+        },
+      },
+      '/events/{slug}/sponsors': {
+        get: {
+          tags: ['Sponsors'],
+          summary: 'List sponsors and exhibitors',
+          description:
+            'Published rows only. Draft sponsor details and logo URLs are never returned.',
+          operationId: 'listSponsors',
+          parameters: [slugParam, ...toParameters(sponsorListQuery, 'query')],
+          responses: {
+            '200': okResponse('The published sponsors and exhibitors', listOf('Sponsor')),
+            ...errors([404, 422]),
           },
         },
       },
