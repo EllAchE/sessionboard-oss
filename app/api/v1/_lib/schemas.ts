@@ -103,29 +103,61 @@ export const submissionSchema = z
   })
   .describe('A petition from the call for orators. Requires an aqueduct key.');
 
-export const sessionListQuery = z.object({
-  status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
-  track: z.string().optional().describe('Track name or id'),
-  room: z.string().optional().describe('Room name or id'),
-});
+const queryFilter = z.string().trim().min(1).max(120);
 
-export const submissionListQuery = z.object({
-  status: z
-    .enum(['draft', 'submitted', 'under_review', 'accepted', 'declined', 'waitlisted', 'withdrawn'])
-    .optional(),
-  limit: z.coerce.number().int().min(1).max(200).optional().describe('Defaults to 100'),
+export const sessionListQuery = z
+  .object({
+    status: z.enum(['draft', 'published', 'cancelled']).optional().describe('Defaults to published'),
+    track: queryFilter.optional().describe('Theme name or id'),
+    room: queryFilter.optional().describe('Chamber name or id'),
+  })
+  .strict();
+
+export const submissionListQuery = z
+  .object({
+    status: z
+      .enum(['draft', 'submitted', 'under_review', 'accepted', 'declined', 'waitlisted', 'withdrawn'])
+      .optional(),
+    limit: z
+      .preprocess(
+        (value) =>
+          typeof value === 'string' && /^[1-9]\d{0,2}$/.test(value) ? Number(value) : value,
+        z.number().int().min(1).max(200),
+      )
+      .optional()
+      .describe('Defaults to 100'),
+  })
+  .strict();
+
+const answerText = z.string().max(20_000);
+const answerValue = z.union([
+  answerText,
+  z.number(),
+  z.boolean(),
+  z.array(z.string().max(1_000)).max(100),
+  z.null(),
+]);
+const answers = z.record(z.string().min(1).max(120), answerValue).superRefine((value, context) => {
+  if (Object.keys(value).length > 100) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'A petition may answer at most 100 prompts',
+    });
+  }
 });
 
 export const createSubmissionBody = z
   .object({
-    email: z.string().email().describe('Petitioner dispatch address; Cicero creates an account if none exists'),
+    email: z
+      .string()
+      .email()
+      .describe('Petitioner dispatch address; Cicero creates an account if none exists'),
     name: z.string().optional().describe('Petitioner name for the rolls'),
-    answers: z
-      .record(z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.null()]))
-      .describe(
-        'Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags.',
-      ),
+    answers: answers.describe(
+      'Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags.',
+    ),
   })
+  .strict()
   .describe('A petition filed through a proclaimed scroll');
 
 export const createSubmissionResponse = z.object({
@@ -133,6 +165,96 @@ export const createSubmissionResponse = z.object({
   ref: z.string(),
   status: z.enum(['draft', 'submitted']),
   title: z.string(),
+});
+
+export const programSessionInputSchema = z.object({
+  externalId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe('Stable Accelevents oration id; unique within this assembly'),
+  title: z.string().trim().min(1).max(300),
+  description: z
+    .string()
+    .max(50_000)
+    .nullable()
+    .describe('Required Markdown inscription; null or blank clears the description'),
+  status: z.enum(['draft', 'published', 'cancelled']),
+  startsAt: z.string().datetime({ offset: true }).nullable(),
+  endsAt: z.string().datetime({ offset: true }).nullable(),
+  room: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .nullable()
+    .describe('Assembly chamber id or exact name (case-insensitive)'),
+  track: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .nullable()
+    .describe('Assembly theme id or exact name (case-insensitive)'),
+  format: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .nullable()
+    .describe('Assembly oration format id or exact name (case-insensitive)'),
+  ceuCredits: z.string().trim().max(50).nullable(),
+});
+
+export const programReconcileBody = z
+  .object({
+    source: z.literal('accelevents'),
+    mode: z
+      .enum(['merge', 'replace'])
+      .default('merge')
+      .describe(
+        'merge inscribes or revises listed records; replace also erases absent managed records',
+      ),
+    apply: z
+      .boolean()
+      .default(false)
+      .describe('False previews the exact acts without altering the rolls'),
+    confirmDeleteMissing: z
+      .literal('DELETE_MISSING_SESSIONS')
+      .optional()
+      .describe('Required to enact replace mode when missing managed orations would be erased'),
+    sessions: z.array(programSessionInputSchema).max(1_000).default([]),
+    deleteExternalIds: z
+      .array(z.string().trim().min(1).max(200))
+      .max(1_000)
+      .default([])
+      .describe('Source-managed orations to erase explicitly in merge mode'),
+  })
+  .describe('An Accelevents-shaped programme snapshot or petition');
+
+export const programOperationSchema = z.object({
+  externalId: z.string(),
+  action: z.enum(['create', 'update', 'delete', 'noop', 'error']),
+  sessionId: z.string().nullable(),
+  changes: z.array(z.string()),
+  message: z.string().nullable(),
+});
+
+export const programReconcileResponse = z.object({
+  source: z.literal('accelevents'),
+  mode: z.enum(['merge', 'replace']),
+  applied: z.boolean(),
+  canApply: z.boolean(),
+  requiresDeleteConfirmation: z.boolean(),
+  summary: z.object({
+    create: z.number().int(),
+    update: z.number().int(),
+    delete: z.number().int(),
+    noop: z.number().int(),
+    error: z.number().int(),
+  }),
+  operations: z.array(programOperationSchema),
 });
 
 export const acceleventsProgramSyncBody = z

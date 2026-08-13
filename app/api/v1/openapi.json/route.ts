@@ -9,6 +9,8 @@ import {
   createSubmissionResponse,
   errorResponse,
   eventSchema,
+  programReconcileBody,
+  programReconcileResponse,
   sessionListQuery,
   sessionSchema,
   speakerSchema,
@@ -84,6 +86,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         'Public reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key',
         'issued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.',
         'Keys are hashed at rest and revealed only once, when forged.',
+        'Programme reconciliation writes use the same assembly-scoped Bearer seals and preview by default.',
       ].join('\n'),
       license: { name: 'MIT' },
     },
@@ -111,6 +114,8 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         Submission: toJsonSchema(submissionSchema),
         NewSubmission: toJsonSchema(createSubmissionBody),
         NewSubmissionResult: toJsonSchema(createSubmissionResponse),
+        ProgramReconcileRequest: toJsonSchema(programReconcileBody),
+        ProgramReconcileResult: toJsonSchema(programReconcileResponse),
         Error: toJsonSchema(errorResponse),
       },
     },
@@ -166,6 +171,29 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           },
         },
       },
+      '/events/{slug}/program/reconcile': {
+        post: {
+          tags: ['Programme'],
+          summary: 'Preview or apply an Accelevents programme collection',
+          description:
+            'Requires an aqueduct key issued for this assembly. `apply: false` previews without altering the rolls. `merge` inscribes or updates the listed orations and honors explicit `deleteExternalIds`. `replace` also reports source-managed orations missing from the collection; erasing those inscriptions requires `confirmDeleteMissing: "DELETE_MISSING_SESSIONS"`. Any error in one record prevents the entire petition from being enacted.',
+          operationId: 'reconcileProgram',
+          security: [{ bearerAuth: [] }],
+          parameters: [slugParam],
+          requestBody: {
+            required: true,
+            content: jsonContent(ref('ProgramReconcileRequest')),
+          },
+          responses: {
+            '200': okResponse('The preview or enacted report', {
+              type: 'object',
+              properties: { data: ref('ProgramReconcileResult') },
+              required: ['data'],
+            }),
+            ...errors([401, 422]),
+          },
+        },
+      },
       '/events/{slug}/submissions': {
         get: {
           tags: ['Petitions'],
@@ -185,7 +213,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           tags: ['Petitions'],
           summary: 'Answer a proclamation for orators',
           description:
-            'No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link.',
+            'No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link. This POST is non-idempotent: a retry may create another petition when the scroll allows multiple petitions per citizen.',
           operationId: 'createSubmission',
           parameters: [
             slugParam,

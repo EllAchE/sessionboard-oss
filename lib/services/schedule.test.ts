@@ -158,7 +158,7 @@ describe('detectConflicts', () => {
     expect(conflicts).toEqual([]);
   });
 
-  it('reports a track collision as a warning, not an error', () => {
+  it('reports a track collision as an error', () => {
     const conflicts = detectConflicts(
       [
         entry({
@@ -181,7 +181,7 @@ describe('detectConflicts', () => {
 
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0].kind).toBe('track');
-    expect(conflicts[0].severity).toBe('warning');
+    expect(conflicts[0].severity).toBe('error');
     expect(conflicts[0].message).toContain('Platform');
   });
 
@@ -445,7 +445,7 @@ describe('drag preview', () => {
     expect(conflicts.map((conflict) => conflict.kind)).toEqual(['room']);
   });
 
-  it('clears the warning once the drag moves past the occupied block', () => {
+  it('clears the conflict once the drag moves past the occupied block', () => {
     const item: QueueItem = {
       kind: 'submission',
       id: 'sub-1',

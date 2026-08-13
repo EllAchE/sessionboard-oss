@@ -77,6 +77,7 @@ export function toJsonSchema(input: z.ZodTypeAny): JsonSchema {
         }[]) ?? []) {
           if (check.kind === 'email') out.format = 'email';
           if (check.kind === 'url') out.format = 'uri';
+          if (check.kind === 'datetime') out.format = 'date-time';
           if (check.kind === 'min') out.minLength = check.value;
           if (check.kind === 'max') out.maxLength = check.value;
         }
@@ -121,6 +122,7 @@ export function toJsonSchema(input: z.ZodTypeAny): JsonSchema {
         }
 
         const out: JsonSchema = { type: 'object', properties };
+        if ((def.unknownKeys as string | undefined) === 'strict') out.additionalProperties = false;
         if (required.length > 0) out.required = required;
         return out;
       }

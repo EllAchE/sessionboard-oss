@@ -19,7 +19,6 @@ import {
   DEFAULT_SESSION_MINUTES,
   agendaDayKeys,
   applyPlacements,
-  conflictKey,
   conflictsBySession,
   detectConflicts,
   durationMinutes,
@@ -33,7 +32,6 @@ import {
   provisionalEntry,
   publishCounts,
   summarizeConflicts,
-  type Conflict,
   type Placement,
   type QueueItem,
   type ScheduleEntry,
@@ -67,10 +65,9 @@ import styles from './agenda.module.css';
  * The agenda board. One `DndContext` covers the rail and every day grid on screen, so a card can
  * travel from "waiting for a slot" to a room column in one gesture and back again.
  *
- * The rule that shapes this component: **conflicts are computed live and never block a drop.**
- * `previewConflicts` runs on each hovered cell against the world as it would be, and the difference
- * against the current conflicts is what the organizer sees under the cursor. They drop anyway if
- * they mean to — the schedule they are holding in their head beats the one we can infer.
+ * `previewConflicts` runs on each hovered cell against the world as the drop would leave it. A true
+ * room, track or speaker overlap cannot be saved, so the board shows the reason before the server's
+ * serialized validation makes the same decision.
  *
  * Calendar mail is not this component's business. `actions.ts` routes every change through
  * `sendSessionInvites`, which owns `ics_sequence` and the `ics_uid` of an existing row.
@@ -169,7 +166,6 @@ export function AgendaBoard({
   );
 
   const settled = useMemo(() => detectConflicts(entries, labels), [entries, labels]);
-  const settledKeys = useMemo(() => new Set(settled.map(conflictKey)), [settled]);
 
   /** What the board renders while a drag is in flight: the agenda as this drop would leave it. */
   const live = useMemo(() => {
@@ -177,10 +173,10 @@ export function AgendaBoard({
     return previewConflicts(entries, [drag.hover.placement], labels, drag.hover.additions);
   }, [drag, entries, labels, settled]);
 
-  const introduced = useMemo(
-    () => (drag?.hover ? live.filter((conflict) => !settledKeys.has(conflictKey(conflict))) : []),
-    [drag, live, settledKeys],
-  );
+  const blocking = useMemo(() => {
+    const sessionId = drag?.hover?.placement.sessionId;
+    return sessionId ? live.filter((item) => item.sessionIds.includes(sessionId)) : [];
+  }, [drag, live]);
 
   const conflictIndex = useMemo(() => conflictsBySession(live), [live]);
   const summary = useMemo(() => summarizeConflicts(live), [live]);
@@ -200,17 +196,6 @@ export function AgendaBoard({
       const result = await action();
       if (!result.ok) toast({ title, description: result.error, tone: 'danger' });
       router.refresh();
-    });
-  };
-
-  const warnAbout = (conflicts: Conflict[]) => {
-    if (conflicts.length === 0) return;
-    const worst = conflicts.some((conflict) => conflict.severity === 'error');
-    toast({
-      title: worst ? 'Placed, with a clash' : 'Placed, with an overlap',
-      description: conflicts.map((conflict) => conflict.message).join(' · '),
-      tone: worst ? 'danger' : 'warning',
-      duration: 8000,
     });
   };
 
@@ -296,6 +281,19 @@ export function AgendaBoard({
     const hover = hoverFor(overId, state.payload);
     if (!hover) return;
 
+    const conflicts = previewConflicts(entries, [hover.placement], labels, hover.additions).filter(
+      (item) => item.sessionIds.includes(hover.placement.sessionId),
+    );
+    if (conflicts.length > 0) {
+      toast({
+        title: 'Choose another chamber or hour',
+        description: conflicts.map((item) => item.message).join(' · '),
+        tone: 'danger',
+        duration: 8000,
+      });
+      return;
+    }
+
     const input: PlacementInput =
       state.payload.source === 'queue'
         ? {
@@ -324,13 +322,6 @@ export function AgendaBoard({
         current.filter((card) => !(card.kind === item.kind && card.id === item.id)),
       );
     }
-
-    // The drop always lands. The warning is the product: the organizer is told, not stopped.
-    warnAbout(
-      previewConflicts(entries, [hover.placement], labels, hover.additions).filter(
-        (conflict) => !settledKeys.has(conflictKey(conflict)),
-      ),
-    );
 
     run('Could not move that oration', () => placeSessionAction(input));
   };
@@ -438,7 +429,7 @@ export function AgendaBoard({
           title: `Proclaimed ${result.data.published} oration${result.data.published === 1 ? '' : 's'}`,
           description:
             result.data.skipped > 0
-              ? `${result.data.skipped} still needs a room and a time.`
+              ? `${result.data.skipped} still needs a chamber and an hour.`
               : 'Every orator with a proclaimed hour has received a summons.',
           tone: result.data.skipped > 0 ? 'warning' : 'success',
         });
@@ -459,7 +450,7 @@ export function AgendaBoard({
           <h1 className={styles.title}>Fasti</h1>
           <p className={styles.lede}>
             Marshal an accepted oration from the rail into its chamber and hour. Cicero names every
-            clash but never overrules you—times shown in {timeZone}.
+            clash, which must be settled before placement—times shown in {timeZone}.
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -518,11 +509,11 @@ export function AgendaBoard({
         )}
       </div>
 
-      {introduced.length > 0 ? (
+      {blocking.length > 0 ? (
         <div className={`${styles.banner} ${styles.bannerError}`}>
           <AlertTriangle size={15} aria-hidden />
-          <span>{introduced.map((conflict) => conflict.message).join(' · ')}</span>
-          <span className={styles.bannerCounts}>The consul may overrule the warning</span>
+          <span>{blocking.map((item) => item.message).join(' · ')}</span>
+          <span className={styles.bannerCounts}>Choose another chamber or hour</span>
         </div>
       ) : summary.total === 0 ? (
         <div className={`${styles.banner} ${styles.bannerClear}`}>
@@ -627,7 +618,7 @@ export function AgendaBoard({
           {drag ? (
             <div
               className={`${styles.dragPreview} ${
-                introduced.length > 0 ? styles.dragPreviewWarning : ''
+                blocking.length > 0 ? styles.dragPreviewWarning : ''
               }`}
             >
               {drag.payload.source === 'queue' ? drag.payload.item.title : drag.payload.entry.title}
@@ -643,8 +634,8 @@ export function AgendaBoard({
                     : ''}
                 </span>
               )}
-              {introduced.length > 0 && (
-                <span className={styles.dragPreviewNote}>{introduced[0].message}</span>
+              {blocking.length > 0 && (
+                <span className={styles.dragPreviewNote}>{blocking[0].message}</span>
               )}
             </div>
           ) : null}

@@ -3,7 +3,7 @@
   "info": {
     "title": "Cicero Public Aqueduct",
     "version": "1.0.0",
-    "description": "Read the public programme of a Cicero assembly and answer an open proclamation for orators.\n\nPublic reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key\nissued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and revealed only once, when forged.",
+    "description": "Read the public programme of a Cicero assembly and answer an open proclamation for orators.\n\nPublic reads need no seal. `GET /events/{slug}/submissions` requires an aqueduct key\nissued for that assembly under Curia → Alliances, sent as `Authorization: Bearer <key>`.\nKeys are hashed at rest and revealed only once, when forged.\nProgramme reconciliation writes use the same assembly-scoped Bearer seals and preview by default.",
     "license": {
       "name": "MIT"
     }
@@ -935,7 +935,8 @@
             "additionalProperties": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 20000
                 },
                 {
                   "type": "number"
@@ -946,7 +947,8 @@
                 {
                   "type": "array",
                   "items": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                   }
                 },
                 {
@@ -957,6 +959,7 @@
             "description": "Keyed by the scroll prompt key. Customary keys are title, description, format, track, level, tags."
           }
         },
+        "additionalProperties": false,
         "required": [
           "email",
           "answers"
@@ -988,6 +991,244 @@
           "ref",
           "status",
           "title"
+        ]
+      },
+      "ProgramReconcileRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "accelevents"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "replace"
+            ],
+            "description": "merge inscribes or revises listed records; replace also erases absent managed records"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "False previews the exact acts without altering the rolls"
+          },
+          "confirmDeleteMissing": {
+            "const": "DELETE_MISSING_SESSIONS",
+            "description": "Required to enact replace mode when missing managed orations would be erased"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "externalId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Stable Accelevents oration id; unique within this assembly"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 50000,
+                  "description": "Required Markdown inscription; null or blank clears the description"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "cancelled"
+                  ]
+                },
+                "startsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "endsAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time"
+                },
+                "room": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Assembly chamber id or exact name (case-insensitive)"
+                },
+                "track": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Assembly theme id or exact name (case-insensitive)"
+                },
+                "format": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "description": "Assembly oration format id or exact name (case-insensitive)"
+                },
+                "ceuCredits": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 50
+                }
+              },
+              "required": [
+                "externalId",
+                "title",
+                "description",
+                "status",
+                "startsAt",
+                "endsAt",
+                "room",
+                "track",
+                "format",
+                "ceuCredits"
+              ]
+            }
+          },
+          "deleteExternalIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Source-managed orations to erase explicitly in merge mode"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "description": "An Accelevents-shaped programme snapshot or petition"
+      },
+      "ProgramReconcileResult": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "const": "accelevents"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "merge",
+              "replace"
+            ]
+          },
+          "applied": {
+            "type": "boolean"
+          },
+          "canApply": {
+            "type": "boolean"
+          },
+          "requiresDeleteConfirmation": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "create": {
+                "type": "integer"
+              },
+              "update": {
+                "type": "integer"
+              },
+              "delete": {
+                "type": "integer"
+              },
+              "noop": {
+                "type": "integer"
+              },
+              "error": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "create",
+              "update",
+              "delete",
+              "noop",
+              "error"
+            ]
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "externalId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete",
+                    "noop",
+                    "error"
+                  ]
+                },
+                "sessionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "message": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "externalId",
+                "action",
+                "sessionId",
+                "changes",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "source",
+          "mode",
+          "applied",
+          "canApply",
+          "requiresDeleteConfirmation",
+          "summary",
+          "operations"
         ]
       },
       "Error": {
@@ -1113,20 +1354,24 @@
             "name": "track",
             "in": "query",
             "required": false,
-            "description": "Track name or id",
+            "description": "Theme name or id",
             "schema": {
               "type": "string",
-              "description": "Track name or id"
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Theme name or id"
             }
           },
           {
             "name": "room",
             "in": "query",
             "required": false,
-            "description": "Room name or id",
+            "description": "Chamber name or id",
             "schema": {
               "type": "string",
-              "description": "Room name or id"
+              "minLength": 1,
+              "maxLength": 120,
+              "description": "Chamber name or id"
             }
           }
         ],
@@ -1280,6 +1525,82 @@
         }
       }
     },
+    "/events/{slug}/program/reconcile": {
+      "post": {
+        "tags": [
+          "Programme"
+        ],
+        "summary": "Preview or apply an Accelevents programme collection",
+        "description": "Requires an aqueduct key issued for this assembly. `apply: false` previews without altering the rolls. `merge` inscribes or updates the listed orations and honors explicit `deleteExternalIds`. `replace` also reports source-managed orations missing from the collection; erasing those inscriptions requires `confirmDeleteMissing: \"DELETE_MISSING_SESSIONS\"`. Any error in one record prevents the entire petition from being enacted.",
+        "operationId": "reconcileProgram",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The assembly's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramReconcileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview or enacted report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ProgramReconcileResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid aqueduct seal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The petition failed validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/events/{slug}/submissions": {
       "get": {
         "tags": [
@@ -1398,7 +1719,7 @@
           "Petitions"
         ],
         "summary": "Answer a proclamation for orators",
-        "description": "No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link.",
+        "description": "No aqueduct key is required—an open proclamation accepts petitions from anyone. Cicero adds an unknown address to the rolls and sends a sealed entry link. This POST is non-idempotent: a retry may create another petition when the scroll allows multiple petitions per citizen.",
         "operationId": "createSubmission",
         "parameters": [
           {

@@ -213,3 +213,20 @@ docker compose up      # must reach a working first-run setup screen with no oth
 
 `T-3` is only satisfied if that is true on a machine that has never built this repo. Verifying it on
 a developer machine with a warm cache proves nothing.
+
+## 6. Left on the table for v1 — to-do
+
+Two items the brief could plausibly want that are not in this submission. Neither is in the
+requirements doc's `Explicit non-goals` table, because there is no brief evidence excluding them —
+they are simply not built yet, and belong here as a running to-do rather than a permanent exclusion.
+
+| Item | Status | Notes |
+| --- | --- | --- |
+| Agent mail | Not started | No agent (reviewer, scheduler) sends or manages mail on its own. `lib/mail` and `lib/services/comms.ts` are template-driven transactional email triggered by organizer actions, consistent with the advisory-only AI stance in §2 — an agent that owns its own mailbox is a bigger commitment than "propose, never decide." |
+| Video uploads / post-conference assets | Partially covered | The task/deliverable uploader already accepts video as a file kind (`app/admin/submissions/files/kind.ts`), so a speaker can attach a video file during CFP or the portal task flow today. What's missing is anything **post-conference**: no session-recording field, no publish-after-the-event flow, and no public surface (e.g. "watch the recording") on the program page. |
+
+Not on this list: Speaker CRM. `docs/01-requirements.md` §14 still marks it `[EXCLUDED]`, but that
+line is stale — see `docs/decisions-long-form.md` ("The largest functional expansion is the speaker
+CRM"), which documents the exclusion being deliberately reversed and a full CRM (`app/crm/*`) built
+above the event layer. It shipped; the non-goals table needs a follow-up correction, tracked
+separately from this to-do.

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { toJsonSchema, toParameters } from './openapi';
-import { agendaSchema, sessionListQuery, sessionSchema, submissionSchema } from './schemas';
+import {
+  agendaSchema,
+  programReconcileBody,
+  sessionListQuery,
+  sessionSchema,
+  submissionListQuery,
+  submissionSchema,
+} from './schemas';
 
 /**
  * The generator walks Zod's `_def` internals, which are not a public contract. These assertions are
@@ -14,6 +21,10 @@ describe('toJsonSchema', () => {
     expect(schema.type).toBe('object');
     expect(schema.required).toEqual(['a']);
     expect((schema.properties as Record<string, { type: string }>).b.type).toBe('number');
+  });
+
+  it('publishes strict object boundaries', () => {
+    expect(toJsonSchema(z.object({ value: z.string() }).strict()).additionalProperties).toBe(false);
   });
 
   it('renders a nullable field as a type union rather than dropping it', () => {
@@ -33,6 +44,13 @@ describe('toJsonSchema', () => {
     expect(props.status.enum).toEqual(['draft', 'published']);
     expect(props.status.description).toBe('Publication state');
     expect(props.tags.type).toBe('array');
+  });
+
+  it('carries ISO instants through as date-time strings', () => {
+    const generated = toJsonSchema(programReconcileBody) as {
+      properties: { sessions: { items: { properties: { startsAt: { format: string } } } } };
+    };
+    expect(generated.properties.sessions.items.properties.startsAt.format).toBe('date-time');
   });
 
   it('generates a non-empty schema for every published payload', () => {
@@ -57,5 +75,12 @@ describe('toParameters', () => {
     // Every filter on a public read is optional; a required one would break the bare `/sessions`.
     expect(params.every((param) => param.required === false)).toBe(true);
     expect(params.map((param) => param.name)).toContain('track');
+  });
+
+  it('publishes transformed numeric query limits as bounded integers', () => {
+    const limit = toParameters(submissionListQuery, 'query').find(
+      (parameter) => parameter.name === 'limit',
+    );
+    expect(limit?.schema).toMatchObject({ type: 'integer', minimum: 1, maximum: 200 });
   });
 });
