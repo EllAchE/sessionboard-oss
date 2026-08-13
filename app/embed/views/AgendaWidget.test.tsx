@@ -39,6 +39,7 @@ function session(index: number): PublicSession {
     trackId: `track-${index}`,
     format: 'Talk',
     ceuCredits: null,
+    tags: [],
     speakers: [],
   };
 }
@@ -66,7 +67,9 @@ function bundle(roomCount: number): PublicBundle {
 
 describe('AgendaWidget scaling affordances', () => {
   it('labels a large schedule as a keyboard-scrollable region and explains both axes', () => {
-    const html = renderToStaticMarkup(<AgendaWidget bundle={bundle(8)} options={options} />);
+    const html = renderToStaticMarkup(
+      <AgendaWidget bundle={bundle(8)} options={options} speakerBase="/speakers" />,
+    );
 
     expect(html).toContain('role="region"');
     expect(html).toContain('tabindex="0"');
@@ -75,7 +78,9 @@ describe('AgendaWidget scaling affordances', () => {
   });
 
   it('marks short cards for compact rendering while retaining a complete accessible name', () => {
-    const html = renderToStaticMarkup(<AgendaWidget bundle={bundle(1)} options={options} />);
+    const html = renderToStaticMarkup(
+      <AgendaWidget bundle={bundle(1)} options={options} speakerBase="/speakers" />,
+    );
 
     expect(html).toContain('data-compact="true"');
     expect(html).toContain(
