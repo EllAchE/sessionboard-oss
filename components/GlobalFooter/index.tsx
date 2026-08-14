@@ -1,7 +1,36 @@
 import Link from 'next/link';
-import { ExternalLink, Gift, Github, Globe2, Linkedin, Twitter } from 'lucide-react';
+import {
+  ExternalLink,
+  Gift,
+  Github,
+  Globe2,
+  Landmark,
+  Linkedin,
+  Megaphone,
+  Scale,
+  Twitter,
+} from 'lucide-react';
 import { CiceroMark } from '@/components/CiceroBrand';
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import styles from './GlobalFooter.module.css';
+
+const DEMO_LINKS = [
+  {
+    href: DEMO_ENTRY_LINKS.organizer,
+    label: 'Organizer demo',
+    icon: Landmark,
+  },
+  {
+    href: DEMO_ENTRY_LINKS.reviewer,
+    label: 'Reviewer demo',
+    icon: Scale,
+  },
+  {
+    href: DEMO_ENTRY_LINKS.speaker,
+    label: 'Speaker demo',
+    icon: Megaphone,
+  },
+] as const;
 
 const SOCIAL_LINKS = [
   {
@@ -42,7 +71,14 @@ export function GlobalFooter() {
           <p>Open-source conference operations, from call for speakers to show day.</p>
         </div>
 
-        <nav className={styles.links} aria-label="Cicero and creator links">
+        <nav className={styles.links} aria-label="Cicero demo, creator, and source links">
+          {DEMO_LINKS.map(({ href, icon: Icon, label }) => (
+            <Link key={label} className={styles.link} href={href}>
+              <Icon size={15} aria-hidden="true" />
+              <span>{label}</span>
+            </Link>
+          ))}
+          <span className={styles.divider} aria-hidden="true" />
           {SOCIAL_LINKS.map(({ href, icon: Icon, label }) => (
             <a key={label} className={styles.link} href={href} target="_blank" rel="noreferrer">
               <Icon size={15} aria-hidden="true" />

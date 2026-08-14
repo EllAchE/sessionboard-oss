@@ -635,6 +635,14 @@
   max-width: 720px;
 }
 
+.finalCtaActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
 @media (max-width: 1020px) {
   .hero {
     min-height: auto;
@@ -728,11 +736,13 @@
     font-size: clamp(2.75rem, 14vw, 4rem);
   }
 
-  .actions {
+  .actions,
+  .finalCtaActions {
     width: 100%;
   }
 
-  .actions > * {
+  .actions > *,
+  .finalCtaActions > * {
     flex: 1 1 100%;
   }
 
