@@ -70,3 +70,70 @@ export function parseArgs(argv: readonly string[]): Map<string, string> {
   }
   return parsed;
 }
+
+export type ProcessCpuInfo = { ppid: number; cpuMs: number };
+
+/**
+ * macOS has no `/proc`, so `--cpu-pid` falls back to `ps`'s own cumulative-CPU-time column there.
+ * Its format is `[[dd-]hh:]mm:ss.ss`, unbounded on the left rather than rolling over into the next
+ * unit — a process with 144 minutes of CPU time reads `144:19.27`, never `2:24:19.27`. Returns
+ * milliseconds, or `null` for anything that is not that shape.
+ */
+export function parseBsdCpuTime(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  let rest = trimmed;
+  let days = 0;
+  const dashIndex = rest.indexOf('-');
+  if (dashIndex !== -1) {
+    days = Number(rest.slice(0, dashIndex));
+    rest = rest.slice(dashIndex + 1);
+  }
+  if (!Number.isFinite(days)) return null;
+
+  const parts = rest.split(':');
+  if (parts.length === 0) return null;
+
+  let seconds = days * 86400;
+  let multiplier = 1;
+  for (let index = parts.length - 1; index >= 0; index -= 1) {
+    const value = Number(parts[index]);
+    if (!Number.isFinite(value)) return null;
+    seconds += value * multiplier;
+    multiplier *= 60;
+  }
+  return seconds * 1000;
+}
+
+/**
+ * Sums CPU across every named process and its descendants, given a `pid -> {ppid, cpuMs}` table
+ * built from either `/proc` (Linux) or `ps` (macOS) — both backends land here so the walk itself
+ * only needs testing once. Takes a list of roots because a server is not always one process:
+ * `wrangler dev` runs two sibling `workerd` processes under a supervisor whose own CPU should not
+ * be billed to the app.
+ */
+export function sumProcessTreeCpuMs(
+  rootPids: readonly number[],
+  table: ReadonlyMap<number, ProcessCpuInfo>,
+): number | null {
+  // A root that has already exited means the measurement is meaningless, not merely incomplete.
+  if (rootPids.length === 0 || rootPids.some((pid) => !table.has(pid))) return null;
+
+  const children = new Map<number, number[]>();
+  for (const [pid, info] of table) {
+    children.set(info.ppid, [...(children.get(info.ppid) ?? []), pid]);
+  }
+
+  let cpuMs = 0;
+  const queue = [...rootPids];
+  const seen = new Set<number>();
+  while (queue.length > 0) {
+    const pid = queue.pop() as number;
+    if (seen.has(pid)) continue;
+    seen.add(pid);
+    cpuMs += table.get(pid)?.cpuMs ?? 0;
+    queue.push(...(children.get(pid) ?? []));
+  }
+  return cpuMs;
+}

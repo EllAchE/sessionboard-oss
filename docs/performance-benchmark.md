@@ -35,12 +35,14 @@ Three details change what the numbers mean:
   pair is how a Workers free-plan deployment fails when a render exceeds the 10ms CPU cap, which is
   the one failure mode the README already documents. Folding it into a general error rate would
   discard the number most worth knowing about the demo deployment.
-- **`--cpu-pid=<pid>[,<pid>…]` samples `/proc` for CPU consumed by a local server process and its
-  descendants**, before and after each route's measured window, with warmup excluded. Wall-clock
-  latency says nothing about CPU — a route can be slow because Postgres is slow and still cost 2ms of
-  CPU — and the free-plan ceiling is a CPU ceiling, so this is the measurement that speaks to it. It
-  takes a list because `wrangler dev` runs two sibling `workerd` processes under a supervisor whose
-  own CPU should not be billed to the app.
+- **`--cpu-pid=<pid>[,<pid>…]` samples CPU consumed by a local server process and its descendants**,
+  before and after each route's measured window, with warmup excluded. Wall-clock latency says
+  nothing about CPU — a route can be slow because Postgres is slow and still cost 2ms of CPU — and
+  the free-plan ceiling is a CPU ceiling, so this is the measurement that speaks to it. It takes a
+  list because `wrangler dev` runs two sibling `workerd` processes under a supervisor whose own CPU
+  should not be billed to the app. The source is `/proc/<pid>/stat` on Linux and `ps`'s own
+  cumulative-CPU-time column on macOS (no other platform is supported); either way, treat the result
+  as an order of magnitude, never as a Workers measurement — Node and Bun are not `workerd`.
 
 ## Running it
 
