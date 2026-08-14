@@ -20,8 +20,15 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 
-import type { ErrorKind, LatencySummary } from './benchmark-stats';
-import { CPU_LIMIT_MARKER, classify, parseArgs, summarise } from './benchmark-stats';
+import type { ErrorKind, LatencySummary, ProcessCpuInfo } from './benchmark-stats';
+import {
+  CPU_LIMIT_MARKER,
+  classify,
+  parseArgs,
+  parseBsdCpuTime,
+  summarise,
+  sumProcessTreeCpuMs,
+} from './benchmark-stats';
 
 type Sample = {
   latencyMs: number;
@@ -91,6 +98,11 @@ const routes: RouteSpec[] = [
  * the free-plan failure this benchmark watches for is a *CPU* ceiling, and wall-clock latency says
  * nothing about CPU: a route can be slow because Postgres is slow and still cost 2ms of CPU. Node
  * is not workerd, so treat the result as an order of magnitude, never as a Workers measurement.
+ *
+ * Two backends, picked by `process.platform`, both landing in the same `pid -> {ppid, cpuMs}` table
+ * shape so `sumProcessTreeCpuMs` (in `./benchmark-stats`, where it can be tested) only needs writing
+ * once: Linux reads `/proc/<pid>/stat` directly; macOS has no `/proc`, so it shells out to `ps` for
+ * the same cumulative-CPU-time column instead.
  */
 function clockTicksPerSecond(): number {
   try {
@@ -101,12 +113,7 @@ function clockTicksPerSecond(): number {
   }
 }
 
-/**
- * Sums CPU across every named process and its descendants. It takes a list because a server is not
- * always one tree: `wrangler dev` runs two sibling `workerd` processes under a supervisor, and
- * measuring their common parent would bill the supervisor's own CPU to the app.
- */
-function processTreeCpuMs(rootPids: readonly number[], ticksPerSecond: number): number | null {
+function readProcessTableLinux(ticksPerSecond: number): Map<number, ProcessCpuInfo> | null {
   let entries: string[];
   try {
     entries = readdirSync('/proc');
@@ -114,9 +121,7 @@ function processTreeCpuMs(rootPids: readonly number[], ticksPerSecond: number): 
     return null;
   }
 
-  const children = new Map<number, number[]>();
-  const selfTicks = new Map<number, number>();
-
+  const table = new Map<number, ProcessCpuInfo>();
   for (const entry of entries) {
     const pid = Number(entry);
     if (!Number.isInteger(pid)) continue;
@@ -132,24 +137,47 @@ function processTreeCpuMs(rootPids: readonly number[], ticksPerSecond: number): 
     const utime = Number(fields[11]);
     const stime = Number(fields[12]);
     if (!Number.isFinite(ppid) || !Number.isFinite(utime) || !Number.isFinite(stime)) continue;
-    selfTicks.set(pid, utime + stime);
-    children.set(ppid, [...(children.get(ppid) ?? []), pid]);
+    table.set(pid, { ppid, cpuMs: ((utime + stime) / ticksPerSecond) * 1000 });
+  }
+  return table;
+}
+
+/**
+ * `-axo` lists every process on the system regardless of controlling terminal — a dev server is
+ * usually not attached to one, so plain `-a` would miss it — and the trailing `=` on each field
+ * suppresses BSD `ps`'s header line so every row is data.
+ */
+function readProcessTableDarwin(): Map<number, ProcessCpuInfo> | null {
+  let output: string;
+  try {
+    output = execFileSync('ps', ['-axo', 'pid=,ppid=,time='], { encoding: 'utf8' });
+  } catch {
+    return null;
   }
 
-  // A root that has already exited means the measurement is meaningless, not merely incomplete.
-  if (rootPids.length === 0 || rootPids.some((pid) => !selfTicks.has(pid))) return null;
-
-  let ticks = 0;
-  const queue = [...rootPids];
-  const seen = new Set<number>();
-  while (queue.length > 0) {
-    const pid = queue.pop() as number;
-    if (seen.has(pid)) continue;
-    seen.add(pid);
-    ticks += selfTicks.get(pid) ?? 0;
-    queue.push(...(children.get(pid) ?? []));
+  const table = new Map<number, ProcessCpuInfo>();
+  for (const line of output.split('\n')) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 3) continue;
+    const pid = Number(parts[0]);
+    const ppid = Number(parts[1]);
+    const cpuMs = parseBsdCpuTime(parts[2]);
+    if (!Number.isInteger(pid) || !Number.isInteger(ppid) || cpuMs === null) continue;
+    table.set(pid, { ppid, cpuMs });
   }
-  return (ticks / ticksPerSecond) * 1000;
+  return table.size > 0 ? table : null;
+}
+
+function readProcessTable(ticksPerSecond: number): Map<number, ProcessCpuInfo> | null {
+  return process.platform === 'darwin'
+    ? readProcessTableDarwin()
+    : readProcessTableLinux(ticksPerSecond);
+}
+
+function processTreeCpuMs(rootPids: readonly number[], ticksPerSecond: number): number | null {
+  const table = readProcessTable(ticksPerSecond);
+  if (!table) return null;
+  return sumProcessTreeCpuMs(rootPids, table);
 }
 
 async function issue(url: string, expect: 'html' | 'json'): Promise<Sample> {
@@ -281,7 +309,7 @@ async function main(): Promise<void> {
   if (cpuPid !== null && sampleCpuMs() === null) {
     console.error(
       `warning: --cpu-pid=${cpuPid} named no live process, so no CPU will be reported. ` +
-        `Try: --cpu-pid="$(ps -eo pid,comm --no-headers | awk '$2==\"next-server\" {print $1}')"\n`,
+        `Try: --cpu-pid="$(pgrep -f next-server | head -1)"\n`,
     );
   }
 
