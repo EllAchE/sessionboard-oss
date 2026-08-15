@@ -164,6 +164,110 @@
   margin-top: var(--space-2);
 }
 
+.personas {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid
+    color-mix(in srgb, var(--border-default) 70%, transparent);
+}
+
+.personasTitle {
+  margin: 0;
+  color: var(--text-faint);
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.personaList {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.persona {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.92)),
+    url('/assets/roman/materials/carrara-marble.webp') center / 280px 280px;
+  box-shadow:
+    0 10px 24px rgba(52, 47, 39, 0.06),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.persona:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+  box-shadow:
+    0 14px 30px rgba(52, 47, 39, 0.1),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.72);
+}
+
+.persona:focus-visible {
+  outline: none;
+  border-color: var(--border-accent);
+  box-shadow: var(--ring-focus);
+}
+
+.personaIcon {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--border-accent) 55%, var(--border-default));
+  border-radius: var(--radius-xs);
+  background: rgba(253, 244, 241, 0.84);
+  color: var(--text-accent);
+}
+
+.personaLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-strong);
+  font: var(--weight-semibold) var(--text-md) / 1.2 var(--font-ui);
+}
+
+.persona:hover .personaLabel,
+.persona:focus-visible .personaLabel {
+  color: var(--text-accent);
+}
+
+.personaBlurb {
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .persona {
+    transition: none;
+  }
+
+  .persona:hover {
+    transform: none;
+  }
+}
+
 .heroVisual {
   position: relative;
   border: var(--border-width) solid var(--border-strong);
