@@ -6,7 +6,10 @@ import {
   ExternalLink,
   FileCheck,
   Github,
+  Landmark,
   ListChecks,
+  Megaphone,
+  Scale,
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
@@ -39,6 +42,42 @@ const FEATURES = [
     body: 'Survey missing biographies, portraits, scrolls, and approvals at a glance, then send a dispatch from the same command post.',
   },
 ];
+
+/**
+ * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
+ * visitor reaches a populated view of the role they care about without reading the page first. The
+ * same three entry points also close the page and sit in the global footer.
+ *
+ * `label` leads with a verb rather than the role noun on purpose, and the role noun opens `blurb`
+ * instead. Automated walkthroughs pick a click target by matching label text from the start and
+ * treat two matches as an error rather than choosing between them, and the footer already ships
+ * `Organizer demo`, `Reviewer demo`, and `Speaker demo` on this same page. That rules out the role
+ * nouns and their stems here -- `Organize`, `Review` and `Speak` are each still a prefix of the
+ * matching footer label -- so `Run`, `Score` and `Give` keep all six entry points separable at their
+ * first word. Only the start of the link text disambiguates, so naming the role inside `blurb`
+ * stays clear for a reader without reintroducing the clash. Re-check the whole page before
+ * rewording any of these.
+ */
+const PERSONAS = [
+  {
+    href: DEMO_ENTRY_LINKS.organizer,
+    icon: Landmark,
+    label: 'Run the conference',
+    blurb: 'Organizer — the programme, the fasti, and every outstanding duty.',
+  },
+  {
+    href: DEMO_ENTRY_LINKS.reviewer,
+    icon: Scale,
+    label: 'Score the petitions',
+    blurb: 'Reviewer — weigh the docket before you and record a verdict.',
+  },
+  {
+    href: DEMO_ENTRY_LINKS.speaker,
+    icon: Megaphone,
+    label: 'Give a talk',
+    blurb: 'Speaker — an accepted oration, your profile, and stage duties.',
+  },
+] as const;
 
 export default function Home() {
   return (
@@ -96,13 +135,28 @@ export default function Home() {
             >
               Convene your event
             </Button>
-            <Button
-              href={DEMO_ENTRY_LINKS.organizer}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Enter the organizer Forum
-            </Button>
+          </div>
+
+          <div className={styles.personas}>
+            <p className={styles.personasTitle} id="personas-title">
+              Or enter a conference already in motion
+            </p>
+            <ul className={styles.personaList} aria-labelledby="personas-title">
+              {PERSONAS.map((persona) => (
+                <li key={persona.label}>
+                  <a className={styles.persona} href={persona.href}>
+                    <span className={styles.personaIcon}>
+                      <persona.icon size={18} aria-hidden="true" />
+                    </span>
+                    <span className={styles.personaLabel}>
+                      {persona.label}
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </span>
+                    <span className={styles.personaBlurb}>{persona.blurb}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
