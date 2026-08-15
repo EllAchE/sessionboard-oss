@@ -8,10 +8,14 @@ const compat = new FlatCompat({ baseDirectory });
 const eslintConfig = [
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
+    // `.claude/**` holds Claude Code's built-in agent worktrees, each a full checkout of this repo
+    // on its own branch. `eslint .` walks into them, so an unrelated session's half-finished code
+    // shows up as errors in this checkout's lint run while CI — which clones fresh — stays green.
     ignores: [
       '.next/**',
       '.open-next/**',
       'node_modules/**',
+      '.claude/**',
       'next-env.d.ts',
       'cloudflare-env.d.ts',
     ],

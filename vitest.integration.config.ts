@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 /**
  * The database-backed suite, kept separate from `vitest.config.ts` so `bun run test` stays a pure
@@ -9,6 +9,10 @@ import { defineConfig } from 'vitest/config';
  * Single-forked on purpose: these tests share one database, and running files in parallel against
  * it turns an ordering bug into an intermittent failure that costs far more than the wall clock it
  * saves.
+ *
+ * `.claude/**` is excluded for the same reason as in `vitest.config.ts`: Claude Code's built-in
+ * agent worktrees live under `.claude/worktrees/<name>/` and are full checkouts, so the include
+ * glob above would otherwise run another branch's integration tests against this database.
  */
 export default defineConfig({
   resolve: {
@@ -18,6 +22,7 @@ export default defineConfig({
   },
   test: {
     include: ['**/*.integration.test.ts'],
+    exclude: [...configDefaults.exclude, '**/.claude/**'],
     pool: 'forks',
     poolOptions: { forks: { singleFork: true } },
     // A cold Postgres connection plus migrations is slower than any unit test here.
