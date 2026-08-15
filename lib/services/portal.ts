@@ -446,6 +446,8 @@ export type PortalSubmission = {
 };
 
 export type ScheduledSlot = {
+  /** Addresses `app/api/calendar/[sessionId]`, so the portal can offer the download emails already link. */
+  id: string;
   ref: string;
   title: string;
   startsAt: Date | null;
@@ -501,6 +503,7 @@ export async function listMySubmissions(participantId: string): Promise<PortalSu
       .map((row) => [
         row.session.submissionId as string,
         {
+          id: row.session.id,
           ref: formatRef('session', row.session.ref),
           title: row.session.title,
           startsAt: row.session.startsAt,

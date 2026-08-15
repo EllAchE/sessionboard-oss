@@ -1737,7 +1737,10 @@ export async function buildSessionCalendar(
   };
 }
 
-/** `C-3a`. Served by `app/api/calendar/[sessionId]/route.ts` and linked from the portal. */
+/**
+ * `C-3a`. Served by `app/api/calendar/[sessionId]/route.ts`, linked from acceptance mail, the
+ * itinerary widget, and the speaker portal.
+ */
 export async function sessionCalendarDownload(
   sessionId: string,
 ): Promise<{ body: string; filename: string } | null> {

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarClock, MapPin } from 'lucide-react';
+import { CalendarClock, CalendarPlus, MapPin } from 'lucide-react';
 import { Badge, Card, CardBody } from '@/components/ui';
 import { listMySubmissions } from '@/lib/services/portal';
 import {
@@ -81,6 +81,15 @@ export default async function SubmissionsPage({
                         )}
                         {!entry.scheduled.published && (
                           <Badge tone="warning">Not published yet</Badge>
+                        )}
+                        {entry.scheduled.startsAt && (
+                          <a
+                            className={styles.calendarLink}
+                            href={`/api/calendar/${entry.scheduled.id}`}
+                          >
+                            <CalendarPlus size={14} aria-hidden />
+                            Add to calendar (.ics)
+                          </a>
                         )}
                       </div>
                     )}
