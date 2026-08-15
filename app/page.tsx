@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
@@ -96,7 +97,7 @@ export default function Home() {
               Convene your event
             </Button>
             <Button
-              href="/signin?email=organizer@example.com&next=/admin"
+              href={DEMO_ENTRY_LINKS.organizer}
               size="lg"
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
@@ -307,16 +308,33 @@ export default function Home() {
         <h2>Enter a conference already in motion.</h2>
         <p>
           The live province is filled with petitions, orators, unfinished duties, and a two-day
-          programme ready for inspection.
+          programme ready for inspection. Take the seat you want to try: the magistrate who
+          governs it, a censor weighing petitions, or an orator readying for the stage.
         </p>
-        <Button
-          href="/signin?email=organizer@example.com&next=/admin"
-          variant="primary"
-          size="lg"
-          iconRight={<ArrowRight size={17} aria-hidden="true" />}
-        >
-          Open the organizer Forum
-        </Button>
+        <div className={styles.finalCtaActions}>
+          <Button
+            href={DEMO_ENTRY_LINKS.organizer}
+            variant="primary"
+            size="lg"
+            iconRight={<ArrowRight size={17} aria-hidden="true" />}
+          >
+            Open the organizer Forum
+          </Button>
+          <Button
+            href={DEMO_ENTRY_LINKS.reviewer}
+            size="lg"
+            iconRight={<ArrowRight size={17} aria-hidden="true" />}
+          >
+            Judge petitions as a reviewer
+          </Button>
+          <Button
+            href={DEMO_ENTRY_LINKS.speaker}
+            size="lg"
+            iconRight={<ArrowRight size={17} aria-hidden="true" />}
+          >
+            Prepare a talk as a speaker
+          </Button>
+        </div>
       </section>
 
     </main>
