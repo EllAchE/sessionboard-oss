@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { CalendarClock, ChevronLeft, MapPin } from 'lucide-react';
+import { CalendarClock, CalendarPlus, ChevronLeft, MapPin } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
 import { isAppError } from '@/lib/errors';
 import {
@@ -94,6 +94,15 @@ export default async function SubmissionDetailPage({
               <p className={styles.hint}>
                 The schedule is not public yet, so this slot could still move.
               </p>
+            )}
+            {submission.scheduled.startsAt && (
+              <a
+                className={styles.calendarLink}
+                href={`/api/calendar/${submission.scheduled.id}`}
+              >
+                <CalendarPlus size={15} aria-hidden />
+                Add to calendar (.ics)
+              </a>
             )}
           </CardBody>
         </Card>
