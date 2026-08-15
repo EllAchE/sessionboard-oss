@@ -235,7 +235,7 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           parameters: [slugParam, ...toParameters(sponsorListQuery, 'query')],
           responses: {
             '200': okResponse('The published sponsors and exhibitors', listOf('Sponsor')),
-            ...errors([404, 422]),
+            ...errors([404, 422, 429]),
           },
         },
       },
