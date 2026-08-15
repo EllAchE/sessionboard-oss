@@ -10,6 +10,11 @@ next-env.d.ts
 .DS_Store
 coverage/
 .cicero/
+# Agent tooling scratch space. Claude Code puts its built-in worktrees under
+# `.claude/worktrees/`, which are full checkouts of this repo — tracking them would commit a
+# second copy of the tree. Lint and vitest also ignore this directory; see `eslint.config.mjs`
+# and `vitest.config.ts`.
+.claude/
 
 # Per-workstream scratch notes from the build sessions.
 /tasks/
