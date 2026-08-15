@@ -409,6 +409,18 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   health-check passes while navigation intermittently 503s. The deployed Worker itself could not be
   reached from the benchmarking host and remains unmeasured. Measuring a problem is progress, but a
   bonus for speed is not earned by a number that says the public pages exceed the plan's budget.
+  One concrete cause is now fixed: `/`, `/demo`, `/demo/agenda`, and `/submit/demo/speak` each ran
+  their read model (`loadPublicBundle` / `loadPublicForm`) twice per request — once from
+  `generateMetadata`, once from the page body — with no request-scoped memoization, doubling every
+  query and markdown render those routes do. `getPublicEvent`, `loadPublicBundle`, and
+  `loadPublicForm` are now wrapped in React's `cache()`, so each request runs the fan-out once. See
+  the "Applied fix" section in [`performance-benchmark.md`](performance-benchmark.md) for the exact
+  query-count accounting and an honest note on why this wasn't re-measured in CPU-ms: the benchmark's
+  CPU sampling reads `/proc` and only works on Linux, and this fix was verified on macOS. The
+  documented 29–46ms baseline predates this fix and has not been re-captured against it; do not read
+  this row as claiming the routes are now under the free-tier 10ms budget — halving one source of
+  duplicate work on a machine that cost 29–46ms is very unlikely to clear a 10ms ceiling by itself,
+  and a full fix likely still needs Workers Paid (30s CPU budget) or further caching work.
 - [x] **Z-5 · B · COMPLETE — Public API.** Versioned REST routes, API-key auth, and generated OpenAPI
   documentation exist.
 

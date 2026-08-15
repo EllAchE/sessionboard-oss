@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { cache } from 'react';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -465,10 +466,14 @@ export type PublicFormBundle = {
   taxonomy: Taxonomy;
 };
 
-export async function loadPublicForm(
+/**
+ * `cache()`-wrapped: `generateMetadata` and the page body on the public CFP route both call this for
+ * the same request, and without request-scoped memoization each call re-runs all six queries.
+ */
+export const loadPublicForm = cache(async (
   eventSlug: string,
   formSlug: string,
-): Promise<PublicFormBundle | null> {
+): Promise<PublicFormBundle | null> => {
   const db = getDb();
 
   const eventRow = await db.query.event.findFirst({ where: eq(event.slug, eventSlug) });
@@ -544,7 +549,7 @@ export async function loadPublicForm(
     })),
     taxonomy,
   };
-}
+});
 
 function toFieldRows(rows: Array<typeof formField.$inferSelect>): FieldRow[] {
   return rows.map((row) => ({

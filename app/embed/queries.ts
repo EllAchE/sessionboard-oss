@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
+import { cache } from 'react';
 import { getDb } from '@/db/client';
 import {
   event as eventTable,
@@ -80,7 +81,12 @@ export function publicSpeakerFromConfirmedParticipant(
   };
 }
 
-export async function getPublicEvent(slug: string): Promise<PublicEvent | null> {
+/**
+ * `cache()`-wrapped: `generateMetadata` and the page body both call this (and `loadPublicBundle`,
+ * which calls it again) for the same request, and without request-scoped memoization each call is a
+ * fresh round trip.
+ */
+export const getPublicEvent = cache(async (slug: string): Promise<PublicEvent | null> => {
   const row = await getDb().query.event.findFirst({ where: eq(eventTable.slug, slug) });
   if (!row) return null;
   return {
@@ -98,9 +104,13 @@ export async function getPublicEvent(slug: string): Promise<PublicEvent | null> 
     logoUrl: eventBrandingUrl(row.slug, row.logoFileId),
     bannerUrl: eventBrandingUrl(row.slug, row.bannerFileId),
   };
-}
+});
 
-export async function loadPublicBundle(slug: string): Promise<PublicBundle | null> {
+/**
+ * `cache()`-wrapped for the same reason as `getPublicEvent`: `generateMetadata` and the page body
+ * both call it, and it fans out into ~9 queries plus markdown rendering per call.
+ */
+export const loadPublicBundle = cache(async (slug: string): Promise<PublicBundle | null> => {
   const event = await getPublicEvent(slug);
   if (!event) return null;
   const db = getDb();
@@ -291,4 +301,4 @@ export async function loadPublicBundle(slug: string): Promise<PublicBundle | nul
       logoUrl: publicSponsorLogoUrl(event.slug, row.logoFileId),
     })),
   };
-}
+});

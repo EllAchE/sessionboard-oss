@@ -183,6 +183,47 @@ dropped for being slow, the runs were taken on a machine under real contention r
 for a quiet one, and the `workerd` numbers are reported despite being the least flattering set on the
 page.
 
+## Applied fix: deduping the `generateMetadata` / page-body reads
+
+Every server-rendered route measured above calls its read model twice per request: once from
+`generateMetadata`, once from the page body. `getPublicEvent` and `loadPublicBundle`
+(`app/embed/queries.ts`) back `/`, `/demo`, `/demo/agenda`; `loadPublicForm`
+(`lib/services/submissions.ts`) backs `/submit/demo/speak`. Neither had request-scoped
+memoization, so Next.js ran each fan-out twice per request:
+
+- `loadPublicBundle` issues one event lookup plus two batches of parallel queries (six, then two)
+  — about nine round trips — and renders every session description and speaker bio through
+  `renderMarkdown`. Doubled, that is ~18 queries and 2× the markdown work per request on `/demo`
+  and `/demo/agenda`.
+- `loadPublicForm` issues an event lookup, a form lookup, and five parallel queries — seven round
+  trips. Doubled, that is 14 on `/submit/demo/speak`.
+
+The fix wraps all three functions in React's `cache()`, which memoizes an async function per
+render pass keyed on its arguments. `generateMetadata` and the page body now share one call, so
+each of these routes does the fan-out exactly once instead of twice. `EventPage` and the agenda
+route also call `listOpenCalls`/other helpers directly — those were left alone; only the
+double-called read models were in scope.
+
+Not touched, and why: the root `force-dynamic` / ISR question (a caching layer would need to
+account for cookie-based nav state and is a bigger, riskier change than this fix); and
+`PublicChrome`'s `eventHasSponsors` call, which isn't actually duplicated within a single request
+under the current call pattern, so `cache()` wouldn't help it without a prop-threading refactor.
+
+**Locally reproduced numbers don't carry over from the table above.** The CPU/req columns in this
+document come from sampling `/proc`, which only exists on Linux; this fix was built and verified
+on macOS, where `--cpu-pid` silently reports no CPU (`readdirSync('/proc')` fails), and Postgres
+ran over a local loopback connection with sub-millisecond round trips rather than the shared,
+contended box the baseline above was captured on. Under those conditions wall-clock p50 before and
+after the fix was within run-to-run noise (`/demo` p50 8.1ms after vs 7.5ms before, `/demo/agenda`
+6.3ms both) — expected, since halving nine fast local queries and some markdown rendering doesn't
+move a number that's mostly TCP/serialization overhead at this scale. That is not evidence the fix
+does nothing; it's evidence that wall-clock on an idle loopback Postgres was never going to show a
+CPU-bound win. The number that matters — CPU per request under contention, the free-plan quantity
+this document exists to track — needs the Linux `/proc` reproduction path above to re-measure
+honestly, and hasn't been re-run since this fix landed. Treat the ~2× reduction in query count and
+markdown-render work per request, above, as the substantiated claim; treat any specific new CPU-ms
+figure as unmeasured until someone re-runs the Linux reproduction steps below against this branch.
+
 ## Reproducing
 
 ```sh
