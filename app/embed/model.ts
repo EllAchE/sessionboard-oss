@@ -54,6 +54,15 @@ export type PublicSession = {
   trackId: string | null;
   format: string | null;
   ceuCredits: string | null;
+  /**
+   * The canonical calendar identity from `scheduled_session`, carried out here so the embed's
+   * multi-session download names the same VEVENT as the speaker invite and the `C-3a` per-session
+   * download. A second UID scheme would leave a client that has seen both filing them as unrelated
+   * events, and a hardcoded sequence would leave every update losing to the copy already on the
+   * calendar. `lib/ics.ts` never invents either value; neither does this.
+   */
+  icsUid: string;
+  icsSequence: number;
   /** Present only after the organizer publishes the post-conference recording. */
   recordingUrl?: string | null;
   tags: { id: string; name: string }[];

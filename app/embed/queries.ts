@@ -241,6 +241,8 @@ export const loadPublicBundle = cache(async (slug: string): Promise<PublicBundle
       trackId: row.trackId,
       format: row.formatId ? (formatName.get(row.formatId) ?? null) : null,
       ceuCredits: row.ceuCredits,
+      icsUid: row.icsUid,
+      icsSequence: row.icsSequence,
       recordingUrl:
         recordingPublicationIssue({
           sessionStatus: row.status,

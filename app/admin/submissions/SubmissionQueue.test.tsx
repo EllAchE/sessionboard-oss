@@ -223,3 +223,52 @@ describe('viewColumns', () => {
     expect(viewColumns(['spread'])).toEqual(DEFAULT_COLUMNS);
   });
 });
+
+describe('SubmissionQueue permalink copy', () => {
+  const row = (over: Partial<QueueRowWire> & { id: string }): QueueRowWire => ({
+    ref: 1,
+    displayRef: 'ABS-1',
+    title: over.id,
+    status: 'under_review',
+    trackId: null,
+    trackName: null,
+    formatId: null,
+    formatName: null,
+    tagIds: [],
+    submitterName: 'Someone',
+    averageScore: 2.8,
+    spread: null,
+    assignedCount: 2,
+    completedCount: 2,
+    stagedDecision: null,
+    hasAiReview: false,
+    ...over,
+  });
+
+  it('offers a copy affordance on each row, named for the proposal it points at', () => {
+    const html = renderToStaticMarkup(
+      <SubmissionQueue
+        {...props}
+        rows={[
+          row({ id: 'sub-a', displayRef: 'ABS-1' }),
+          row({ id: 'sub-b', displayRef: 'ABS-2', ref: 2 }),
+        ]}
+      />,
+    );
+
+    // The label carries the ref because the button is an icon: "Copy link" twice in a row of forty
+    // tells a screen-reader user nothing about which link they just took.
+    expect(html).toContain('aria-label="Copy link to ABS-1"');
+    expect(html).toContain('aria-label="Copy link to ABS-2"');
+  });
+
+  it('leaves the row link itself intact beside the copy button', () => {
+    const html = renderToStaticMarkup(
+      <SubmissionQueue {...props} rows={[row({ id: 'sub-a' })]} />,
+    );
+
+    // Copying is an addition to the row, never a replacement for clicking through to it.
+    expect(html).toContain('href="/admin/submissions/sub-a"');
+    expect(html).toContain('aria-label="Copy link to ABS-1"');
+  });
+});

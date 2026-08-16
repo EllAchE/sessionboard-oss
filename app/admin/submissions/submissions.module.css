@@ -239,6 +239,14 @@
   gap: var(--space-2);
 }
 
+/* The ref and its copy button read as one identity line, not a label with an action stranded beside it. */
+.detailIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .detailRef {
   font: var(--type-mono);
   color: var(--text-faint);

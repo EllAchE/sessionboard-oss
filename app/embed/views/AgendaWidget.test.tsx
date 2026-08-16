@@ -39,6 +39,8 @@ function session(index: number): PublicSession {
     trackId: `track-${index}`,
     format: 'Talk',
     ceuCredits: null,
+    icsUid: `ics-session-${index}@cicero.events`,
+    icsSequence: 0,
     tags: [],
     speakers: [],
   };
