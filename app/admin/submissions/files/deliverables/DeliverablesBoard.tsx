@@ -123,7 +123,8 @@ export function DeliverablesBoard({
       {
         id: 'speaker',
         header: 'Speaker',
-        width: '22%',
+        width: '16%',
+        space: 'wide',
         strong: true,
         render: (row) => (
           <span className={styles.owner}>
@@ -135,7 +136,8 @@ export function DeliverablesBoard({
       {
         id: 'deliverable',
         header: 'Deliverable',
-        width: '22%',
+        width: '16%',
+        space: 'wide',
         render: (row) => (
           <span className={styles.owner}>
             <span>{row.taskName}</span>
@@ -151,6 +153,7 @@ export function DeliverablesBoard({
         id: 'state',
         header: 'Status',
         width: '124px',
+        space: 'compact',
         render: (row) => (
           <Badge tone={row.overdue && row.state === 'outstanding' ? 'danger' : STATE_TONE[row.state]}>
             {row.overdue && row.state === 'outstanding' ? 'Overdue' : STATE_LABEL[row.state]}
@@ -160,7 +163,8 @@ export function DeliverablesBoard({
       {
         id: 'files',
         header: 'Received',
-        width: '22%',
+        width: '16%',
+        space: 'wide',
         render: (row) =>
           row.files.length === 0 ? (
             <span className={queue.muted}>Nothing yet</span>
@@ -188,7 +192,8 @@ export function DeliverablesBoard({
       {
         id: 'session',
         header: 'Session',
-        width: '18%',
+        width: '14%',
+        space: 'wide',
         render: (row) =>
           row.submissionId ? (
             <Link className={styles.fileLink} href={`/admin/submissions/${row.submissionId}`}>

@@ -192,7 +192,8 @@ export function OutstandingTasks({
     {
       id: 'person',
       header: heading('Speaker', 'person'),
-      width: '24%',
+      width: '23%',
+      space: 'wide',
       render: (row) => (
         <div className={styles.person}>
           <Avatar name={row.participantName} size="sm" />
@@ -207,6 +208,7 @@ export function OutstandingTasks({
       id: 'task',
       header: heading('Task', 'task'),
       width: '23%',
+      space: 'wide',
       render: (row) => (
         <div className={styles.taskCell}>
           <span className={styles.taskName}>{row.taskName}</span>
@@ -220,13 +222,14 @@ export function OutstandingTasks({
     {
       id: 'status',
       header: heading('Status', 'status'),
-      width: '13%',
+      width: '10%',
+      space: 'compact',
       render: (row) => <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>,
     },
     {
       id: 'due',
       header: heading('Deadline', 'due'),
-      width: '16%',
+      width: '13%',
       render: (row) => {
         const late = lateness(row);
         return (
@@ -242,7 +245,8 @@ export function OutstandingTasks({
     {
       id: 'sessions',
       header: 'Sessions',
-      width: '15%',
+      width: '18%',
+      space: 'wide',
       render: (row) =>
         row.sessionTitles.length === 0 ? (
           <span className={styles.personMeta}>{row.accepted ? '—' : 'Not accepted'}</span>
@@ -258,7 +262,8 @@ export function OutstandingTasks({
        */
       id: 'chase',
       header: 'Chase',
-      width: '12%',
+      width: '13%',
+      space: 'wide',
       render: (row) =>
         row.urgency === 'done' ? (
           <span className={styles.personMeta}>—</span>

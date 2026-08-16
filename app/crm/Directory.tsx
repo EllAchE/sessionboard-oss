@@ -155,7 +155,7 @@ export function Directory({
     {
       id: 'name',
       header: 'Name',
-      width: '22%',
+      width: '20%',
       render: (row) => (
         <span className={styles.person}>
           <Link href={`/crm/${row.id}`} className={styles.personName}>
@@ -168,25 +168,27 @@ export function Directory({
       id: 'email',
       header: 'Email',
       width: '22%',
+      space: 'wide',
       mono: true,
       render: (row) => row.email,
     },
     {
       id: 'company',
       header: 'Company',
-      width: '16%',
+      width: '15%',
       render: (row) => row.company ?? <span className={styles.muted}>—</span>,
     },
     {
       id: 'jobTitle',
       header: 'Job title',
-      width: '16%',
+      width: '15%',
       render: (row) => row.jobTitle ?? <span className={styles.muted}>—</span>,
     },
     {
       id: 'tags',
       header: 'Tags',
-      width: '14%',
+      width: '15%',
+      space: 'wide',
       render: (row) =>
         row.tags.length === 0 ? (
           <span className={styles.muted}>—</span>
@@ -201,7 +203,7 @@ export function Directory({
     {
       id: 'enroll',
       header: '',
-      width: '10%',
+      width: '8%',
       align: 'right',
       render: (row) => (
         <Button

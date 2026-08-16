@@ -117,12 +117,24 @@
 }
 
 .filters > * {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+}
+
+/* Select owns a full-width wrapper by default. In a filter row it should shrink to its content. */
+.filters > span {
+  width: auto;
+  max-width: 100%;
+}
+
+.filters select {
+  min-width: 9.5rem;
+  max-width: 100%;
 }
 
 .search {
-  min-width: 220px;
-  flex: 1 1 220px;
+  width: min(18rem, 100%);
+  min-width: min(220px, 100%);
+  flex: 0 1 18rem;
 }
 
 .bulkBar {

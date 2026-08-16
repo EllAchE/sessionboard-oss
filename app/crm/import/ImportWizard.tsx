@@ -104,6 +104,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
       id: 'line',
       header: 'Line',
       width: '8%',
+      space: 'compact',
       mono: true,
       render: (row) => row.line,
     },
@@ -117,6 +118,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
       id: 'email',
       header: 'Email',
       width: '24%',
+      space: 'wide',
       mono: true,
       render: (row) => row.values.email || '—',
     },
@@ -136,6 +138,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
       id: 'issues',
       header: 'Problems',
       width: '18%',
+      space: 'wide',
       render: (row) =>
         row.issues.length === 0 ? (
           <span className={styles.muted}>—</span>
