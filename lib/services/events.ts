@@ -13,6 +13,7 @@ import {
   isValidTimezone,
   resolveEventWindow,
   utcToLocalInput,
+  zonedTimeToUtc,
   type EventWindow,
 } from '@/lib/event-dates';
 import { slugify } from '@/lib/ids';
@@ -194,6 +195,19 @@ const wallClock = (what: string) =>
     .regex(WALL_CLOCK, `Give a ${what} date and time`);
 
 /**
+ * `E-1b`. A milestone is optional in a way the event window is not, so blank has to mean "clear it"
+ * rather than "invalid" — otherwise an organizer who set a deadline could never take it back off.
+ * Non-blank is read as wall clock in the event's own timezone, exactly like `startsAt`.
+ */
+const deadlineField = z
+  .string()
+  .trim()
+  .nullable()
+  .transform((value) => value ?? '')
+  .refine((value) => value === '' || WALL_CLOCK.test(value), 'Give a date and time')
+  .transform((value) => (value === '' ? null : value));
+
+/**
  * `websiteUrl` gets a scheme when the organizer omitted one — people type `example.com` — and is
  * then held to `http`/`https`, because the value is rendered as a link on the public page and a
  * `javascript:` URL there is a stored XSS.
@@ -265,6 +279,8 @@ const createEventSchema = z.object({
   venueAddress: metadataShape.venueAddress.optional(),
   logoFileId: metadataShape.logoFileId.optional(),
   bannerFileId: metadataShape.bannerFileId.optional(),
+  speakerDeadlineAt: deadlineField.optional(),
+  agendaDeadlineAt: deadlineField.optional(),
 });
 
 const updateEventSchema = z
@@ -273,6 +289,8 @@ const updateEventSchema = z
     timezone: timezoneField,
     startsAt: wallClock('start'),
     endsAt: wallClock('end'),
+    speakerDeadlineAt: deadlineField,
+    agendaDeadlineAt: deadlineField,
     ...metadataShape,
   })
   .partial();
@@ -296,6 +314,9 @@ export type CreateEventInput = {
   venueAddress?: string | null;
   logoFileId?: string | null;
   bannerFileId?: string | null;
+  /** `E-1b`. Wall clock in `timezone` like `startsAt`; blank or null clears the milestone. */
+  speakerDeadlineAt?: string | null;
+  agendaDeadlineAt?: string | null;
 };
 
 export type UpdateEventInput = Partial<CreateEventInput>;
@@ -318,6 +339,46 @@ function metadataPatch(values: Record<string, unknown>): Record<string, unknown>
   const patch: Record<string, unknown> = {};
   for (const key of METADATA_KEYS) {
     if (values[key] !== undefined) patch[key] = values[key];
+  }
+  return patch;
+}
+
+const DEADLINE_FIELDS = [
+  { key: 'speakerDeadlineAt', what: 'speaker deadline' },
+  { key: 'agendaDeadlineAt', what: 'agenda deadline' },
+] as const;
+
+type DeadlineKey = (typeof DEADLINE_FIELDS)[number]['key'];
+
+/**
+ * `E-1b`. Wall clock in the event's own timezone becomes an instant, and `null` clears the column.
+ *
+ * The one rule is that a milestone cannot fall after the doors open: a roster settled mid-conference
+ * is a mistyped year, not a plan. The two are deliberately *not* ordered against each other —
+ * fixing the programme before the roster is a legitimate way to run an edition, and a rule
+ * forbidding it would be this file inventing policy it has no business inventing.
+ */
+function deadlinePatch(
+  readings: Partial<Record<DeadlineKey, string | null>>,
+  timezone: string,
+  startsAt: Date,
+): Record<string, Date | null> {
+  const patch: Record<string, Date | null> = {};
+  for (const { key, what } of DEADLINE_FIELDS) {
+    const reading = readings[key];
+    if (reading === undefined) continue;
+    if (reading === null) {
+      patch[key] = null;
+      continue;
+    }
+    const instant = zonedTimeToUtc(reading, timezone);
+    if (!instant) throw invalid(`Give a ${what} date and time`, { [key]: 'Give a date and time' });
+    if (instant.getTime() > startsAt.getTime()) {
+      throw invalid(`The ${what} falls after the event starts`, {
+        [key]: 'Pick a date before the event starts',
+      });
+    }
+    patch[key] = instant;
   }
   return patch;
 }
@@ -350,6 +411,14 @@ export async function createEvent(userId: string, input: CreateEventInput) {
     .insert(event)
     .values({
       ...metadataPatch(values),
+      ...deadlinePatch(
+        {
+          speakerDeadlineAt: values.speakerDeadlineAt,
+          agendaDeadlineAt: values.agendaDeadlineAt,
+        },
+        window.timezone,
+        window.startsAt,
+      ),
       name: values.name,
       slug,
       timezone: window.timezone,
@@ -378,10 +447,12 @@ export async function updateEvent(ctx: EventContext, input: UpdateEventInput) {
   const patch: Record<string, unknown> = metadataPatch(values);
   if (values.name !== undefined) patch.name = values.name;
 
+  let timezone = current.timezone;
+  let startsAt = current.startsAt;
+
   if (values.timezone !== undefined || values.startsAt !== undefined || values.endsAt !== undefined) {
-    const timezone = values.timezone ?? current.timezone;
     const window = windowOrThrow(
-      timezone,
+      values.timezone ?? current.timezone,
       values.startsAt ?? utcToLocalInput(current.startsAt, current.timezone),
       values.endsAt ?? utcToLocalInput(current.endsAt, current.timezone),
     );
@@ -390,7 +461,22 @@ export async function updateEvent(ctx: EventContext, input: UpdateEventInput) {
     patch.endsAt = window.endsAt;
     patch.startsOn = window.startsOn;
     patch.endsOn = window.endsOn;
+    timezone = window.timezone;
+    startsAt = window.startsAt;
   }
+
+  /**
+   * Milestones follow the window's rule above rather than sitting still through a zone correction.
+   * A deadline the organizer set for 17:00 means 17:00 wherever the conference turns out to be, so
+   * one the caller did not resend is re-read in the new zone instead of sliding by the offset.
+   */
+  const rezone = timezone !== current.timezone;
+  const readings: Partial<Record<DeadlineKey, string | null>> = {};
+  for (const { key } of DEADLINE_FIELDS) {
+    if (values[key] !== undefined) readings[key] = values[key] ?? null;
+    else if (rezone && current[key]) readings[key] = utcToLocalInput(current[key]!, current.timezone);
+  }
+  Object.assign(patch, deadlinePatch(readings, timezone, startsAt));
 
   if (Object.keys(patch).length === 0) return current;
 
