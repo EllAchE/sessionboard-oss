@@ -454,8 +454,12 @@ first dead end.
   five public routes, and 29–46ms of server CPU per rendered page — which is where a 10ms budget
   went. [`docs/performance-benchmark.md`](docs/performance-benchmark.md) has the method and the
   numbers, and [`docs/02-architecture.md`](docs/02-architecture.md) §1 records why the host changed.
-- **Reviewers are added by role, not by invitation.** There is no "invite a reviewer" flow and no
-  per-submission manual assignment — rounds assign in bulk. The same gap is why the `manual`
-  audience is hidden from the compose screen: nothing yet assigns a task to one named participant.
+- **The compose screen can't address one named person.** `manual` is a real audience kind in the
+  service layer (`lib/services/comms.ts:293`) and the MCP surface reaches it, but it is not
+  selectable in [`app/admin/comms/Composer.tsx`](app/admin/comms/Composer.tsx) — every send from
+  that screen goes to a computed group. This bullet used to also claim reviewers could only be added
+  by role; that stopped being true once `inviteReviewerAction`
+  (`app/admin/submissions/rounds/actions.ts:67`) and per-submission `assignReviewers`
+  (`app/admin/submissions/actions.ts:167`) shipped, and both work today.
 - **The embed builder exports HTML and an iframe snippet only.** JSON, XML and iCal exports of the
   same data are reachable through the REST API but have no button in the embed admin.

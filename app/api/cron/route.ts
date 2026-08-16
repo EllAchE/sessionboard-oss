@@ -4,10 +4,16 @@ import { env } from '@/lib/env';
 import { hashToken, timingSafeEqual } from '@/lib/ids';
 
 /**
- * `C-7`'s dispatcher. Cloudflare Cron Triggers hit this in production; a plain crontab or a
- * `systemd` timer hits it self-hosted. Both deliver at least once and neither guarantees it will
- * not fire twice, so every job behind `runScheduledJobs` carries its own guard rather than
- * assuming this handler runs exactly once.
+ * `C-7`'s dispatcher. Vercel Cron hits this in production via the `GET` handler below; a plain
+ * crontab or a `systemd` timer hits it self-hosted, and Cloudflare Cron Triggers still reach it
+ * through `lib/cloudflare-cron.ts` for anyone on that path. All of them deliver at least once and
+ * none guarantees it will not fire twice, so every job behind `runScheduledJobs` carries its own
+ * guard rather than assuming this handler runs exactly once.
+ *
+ * Production ticks **daily** (`0 8 * * *` in `vercel.json`), not hourly: Vercel Hobby rejects a
+ * sub-daily schedule at deploy time. Because each job evaluates its own due times, a coarser tick
+ * delays a reminder rather than corrupting or duplicating one. Hourly parity needs Vercel Pro or
+ * any external scheduler calling this endpoint.
  *
  * `CRON_SECRET` is optional on purpose: the jobs are idempotent and send nothing that is not
  * already due, so an unauthenticated call is a wasted query rather than a way to spam speakers. Set
