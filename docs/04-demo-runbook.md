@@ -6,10 +6,12 @@ spine first, then shows API and automation work as bonus value. The source of tr
 [`01-requirements.md`](01-requirements.md); the public Sessionboard survey is supporting context,
 not an extra scope list.
 
-> **Status on 12 August 2026.** The existing `demo` event is live. The Roman Senate event and the
-> two program-reconciliation routes are not deployed from `main` yet. At the last approved
-> read-only check, `/first-settlement` returned 404. Do not imply otherwise. Re-run the preflight
-> after the relevant PRs are approved, merged, deployed, and seeded.
+> **Status on 16 August 2026.** The hosted `demo` and `first-settlement` public programmes, agenda
+> embed, public agenda API, reserved-address magic-link flow, and organizer dashboard were exercised
+> successfully. The host is on an older organizer revision that uses `/admin`; current source uses
+> `/organizer` and includes newer command-menu, review-keyboard, Updates, exhibitor-map, and chasing
+> ergonomics. Use the hosted site for the core flow and current local source for those additions until
+> a fresh deployment closes the parity gap. See [`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## Demo charter
 
@@ -43,9 +45,9 @@ The production base URL is <https://cicero-three.vercel.app>.
 | Purpose | URL | Pre-demo expectation |
 | --- | --- | --- |
 | Home | <https://cicero-three.vercel.app> | Live |
-| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/organizer> | Live; submit `organizer@example.com`; the page returns the demo magic link |
-| Organizer dashboard | <https://cicero-three.vercel.app/organizer> | Live after sign-in |
-| Captured demo mail | <https://cicero-three.vercel.app/organizer/mail> | Live after sign-in |
+| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
+| Organizer dashboard | <https://cicero-three.vercel.app/admin> | Live after sign-in; legacy hosted route |
+| Captured demo mail | <https://cicero-three.vercel.app/admin/mail> | Verify during preflight; legacy hosted route |
 | Existing public demo | <https://cicero-three.vercel.app/demo> | Live fallback |
 | Existing demo agenda | <https://cicero-three.vercel.app/demo/agenda> | Live fallback |
 | Existing public CFP | <https://cicero-three.vercel.app/submit/demo/speak> | Live fallback |
@@ -53,8 +55,8 @@ The production base URL is <https://cicero-three.vercel.app>.
 | Existing public agenda API | <https://cicero-three.vercel.app/api/v1/events/demo/agenda> | Live fallback |
 | Live OpenAPI | <https://cicero-three.vercel.app/api/v1/openapi.json> | Live; proves whether a provisional route is deployed |
 
-The First Settlement seed was approved and run against production on 2026-08-15, so these links are
-live. Statuses below were re-verified against the deployment that same day:
+The First Settlement seed was approved and run against production on 2026-08-15. The event overview
+was re-verified on 2026-08-16; recheck the deeper routes during presentation preflight:
 
 | Purpose | URL | Status |
 | --- | --- | --- |
@@ -110,9 +112,8 @@ approving this runbook does not approve any of them.
 | Real Accelevents push | The named Accelevents event and the accepted speakers that will be created or treated as already present |
 
 Never run the full `npm run db:seed` against production. The full seed removes and recreates known
-demo identities and their events. The targeted seed is proposed in
-[`PR #50`](https://github.com/EllAchE/sessionboard-oss/pull/50), which was open, ready, mergeable,
-and green when this runbook was written. After review and merge, its commands are:
+demo identities and their events. The targeted seed landed in
+[`PR #50`](https://github.com/EllAchE/sessionboard-oss/pull/50); its commands are:
 
 ```bash
 bun run db:seed:first-settlement
@@ -120,9 +121,8 @@ bun run db:seed:first-settlement --apply --confirm=first-settlement
 ```
 
 The first command is a dry-run. The second creates or replaces only the named Roman fixture, but it
-still requires separate production approval and an explicit `DATABASE_URL`; the PR is not deployed
-merely because it is green. Database migrations remain a human-run operation and are not part of
-this demo.
+still requires separate production approval and an explicit `DATABASE_URL`. Database migrations
+remain a human-run operation and are not part of this demo.
 
 ## Run of show
 
@@ -130,7 +130,7 @@ The checkpoint column tells the producer what must be visibly true before the dr
 
 | Time | Segment | Presenter action and line | Checkpoint |
 | --- | --- | --- | --- |
-| 0:00–1:30 | Required: value first | Sign in as `organizer@example.com`, select **The First Settlement** if deployed, and open the dashboard. Say: “Sessionboard has no central task-completion report; Cicero starts with the accepted speakers who still owe us something.” | Outstanding people, exact tasks, counters, and linked actions are visible. |
+| 0:00–1:30 | Required: value first | Sign in as `organizer@example.com`, select **The First Settlement**, and open the dashboard. Say: “Sessionboard has no central task-completion report; Cicero starts with the accepted speakers who still owe us something.” | Outstanding people, exact tasks, counters, and linked actions are visible. |
 | 1:30–3:00 | Required: organizer cold start | In a fresh profile, sign up with an approved disposable address. Create an event, set dates/timezone, then add two tracks, two rooms, and a format. Return to the seeded organizer. | A new organizer reaches event creation without an invitation; tenant separation is evident. |
 | 3:00–5:00 | Required: event and CFP configuration | Open Roman Organizer → Settings and Order of Debate to show branding, taxonomy, required fields, and a custom field. Switch to the seeded `demo` form for the prebuilt conditional rule and routed track/category, unless approved disposable Roman configuration was prepared. | Event-scoped taxonomy and conditional/routed form configuration are visible without overstating the Roman seed. |
 | 5:00–7:00 | Required: cold submission | In incognito, use the seeded `demo` CFP to trigger its conditional question, or `/submit/first-settlement/motions` if an approved Roman condition was prepared. Start cold, progress through the multi-step flow, review, and submit. | Account is created in-flow; confirmation is captured; redirect reaches the portal. |
@@ -143,11 +143,11 @@ The checkpoint column tells the producer what must be visibly true before the dr
 | 20:00–21:30 | Required: Accelevents outbound | Organizer → Integrations → **Push accepted speakers**. Use fixture mode unless a real push was separately approved. Explain verified live scope: speaker create/list, duplicate email treated as already present. | Summary shows `created`, `alreadyThere`, `skipped`, and `failed`; log retains outcomes. |
 | 21:30–23:00 | Bonus: Accelevents-shaped program update | Show live OpenAPI first. If the provisional reconcile route exists, preview the First Settlement collection, apply the approved change, repeat for no-ops, and verify the public agenda. | Stable external IDs yield create/update/delete/no-op; second applied run is idempotent. |
 | 23:00–24:00 | Bonus: full outbound CRUD fixture | If deployed, reset the deterministic fake Accelevents program, preview drift, safely apply creates/updates, approve the fixture delete, and repeat. Never describe this as live remote support. | Response says `adapter: "fake"`; expected counts and final all-noop result are visible. |
-| 24:00–25:00 | Bonus and close | Show the `$manage-cicero-event` prompt, then summarize: open source, Cloudflare deployed, self-hostable, no passwords, API bonus, safe automation. | Audience can name the replacement spine and added value. |
+| 24:00–25:00 | Ergonomics and close | On current source, open `⌘K`/`Ctrl-K`, show queue/review keyboard hints, and open workspace readiness/quick actions. Then summarize: MIT source, Vercel-hosted demo, Cloudflare-supported and self-hostable, no passwords, human-controlled automation. | Audience can name the replacement spine, added value, and why frequent organizers can work without constant mouse travel. |
 
-If the Roman event is still 404, do not attempt a production seed during the presentation. Use the
-existing `demo` event for the required browser flow, show the Roman seed and expected links as the
-prepared scenario, and state exactly which approval remains.
+If a preflight unexpectedly finds the Roman event unavailable, do not attempt a production seed
+during the presentation. Use the existing `demo` event for the required browser flow and state that
+the hosted fixture changed after the dated evidence capture.
 
 ## Requirement-to-demo traceability
 
@@ -189,12 +189,10 @@ prepared scenario, and state exactly which approval remains.
 
 ## Bonus API segment: Accelevents-shaped program reconciliation
 
-This contract is implemented in
-[`PR #53`](https://github.com/EllAchE/sessionboard-oss/pull/53) but remains **unavailable live until
-that PR is reviewed, merged, and deployed and the deployed OpenAPI contains the path**. The endpoint
+This contract landed in [`PR #53`](https://github.com/EllAchE/sessionboard-oss/pull/53). The endpoint
 accepts Accelevents-shaped program records as JSON so field validation, identifiers, and preview
-output are explicit and reproducible. Treat this as a provisional deployment segment until those
-gates pass.
+output are explicit and reproducible. Treat it as a live segment only when the deployed OpenAPI
+contains the path; source availability is not proof of deployment parity.
 
 ### Proposed contract
 
@@ -425,10 +423,8 @@ not substitute an unverified remote endpoint.
 
 ## Added fixture bonus: full Accelevents-shaped CRUD
 
-This bonus is implemented in
-[`PR #42`](https://github.com/EllAchE/sessionboard-oss/pull/42), whose lint, build, and test checks
-were green when this runbook was written. Until it is merged and deployed, it remains a fallback-
-ready bonus rather than a live claim.
+This bonus landed in [`PR #42`](https://github.com/EllAchE/sessionboard-oss/pull/42). It remains a
+source-backed fallback rather than a live claim unless the route is present in deployed OpenAPI.
 
 ```text
 POST /api/v1/events/{slug}/integrations/accelevents/program
@@ -562,9 +558,9 @@ or remote Accelevents calls to make the screen look right during a demo.
 
 | Failure | Presenter response |
 | --- | --- |
-| First Settlement returns 404 | State that targeted seed approval is pending; use `/demo`; show Roman source and expected URLs. |
-| Admin returns Cloudflare 503/1102 | Reload once. The README documents the free-plan 10 ms CPU ceiling. Then use open public tabs and captured evidence. |
-| Sign-in email unavailable | Use the on-page magic link or `/organizer/mail`; for a seeded speaker, use organizer impersonation. |
+| First Settlement returns 404 | State that the hosted fixture changed after the dated evidence capture; use `/demo` and do not reseed during the presentation. |
+| Hosted organizer route fails | Reload once, then use open public tabs, the local current-source stack, and captured evidence. Do not describe the Vercel host as Cloudflare. |
+| Sign-in email unavailable | Use the on-page magic link or hosted `/admin/mail`; on current source use `/organizer/mail`; for a seeded speaker, use organizer impersonation. |
 | Upload or task write fails | Show pre-seeded file/task state; do not retry with personal files. |
 | Calendar client cannot import | Show captured mail attachment and UID/SEQUENCE fixture; do not send another real invitation. |
 | Reconcile route missing from OpenAPI | Stop the write segment, show proposed contract/fixture, and use the public read API. |
@@ -578,7 +574,8 @@ or remote Accelevents calls to make the screen look right during a demo.
 
 - [ ] Approval owner and scope are written down for every live mutation.
 - [ ] Live home, sign-in, `demo` pages, embed, and public API respond.
-- [ ] Organizer magic link works without an inbox and `/organizer/mail` is reachable.
+- [ ] Organizer magic link works without an inbox and the environment's mail route (`/admin/mail`
+      hosted, `/organizer/mail` on current source) is reachable.
 - [ ] First Settlement is verified live after an approved targeted seed, or fallback wording is in
       the speaker notes.
 - [ ] Event switcher selects the intended event before every write.

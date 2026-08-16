@@ -23,7 +23,10 @@ one-command self-host that needs no API key from anyone.
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/organizer/mail`](https://cicero-three.vercel.app/organizer/mail).
+[`/admin/mail`](https://cicero-three.vercel.app/admin/mail). The hosted demo was still on the legacy
+`/admin` organizer revision during the [2026-08-16 evidence
+pass](docs/06-submission-evidence.md); current source uses `/organizer` and includes newer organizer
+ergonomics.
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
@@ -414,8 +417,12 @@ coexist without either seeing the other.
 8. **[`docs/05-additional-requirements.md`](docs/05-additional-requirements.md)** — requirements
    added by the owner after the brief was frozen, with build status per row and what the optional
    add-ons cost a self-hoster
-9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
-10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
+9. **[`docs/06-submission-narrative.md`](docs/06-submission-narrative.md)** — the full competition
+   submission: brief coverage, added product value, ergonomics, omissions, and integration roadmap
+10. **[`docs/06-submission-evidence.md`](docs/06-submission-evidence.md)** — dated local seeded and
+    hosted-demo browser evidence, including deployment-parity findings
+11. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
+12. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
 Alongside those, four unnumbered companions:
 
