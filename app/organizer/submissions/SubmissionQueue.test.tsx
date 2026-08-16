@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   COLUMNS,
   DEFAULT_COLUMNS,
+  SelectionActions,
   SubmissionQueue,
   viewColumns,
   type QueueProps,
@@ -203,6 +204,26 @@ describe('SubmissionQueue staging controls', () => {
     expect(html).toContain('⇧d');
     expect(html).toContain('⇧h');
     expect(html).toContain('⇧c');
+  });
+
+  it('combines queue placement and decisions in one selection bar', () => {
+    const html = renderToStaticMarkup(
+      <SelectionActions
+        selectedCount={2}
+        pending={false}
+        onDecide={vi.fn()}
+        onStage={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('aria-label="Actions for 2 selected"');
+    expect(html).toContain('aria-label="Queue selected submissions"');
+    expect(html).toContain('Accept queue');
+    expect(html).toContain('Decline queue');
+    expect(html).toContain('aria-label="Decide selected submissions"');
+    expect(html).toContain('Waitlist');
+    expect(html).not.toContain('>Reset<');
+    expect(html).not.toContain('>Clear<');
   });
 });
 
