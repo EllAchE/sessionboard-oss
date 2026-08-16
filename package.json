@@ -14,6 +14,8 @@
     "test:watch": "vitest",
     "audit": "bun audit --audit-level=high",
     "bench": "tsx scripts/benchmark.ts",
+    "alternatives:build": "tsx scripts/alternatives/build.ts",
+    "alternatives:check": "tsx scripts/alternatives/build.ts --check",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "eval": "tsx scripts/eval-loop.ts",
     "eval:loop": "tsx scripts/eval-loop.ts --loop",
