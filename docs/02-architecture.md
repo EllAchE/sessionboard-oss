@@ -7,19 +7,26 @@ refer to `01-requirements.md`.
 
 The product is named **Cicero**, after the design system built for it.
 
-## 1. Hosting — Cloudflare, with the fallback pre-paid
+## 1. Hosting — the fallback got called
 
-Primary target is **Cloudflare Workers** via the OpenNext adapter. Self-host is a supported
-secondary target, not the thing the architecture bends around.
+> **Production runs on Vercel as of 2026-08-15.** Cloudflare Workers was the design-time primary and
+> is still a supported target that builds from this same tree, but the free tier's 3 MiB Worker
+> ceiling rejects our bundle, so deploys to it fail. See
+> [The fallback got called](#the-fallback-got-called-2026-08-15) below for the numbers and the
+> alternative we declined. Everything in this section describing Cloudflare remains accurate for
+> anyone deploying there; `wrangler.jsonc` and `custom-worker.ts` are unchanged.
 
-| Concern | Cloudflare (primary) | Self-host (secondary) |
-| --- | --- | --- |
-| Runtime | Workers, `@opennextjs/cloudflare` | Node 22 container, `next start` |
-| Database | Neon Postgres via **Hyperdrive** | Postgres 16 in `docker-compose` |
-| DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** |
-| File storage | Postgres by default, R2 binding when bound | MinIO, or any S3 endpoint |
-| Email | Resend HTTP API | SMTP via nodemailer |
-| Scheduled sends | Hourly Cron Trigger → custom Worker → `/api/cron` in-process | any cron hitting `/api/cron` |
+Design-time primary target was **Cloudflare Workers** via the OpenNext adapter. Self-host is a
+supported secondary target, not the thing the architecture bends around.
+
+| Concern | Cloudflare | Vercel (production) | Self-host |
+| --- | --- | --- | --- |
+| Runtime | Workers, `@opennextjs/cloudflare` | Node 22 serverless, stock `next build` | Node 22 container, `next start` |
+| Database | Neon Postgres via **Hyperdrive** | Neon Postgres via `DATABASE_URL` | Postgres 16 in `docker-compose` |
+| DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** | **the same two packages** |
+| File storage | Postgres by default, R2 binding when bound | Postgres `file_blob` | MinIO, or any S3 endpoint |
+| Email | Resend HTTP API | Resend HTTP API | SMTP via nodemailer |
+| Scheduled sends | Hourly Cron Trigger → custom Worker → `/api/cron` in-process | Vercel Cron → `GET /api/cron` | any cron hitting `/api/cron` |
 
 `wrangler.jsonc` points at `custom-worker.ts`, which preserves OpenNext's generated `fetch` handler
 and adds Cloudflare's module-format `scheduled` handler. The hourly trigger calls that fetch handler
@@ -85,6 +92,60 @@ different driver, a different storage story, and a migration of every query. We 
 amount of day-one setup for the ability to abandon the primary host without abandoning the work.
 On a deadline where the deployed site is a hard deliverable (`D-3`), an escape hatch is worth more
 than a head start.
+
+### The fallback got called (2026-08-15)
+
+The paragraph above was written speculatively. It cashed out, and the honest version of the story is
+that we were wrong about *which* limit would bite.
+
+`bun run cf:deploy` fails:
+
+```
+✘ A request to the Cloudflare API (.../workers/scripts/cicero/versions) failed.
+  Your Worker exceeded the size limit of 3 MiB. Please upgrade to a paid plan
+  to deploy Workers up to 10 MiB. [code: 10027]
+```
+
+`.open-next/server-functions/default/handler.mjs` is **13.4 MiB** uncompressed against a **3 MiB**
+free-tier ceiling. This is not a slow creep past a threshold; a Next 15 App Router server bundle with
+Drizzle, `pg`, Zod, the Anthropic SDK and ~20 API routes was never going to fit, and Workers Paid's
+10 MiB ceiling would not have fit it either without splitting the bundle. The pre-deploy spike at
+[§1's gate](#the-spike-that-de-risks-it) proved a *hello-world* deploys to Workers, which is exactly
+the thing a bundle-size limit cannot be tested by. That is the lesson worth keeping: the spike
+validated the integration and told us nothing about the constraint that actually stopped us.
+
+The failure mode was quiet in a way worth recording. Deploys had been failing rather than not being
+run, so production silently stayed on a pre-2026-08-13 build for two days — 8 API paths live against
+20 on `main`, and every magic link it issued pointed at a hostname that no longer resolves.
+
+**What we declined.** Workers Paid is $5/month and raises the ceiling to 10 MiB with 30s CPU per
+request, which would very likely have carried this bundle and kept `Z-1`. That was a real option and
+a cheap one; we passed on it because `Z-1` is a **"mild"** bonus by the brief's own wording
+(`01-requirements.md`) and paying a subscription to keep a mild bonus is the wrong trade for a
+project whose README asks a stranger to clone and run it. A reader who wants `Z-1` should upgrade
+the plan — nothing in this repo has to change to take that path, which is the same reversibility
+claim as before, pointing the other way.
+
+**What the move actually cost, in full:**
+
+- `Z-1` (the Cloudflare bonus) is not met by the deployed instance.
+- **Hyperdrive is gone**, so Postgres connections are no longer pooled at the edge. `db/client.ts`
+  falls through to its `DATABASE_URL` branch with the module-scoped `nodePool` — correct for Node,
+  and the reason no code changed. Use a Neon **pooled** connection string here; the direct one will
+  exhaust connections under serverless fan-out.
+- **Cron parity degrades on Vercel Hobby**, which rejects any schedule running more than once a day
+  *at deploy time* — an hourly `0 * * * *` fails the build outright. `vercel.json` therefore
+  schedules `0 8 * * *`, and Hobby may fire it anywhere inside that hour. Reminder jobs already
+  carry durable idempotency guards and evaluate their own due times, so a coarser tick delays
+  delivery rather than corrupting it. Restoring hourly is either Vercel Pro or any external
+  scheduler hitting `GET /api/cron` with `Authorization: Bearer $CRON_SECRET`.
+
+**What did not change:** no application code. `db/client.ts`, `lib/env.ts` and `lib/storage` each
+already had a non-Cloudflare branch reached by catching `getCloudflareContext()`'s throw, and R2 was
+never enabled, so uploads were already going to the `file_blob` table. The only repo changes are
+`vercel.json`, moving `@opennextjs/cloudflare` from `devDependencies` to `dependencies` (runtime
+modules import it, so Vercel's file tracing must see it as one), and this section. `wrangler.jsonc`
+and `custom-worker.ts` are untouched and still correct.
 
 ### The spike that de-risks it
 
