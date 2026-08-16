@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PgDialect } from 'drizzle-orm/pg-core';
 
 vi.mock('@/app/api/v1/_lib/queries', () => ({ requireEvent: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn() }));
@@ -96,22 +97,87 @@ const BUNDLE: PublicFormBundle = {
   taxonomy: { formats: [], tracks: [], tags: [] },
 };
 
-async function read() {
-  const response = await GET(new Request('https://cicero.test/api/v1/events/x/forms/panels'), {
-    params: Promise.resolve({ slug: 'first-settlement', formId: 'panels' }),
+async function read(formId = 'panels') {
+  const response = await GET(new Request(`https://cicero.test/api/v1/events/x/forms/${formId}`), {
+    params: Promise.resolve({ slug: 'first-settlement', formId }),
   });
-  const body = (await response.json()) as { data: unknown };
-  return { response, data: body.data };
+  const body = (await response.json()) as {
+    data?: unknown;
+    error?: { code: string; message: string };
+  };
+  return { response, data: body.data, error: body.error };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocked(requireEvent).mockResolvedValue({ id: 'event-1', slug: 'first-settlement' });
-  mocked(getDb).mockReturnValue({ query: { form: { findFirst: async () => undefined } } });
+  mocked(getDb).mockReturnValue({
+    query: {
+      form: {
+        findFirst: async () => ({
+          id: BUNDLE.form.id,
+          eventId: BUNDLE.event.id,
+          slug: BUNDLE.form.slug,
+        }),
+      },
+    },
+  });
   mocked(loadPublicForm).mockResolvedValue(BUNDLE);
 });
 
 describe('the published form contract', () => {
+  it('looks up a listed slug as a slug rather than casting it to a UUID', async () => {
+    const findFirst = vi.fn().mockResolvedValue({
+      id: BUNDLE.form.id,
+      eventId: BUNDLE.event.id,
+      slug: BUNDLE.form.slug,
+    });
+    mocked(getDb).mockReturnValue({ query: { form: { findFirst } } });
+
+    const { response } = await read('panels');
+
+    expect(response.status).toBe(200);
+    const query = new PgDialect().sqlToQuery(findFirst.mock.calls[0][0].where);
+    expect(query.sql).toContain('"form"."slug"');
+    expect(query.sql).not.toContain('"form"."id" =');
+    expect(query.params).toContain('panels');
+    expect(loadPublicForm).toHaveBeenCalledWith('first-settlement', 'panels');
+  });
+
+  it('resolves a UUID to its event-scoped public slug', async () => {
+    const formId = '104b72c2-7637-4301-b646-83f7c0622558';
+    const findFirst = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ id: formId, eventId: BUNDLE.event.id, slug: 'panels' });
+    mocked(getDb).mockReturnValue({ query: { form: { findFirst } } });
+
+    const { response } = await read(formId);
+
+    expect(response.status).toBe(200);
+    expect(findFirst).toHaveBeenCalledTimes(2);
+    const query = new PgDialect().sqlToQuery(findFirst.mock.calls[1][0].where);
+    expect(query.sql).toContain('"form"."event_id"');
+    expect(query.sql).toContain('"form"."id"');
+    expect(query.params).toEqual([BUNDLE.event.id, formId]);
+    expect(loadPublicForm).toHaveBeenCalledWith('first-settlement', 'panels');
+  });
+
+  it.each(['missing', '104b72c2-7637-4301-b646-83f7c0622558'])(
+    'returns the documented not-found response for unknown identifier %s',
+    async (formId) => {
+      mocked(getDb).mockReturnValue({
+        query: { form: { findFirst: vi.fn().mockResolvedValue(undefined) } },
+      });
+
+      const { response, error } = await read(formId);
+
+      expect(response.status).toBe(404);
+      expect(error).toEqual({ code: 'not_found', message: 'That form could not be found' });
+      expect(loadPublicForm).not.toHaveBeenCalled();
+    },
+  );
+
   it('matches the schema the OpenAPI document is generated from', async () => {
     const { data } = await read();
     expect(publicFormSchema.parse(data)).toBeTruthy();
