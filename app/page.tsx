@@ -112,7 +112,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             <span>GitHub</span>
           </a>
           <a className={styles.signInLink} href="/signin">
-            Enter
+            Sign in
           </a>
           <Button
             className={styles.navCta}
@@ -120,7 +120,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             variant="primary"
             size="sm"
           >
-            Join Cicero
+            Sign up
           </Button>
         </div>
       </nav>
