@@ -11,7 +11,7 @@ export function aiModelConfigured(): boolean {
 
 /** What AI surfaces show when no model key is configured. */
 export const AI_KEY_MISSING_NOTE =
-  'No model key is configured. Set ANTHROPIC_API_KEY to enable claude-sonnet-5.';
+  'No model key is configured. Set ANTHROPIC_API_KEY to enable claude-sonnet-5. (this is a demo, I didn't want to find someone building their SaaS in here :))';
 
 export const AI_KEY_MISSING_NOTE_MARKDOWN =
-  '**No model key is configured.** Set `ANTHROPIC_API_KEY` to enable `claude-sonnet-5`.';
+  '**No model key is configured.** Set `ANTHROPIC_API_KEY` to enable `claude-sonnet-5`. (this is a demo, I didn't want to find someone building their SaaS in here :))';

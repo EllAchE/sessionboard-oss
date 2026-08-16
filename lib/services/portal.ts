@@ -850,7 +850,7 @@ async function sendShareInvite(
   const body = [
     `Hi${name ? ` ${name}` : ''},`,
     '',
-    `You have been added to **${session.title}** at ${eventRow.name}.`,
+    `You have been added to **${session.title}** at ${eventRow.name}. Your speaker portal is where you add your bio, headshot and anything else the organizers need.`,
     '',
     `[Open the ${eventRow.name} speaker portal](${link})`,
   ].join('\n');
