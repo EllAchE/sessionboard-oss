@@ -1,5 +1,9 @@
 # Cicero — submission (short form)
 
+> **Historical competition artifact.** This copy was frozen for the August 2026 submission. Test
+> counts, deployment measurements, and next steps below are dated evidence, not current status. See
+> [`../README.md`](../README.md) and the latest CI run for the maintained view.
+
 **Live demo:** https://cicero-three.vercel.app
 **Source:** https://github.com/EllAchE/sessionboard-oss
 

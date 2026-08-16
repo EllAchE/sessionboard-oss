@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "audit": "bun audit",
     "bench": "tsx scripts/benchmark.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "eval": "tsx scripts/eval-loop.ts",
@@ -19,6 +20,7 @@
     "eval:archive": "tsx scripts/archive-sessionboard-eval.ts",
     "verify:headshots": "tsx scripts/verify-speaker-headshots.ts",
     "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
     "db:seed:first-settlement": "tsx --env-file-if-exists=.env db/seed-first-settlement.ts",
@@ -26,7 +28,7 @@
     "docs:mcp": "tsx scripts/generate-mcp-tools.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
-    "cf:deploy": "wrangler hyperdrive update 0d0c43d957e24187a177a06a6dd7faed --caching-disabled && opennextjs-cloudflare deploy"
+    "cf:deploy": "bun run db:migrate && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
@@ -36,12 +38,12 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@modelcontextprotocol/server": "2.0.0",
-    "drizzle-orm": "^0.38.0",
+    "drizzle-orm": "^0.45.2",
     "libphonenumber-js": "^1.13.10",
     "lucide-react": "^0.469.0",
     "marked": "^15.0.0",
     "next": "^15.1.0",
-    "nodemailer": "^6.9.16",
+    "nodemailer": "^9.0.5",
     "pg": "^8.13.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -54,16 +56,21 @@
     "@fontsource/ibm-plex-mono": "^5.1.0",
     "@fontsource/spectral": "^5.1.0",
     "@types/node": "^22.10.2",
-    "@types/nodemailer": "^6.4.17",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.11.10",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "drizzle-kit": "^0.30.1",
+    "drizzle-kit": "^0.31.10",
     "eslint": "9.39.5",
     "eslint-config-next": "15.5.23",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8",
+    "vitest": "^4.1.10",
     "wrangler": "^4.86.0"
+  },
+  "overrides": {
+    "esbuild": "^0.25.4",
+    "postcss": "^8.5.26",
+    "sharp": "^0.35.2"
   }
 }

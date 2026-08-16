@@ -3,19 +3,19 @@
 # Bun installs and builds because bun.lock is the lockfile; Node 22 runs the server because
 # `next start` is the supported production entrypoint and drags in no Bun-specific behaviour.
 
-FROM oven/bun:1.3-slim AS deps
+FROM oven/bun:1.3.10-slim AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-FROM oven/bun:1.3-slim AS build
+FROM oven/bun:1.3.10-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 
-FROM node:22-slim AS runtime
+FROM node:22.22.0-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
@@ -38,6 +38,6 @@ RUN useradd --system --uid 1001 cicero && chown -R cicero:cicero /app
 USER cicero
 EXPOSE 3000
 
-# Workers cannot migrate at boot, so the Cloudflare target runs `db:migrate` as a predeploy
-# step. A container can, which is why `docker compose up` needs no second command.
+# Workers cannot migrate at boot, so `bun run cf:deploy` runs `db:migrate` before deployment. A
+# container can migrate at startup, which is why `docker compose up` needs no second command.
 CMD ["sh", "-c", "node_modules/.bin/tsx db/migrate.ts && node_modules/.bin/next start"]

@@ -24,6 +24,29 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run db:check
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run audit
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -34,6 +57,10 @@ jobs:
           bun-version: 1.3.10
       - run: bun install --frozen-lockfile
       - run: bun run build
+      - run: bun run docs:openapi
+      - run: bun run docs:mcp
+      - run: git diff --exit-code -- docs/openapi.json docs/mcp-tools.json
+      - run: docker compose config --quiet
 
   test:
     name: Test
@@ -54,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16.14-alpine3.23
         env:
           POSTGRES_USER: cicero
           POSTGRES_PASSWORD: cicero

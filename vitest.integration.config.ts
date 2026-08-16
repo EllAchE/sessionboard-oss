@@ -15,6 +15,9 @@ import { configDefaults, defineConfig } from 'vitest/config';
  * glob above would otherwise run another branch's integration tests against this database.
  */
 export default defineConfig({
+  oxc: {
+    jsx: { runtime: 'automatic' },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('.', import.meta.url)),
@@ -24,7 +27,8 @@ export default defineConfig({
     include: ['**/*.integration.test.ts'],
     exclude: [...configDefaults.exclude, '**/.claude/**'],
     pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    maxWorkers: 1,
+    isolate: false,
     // A cold Postgres connection plus migrations is slower than any unit test here.
     testTimeout: 30_000,
     hookTimeout: 60_000,

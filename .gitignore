@@ -19,4 +19,3 @@ coverage/
 # Per-workstream scratch notes from the build sessions.
 /tasks/
 .vercel
-.env*

@@ -1,5 +1,9 @@
 # Cicero
 
+> **Historical competition artifact.** This narrative records the August 2026 submission. Counts,
+> deployment measurements, and follow-up lists are deliberately frozen; use
+> [`../README.md`](../README.md) and the latest CI run for current status.
+
 An open-source replacement for Sessionboard.
 
 Live: <https://cicero-three.vercel.app> · Source: `EllAchE/sessionboard-oss`, MIT.
