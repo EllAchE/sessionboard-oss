@@ -39,15 +39,28 @@ export type RecordingFileWire = {
   sizeBytes: number;
 };
 
+export function formatSessionDateTime(iso: string, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone,
+  }).format(new Date(iso));
+}
+
 function SessionRecordingRow({
   row,
   choices,
   eventSlug,
+  eventTimeZone,
   onChanged,
 }: {
   row: RecordingWire;
   choices: RecordingFileWire[];
   eventSlug: string;
+  eventTimeZone: string;
   onChanged: () => void;
 }) {
   const { toast } = useToast();
@@ -123,7 +136,12 @@ function SessionRecordingRow({
             </Badge>
           </div>
           <p className={styles.meta}>
-            {date ? new Date(date).toLocaleString() : 'Session time not set'} · agenda{' '}
+            {date ? (
+              <time dateTime={date}>{formatSessionDateTime(date, eventTimeZone)}</time>
+            ) : (
+              'Session time not set'
+            )}{' '}
+            · agenda{' '}
             {row.session.status}
           </p>
           {row.recording ? (
@@ -273,11 +291,13 @@ export function RecordingsBoard({
   rows,
   choices,
   eventSlug,
+  eventTimeZone,
   onRefresh,
 }: {
   rows: RecordingWire[];
   choices: RecordingFileWire[];
   eventSlug: string;
+  eventTimeZone: string;
   onRefresh?: () => void;
 }) {
   const refresh = onRefresh ?? (() => window.location.reload());
@@ -297,6 +317,7 @@ export function RecordingsBoard({
           row={row}
           choices={choices}
           eventSlug={eventSlug}
+          eventTimeZone={eventTimeZone}
           onChanged={refresh}
         />
       ))}
