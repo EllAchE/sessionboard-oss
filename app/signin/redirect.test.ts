@@ -9,6 +9,7 @@ describe('authRedirect', () => {
   it('rejects absolute and protocol-relative destinations', () => {
     expect(authRedirect('https://example.com', '/admin')).toBe('/admin');
     expect(authRedirect('//example.com', '/admin')).toBe('/admin');
+    expect(authRedirect('/\\example.com', '/admin')).toBe('/admin');
   });
 
   it('uses the flow-specific fallback when no destination is supplied', () => {
