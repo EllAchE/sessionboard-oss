@@ -1,0 +1,1 @@
+ALTER TABLE "scheduled_session" ADD CONSTRAINT "scheduled_session_event_client_id" UNIQUE("event_id","client_id");

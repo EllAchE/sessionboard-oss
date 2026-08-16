@@ -277,6 +277,37 @@ cleanly when a deployment lacks the required operation. See the organizer workfl
 The discovery location and `$skill-name` invocation follow the
 [official Codex skills documentation](https://developers.openai.com/codex/build-skills#where-codex-loads-local-skills).
 
+### Excel / CSV agenda sync
+
+An event API key can preview and atomically apply a whole spreadsheet change set. Create and update
+rows are published immediately; delete rows leave a cancelled record under the same `client_id` so
+speaker calendars receive a real cancellation and replaying the same file is a no-op. Room, track,
+and format accept either an event-scoped id or the display name an organizer sees in Excel.
+
+The Roman seed gives every scheduled debate a stable client id. Its deterministic
+[`first-settlement-session-sync.csv`](docs/examples/first-settlement-session-sync.csv) fixture makes
+exactly one create, one update, and one delete:
+
+```bash
+export CICERO_API_KEY='<key created under Admin → Integrations>'
+
+curl --fail-with-body \
+  -H "Authorization: Bearer $CICERO_API_KEY" \
+  -H 'Content-Type: text/csv' \
+  --data-binary @docs/examples/first-settlement-session-sync.csv \
+  'http://localhost:3000/api/v1/events/first-settlement/sessions/sync?dryRun=true'
+
+curl --fail-with-body \
+  -H "Authorization: Bearer $CICERO_API_KEY" \
+  -H 'Content-Type: text/csv' \
+  --data-binary @docs/examples/first-settlement-session-sync.csv \
+  'http://localhost:3000/api/v1/events/first-settlement/sessions/sync?dryRun=false'
+```
+
+The preview and first apply report `created: 1`, `updated: 1`, and `deleted: 1`. A second apply
+reports `unchanged: 3` with no writes or calendar notifications. The same endpoint also accepts
+`application/json` as `{ "rows": [{ "action": "create", "client_id": "...", ... }] }`.
+
 ## Deployment
 
 **Vercel** is where the demo above runs. It is a stock Next build — no adapter, no config beyond

@@ -177,6 +177,13 @@ export const sessionListQuery = z
   })
   .strict();
 
+export const sessionSyncQuery = z.object({
+  dryRun: z
+    .enum(['true', 'false'])
+    .optional()
+    .describe('Defaults to true. Set false only after reviewing the preview.'),
+});
+
 export const speakerListQuery = z
   .object({
     q: queryFilter.optional().describe('Search name, biography, company, role, links, and sessions'),

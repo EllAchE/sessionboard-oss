@@ -3093,6 +3093,243 @@
           "operations"
         ]
       },
+      "SessionSyncRow": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "delete"
+            ]
+          },
+          "client_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "track": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ends_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ceu_credits": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "client_id"
+        ],
+        "description": "One Excel-shaped agenda sync row"
+      },
+      "SessionSyncRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete"
+                  ]
+                },
+                "client_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "room": {
+                  "type": "string"
+                },
+                "track": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string"
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "ends_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "ceu_credits": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "client_id"
+              ],
+              "description": "One Excel-shaped agenda sync row"
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "description": "Excel-shaped rows using the same column names as the CSV import"
+      },
+      "SessionSyncResult": {
+        "type": "object",
+        "properties": {
+          "dryRun": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deleted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unchanged": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "clientId": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete"
+                  ]
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "updated",
+                    "deleted",
+                    "unchanged"
+                  ]
+                }
+              },
+              "required": [
+                "row",
+                "clientId",
+                "action",
+                "outcome"
+              ]
+            }
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "room",
+                    "track",
+                    "speaker"
+                  ]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "error",
+                    "warning"
+                  ]
+                },
+                "sessionIds": {},
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "severity",
+                "sessionIds",
+                "message"
+              ]
+            }
+          },
+          "calendarNotifications": {
+            "type": "object",
+            "properties": {
+              "planned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "attempted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "planned",
+              "attempted",
+              "failed"
+            ]
+          }
+        },
+        "required": [
+          "dryRun",
+          "created",
+          "updated",
+          "deleted",
+          "unchanged",
+          "changes",
+          "conflicts",
+          "calendarNotifications"
+        ]
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -3377,6 +3614,104 @@
           },
           "429": {
             "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{slug}/sessions/sync": {
+      "post": {
+        "tags": [
+          "Program"
+        ],
+        "summary": "Preview or apply an agenda collection sync",
+        "description": "Requires an API key issued for this event. CSV rows use action and client_id columns. Create and update rows are published; delete rows are retained as cancelled so calendar cancellations and idempotent replay remain possible.",
+        "operationId": "syncSessions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "The event's URL slug",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dryRun",
+            "in": "query",
+            "required": false,
+            "description": "Defaults to true. Set false only after reviewing the preview.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Defaults to true. Set false only after reviewing the preview."
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string",
+                "description": "Excel-compatible CSV with action, client_id, title, room, starts_at and ends_at columns."
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionSyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview or applied sync result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionSyncResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with an existing record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request failed validation",
             "content": {
               "application/json": {
                 "schema": {

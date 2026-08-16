@@ -852,30 +852,35 @@ export async function seedFirstSettlement(
   const placements = [
     {
       motion: accepted[0],
+      clientId: 'roman-republic-restoration',
       room: curia,
       startsAt: atRome(day1, 9, 0),
       minutes: 45,
     },
     {
       motion: accepted[1],
+      clientId: 'roman-provincial-command',
       room: curia,
       startsAt: atRome(day1, 10, 30),
       minutes: 30,
     },
     {
       motion: accepted[3],
+      clientId: 'roman-first-among-senators',
       room: portico,
       startsAt: atRome(day1, 14, 0),
       minutes: 60,
     },
     {
       motion: accepted[4],
+      clientId: 'roman-public-peace',
       room: temple,
       startsAt: atRome(day2, 10, 0),
       minutes: 30,
     },
     {
       motion: accepted[2],
+      clientId: 'roman-name-augustus',
       room: curia,
       startsAt: atRome(day4, 11, 0),
       minutes: 45,
@@ -897,6 +902,7 @@ export async function seedFirstSettlement(
         startsAt: placement.startsAt,
         endsAt: new Date(placement.startsAt.getTime() + placement.minutes * 60_000),
         status: 'published' as const,
+        clientId: placement.clientId,
         icsUid: newIcsUid(),
       })),
     )
