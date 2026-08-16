@@ -750,7 +750,7 @@ export type EmailTemplateRow = typeof emailTemplate.$inferSelect;
  * The shipped SMS copy deliberately uses `{{portal.url}}` where the email writes
  * `{{portal.link}}`. Custom SMS templates may now request the one-click link, and the SMS mailbox
  * gates it like the mail archive, but the plain URL keeps the default archive credential-free as
- * defence in depth. See `app/admin/sms/magic-links.ts`.
+ * defence in depth. See `app/organizer/sms/magic-links.ts`.
  */
 export const DEFAULT_TEMPLATES: Array<{
   key: string;
@@ -1057,7 +1057,7 @@ async function mintPortalLink(
 
 /**
  * Any channel may request the one-click portal credential. The SMS path was deliberately omitted
- * until its archive gained the same read-time gate as `/admin/mail`; keeping the test in one helper
+ * until its archive gained the same read-time gate as `/organizer/mail`; keeping the test in one helper
  * prevents a future send path from silently rendering `{{portal.link}}` as an empty string again.
  */
 const PORTAL_LINK_PATTERN = /\{\{\s*portal\.link/;
@@ -2273,34 +2273,34 @@ export async function getSms(eventId: string, id: string): Promise<SmsMailboxEnt
 }
 
 // ---------------------------------------------------------------------------
-// Admin event resolution
+// Organizer event resolution
 // ---------------------------------------------------------------------------
 
-export type AdminEventOption = { id: string; name: string; slug: string };
+export type OrganizerEventOption = { id: string; name: string; slug: string };
 
 /** Newest first, which is what a judge who just made an event wants to find at the top. */
-export async function listEventsForAdmin(userId: string): Promise<AdminEventOption[]> {
+export async function listEventsForOrganizer(userId: string): Promise<OrganizerEventOption[]> {
   const rows = await listEventsForUser(userId);
   return rows.map(({ id, name, slug }) => ({ id, name, slug }));
 }
 
 /**
- * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=`, then
- * from the same cookie the rest of the admin shell reads, then from the caller's newest event. The
+ * `/organizer/comms` and `/organizer/mail` carry no event segment, so the event comes from `?event=`, then
+ * from the same cookie the rest of the organizer shell reads, then from the caller's newest event. The
  * cookie step is what keeps the mailbox showing the event the sidebar says is selected.
  *
  * Both candidates are matched against the caller's own events rather than looked up directly. These
  * pages have no `requireEventContext` between them and the database, so resolving `?event=` by slug
  * would hand any signed-in organizer another event's mailbox for the price of guessing a slug.
  */
-export async function resolveAdminEvent(options: {
+export async function resolveOrganizerEvent(options: {
   eventParam?: string | null;
   cookieEventId?: string | null;
   userId: string;
-}): Promise<{ event: EventRow | null; options: AdminEventOption[] }> {
+}): Promise<{ event: EventRow | null; options: OrganizerEventOption[] }> {
   const db = getDb();
   const mine = await listEventsForUser(options.userId);
-  const all: AdminEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
+  const all: OrganizerEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
 
   const pick = (wanted: string | null | undefined) =>
     wanted ? mine.find((entry) => entry.id === wanted || entry.slug === wanted) : undefined;
@@ -2313,8 +2313,8 @@ export async function resolveAdminEvent(options: {
 }
 
 export async function listTracksAndFormats(eventId: string): Promise<{
-  tracks: AdminEventOption[];
-  formats: AdminEventOption[];
+  tracks: OrganizerEventOption[];
+  formats: OrganizerEventOption[];
 }> {
   const lookups = await loadLookups(eventId);
   return {
@@ -2323,7 +2323,7 @@ export async function listTracksAndFormats(eventId: string): Promise<{
   };
 }
 
-export async function listTasksForEvent(eventId: string): Promise<AdminEventOption[]> {
+export async function listTasksForEvent(eventId: string): Promise<OrganizerEventOption[]> {
   const db = getDb();
   const rows = await db
     .select({ id: task.id, name: task.name })

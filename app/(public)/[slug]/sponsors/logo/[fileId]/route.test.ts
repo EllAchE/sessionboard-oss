@@ -10,7 +10,7 @@ import { GET } from './route';
  * `E-7`. This route is the only unauthenticated way to read bytes out of the `file` table for a
  * sponsor, so what it *refuses* is the whole point of it — and the interesting refusals are the ones
  * a naive implementation gets wrong. "The file is on this event" is not the boundary; that is the
- * check the private `/admin/sponsors/logo/[fileId]` makes behind an organizer gate, and copying it
+ * check the private `/organizer/sponsors/logo/[fileId]` makes behind an organizer gate, and copying it
  * here would turn a public URL into a reader for every deck, headshot and signed contract the event
  * has ever stored.
  *

@@ -15,7 +15,7 @@ export { undeliverableRecipient } from './config';
 
 /**
  * One warning per distinct misconfiguration per process. `selectTransport` runs on every send and on
- * every render of the admin mailbox banner, and a line repeated per email is a line nobody reads.
+ * every render of the organizer mailbox banner, and a line repeated per email is a line nobody reads.
  */
 const warned = new Set<string>();
 
@@ -30,7 +30,7 @@ function selectTransport(): MailTransport {
   // Falling back rather than throwing is deliberate: a missing key should degrade to the dev
   // mailbox, not take down acceptance emails and every magic link with them. Falling back
   // *quietly* is not — an operator who asked for a real transport has to hear that they did not
-  // get one, or `/admin/mail` reads as a sent inbox for mail that never left the machine.
+  // get one, or `/organizer/mail` reads as a sent inbox for mail that never left the machine.
   if (resolved.transport === 'resend') {
     warnOnSharedResendSender();
     return resendTransport(resolved.apiKey);
@@ -79,7 +79,7 @@ type LoggedCopy = Pick<OutgoingMail, 'subject' | 'html' | 'text'> & { ics: strin
  * What goes into `email_log`, which is not always what goes out on the wire.
  *
  * A message body can carry a `/auth/verify?token=…` — a live, single-use session as the recipient
- * (see `./redact.ts`). `/admin/mail` already refuses to *render* one to a reader who is not entitled
+ * (see `./redact.ts`). `/organizer/mail` already refuses to *render* one to a reader who is not entitled
  * to it, but that gate is at read time, and the token is still sitting in the table underneath it
  * for anyone with database access, a backup, or a replica.
  *
@@ -107,7 +107,7 @@ type LoggedCopy = Pick<OutgoingMail, 'subject' | 'html' | 'text'> & { ics: strin
  *
  * **Rows written before this shipped still hold their tokens.** They are left alone: removing them
  * needs a migration, and this workstream cannot add one. They stay covered by the read-time gate in
- * `app/admin/mail/magic-links.ts`, which is what has been protecting them all along, and every token
+ * `app/organizer/mail/magic-links.ts`, which is what has been protecting them all along, and every token
  * in them expires on its own schedule. An operator who wants them gone now can do it in one
  * statement, which is safe to run repeatedly and touches nothing but the token:
  *
@@ -136,7 +136,7 @@ function loggedCopy(input: SendMailInput, transport: MailTransport['name']): Log
 
 /**
  * The single send path. The message is written to `email_log` *before* dispatch, so a message that
- * the provider rejects is still readable at `/admin/mail` with its error attached — the log is the
+ * the provider rejects is still readable at `/organizer/mail` with its error attached — the log is the
  * record of intent, not a record of success. Everything is written except a sign-in token that a
  * real transport is about to deliver to the recipient itself; `loggedCopy` explains why.
  *
@@ -204,7 +204,7 @@ export async function sendMail(input: SendMailInput): Promise<{ id: string; sent
   }
 }
 
-/** Which transport is live, for the admin mailbox banner and the deployment checklist. */
+/** Which transport is live, for the organizer mailbox banner and the deployment checklist. */
 export function activeTransportName(): MailTransport['name'] {
   return selectTransport().name;
 }

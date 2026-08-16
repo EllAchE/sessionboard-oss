@@ -13,7 +13,7 @@ export const DEMO_ENTRY_IDENTITIES = [
  * deployed origin.
  */
 export const DEMO_ENTRY_LINKS = {
-  organizer: `/signin?email=${DEMO_ENTRY_IDENTITIES[0].email}&next=/admin`,
+  organizer: `/signin?email=${DEMO_ENTRY_IDENTITIES[0].email}&next=/organizer`,
   reviewer: `/signin?email=${DEMO_ENTRY_IDENTITIES[1].email}&next=/review`,
   speaker: `/signin?email=${DEMO_ENTRY_IDENTITIES[2].email}&next=/portal`,
 } as const;
