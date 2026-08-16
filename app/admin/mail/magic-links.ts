@@ -26,9 +26,10 @@ import { hasMagicLink, isRedacted, redactMagicLinks, REDACTED } from '@/lib/mail
  * `auth.magic_link` alone would leave every portal link in the archive readable.
  *
  * The invite has already made that account a legitimate `startImpersonation` target, so an organizer
- * can reach comparable access anyway — but attributably, through a session that carries
- * `impersonated_by`. The mailbox copy is the unattributed, transferable version. That difference is
- * the whole reason this is a fix and not a nicety.
+ * can reach comparable access anyway — but through a live session that identifies the organizer in
+ * `impersonated_by`. The mailbox copy is the completely unattributed, transferable version. That
+ * difference is the whole reason this is a fix and not a nicety, even though durable per-mutation
+ * organizer attribution remains a separate hardening gap.
  *
  * ## The boundary
  *

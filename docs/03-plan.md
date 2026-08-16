@@ -157,7 +157,8 @@ should be visible in the demo rather than buried in a changelog.
   use passwords. A speaker returns monthly and has forgotten theirs; the password is pure friction
   on a login nobody performs often enough to remember.
 - **`S-10` — full impersonation, not preview.** The admin's session cookie carries
-  `impersonated_by`; every write goes through as the speaker and stays attributable. Sessionboard's
+  `impersonated_by`; every write goes through as the speaker and can inspect the organizer identity
+  while that session exists. Sessionboard's
   "View portal as…" is read-only, which makes it useless for support and useless for judging. Ours
   lets an organizer complete a stuck speaker's task, and lets a judge reach a speaker portal in one
   click without an inbox (`T-7a`).
