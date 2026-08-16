@@ -667,10 +667,11 @@ Three patterns are worth naming, because they say more than any individual row.
 
 **The convergence signal and Cicero's decisions disagree at the top.** Three of the ranked items
 share the highest count of 5, and they land in three different places: `AD-3` 1st, `AD-5` 6th,
-`AD-6` declined outright. Identical evidence, three outcomes — because `AD-3` contradicts nothing
-Cicero decided, `AD-5` contradicts a design note (`Z-2`, one-way mirror) that the field's reading
-outweighs, and `AD-6` contradicts a `[REQUIRED]` row (`T-4a`) that it does not. That gradation is
-the rubric working as intended rather than a flaw in it.
+`AD-6` declined outright. Identical evidence, three outcomes, because of what each one collides
+with. `AD-3` contradicts nothing Cicero decided, so the evidence carries it. `AD-5` contradicts a
+design note — `Z-2`, the one-way mirror — and a note is exactly the kind of decision five
+independent readings should be able to reopen. `AD-6` contradicts a `[REQUIRED]` row, `T-4a`, which
+they should not. The gradation is the rubric working as intended rather than a flaw in it.
 
 **Most of the cheap wins are half-built.** `AD-3`, `AD-22`, `AD-38`, `AD-46`, `AD-12`, and `AD-36`
 are all cases where Cicero has the schema, the primitive, or the machinery and is missing the last
