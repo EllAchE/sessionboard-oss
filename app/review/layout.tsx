@@ -5,7 +5,7 @@ import { ReviewerShell } from './ReviewerShell';
 
 /**
  * `CFP-10`. Everything a reviewer can reach hangs off this layout, and it carries no organizer
- * navigation at all — no event configuration, no decisions, no admin sections. The absence is the
+ * navigation at all — no event configuration, no decisions, no organizer sections. The absence is the
  * feature: a surface that merely hides those controls still ships them to the browser.
  */
 export default async function ReviewLayout({ children }: { children: React.ReactNode }) {

@@ -33,7 +33,7 @@ vi.mock('../../db/client', () => ({
 import { sendMail } from './index';
 
 /**
- * The residue `/admin/mail`'s render-time gate could not reach: a `/auth/verify?token=…` is a live
+ * The residue `/organizer/mail`'s render-time gate could not reach: a `/auth/verify?token=…` is a live
  * session as the recipient, `sendMail` writes the body to `email_log` before dispatch, and anyone
  * with database access reads it there without going through the page that gates it.
  *
