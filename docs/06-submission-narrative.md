@@ -1,5 +1,9 @@
 # Cicero — full submission narrative
 
+> **Dated competition artifact.** This narrative and its evidence capture were prepared on 16
+> August 2026. Use [`../README.md`](../README.md), [`README.md`](README.md), and the latest CI run for
+> the maintained operating state.
+
 **Live demo:** <https://cicero-three.vercel.app>
 
 **Source:** <https://github.com/EllAchE/sessionboard-oss>

@@ -1,8 +1,13 @@
-# Cicero requirements audit checklist
+# Historical Cicero requirements audit
 
 This checklist compares Cicero with the competition's [original brief](reference/source-brief.txt)
-and the repository's [normalized requirements ledger](01-requirements.md). It is intended to remain
-the scrollable source of truth for what is complete and what still needs work.
+and the repository's [normalized requirements ledger](01-requirements.md).
+
+> **Frozen snapshot, not current status.** The row verdicts below are pinned to commit `416101e` on
+> 2026-08-13. Later notes corrected a few especially visible deployment claims, but the body was not
+> re-audited. Use current CI, the live OpenAPI, and [`../README.md`](../README.md) for present
+> behavior. Retaining this file preserves the competition evidence without making an old checklist
+> an operational source of truth.
 
 ## Audit snapshot
 
@@ -492,9 +497,8 @@ covering real recipients, the log transport, and seeded demo identities.
   ICS generation, deployment configuration, and tests.
 - `bun run test`: **75 test files, 825 tests, all passed** (up from 35 files / 381 tests at the
   previous audit).
-  *Updated 2026-08-16:* the suite now runs **129 files, 1371 tests, all passed**. The row verdicts
-  above were not re-audited against that tree — only this count was re-measured, so treat the
-  verdicts as pinned to `416101e` and this number as current.
+  *Measured later on 2026-08-16:* the suite then ran **129 files, 1371 tests, all passed**. That is a
+  dated measurement, not a live counter; consult the latest CI run for current totals.
 - `bun run typecheck`: passed.
 - `bun run lint`: passed.
 - `bun run build`: production build passed.

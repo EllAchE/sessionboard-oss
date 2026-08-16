@@ -144,8 +144,9 @@ run, so production silently stayed on a pre-2026-08-13 build for two days — 8 
 **What we declined.** Workers Paid is $5/month and raises the ceiling to 10 MiB with 30s CPU per
 request. Measured rather than assumed, it **does** carry this bundle — 3.42 MiB against 10 MiB — and
 it would keep `Z-1` and close the 10ms CPU defect in the same $5. That is a real option and a cheap
-one, and it stays one line away: upgrade the plan and run `bun run cf:deploy`, with no change to any
-file in this repo. We passed on it because `Z-1` is a **"mild"** bonus by the brief's own wording
+one. For the configured account it stays one command away: upgrade the plan, provide the direct
+`DATABASE_URL` used for migrations, and run `bun run cf:deploy`. A different account must also put
+its Hyperdrive id and `APP_URL` in `wrangler.jsonc`. We passed on Paid because `Z-1` is a **"mild"** bonus by the brief's own wording
 (`01-requirements.md`) and paying a subscription to keep a mild bonus is the wrong trade for a
 project whose README asks a stranger to clone and run it. A reader who wants `Z-1` should upgrade
 the plan — nothing in this repo has to change to take that path, which is the same reversibility
@@ -210,9 +211,17 @@ badly.
 
 ## 3. Database layer
 
-Postgres 16. Drizzle migrations live in `db/migrations/` and are applied by a `predeploy` step.
-Workers cannot run migrations at boot the way a container entrypoint can — this is the one
-operational difference between the two targets, and it resolves to a `package.json` script.
+Postgres 16. Drizzle migrations live in `db/migrations/` and are always applied explicitly. The
+container entrypoint migrates before it starts Next. `bun run cf:deploy` runs `db:migrate:remote`
+through a direct `DATABASE_URL` before deploying the Worker, whose runtime traffic uses Hyperdrive.
+Vercel operators run `db:migrate` before `vercel deploy --prod`; preview builds never mutate a
+database.
+
+The deploy variant exists because the ordinary `db:migrate` loads `.env` if one is present, and the
+`.env` a contributor gets from `.env.example` points at localhost. Migrating a development database
+and then deploying the Worker regardless is a silent failure — a production database left
+unmigrated behind a new revision — so `db:migrate:remote` reads no `.env` and refuses a localhost
+host outright.
 
 ### Event scoping is not optional
 

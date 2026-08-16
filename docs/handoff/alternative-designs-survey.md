@@ -1,16 +1,18 @@
-# Handoff: survey, pull and document the alternative Sessionboard designs
+# Completed handoff: survey and document alternative Sessionboard designs
+
+> **Completed 2026-08-16.** The resulting index and 32 repository reports live in
+> [`../alternatives/README.md`](../alternatives/README.md). The brief below is retained to explain
+> the survey method; it is not unfinished work.
 
 Self-contained brief for the session that surveys other entrants' Sessionboard clones, reads their
 code, and documents each one in this repo. You do not need prior context from the session that
 wrote this page.
 
-## Status when this was written
+## Original status when this was written
 
-**Nothing has been done yet. Zero repositories have been collected, cloned, or analyzed.**
-
-This survey was scoped early as one of two parallel work streams and never completed. There is no
-repo list, no feature comparison, and no gap analysis against other entrants anywhere in this
-repo. If you find a document claiming otherwise, it is wrong — start from zero.
+At the time this handoff was drafted, no repositories had been collected or analyzed. That is no
+longer the current state; use the completed output linked above. The instructions below are the
+historical execution brief, not a request to start over.
 
 Do not confuse this with the gap list measured against *our own* requirements, which does exist and
 is a different thing entirely (see "What we shipped" below).

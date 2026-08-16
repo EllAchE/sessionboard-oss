@@ -20,6 +20,9 @@ one-command self-host that needs no API key from anyone.
 
 **<https://cicero-three.vercel.app>** is deployed and seeded.
 
+The hosted demo is shared and editable. Its seed data is a baseline, not a permanent record, so
+counts may drift between resets. Use the checked-in seed when an exact fixture is required.
+
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
@@ -37,6 +40,9 @@ Without signing in at all: the [public event page](https://cicero-three.vercel.a
 [open call for speakers](https://cicero-three.vercel.app/submit/demo/speak) you can submit to,
 the [embeddable agenda](https://cicero-three.vercel.app/embed/demo/agenda) an event site would
 iframe, and the [REST API](https://cicero-three.vercel.app/api/v1/events/demo/agenda).
+
+> The screenshots below capture the competition-submission build. Use the live demo for the current
+> interface and sample data.
 
 ![The organizer dashboard, opening on outstanding speaker tasks](docs/images/dashboard.jpg)
 
@@ -89,18 +95,21 @@ bun run db:seed            # optional
 bun run dev
 ```
 
-Everything in `.env.example` is documented inline. The only variable that must be right in a real
-deployment is `APP_URL`, because magic links, embed snippets and calendar invites are all built
-from it.
+Everything in `.env.example` is documented inline. Every deployment needs a database connection or
+Hyperdrive binding and a correct `APP_URL`; storage, mail, scheduled jobs, SMS, AI, and integrations
+have their own optional settings. Apply migrations before serving a new application revision.
 
 | Script | |
 |---|---|
 | `bun run dev` | Next dev server |
 | `bun run typecheck` | `tsc --noEmit` |
-| `npm test` | `vitest run` — no database needed |
+| `bun run test` | `vitest run` — no database needed |
 | `bun run test:integration` | The database-backed suite (see below) |
+| `bun run audit` | Audit the locked dependency tree (gates on high and critical) |
 | `bun run db:generate` | Generate a migration from `db/schema.ts` |
+| `bun run db:check` | Validate Drizzle migration snapshots |
 | `bun run db:migrate` | Apply migrations |
+| `bun run db:migrate:remote` | Apply migrations to a deployment target; ignores `.env`, rejects localhost |
 | `bun run db:seed` | Seed both demo conferences (idempotent) |
 | `bun run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `bun run cf:deploy` | Build and deploy to Cloudflare Workers |
@@ -135,24 +144,22 @@ Nothing can be delivered to them; a real provider would hard-bounce the seeded d
 fictional senators and charge every bounce against your sending reputation. Real recipients in the
 same run still get real mail.
 
-#### Turning on mail for the hosted demo
+#### Turning on mail for a deployment
 
-The deployment runs `MAIL_TRANSPORT: auto` with no key, so it is on the dev mailbox and one secret
-away from real sending. To flip it, in this order:
+The hosted demo runs `MAIL_TRANSPORT=auto` with no key, so it uses the development mailbox. To turn
+on real delivery, in this order:
 
 1. **Verify a sender domain in Resend** — Domains → Add Domain, then publish the DKIM/SPF records it
    gives you and wait for the status to go green. Nothing below works without this.
-2. **Point `MAIL_FROM` at that domain** in `wrangler.jsonc`, e.g. `Cicero <cicero@your-domain.tld>`.
-   The placeholder there is `onboarding@resend.dev`, Resend's shared test sender: it delivers only
-   to the Resend account owner and returns 403 for everyone else. Leave it in place with a key set
-   and the app says so on the server console on the first send.
-3. **`wrangler secret put RESEND_API_KEY`** and paste the key. A secret, never a `var` — vars in
-   `wrangler.jsonc` are committed.
-4. Deploy (`bun run cf:deploy`), then confirm the banner at `/organizer/mail` names `resend` and send
-   yourself something from `/organizer/comms`.
+2. **Set `MAIL_FROM`** to an address at that domain, e.g. `Cicero <cicero@your-domain.tld>`.
+3. **Set `RESEND_API_KEY` as a platform secret.** On the hosted Vercel deployment use
+   `vercel env add`; on Workers use `wrangler secret put`; on a self-hosted instance use its secret
+   manager. Never commit the key or add it to `wrangler.jsonc` vars.
+4. Redeploy, confirm the banner at `/organizer/mail` names `resend`, and send yourself a test from
+   `/organizer/comms`.
 
-Step 3 alone is what changes behaviour, so a key without step 1 sends nothing and a key without
-step 2 sends only to you.
+Step 3 selects the real transport, but a key without a verified domain and matching sender still
+does not produce production delivery.
 
 #### Letting a visitor in without an inbox
 
@@ -170,7 +177,7 @@ Leave it off on any instance running a real event.
 
 ### The two test suites
 
-`npm test` is the fast one and needs nothing: everything it touches is either pure or mocked at the
+`bun run test` is the fast one and needs nothing: everything it touches is either pure or mocked at the
 service boundary. Keep it that way — it is what makes the suite runnable on any checkout.
 
 `bun run test:integration` runs `*.integration.test.ts` against a real Postgres, because the rules
@@ -225,8 +232,6 @@ host—the through-app upload is intentionally capped at 25 MB.
 
 **Comms.** Branded templates, a send log, and a real `.ics` `METHOD:REQUEST` that bumps `SEQUENCE`
 so a reschedule *updates the existing calendar entry in place* rather than adding a second one.
-
-![The mailbox, showing a rendered reminder with its links pulled out](docs/images/mailbox.jpg)
 
 **Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary,
 speaker gallery, sponsor wall, and a static PDF exhibitor map — all server-rendered, all readable
@@ -290,6 +295,9 @@ The discovery location and `$skill-name` invocation follow the
 ```bash
 vercel link
 vercel env add DATABASE_URL production     # a POOLED Postgres URL
+vercel env add APP_URL production
+vercel env pull .env.production.local --environment=production
+bun --env-file=.env.production.local run db:migrate
 vercel deploy --prod
 ```
 
@@ -303,11 +311,17 @@ delivery rather than duplicating or corrupting it.
 
 ```bash
 wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url>"
-# put the returned id in wrangler.jsonc
+# put the returned id and your APP_URL in wrangler.jsonc
+wrangler hyperdrive update <returned-id> --caching-disabled
+export DATABASE_URL="<your-direct-postgres-url>"   # the migration step, not the Worker
 bun run cf:deploy
 ```
 
-This path is complete and current — it is not a leftover. `bun run cf:build` succeeds, and the
+`cf:deploy` applies pending migrations through the direct `DATABASE_URL` and only then deploys the
+Worker. The Worker uses Hyperdrive at runtime. Unlike `bun run db:migrate`, the deploy path reads no
+`.env` file and refuses a `DATABASE_URL` pointing at localhost, because the failure it exists to
+prevent is migrating a development database and shipping the Worker anyway. The path is current:
+`bun run cf:build` succeeds, and the
 bundle weighs **3.42 MiB gzipped** (`wrangler deploy --dry-run`, 2026-08-16). That fits **Workers
 Paid**'s 10 MiB ceiling about three times over, so on a paid account the deploy above is all there
 is to it.
@@ -338,10 +352,10 @@ handler and adds a scheduled handler that dispatches task and draft-deadline rem
 send it as a bearer token when the route is exposed publicly. Each reminder job is idempotent, so
 Cloudflare's at-least-once delivery does not intentionally duplicate messages.
 
-One thing to know before you deploy this yourself: **`next build` reads `.env` and inlines what it
-finds into the bundle**, so a `.env` sitting in the working directory at build time ships baked into
-the deployed artifact. Keep secrets in `wrangler secret put` (or `vercel env add`), and check that
-`.env` holds only local development values before you build.
+Keep production secrets in the hosting platform's secret store (`vercel env add`, `wrangler secret
+put`, or the self-host's equivalent). Only variables deliberately prefixed `NEXT_PUBLIC_` belong in
+browser bundles; Cicero does not use that prefix for credentials. The Docker build context excludes
+`.env` files.
 
 ## Judgment calls worth arguing about
 
@@ -402,39 +416,21 @@ coexist without either seeing the other.
 
 ## Documentation
 
-1. **[`docs/00-goals.md`](docs/00-goals.md)** — what we are building and why, in prose
-2. **[`docs/01-requirements.md`](docs/01-requirements.md)** — every requirement and deliverable,
-   tagged `[REQUIRED]` / `[IMPORTANT]` / `[OPTIONAL]` / `[EXCLUDED]` / `[BONUS]`
-3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
-   API layers, and the form-engine and integration decisions
-4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
-5. **[`docs/04-adversarial-test-plan.md`](docs/04-adversarial-test-plan.md)** — the hostile-input
-   matrix, current implementation audit, and safe execution gate for adversarial testing
-6. **[`docs/04-demo-runbook.md`](docs/04-demo-runbook.md)** — the presenter-ready walkthrough,
-   requirement traceability, API bonus, fallbacks, resets, and go/no-go checks
-7. **[`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md)** — the actor model,
-   what each role can and cannot do, and the permission matrix
-8. **[`docs/05-additional-requirements.md`](docs/05-additional-requirements.md)** — requirements
-   added by the owner after the brief was frozen, with build status per row and what the optional
-   add-ons cost a self-hoster
-9. **[`docs/06-submission-narrative.md`](docs/06-submission-narrative.md)** — the full competition
-   submission: brief coverage, added product value, ergonomics, omissions, and integration roadmap
-10. **[`docs/06-submission-evidence.md`](docs/06-submission-evidence.md)** — dated local seeded and
-    hosted-demo browser evidence, including deployment-parity findings
-11. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
-12. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
+[`docs/README.md`](docs/README.md) separates current operating documentation from historical
+competition records and completed handoffs. Start there rather than treating every numbered file as
+current policy.
 
-Alongside those, four unnumbered companions:
+- [`docs/02-architecture.md`](docs/02-architecture.md) — current hosting, stack, database, and API decisions
+- [`docs/04-demo-runbook.md`](docs/04-demo-runbook.md) — presenter-ready walkthrough and safety gates
+- [`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md) — actor and permission model
+- [`docs/api/program-reconcile.md`](docs/api/program-reconcile.md) — safe inbound program reconciliation
+- [`docs/06-submission-narrative.md`](docs/06-submission-narrative.md) — full competition submission
+- [`docs/06-submission-evidence.md`](docs/06-submission-evidence.md) — dated local and hosted demo proof
+- [`docs/openapi.json`](docs/openapi.json) and [`docs/mcp-tools.json`](docs/mcp-tools.json) — generated contracts
 
-- [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
-  ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
-- [`docs/decisions-long-form.md`](docs/decisions-long-form.md) — the narrative rationale: why the
-  product was scoped, built and named the way it was, including what was deliberately not built
-- [`docs/handoff/sessionboard-eval.md`](docs/handoff/sessionboard-eval.md) — how to run the external
-  `sessionboard-eval-kit` against the hosted product, gather scenario evidence, judge it in fresh
-  context, and produce the real rubric score; this is not the repository's local CI eval loop
-- [`docs/handoff/sessionboard-eval-loop.md`](docs/handoff/sessionboard-eval-loop.md) — the
-  approval-gated overnight cycle: preserve one run, fix its findings, then check in before any rerun
+The goals, original requirements, delivery plan, submission narrative, and pinned requirements audit
+are preserved as historical competition artifacts. Their counts and deployment observations are not
+live status.
 
 ### Reference material
 

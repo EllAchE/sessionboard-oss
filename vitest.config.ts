@@ -20,6 +20,11 @@ import { configDefaults, defineConfig } from 'vitest/config';
  * vitest's defaults, which would pull `node_modules` and `dist` back into collection.
  */
 export default defineConfig({
+  // Next preserves JSX for its own compiler. Vite otherwise preserves it too, leaving Vitest's
+  // SSR transform with syntax it cannot execute.
+  oxc: {
+    jsx: { runtime: 'automatic' },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('.', import.meta.url)),
