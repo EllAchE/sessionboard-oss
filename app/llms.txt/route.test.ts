@@ -50,6 +50,16 @@ describe('llms.txt', () => {
     }
   });
 
+  it('uses ordinary conference vocabulary without a translation glossary', () => {
+    const body = buildLlmsTxt(ORIGIN);
+
+    expect(body).toContain('conference home');
+    expect(body).toContain('searchable sessions');
+    expect(body).toContain('published call for speakers');
+    expect(body).not.toContain('## Glossary');
+    expect(body).not.toMatch(/\b(?:petition|orator|oration|fasti|aqueduct key)\b/i);
+  });
+
   it('keeps parameterized routes as templates instead of duplicating API documentation', () => {
     const body = buildLlmsTxt(ORIGIN);
 
