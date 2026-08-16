@@ -81,6 +81,7 @@ function SyncLog({ rows, label }: { rows: SyncLogRow[]; label: string }) {
       id: 'label',
       header: 'Record',
       strong: true,
+      space: 'wide',
       render: (row) => (
         <div className={styles.cellStack}>
           <span>{row.label}</span>
@@ -92,11 +93,13 @@ function SyncLog({ rows, label }: { rows: SyncLogRow[]; label: string }) {
       id: 'status',
       header: 'Status',
       width: '20%',
+      space: 'compact',
       render: (row) => <Badge tone={SYNC_TONE[row.status]}>{row.status}</Badge>,
     },
     {
       id: 'error',
       header: 'Detail',
+      space: 'wide',
       render: (row) => <span className={styles.cellSub}>{row.error ?? '—'}</span>,
     },
     {
@@ -152,7 +155,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
   };
 
   const columns: DataTableColumn<ApiKeyRow>[] = [
-    { id: 'name', header: 'Name', strong: true, render: (row) => row.name },
+    { id: 'name', header: 'Name', strong: true, space: 'wide', render: (row) => row.name },
     {
       id: 'prefix',
       header: 'Prefix',
@@ -164,6 +167,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       id: 'scope',
       header: 'Scope',
       width: '12%',
+      space: 'compact',
       render: (row) => (
         <Badge tone={row.scope === 'write' ? 'warning' : 'neutral'}>{row.scope}</Badge>
       ),
@@ -172,6 +176,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       id: 'status',
       header: 'Status',
       width: '14%',
+      space: 'compact',
       render: (row) =>
         row.revokedAt ? <Badge tone="danger">Revoked</Badge> : <Badge tone="success">Active</Badge>,
     },
@@ -191,6 +196,7 @@ function ApiKeysPanel({ keys }: { keys: ApiKeyRow[] }) {
       id: 'revoke',
       header: '',
       width: '6%',
+      space: 'compact',
       align: 'right',
       render: (row) =>
         row.revokedAt ? null : (
@@ -317,6 +323,7 @@ function WebhooksPanel({ panel }: { panel: WebhookPanel }) {
       id: 'endpoint',
       header: 'Endpoint',
       strong: true,
+      space: 'wide',
       render: (row) => (
         <div className={styles.cellStack}>
           <span>{row.name}</span>
@@ -327,6 +334,7 @@ function WebhooksPanel({ panel }: { panel: WebhookPanel }) {
     {
       id: 'events',
       header: 'Events',
+      space: 'wide',
       render: (row) => <span className={styles.cellSub}>{row.eventTypes.join(', ')}</span>,
     },
     {
@@ -340,6 +348,7 @@ function WebhooksPanel({ panel }: { panel: WebhookPanel }) {
       id: 'status',
       header: 'Status',
       width: '12%',
+      space: 'compact',
       render: (row) => (
         <Badge tone={row.enabled ? 'success' : 'danger'}>
           {row.enabled ? 'Active' : 'Disabled'}
@@ -350,6 +359,7 @@ function WebhooksPanel({ panel }: { panel: WebhookPanel }) {
       id: 'disable',
       header: '',
       width: '6%',
+      space: 'compact',
       align: 'right',
       render: (row) =>
         row.enabled ? (
@@ -400,6 +410,7 @@ function WebhooksPanel({ panel }: { panel: WebhookPanel }) {
     {
       id: 'detail',
       header: 'Detail',
+      space: 'wide',
       render: (row) => (
         <span className={styles.cellSub}>
           {row.responseStatus ? `HTTP ${row.responseStatus}` : row.error ?? '—'}
@@ -528,6 +539,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
       id: 'name',
       header: 'Speaker',
       strong: true,
+      space: 'wide',
       render: (row) => (
         <div className={styles.cellStack}>
           <span>{row.name}</span>
@@ -538,6 +550,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
     {
       id: 'sessions',
       header: 'Accepted talks',
+      space: 'wide',
       render: (row) => (
         <span className={styles.cellSub}>{row.sessionTitles.join(', ') || '—'}</span>
       ),
@@ -546,6 +559,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
       id: 'status',
       header: 'Last push',
       width: '22%',
+      space: 'compact',
       render: (row) =>
         row.lastStatus ? (
           <Badge tone={SYNC_TONE[row.lastStatus]}>{row.lastStatus}</Badge>

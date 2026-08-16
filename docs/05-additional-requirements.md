@@ -384,7 +384,24 @@ optimizer.
 
 ---
 
-## 11. Notifications and update rundown
+## 11. Exhibitor map
+
+The first version is deliberately a document, not a floor-plan editor. An organizer should be able
+to publish the map they already have without recreating booths or exhibitor data in Cicero. The
+upload is the configuration: no coordinates, booth records, or map-specific authoring are required.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-37 | **[REQUIRED]** | SHIPPED | **An organizer can upload one PDF exhibitor map for an event and expose it as an embed.** Organizer → Exhibitor map uploads, replaces, or removes the current PDF through the ordinary event-scoped storage path; server validation checks the MIME type, `.pdf` extension, 25 MB ceiling, and `%PDF-` signature. Uploading publishes immediately, while replacement keeps the stable embed URL and removal revokes it before deleting the bytes. The same screen previews the map and copies script or iframe snippets for `/embed/:slug/exhibitor-map`; its current-slot-only file route is unauthenticated, responsive, non-cacheable, and offers inline, open, and download paths. The embedded result remains the uploaded static document — there are no interactive booths, hotspots, search, wayfinding, or map-region links (`event_exhibitor_map`, `lib/services/exhibitor-map.ts`, `app/organizer/exhibitor-map/**`, `app/embed/views/ExhibitorMapWidget.tsx`, migration `0021`) |
+
+**Future work, not part of AR-37:** multiple floors or maps, structured booth placement, clickable
+exhibitor regions, map search and filtering, attendee wayfinding, and richer embed presentation or
+accessibility controls. Those enhancements should build on the basic upload-and-embed path rather
+than block it.
+
+---
+
+## 12. Notifications and update rundown
 
 An organizer should not have to inspect the submission queue, review rounds, speaker roster, task
 board, content history, deliverables, and agenda one by one just to learn what moved while they were
@@ -423,7 +440,7 @@ question that blocks a build.
 | Document | Relationship |
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
-| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3, 5, 10 and 11 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP, intelligent agenda optimization, and the update rundown are not mentioned at all |
-| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, and AR-35 in W4 (crossing W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized; AR-38 starts in W6 while a future append-only activity table must cross W0 deliberately |
+| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3, 5, 10 and 12 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP, intelligent agenda optimization, and the update rundown are not mentioned at all |
+| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule, AR-25's transport choice, and AR-37's public-file authorization boundary are recorded there |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, and AR-35 in W4 (crossing W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized; AR-37 belongs to W6 on W2's file-storage primitives, and AR-38 starts in W6 while a future append-only activity table must cross W0 deliberately |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |

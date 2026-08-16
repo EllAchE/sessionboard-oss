@@ -80,6 +80,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'title',
         header: 'Submission',
         strong: true,
+        space: 'wide',
         render: (row) => (
           <span className={styles.rowTitle}>
             <span className={styles.rowRef}>{row.displayRef}</span>
@@ -90,7 +91,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       {
         id: 'author',
         header: 'Author',
-        width: '18%',
+        width: '16%',
         render: (row) =>
           props.authorHidden ? (
             <span className={styles.muted}>
@@ -100,11 +101,12 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             row.submitterName
           ),
       },
-      { id: 'track', header: 'Track', width: '14%', render: (row) => row.trackName ?? '—' },
+      { id: 'track', header: 'Track', width: '12%', render: (row) => row.trackName ?? '—' },
       {
         id: 'status',
         header: 'Status',
         width: '110px',
+        space: 'compact',
         render: (row) =>
           row.status === 'completed' ? (
             <Badge tone="success">Scored</Badge>
@@ -116,6 +118,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'score',
         header: 'Your score',
         width: '96px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.average === null ? (
@@ -128,6 +131,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'actions',
         header: '',
         width: '176px',
+        space: 'wide',
         render: (row) => (
           <span className={styles.rowActions}>
             <Button size="sm" variant="ghost" onClick={() => open(row)}>
@@ -157,6 +161,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'title',
         header: 'Submission',
         strong: true,
+        space: 'wide',
         render: (row) => (
           <span className={styles.rowTitle}>
             <span className={styles.rowRef}>{row.displayRef}</span>
@@ -167,6 +172,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       {
         id: 'reason',
         header: 'Reason you gave',
+        space: 'wide',
         render: (row) => row.comment ?? <span className={styles.muted}>No reason given</span>,
       },
     ],

@@ -3427,8 +3427,8 @@ export type ReviewerQueue = {
   completedCount: number;
   /**
    * `V-5`: the tracks this reviewer covers, read from the same rows that filled the queue above.
-   * Naming them is what makes the queue explicable — "these arrived because you read the aqueduct
-   * talks" rather than a list somebody handed them.
+   * Naming them is what makes the queue explicable — "these arrived because you review the
+   * infrastructure track" rather than a list somebody handed them.
    */
   coveredTracks: string[];
 };
