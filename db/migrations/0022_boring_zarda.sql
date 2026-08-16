@@ -1,2 +1,0 @@
-ALTER TABLE "task" ADD COLUMN "reminder_days_after_send" integer;--> statement-breakpoint
-ALTER TABLE "task" ADD CONSTRAINT "task_reminder_days_after_send_positive" CHECK ("task"."reminder_days_after_send" is null or "task"."reminder_days_after_send" > 0);

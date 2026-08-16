@@ -188,7 +188,8 @@ new primitive routed the request rather than adding one. There is no Tailwind, n
 no CSS-in-JS anywhere in the tree — introducing any of them would mean fighting the design system
 rather than using it.
 
-The current tree has 23 modules in `components/ui/` and 20 migrations, and the layering held.
+The current tree has 23 modules in `components/ui/` and one consolidated migration baseline, and the
+layering held.
 
 ### The database: one hybrid table, and event scoping from day one
 
@@ -428,7 +429,7 @@ Verified by me on the current tree, not quoted:
 - Live routes returning 200: `/`, `/demo/agenda`, `/api/v1/events/demo/agenda`, `/embed/demo/agenda`,
   `/first-settlement`.
 - No `fetch()` from `app/` to Cicero's own `/api/v1`.
-- 28 API route handlers, 20 migrations, 23 UI primitives, MIT license.
+- 28 API route handlers, one consolidated migration baseline, 23 UI primitives, MIT license.
 
 ### Partial — the accurate word is partial
 
