@@ -267,7 +267,7 @@ export const event = pgTable(
     submissionSeq: integer('submission_seq').notNull().default(0),
     sessionSeq: integer('session_seq').notNull().default(0),
     /**
-     * `AR-30`. Whether a detected agenda clash refuses the write or is recorded as a warning the
+     * `AR-35`. Whether a detected agenda clash refuses the write or is recorded as a warning the
      * organizer can see and act on. `warn` is the default because a programme is built by moving
      * things through invalid intermediate states — refusing every one of them means the only way to
      * swap two talks is to unschedule one first, and it also means `A-2`'s conflicts view can never

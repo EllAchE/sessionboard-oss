@@ -186,7 +186,7 @@ already-authenticated session hides.
 4. In the portal: bio, headshot, slides, complete a task
 5. Back as organizer: score it, accept it, confirm the acceptance email in `/admin/mail`
 6. Drag it onto the agenda; force a room clash and a speaker double-booking. Both **save** — the
-   default policy is `warn` (AR-30) — and both surface: an amber banner during the drag, a "Saved
+   default policy is `warn` (AR-35) — and both surface: an amber banner during the drag, a "Saved
    with a clash" toast, the count chip, and a named row in **Conflicts** with one-click unschedule.
    Then turn on **Block clashes on save** in that view and re-drag: the same drop is refused. Turn
    it back off before continuing

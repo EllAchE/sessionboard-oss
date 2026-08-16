@@ -69,7 +69,7 @@ import styles from './agenda.module.css';
  * travel from "waiting for a slot" to a room column in one gesture and back again.
  *
  * `previewConflicts` runs on each hovered cell against the world as the drop would leave it. What
- * happens to a clash it finds is `AR-30`'s per-event `ConflictPolicy`: under `warn` — the default —
+ * happens to a clash it finds is `AR-35`'s per-event `ConflictPolicy`: under `warn` — the default —
  * the drop lands, the save goes through and the clash is named in a toast and carried into the
  * conflicts view; under `block` the drop is refused before the round trip, and the server's
  * serialized re-check makes the same decision under the same lock.
@@ -113,7 +113,7 @@ function weekDayKeys(anchor: string, available: string[]): string[] {
 type Hover = { placement: Placement; additions: ScheduleEntry[]; dayKey: string };
 
 /**
- * `AR-30`. The clashes a write actually committed, as the server saw them after the fact. Only the
+ * `AR-35`. The clashes a write actually committed, as the server saw them after the fact. Only the
  * two placement actions carry them; everything else returns `null`, hence the shape check rather
  * than a cast.
  */
@@ -193,7 +193,7 @@ export function AgendaBoard({
   }, [drag, entries, labels, settled]);
 
   /**
-   * `AR-30`. Optimistic so the switch reads as instant; the server action is the authority and
+   * `AR-35`. Optimistic so the switch reads as instant; the server action is the authority and
    * `router.refresh()` brings the stored value back.
    */
   const [policy, setPolicy] = useState<ConflictPolicy>(event.conflictPolicy);
@@ -343,7 +343,7 @@ export function AgendaBoard({
     if (!hover) return;
 
     /**
-     * `AR-30`. Under `block` this is where the drop stops, before any round trip. Under `warn` the
+     * `AR-35`. Under `block` this is where the drop stops, before any round trip. Under `warn` the
      * drop proceeds and the clash becomes a named, reviewable warning instead of a dead end — the
      * server's `onWarn` will confirm what actually committed, so nothing is announced here that the
      * database might not agree with.

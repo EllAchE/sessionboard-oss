@@ -55,11 +55,11 @@ describe('GroupedView mobile scaling', () => {
 });
 
 /**
- * `AR-30`. The rehearsal script's step 6 — "force a room clash and a speaker double-booking;
+ * `AR-35`. The rehearsal script's step 6 — "force a room clash and a speaker double-booking;
  * confirm both surface" — was previously unperformable: nothing could persist a conflicting agenda,
  * so this view could only ever render its empty state. These assertions are that step, in code.
  */
-describe('ConflictsView (A-2, AR-30)', () => {
+describe('ConflictsView (A-2, AR-35)', () => {
   const window = {
     startsAt: new Date('2027-04-15T09:00:00.000Z'),
     endsAt: new Date('2027-04-15T10:00:00.000Z'),

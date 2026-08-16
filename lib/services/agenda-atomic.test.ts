@@ -132,7 +132,7 @@ describe('runAtomicAgendaMutation', () => {
   });
 
   /**
-   * `AR-30`, and the whole point of the change: with the default policy the conflicting agenda is
+   * `AR-35`, and the whole point of the change: with the default policy the conflicting agenda is
    * allowed to exist. If it were not, `A-2`'s conflicts view could only ever render zero rows.
    */
   it('commits a conflicting change under the default warn policy and hands the clashes to onWarn', async () => {

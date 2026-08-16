@@ -70,7 +70,7 @@ async function loadEntries(
   }));
 }
 
-/** `AR-30`. Read under the same lock as the entries so the decision cannot straddle a policy change. */
+/** `AR-35`. Read under the same lock as the entries so the decision cannot straddle a policy change. */
 async function loadPolicy(
   transaction: AgendaTransaction,
   eventId: string,

@@ -61,7 +61,7 @@ export type ProgramReconcileResult = {
   summary: Record<ProgramOperationAction, number>;
   operations: ProgramOperation[];
   /**
-   * `AR-30`. Clashes this plan leaves on the agenda, under the event's conflict policy. Populated
+   * `AR-35`. Clashes this plan leaves on the agenda, under the event's conflict policy. Populated
    * on a dry run as well as on an apply, so an integrator can see what the push is about to do
    * before it does it. Under `block` the same clashes would have been a `409` instead.
    */
@@ -424,7 +424,7 @@ function publicResult(
 }
 
 /**
- * The API's half of `AR-30`, and it has to answer exactly as the board does: the same detector, the
+ * The API's half of `AR-35`, and it has to answer exactly as the board does: the same detector, the
  * same event policy, the same `blockingConflicts` call. An agenda an organizer can save by dragging
  * must not come back `409` from a push, and one the push accepts must not be un-draggable.
  *

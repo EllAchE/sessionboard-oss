@@ -68,7 +68,7 @@ type MutableProgramState = {
   sessionSeq: number;
   locks: number;
   transactions: number;
-  /** `AR-30`. The event's conflict policy, which the API path has to honour exactly as the UI does. */
+  /** `AR-35`. The event's conflict policy, which the API path has to honour exactly as the UI does. */
   agendaConflictPolicy: 'warn' | 'block';
 };
 
@@ -395,7 +395,7 @@ describe('program reconciliation execution', () => {
   });
 
   /**
-   * `AR-30`. The API and the board have to agree. An organizer can drag these two talks into the
+   * `AR-35`. The API and the board have to agree. An organizer can drag these two talks into the
    * same room under the default `warn` policy, so a push that describes the same programme must not
    * come back `409` — it applies, and it reports what it left behind.
    */

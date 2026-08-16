@@ -170,7 +170,7 @@ export async function placeSessionAction(
 }
 
 /**
- * `AR-30`. The organizer's own switch, on behalf of the event. `agenda:manage` rather than
+ * `AR-35`. The organizer's own switch, on behalf of the event. `agenda:manage` rather than
  * `event:manage`: it is a rule about how the board behaves, and the person building the programme
  * is the person who should be able to change it.
  */

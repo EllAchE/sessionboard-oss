@@ -81,7 +81,7 @@ export function severityForKind(kind: ConflictKind): ConflictSeverity {
 }
 
 /**
- * `AR-30`. The per-event answer to "does a clash stop the save?", authored by the organizer and
+ * `AR-35`. The per-event answer to "does a clash stop the save?", authored by the organizer and
  * stored on `event.agenda_conflict_policy`.
  *
  * `warn` is the default. A programme is built by passing through states that are briefly invalid —

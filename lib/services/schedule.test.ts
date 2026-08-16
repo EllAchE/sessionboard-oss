@@ -162,7 +162,7 @@ describe('detectConflicts', () => {
     expect(conflicts).toEqual([]);
   });
 
-  it('reports a track collision as a warning, not an error (AR-30)', () => {
+  it('reports a track collision as a warning, not an error (AR-35)', () => {
     const conflicts = detectConflicts(
       [
         entry({
@@ -409,10 +409,10 @@ describe('detectConflicts', () => {
 });
 
 /**
- * `AR-30`. Severity and enforcement are two axes. These tests exist to keep them from collapsing
+ * `AR-35`. Severity and enforcement are two axes. These tests exist to keep them from collapsing
  * back into one — the collapse is what made `A-2` undemonstrable in the first place.
  */
-describe('conflict policy (AR-30)', () => {
+describe('conflict policy (AR-35)', () => {
   const broken = () =>
     detectConflicts([
       entry({

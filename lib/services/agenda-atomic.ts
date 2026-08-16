@@ -17,7 +17,7 @@ export type AtomicAgendaDependencies<T, Transaction> = {
   lock: (transaction: Transaction) => Promise<void>;
   loadEntries: (transaction: Transaction) => Promise<ScheduleEntry[]>;
   /**
-   * `AR-30`. Read inside the same transaction and behind the same advisory lock as the entries, so
+   * `AR-35`. Read inside the same transaction and behind the same advisory lock as the entries, so
    * an organizer flipping the event to `block` cannot be raced by a write that read `warn`.
    * Omitted means the product default, which is `warn`.
    */

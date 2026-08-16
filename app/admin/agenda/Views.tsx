@@ -249,7 +249,7 @@ export function GroupedView({
 
 /**
  * `A-2`'s dedicated conflicts view: every clash on the whole agenda, worst first, and — since
- * `AR-30` — the switch that decides whether a clash refuses the save at all.
+ * `AR-35` — the switch that decides whether a clash refuses the save at all.
  *
  * The switch lives here rather than in event settings because this is the screen an organizer is
  * already on when the rule starts to matter, and because the list underneath it is the evidence for

@@ -39,7 +39,7 @@ export type AgendaData = {
     timezone: string;
     startsOn: string | null;
     endsOn: string | null;
-    /** `AR-30`. Whether a detected clash refuses the write or is recorded as a warning. */
+    /** `AR-35`. Whether a detected clash refuses the write or is recorded as a warning. */
     conflictPolicy: ConflictPolicy;
   };
   rooms: NamedRoom[];

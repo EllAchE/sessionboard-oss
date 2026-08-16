@@ -303,7 +303,46 @@ carries the stored UID and sequence (`app/embed/calendar.ts`, `app/embed/calenda
 
 ---
 
-## 8. Agenda conflict policy
+## 8. Assisted chasing
+
+The ask: the outstanding-task dashboard (`B-1`) tells an organizer who is blocking the event, and
+then abandons them. The chase itself — the thing that actually consumes a coordinator's week — was
+left to their inbox.
+
+The shape is not a free choice. A program-committee organizer with roughly a decade of records had
+an assistant read the Slack channel where their event coordinator has run speaker logistics for
+years, ~13,488 messages, and the finding was blunt: **in thirteen years of archive there is no
+instance of a tool successfully sending a reminder on the committee's behalf.** The same "it went
+to spam, I'm sending a personal email" incident appears in 2023 and again in 2025. Their conclusion,
+which these rows adopt verbatim as a constraint: a feature that auto-emails speakers is switched off
+within one event cycle; build **assisted chasing** — the tool drafts, a human reviews and sends.
+
+The related finding is that escalation runs **by medium, not by attempt count**: the tool's email,
+then the coordinator's own address, then a cc, then a text, then a phone call. Each step up is a
+deliberate signal. That is why AR-32 exists: the same reviewed draft has to be able to leave through
+the organizer's own mail client, not only through Cicero's transport.
+
+Cicero already had the send primitives — `previewParticipantEmail` and `sendParticipantEmail` in
+`lib/services/comms.ts` — but only the MCP agent surface reached them. No organizer screen did.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-30 | **[REQUIRED]** | SHIPPED | **Every outstanding-task row can be chased from where it is read.** A per-row "Draft a nudge" control on the `B-1` report opens a composer prefilled with copy specific to that person and that task — overdue by how long, which sessions it blocks, a one-click portal link. Composition is a pure function (`composeTaskNudge`) so the wording is regression-tested rather than buried in JSX (`lib/services/task-nudge.ts`, `app/admin/dashboard/OutstandingTasks.tsx`, `app/admin/dashboard/NudgeComposer.tsx`) |
+| AR-31 | **[REQUIRED]** | SHIPPED | **Nothing leaves without a human reading it.** The composer is two-step: edit, then render, then send — and any edit invalidates the rendering. This is enforced on the server, not in the client: `sendTaskNudge` requires the reviewed subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the recipient and re-renders the message and refuses if either moved. There is no bulk action, no "remind all", and no code path from a table row to an outbound message that skips the render |
+| AR-32 | **[IMPORTANT]** | SHIPPED | **The draft can escalate to the organizer's own address.** Once rendered, the composer offers *Copy* and *Send from my own email* (`mailto:`) beside *Send from Cicero* — the same reviewed text, handed to the human instead of the transport. This is the escalation-by-medium finding, and it is the one thing an autosender structurally cannot do |
+| AR-33 | **[IMPORTANT]** | SHIPPED | **A settled task is never chased.** Completed and waived assignments get no button, and both the draft and send paths re-check status against the live report — so a task finished while the composer was open fails closed. A successful send stamps `task_assignment.last_reminded_at`, which is the same field the cron reminder reads, so the automatic reminder does not chase someone a human chased an hour ago. The row shows when that person was last reminded |
+| AR-34 | **[EXCLUDED]** | — | **Autonomous or scheduled chasing from this surface.** Declined on the evidence above. Cicero does keep its opt-in `task.reminder` cron flow, which is a template an organizer configured in advance for a whole event; this surface is the opposite act — one person, one task, one message, sent by a named human. Conflating them is exactly how the tools in that archive lost their users |
+
+**Behavior on the `log` transport.** The hosted deployment runs `MAIL_TRANSPORT=log` on purpose
+(§2, and the on-screen magic link judges sign in with depends on it). Assisted chasing is fully
+exercisable there: the draft renders, the review gate applies, and the send lands in `email_log`
+under `templateKey: 'task.nudge'`, visible at Admin → Mail. The organizer is told which of the two
+happened rather than being shown a false "delivered" — and *Send from my own email* delivers for
+real regardless of transport.
+
+---
+
+## 9. Agenda conflict policy
 
 `A-2` in `01-requirements.md` asks for conflict detection, and `A-7` for speaker double-booking
 detection. Both were built as *refusals*: every write path re-detected conflicts after the mutation
@@ -319,7 +358,7 @@ organizer's call.
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-30 | **[REQUIRED]** | SHIPPED | **Agenda conflicts are recorded, not refused, unless the organizer says otherwise.** `event.agenda_conflict_policy` is `warn` (default) or `block`, set from the conflicts view by anyone with `agenda:manage`. Severity is a property of the clash: a room double-booking and a speaker double-booking are `error` — physically impossible programmes; a track collision is `warning` — an editorial judgement, since parallel sessions inside a strand are a normal choice. Under `block` only `error` kinds refuse the write; under `warn` nothing refuses, and every clash surfaces as a named row — "Cicero is scheduled in X and Y at the same time" — with one-click unschedule on either side, a "Saved with a clash" toast confirming what actually committed, an amber banner during the drag, and the persistent count chip. The policy is read inside the same transaction and advisory lock as the entries, and `blockingConflicts()` is the single decision point shared by the board, the transactional guard, and `/api/v1` program reconcile, so the UI and the API cannot disagree about what saves (`lib/services/schedule.ts`, `lib/services/agenda-atomic.ts`, `lib/services/program-reconcile.ts`, migration `0020`) |
+| AR-35 | **[REQUIRED]** | SHIPPED | **Agenda conflicts are recorded, not refused, unless the organizer says otherwise.** `event.agenda_conflict_policy` is `warn` (default) or `block`, set from the conflicts view by anyone with `agenda:manage`. Severity is a property of the clash: a room double-booking and a speaker double-booking are `error` — physically impossible programmes; a track collision is `warning` — an editorial judgement, since parallel sessions inside a strand are a normal choice. Under `block` only `error` kinds refuse the write; under `warn` nothing refuses, and every clash surfaces as a named row — "Cicero is scheduled in X and Y at the same time" — with one-click unschedule on either side, a "Saved with a clash" toast confirming what actually committed, an amber banner during the drag, and the persistent count chip. The policy is read inside the same transaction and advisory lock as the entries, and `blockingConflicts()` is the single decision point shared by the board, the transactional guard, and `/api/v1` program reconcile, so the UI and the API cannot disagree about what saves (`lib/services/schedule.ts`, `lib/services/agenda-atomic.ts`, `lib/services/program-reconcile.ts`, migration `0020`) |
 
 ---
 
@@ -348,7 +387,7 @@ question that blocks a build.
 | Document | Relationship |
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
-| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
+| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
 | [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30 in W4 (and crosses W0 for the one `event` column it adds) |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds) |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |
