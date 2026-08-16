@@ -27,7 +27,7 @@ export const SPONSOR_LOGO: SponsorLogoSpec = {
 
 /**
  * Where the public wall reads a logo from — the unauthenticated twin of
- * `app/admin/sponsors/types.ts`'s `sponsorLogoUrl`, which stays behind the organizer gate.
+ * `app/organizer/sponsors/types.ts`'s `sponsorLogoUrl`, which stays behind the organizer gate.
  *
  * Content-addressed and event-scoped for the same reason `eventBrandingUrl` is: the id in the path
  * changes when the image does, so the response can be cached hard and a replacement still shows

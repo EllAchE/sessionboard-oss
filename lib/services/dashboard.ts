@@ -305,42 +305,42 @@ export async function loadNudges(ctx: EventContext, now = new Date()): Promise<N
       id: 'overdue-tasks',
       label: 'overdue speaker tasks',
       count: overdue,
-      href: '/admin/tasks',
+      href: '/organizer/tasks',
       tone: 'danger',
     },
     {
       id: 'needs-slot',
       label: 'sessions still need a time slot',
       count: needsSlot,
-      href: '/admin/agenda',
+      href: '/organizer/agenda',
       tone: 'warning',
     },
     {
       id: 'accepted-unscheduled',
       label: 'accepted talks are not on the agenda yet',
       count: acceptedWithoutSession,
-      href: '/admin/agenda',
+      href: '/organizer/agenda',
       tone: 'warning',
     },
     {
       id: 'missing-profile',
       label: 'speakers are missing a bio or headshot',
       count: missingProfile,
-      href: '/admin/speakers',
+      href: '/organizer/speakers',
       tone: 'warning',
     },
     {
       id: 'awaiting-review',
       label: 'submissions are still awaiting a decision',
       count: awaitingReview,
-      href: '/admin/submissions',
+      href: '/organizer/submissions',
       tone: 'info',
     },
     {
       id: 'unpublished',
       label: 'sessions are drafts and stay out of the public embeds',
       count: unpublished,
-      href: '/admin/agenda',
+      href: '/organizer/agenda',
       tone: 'info',
     },
   ];
@@ -595,7 +595,7 @@ export async function loadScheduleHealth(ctx: EventContext): Promise<ScheduleHea
 }
 
 // ---------------------------------------------------------------------------
-// Speaker tracking and the admin task list
+// Speaker tracking and the organizer task list
 // ---------------------------------------------------------------------------
 
 export type SpeakerRow = {
@@ -659,7 +659,7 @@ export async function listSpeakers(ctx: EventContext, now = new Date()): Promise
     .sort((a, b) => b.tasksOverdue - a.tasksOverdue || a.name.localeCompare(b.name));
 }
 
-export type AdminTaskRow = {
+export type OrganizerTaskRow = {
   id: string;
   name: string;
   kind: TaskKindValue;
@@ -683,10 +683,10 @@ export type AdminTaskRow = {
   completionPct: number;
 };
 
-export async function listTasksForAdmin(
+export async function listTasksForOrganizer(
   ctx: EventContext,
   now = new Date(),
-): Promise<AdminTaskRow[]> {
+): Promise<OrganizerTaskRow[]> {
   requireCapability(ctx, 'submission:read_all');
   const db = getDb();
 

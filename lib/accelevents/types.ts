@@ -113,7 +113,7 @@ export type ListSpeakersResult = {
 };
 
 /**
- * `N-1b`. Everything above the gateway — the sync service, the admin screens, the tests — depends
+ * `N-1b`. Everything above the gateway — the sync service, the organizer screens, the tests — depends
  * on this and never on `fetch`, which is what lets a judge without credentials drive the same code
  * path the live client would take.
  */

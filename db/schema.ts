@@ -1341,7 +1341,7 @@ export const emailTemplate = pgTable(
 );
 
 /**
- * Doubles as the dev mailbox rendered at `/admin/mail`, which satisfies `T-7a` and removes email
+ * Doubles as the dev mailbox rendered at `/organizer/mail`, which satisfies `T-7a` and removes email
  * deliverability as a single point of failure during judging: a judge who never receives a message
  * can still read it.
  */

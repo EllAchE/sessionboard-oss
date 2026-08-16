@@ -35,7 +35,7 @@ function selectTransport(): SmsTransport {
 /**
  * Verification is the one SMS allowed before consent: it proves ownership so consent can later be
  * granted. Keeping it separate from `sendSms` means no ordinary caller can bypass the consent gate.
- * Log mode persists the code in `/admin/sms` and returns it to the signed-in requester; it never
+ * Log mode persists the code in `/organizer/sms` and returns it to the signed-in requester; it never
  * contacts Twilio.
  */
 export async function sendPhoneVerificationCode(input: {
@@ -93,7 +93,7 @@ export type SendSmsInput = Omit<OutgoingSms, 'from'> & {
 
 /**
  * The SMS equivalent of `sendMail` (`lib/mail/index.ts`) — same insert-before-dispatch shape, same
- * "never throws" contract, so a failed send is still readable at `/admin/sms` with its error attached.
+ * "never throws" contract, so a failed send is still readable at `/organizer/sms` with its error attached.
  */
 export async function sendSms(input: SendSmsInput): Promise<{ id: string; sent: boolean }> {
   const db = getDb();
@@ -146,7 +146,7 @@ export async function sendSms(input: SendSmsInput): Promise<{ id: string; sent: 
   }
 }
 
-/** Which transport is live, for the admin SMS mailbox banner and the deployment checklist. */
+/** Which transport is live, for the organizer SMS mailbox banner and the deployment checklist. */
 export function activeSmsTransportName(): SmsTransport['name'] {
   return selectTransport().name;
 }
