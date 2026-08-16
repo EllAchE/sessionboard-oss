@@ -102,8 +102,11 @@ function planLocally(context: ProposalContext): RawPlacement[] {
       startsAt,
       endsAt: addMinutes(startsAt, minutes),
     });
-    const clashes = detectConflicts([...world, provisional]).some(
-      (conflict) => conflict.severity === 'error' && conflict.sessionIds.includes(provisional.id),
+    // Any clash at all, not just the blocking kinds. The event's `ConflictPolicy` governs what an
+    // organizer is allowed to *save*; a proposal is generated from nothing and has no reason to
+    // suggest a clash of any severity when a clean slot exists.
+    const clashes = detectConflicts([...world, provisional]).some((conflict) =>
+      conflict.sessionIds.includes(provisional.id),
     );
     return clashes ? null : provisional;
   };
@@ -286,9 +289,11 @@ export function validateProposal(
     const conflicts = detectConflicts([...world, provisional]).filter((conflict) =>
       conflict.sessionIds.includes(provisional.id),
     );
-    const blocking = conflicts.filter((conflict) => conflict.severity === 'error');
-    if (blocking.length > 0) {
-      rejected.push({ item, reason: reasonFor(blocking) });
+    // `AI stays advisory, never decides`: a suggestion that lands on a clash is dropped here rather
+    // than handed to the organizer, whatever the event's conflict policy would let them save by
+    // hand. The policy is about the organizer's own edits, not about what the model may propose.
+    if (conflicts.length > 0) {
+      rejected.push({ item, reason: reasonFor(conflicts) });
       continue;
     }
 

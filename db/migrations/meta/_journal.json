@@ -141,6 +141,13 @@
       "when": 1786650650229,
       "tag": "0019_boring_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1786852524963,
+      "tag": "0020_foamy_reaper",
+      "breakpoints": true
     }
   ]
 }

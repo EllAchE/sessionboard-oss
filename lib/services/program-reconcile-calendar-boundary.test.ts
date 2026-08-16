@@ -41,6 +41,7 @@ describe('program reconciliation calendar boundary', () => {
         room: { findMany: async () => [{ id: 'room-1', name: 'Curia Julia' }] },
         track: { findMany: async () => [] },
         sessionFormat: { findMany: async () => [] },
+        event: { findFirst: async () => ({ agendaConflictPolicy: 'warn' }) },
       },
       execute: async () => undefined,
       transaction: async (work: (transaction: unknown) => Promise<unknown>) => work(database),

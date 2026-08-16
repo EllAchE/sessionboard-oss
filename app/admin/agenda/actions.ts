@@ -6,7 +6,11 @@ import { getDb } from '@/db/client';
 import { scheduledSession, sessionFormat, submission } from '@/db/schema';
 import { requireCapability } from '@/lib/context';
 import { conflict, invalid, toPublicError } from '@/lib/errors';
-import { mutateAgendaAtomically, type AgendaTransaction } from '@/lib/services/agenda-guard';
+import {
+  mutateAgendaAtomically,
+  setAgendaConflictPolicy,
+  type AgendaTransaction,
+} from '@/lib/services/agenda-guard';
 import { loadRecipientGraph, sendSessionInvites, type RecipientGraph } from '@/lib/services/comms';
 import {
   allocateSessionRef,
@@ -14,7 +18,12 @@ import {
   notifyIfPublished,
 } from '@/lib/services/agenda-mutations';
 import { currentEventContext } from '@/lib/services/events';
-import { DEFAULT_SESSION_MINUTES } from '@/lib/services/schedule';
+import {
+  DEFAULT_SESSION_MINUTES,
+  parseConflictPolicy,
+  type Conflict,
+  type ConflictPolicy,
+} from '@/lib/services/schedule';
 import { emitSessionScheduled } from '@/lib/webhooks';
 
 /**
@@ -45,6 +54,12 @@ async function authorize() {
   requireCapability(ctx, 'agenda:manage');
   return ctx;
 }
+
+/**
+ * `warnings` are the clashes a `warn`-policy event let through on this write. Server-confirmed
+ * rather than predicted, so the toast the board raises describes what is actually in the database.
+ */
+export type PlacementOutcome = { sessionId: string; warnings: string[] };
 
 export type PlacementInput = {
   /** A `scheduled_session.id`, or an accepted `submission.id` when the card came from the rail. */
@@ -132,18 +147,41 @@ async function placeSession(
  */
 export async function placeSessionAction(
   input: PlacementInput,
-): Promise<ActionResult<{ sessionId: string }>> {
+): Promise<ActionResult<PlacementOutcome>> {
   try {
     const ctx = await authorize();
-    const sessionId = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
-      const changedSessionId = await placeSession(transaction, ctx.eventId, input);
-      return { data: changedSessionId, changedSessionIds: [changedSessionId] };
-    });
+    const warnings: Conflict[] = [];
+    const sessionId = await mutateAgendaAtomically(
+      ctx.eventId,
+      async (transaction) => {
+        const changedSessionId = await placeSession(transaction, ctx.eventId, input);
+        return { data: changedSessionId, changedSessionIds: [changedSessionId] };
+      },
+      { onWarn: (conflicts) => warnings.push(...conflicts) },
+    );
 
     await notifyIfPublished(sessionId);
     await emitSessionScheduled(ctx.eventId, sessionId);
     revalidate();
-    return { ok: true, data: { sessionId } };
+    return { ok: true, data: { sessionId, warnings: warnings.map((item) => item.message) } };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * `AR-30`. The organizer's own switch, on behalf of the event. `agenda:manage` rather than
+ * `event:manage`: it is a rule about how the board behaves, and the person building the programme
+ * is the person who should be able to change it.
+ */
+export async function setConflictPolicyAction(
+  policy: ConflictPolicy,
+): Promise<ActionResult<{ policy: ConflictPolicy }>> {
+  try {
+    const ctx = await authorize();
+    const saved = await setAgendaConflictPolicy(ctx.eventId, parseConflictPolicy(policy));
+    revalidate();
+    return { ok: true, data: { policy: saved } };
   } catch (error) {
     return fail(error);
   }
@@ -201,9 +239,10 @@ export type ManualSessionInput = {
  */
 export async function saveManualSessionAction(
   input: ManualSessionInput,
-): Promise<ActionResult<{ sessionId: string }>> {
+): Promise<ActionResult<PlacementOutcome>> {
   try {
     const ctx = await authorize();
+    const warnings: Conflict[] = [];
 
     const title = input.title.trim();
     if (!title) return { ok: false, error: 'A session needs a title' };
@@ -221,7 +260,9 @@ export async function saveManualSessionAction(
       return { ok: false, error: 'A session has to end after it starts' };
     }
 
-    const sessionId = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
+    const sessionId = await mutateAgendaAtomically(
+      ctx.eventId,
+      async (transaction) => {
       let resolvedEndsAt = endsAt;
       if (startsAt && !resolvedEndsAt) {
         const minutes = input.formatId
@@ -303,12 +344,14 @@ export async function saveManualSessionAction(
         })
         .returning();
       return { data: created.id, changedSessionIds: [created.id] };
-    });
+      },
+      { onWarn: (conflicts) => warnings.push(...conflicts) },
+    );
 
     await notifyIfPublished(sessionId);
     if (startsAt) await emitSessionScheduled(ctx.eventId, sessionId);
     revalidate();
-    return { ok: true, data: { sessionId } };
+    return { ok: true, data: { sessionId, warnings: warnings.map((item) => item.message) } };
   } catch (error) {
     return fail(error);
   }

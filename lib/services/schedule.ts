@@ -57,8 +57,63 @@ function participatesInConflicts(entry: ScheduleEntry): entry is PlacedEntry {
 
 export type ConflictKind = 'room' | 'track' | 'speaker';
 
-/** `warning` remains a presentation level for non-conflict diagnostics; agenda overlaps are errors. */
+/**
+ * How bad a clash is. This is a property of the *kind* and of nothing else — in particular it is
+ * not the same question as whether the save is refused, which is `ConflictPolicy` below. Conflating
+ * the two is what made `A-2` undemonstrable: every clash was an `error`, every `error` refused the
+ * write, so no conflicting agenda could exist for the conflicts view to render.
+ *
+ * A room holds one session and a person stands in one place, so those two are `error`: the
+ * programme as written cannot physically happen. Two talks at once on one track is an editorial
+ * judgement — plenty of conferences deliberately run parallel sessions inside a strand — so a track
+ * collision is a `warning` the organizer should see and may well accept.
+ */
 export type ConflictSeverity = 'error' | 'warning';
+
+const SEVERITY_BY_KIND: Record<ConflictKind, ConflictSeverity> = {
+  room: 'error',
+  speaker: 'error',
+  track: 'warning',
+};
+
+export function severityForKind(kind: ConflictKind): ConflictSeverity {
+  return SEVERITY_BY_KIND[kind];
+}
+
+/**
+ * `AR-30`. The per-event answer to "does a clash stop the save?", authored by the organizer and
+ * stored on `event.agenda_conflict_policy`.
+ *
+ * `warn` is the default. A programme is built by passing through states that are briefly invalid —
+ * you drop a talk into an occupied room precisely so you can then drag the other one out — and a
+ * board that refuses every one of them can only be edited by unscheduling first. `block` restores
+ * the strict behaviour for an organizer who wants the room and the speaker treated as hard
+ * constraints.
+ */
+export type ConflictPolicy = 'warn' | 'block';
+
+export const DEFAULT_CONFLICT_POLICY: ConflictPolicy = 'warn';
+
+/** Anything unrecognised — a null column, an older row, a hand-edited value — reads as the default. */
+export function parseConflictPolicy(value: string | null | undefined): ConflictPolicy {
+  return value === 'block' ? 'block' : DEFAULT_CONFLICT_POLICY;
+}
+
+/**
+ * The one decision every write path asks: which of these clashes refuse the save? The board's drop
+ * handler, the transactional guard behind the server actions and the `/api/v1` program reconciler
+ * all call this and nothing else, so an agenda that saves in the UI cannot be rejected by the API.
+ *
+ * Under `block` only `error` kinds refuse. A track collision is never physically impossible, so
+ * there is no setting under which the product should refuse to record one — it still surfaces.
+ */
+export function blockingConflicts(
+  conflicts: Conflict[],
+  policy: ConflictPolicy = DEFAULT_CONFLICT_POLICY,
+): Conflict[] {
+  if (policy !== 'block') return [];
+  return conflicts.filter((item) => item.severity === 'error');
+}
 
 export type Conflict = {
   kind: ConflictKind;
@@ -107,7 +162,7 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
         const name = labels.rooms?.[a.roomId] ?? 'the same room';
         add({
           kind: 'room',
-          severity: 'error',
+          severity: severityForKind('room'),
           sessionIds: pair(a, b),
           subjectId: a.roomId,
           subjectName: labels.rooms?.[a.roomId] ?? null,
@@ -119,7 +174,7 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
         const name = labels.tracks?.[a.trackId] ?? 'the same track';
         add({
           kind: 'track',
-          severity: 'error',
+          severity: severityForKind('track'),
           sessionIds: pair(a, b),
           subjectId: a.trackId,
           subjectName: labels.tracks?.[a.trackId] ?? null,
@@ -130,7 +185,7 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
       for (const speaker of sharedSpeakers(a, b)) {
         add({
           kind: 'speaker',
-          severity: 'error',
+          severity: severityForKind('speaker'),
           sessionIds: pair(a, b),
           subjectId: speaker.participantId,
           subjectName: speaker.name,

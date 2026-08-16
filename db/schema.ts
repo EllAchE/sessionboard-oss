@@ -226,47 +226,67 @@ export const user = pgTable(
   }),
 );
 
-export const event = pgTable('event', {
-  id: id(),
-  slug: text('slug').notNull().unique(),
-  name: text('name').notNull(),
-  tagline: text('tagline'),
-  descriptionMarkdown: text('description_markdown'),
-  /** `E-2`. Organizer-authored rather than an enum — see `lib/services/events.ts`. */
-  eventType: text('event_type'),
-  /** `E-2`. The edition's theme, long form. */
-  theme: text('theme'),
-  timezone: text('timezone').notNull().default('America/Los_Angeles'),
-  /**
-   * `E-1`. When the event actually runs. Required, and a real instant rather than a date, because a
-   * calendar invite and a countdown both need the time of day and "12 October" is two different
-   * moments in Rome and in Los Angeles.
-   */
-  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
-  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
-  /**
-   * The date-only projection of `startsAt` / `endsAt` into `timezone`. Derived on every write by
-   * `resolveEventWindow` and never authored directly — it exists because the public pages, the merge
-   * fields and the shipped `/api/v1` payload all read a `YYYY-MM-DD` string, and changing where the
-   * dates are stored should not change a contract somebody has already integrated against.
-   */
-  startsOn: text('starts_on').notNull(),
-  endsOn: text('ends_on').notNull(),
-  websiteUrl: text('website_url'),
-  venueName: text('venue_name'),
-  venueAddress: text('venue_address'),
-  /** `E-3`. Square mark and wide banner, both rows in `file`. */
-  logoFileId: uuid('logo_file_id'),
-  bannerFileId: uuid('banner_file_id'),
-  ownerUserId: uuid('owner_user_id')
-    .notNull()
-    .references(() => user.id),
-  /** Per-event counters backing the human-readable refs (`ABS-12`, `SESS-4`) that `S-5` calls for. */
-  submissionSeq: integer('submission_seq').notNull().default(0),
-  sessionSeq: integer('session_seq').notNull().default(0),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
+export const event = pgTable(
+  'event',
+  {
+    id: id(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    tagline: text('tagline'),
+    descriptionMarkdown: text('description_markdown'),
+    /** `E-2`. Organizer-authored rather than an enum — see `lib/services/events.ts`. */
+    eventType: text('event_type'),
+    /** `E-2`. The edition's theme, long form. */
+    theme: text('theme'),
+    timezone: text('timezone').notNull().default('America/Los_Angeles'),
+    /**
+     * `E-1`. When the event actually runs. Required, and a real instant rather than a date, because a
+     * calendar invite and a countdown both need the time of day and "12 October" is two different
+     * moments in Rome and in Los Angeles.
+     */
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /**
+     * The date-only projection of `startsAt` / `endsAt` into `timezone`. Derived on every write by
+     * `resolveEventWindow` and never authored directly — it exists because the public pages, the merge
+     * fields and the shipped `/api/v1` payload all read a `YYYY-MM-DD` string, and changing where the
+     * dates are stored should not change a contract somebody has already integrated against.
+     */
+    startsOn: text('starts_on').notNull(),
+    endsOn: text('ends_on').notNull(),
+    websiteUrl: text('website_url'),
+    venueName: text('venue_name'),
+    venueAddress: text('venue_address'),
+    /** `E-3`. Square mark and wide banner, both rows in `file`. */
+    logoFileId: uuid('logo_file_id'),
+    bannerFileId: uuid('banner_file_id'),
+    ownerUserId: uuid('owner_user_id')
+      .notNull()
+      .references(() => user.id),
+    /** Per-event counters backing the human-readable refs (`ABS-12`, `SESS-4`) that `S-5` calls for. */
+    submissionSeq: integer('submission_seq').notNull().default(0),
+    sessionSeq: integer('session_seq').notNull().default(0),
+    /**
+     * `AR-30`. Whether a detected agenda clash refuses the write or is recorded as a warning the
+     * organizer can see and act on. `warn` is the default because a programme is built by moving
+     * things through invalid intermediate states — refusing every one of them means the only way to
+     * swap two talks is to unschedule one first, and it also means `A-2`'s conflicts view can never
+     * render a row. `block` restores the strict behaviour for an organizer who wants it.
+     *
+     * Only `error`-severity kinds (room, speaker) are ever blockable — see
+     * `lib/services/schedule.ts`. Read by every agenda write path through `blockingConflicts`.
+     */
+    agendaConflictPolicy: text('agenda_conflict_policy').notNull().default('warn'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    conflictPolicy: check(
+      'event_agenda_conflict_policy_check',
+      sql`${t.agendaConflictPolicy} in ('warn', 'block')`,
+    ),
+  }),
+);
 
 export const membership = pgTable(
   'membership',

@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_CONFLICT_POLICY,
   DEFAULT_GRID,
   agendaDayKeys,
   applyPlacements,
   blockGeometry,
+  blockingConflicts,
   buildSlots,
   canPublish,
   conflictsForSession,
   dayKeyRange,
   detectConflicts,
+  parseConflictPolicy,
+  severityForKind,
   entriesForDay,
   formatZonedRange,
   gridForDay,
@@ -158,7 +162,7 @@ describe('detectConflicts', () => {
     expect(conflicts).toEqual([]);
   });
 
-  it('reports a track collision as an error', () => {
+  it('reports a track collision as a warning, not an error (AR-30)', () => {
     const conflicts = detectConflicts(
       [
         entry({
@@ -181,7 +185,7 @@ describe('detectConflicts', () => {
 
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0].kind).toBe('track');
-    expect(conflicts[0].severity).toBe('error');
+    expect(conflicts[0].severity).toBe('warning');
     expect(conflicts[0].message).toContain('Platform');
   });
 
@@ -401,6 +405,70 @@ describe('detectConflicts', () => {
 
     expect(conflictsForSession(rows, 'c')).toEqual([]);
     expect(conflictsForSession(rows, 'a')).toHaveLength(1);
+  });
+});
+
+/**
+ * `AR-30`. Severity and enforcement are two axes. These tests exist to keep them from collapsing
+ * back into one — the collapse is what made `A-2` undemonstrable in the first place.
+ */
+describe('conflict policy (AR-30)', () => {
+  const broken = () =>
+    detectConflicts([
+      entry({
+        id: 'a',
+        roomId: ROOM_A,
+        trackId: TRACK_A,
+        startsAt: at('2026-10-12T16:00:00Z'),
+        endsAt: at('2026-10-12T17:00:00Z'),
+        speakers: [{ participantId: 'p1', name: 'Cicero' }],
+      }),
+      entry({
+        id: 'b',
+        roomId: ROOM_A,
+        trackId: TRACK_A,
+        startsAt: at('2026-10-12T16:30:00Z'),
+        endsAt: at('2026-10-12T17:30:00Z'),
+        speakers: [{ participantId: 'p1', name: 'Cicero' }],
+      }),
+    ]);
+
+  it('defaults to warnings, so nothing is refused', () => {
+    expect(DEFAULT_CONFLICT_POLICY).toBe('warn');
+    expect(blockingConflicts(broken())).toEqual([]);
+    expect(blockingConflicts(broken(), 'warn')).toEqual([]);
+  });
+
+  it('rates a room and a speaker clash as errors and a track collision as a warning', () => {
+    expect(severityForKind('room')).toBe('error');
+    expect(severityForKind('speaker')).toBe('error');
+    expect(severityForKind('track')).toBe('warning');
+  });
+
+  it('blocks only the physically impossible kinds under a block policy', () => {
+    const blocked = blockingConflicts(broken(), 'block');
+
+    expect(blocked.map((item) => item.kind).sort()).toEqual(['room', 'speaker']);
+    expect(blocked.every((item) => item.severity === 'error')).toBe(true);
+  });
+
+  it('still detects every kind under either policy — blocking is not filtering', () => {
+    expect(broken().map((item) => item.kind).sort()).toEqual(['room', 'speaker', 'track']);
+  });
+
+  it('names the double-booked speaker in the message the chip renders', () => {
+    const speaker = broken().find((item) => item.kind === 'speaker');
+
+    expect(speaker?.message).toBe('Cicero is scheduled in Session a and Session b at the same time');
+    expect(speaker?.subjectName).toBe('Cicero');
+  });
+
+  it('reads an unset, unknown or legacy column as the default rather than throwing', () => {
+    expect(parseConflictPolicy('block')).toBe('block');
+    expect(parseConflictPolicy('warn')).toBe('warn');
+    expect(parseConflictPolicy(null)).toBe('warn');
+    expect(parseConflictPolicy(undefined)).toBe('warn');
+    expect(parseConflictPolicy('nonsense')).toBe('warn');
   });
 });
 

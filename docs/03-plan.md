@@ -185,7 +185,11 @@ already-authenticated session hides.
 3. In an incognito window, submit a talk cold → account created → redirected into the portal
 4. In the portal: bio, headshot, slides, complete a task
 5. Back as organizer: score it, accept it, confirm the acceptance email in `/admin/mail`
-6. Drag it onto the agenda; force a room clash and a speaker double-booking; confirm both surface
+6. Drag it onto the agenda; force a room clash and a speaker double-booking. Both **save** — the
+   default policy is `warn` (AR-30) — and both surface: an amber banner during the drag, a "Saved
+   with a clash" toast, the count chip, and a named row in **Conflicts** with one-click unschedule.
+   Then turn on **Block clashes on save** in that view and re-drag: the same drop is refused. Turn
+   it back off before continuing
 7. Open the `.ics` from the email in a real calendar client; reschedule; confirm the existing event
    **updates in place** rather than duplicating
 8. Load `/embed/:slug/agenda` in a bare HTML file on a different origin; change a session; reload

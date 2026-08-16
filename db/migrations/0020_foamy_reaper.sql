@@ -1,0 +1,2 @@
+ALTER TABLE "event" ADD COLUMN "agenda_conflict_policy" text DEFAULT 'warn' NOT NULL;--> statement-breakpoint
+ALTER TABLE "event" ADD CONSTRAINT "event_agenda_conflict_policy_check" CHECK ("event"."agenda_conflict_policy" in ('warn', 'block'));

@@ -68,6 +68,8 @@ type MutableProgramState = {
   sessionSeq: number;
   locks: number;
   transactions: number;
+  /** `AR-30`. The event's conflict policy, which the API path has to honour exactly as the UI does. */
+  agendaConflictPolicy: 'warn' | 'block';
 };
 
 function inMemoryDatabase(state: MutableProgramState): Database {
@@ -106,6 +108,9 @@ function inMemoryDatabase(state: MutableProgramState): Database {
       room: { findMany: async () => TAXONOMY.rooms },
       track: { findMany: async () => TAXONOMY.tracks },
       sessionFormat: { findMany: async () => TAXONOMY.formats },
+      event: {
+        findFirst: async () => ({ agendaConflictPolicy: state.agendaConflictPolicy }),
+      },
     },
     update,
     insert: () => ({
@@ -272,7 +277,13 @@ describe('program reconciliation execution', () => {
   let database: Database;
 
   beforeEach(() => {
-    state = { sessions: [], sessionSeq: 0, locks: 0, transactions: 0 };
+    state = {
+      sessions: [],
+      sessionSeq: 0,
+      locks: 0,
+      transactions: 0,
+      agendaConflictPolicy: 'warn',
+    };
     database = inMemoryDatabase(state);
   });
 
@@ -358,27 +369,87 @@ describe('program reconciliation execution', () => {
     expect(state.sessions).toHaveLength(0);
   });
 
-  it('rejects an overlapping room and track collection before any write', async () => {
+  const overlappingPair = () => {
     const placement = {
       startsAt: '2027-01-13T08:00:00.000Z',
       endsAt: '2027-01-13T08:45:00.000Z',
       room: 'Curia Julia',
       track: 'Constitution & Office',
     };
+    return request({
+      apply: true,
+      sessions: [
+        session('first', 'First motion', placement),
+        session('second', 'Second motion', placement),
+      ],
+    });
+  };
 
-    await expect(
-      reconcileProgram(
-        'event-1',
-        request({
-          apply: true,
-          sessions: [
-            session('first', 'First motion', placement),
-            session('second', 'Second motion', placement),
-          ],
-        }),
-        database,
-      ),
-    ).rejects.toThrow('both occupy');
+  it('rejects an overlapping room and track collection before any write under a block policy', async () => {
+    state.agendaConflictPolicy = 'block';
+
+    await expect(reconcileProgram('event-1', overlappingPair(), database)).rejects.toThrow(
+      'both occupy',
+    );
     expect(state.sessions).toHaveLength(0);
+  });
+
+  /**
+   * `AR-30`. The API and the board have to agree. An organizer can drag these two talks into the
+   * same room under the default `warn` policy, so a push that describes the same programme must not
+   * come back `409` — it applies, and it reports what it left behind.
+   */
+  it('applies an overlapping collection under the default warn policy and reports the clashes', async () => {
+    const result = await reconcileProgram('event-1', overlappingPair(), database);
+
+    expect(result.applied).toBe(true);
+    expect(state.sessions).toHaveLength(2);
+
+    const messages = result.conflicts.map((item) => item.message);
+    expect(result.conflicts.filter((item) => item.kind === 'room')).toHaveLength(1);
+    expect(result.conflicts.filter((item) => item.kind === 'track')).toHaveLength(1);
+    expect(messages.some((message) => message.includes('both occupy'))).toBe(true);
+  });
+
+  /** A room clash is an `error`; a track collision is a `warning`. Blocking never applies to the latter. */
+  it('never blocks a track-only collision, even under a block policy', async () => {
+    state.agendaConflictPolicy = 'block';
+    const placement = {
+      startsAt: '2027-01-13T08:00:00.000Z',
+      endsAt: '2027-01-13T08:45:00.000Z',
+      track: 'Constitution & Office',
+    };
+
+    const result = await reconcileProgram(
+      'event-1',
+      request({
+        apply: true,
+        sessions: [
+          session('first', 'First motion', { ...placement, room: null }),
+          session('second', 'Second motion', { ...placement, room: null }),
+        ],
+      }),
+      database,
+    );
+
+    expect(result.applied).toBe(true);
+    expect(state.sessions).toHaveLength(2);
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.conflicts[0]).toMatchObject({ kind: 'track', severity: 'warning' });
+  });
+
+  /** A dry run answers the question rather than throwing it, so an integrator can look before pushing. */
+  it('reports the clashes a preview would create without writing anything', async () => {
+    state.agendaConflictPolicy = 'block';
+
+    const result = await reconcileProgram(
+      'event-1',
+      { ...overlappingPair(), apply: false },
+      database,
+    );
+
+    expect(result.applied).toBe(false);
+    expect(state.sessions).toHaveLength(0);
+    expect(result.conflicts.map((item) => item.kind).sort()).toEqual(['room', 'track']);
   });
 });
