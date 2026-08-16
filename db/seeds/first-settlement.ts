@@ -2,7 +2,6 @@ import { eq, inArray } from 'drizzle-orm';
 import { requireEventWindow } from '../../lib/event-dates';
 import { newIcsUid } from '../../lib/ics';
 import { ensureDefaultTemplates } from '../../lib/services/comms';
-import { getStorage, storageKey } from '../../lib/storage';
 import {
   PARTICIPANT_BUILTIN_FIELDS,
   PARTICIPANT_BUILTIN_META,
@@ -12,7 +11,6 @@ import type { Database } from '../client';
 import {
   emailLog,
   event,
-  file,
   fileRequest,
   form,
   formField,
@@ -39,10 +37,8 @@ import {
   track,
   user,
 } from '../schema';
-import {
-  createRomanProfileArtAssignments,
-  ROMAN_PROFILE_ART,
-} from './roman-profile-art';
+import { removeEventFiles, seedProfileArt } from './profile-art-store';
+import { ROMAN_PROFILE_ART } from './roman-profile-art';
 
 const SLUG = 'first-settlement';
 const DAY = 86_400_000;
@@ -63,16 +59,6 @@ const SENATE_PEOPLE = [
 const REVIEWER_EMAILS = REVIEWER_PEOPLE.map((person) => person.email);
 
 const SPEAKER_EMAILS = ROMAN_PROFILE_ART.map((entry) => entry.email);
-
-async function inBatches<T>(
-  items: readonly T[],
-  size: number,
-  operation: (item: T) => Promise<void>,
-): Promise<void> {
-  for (let start = 0; start < items.length; start += size) {
-    await Promise.all(items.slice(start, start + size).map(operation));
-  }
-}
 
 type SenateUser = { id: string; email: string; name: string | null };
 
@@ -95,49 +81,6 @@ export async function prepareFirstSettlementSeed(
   const createdPeople = missingPeople.length > 0 ? await store.createSenatePeople(missingPeople) : [];
 
   return new Map([...existingPeople, ...createdPeople].map((person) => [person.email, person]));
-}
-
-async function removeEventFiles(db: Database, eventId: string): Promise<void> {
-  const records = await db.select({ storageKey: file.storageKey }).from(file).where(eq(file.eventId, eventId));
-  const storage = getStorage();
-  await inBatches(records, 24, (record) => storage.delete(record.storageKey));
-}
-
-async function seedProfileArt(
-  db: Database,
-  eventId: string,
-  uploadedByUserId: string,
-): Promise<Map<(typeof SPEAKER_EMAILS)[number], string>> {
-  const storage = getStorage();
-  const artwork = createRomanProfileArtAssignments(SPEAKER_EMAILS);
-  const uploads = artwork.map((assignment) => ({
-    assignment,
-    row: {
-      eventId,
-      storageKey: storageKey(eventId, assignment.filename),
-      filename: assignment.filename,
-      contentType: assignment.contentType,
-      sizeBytes: assignment.bytes.byteLength,
-      uploadedByUserId,
-    },
-  }));
-
-  await inBatches(uploads, 24, ({ assignment, row }) =>
-    storage.put(row.storageKey, assignment.bytes, assignment.contentType),
-  );
-
-  const records = await db
-    .insert(file)
-    .values(uploads.map(({ row }) => row))
-    .returning({ id: file.id, storageKey: file.storageKey });
-  const idByStorageKey = new Map(records.map((record) => [record.storageKey, record.id]));
-  return new Map(
-    uploads.map(({ assignment, row }) => {
-      const fileId = idByStorageKey.get(row.storageKey);
-      if (!fileId) throw new Error(`Profile art insert omitted ${row.storageKey}`);
-      return [assignment.speakerKey, fileId] as const;
-    }),
-  );
 }
 
 function currentOrNextAnniversary(now: Date): Date {
@@ -731,7 +674,11 @@ export async function seedFirstSettlement(
     { submissionId: submissions[7].id, tagId: tags[0].id },
   ]);
 
-  const profileArt = await seedProfileArt(db, senate.id, organizerUserId);
+  const profileArt = await seedProfileArt(db, {
+    eventId: senate.id,
+    uploadedByUserId: organizerUserId,
+    speakerKeys: SPEAKER_EMAILS,
+  });
 
   const participants = await db
     .insert(participant)
