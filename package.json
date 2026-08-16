@@ -13,6 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "tsx scripts/benchmark.ts",
+    "alternatives:build": "tsx scripts/alternatives/build.ts",
+    "alternatives:check": "tsx scripts/alternatives/build.ts --check",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "eval": "tsx scripts/eval-loop.ts",
     "eval:loop": "tsx scripts/eval-loop.ts --loop",

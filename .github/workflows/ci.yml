@@ -23,6 +23,10 @@ jobs:
           bun-version: 1.3.10
       - run: bun install --frozen-lockfile
       - run: bun run lint
+      # The alternative-designs survey keeps its structured data in docs/alternatives/data/ and
+      # generates the matrix, the comparative requirements doc, and the visual grid from it. This
+      # fails if someone edits the data without regenerating, or hand-edits a generated file.
+      - run: bun run alternatives:check
 
   build:
     name: Build
