@@ -43,7 +43,22 @@ interface HotkeyContextValue {
   register: (registration: Registration) => () => void;
 }
 
-const HotkeyContext = createContext<HotkeyContextValue | null>(null);
+/**
+ * Outside a provider a screen has no shortcuts and nothing else changes.
+ *
+ * Throwing here would be the wrong trade. Screens that register bindings are rendered on their own
+ * in tests, and the reviewer, portal, and CRM shells have not mounted a provider yet — none of that
+ * is a bug worth taking a page down for, and a shortcut that quietly does not exist is exactly what
+ * "this surface has no hotkeys" should look like.
+ */
+const NO_PROVIDER: HotkeyContextValue = {
+  stack: [],
+  platform: 'other',
+  openShortcuts: () => undefined,
+  register: () => () => undefined,
+};
+
+const HotkeyContext = createContext<HotkeyContextValue>(NO_PROVIDER);
 
 function describePlatform(): Platform {
   if (typeof navigator === 'undefined') return 'other';
@@ -172,9 +187,7 @@ export function HotkeyProvider({ children }: { children: ReactNode }) {
 }
 
 export function useHotkeyContext(): HotkeyContextValue {
-  const value = useContext(HotkeyContext);
-  if (!value) throw new Error('useHotkeyContext must be used inside a HotkeyProvider');
-  return value;
+  return useContext(HotkeyContext);
 }
 
 /**

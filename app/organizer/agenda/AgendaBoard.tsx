@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
-  pointerWithin,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -14,7 +14,9 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { AlertTriangle, CheckCircle2, Plus, Send, Sparkles } from 'lucide-react';
+import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import { Badge, Button, useToast } from '@/components/ui';
+import { SCOPES } from '@/lib/hotkeys/registry';
 import {
   DEFAULT_SESSION_MINUTES,
   agendaDayKeys,
@@ -53,6 +55,7 @@ import { AiProposalDialog } from './AiProposalDialog';
 import type { AgendaData } from './data';
 import { fromWire, type NamedFormat, type NamedRoom, type NamedTrack, type WireEntry } from './wire';
 import { DayGrid, OrphanedNotice, UnscheduledRail, parseCellId, type DragPayload } from './Grid';
+import { agendaCollisionDetection, cellCoordinateGetter } from './keyboardCoordinates';
 import {
   SessionDialog,
   draftFor,
@@ -196,6 +199,15 @@ export function AgendaBoard({
   const sensors = useSensors(
     // A block is both draggable and clickable; without a threshold, opening one is impossible.
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    /**
+     * The same block is also focusable, so Space lifts it and the arrows walk it across rooms and
+     * time. Enter is left out of the sensor's keys deliberately: it stays the way into the session,
+     * which is what it already did before a session could be lifted at all.
+     */
+    useSensor(KeyboardSensor, {
+      coordinateGetter: cellCoordinateGetter,
+      keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space'] },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -487,6 +499,45 @@ export function AgendaBoard({
       return result;
     });
 
+  // -------------------------------------------------------------------------
+  // Keyboard
+  // -------------------------------------------------------------------------
+
+  const shiftDay = (step: 1 | -1) => {
+    const index = dayKeys.indexOf(dayKey);
+    const next = dayKeys[index + step];
+    if (next) {
+      setDayKey(next);
+      setView('conference');
+    }
+  };
+
+  /**
+   * Screen-level keys, deliberately none of which move a session — that is the sensor's job above.
+   * They stand down mid-lift so an arrow-key move cannot be interrupted by a day change underneath
+   * it, and a read-only organizer gets the navigation keys without the ones that would write.
+   */
+  useHotkeys(
+    SCOPES.agenda,
+    {
+      'new-session': () => {
+        if (canManage) openNew();
+      },
+      'publish-day': () => {
+        if (canManage && draftsOnDay.length > 0) publishDay();
+      },
+      'prev-day': () => shiftDay(-1),
+      'next-day': () => shiftDay(1),
+      view: (fired) => {
+        const option = VIEWS[Number(fired.key) - 1];
+        if (option) setView(option.id);
+      },
+    },
+    { active: drag === null },
+  );
+
+  useHotkeyScope(SCOPES.dialog, dialog !== null || proposalOpen);
+
   const dialogConflicts = dialog?.draft.sessionId
     ? (conflictIndex.get(dialog.draft.sessionId) ?? [])
     : [];
@@ -598,7 +649,7 @@ export function AgendaBoard({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={pointerWithin}
+        collisionDetection={agendaCollisionDetection}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}

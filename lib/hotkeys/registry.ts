@@ -138,29 +138,33 @@ const SUBMISSION_DETAIL: ScopeDef = {
  * `app/organizer/agenda/AgendaBoard.tsx`.
  *
  * Moving a session and changing its time are deliberately absent from this table: they are served
- * by dnd-kit's `KeyboardSensor`, which drives the same drop path as the mouse, so conflict
- * preview and `placeSessionAction` behave identically either way. Duplicating them here as
- * separate arrow-key bindings would create a second way to move a session that could disagree with
- * the first. The overlay documents the sensor's keys through `agenda-move` below, which is a
- * description rather than a live binding.
+ * by dnd-kit's `KeyboardSensor`, which drives the same drop path as the mouse, so conflict preview
+ * and `placeSessionAction` behave identically either way. Arrow-key bindings here would be a second
+ * way to move a session that could disagree with the first. The `lift` row documents the sensor's
+ * keys without owning them — it has no chords, so it appears in the overlay and matches nothing.
  */
 const AGENDA: ScopeDef = {
   id: SCOPES.agenda,
   title: 'Agenda',
   bindings: [
-    { id: 'new-session', chords: ['n'], label: 'New session', group: 'Build' },
-    { id: 'unschedule', chords: ['u'], label: 'Unschedule the focused session', group: 'Build' },
-    { id: 'publish-day', chords: ['p'], label: 'Publish this day', group: 'Build' },
+    {
+      id: 'lift',
+      chords: [],
+      label: 'Lift a session, arrows to move it, space again to drop',
+      group: 'Schedule',
+      display: ['Space'],
+    },
+    { id: 'new-session', chords: ['n'], label: 'New session', group: 'Schedule' },
+    { id: 'publish-day', chords: ['p'], label: 'Publish this day', group: 'Schedule' },
     { id: 'prev-day', chords: ['['], label: 'Previous day', group: 'Move' },
     { id: 'next-day', chords: [']'], label: 'Next day', group: 'Move' },
     {
-      id: 'view-1',
-      chords: ['1'],
-      label: 'Conference view',
+      id: 'view',
+      chords: ['1', '2', '3', '4', '5', '6'],
+      label: 'Switch view: conference, list, room, track, conflicts, month',
       group: 'Move',
+      display: ['1', '–', '6'],
     },
-    { id: 'view-2', chords: ['2'], label: 'Day view', group: 'Move' },
-    { id: 'view-3', chords: ['3'], label: 'List view', group: 'Move' },
   ],
 };
 
@@ -213,9 +217,8 @@ function signatureOf(binding: Binding, chord: string): string {
  * The bindings actually live for a scope stack, innermost first.
  *
  * Two rules do the work. A `modal` scope truncates everything beneath it, so a confirmation dialog
- * silences the list behind it. And an inner scope shadows an outer one on the same chord, so the
- * agenda's `u` ("unschedule") wins over nothing today but would win over a global `u` tomorrow
- * without either table needing to know about the other.
+ * silences the list behind it. And an inner scope shadows an outer one on the same chord, so a
+ * screen can take a key the shell also wants without either table needing to know about the other.
  */
 export function resolveBindings(stack: readonly string[]): ResolvedBinding[] {
   const defs = stack
@@ -233,7 +236,9 @@ export function resolveBindings(stack: readonly string[]): ResolvedBinding[] {
   for (const scope of visible) {
     for (const binding of scope.bindings) {
       const signatures = binding.chords.map((chord) => signatureOf(binding, chord));
-      if (signatures.every((signature) => claimed.has(signature))) continue;
+      // A chordless binding documents a key some other machinery owns, so it is never shadowed and
+      // never claims anything. Without the length check the `every` below would swallow it.
+      if (signatures.length > 0 && signatures.every((signature) => claimed.has(signature))) continue;
       for (const signature of signatures) claimed.add(signature);
       resolved.push({ scope, binding });
     }

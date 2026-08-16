@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, ChevronLeft, ChevronRight, Clock, RotateCcw, Sparkles, X } from 'lucide-react';
 import {
@@ -16,7 +16,9 @@ import {
   Tag,
   Textarea,
 } from '../../../../components/ui';
+import { useHotkeys } from '@/components/hotkeys/HotkeyProvider';
 import { AI_KEY_MISSING_NOTE } from '@/lib/ai/notice';
+import { SCOPES } from '@/lib/hotkeys/registry';
 import { CopyPermalinkButton } from '../CopyPermalinkButton';
 import {
   assignOneAction,
@@ -287,91 +289,32 @@ export function ReviewDetail(props: ReviewDetailProps) {
     [router],
   );
 
-  useEffect(() => {
-    const isTyping = (target: EventTarget | null) => {
-      const node = target as HTMLElement | null;
-      if (!node) return false;
-      return (
-        node.tagName === 'INPUT' ||
-        node.tagName === 'TEXTAREA' ||
-        node.tagName === 'SELECT' ||
-        node.isContentEditable
-      );
-    };
+  useHotkeys(SCOPES.submissionDetail, {
+    /**
+     * `1`–`9` scores the criterion under the cursor and advances to the next, so a whole scorecard
+     * is a short run of digits. The digit that fired arrives on the event, because the binding
+     * covers a range rather than nine separate keys.
+     */
+    score: (event) => {
+      if (criteria.length === 0) return;
+      const index = Math.max(0, Math.min(criteria.length - 1, activeCriterion));
+      const criterion = criteria[index];
+      setScore(criterion.id, Math.min(criterion.maxScore, Number(event.key)));
+      setActiveCriterion(Math.min(criteria.length - 1, index + 1));
+    },
+    'criterion-next': () => setActiveCriterion((index) => Math.min(criteria.length - 1, index + 1)),
+    'criterion-prev': () => setActiveCriterion((index) => Math.max(0, index - 1)),
+    'save-draft': () => save(false),
+    submit: () => save(true),
 
-    const onKey = (event: KeyboardEvent) => {
-      if (isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
+    next: () => go(props.nextHref),
+    prev: () => go(props.prevHref),
+    back: () => router.push(props.backHref),
 
-      if (/^[1-9]$/.test(event.key) && criteria.length > 0) {
-        event.preventDefault();
-        const index = Math.max(0, Math.min(criteria.length - 1, activeCriterion));
-        const criterion = criteria[index];
-        const value = Math.min(criterion.maxScore, Number(event.key));
-        setScore(criterion.id, value);
-        setActiveCriterion(Math.min(criteria.length - 1, index + 1));
-        return;
-      }
-
-      switch (event.key) {
-        case 'j':
-          event.preventDefault();
-          go(props.nextHref);
-          break;
-        case 'k':
-          event.preventDefault();
-          go(props.prevHref);
-          break;
-        case 'ArrowDown':
-          event.preventDefault();
-          setActiveCriterion((index) => Math.min(criteria.length - 1, index + 1));
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          setActiveCriterion((index) => Math.max(0, index - 1));
-          break;
-        case 's':
-          event.preventDefault();
-          save(false);
-          break;
-        case 'c':
-          event.preventDefault();
-          save(true);
-          break;
-        case 'a':
-          event.preventDefault();
-          decide('accept');
-          break;
-        case 'w':
-          event.preventDefault();
-          decide('waitlist');
-          break;
-        case 'd':
-          event.preventDefault();
-          decide('decline');
-          break;
-        case 'u':
-          event.preventDefault();
-          router.push(props.backHref);
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [
-    activeCriterion,
-    criteria,
-    decide,
-    go,
-    props.backHref,
-    props.nextHref,
-    props.prevHref,
-    router,
-    save,
-    setScore,
-  ]);
+    accept: () => decide('accept'),
+    waitlist: () => decide('waitlist'),
+    decline: () => decide('decline'),
+  });
 
   // Peer scores stay hidden until this reviewer has committed their own, so nobody anchors on a
   // number someone else picked. An organizer who has to decide always sees them.
