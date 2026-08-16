@@ -28,17 +28,13 @@ export default async function SubmissionsPage({
       <div className={styles.pageHead}>
         <h1 className={styles.pageTitle}>My sessions</h1>
         <p className={styles.pageLead}>
-          Everything you are speaking on at {event.name}, and where each one has got to.
+          Your sessions for {event.name} and their status.
         </p>
       </div>
 
       {submissions.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyTitle}>No talks yet</div>
-          <p>
-            When a talk with your name on it is submitted, it appears here with its reference and
-            status. Once the schedule is published, its time and room show up alongside them.
-          </p>
         </div>
       ) : (
         <div className={styles.stackTight}>

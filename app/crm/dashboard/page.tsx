@@ -76,9 +76,7 @@ export default async function CrmDashboardPage() {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>CRM dashboard</h1>
-          <p className={styles.subtitle}>
-            The speaker database at a glance, across every event you run.
-          </p>
+          <p className={styles.subtitle}>Your speaker database across events.</p>
         </div>
       </div>
 

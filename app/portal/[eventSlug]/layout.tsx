@@ -64,12 +64,12 @@ export default async function PortalLayout({
             You are viewing the portal as{' '}
             <span className={styles.impersonationWho}>{speakerName(me, ctx)}</span> ({ctx.actor.email}).
             <span className={styles.impersonationNote}>
-              Anything you change here is saved as them — finish their task, then return to admin.
+              Anything you change here is saved as them — finish their task, then return to organizer.
             </span>
           </div>
           <form action={stopImpersonationAction}>
             <Button type="submit" variant="primary" size="sm">
-              Return to admin
+              Return to organizer
             </Button>
           </form>
         </div>

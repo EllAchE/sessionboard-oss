@@ -33,14 +33,8 @@ export default async function SubmissionDonePage({ params, searchParams }: PageP
 
         <div className={styles.done}>
           {ref && <p className={styles.refBadge}>{ref}</p>}
-          <p>
-            We emailed you a confirmation and a sign-in link. Your speaker account already exists —
-            there is no password to set.
-          </p>
-          <p className={styles.help}>
-            Next: add a bio and a headshot in the portal so the organizers have what they need if
-            your talk is accepted.
-          </p>
+          <p>We emailed your confirmation and sign-in link.</p>
+          <p className={styles.help}>Next: add your bio and headshot in the portal.</p>
 
           <Link href={portal}>
             <Button variant="primary" size="lg">
