@@ -33,8 +33,8 @@ export function cellId(roomId: string, minute: number, dayKey?: string): string 
 }
 
 /**
- * The day is part of the id so the week view can mount one grid per day inside a single
- * `DndContext` — two grids sharing `cell:<room>:<minute>` would collide on drop.
+ * The day is part of the id so a drop carries its conference date with it. It also keeps cell ids
+ * unambiguous if more than one day grid is ever mounted inside the shared `DndContext`.
  */
 export function parseCellId(
   id: string,
