@@ -10,6 +10,7 @@ import {
   FileText,
   LayoutDashboard,
   Mail,
+  Map as MapIcon,
   MessageSquare,
   Plug,
   Settings,
@@ -63,6 +64,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     items: [
       { id: 'settings', label: 'Settings', href: '/organizer/settings', icon: <Settings size={15} /> },
       { id: 'sponsors', label: 'Sponsors', href: '/organizer/sponsors', icon: <Building2 size={15} /> },
+      { id: 'exhibitor-map', label: 'Exhibitor map', href: '/organizer/exhibitor-map', icon: <MapIcon size={15} /> },
       { id: 'integrations', label: 'Integrations', href: '/organizer/integrations', icon: <Plug size={15} /> },
     ],
   },

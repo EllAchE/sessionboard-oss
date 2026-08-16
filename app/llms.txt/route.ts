@@ -45,6 +45,7 @@ export function buildLlmsTxt(origin = appUrl()): string {
     '## Embeds',
     '',
     `- \`/embed/{slug}/{view}\` — an unindexed event-site view. Supported views: ${EMBED_VIEWS.map((view) => `\`${view}\``).join(', ')}.`,
+    '- `/embed/{slug}/exhibitor-map/file` — the current map’s inline or downloadable PDF bytes.',
     `- [Embed loader](${base}/embed.js): the script an event site drops in to size the iframe.`,
     '',
     '## Developer resources',

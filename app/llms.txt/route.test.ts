@@ -64,6 +64,7 @@ describe('llms.txt', () => {
       '/{slug}/sponsors',
       '/submit/{eventSlug}/{formSlug}',
       '/embed/{slug}/{view}',
+      '/embed/{slug}/exhibitor-map/file',
       '/api/v1/events/{slug}/mcp',
     ]) {
       expect(body).toContain(`\`${route}\``);
