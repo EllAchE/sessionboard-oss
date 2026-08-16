@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, Download } from 'lucide-react';
+import { ArrowDown, ArrowUp, Download, PenLine } from 'lucide-react';
 import { Avatar, Badge, Button, DataTable, Input, Select } from '@/components/ui';
 import type { DataTableColumn } from '@/components/ui';
 import type { OutstandingTaskRow, TaskUrgency } from '@/lib/services/dashboard';
+import { NudgeComposer } from './NudgeComposer';
 import styles from './dashboard.module.css';
 
 type SortKey = 'urgency' | 'person' | 'task' | 'due' | 'status';
@@ -133,6 +134,8 @@ export function OutstandingTasks({
   const [acceptedOnly, setAcceptedOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('urgency');
   const [direction, setDirection] = useState<Direction>('asc');
+  /** One row at a time, on purpose. Assisted chasing has no bulk blast — see `NudgeComposer`. */
+  const [chasing, setChasing] = useState<OutstandingTaskRow | null>(null);
 
   const tasks = useMemo(() => {
     const seen = new Map<string, string>();
@@ -189,7 +192,7 @@ export function OutstandingTasks({
     {
       id: 'person',
       header: heading('Speaker', 'person'),
-      width: '26%',
+      width: '24%',
       render: (row) => (
         <div className={styles.person}>
           <Avatar name={row.participantName} size="sm" />
@@ -203,7 +206,7 @@ export function OutstandingTasks({
     {
       id: 'task',
       header: heading('Task', 'task'),
-      width: '26%',
+      width: '23%',
       render: (row) => (
         <div className={styles.taskCell}>
           <span className={styles.taskName}>{row.taskName}</span>
@@ -239,12 +242,35 @@ export function OutstandingTasks({
     {
       id: 'sessions',
       header: 'Sessions',
-      width: '19%',
+      width: '15%',
       render: (row) =>
         row.sessionTitles.length === 0 ? (
           <span className={styles.personMeta}>{row.accepted ? '—' : 'Not accepted'}</span>
         ) : (
           <span className={styles.personMeta}>{row.sessionTitles.join(', ')}</span>
+        ),
+    },
+    {
+      /**
+       * The chase, which is where the organizer's time actually goes. It drafts; it does not send.
+       * Settled rows get no button — nothing is more corrosive to trust in a reminder tool than
+       * chasing someone for something they already did.
+       */
+      id: 'chase',
+      header: 'Chase',
+      width: '12%',
+      render: (row) =>
+        row.urgency === 'done' ? (
+          <span className={styles.personMeta}>—</span>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            iconLeft={<PenLine size={14} />}
+            onClick={() => setChasing(row)}
+          >
+            Draft a nudge
+          </Button>
         ),
     },
   ];
@@ -315,6 +341,7 @@ export function OutstandingTasks({
           Showing 10 of {visible.length}. <Link href="/admin/tasks">See every task</Link>.
         </p>
       ) : null}
+      <NudgeComposer row={chasing} onClose={() => setChasing(null)} />
     </div>
   );
 }
