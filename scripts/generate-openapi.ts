@@ -2,6 +2,6 @@ import { writeFile } from 'node:fs/promises';
 import { buildSpec } from '../app/api/v1/openapi.json/route';
 
 const output = new URL('../docs/openapi.json', import.meta.url);
-const origin = process.env.OPENAPI_ORIGIN ?? 'https://cicero.elehche.workers.dev';
+const origin = process.env.OPENAPI_ORIGIN ?? 'https://cicero-three.vercel.app';
 
 await writeFile(output, `${JSON.stringify(buildSpec(origin), null, 2)}\n`);
