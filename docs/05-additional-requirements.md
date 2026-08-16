@@ -371,6 +371,19 @@ organizer's call.
 
 ---
 
+## 10. Intelligent agenda optimization
+
+The current builder finds a valid, conflict-free placement. A later version should optimize the
+draft for likely attendees and the physical venue. That is outside v1 because it needs new input
+data, a scoring model, and tuning against real conference programs; a model prompt alone is not an
+optimizer.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-36 | **[EXCLUDED]** | — | **Build intelligent automatic agenda allocation as a post-v1 goal.** A future auto-drafter should infer likely audience overlap from talk content, format, and expected interest, then avoid placing talks for the same cohort in parallel. For example, energy-and-software and bioweapons-and-software talks may compete for much of the same software audience. It should also estimate demand from speaker popularity or clout and map each talk to the venue structure, stage or room capacity, and available slot shapes. Speaker popularity and venue structure need first-class fields if the current data model does not carry them. The optimizer needs a tunable weighting system for these competing objectives and an evaluation loop that calibrates the weights against real schedules. This is a recorded product goal, not current implementation scope. |
+
+---
+
 ## Decisions
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so
@@ -398,5 +411,5 @@ question that blocks a build.
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
 | [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
 | [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds) |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |
