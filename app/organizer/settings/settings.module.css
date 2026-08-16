@@ -162,6 +162,23 @@
   gap: var(--space-3);
 }
 
+/*
+ * ---- Milestone deadlines — E-1b ----
+ *
+ * A rule across the grid rather than another pair of date boxes in the run. The milestones are
+ * internal and advisory; the conference dates above them are neither, and a reader skimming the
+ * panel should be able to tell which is which without reading the hints.
+ */
+
+.groupHeading {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
 /* ---- Event branding — E-3 ---- */
 
 .subPanel {

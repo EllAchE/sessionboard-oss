@@ -96,6 +96,12 @@ export default async function SettingsPage({
         timezone: event.timezone,
         startsAt: utcToLocalInput(event.startsAt, event.timezone),
         endsAt: utcToLocalInput(event.endsAt, event.timezone),
+        speakerDeadlineAt: event.speakerDeadlineAt
+          ? utcToLocalInput(event.speakerDeadlineAt, event.timezone)
+          : '',
+        agendaDeadlineAt: event.agendaDeadlineAt
+          ? utcToLocalInput(event.agendaDeadlineAt, event.timezone)
+          : '',
         websiteUrl: event.websiteUrl,
         venueName: event.venueName,
         venueAddress: event.venueAddress,
