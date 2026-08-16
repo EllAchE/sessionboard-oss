@@ -99,7 +99,7 @@ Cicero had already recorded against itself.
 *Touches:* `app/embed/**`, `lib/ics.ts`, `public/embed.js` (W6, borrowing W5's calendar primitives).
 No schema change.
 
-### 2. `AD-19` — Append-only activity ledger · convergence 1 · **M**
+### 2. `AD-19` — Hash-chained audit ledger, taken as the append-only half · convergence 1 · **M**
 
 Ranked second on a convergence of 1, which is the largest single departure from axis 1 in this
 document, and it is deliberate. Cicero's own requirements already declare this gap:
@@ -112,16 +112,17 @@ all. `db/schema.ts` has no audit table; `contentRevision` (`db/schema.ts:1131`) 
 `session` and `participant` content, and `contactActivity` (`db/schema.ts:1715`) is CRM-only. This
 is a correctness gap in a tool whose job includes answering "who decided this."
 
-Note the scope taken here is the *ledger*, not `AD-19` in full — the hash chaining and checksummed
-whole-workspace export that the attributed project also built are a separate question, listed under
-"Only if a user asks" as part of `AD-36`'s neighbourhood.
+The scope taken here is deliberately the smaller half. The catalogued item is a *hash-chained* ledger
+plus checksummed whole-workspace export and import; what is ranked second is the append-only event
+table underneath it. Tamper-evidence and workspace export are a separate decision and do not need to
+be made now — the table does, because four other items depend on it.
 
 *Touches:* new `activity_event` table (W0), write sites across `lib/services/**`,
 `lib/services/updates.ts` and `app/organizer/updates/**` (W6). The routing is already recorded —
 `docs/05-additional-requirements.md` states that "AR-38 starts in W6 while a future append-only
 activity table must cross W0 deliberately" — so the ownership question is settled before the build
-starts. Unblocks `AD-36`, and
-is the missing substrate under `AD-14`'s audit trail.
+starts. Unblocks `AD-36`, cheapens `AD-34` and `AD-44`, and is the missing substrate under
+`AD-14`'s audit trail.
 
 ### 3. `AD-2` — Speaker availability / blackout windows · convergence 4 · **M**
 
