@@ -24,11 +24,15 @@ the scrollable source of truth for what is complete and what still needs work.
 > snapshot of revision `416101e` and is left as written, but two of its statements are no longer
 > true of the running deployment:
 >
-> 1. **The Worker host is dead.** Production moved to Vercel and now serves from
->    <https://cicero-three.vercel.app>. `bun run cf:deploy` fails with Cloudflare API error 10027 —
->    the OpenNext bundle is 13.4 MiB against the free tier's 3 MiB ceiling — so `Z-1` is knowingly
->    not met by the deployed instance. [`02-architecture.md`](02-architecture.md) §1 has the full
->    reasoning and the option that was declined.
+> 1. **The hosted instance moved to Vercel** and now serves from <https://cicero-three.vercel.app>.
+>    Cloudflare Workers remains a first-class supported target — `bun run cf:build` succeeds and the
+>    whole `wrangler` path is intact — but on a *free* account `cf:deploy` returns API error 10027,
+>    because the upload is 3.42 MiB gzipped against a 3 MiB ceiling (~14% over). Workers Paid's 10 MiB
+>    ceiling clears it with ~3× headroom and was declined for this challenge, so `Z-1` is knowingly
+>    not met *by the running deployment* while remaining one plan upgrade away.
+>    [`02-architecture.md`](02-architecture.md) §1 has the full reasoning.
+>    *(Corrected 2026-08-16: this note first said "13.4 MiB against 3 MiB", comparing an uncompressed
+>    size to a compressed limit.)*
 > 2. **First Settlement is live, not 404.** The production database was rebuilt and reseeded on
 >    2026-08-15; `/first-settlement` and its agenda, sessions and speaker routes all return 200.
 >
@@ -408,13 +412,23 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 
 ## 13. Bonus criteria
 
-- [ ] **Z-1 · B · NOT MET as deployed — Cloudflare deployment.** *Revised 2026-08-15; this row read
-  COMPLETE at `416101e`.* The Workers configuration and deployment tooling are still present and
-  still correct, which is what the original verdict measured — but they do not produce a running
-  deployment. `cf:deploy` fails with Cloudflare API error 10027: the OpenNext bundle is 13.4 MiB
-  against the free tier's 3 MiB ceiling. Production runs on Vercel instead. Workers Paid ($5/mo,
-  10 MiB) would likely close this and was deliberately declined; see
-  [`02-architecture.md`](02-architecture.md) §1.
+- [ ] **Z-1 · B · SUPPORTED, NOT CURRENTLY DEPLOYED — Cloudflare deployment.** *Revised 2026-08-15
+  (COMPLETE → NOT MET) and again 2026-08-16 with measured numbers.* The Workers path is real and
+  maintained: `wrangler.jsonc`, `custom-worker.ts`, `open-next.config.ts`, the Hyperdrive binding and
+  the `cf:build` / `cf:preview` / `cf:deploy` scripts are all present, and `bun run cf:build`
+  completes cleanly from this tree. What it does not have is a *running* Cloudflare instance, which
+  is why this stays unticked — the row measures the deployment, not the capability.
+
+  The blocker is a plan ceiling, and smaller than previously recorded. `wrangler deploy --dry-run`
+  weighs the upload at **3.42 MiB gzipped** (`Total Upload: 19499.98 KiB / gzip: 3499.68 KiB`). The
+  free tier's ceiling is 3 MiB, so it misses by ~14% and the API returns error 10027. **Workers Paid
+  ($5/mo, 10 MiB) clears it with roughly 3× headroom** — measured, no longer a guess — and needs no
+  change to any file here. That upgrade was deliberately declined for this challenge; production runs
+  on Vercel instead. See [`02-architecture.md`](02-architecture.md) §1.
+
+  *Correction:* this row previously cited "13.4 MiB against the free tier's 3 MiB ceiling", comparing
+  an uncompressed bundle to a compressed limit. Cloudflare weighs the gzipped upload. The gap is 14%,
+  not 4.5×.
 - [x] **Z-2 · B · COMPLETE — Airtable persistence.** Speakers, submissions, and agenda data can be
   mirrored one-way into a configured Airtable base.
 - [ ] **Z-3 · B · OUTSTANDING — Forge hosting.** Source is hosted on GitHub rather than Forge.

@@ -294,10 +294,16 @@ wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url
 npm run cf:deploy
 ```
 
-Be aware that this **exceeds the Workers free-tier 3 MiB bundle limit** — the server bundle is
-~13.4 MiB, and the deploy fails with API error 10027 until you are on Workers Paid. That is why the
-demo moved to Vercel; [`docs/02-architecture.md`](docs/02-architecture.md) §1 records the decision
-and what it cost.
+This path is complete and current — it is not a leftover. `bun run cf:build` succeeds, and the
+bundle weighs **3.42 MiB gzipped** (`wrangler deploy --dry-run`, 2026-08-16). That fits **Workers
+Paid**'s 10 MiB ceiling about three times over, so on a paid account the deploy above is all there
+is to it.
+
+On the **free** tier it misses the 3 MiB ceiling by roughly 14% and the API rejects the upload with
+error 10027. We chose not to put a $5/month subscription behind a demo for this challenge, so the
+hosted instance runs on Vercel instead — a billing decision, not a technical one, and reversible by
+upgrading the plan without editing a file.
+[`docs/02-architecture.md`](docs/02-architecture.md) §1 records the decision and what it cost.
 
 Any Postgres works — Neon, Supabase, RDS, your own box. On Workers, Hyperdrive pools the connection
 at the edge; everywhere else a pooled `DATABASE_URL` does the same job. Either way it is **the same

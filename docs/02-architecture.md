@@ -9,12 +9,21 @@ The product is named **Cicero**, after the design system built for it.
 
 ## 1. Hosting — the fallback got called
 
-> **Production runs on Vercel as of 2026-08-15.** Cloudflare Workers was the design-time primary and
-> is still a supported target that builds from this same tree, but the free tier's 3 MiB Worker
-> ceiling rejects our bundle, so deploys to it fail. See
-> [The fallback got called](#the-fallback-got-called-2026-08-15) below for the numbers and the
-> alternative we declined. Everything in this section describing Cloudflare remains accurate for
-> anyone deploying there; `wrangler.jsonc` and `custom-worker.ts` are unchanged.
+> **Cloudflare Workers is a first-class, supported deployment target. Production currently runs on
+> Vercel as of 2026-08-15 — a billing choice, not a technical one.**
+>
+> `bun run cf:build` completes cleanly from this tree and `bun run cf:deploy` is wired end to end.
+> The bundle weighs **3.42 MiB gzipped** (`wrangler deploy --dry-run`, measured 2026-08-16), which
+> clears **Workers Paid**'s 10 MiB ceiling with about three times the headroom and misses the
+> **free** tier's 3 MiB ceiling by roughly 14%. We declined the $5/month upgrade for the duration of
+> this challenge rather than put a subscription behind a demo, so the free tier rejects the upload
+> with API error 10027 and the running instance is on Vercel instead.
+>
+> Nothing about the Cloudflare path was removed, stubbed, or left to rot: `wrangler.jsonc`,
+> `custom-worker.ts`, `open-next.config.ts`, the Hyperdrive binding and the `cf:build` / `cf:preview`
+> / `cf:deploy` scripts are all present and current. Everything in this section describing Cloudflare
+> is accurate for anyone deploying there today. See
+> [The fallback got called](#the-fallback-got-called-2026-08-15) below for the full numbers.
 
 Design-time primary target was **Cloudflare Workers** via the OpenNext adapter. Self-host is a
 supported secondary target, not the thing the architecture bends around.
@@ -106,21 +115,37 @@ that we were wrong about *which* limit would bite.
   to deploy Workers up to 10 MiB. [code: 10027]
 ```
 
-`.open-next/server-functions/default/handler.mjs` is **13.4 MiB** uncompressed against a **3 MiB**
-free-tier ceiling. This is not a slow creep past a threshold; a Next 15 App Router server bundle with
-Drizzle, `pg`, Zod, the Anthropic SDK and ~20 API routes was never going to fit, and Workers Paid's
-10 MiB ceiling would not have fit it either without splitting the bundle. The pre-deploy spike at
-[§1's gate](#the-spike-that-de-risks-it) proved a *hello-world* deploys to Workers, which is exactly
-the thing a bundle-size limit cannot be tested by. That is the lesson worth keeping: the spike
-validated the integration and told us nothing about the constraint that actually stopped us.
+**Corrected 2026-08-16.** This paragraph previously read "13.4 MiB uncompressed against a 3 MiB
+free-tier ceiling … Workers Paid's 10 MiB ceiling would not have fit it either." Both halves were
+wrong, and in a way that made the Cloudflare path look far more dead than it is. Cloudflare measures
+the **gzipped** upload, so quoting an uncompressed figure against a compressed limit compares two
+different things. `bunx wrangler deploy --dry-run` reports what the API actually weighs:
+
+```
+Total Upload: 19499.98 KiB / gzip: 3499.68 KiB
+```
+
+**3.42 MiB gzipped.** Against the free tier's 3 MiB that is a miss of about 14% — a near miss, not
+the 4.5× blowout the old wording implied. Against Workers Paid's 10 MiB it fits with roughly three
+times the headroom, so the claim that Paid "would not have fit it either without splitting the
+bundle" was simply false. `bun run cf:build` completes cleanly; nothing here is broken, and no
+bundle splitting is required to take the paid path.
+
+The pre-deploy spike at [§1's gate](#the-spike-that-de-risks-it) proved a *hello-world* deploys to
+Workers, which is exactly the thing a bundle-size limit cannot be tested by. That is the lesson
+worth keeping: the spike validated the integration and told us nothing about the constraint that
+actually stopped us — and the follow-on lesson is this correction, that we then misdescribed the
+constraint for a day by measuring it in the wrong units.
 
 The failure mode was quiet in a way worth recording. Deploys had been failing rather than not being
 run, so production silently stayed on a pre-2026-08-13 build for two days — 8 API paths live against
 20 on `main`, and every magic link it issued pointed at a hostname that no longer resolves.
 
 **What we declined.** Workers Paid is $5/month and raises the ceiling to 10 MiB with 30s CPU per
-request, which would very likely have carried this bundle and kept `Z-1`. That was a real option and
-a cheap one; we passed on it because `Z-1` is a **"mild"** bonus by the brief's own wording
+request. Measured rather than assumed, it **does** carry this bundle — 3.42 MiB against 10 MiB — and
+it would keep `Z-1` and close the 10ms CPU defect in the same $5. That is a real option and a cheap
+one, and it stays one line away: upgrade the plan and run `bun run cf:deploy`, with no change to any
+file in this repo. We passed on it because `Z-1` is a **"mild"** bonus by the brief's own wording
 (`01-requirements.md`) and paying a subscription to keep a mild bonus is the wrong trade for a
 project whose README asks a stranger to clone and run it. A reader who wants `Z-1` should upgrade
 the plan — nothing in this repo has to change to take that path, which is the same reversibility
