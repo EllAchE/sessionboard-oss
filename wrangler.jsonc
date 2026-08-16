@@ -28,10 +28,10 @@
   // to be the real origin. Self-hosters set APP_URL in the environment instead.
   //
   // MAIL_TRANSPORT is `auto`: whichever transport has credentials wins, and with none it is the dev
-  // mailbox at /admin/mail. So turning this deployment's mail on is two operator steps and no
+  // mailbox at /organizer/mail. So turning this deployment's mail on is two operator steps and no
   // commit — verify a domain in Resend, point MAIL_FROM at it, then
   // `wrangler secret put RESEND_API_KEY` (a secret, never a var). Until then nothing is delivered
-  // and every message is still readable at /admin/mail, which is what the demo has always done.
+  // and every message is still readable at /organizer/mail, which is what the demo has always done.
   //
   // MAIL_FROM below is Resend's shared test sender, which delivers to the Resend account owner and
   // 403s every other recipient (https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).

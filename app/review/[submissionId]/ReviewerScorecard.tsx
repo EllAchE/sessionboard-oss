@@ -212,8 +212,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
             <CardBody>
               {props.authorHidden ? (
                 <p className={styles.muted}>
-                  <EyeOff size={13} aria-hidden /> This round is anonymized. Names, contact details,
-                  affiliations and bios are withheld so you score the proposal on its own terms.
+                  <EyeOff size={13} aria-hidden /> This round hides speaker identities.
                 </p>
               ) : (
                 <div className={styles.answerList}>
@@ -286,9 +285,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
               ))}
 
               {props.criteria.length === 0 ? (
-                <p className={styles.muted}>
-                  The organizer has not added scoring criteria to this round yet.
-                </p>
+                <p className={styles.muted}>No scoring criteria yet.</p>
               ) : null}
 
               <div className={styles.field}>
@@ -346,8 +343,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
               </CardHeader>
               <CardBody>
                 <p className={styles.muted}>
-                  If you cannot judge this fairly, recuse yourself. It leaves your queue and the
-                  organizer can reassign it.
+                  Recusing removes this from your queue for reassignment.
                 </p>
                 <div className={styles.metaRow}>
                   <Button
@@ -365,8 +361,8 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
 
           {props.blinded ? (
             <p className={styles.hint}>
-              {props.peerCount} other {props.peerCount === 1 ? 'reviewer is' : 'reviewers are'} on
-              this submission. Their scores stay hidden until the round closes.
+              {props.peerCount} other reviewer{props.peerCount === 1 ? '' : 's'}; scores remain
+              hidden until the round closes.
             </p>
           ) : null}
         </div>
@@ -396,7 +392,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
             id="recusal-reason-detail"
             rows={3}
             value={reason}
-            placeholder="A conflict of interest, or simply no capacity."
+            placeholder="Conflict of interest or availability."
             onChange={(event) => setReason(event.target.value)}
           />
         </div>

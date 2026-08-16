@@ -12,7 +12,7 @@ import { resolveMailTransport, undeliverableRecipient } from './config';
 
 /**
  * `T-6`. The bug this covers is not a crash — it is `MAIL_TRANSPORT=smtp` with no server behind it
- * quietly becoming `log`, so `/admin/mail` shows a full outbox of mail that never left the machine.
+ * quietly becoming `log`, so `/organizer/mail` shows a full outbox of mail that never left the machine.
  * Degrading is still the behaviour; being quiet about it is not.
  */
 

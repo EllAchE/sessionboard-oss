@@ -115,12 +115,12 @@ fact — a schema change at hour eight invalidates work in five directories at o
 
 | | Workstream | Owns | Requirements |
 | --- | --- | --- | --- |
-| W1 | Form engine + public CFP | `app/(public)/submit/**`, `app/admin/forms/**`, `lib/services/forms.ts` | `F-*`, `P-*` |
+| W1 | Form engine + public CFP | `app/(public)/submit/**`, `app/organizer/forms/**`, `lib/services/forms.ts` | `F-*`, `P-*` |
 | W2 | Speaker portal, tasks, files, wiki | `app/portal/**`, `lib/services/{tasks,files,portal}.ts` | `S-*` |
-| W3 | Review, scoring, rounds | `app/admin/submissions/**`, `lib/services/review.ts` | `V-*` |
-| W4 | Agenda + conflict detection | `app/admin/agenda/**`, `lib/services/schedule.ts` | `A-*` |
-| W5 | Comms + calendar | `app/admin/comms/**`, `lib/mail/**`, `lib/ics.ts` | `C-*` |
-| W6 | Embeds, public pages, dashboard | `app/embed/**`, `app/(public)/**`, `app/admin/page.tsx` | `G-*`, `B-*` |
+| W3 | Review, scoring, rounds | `app/organizer/submissions/**`, `lib/services/review.ts` | `V-*` |
+| W4 | Agenda + conflict detection | `app/organizer/agenda/**`, `lib/services/schedule.ts` | `A-*` |
+| W5 | Comms + calendar | `app/organizer/comms/**`, `lib/mail/**`, `lib/ics.ts` | `C-*` |
+| W6 | Embeds, public pages, dashboard | `app/embed/**`, `app/(public)/**`, `app/organizer/page.tsx` | `G-*`, `B-*` |
 | W7 | Accelevents + Airtable + public API | `lib/accelevents/**`, `lib/airtable/**`, `app/api/v1/**` | `N-*`, `Z-2`, `Z-5` |
 | W8 | Deploy, seed, docs, demo | `wrangler.jsonc`, `docker-compose.yml`, `db/seed.ts`, `README.md` | `T-*`, `D-*`, `Z-1`, `Z-3` |
 | W9 | AI review + AI agenda | `lib/ai/**`, mounted into W3 and W4 surfaces | `V-9`, `A-8` |
@@ -185,7 +185,7 @@ already-authenticated session hides.
 2. Build a CFP form with a conditional question and one custom field; publish it
 3. In an incognito window, submit a talk cold → account created → redirected into the portal
 4. In the portal: bio, headshot, slides, complete a task
-5. Back as organizer: score it, accept it, confirm the acceptance email in `/admin/mail`
+5. Back as organizer: score it, accept it, confirm the acceptance email in `/organizer/mail`
 6. Drag it onto the agenda; force a room clash and a speaker double-booking. Both **save** — the
    default policy is `warn` (AR-35) — and both surface: an amber banner during the drag, a "Saved
    with a clash" toast, the count chip, and a named row in **Conflicts** with one-click unschedule.
@@ -194,7 +194,7 @@ already-authenticated session hides.
 7. Open the `.ics` from the email in a real calendar client; reschedule; confirm the existing event
    **updates in place** rather than duplicating
 8. Load `/embed/:slug/agenda` in a bare HTML file on a different origin; change a session; reload
-9. Impersonate the speaker from admin; complete a task as them; return to admin mode
+9. Impersonate the speaker from admin; complete a task as them; return to organizer mode
 10. Create a *second* event as a different user; confirm it and the seeded demo cannot see each
     other
 
@@ -228,7 +228,7 @@ to-do.
 | Item | Status | Notes |
 | --- | --- | --- |
 | Agent mail | **Shipped — bounded MCP slice** | The event MCP server can list effective templates and redacted delivery metadata, preview one recipient-resolved email, and send it through the existing audited mail boundary. It is deliberately not an agent-owned arbitrary mailbox: the target must be an existing participant on the API key's event, SMS and calendar sends stay out, email preference is rechecked at dispatch, and a write key must echo the preview's literal target confirmation plus its content-bound digest. Template, recipient or copy changes invalidate the preview. See `lib/services/agent-mail.ts` and `lib/mcp/server.ts`. |
-| Video uploads / post-conference assets | **Shipped** | `session_recording` holds one deliberately draft/published source per scheduled session. **Admin → Recordings** can upload a bounded 25 MB video through the existing event-scoped storage path, associate an existing event video, or validate an external HTTPS streaming URL. A recording cannot publish before its public session ends (the past event end is the fallback for historical imports), and changing its source returns it to draft. Published recordings alone add **Watch recording** to the public session list, home/program cards, agenda detail, itinerary, speaker-session lists, and embeds; stored bytes are streamed through a publication-gated route. |
+| Video uploads / post-conference assets | **Shipped** | `session_recording` holds one deliberately draft/published source per scheduled session. **Organizer → Recordings** can upload a bounded 25 MB video through the existing event-scoped storage path, associate an existing event video, or validate an external HTTPS streaming URL. A recording cannot publish before its public session ends (the past event end is the fallback for historical imports), and changing its source returns it to draft. Published recordings alone add **Watch recording** to the public session list, home/program cards, agenda detail, itinerary, speaker-session lists, and embeds; stored bytes are streamed through a publication-gated route. |
 | Full agent guide | **Shipped** | `.agents/skills/onboard-cicero/` establishes or resumes non-secret local state, discovers the caller's current setup, walks only unfinished milestones, preserves confirmation boundaries, and hands ongoing work to `manage-cicero-event`. The home page exposes a copyable entry prompt. See §6.1. |
 
 ### 6.1 Agent quick start, and the full agent guide behind it
@@ -245,7 +245,7 @@ works out how far along you already are before instructing anything. Roughly, in
 - Do you have a Cicero account yet, or are you starting from a bare repo?
 - Are you self-hosting, or pointing at a deployment someone else runs? What is the base URL?
 - Which event do you care about — an existing slug, or one to be created?
-- Do you have an organizer API key (**Admin → Integrations**), or is this read-only for now?
+- Do you have an organizer API key (**Organizer → Integrations**), or is this read-only for now?
 
 Only then does it walk the remaining setup: deploy or `docker compose up`, sign up, create the
 event, open the CFP, review and accept, build the program, publish, mint an API key, and hand off

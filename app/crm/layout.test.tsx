@@ -13,10 +13,10 @@ const { currentActor, currentEventId, listEventsForUser, redirect } = vi.hoisted
 vi.mock('next/navigation', () => ({ redirect }));
 vi.mock('@/lib/auth', () => ({ currentActor }));
 vi.mock('@/lib/services/events', () => ({ currentEventId, listEventsForUser }));
-vi.mock('../admin/AdminShell', () => ({ AdminShell: vi.fn() }));
+vi.mock('../organizer/OrganizerShell', () => ({ OrganizerShell: vi.fn() }));
 vi.mock('./CrmNav', () => ({ CrmNav: vi.fn() }));
 
-import { AdminShell } from '../admin/AdminShell';
+import { OrganizerShell } from '../organizer/OrganizerShell';
 import CrmLayout from './layout';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -62,7 +62,7 @@ describe('CRM route authorization', () => {
 
     const result = await CrmLayout({ children: null });
 
-    expect(result.type).toBe(AdminShell);
+    expect(result.type).toBe(OrganizerShell);
     expect(result.props.currentEventId).toBe('organized-event');
     expect(result.props.events).toEqual([event('organized-event', ['organizer'])]);
   });

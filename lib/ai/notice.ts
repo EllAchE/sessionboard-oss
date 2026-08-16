@@ -9,17 +9,9 @@ export function aiModelConfigured(): boolean {
   return features.ai();
 }
 
-/**
- * What those surfaces say when no key is set. Deliberately specific about *why* — an organizer who
- * reads "unavailable" assumes something is broken, and the honest answer is that nobody has bought
- * a key for this instance yet.
- */
+/** What AI surfaces show when no model key is configured. */
 export const AI_KEY_MISSING_NOTE =
-  'No model key is set here. This deployment is a demo and nobody wanted to put a card down for it ' +
-  'yet — the wiring is finished either way, so setting ANTHROPIC_API_KEY in the environment is the ' +
-  'whole change, and this starts calling claude-sonnet-5 on the next request.';
+  "No model key is configured. Set ANTHROPIC_API_KEY to enable claude-sonnet-5. (this is a demo, I didn't want to find someone building their SaaS in here :)) — Logan";
 
 export const AI_KEY_MISSING_NOTE_MARKDOWN =
-  '**No model key is set on this deployment.** It is a demo and nobody wanted to put a card down ' +
-  'for one yet. The wiring is finished — set `ANTHROPIC_API_KEY` and the same button calls ' +
-  '`claude-sonnet-5` instead.';
+  "**No model key is configured.** Set `ANTHROPIC_API_KEY` to enable `claude-sonnet-5`. (this is a demo, I didn't want to find someone building their SaaS in here :)) — Logan";

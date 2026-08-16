@@ -1,0 +1,137 @@
+.page {
+  display: flex;
+  width: 100%;
+  max-width: var(--content-max);
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-1);
+  color: var(--text-faint);
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-strong);
+  font: var(--type-title);
+}
+
+.lede,
+.cardCopy {
+  color: var(--text-muted);
+  font: var(--type-body);
+}
+
+.lede {
+  max-width: var(--prose-max);
+  margin: var(--space-2) 0 0;
+}
+
+.identity {
+  display: flex;
+  min-width: min(100%, 16rem);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+}
+
+.identity div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.identity strong,
+.identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity strong {
+  color: var(--text-strong);
+  font: var(--type-body);
+  font-weight: var(--weight-semibold);
+}
+
+.identity span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.field,
+.fieldWide {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.label {
+  color: var(--text-muted);
+  font: var(--type-label);
+}
+
+.hint {
+  color: var(--text-faint);
+  font: var(--type-label);
+}
+
+.error {
+  color: var(--status-danger-fg);
+  font: var(--type-label);
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.secondaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.cardCopy {
+  margin: 0 0 var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--space-4);
+  }
+
+  .formGrid,
+  .secondaryGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
