@@ -164,7 +164,17 @@ column plus a check at the publish boundary.
 ### 5. `AD-8` — In-product streaming AI assistant with tool use · convergence 4 · **L**
 
 The highest-leverage item in the document, and the reason it is fifth rather than first is purely
-cost. Cicero has already built every hard part except the chat surface: `lib/mcp/tools.ts` defines
+cost — of two distinct kinds, and the second is the binding one.
+
+**Inference cost is the actual reason this is not being built.** Every other item in this tier is
+paid for once, in engineering time. An in-product assistant is paid for on every keystroke, forever,
+by us rather than by the organizer: a chat surface with tool use runs the full tool registry through
+a model on each turn, and the bill scales with how much people like it. That is a product-economics
+decision, not a technical one, and it is deliberate. The out-of-band MCP surface deliberately puts
+that cost on whoever brings their own client and their own key — which is why it exists and this
+does not.
+
+The build cost is the lesser half. Cicero has already built every hard part except the chat surface: `lib/mcp/tools.ts` defines
 ten tools including mutating ones (`cicero_mail_send`, `cicero_program_reconcile`), `lib/mcp/server.ts`
 wires them to transport-neutral service functions, and — critically — `AR-31` already established
 Cicero's answer to the approval question, server-side: the send path "requires the reviewed
