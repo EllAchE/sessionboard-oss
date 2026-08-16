@@ -348,8 +348,12 @@ actually use." These are ours, stated out loud rather than buried.
   password for a site they visit twice a year. They forget it, and the organizer becomes a help
   desk.
 - **Impersonation, not preview.** The organizer's session carries `impersonated_by` and every write
-  goes through *as the speaker* while staying attributable. A read-only "view as" is useless for
-  support — the point is to finish the stuck speaker's task for them.
+  goes through *as the speaker*. A read-only "view as" is useless for support — the point is to
+  finish the stuck speaker's task for them. Full-session impersonation is also an intentional
+  shortcut, not the production end state: it exposes speaker settings, and task, upload and comment
+  records do not all preserve the organizer as the acting identity. One of the first hardening steps
+  would keep organizer-assisted edits while scoping them away from speaker-only settings and
+  recording both the organizer and speaker on every action.
 - **Speaker double-booking detection.** A room clash is a spreadsheet error someone catches. A
   speaker booked in two rooms at once is a failure the audience watches happen.
 - **Calendar invites that update in place.** A real `METHOD:REQUEST` with a bumped `SEQUENCE`, so
@@ -412,12 +416,15 @@ coexist without either seeing the other.
 9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
-Alongside those, two unnumbered companions:
+Alongside those, three unnumbered companions:
 
 - [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
   ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
 - [`docs/decisions-long-form.md`](docs/decisions-long-form.md) — the narrative rationale: why the
   product was scoped, built and named the way it was, including what was deliberately not built
+- [`docs/handoff/sessionboard-eval.md`](docs/handoff/sessionboard-eval.md) — how to run the external
+  `sessionboard-eval-kit` against the hosted product, gather scenario evidence, judge it in fresh
+  context, and produce the real rubric score; this is not the repository's local CI eval loop
 
 ### Reference material
 

@@ -1,8 +1,10 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { magicLinkMayBeShown, requestMagicLink } from '@/lib/auth';
 import { isAppError } from '@/lib/errors';
 import type { DeliveryState } from './copy';
+import { localAuthOrigin } from './redirect';
 
 export type SignInState =
   | { sent: false; error?: string }
@@ -14,7 +16,11 @@ export async function requestLinkAction(_prev: SignInState, formData: FormData):
   if (!email) return { sent: false, error: 'Enter your email address' };
 
   try {
-    const { email: address, link } = await requestMagicLink({ email, redirectTo: next });
+    const { email: address, link } = await requestMagicLink({
+      email,
+      redirectTo: next,
+      developmentOrigin: localAuthOrigin(await headers()),
+    });
     /**
      * A link on this page is a session for whoever was typed into the box, so exactly one predicate
      * decides it — `lib/demo-access.ts`, which states the boundary in full. It says yes for an
