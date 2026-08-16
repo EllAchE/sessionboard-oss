@@ -284,6 +284,51 @@
   color: var(--text-faint);
 }
 
+/*
+ * ---- Key dates — E-1b ----
+ *
+ * Deliberately not styled like `.stat` above: those are counts of things that exist, and a date the
+ * organizers are working towards is a promise rather than a total. It dims rather than alerts once
+ * it has gone by, because a public page is the last place that should imply an organizer is behind
+ * on their own schedule.
+ */
+
+.keyDates {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.keyDate {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.keyDate[data-passed='true'] {
+  opacity: 0.6;
+}
+
+.keyDateLabel {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--text-faint);
+}
+
+.keyDateWhen {
+  font: var(--type-body);
+  color: var(--text-strong);
+}
+
+.keyDateRelative {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
 .filterBar {
   display: flex;
   gap: var(--space-1);

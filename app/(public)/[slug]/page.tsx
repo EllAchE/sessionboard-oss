@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { listOpenCalls } from '@/lib/services/submissions';
 import { appUrl } from '@/lib/env';
 import { createSocialMetadata } from '@/lib/site-metadata';
+import { describeEventDeadlines } from '@/lib/event-deadlines';
 import { EmbedBody } from '../../embed/EmbedBody';
 import { loadPublicBundle, parseEmbedOptions } from '../../embed/queries';
 import { PublicChrome, publicStyles as styles } from './PublicChrome';
@@ -32,6 +33,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
 
   const { event } = bundle;
   const dates = [event.startsOn, event.endsOn].filter(Boolean).join(' – ');
+  const deadlines = describeEventDeadlines(event);
   const options = parseEmbedOptions({ limit: '6', columns: '3' });
   const [call] = await listOpenCalls(event.id);
 
@@ -96,6 +98,28 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
           ) : null}
         </div>
       </section>
+
+      {/*
+        `E-1b`. The two milestones the organizers set for themselves, shown here because "when will
+        the full agenda be up?" is the question this page gets asked and cannot otherwise answer.
+        Nothing published here is a commitment the product enforces — see `lib/event-deadlines.ts`.
+      */}
+      {deadlines.length > 0 ? (
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2 className={styles.sectionTitle}>Key dates</h2>
+          </div>
+          <ul className={styles.keyDates}>
+            {deadlines.map((deadline) => (
+              <li key={deadline.key} className={styles.keyDate} data-passed={deadline.passed}>
+                <span className={styles.keyDateLabel}>{deadline.publicLabel}</span>
+                <span className={styles.keyDateWhen}>{deadline.when}</span>
+                <span className={styles.keyDateRelative}>{deadline.relative}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {bundle.speakers.length > 0 ? (
         <section className={styles.section}>

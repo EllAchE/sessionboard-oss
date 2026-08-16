@@ -14,6 +14,12 @@ export type PublicEvent = {
   endsOn: string | null;
   /** Exact event end, used to gate historical recordings when a session has no end time. */
   endsAt?: string;
+  /**
+   * `E-1b`. ISO instants for the two advisory milestones. Optional for the same reason the branding
+   * below is: a fixture that renders an agenda has no business knowing about them.
+   */
+  speakerDeadlineAt?: string | null;
+  agendaDeadlineAt?: string | null;
   websiteUrl: string | null;
   venueName: string | null;
   /**

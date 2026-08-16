@@ -43,11 +43,22 @@ const DEADLINES: {
   { key: 'agendaDeadlineAt', label: 'Agenda settled', publicLabel: 'Full agenda by' },
 ];
 
+/**
+ * Strings are accepted alongside `Date` because the public bundle and the API carry these as ISO
+ * instants, and making every one of those callers reconstruct a `Date` first is how a surface ends
+ * up quietly doing it wrong.
+ */
 export type EventDeadlineSource = {
   timezone: string;
-  speakerDeadlineAt: Date | null;
-  agendaDeadlineAt: Date | null;
+  speakerDeadlineAt?: Date | string | null;
+  agendaDeadlineAt?: Date | string | null;
 };
+
+function instant(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  const at = typeof value === 'string' ? new Date(value) : value;
+  return Number.isNaN(at.getTime()) ? null : at;
+}
 
 const DAY_MS = 86_400_000;
 
@@ -92,8 +103,8 @@ export function describeEventDeadlines(
 ): EventDeadline[] {
   const described: EventDeadline[] = [];
   for (const { key, label, publicLabel } of DEADLINES) {
-    const at = event[key];
-    if (!at || Number.isNaN(at.getTime())) continue;
+    const at = instant(event[key]);
+    if (!at) continue;
     described.push({
       key,
       label,
