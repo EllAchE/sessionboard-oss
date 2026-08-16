@@ -19,6 +19,7 @@ type TaskFixture = {
   name: string;
   dueAt: Date | null;
   reminderDaysBefore: number[];
+  reminderDaysAfterSend: number | null;
 };
 
 type AssignmentFixture = {
@@ -27,6 +28,7 @@ type AssignmentFixture = {
   participantId: string;
   submissionId: string | null;
   lastRemindedAt: Date | null;
+  status: 'not_started' | 'in_progress' | 'completed' | 'waived';
 };
 
 const state = vi.hoisted(() => ({
@@ -34,6 +36,8 @@ const state = vi.hoisted(() => ({
   assignments: [] as Array<Record<string, unknown>>,
   stamped: [] as string[][],
   sentMail: [] as Array<{ to: string; subject: string; text: string }>,
+  settleBeforeRecipientRead: false,
+  taskReminderTemplateEnabled: null as boolean | null,
 }));
 
 vi.mock('../../db/client', () => ({ getDb: () => createDb() }));
@@ -154,23 +158,30 @@ const SUBMISSIONS = [
 
 /** The graph's shape: one row per assignment, joined to its task, with the session it is about. */
 function graphTaskRows() {
+  if (state.settleBeforeRecipientRead) return [];
   const byId = new Map(state.tasks.map((row) => [row.id as string, row]));
-  return state.assignments.map((assignment) => {
-    const owner = byId.get(assignment.taskId as string)!;
-    return {
-      participantId: assignment.participantId,
-      taskId: owner.id,
-      name: owner.name,
-      dueAt: owner.dueAt,
-      submissionId: assignment.submissionId,
-    };
-  });
+  return state.assignments
+    .filter((assignment) => !['completed', 'waived'].includes(assignment.status as string))
+    .map((assignment) => {
+      const owner = byId.get(assignment.taskId as string)!;
+      return {
+        participantId: assignment.participantId,
+        taskId: owner.id,
+        name: owner.name,
+        dueAt: owner.dueAt,
+        submissionId: assignment.submissionId,
+      };
+    });
 }
 
 function rowsFor(source: unknown, joined: boolean): unknown[] {
   if (source === eventTable) return [EVENT];
   if (source === portalTheme) return [];
-  if (source === emailTemplate) return [];
+  if (source === emailTemplate) {
+    return state.taskReminderTemplateEnabled === null
+      ? []
+      : [{ enabled: state.taskReminderTemplateEnabled }];
+  }
   if (source === participant) return PEOPLE;
   if (source === participantRole) return SUBMISSIONS;
   if (source === scheduledSession) return [];
@@ -178,7 +189,13 @@ function rowsFor(source: unknown, joined: boolean): unknown[] {
   if (source === task) return state.tasks;
   // Two queries read `task_assignment`: the recipient graph joins it to `task`, the reminder run
   // reads the bare rows it is about to stamp.
-  if (source === taskAssignment) return joined ? graphTaskRows() : state.assignments;
+  if (source === taskAssignment) {
+    return joined
+      ? graphTaskRows()
+      : state.assignments.filter(
+          (assignment) => !['completed', 'waived'].includes(assignment.status as string),
+        );
+  }
   return [];
 }
 
@@ -209,7 +226,11 @@ function query() {
 
 /** The ids an `inArray(...)` stamp covered, read back off the rendered statement. */
 function stampedIds(condition: SQL): string[] {
-  return new PgDialect().sqlToQuery(condition).params.map(String).filter((param) => param !== 'id');
+  const assignmentIds = new Set(state.assignments.map((assignment) => String(assignment.id)));
+  return new PgDialect()
+    .sqlToQuery(condition)
+    .params.map(String)
+    .filter((param) => assignmentIds.has(param));
 }
 
 function createDb() {
@@ -236,6 +257,7 @@ function submissionScopedTask(): TaskFixture {
     name: 'Upload your slides',
     dueAt: DUE,
     reminderDaysBefore: [1],
+    reminderDaysAfterSend: null,
   };
 }
 
@@ -245,6 +267,7 @@ function assignment(over: Partial<AssignmentFixture> & { id: string }): Assignme
     participantId: 'participant-one',
     submissionId: null,
     lastRemindedAt: null,
+    status: 'not_started',
     ...over,
   };
 }
@@ -254,6 +277,8 @@ beforeEach(() => {
   state.assignments = [];
   state.stamped = [];
   state.sentMail = [];
+  state.settleBeforeRecipientRead = false;
+  state.taskReminderTemplateEnabled = null;
 });
 
 describe('a submission-scoped reminder, for a speaker with three accepted talks', () => {
@@ -392,5 +417,131 @@ describe('the cadence itself', () => {
 
     expect(sent).toBe(1);
     expect(state.stamped[0]).toEqual(['assignment-rhetoric']);
+  });
+
+  it('follows up after the configured number of days from the latest send', async () => {
+    state.tasks = [
+      {
+        ...submissionScopedTask(),
+        dueAt: null,
+        reminderDaysBefore: [],
+        reminderDaysAfterSend: 3,
+      },
+    ];
+    state.assignments = [
+      assignment({
+        id: 'assignment-rhetoric',
+        submissionId: 'submission-rhetoric',
+        lastRemindedAt: new Date('2026-09-08T09:00:00Z'),
+      }),
+    ];
+
+    const sent = await runTaskReminders({ eventId: 'event-one', now: NOW });
+
+    expect(sent).toBe(1);
+    expect(state.stamped[0]).toEqual(['assignment-rhetoric']);
+  });
+
+  it('does not invent a first send for an after-send cadence', async () => {
+    state.tasks = [
+      {
+        ...submissionScopedTask(),
+        dueAt: null,
+        reminderDaysBefore: [],
+        reminderDaysAfterSend: 3,
+      },
+    ];
+    state.assignments = [assignment({ id: 'assignment-rhetoric' })];
+
+    const sent = await runTaskReminders({ eventId: 'event-one', now: NOW });
+
+    expect(sent).toBe(0);
+    expect(state.sentMail).toEqual([]);
+    expect(state.stamped).toEqual([]);
+  });
+
+  it('waits until the after-send interval has elapsed', async () => {
+    state.tasks = [
+      {
+        ...submissionScopedTask(),
+        dueAt: null,
+        reminderDaysBefore: [],
+        reminderDaysAfterSend: 3,
+      },
+    ];
+    state.assignments = [
+      assignment({
+        id: 'assignment-rhetoric',
+        lastRemindedAt: new Date('2026-09-11T09:01:00Z'),
+      }),
+    ];
+
+    const sent = await runTaskReminders({ eventId: 'event-one', now: NOW });
+
+    expect(sent).toBe(0);
+    expect(state.stamped).toEqual([]);
+  });
+
+  it.each(['completed', 'waived'] as const)(
+    'does not follow up after a send once the assignment is %s',
+    async (status) => {
+      state.tasks = [
+        {
+          ...submissionScopedTask(),
+          dueAt: null,
+          reminderDaysBefore: [],
+          reminderDaysAfterSend: 3,
+        },
+      ];
+      state.assignments = [
+        assignment({
+          id: 'assignment-rhetoric',
+          lastRemindedAt: new Date('2026-09-01T09:00:00Z'),
+          status,
+        }),
+      ];
+
+      const sent = await runTaskReminders({ eventId: 'event-one', now: NOW });
+
+      expect(sent).toBe(0);
+      expect(state.sentMail).toEqual([]);
+      expect(state.stamped).toEqual([]);
+    },
+  );
+
+  it('rechecks pending status after deciding the follow-up is due', async () => {
+    state.tasks = [
+      {
+        ...submissionScopedTask(),
+        dueAt: null,
+        reminderDaysBefore: [],
+        reminderDaysAfterSend: 3,
+      },
+    ];
+    state.assignments = [
+      assignment({
+        id: 'assignment-rhetoric',
+        lastRemindedAt: new Date('2026-09-01T09:00:00Z'),
+      }),
+    ];
+    state.settleBeforeRecipientRead = true;
+
+    const sent = await runTaskReminders({ eventId: 'event-one', now: NOW });
+
+    expect(sent).toBe(0);
+    expect(state.sentMail).toEqual([]);
+    expect(state.stamped).toEqual([]);
+  });
+
+  it('does not create an after-send anchor when the reminder template is disabled', async () => {
+    state.tasks = [submissionScopedTask()];
+    state.assignments = [assignment({ id: 'assignment-rhetoric' })];
+    state.taskReminderTemplateEnabled = false;
+
+    const sent = await runTaskReminders({ eventId: 'event-one', now: NOW });
+
+    expect(sent).toBe(0);
+    expect(state.sentMail).toEqual([]);
+    expect(state.stamped).toEqual([]);
   });
 });
