@@ -1,0 +1,78 @@
+.scope {
+  margin-bottom: var(--space-5);
+}
+
+.scope:last-of-type {
+  margin-bottom: var(--space-4);
+}
+
+.scopeTitle {
+  margin: 0 0 var(--space-2);
+  color: var(--text-strong);
+  font: var(--type-heading);
+}
+
+.group {
+  margin-bottom: var(--space-3);
+}
+
+.group:last-child {
+  margin-bottom: 0;
+}
+
+.groupTitle {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+.rows {
+  margin: 0;
+  display: grid;
+  gap: var(--space-05);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.row:nth-child(odd) {
+  background: var(--surface-sunken);
+}
+
+.label {
+  color: var(--text-body);
+  font: var(--type-body);
+}
+
+.keys {
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.connector {
+  color: var(--text-muted);
+  font: var(--type-label);
+}
+
+.empty,
+.footnote {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--type-label);
+}
+
+.footnote {
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
