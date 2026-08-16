@@ -53,7 +53,7 @@ export type PortalEvent = {
   timezone: string;
   startsOn: string | null;
   endsOn: string | null;
-  /** `E-1b`. Advisory milestones the portal shows as key dates — see `lib/event-deadlines.ts`. */
+  /** `AR-44`. Advisory milestones the portal shows as key dates — see `lib/event-deadlines.ts`. */
   speakerDeadlineAt: Date | null;
   agendaDeadlineAt: Date | null;
   websiteUrl: string | null;

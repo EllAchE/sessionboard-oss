@@ -72,7 +72,7 @@ export type EventWire = {
   startsAt: string;
   endsAt: string;
   /**
-   * `E-1b`. The same wall clock, except empty is a real state: a milestone nobody has set reads as
+   * `AR-44`. The same wall clock, except empty is a real state: a milestone nobody has set reads as
    * `''` so the input renders blank, and saving it blank is how an organizer takes one back off.
    */
   speakerDeadlineAt: string;

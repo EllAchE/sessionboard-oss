@@ -16,7 +16,18 @@ import { normalizePhoneNumber } from '../phone';
 import { blockSmsBeforePreferenceChange, recordSmsConsent } from '../sms/consent';
 import { activeSmsTransportName, sendPhoneVerificationCode } from '../sms';
 
-export const NOTIFICATION_CATEGORIES = ['submission', 'session', 'task', 'form', 'adhoc'] as const;
+/**
+ * `deadline` is `AR-45`'s, and needed no migration to add: `notification_preference.template_key` is
+ * free text with no enum or check behind it, and the category is derived from the key prefix below.
+ */
+export const NOTIFICATION_CATEGORIES = [
+  'submission',
+  'session',
+  'task',
+  'form',
+  'deadline',
+  'adhoc',
+] as const;
 export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
 export type ChannelOverride = boolean | null;
 
@@ -25,6 +36,7 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> 
   session: 'Schedule changes',
   task: 'Task reminders',
   form: 'Submission deadlines',
+  deadline: 'Event milestones',
   adhoc: 'Organizer announcements',
 };
 

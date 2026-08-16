@@ -448,6 +448,30 @@ this work enters scope, the intended feature is a durable sync with the followin
 
 ---
 
+## 15. Milestone deadlines between the CFP and the doors
+
+The ask: an organizer can already say when submissions close (`form.closes_at`), when a review round
+runs (`review_round.opens_at` / `closes_at`), and when a speaker's task is due (`task.due_at`). They
+had nowhere to say when the **speaker roster** is meant to be settled or when the **agenda** is —
+the two internal milestones that pace a conference between the CFP closing and the doors opening.
+
+**These are informative, and deliberately so.** The owner's decision was that they should not be
+enforced: nothing is refused, warned on, or scored against either date, and no readiness count is
+derived from them. An organizer moving a talk the week of the show is ordinary conference work, and
+a product that argued with them about it would be wrong. That choice is what keeps the change
+additive — `mutateAgendaAtomically`, `decideSubmissions`, `setSpeakerWorkflowStatus` and
+`isAcceptingSubmissions` are untouched, and `passed` in `lib/event-deadlines.ts` exists for phrasing
+rather than for gating.
+
+The columns are named `deadline`, not `lock`, for the same reason: nothing locks.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-44 | **[IMPORTANT]** | SHIPPED | **The event carries two advisory milestone deadlines: when the speaker roster is meant to be settled, and when the agenda is.** They are nullable properties of `event` (`speaker_deadline_at` / `agenda_deadline_at`), not a separate milestone entity — an event that sets neither behaves exactly as before. Both are entered as wall clock in the event's own timezone, alongside the conference window in organizer settings; the one write rule is that a milestone may not fall after the event starts, and there is no ordering between the two, because settling the agenda before the roster is legitimate. They are read on the organizer dashboard, the speaker portal, the public event page, and `/api/v1/events/:slug`, all through one shared description so no surface disagrees with another about what day it is |
+| AR-45 | **[IMPORTANT]** | SHIPPED | **Each milestone reminds the organizers once inside the three days before it falls.** The send rides the existing scheduled-reminder pass and is guarded by `email_log`, so re-running it sends no duplicate. Recipients are the event's **organizers only**: both dates describe work only they can do, and a speaker has no lever on either. Speakers still read the dates — on the portal, on the public page, and through the `{{event.speakerDeadline}}` / `{{event.agendaDeadline}}` merge fields available to every template, so an acceptance email can carry the date without a second fan-out. The mails belong to their own `deadline` notification category rather than falling in with organizer announcements |
+
+---
+
 ## Decisions
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so

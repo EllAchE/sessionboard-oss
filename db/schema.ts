@@ -255,7 +255,7 @@ export const event = pgTable(
     startsOn: text('starts_on').notNull(),
     endsOn: text('ends_on').notNull(),
     /**
-     * `E-1b`. The two internal milestones that pace an edition between the call closing and the
+     * `AR-44`. The two internal milestones that pace an edition between the call closing and the
      * doors opening: when the speaker roster is meant to be settled, and when the agenda is.
      *
      * Nothing enforces them. No write is refused, warned on or scored for being past one, because
