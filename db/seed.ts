@@ -7,8 +7,11 @@ import {
   PARTICIPANT_BUILTIN_META,
 } from '../lib/forms/contract';
 import { splitPersonName } from '../lib/person-name';
+import type { RomanSpeakerHeadshotGender } from '../lib/roman-speaker-headshots';
 import { getDb } from './client';
 import { seedFirstSettlement } from './seeds/first-settlement';
+import { removeEventFiles, seedProfileArt } from './seeds/profile-art-store';
+import { ROMAN_PROFILE_ART } from './seeds/roman-profile-art';
 import {
   emailLog,
   event,
@@ -114,7 +117,13 @@ const DEMO_IDENTITY_EMAILS = [
 ];
 
 const [existing] = await db.select().from(event).where(eq(event.slug, SLUG));
-if (existing) await db.delete(event).where(eq(event.id, existing.id));
+if (existing) {
+  // Before the event goes, not after: deleting it cascades the `file` rows away and with them any
+  // record of which stored objects were the demo's, so a re-run would strand a fresh set of
+  // portraits in storage every time.
+  await removeEventFiles(db, existing.id);
+  await db.delete(event).where(eq(event.id, existing.id));
+}
 
 // Anything else a demo identity owns goes with them. `event.owner_user_id` is a restricting
 // reference, so a rehearsal event created while signed in as one of these addresses would block
@@ -129,12 +138,16 @@ const demoUsers = await db
     ),
   );
 if (demoUsers.length > 0) {
-  await db.delete(event).where(
-    inArray(
-      event.ownerUserId,
-      demoUsers.map((row) => row.id),
-    ),
-  );
+  const ownedIds = demoUsers.map((row) => row.id);
+  // `first-settlement` is one of these: `organizer@example.com` owns it, so this sweep — not the
+  // slug delete above, and not that seed's own cleanup, which then finds nothing to clean — is what
+  // actually removes it on a re-run. Clear its objects here or every re-seed strands another set.
+  const ownedEvents = await db
+    .select({ id: event.id })
+    .from(event)
+    .where(inArray(event.ownerUserId, ownedIds));
+  for (const owned of ownedEvents) await removeEventFiles(db, owned.id);
+  await db.delete(event).where(inArray(event.ownerUserId, ownedIds));
 }
 
 await db.delete(user).where(
@@ -821,46 +834,83 @@ await db.insert(submissionTag).values([
 // portal keys off.
 // ---------------------------------------------------------------------------
 
-const PROFILES: Record<string, { title: string; company: string; bio: string; pronouns?: string }> = {
+type DemoProfile = {
+  title: string;
+  company: string;
+  bio: string;
+  pronouns?: string;
+  /**
+   * Which generated portrait to render. Stated per speaker rather than derived from the name or the
+   * slot, for the same reason the first-settlement roster states it: the generator splits the full
+   * set evenly on its own, which is the right default for six hundred invented senators and the
+   * wrong one for seven named people the demo also gives pronouns to.
+   */
+  gender: RomanSpeakerHeadshotGender;
+};
+
+const PROFILES: Record<string, DemoProfile> = {
   'vitruvius@example.com': {
     title: 'Architect and engineer',
     company: 'Office of Public Works',
     bio: 'Designs buildings, machines, and water systems. Believes durable infrastructure begins with proportion, inspection, and maintenance.',
+    gender: 'man',
   },
   'sulpicia@example.com': {
     title: 'Poet',
     company: 'Independent',
     bio: 'Writes about public life, private obligation, and whose voice survives in the historical record.',
     pronouns: 'she/her',
+    gender: 'woman',
   },
   'varro@example.com': {
     title: 'Scholar and archivist',
     company: 'Public Libraries',
     bio: 'Catalogues language, agriculture, history, and almost everything else. Has never met a subject that could not use an index.',
+    gender: 'man',
   },
   'tiro@example.com': {
     title: 'Secretary and author',
     company: 'House of Cicero',
     bio: 'Developed a shorthand system for fast debate and maintains a large correspondence archive.',
+    gender: 'man',
   },
   'cornelia@example.com': {
     title: 'Civic patron and educator',
     company: 'Rome',
     bio: 'Builds durable public influence through education, patronage, and a formidable network of civic relationships.',
     pronouns: 'she/her',
+    gender: 'woman',
   },
   'marius@example.com': {
     title: 'General and reformer',
     company: 'Roman Army',
     bio: 'Focuses on recruitment, standardized equipment, and the logistics required to keep a large force moving.',
+    gender: 'man',
   },
   'servilia@example.com': {
     title: 'Political strategist',
     company: 'Servilian House',
     bio: 'Works across competing factions and plans for the second-order consequences of every alliance.',
     pronouns: 'she/her',
+    gender: 'woman',
   },
 };
+
+const SPEAKER_EMAILS = Object.keys(PROFILES);
+
+/**
+ * `D-3` again: the demo is the event a judge lands on, and a roster of initials reads as an empty
+ * shell however much data sits behind it. The portraits come from the same generator the
+ * first-settlement seed uses, offset past that roster's slots so the two events do not hand out the
+ * same faces on one deployment.
+ */
+const profileArt = await seedProfileArt(db, {
+  eventId: demo.id,
+  uploadedByUserId: organizer.id,
+  speakerKeys: SPEAKER_EMAILS,
+  slotOffset: ROMAN_PROFILE_ART.length,
+  gender: (email) => PROFILES[email].gender,
+});
 
 const participants = await db
   .insert(participant)
@@ -873,6 +923,7 @@ const participants = await db
       jobTitle: profile.title,
       company: profile.company,
       bioMarkdown: profile.bio,
+      headshotFileId: profileArt.get(email)!,
       timezone: 'America/Los_Angeles',
       // The standard demo advertises these profiles as its public speaker roster. Keep that
       // fixture state explicit: the schema default is `invited`, which is intentionally excluded

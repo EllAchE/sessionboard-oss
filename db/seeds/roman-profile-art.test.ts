@@ -44,6 +44,40 @@ describe('Roman profile art', () => {
     );
   });
 
+  it('seats a second roster beside the first instead of on top of it', () => {
+    const senate = createRomanProfileArtAssignments(ROMAN_PROFILE_ART.map((entry) => entry.email));
+    const demo = createRomanProfileArtAssignments(
+      ['sulpicia@example.com', 'vitruvius@example.com'],
+      {
+        slotOffset: ROMAN_PROFILE_ART.length,
+        gender: (email) => (email === 'sulpicia@example.com' ? 'woman' : 'man'),
+      },
+    );
+
+    expect(demo.map((entry) => entry.slot)).toEqual([
+      ROMAN_PROFILE_ART.length,
+      ROMAN_PROFILE_ART.length + 1,
+    ]);
+    expect(new Set([...senate, ...demo].map((entry) => entry.filename)).size).toBe(
+      senate.length + demo.length,
+    );
+
+    // The face, hair and material combination comes from the slot alone — the speaker key varies
+    // only secondary traits — so the offset is what actually keeps the two rosters from sharing
+    // silhouettes on a deployment that serves both events.
+    const silhouette = (entry: { speakerKey: string; slot: number }) => {
+      const design = designRomanSpeakerHeadshot(entry.speakerKey, entry.slot);
+      return `${design.face}:${design.hair}:${design.material}`;
+    };
+    const senateSilhouettes = new Set(senate.map(silhouette));
+    expect(demo.some((entry) => senateSilhouettes.has(silhouette(entry)))).toBe(false);
+
+    const portrait = (speakerKey: string) =>
+      new TextDecoder().decode(demo.find((entry) => entry.speakerKey === speakerKey)!.bytes);
+    expect(portrait('sulpicia@example.com')).toContain('classical woman speaker portrait');
+    expect(portrait('vitruvius@example.com')).toContain('classical man speaker portrait');
+  });
+
   it('produces 600 exact-unique, visually separated, compact assets', () => {
     const assignments = createRomanProfileArtAssignments(SPEAKER_KEYS);
     const hashes = assignments.map((entry) =>
