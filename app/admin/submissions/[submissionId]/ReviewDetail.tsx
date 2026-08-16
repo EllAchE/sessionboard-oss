@@ -17,6 +17,7 @@ import {
   Textarea,
 } from '../../../../components/ui';
 import { AI_KEY_MISSING_NOTE } from '@/lib/ai/notice';
+import { CopyPermalinkButton } from '../CopyPermalinkButton';
 import {
   assignOneAction,
   decideAction,
@@ -419,7 +420,13 @@ export function ReviewDetail(props: ReviewDetailProps) {
       <div className={styles.detail}>
         <div className={styles.detailMain}>
           <header className={styles.detailHeader}>
-            <span className={styles.detailRef}>{props.displayRef}</span>
+            <div className={styles.detailIdentity}>
+              <span className={styles.detailRef}>{props.displayRef}</span>
+              <CopyPermalinkButton
+                path={`/admin/submissions/${props.submissionId}`}
+                subject={props.displayRef}
+              />
+            </div>
             <h1 className={styles.detailTitle}>{props.title}</h1>
             <div className={styles.metaRow}>
               <Badge tone={STATUS_TONE[props.status] ?? 'neutral'}>

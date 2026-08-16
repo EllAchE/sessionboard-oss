@@ -108,3 +108,19 @@ describe('ReviewDetail reviewer assignments', () => {
     expect(html).not.toContain('one@example.test');
   });
 });
+
+describe('ReviewDetail permalink copy', () => {
+  it('puts a copy affordance in the header, beside the ref it copies', () => {
+    const html = renderToStaticMarkup(<ReviewDetail {...props} />);
+
+    expect(html).toContain('Copy link');
+    expect(html).toContain('ABS-1');
+  });
+
+  it('offers it to a reviewer as well as to an organizer', () => {
+    // Pasting a link at the rest of the committee is not a decision, so it is not gated on one.
+    const html = renderToStaticMarkup(<ReviewDetail {...props} canDecide={false} />);
+
+    expect(html).toContain('Copy link');
+  });
+});

@@ -6,6 +6,12 @@ import type { PublicEvent, PublicSession } from './model';
  * import rather than asking eight times. The VEVENT bodies come from `lib/ics` unchanged — folding,
  * escaping and the UTC stamps are the part that is easy to get subtly wrong, and it is already
  * written once there.
+ *
+ * The identity comes from `scheduled_session.ics_uid` / `.ics_sequence` for the same reason: a
+ * session downloaded here and the same session invited by `lib/services/comms.ts` have to be one
+ * VEVENT, or a calendar client that has seen both shows the attendee two. Minting a UID from the
+ * row id here instead would also pin every download to `SEQUENCE:0`, so a re-timed session would
+ * lose to the copy already sitting on the calendar.
  */
 
 const ORGANIZER_EMAIL = 'noreply@cicero.events';
@@ -23,8 +29,8 @@ export function calendarEventFor(session: PublicSession, event: PublicEvent) {
     ? new Date(session.endsAt)
     : new Date(startsAt.getTime() + 60 * 60 * 1000);
   return {
-    uid: `${session.id}@cicero.events`,
-    sequence: 0,
+    uid: session.icsUid,
+    sequence: session.icsSequence,
     summary: session.title,
     startsAt,
     endsAt,

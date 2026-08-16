@@ -151,6 +151,7 @@ const SUBMISSIONS: ReviewResultsExportSubmission[] = [
     ref: 2,
     title: 'Unscored proposal',
     status: 'submitted',
+    decisionNote: null,
     speakers: [{ name: 'No Score', email: 'none@example.test', kind: 'speaker' }],
     reviewers: [],
   },
@@ -158,6 +159,7 @@ const SUBMISSIONS: ReviewResultsExportSubmission[] = [
     ref: 1,
     title: 'Scaling "CI", safely',
     status: 'under_review',
+    decisionNote: 'Held for the second round: strong, but\noverlaps ABS-9.',
     speakers: [
       { name: 'Priya Raman', email: 'priya@example.test', kind: 'speaker' },
       { name: 'Marcus "M"', email: 'marcus@example.test', kind: 'co_speaker' },
@@ -199,6 +201,7 @@ describe('reviewResultsCsv', () => {
         'Submission ref',
         'Title',
         'Submission status',
+        'Decision note',
         'Round',
         'Aggregate score (1-5)',
         'Reviews completed',
@@ -218,6 +221,7 @@ describe('reviewResultsCsv', () => {
         'ABS-1',
         'Scaling "CI", safely',
         'under_review',
+        'Held for the second round: strong, but\noverlaps ABS-9.',
         'Initial Review',
         '4.00',
         '1',
@@ -237,6 +241,7 @@ describe('reviewResultsCsv', () => {
         'ABS-1',
         'Scaling "CI", safely',
         'under_review',
+        'Held for the second round: strong, but\noverlaps ABS-9.',
         'Initial Review',
         '4.00',
         '1',
@@ -256,6 +261,7 @@ describe('reviewResultsCsv', () => {
         'ABS-2',
         'Unscored proposal',
         'submitted',
+        '',
         'Initial Review',
         '',
         '0',
@@ -274,6 +280,31 @@ describe('reviewResultsCsv', () => {
     ]);
     expect(csv).toContain('"Scaling ""CI"", safely"');
     expect(csv).toContain('"Strong, but\nverify"');
+    expect(csv).toContain('"Held for the second round: strong, but\noverlaps ABS-9."');
+  });
+
+  it('repeats the decision note on every reviewer row of the submission it belongs to', () => {
+    const rows = parseCsvRows(reviewResultsCsv({ name: 'Initial Review' }, CRITERIA, SUBMISSIONS));
+    const noteColumn = rows[0].indexOf('Decision note');
+    const forAbs1 = rows.slice(1).filter((row) => row[0] === 'ABS-1');
+
+    expect(noteColumn).toBeGreaterThan(-1);
+    expect(forAbs1).toHaveLength(2);
+    for (const row of forAbs1) {
+      expect(row[noteColumn]).toBe('Held for the second round: strong, but\noverlaps ABS-9.');
+    }
+  });
+
+  /**
+   * The guard for the judgment call recorded on `reviewResultsCsv`: the AI rationale is advisory and
+   * stays off the decision record. A future column that reintroduces it should have to delete this.
+   */
+  it('keeps the advisory AI rationale out of the decision record', () => {
+    const header = parseCsvRows(
+      reviewResultsCsv({ name: 'Initial Review' }, CRITERIA, SUBMISSIONS),
+    )[0];
+
+    expect(header.some((column) => /\bAI\b|rationale/i.test(column))).toBe(false);
   });
 });
 
@@ -318,7 +349,14 @@ describe('buildReviewResultsExport', () => {
       [
         submission,
         [
-          { id: 'submission-1', ref: 1, title: 'In event', status: 'submitted', eventId: 'event-1' },
+          {
+            id: 'submission-1',
+            ref: 1,
+            title: 'In event',
+            status: 'submitted',
+            decisionNote: 'Accepted on the strength of the demo.',
+            eventId: 'event-1',
+          },
           { id: 'submission-2', ref: 2, title: 'Other event', status: 'submitted', eventId: 'event-2' },
         ],
       ],

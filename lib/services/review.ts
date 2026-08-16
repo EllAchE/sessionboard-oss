@@ -1833,6 +1833,12 @@ export type ReviewResultsExportSubmission = {
   ref: number;
   title: string;
   status: SubmissionStatus;
+  /**
+   * The note the organizer left with the accept/decline. Without it the export answers what was
+   * decided and never why, so the reasoning stays locked in the tool the moment anyone works the
+   * results in a spreadsheet.
+   */
+  decisionNote: string | null;
   speakers: ReviewResultsExportSpeaker[];
   reviewers: ReviewerScorecard[];
 };
@@ -1845,7 +1851,18 @@ function exportScore(value: number | null): string {
   return value === null ? '' : value.toFixed(2);
 }
 
-/** One row per assignment preserves disagreement; the blank row keeps an unassigned proposal visible. */
+/**
+ * One row per assignment preserves disagreement; the blank row keeps an unassigned proposal
+ * visible.
+ *
+ * `ai_review.rationale_markdown` is deliberately not a column here. It is advisory by construction
+ * (`docs/03-plan.md` §2) and this file is read as the decision record: a paragraph of model prose
+ * sitting between `Submission status` and `Reviewer comment` is read as reasoning that decided
+ * something, and no CSV reader carries the caveat the AI panel carries on screen. It is also the
+ * wrong shape — multi-paragraph markdown repeated verbatim on every reviewer row of a submission,
+ * in a file people open in a spreadsheet. The advisory text stays on the submission detail, where
+ * it is labelled.
+ */
 export function reviewResultsCsv(
   round: Pick<ReviewRoundRecord, 'name'>,
   criteria: CriterionSpec[],
@@ -1856,6 +1873,7 @@ export function reviewResultsCsv(
     'Submission ref',
     'Title',
     'Submission status',
+    'Decision note',
     'Round',
     'Aggregate score (1-5)',
     'Reviews completed',
@@ -1906,6 +1924,7 @@ export function reviewResultsCsv(
           formatRef('submission', submission.ref),
           submission.title,
           submission.status,
+          submission.decisionNote ?? '',
           round.name,
           exportScore(summary.average),
           summary.completedCount,
@@ -1946,6 +1965,7 @@ export async function buildReviewResultsExport(
         ref: submission.ref,
         title: submission.title,
         status: submission.status,
+        decisionNote: submission.decisionNote,
       })
       .from(submission)
       .where(eq(submission.eventId, ctx.eventId))
@@ -2051,6 +2071,7 @@ export async function buildReviewResultsExport(
         ref: row.ref,
         title: row.title,
         status: row.status,
+        decisionNote: row.decisionNote,
         speakers: speakersBySubmission.get(row.id) ?? [],
         reviewers: assignmentsBySubmission.get(row.id) ?? [],
       })),

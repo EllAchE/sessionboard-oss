@@ -281,6 +281,28 @@ Stated plainly, because a pricing table that hides its uncertainty is worse than
 
 ---
 
+## 7. Review surface: circulating and exporting a decision
+
+Two gaps found by reading the review surfaces against how a program committee actually works. A
+committee argues about proposals asynchronously — by pasting links at each other, and by working
+the results in a spreadsheet — and both of those paths lost information on the way out of the tool.
+
+Numbered after §6 rather than before it so the existing `#6-what-the-add-ons-cost-a-self-hoster`
+anchors, which three rows above link to, keep resolving.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-28 | **[IMPORTANT]** | SHIPPED | **A submission permalink is copyable in one click** from both review surfaces: every queue row and the submission detail header (`app/admin/submissions/CopyPermalinkButton.tsx`). `/admin/submissions/{id}` already resolved and was already linked; what was missing was getting the absolute URL out of the page without selecting the address bar, which a row in a queue of forty does not let you do. The origin is read at click time, so the copied link is on whichever host the reader is already using. The row's own link is untouched — copying is an addition, not a replacement — and the affordance is offered to reviewers as well as organizers, since circulating a link is not a decision |
+| AR-29 | **[IMPORTANT]** | SHIPPED | **The review results export carries `submission.decision_note`**, in a `Decision note` column beside `Submission status` (`reviewResultsCsv`, `lib/services/review.ts`). The export already carried per-criterion scores, criterion weights and reviewer comments, so it answered what was decided and by whom — but never why, leaving the organizer's reasoning locked in the tool the moment anyone opened the results in a spreadsheet. The note repeats on each reviewer row of its submission, matching every other submission-level column in that file. `ai_review.rationale_markdown` is deliberately **excluded**: it is advisory by construction (`03-plan.md` §2), and a paragraph of model prose sitting between `Submission status` and `Reviewer comment` reads as reasoning that decided something, carrying none of the caveat the AI panel carries on screen |
+
+A third fix shipped alongside these is a defect repair rather than a new requirement, so it gets no
+AR ID: the embed's multi-session `.ics` download minted its own `{session.id}@cicero.events` UID at
+a hardcoded `SEQUENCE:0`, giving a session a second calendar identity distinct from the
+`scheduled_session.ics_uid` used by the speaker invite and the `C-3a` per-session download. It now
+carries the stored UID and sequence (`app/embed/calendar.ts`, `app/embed/calendar.test.ts`).
+
+---
+
 ## Decisions
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so
@@ -308,5 +330,5 @@ question that blocks a build.
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
 | [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
 | [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7 |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3 |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |

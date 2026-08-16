@@ -46,6 +46,8 @@ const session: PublicSession = {
   trackId: 'track-1',
   format: 'Talk',
   ceuCredits: null,
+  icsUid: 'ics-session-1@cicero.events',
+  icsSequence: 0,
   tags: [{ id: 'tag-1', name: 'Stoicism' }],
   speakers: [
     {
