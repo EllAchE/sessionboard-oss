@@ -1,4 +1,9 @@
 import { appUrl } from '@/lib/env';
+import {
+  sessionSyncJsonBodySchema,
+  sessionSyncResultSchema,
+  sessionSyncRowSchema,
+} from '@/lib/services/session-sync';
 import { toJsonSchema, toParameters, type JsonSchema } from '../_lib/openapi';
 import { PUBLIC_CACHE, handle, json } from '../_lib/respond';
 import {
@@ -17,6 +22,7 @@ import {
   publicFormSchema,
   sessionListQuery,
   sessionSchema,
+  sessionSyncQuery,
   speakerListQuery,
   speakerProfileSchema,
   sponsorListQuery,
@@ -182,6 +188,9 @@ export function buildSpec(origin = appUrl()): JsonSchema {
         NewSubmissionResult: toJsonSchema(createSubmissionResponse),
         ProgramReconcileRequest: toJsonSchema(programReconcileBody),
         ProgramReconcileResult: toJsonSchema(programReconcileResponse),
+        SessionSyncRow: toJsonSchema(sessionSyncRowSchema),
+        SessionSyncRequest: toJsonSchema(sessionSyncJsonBodySchema),
+        SessionSyncResult: toJsonSchema(sessionSyncResultSchema),
         Error: toJsonSchema(errorResponse),
       },
     },
@@ -209,6 +218,34 @@ export function buildSpec(origin = appUrl()): JsonSchema {
           responses: {
             '200': okResponse('Matching sessions', listOf('Session')),
             ...errors([404, 422, 429]),
+          },
+        },
+      },
+      '/events/{slug}/sessions/sync': {
+        post: {
+          tags: ['Program'],
+          summary: 'Preview or apply an agenda collection sync',
+          description:
+            'Requires an API key issued for this event. CSV rows use action and client_id columns. Create and update rows are published; delete rows are retained as cancelled so calendar cancellations and idempotent replay remain possible.',
+          operationId: 'syncSessions',
+          security: [{ bearerAuth: [] }],
+          parameters: [slugParam, ...toParameters(sessionSyncQuery, 'query')],
+          requestBody: {
+            required: true,
+            content: {
+              'text/csv': {
+                schema: {
+                  type: 'string',
+                  description:
+                    'Excel-compatible CSV with action, client_id, title, room, starts_at and ends_at columns.',
+                },
+              },
+              'application/json': { schema: ref('SessionSyncRequest') },
+            },
+          },
+          responses: {
+            '200': okResponse('The preview or applied sync result', ref('SessionSyncResult')),
+            ...errors([401, 409, 422]),
           },
         },
       },

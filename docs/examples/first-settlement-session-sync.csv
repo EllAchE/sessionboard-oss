@@ -1,0 +1,4 @@
+action,client_id,title,description,room,track,format,starts_at,ends_at,ceu_credits
+update,roman-republic-restoration,On Returning the Republic to Senate and People — Revised,A revised opening statement returning emergency powers to ordinary government.,Curia Julia,Constitution & Office,Oratio,2027-01-13T09:15:00+01:00,2027-01-13T10:00:00+01:00,
+delete,roman-provincial-command,,,,,,,,
+create,roman-censors-register,The Censors' Register,A practical new session on restoring the Senate roll.,Portico of Octavia,Constitution & Office,Consilium,2027-01-13T12:00:00+01:00,2027-01-13T13:00:00+01:00,

@@ -1011,6 +1011,7 @@ export const scheduledSession = pgTable(
   },
   (t) => ({
     uniqueRef: unique('scheduled_session_event_ref').on(t.eventId, t.ref),
+    uniqueClientId: unique('scheduled_session_event_client_id').on(t.eventId, t.clientId),
     byEventStart: index('scheduled_session_event_start_idx').on(t.eventId, t.startsAt),
     byRoom: index('scheduled_session_room_idx').on(t.roomId),
   }),
