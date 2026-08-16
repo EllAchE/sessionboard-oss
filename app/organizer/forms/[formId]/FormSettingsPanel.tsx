@@ -144,9 +144,7 @@ export function FormSettingsPanel({
                 value={draft.name}
                 onChange={(event) => update({ name: event.target.value })}
               />
-              <span className={styles.help}>
-                Only organizers see this. It is how the form is listed here, not what a speaker reads.
-              </span>
+              <span className={styles.help}>Shown only to organizers.</span>
             </div>
 
             <div className={styles.field}>
@@ -175,7 +173,7 @@ export function FormSettingsPanel({
                 <option value="cfp">Call for speakers</option>
                 <option value="portal">Portal form</option>
               </Select>
-              <span className={styles.help}>What the form is for. What it produces is below.</span>
+              <span className={styles.help}>Choose what this form creates.</span>
             </div>
 
             {/* `F-4` */}
@@ -205,8 +203,7 @@ export function FormSettingsPanel({
               <span className={styles.switchText}>
                 <span className={styles.switchLabel}>Collect participants</span>
                 <span className={styles.help}>
-                  Adds the participant step to the public form, where speakers give their details and
-                  name anyone presenting with them. Off, only the submitter is recorded.
+                  Adds a participant step for the submitter and co-presenters.
                 </span>
               </span>
               <Switch
@@ -271,10 +268,7 @@ export function FormSettingsPanel({
             <div className={styles.switchRow}>
               <span className={styles.switchText}>
                 <span className={styles.switchLabel}>Show the welcome message</span>
-                <span className={styles.help}>
-                  Turn it off to hide the welcome step while keeping the copy. Getting it back is this
-                  switch, not rewriting the paragraph.
-                </span>
+                <span className={styles.help}>Hide the welcome step without deleting its copy.</span>
               </span>
               <Switch
                 checked={draft.showWelcome}
@@ -313,8 +307,7 @@ export function FormSettingsPanel({
               </div>
             </div>
             <span className={styles.help}>
-              Times are in your browser&rsquo;s timezone. Leave both empty and the form is governed
-              only by its published status.
+              Your browser timezone. Leave blank for no date limits.
             </span>
 
             <hr className={styles.divider} />
@@ -365,7 +358,7 @@ export function FormSettingsPanel({
                 onChange={(event) => update({ notifyEmails: event.target.value })}
               />
               <span className={styles.help}>
-                One address per line, or separated by commas. Leave empty for no notifications.
+                Separate addresses with commas or new lines. Leave blank for none.
               </span>
             </div>
           </div>
@@ -395,9 +388,7 @@ export function FormSettingsPanel({
                 value={draft.confirmationBodyMarkdown}
                 onChange={(event) => update({ confirmationBodyMarkdown: event.target.value })}
               />
-              <span className={styles.help}>
-                Markdown. Leave both empty and no confirmation email is sent.
-              </span>
+              <span className={styles.help}>Leave both blank to send no confirmation.</span>
             </div>
           </div>
         </Card>

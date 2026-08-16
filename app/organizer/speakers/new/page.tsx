@@ -26,9 +26,7 @@ export default async function NewSpeakerPage() {
           <div>
             <p className={styles.eyebrow}>Program</p>
             <h1 className={styles.title}>Add a speaker</h1>
-            <p className={styles.subtitle}>
-              They join this event&rsquo;s roster straight away. No email is sent.
-            </p>
+            <p className={styles.subtitle}>Adds them to the roster. No email sent.</p>
           </div>
         </div>
       </div>

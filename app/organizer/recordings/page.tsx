@@ -20,9 +20,7 @@ export default async function RecordingsPage() {
         <p className={styles.eyebrow}>Program</p>
         <h1 className={styles.title}>Session recordings</h1>
         <p className={styles.subtitle}>
-          Attach post-conference video now, then deliberately publish it after the session ends.
-          Draft recordings are never exposed on public pages or embeds. Uploads are bounded clips;
-          associate a full-length recording from an HTTPS streaming host.
+          Attach clips or hosted video, then publish after the session ends.
         </p>
       </header>
       <RecordingsBoard

@@ -230,13 +230,13 @@ function heuristicReview(subject: AiReviewSubject): AiReviewResult {
     rationaleMarkdown: [
       AI_KEY_MISSING_NOTE_MARKDOWN,
       '',
-      'Until then, what follows is a rule-based reading of how complete the submission is, not an opinion on whether the talk is good. Treat it as triage and score it yourself.',
+      'This is a completeness check, not a quality score.',
       '',
       observations,
       '',
       abstract < 25 || bio === 0
-        ? '_This proposal is missing enough that it would be worth asking the speaker for more before reviewing it properly._'
-        : '_Nothing obviously missing; the substance is a judgement call for a human reviewer._',
+        ? '_Ask the speaker for more detail before review._'
+        : '_No obvious gaps. Judge the substance yourself._',
     ].join('\n'),
     criterionScores,
   };

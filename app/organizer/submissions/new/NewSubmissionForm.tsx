@@ -155,10 +155,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
         <div className={queue.headings}>
           <span className={queue.eyebrow}>Review</span>
           <h1 className={queue.title}>Add submission</h1>
-          <p className={queue.subtitle}>
-            Creates the speaker&apos;s account and participant record if they have neither.
-            ⌘&#8629; submits.
-          </p>
+          <p className={queue.subtitle}>Creates the speaker if needed. ⌘&#8629; submits.</p>
         </div>
         <div className={queue.actions}>
           <Button
@@ -207,7 +204,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
                     <Badge tone={FORM_STATUS_TONE[selected.status] ?? 'neutral'} size="sm">
                       {selected.status}
                     </Badge>{' '}
-                    A closed form still accepts an organizer-entered talk.
+                    Organizers can add submissions to closed forms.
                   </span>
                 ) : null}
               </label>
@@ -336,10 +333,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
                   placeholder="speaker@example.com"
                   onChange={(event) => setSpeakerEmail(event.target.value)}
                 />
-                <span className={styles.hint}>
-                  An existing account is reused; a new address gets one, with no email sent from
-                  here.
-                </span>
+                <span className={styles.hint}>Existing accounts are reused. No email is sent.</span>
                 {fieldErrors.speakerEmail ? (
                   <span className={styles.fieldError}>{fieldErrors.speakerEmail}</span>
                 ) : null}
@@ -365,10 +359,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
             <CardBody>
               <p className={styles.notice}>
                 <Info size={14} />
-                These {selected.customFields.length} field
-                {selected.customFields.length === 1 ? '' : 's'} are not collected here. The organizer
-                path writes the submission&apos;s own columns only, so the speaker fills these in
-                from the portal once they have the submission.
+                Participant fields are completed later in the portal.
               </p>
               <ul className={styles.fieldList}>
                 {selected.customFields.map((field) => (

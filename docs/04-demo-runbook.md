@@ -180,7 +180,7 @@ prepared scenario, and state exactly which approval remains.
 | --- | --- |
 | Lead with outstanding tasks | Cicero supplies a central completion view the incumbent's FAQ says it lacks. |
 | Passwordless cold paths | Infrequent speakers do not create and forget another password; evaluation needs no inbox. |
-| Full impersonation | Support can finish a stuck task while the action remains attributable; read-only preview cannot. |
+| Full impersonation | Support can finish a stuck task; the live session identifies the organizer, but durable per-action attribution remains a documented hardening gap. |
 | Speaker double-booking | Cicero protects against the public failure, not only room and track collisions. |
 | Stable calendar UID and sequence | Rescheduling updates an accepted calendar entry instead of creating a stale duplicate. |
 | Live server-rendered embeds | Public pages and iframes update from one source without replacing markup. |

@@ -217,7 +217,7 @@ export function SponsorBoard({
           if (!open) setEditing(undefined);
         }}
         title={editing ? `Edit ${editing.name}` : 'Add an organisation'}
-        description="Only the name is required. Everything else can be filled in later."
+        description="Only the name is required."
         footer={
           <>
             <Button variant="secondary" onClick={() => setEditing(undefined)}>

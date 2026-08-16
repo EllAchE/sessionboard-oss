@@ -229,9 +229,7 @@ export function DeliverablesBoard({
         <div className={queue.headings}>
           <span className={queue.eyebrow}>Content</span>
           <h1 className={queue.title}>Deliverables</h1>
-          <p className={queue.subtitle}>
-            What each speaker still owes, and who to chase for it.
-          </p>
+          <p className={queue.subtitle}>Outstanding speaker files.</p>
         </div>
         <div className={queue.actions}>
           <Button

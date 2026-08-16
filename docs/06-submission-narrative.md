@@ -283,10 +283,12 @@ of the reviewer-invite path did exactly that; it was found in the audit and fixe
 now lives in the code so it does not come back.
 
 The related judgment call is **impersonation, not preview** (`S-10`). The organizer's session cookie
-carries `impersonated_by`; every write goes through *as the speaker* and stays attributable.
+carries `impersonated_by`; every write goes through *as the speaker* while that organizer identity is
+available to the service handling it.
 Sessionboard's "View portal as…" is read-only, which makes it useless for support — the point is to
 finish the stuck speaker's task for them — and useless for judging. Ours lets a judge reach a speaker
-portal in one click without an inbox.
+portal in one click without an inbox. The shortcut and its incomplete durable attribution are called
+out below rather than presented as the final production model.
 
 ---
 
@@ -430,6 +432,11 @@ Verified by me on the current tree, not quoted:
 
 ### Partial — the accurate word is partial
 
+- **Organizer-assisted action attribution.** Full impersonation works, but it is broader than the
+  task-support use case: it includes the speaker's settings, and task, upload and comment mutations
+  do not all retain the organizer as the actor after the impersonated session ends. The useful
+  capability is an organizer making an edit on a speaker's behalf; the missing production boundary
+  is to scope that access and persist both identities on every such action.
 - **`T-6` — real outbound transactional email on the deployed instance.** The code is finished: three
   transports (`log`, `smtp`, `resend`) behind an `auto` resolver that degrades to `log` and warns
   rather than failing silently. What is missing is deployment configuration — a verified Resend
@@ -497,26 +504,30 @@ In rough order of how much a real organizer would feel it.
    is the only thing standing between the tested `.ics` and an actual calendar entry. It has to be
    done without breaking the inbox-free demo, and the per-recipient reserved-domain routing already
    built for exactly that reason means it can be.
-2. **Re-measure `Z-4` properly, on Linux, against the Workers runtime.** The `cache()` fix has never
+2. **Replace full-session impersonation with an audited organizer-assist path.** Keep the ability to
+   finish work on a speaker's behalf, but do not expose speaker-only settings. Every mutation should
+   persist both the acting organizer and the affected speaker so the task history, uploads, comments
+   and exports never claim that the speaker performed an organizer's action.
+3. **Re-measure `Z-4` properly, on Linux, against the Workers runtime.** The `cache()` fix has never
    been measured. The honest next step is a Linux benchmark host, `--cpu-pid` against `wrangler dev`,
    and then a decision: either the public routes fit a real budget, or the answer is a
    short-TTL cache on the public read model, which is where the CPU actually goes. Both are better
    answers than "buy the paid plan," even though the paid plan also fixes it.
-3. **Re-run the requirements audit against the current tree.** The pinned checklist is two days and
+4. **Re-run the requirements audit against the current tree.** The pinned checklist is two days and
    several hundred commits stale, and a stale audit is worse than none because it reads as current. It
    should also pick up the corrected Cloudflare bundle numbers in §4, which landed after the audit was
    pinned.
-4. **Split the Cloudflare bundle, or shrink it.** 3.42 MiB against a 3 MiB ceiling is ~14% — that is a
+5. **Split the Cloudflare bundle, or shrink it.** 3.42 MiB against a 3 MiB ceiling is ~14% — that is a
    tractable engineering problem, not a wall. The Anthropic SDK, the AWS S3 client and `nodemailer` are
    all conditionally reachable and all in the server bundle; moving the AI and S3 paths behind dynamic
    imports is the obvious first cut. Getting under 3 MiB would restore free-tier Cloudflare and close
    `Z-1` without anyone paying anything, which is a better outcome than the $5.
-5. **Give the composer a `manual` audience.** The service layer already supports it; only the
+6. **Give the composer a `manual` audience.** The service layer already supports it; only the
    organizer screen does not. This is the shortest distance between a known gap and a closed one.
-6. **A live Accelevents run** (`N-1c`) the moment a credential exists — and then decide, on evidence,
+7. **A live Accelevents run** (`N-1c`) the moment a credential exists — and then decide, on evidence,
    whether the experimental attendee-order path is worth keeping or should be deleted rather than
    shipped ambiguous.
-7. **Event cloning.** The requirements doc flagged this as the one genuinely arguable exclusion:
+8. **Event cloning.** The requirements doc flagged this as the one genuinely arguable exclusion:
    organizers run the conference annually, and the brief never mentions a second edition. Everything
    needed for it exists — event scoping, `S-20` copy-tasks-from-a-previous-event, the CRM's
    cross-event contact model. It is the highest-value thing the brief did not ask for.

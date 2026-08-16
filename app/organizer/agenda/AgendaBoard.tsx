@@ -498,8 +498,7 @@ export function AgendaBoard({
           <p className={styles.eyebrow}>{event.name}</p>
           <h1 className={styles.title}>Agenda</h1>
           <p className={styles.lede}>
-            Drag an accepted talk from the rail onto a room and a time. Clashes are flagged as you
-            move and must be resolved before placement — times shown in {timeZone}.
+            Drag accepted talks onto the grid. Conflicts are flagged. Times use {timeZone}.
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -573,7 +572,7 @@ export function AgendaBoard({
       ) : summary.total === 0 ? (
         <div className={`${styles.banner} ${styles.bannerClear}`}>
           <CheckCircle2 size={15} aria-hidden />
-          <span>No room, track or speaker clashes. Back-to-back sessions are not clashes.</span>
+          <span>No conflicts.</span>
         </div>
       ) : (
         <div

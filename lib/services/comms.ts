@@ -765,17 +765,15 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission received',
     subject: 'We received "{{submission.title}}"',
     smsBody:
-      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). We will be in touch once the programme committee has reviewed it. Your portal: {{portal.url}}',
+      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). Portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thanks for submitting **{{submission.title}}** ({{submission.ref}}) to {{event.name}}.',
-      '',
-      'You can review or edit your submission in your speaker portal at any time:',
+      'We received **{{submission.title}}** ({{submission.ref}}) for {{event.name}}.',
       '',
       '[Open your speaker portal]({{portal.link}})',
       '',
-      'We will be in touch once the programme committee has reviewed it.',
+      'We will be in touch after review.',
     ].join('\n'),
   },
   {
@@ -783,15 +781,13 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission accepted',
     subject: 'Your talk was accepted for {{event.name}}',
     smsBody:
-      '{{event.name}}: good news, "{{submission.title}}" is accepted. Your speaker onboarding tasks are waiting in your portal: {{portal.url}}',
+      '{{event.name}}: "{{submission.title}}" is accepted. Next steps: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Good news: **{{submission.title}}** ({{submission.ref}}) has been accepted for {{event.name}}.',
+      '**{{submission.title}}** ({{submission.ref}}) is accepted for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
-      '',
-      'Next, please complete your speaker onboarding:',
       '',
       '{{tasks.list}}',
       '',
@@ -803,15 +799,15 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission waitlisted',
     subject: 'Your {{event.name}} submission is on the waitlist',
     smsBody:
-      '{{event.name}}: "{{submission.title}}" is on the waitlist. Nothing to do for now; we will let you know either way. Your portal: {{portal.url}}',
+      '{{event.name}}: "{{submission.title}}" is waitlisted. We will send an update. {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}. The programme committee rated it highly, and we would like to include it if a slot opens up.',
+      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
       '',
-      'There is nothing you need to do now. We will email you as soon as we know either way, and your submission stays visible in your speaker portal in the meantime:',
+      'We will send an update when its status changes.',
       '',
       '[Open your speaker portal]({{portal.link}})',
     ].join('\n'),
@@ -822,15 +818,15 @@ export const DEFAULT_TEMPLATES: Array<{
     subject: 'An update on your {{event.name}} submission',
     // No link: the decline email has none either, and there is nothing for the speaker to do.
     smsBody:
-      '{{event.name}}: thank you for submitting "{{submission.title}}". We had more strong proposals than slots and cannot include it this year. We hope you will submit again next time.',
+      '{{event.name}}: we cannot include "{{submission.title}}" this year. Thank you for submitting.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thank you for submitting **{{submission.title}}** to {{event.name}}. We had many more strong proposals than slots this year, and we are not able to include it in the programme.',
+      'We cannot include **{{submission.title}}** in the {{event.name}} programme this year.',
       '',
       '{{submission.decisionNote}}',
       '',
-      'We hope you will submit again next time.',
+      'Thank you for submitting.',
     ].join('\n'),
   },
   {
@@ -844,7 +840,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Your session at {{event.name}} is scheduled. This email carries a calendar invitation. Accept it and the session lands on your own calendar, and it updates itself in place if we ever have to move you.',
+      'Your {{event.name}} session is scheduled. A calendar invitation is attached.',
       '',
       '- **Session:** {{session.title}} ({{session.ref}})',
       '- **Starts:** {{session.startsAt}}',
@@ -852,7 +848,7 @@ export const DEFAULT_TEMPLATES: Array<{
       '- **Room:** {{session.room|to be confirmed}}',
       '- **Track:** {{session.track|—}}',
       '',
-      'If your mail client did not show accept and decline buttons, you can [add it to your calendar directly]({{session.calendarUrl}}).',
+      '[Download the calendar invite]({{session.calendarUrl}})',
     ].join('\n'),
   },
   {
@@ -863,11 +859,11 @@ export const DEFAULT_TEMPLATES: Array<{
     // "Reply to this email" does not translate: an SMS reply lands at the provider, not the
     // organizer, so the cancellation names the support address instead.
     smsBody:
-      '{{event.name}}: "{{session.title}}" ({{session.ref}}) has been cancelled and the calendar entry withdrawn. If this is unexpected, please contact {{event.supportEmail|the programme team}}.',
+      '{{event.name}}: "{{session.title}}" ({{session.ref}}) is cancelled. Contact {{event.supportEmail|the programme team}} with questions.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      '**{{session.title}}** ({{session.ref}}) has been removed from the {{event.name}} programme, and this email cancels the calendar entry we sent you earlier.',
+      '**{{session.title}}** ({{session.ref}}) is cancelled. The calendar entry has been withdrawn.',
       '',
       'If this is unexpected, please reply to this email.',
     ].join('\n'),
@@ -879,13 +875,11 @@ export const DEFAULT_TEMPLATES: Array<{
     // `{{tasks.list}}` is a multi-line markdown list, so it is deliberately not here: over SMS it
     // collapses to one run-on line of unbounded length. One task and one link is the whole message.
     smsBody:
-      '{{event.name}} reminder: {{task.name}} is still outstanding{{task.dueAt}}. Finish it in your portal: {{portal.url}}',
+      '{{event.name}}: {{task.name}} is outstanding{{task.dueAt}}. {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'A quick reminder that **{{task.name}}** is still outstanding{{task.dueAt| }}.{{task.sessions}}',
-      '',
-      'Everything still open on your list:',
+      'Reminder: **{{task.name}}** is outstanding{{task.dueAt| }}.{{task.sessions}}',
       '',
       '{{tasks.list}}',
       '',
@@ -898,11 +892,11 @@ export const DEFAULT_TEMPLATES: Array<{
     subject: 'Your {{event.name}} draft closes {{form.closesAt}}',
     // `runDraftDeadlineReminders` builds its own `vars`: event, speaker and form fields only.
     smsBody:
-      '{{event.name}}: your draft is not submitted yet, and {{form.name}} closes {{form.closesAt}}. Finish it: {{form.url}}',
+      '{{event.name}}: your draft is not submitted. {{form.name}} closes {{form.closesAt}}. {{form.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'You have a draft submission for **{{event.name}}** that has not been submitted yet, and {{form.name}} closes on {{form.closesAt}}.',
+      'Your **{{event.name}}** draft is not submitted. {{form.name}} closes {{form.closesAt}}.',
       '',
       '[Finish your submission]({{form.url}})',
     ].join('\n'),

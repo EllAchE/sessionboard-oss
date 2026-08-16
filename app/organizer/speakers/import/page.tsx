@@ -28,10 +28,7 @@ export default async function ImportSpeakersPage() {
           <div>
             <p className={styles.eyebrow}>Program</p>
             <h1 className={styles.title}>Import speakers</h1>
-            <p className={styles.subtitle}>
-              Bring a roster over from a spreadsheet. Map the columns, check the preview, then
-              confirm — nothing is written until you do.
-            </p>
+            <p className={styles.subtitle}>Upload, map, review, then import.</p>
           </div>
         </div>
       </div>

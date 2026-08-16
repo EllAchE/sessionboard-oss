@@ -561,8 +561,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>Accelevents is not configured</strong>
           <p className={styles.note}>
-            Accepted speakers are pushed to an Accelevents event so they receive their comped ticket
-            without anyone re-typing a list. Set these and reload:
+            Push accepted speakers to Accelevents for comp tickets. Set these variables and reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>ACCELEVENTS_API_KEY</li>
@@ -586,8 +585,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
         <div className={styles.headings}>
           <h2 className={styles.sectionTitle}>Accelevents</h2>
           <p className={styles.note}>
-            One way, accepted speakers only. Accelevents rejects a duplicate email outright rather
-            than updating, so anyone already pushed is left alone.
+            One-way sync of accepted speakers. Existing emails are skipped.
           </p>
         </div>
         <div className={styles.actions}>
@@ -672,9 +670,8 @@ function AirtableSection({ panel }: { panel: AirtablePanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>Airtable is not configured</strong>
           <p className={styles.note}>
-            Cicero can mirror submissions, speakers and the agenda into an Airtable base your team
-            can build views over. The mirror is one way — Airtable is never the store. Set these and
-            reload:
+            Mirror submissions, speakers, and the agenda to Airtable. Cicero remains the source of
+            truth. Set these variables and reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>AIRTABLE_API_KEY</li>
@@ -693,11 +690,7 @@ function AirtableSection({ panel }: { panel: AirtablePanel }) {
       <div className={styles.sectionHead}>
         <div className={styles.headings}>
           <h2 className={styles.sectionTitle}>Airtable mirror</h2>
-          <p className={styles.note}>
-            Records are pushed as they change. &ldquo;Sync now&rdquo; backfills whatever is not yet
-            mirrored and is safe to run repeatedly — it resumes rather than restarting, and holds to
-            Airtable&apos;s five requests a second.
-          </p>
+          <p className={styles.note}>Sync now safely backfills unsynced records.</p>
         </div>
         <div className={styles.actions}>
           <Badge tone="success">Connected</Badge>
@@ -750,8 +743,7 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
         <div className={styles.disabled}>
           <strong className={styles.disabledTitle}>SMS is not configured</strong>
           <p className={styles.note}>
-            Anyone who chooses text alerts over email falls back to the dev mailbox at{' '}
-            <code>/organizer/sms</code> until Twilio is configured. Set these and reload:
+            Without Twilio, texts are written to the SMS mailbox. Set these variables and reload:
           </p>
           <ul className={styles.envList}>
             <li className={styles.env}>TWILIO_ACCOUNT_SID</li>
@@ -770,9 +762,7 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
         <div className={styles.headings}>
           <h2 className={styles.sectionTitle}>SMS</h2>
           <p className={styles.note}>
-            Alerts to anyone who prefers text over email — the same triggers as email, and the
-            manual composer&apos;s channel selector. Every send is logged at{' '}
-            <code>/organizer/sms</code>, the way email is at <code>/organizer/mail</code>.
+            Sends the same alerts as email and logs them in the SMS mailbox.
           </p>
           <p className={styles.note}>
             Configure Twilio&apos;s inbound webhook at <code>/api/webhooks/twilio/sms</code>.
@@ -814,10 +804,7 @@ export function IntegrationsScreen({
         <div className={styles.headings}>
           <span className={styles.eyebrow}>Organizer</span>
           <h1 className={styles.title}>Integrations</h1>
-          <p className={styles.subtitle}>
-            API credentials, signed webhooks, the Accelevents speaker push, the Airtable mirror and
-            SMS delivery in one place.
-          </p>
+          <p className={styles.subtitle}>API, webhooks, Accelevents, Airtable, and SMS.</p>
         </div>
       </header>
 

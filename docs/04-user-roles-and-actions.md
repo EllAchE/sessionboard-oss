@@ -324,8 +324,10 @@ An organizer can:
   implementation.
 - Impersonate a speaker to diagnose or complete a stuck workflow on their behalf.
 
-Impersonation is full, attributable action rather than a read-only preview. Anything changed while
-impersonating is saved as the speaker while retaining the organizer's identity for attribution.
+Impersonation is full action rather than a read-only preview. Anything changed while impersonating
+is saved through the speaker's authorization context. The live session retains the organizer's
+identity, but not every task, file or comment record persists it; the organizer-assist audit trail is
+a documented production-hardening gap.
 
 ### Build and modify the agenda
 
@@ -499,9 +501,9 @@ mechanism used for speaker registration.
 | -------------------------------------- | -------------: | ------: | -------: | ---------------------------------: |
 | Browse published program               |            Yes |     Yes |      Yes |                                Yes |
 | Start a public CFP submission          |            Yes |     Yes |       No |                                Yes |
-| Edit own profile and proposal          |             No |     Yes |       No | Through attributable impersonation |
-| Upload speaker deliverables            |             No |     Yes |       No | Through attributable impersonation |
-| Complete assigned speaker tasks        |             No |     Yes |       No | Through attributable impersonation |
+| Edit own profile and proposal          |             No |     Yes |       No | Through full impersonation |
+| Upload speaker deliverables            |             No |     Yes |       No | Through full impersonation |
+| Complete assigned speaker tasks        |             No |     Yes |       No | Through full impersonation |
 | Score assigned proposals               |             No |      No |      Yes |                                Yes |
 | Accept, waitlist, or decline proposals |             No |      No |       No |                                Yes |
 | Configure forms and review rounds      |             No |      No |       No |                                Yes |

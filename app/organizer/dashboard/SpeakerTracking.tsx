@@ -123,7 +123,7 @@ export function SpeakerTable({ speakers }: { speakers: SpeakerRow[] }) {
         columns={columns()}
         rows={rows}
         getRowId={(row) => row.id}
-        emptyState="No speakers yet. They appear once a submission names them."
+        emptyState="Speakers appear when submissions are added."
       />
     </div>
   );

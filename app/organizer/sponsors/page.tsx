@@ -33,14 +33,10 @@ export default async function OrganizerSponsorsPage() {
         <div>
           <p className={styles.eyebrow}>Setup</p>
           <h1 className={styles.title}>Sponsors &amp; exhibitors</h1>
+          <p className={styles.subtitle}>Sponsors and exhibitors for this event.</p>
           <p className={styles.subtitle}>
-            The organisations behind this event. Sponsors are recognised in tier order; exhibitors
-            have a stand on the floor. Both lists are scoped to this event.
-          </p>
-          <p className={styles.subtitle}>
-            New rows start as drafts. Publish each one when it is ready for the{' '}
-            <a href={`/${event.slug}/sponsors`}>sponsor wall</a>, public API, and sponsor embed; return
-            it to draft to remove its details and logo from every public surface.
+            Drafts stay private. Publish a row to show it on the{' '}
+            <a href={`/${event.slug}/sponsors`}>sponsor wall</a>.
           </p>
         </div>
       </div>

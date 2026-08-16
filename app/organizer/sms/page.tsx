@@ -93,9 +93,7 @@ export default async function SmsMailboxPage({
         <div>
           <p className={styles.eyebrow}>Communications</p>
           <h1 className={styles.title}>SMS</h1>
-          <p className={styles.lede}>
-            Every text this event has sent or tried to send, to anyone who chose SMS over email.
-          </p>
+          <p className={styles.lede}>Sent and attempted texts for this event.</p>
         </div>
         <div className={styles.headerActions}>
           {event && <EventPicker current={event.slug} options={options} basePath="/organizer/sms" />}
@@ -107,10 +105,7 @@ export default async function SmsMailboxPage({
       <div className={styles.row}>
         <Badge tone={transport === 'log' ? 'info' : 'success'}>transport: {transport}</Badge>
         {transport === 'log' && (
-          <span className={styles.subtle}>
-            Nothing leaves the server. Everything a recipient would have received as a text is
-            readable here.
-          </span>
+          <span className={styles.subtle}>Development mode: texts are recorded here, not delivered.</span>
         )}
       </div>
 
@@ -120,7 +115,7 @@ export default async function SmsMailboxPage({
           {messages.length === 0 && (
             <p className={styles.empty}>
               <Inbox size={20} />
-              No texts yet. Turn on SMS alerts for a speaker, or force the channel from Compose.
+              No texts yet.
             </p>
           )}
           {messages.map((message) => (

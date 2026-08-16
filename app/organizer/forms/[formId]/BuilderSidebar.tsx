@@ -103,9 +103,7 @@ export function BuilderSidebar({
       <Card padding="sm">
         <p className={styles.panelTitle}>Field library</p>
         {library.length === 0 ? (
-          <p className={styles.help}>
-            Save a question to the library and it becomes reusable on every form for this event.
-          </p>
+          <p className={styles.help}>Saved questions can be reused across this event.</p>
         ) : (
           <div className={styles.libraryList}>
             {library.map((entry) => (
@@ -141,8 +139,7 @@ export function BuilderSidebar({
         <p className={styles.panelTitle}>Combined limits</p>
         {groups.length === 0 ? (
           <p className={styles.help}>
-            Give two questions the same limit group in their settings and their answers count against
-            one shared budget, with a live counter for the submitter.
+            Questions with the same limit group share one character limit.
           </p>
         ) : (
           <div className={styles.groupSummary}>

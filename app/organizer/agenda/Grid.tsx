@@ -109,7 +109,7 @@ export function UnscheduledRail({
         <span className={styles.railHint}>{queue.length}</span>
       </div>
       <p className={styles.railHint}>
-        Accepted talks with no slot yet. Drag one onto the grid; drag a block back here to unschedule it.
+        Unscheduled accepted talks. Drag onto the grid; drag back to unschedule.
       </p>
       {queue.length === 0 ? (
         <p className={styles.railEmpty}>Everything accepted has a slot.</p>
@@ -253,29 +253,19 @@ export function DayGrid({
     return (
       <div className={styles.gridWrap}>
         <p className={styles.noRooms}>
-          Add a room under Settings before building the agenda — a session needs somewhere to be.
+          Add a room in Settings before scheduling.
         </p>
       </div>
     );
   }
 
-  const scrollHintId = `agenda-scroll-hint-${dayKey.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-  const needsScrollHint = rooms.length > 4;
-
   return (
     <>
-      {needsScrollHint ? (
-        <p id={scrollHintId} className={styles.scrollHint}>
-          Scroll across and down to explore all {rooms.length} rooms. Room names and times stay in
-          view.
-        </p>
-      ) : null}
       <div
         className={styles.gridWrap}
         role="region"
         tabIndex={0}
         aria-label={`Schedule for ${dayKey}, ${rooms.length} rooms`}
-        aria-describedby={needsScrollHint ? scrollHintId : undefined}
       >
         <div
           className={styles.grid}

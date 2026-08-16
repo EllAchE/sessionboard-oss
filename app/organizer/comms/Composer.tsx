@@ -319,12 +319,9 @@ export function Composer(props: ComposerProps) {
                     setSmsBody(e.target.value);
                     setPreview(null);
                   }}
-                  placeholder="Leave blank to fall back to a trimmed version of the body above."
+                  placeholder="Optional"
                 />
-                <span className={styles.hint}>
-                  Sent to anyone this message reaches by text. Empty falls back to the markdown
-                  body, stripped and truncated.
-                </span>
+                <span className={styles.hint}>Defaults to a plain-text version of the email.</span>
               </div>
 
               <div className={styles.field}>
@@ -355,8 +352,7 @@ export function Composer(props: ComposerProps) {
                   aria-label="Attach the calendar invitation"
                 />
                 <span className={styles.subtle}>
-                  Attach an add-to-calendar copy of each recipient&rsquo;s session. Invitations that
-                  update in place are sent from the agenda.
+                  Attach the recipient&rsquo;s session. Use Agenda to send updates.
                 </span>
               </div>
             </div>
@@ -402,22 +398,20 @@ export function Composer(props: ComposerProps) {
                 <p className={`${styles.notice} ${styles.success}`}>
                   Sent to {outcome.sent} of {outcome.recipients} recipients ({outcome.sentEmail}{' '}
                   email, {outcome.sentSms} SMS)
-                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Every message is readable
-                  in the mailbox.
+                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Messages are archived in
+                  Mailbox.
                 </p>
               )}
 
               {props.transport === 'log' && (
                 <p className={styles.notice}>
-                  <CalendarCheck size={16} /> MAIL_TRANSPORT is <code>log</code>: nothing leaves the
-                  server. Messages appear in the mailbox with their calendar attachment intact.
+                  <CalendarCheck size={16} /> Development mode: messages go to Mailbox only.
                 </p>
               )}
 
               {props.smsTransport === 'log' && (
                 <p className={styles.notice}>
-                  <CalendarCheck size={16} /> SMS_TRANSPORT is <code>log</code>: text messages land
-                  in the SMS mailbox instead of a phone.
+                  <CalendarCheck size={16} /> Development mode: texts go to the SMS mailbox.
                 </p>
               )}
 
