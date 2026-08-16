@@ -68,7 +68,10 @@ site that can be tested against their walkthrough video.
 
 ## Hard constraint
 
-**Deadline: Wednesday, August 12, 10:00 PM PT.**
+**Deadline: Sunday, August 16.** *(Corrected 2026-08-16. This line previously read "Wednesday,
+August 12, 10:00 PM PT", which was the date this document was written against; the submission
+window ran later than that. Left visible rather than overwritten, per the convention this repo
+uses for every other reversal.)*
 
 Scope is frozen against the **written brief and its screenshots** as captured in
 [`reference/source-brief.txt`](reference/source-brief.txt). Ambiguities in it are decided under
