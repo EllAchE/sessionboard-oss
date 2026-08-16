@@ -117,8 +117,11 @@ whole-workspace export that the attributed project also built are a separate que
 "Only if a user asks" as part of `AD-36`'s neighbourhood.
 
 *Touches:* new `activity_event` table (W0), write sites across `lib/services/**`,
-`lib/services/updates.ts` and `app/organizer/updates/**` (W6). Unblocks `AD-36`, and is the missing
-substrate under `AD-14`'s audit trail.
+`lib/services/updates.ts` and `app/organizer/updates/**` (W6). The routing is already recorded —
+`docs/05-additional-requirements.md` states that "AR-38 starts in W6 while a future append-only
+activity table must cross W0 deliberately" — so the ownership question is settled before the build
+starts. Unblocks `AD-36`, and
+is the missing substrate under `AD-14`'s audit trail.
 
 ### 3. `AD-2` — Speaker availability / blackout windows · convergence 4 · **M**
 
@@ -634,10 +637,11 @@ question and is ranked in Tier 2 for exactly that reason.
 
 ### `AD-33` — Deployable AWS SES infrastructure stacks · convergence 1
 
-Declined on a recorded decision. `docs/05-additional-requirements.md` §"Decisions" ("2026-08-13 — no
-paid infrastructure") holds that Cicero's hosted deployment takes no payment method, and the design
-principle behind it is that "the point of a self-hostable product is that the operator picks the
-backend." `lib/mail/config.ts` implements that: `resend`, `smtp`, and `log`, chosen by env var. A
+Declined on a recorded decision. `docs/05-additional-requirements.md` AR-2 carries an explicit
+"Decision (2026-08-13): the hosted demo does not get a payment method", and §455 of the same
+document states the principle behind it — "the point of a self-hostable product is that the operator
+picks the backend." `lib/mail/config.ts` implements exactly that: `resend`, `smtp`, and `log`,
+chosen by env var. A
 shipped CDK stack for one specific provider inverts that — it makes Cicero opinionated about a
 self-hoster's cloud account. The *transport-agnostic* half of what SES buys is worth taking
 separately: `email_status` is only `queued / sent / failed` (`db/schema.ts:130`), with no bounce or
