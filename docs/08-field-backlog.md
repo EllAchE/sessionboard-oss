@@ -167,10 +167,11 @@ The highest-leverage item in the document, and the reason it is fifth rather tha
 cost. Cicero has already built every hard part except the chat surface: `lib/mcp/tools.ts` defines
 ten tools including mutating ones (`cicero_mail_send`, `cicero_program_reconcile`), `lib/mcp/server.ts`
 wires them to transport-neutral service functions, and — critically — `AR-31` already established
-Cicero's answer to the approval question, server-side: the nudge composer "requires the reviewed
-subject/body/recipient back… and refuses if either moved" (`docs/05-additional-requirements.md`
-§8). An in-product assistant is the same tool registry and the same review gate behind a different
-front end.
+Cicero's answer to the approval question, server-side: the send path "requires the reviewed
+subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the
+recipient and re-renders the message and refuses if either moved"
+(`docs/05-additional-requirements.md`). An in-product assistant is the same tool registry and the
+same review gate behind a different front end.
 
 L because it is a genuinely new surface: streaming responses, persisted threads, and an approval
 step per mutation, none of which exist today. The survey's framing that "Cicero's AI is
@@ -183,9 +184,9 @@ fully tool-capable, it just has no organizer-facing client.
 ### 6. `AD-5` — Bidirectional Airtable sync · convergence 5 · **L**
 
 Joint-highest convergence, ranked last in the tier, and the disagreement is worth naming: this is
-the item where axis 1 and axis 3 point hardest in opposite directions. `lib/airtable/mirror.ts`
-states the current design in its own header — "`Z-2`, one way only. Airtable is a mirror an
-organizer's team can build views over, never the store… Every write here is best-effort" — and
+the item where axis 1 and axis 3 point hardest in opposite directions. `lib/airtable/mirror.ts:29`
+states the current design as a deliberate one — "`Z-2`, one way only. Airtable is a mirror an
+organizer's team can build views over, never the store" — and
 `airtable_sync` (`db/schema.ts:1621`) records only push status. Making it bidirectional means field
 ownership, conflict resolution, retries, and dead-lettering, which is not an extension of a
 best-effort mirror but a replacement for it.
