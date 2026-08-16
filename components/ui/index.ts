@@ -53,6 +53,6 @@ export type { TooltipProps } from './Tooltip';
 
 /* data */
 export { DataTable } from './DataTable';
-export type { DataTableProps, DataTableColumn } from './DataTable';
+export type { DataTableProps, DataTableColumn, DataTableColumnSpace } from './DataTable';
 export { ScoreStars } from './ScoreStars';
 export type { ScoreStarsProps } from './ScoreStars';

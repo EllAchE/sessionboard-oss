@@ -395,12 +395,13 @@ export function RoundsManager(props: RoundsManagerProps) {
 
   const workloadColumns = useMemo<Array<DataTableColumn<WorkloadWire>>>(
     () => [
-      { id: 'name', header: 'Reviewer', strong: true, render: (row) => row.name },
-      { id: 'email', header: 'Email', width: '26%', render: (row) => row.email },
+      { id: 'name', header: 'Reviewer', strong: true, space: 'wide', render: (row) => row.name },
+      { id: 'email', header: 'Email', width: '26%', space: 'wide', render: (row) => row.email },
       {
         id: 'assigned',
         header: 'Assigned',
         width: '90px',
+        space: 'compact',
         align: 'right',
         render: (row) => <span className={styles.progress}>{row.assigned}</span>,
       },
@@ -408,6 +409,7 @@ export function RoundsManager(props: RoundsManagerProps) {
         id: 'done',
         header: 'Done',
         width: '90px',
+        space: 'compact',
         align: 'right',
         render: (row) => (
           <span className={styles.progress}>
@@ -419,6 +421,7 @@ export function RoundsManager(props: RoundsManagerProps) {
         id: 'average',
         header: 'Avg given',
         width: '96px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.averageGiven === null ? (

@@ -602,6 +602,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'ref',
         header: 'Ref',
         width: '92px',
+        space: 'compact',
         mono: true,
         render: (row) => (
           <Link className={styles.rowLink} href={`/organizer/submissions/${row.id}`}>
@@ -613,6 +614,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'title',
         header: 'Title',
         strong: true,
+        space: 'wide',
         render: (row) => (
           <span className={styles.cellTitle}>
             <Link className={styles.rowLink} href={`/organizer/submissions/${row.id}`}>
@@ -630,25 +632,26 @@ export function SubmissionQueue(props: QueueProps) {
       {
         id: 'submitter',
         header: 'Speaker',
-        width: '18%',
+        width: '16%',
         render: (row) => <span className={styles.titleText}>{row.submitterName}</span>,
       },
       {
         id: 'track',
         header: 'Track',
-        width: '13%',
+        width: '10%',
         render: (row) => row.trackName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'format',
         header: 'Format',
-        width: '12%',
+        width: '9%',
         render: (row) => row.formatName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'status',
         header: 'Status',
         width: '140px',
+        space: 'compact',
         // The staging note sits under the status rather than replacing it: staging is what an
         // organizer proposes, the status is what the submission is, and they are never the same
         // claim. A row nobody staged renders exactly the single badge it always did.
@@ -667,6 +670,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'progress',
         header: 'Reviews',
         width: '84px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.assignedCount === 0 ? (
@@ -681,6 +685,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'score',
         header: 'Score',
         width: '92px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.averageScore === null ? (

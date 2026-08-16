@@ -59,7 +59,8 @@ const COLUMNS: Array<DataTableColumn<OrganizerTaskRow>> = [
   {
     id: 'name',
     header: 'Task',
-    width: '30%',
+    width: '28%',
+    space: 'wide',
     render: (row) => (
       <div className={styles.taskCell}>
         <span className={styles.taskName}>{row.name}</span>
@@ -74,13 +75,14 @@ const COLUMNS: Array<DataTableColumn<OrganizerTaskRow>> = [
   {
     id: 'due',
     header: 'Deadline',
-    width: '14%',
+    width: '12%',
     render: (row) => <span className={styles.dueDate}>{formatDate(row.dueAt)}</span>,
   },
   {
     id: 'progress',
     header: 'Progress',
-    width: '26%',
+    width: '22%',
+    space: 'wide',
     render: (row) => (
       <span className={styles.barTrack} title={`${row.completionPct}% complete`}>
         <span
@@ -94,7 +96,8 @@ const COLUMNS: Array<DataTableColumn<OrganizerTaskRow>> = [
   {
     id: 'counts',
     header: 'Assigned',
-    width: '18%',
+    width: '20%',
+    space: 'wide',
     render: (row) => (
       <span className={styles.personMeta}>
         {row.completed + row.waived}/{row.assigned} done · {row.inProgress} in progress
@@ -105,7 +108,8 @@ const COLUMNS: Array<DataTableColumn<OrganizerTaskRow>> = [
     id: 'overdue',
     header: 'Overdue',
     align: 'right',
-    width: '12%',
+    width: '8%',
+    space: 'compact',
     render: (row) =>
       row.overdue > 0 ? <Badge tone="danger">{row.overdue}</Badge> : <span aria-hidden>—</span>,
   },
@@ -187,6 +191,7 @@ export function TasksIndex({
           id: 'actions',
           header: <span className={editor.visuallyHidden}>Actions</span>,
           width: 'calc(var(--control-md) * 2.4)',
+          space: 'compact' as const,
           align: 'right',
           render: (row) => (
             <span className={editor.rowActions}>
