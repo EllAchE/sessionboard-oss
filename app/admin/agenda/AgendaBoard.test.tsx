@@ -2,6 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/ui';
+import { DEFAULT_AGENDA_OPTIMIZATION_WEIGHTS } from '@/lib/ai/agenda-optimizer';
 import { formatDayLabel } from '@/lib/services/schedule';
 import { AgendaBoard } from './AgendaBoard';
 
@@ -37,6 +38,7 @@ describe('AgendaBoard conference view', () => {
             startsOn: '2026-09-08',
             endsOn: '2026-09-10',
             conflictPolicy: 'warn',
+            optimizationWeights: DEFAULT_AGENDA_OPTIMIZATION_WEIGHTS,
           }}
           rooms={[{ id: 'room-1', name: 'Main hall', capacity: 200, floor: null }]}
           tracks={[]}
@@ -44,7 +46,6 @@ describe('AgendaBoard conference view', () => {
           entries={[]}
           queue={[]}
           descriptions={{}}
-          modelConfigured={false}
           canManage
         />
       </ToastProvider>,

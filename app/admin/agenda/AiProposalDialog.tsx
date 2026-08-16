@@ -2,11 +2,48 @@
 
 import { useState, useTransition } from 'react';
 import { Sparkles } from 'lucide-react';
-import { Button, Checkbox, Dialog, Textarea } from '@/components/ui';
+import { Button, Checkbox, Dialog, Input } from '@/components/ui';
+import type { AgendaOptimizationWeights } from '@/lib/ai/agenda-optimizer';
 import { formatZonedRange } from '@/lib/services/schedule';
-import { AI_KEY_MISSING_NOTE } from '@/lib/ai/notice';
 import { proposeAgendaAction, type WireProposal } from './ai-actions';
 import styles from './agenda.module.css';
+
+const OPTIMIZATION_CONTROLS: Array<{
+  key: keyof AgendaOptimizationWeights;
+  label: string;
+  hint: string;
+}> = [
+  {
+    key: 'audienceOverlap',
+    label: 'Audience overlap',
+    hint: 'Separates talks with shared tracks, tags, personas, or subject matter.',
+  },
+  {
+    key: 'expectedAttendance',
+    label: 'Attendance forecast',
+    hint: 'How strongly each talk’s expected audience should shape demand.',
+  },
+  {
+    key: 'speakerPopularity',
+    label: 'Speaker popularity',
+    hint: 'How strongly a speaker’s 0–100 popularity score should raise demand.',
+  },
+  {
+    key: 'roomFit',
+    label: 'Room fit',
+    hint: 'Matches estimated demand to room or stage capacity.',
+  },
+  {
+    key: 'venueFlow',
+    label: 'Venue flow',
+    hint: 'Avoids moving related audiences between floors in adjacent slots.',
+  },
+  {
+    key: 'scheduleCompactness',
+    label: 'Schedule compactness',
+    hint: 'Uses parallel rooms instead of spreading every talk across the day.',
+  },
+];
 
 /**
  * `A-8`. The assistant proposes; the organizer disposes. Every row starts checked and any of them
@@ -16,14 +53,14 @@ import styles from './agenda.module.css';
 
 export function AiProposalDialog({
   open,
-  modelConfigured,
   timeZone,
+  initialWeights,
   onOpenChange,
   onApply,
 }: {
   open: boolean;
-  modelConfigured: boolean;
   timeZone: string;
+  initialWeights: AgendaOptimizationWeights;
   onOpenChange: (open: boolean) => void;
   onApply: (
     placements: {
@@ -35,14 +72,14 @@ export function AiProposalDialog({
     }[],
   ) => Promise<void>;
 }) {
-  const [guidance, setGuidance] = useState('');
+  const [weights, setWeights] = useState(initialWeights);
   const [proposal, setProposal] = useState<WireProposal | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
 
   const request = () => {
     startTransition(async () => {
-      const result = await proposeAgendaAction(guidance || null);
+      const result = await proposeAgendaAction(weights);
       setProposal(result);
       setChosen(new Set(result.placements.map((placement) => placement.targetId)));
     });
@@ -74,12 +111,18 @@ export function AiProposalDialog({
       return next;
     });
 
+  const setWeight = (key: keyof AgendaOptimizationWeights, value: string) =>
+    setWeights((current) => ({
+      ...current,
+      [key]: Math.max(0, Math.min(100, Math.round(Number(value) || 0))),
+    }));
+
   return (
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Draft an agenda"
-      description="A suggested, conflict-free placement for everything still waiting for a slot. Nothing is saved until you apply it."
+      title="Build a smart agenda draft"
+      description="A weighted, conflict-free placement for everything waiting for a slot. Review every suggestion before applying it."
       size="lg"
       footer={
         <div className={styles.detailActions}>
@@ -87,37 +130,43 @@ export function AiProposalDialog({
             <Button variant="primary" onClick={apply} loading={pending}>
               Apply {chosen.size} placement{chosen.size === 1 ? '' : 's'}
             </Button>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={request}
-              loading={pending}
-              iconLeft={<Sparkles size={14} />}
-            >
-              Suggest a schedule
-            </Button>
-          )}
+          ) : null}
+          <Button
+            variant={proposal?.placements.length ? undefined : 'primary'}
+            onClick={request}
+            loading={pending}
+            iconLeft={<Sparkles size={14} />}
+          >
+            {proposal ? 'Rebuild draft' : 'Build draft'}
+          </Button>
           <Button onClick={() => onOpenChange(false)}>Close</Button>
         </div>
       }
     >
       <div className={styles.form}>
-        {!modelConfigured && <p className={styles.proposalNote}>{AI_KEY_MISSING_NOTE}</p>}
-
-        {!proposal && (
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="agenda-guidance">
-              Anything it should know? (optional)
-            </label>
-            <Textarea
-              id="agenda-guidance"
-              rows={3}
-              placeholder="Keep workshops in the afternoon; the keynote room is the largest."
-              value={guidance}
-              onChange={(fired) => setGuidance(fired.target.value)}
-            />
-          </div>
-        )}
+        <p className={styles.proposalNote}>
+          Each weight runs from 0 (ignore it) to 100 (prioritize it). Building the draft saves these
+          values as this event’s defaults.
+        </p>
+        <div className={styles.formRow}>
+          {OPTIMIZATION_CONTROLS.map((control) => (
+            <div className={styles.field} key={control.key}>
+              <label className={styles.label} htmlFor={`agenda-weight-${control.key}`}>
+                {control.label}
+              </label>
+              <Input
+                id={`agenda-weight-${control.key}`}
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={weights[control.key]}
+                onChange={(event) => setWeight(control.key, event.target.value)}
+              />
+              <span className={styles.proposalRationale}>{control.hint}</span>
+            </div>
+          ))}
+        </div>
 
         {proposal?.message && <p className={styles.proposalNote}>{proposal.message}</p>}
         {proposal?.notes && <p className={styles.proposalNote}>{proposal.notes}</p>}

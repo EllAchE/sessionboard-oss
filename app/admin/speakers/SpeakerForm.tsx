@@ -27,6 +27,7 @@ export type SpeakerFormValues = {
   pronouns: string;
   jobTitle: string;
   company: string;
+  popularityScore: string;
   bioMarkdown: string;
   website: string;
   timezone: string;
@@ -42,6 +43,7 @@ export const EMPTY_SPEAKER: SpeakerFormValues = {
   pronouns: '',
   jobTitle: '',
   company: '',
+  popularityScore: '',
   bioMarkdown: '',
   website: '',
   timezone: '',
@@ -151,6 +153,8 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
         dietaryNotes: values.dietaryNotes,
         accessibilityNotes: values.accessibilityNotes,
         headshotFileId,
+        popularityScore:
+          values.popularityScore.trim() === '' ? null : Number(values.popularityScore),
       };
 
       const outcome = editing
@@ -239,6 +243,24 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 value={values.company}
                 placeholder="Analytical Engines Ltd"
                 onChange={(event) => set('company', event.target.value)}
+              />
+            </Field>
+            <Field
+              label="Popularity score"
+              htmlFor="speaker-popularity"
+              error={errors.popularityScore}
+              hint="Organizer estimate from 0–100. Used to forecast demand and choose an appropriate stage."
+            >
+              <Input
+                id="speaker-popularity"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={values.popularityScore}
+                placeholder="75"
+                invalid={Boolean(errors.popularityScore)}
+                onChange={(event) => set('popularityScore', event.target.value)}
               />
             </Field>
             <Field label="Pronouns" htmlFor="speaker-pronouns" error={errors.pronouns}>

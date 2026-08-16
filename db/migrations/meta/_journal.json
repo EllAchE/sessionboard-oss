@@ -148,6 +148,13 @@
       "when": 1786852524963,
       "tag": "0020_foamy_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1786913539734,
+      "tag": "0021_hot_xorn",
+      "breakpoints": true
     }
   ]
 }

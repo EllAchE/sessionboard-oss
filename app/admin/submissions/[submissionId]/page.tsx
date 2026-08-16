@@ -130,6 +130,7 @@ export default async function SubmissionReviewPage({
       level={detail.level}
       trackName={detail.trackName}
       formatName={detail.formatName}
+      expectedAttendance={detail.expectedAttendance}
       tags={detail.tags}
       answers={answerEntries(detail.answers, detail.answerLabels)}
       submittedAt={detail.submittedAt ? detail.submittedAt.toISOString() : null}

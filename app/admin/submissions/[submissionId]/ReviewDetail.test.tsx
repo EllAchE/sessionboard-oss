@@ -18,6 +18,7 @@ const props: ReviewDetailProps = {
   level: null,
   trackName: null,
   formatName: null,
+  expectedAttendance: null,
   tags: [],
   answers: [],
   submittedAt: null,
@@ -106,6 +107,14 @@ describe('ReviewDetail reviewer assignments', () => {
 
     expect(html).not.toContain('Reviewer assignments');
     expect(html).not.toContain('one@example.test');
+    expect(html).not.toContain('Agenda demand');
+  });
+
+  it('shows the stored audience forecast to organizers', () => {
+    const html = renderToStaticMarkup(<ReviewDetail {...props} expectedAttendance={250} />);
+
+    expect(html).toContain('Agenda demand');
+    expect(html).toContain('value="250"');
   });
 });
 

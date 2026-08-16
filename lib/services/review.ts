@@ -2343,6 +2343,7 @@ export type SubmissionReview = {
   level: string | null;
   trackName: string | null;
   formatName: string | null;
+  expectedAttendance: number | null;
   tags: Array<{ id: string; name: string }>;
   answers: Record<string, unknown>;
   /** Answer keys are form-local slugs; the question wording lives on the field row. */
@@ -2521,6 +2522,7 @@ export async function loadSubmissionReview(
     level: row.level,
     trackName: trackRow?.name ?? null,
     formatName: formatRow?.name ?? null,
+    expectedAttendance: row.expectedAttendance,
     tags: tagRows,
     answers: row.answers as Record<string, unknown>,
     answerLabels: Object.fromEntries(fieldRows.map((field) => [field.key, field.label])),
@@ -2563,6 +2565,32 @@ export async function loadSubmissionReview(
   };
 
   return authorHidden ? redactAuthorship(detail, fieldRows) : detail;
+}
+
+export async function setExpectedAttendance(
+  ctx: EventContext,
+  submissionId: string,
+  expectedAttendance: number | null,
+): Promise<number | null> {
+  requireCapability(ctx, 'submission:decide');
+  if (
+    expectedAttendance !== null &&
+    (!Number.isInteger(expectedAttendance) ||
+      expectedAttendance < 0 ||
+      expectedAttendance > 1_000_000)
+  ) {
+    throw invalid('Expected attendance must be a whole number between 0 and 1,000,000', {
+      expectedAttendance: 'Enter a whole number from 0 to 1,000,000',
+    });
+  }
+
+  const [updated] = await getDb()
+    .update(submission)
+    .set({ expectedAttendance, updatedAt: new Date() })
+    .where(and(eq(submission.id, submissionId), eq(submission.eventId, ctx.eventId)))
+    .returning({ expectedAttendance: submission.expectedAttendance });
+  if (!updated) throw notFound('That submission');
+  return updated.expectedAttendance;
 }
 
 // ---------------------------------------------------------------------------

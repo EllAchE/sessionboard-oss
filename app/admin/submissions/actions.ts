@@ -41,6 +41,22 @@ export async function saveScorecardAction(input: {
   }, `/admin/submissions/${input.submissionId}`);
 }
 
+export async function saveExpectedAttendanceAction(
+  submissionId: string,
+  expectedAttendance: number | null,
+): Promise<ActionResult<{ expectedAttendance: number | null }>> {
+  return run(async () => {
+    const ctx = await decideContext();
+    return {
+      expectedAttendance: await review.setExpectedAttendance(
+        ctx,
+        submissionId,
+        expectedAttendance,
+      ),
+    };
+  }, `/admin/submissions/${submissionId}`);
+}
+
 export async function decideAction(
   submissionIds: string[],
   decision: review.Decision,
