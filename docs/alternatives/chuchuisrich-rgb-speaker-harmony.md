@@ -1,9 +1,7 @@
 # chuchuisrich-rgb/speaker-harmony
 
-**Source:** git@github.com:chuchuisrich-rgb/speaker-harmony.git · **Live:** None recorded in the repository
-
+**Source:** git@github.com:chuchuisrich-rgb/speaker-harmony.git · **Live:** none found
 **Found via:** Pre-discovered repository batch supplied for this survey.
-
 **Analyzed:** 2026-08-16 at commit bad9cf0dbc46ed9576933821753229f0a70487f5
 
 ## Stack

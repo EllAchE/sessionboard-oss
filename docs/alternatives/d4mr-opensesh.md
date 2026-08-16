@@ -1,9 +1,7 @@
 # d4mr/opensesh
 
 **Source:** git@github.com:d4mr/opensesh.git · **Live:** https://app.opensesh.io
-
 **Found via:** Pre-discovered repository batch supplied for this survey.
-
 **Analyzed:** 2026-08-16 at commit 35450414ef90dbf552c8d74c9c6613fac1223e23
 
 ## Stack

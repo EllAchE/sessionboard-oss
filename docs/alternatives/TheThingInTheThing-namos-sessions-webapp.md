@@ -1,9 +1,7 @@
 # TheThingInTheThing/namos-sessions-webapp
 
 **Source:** git@github.com:TheThingInTheThing/namos-sessions-webapp.git · **Live:** https://app.namos-sessions.xyz
-
 **Found via:** Pre-discovered repository batch supplied for this survey.
-
 **Analyzed:** 2026-08-16 at commit e4b85d85fbf4f466b4747eb73eacee3822008ecf
 
 ## Stack
