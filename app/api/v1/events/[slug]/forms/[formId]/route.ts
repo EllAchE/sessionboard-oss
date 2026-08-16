@@ -10,6 +10,8 @@ import { enforcePublicApiRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Public form contract so a speaker agent can prepare valid answers before authenticating a write. */
 export async function GET(
   request: Request,
@@ -19,10 +21,8 @@ export async function GET(
     await enforcePublicApiRateLimit(request);
     const { slug, formId } = await context.params;
     const event = await requireEvent(slug);
-    const formRow = await getDb().query.form.findFirst({
-      where: and(eq(formTable.eventId, event.id), eq(formTable.id, formId)),
-    });
-    const bundle = await loadPublicForm(slug, formRow?.slug ?? formId);
+    const formSlug = await resolveFormSlug(event.id, formId);
+    const bundle = await loadPublicForm(slug, formSlug);
     if (!bundle || !isAcceptingSubmissions(bundle.form)) throw notFound('That form');
 
     return json(
@@ -56,4 +56,20 @@ export async function GET(
       { headers: PUBLIC_CACHE },
     );
   });
+}
+
+/** Resolve the public slug first so a caller can safely pass either identifier without UUID casts. */
+async function resolveFormSlug(eventId: string, identifier: string): Promise<string> {
+  const forms = getDb().query.form;
+  const bySlug = await forms.findFirst({
+    where: and(eq(formTable.eventId, eventId), eq(formTable.slug, identifier)),
+  });
+  if (bySlug) return bySlug.slug;
+  if (!UUID.test(identifier)) throw notFound('That form');
+
+  const byId = await forms.findFirst({
+    where: and(eq(formTable.eventId, eventId), eq(formTable.id, identifier)),
+  });
+  if (!byId) throw notFound('That form');
+  return byId.slug;
 }
