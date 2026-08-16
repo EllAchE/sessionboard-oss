@@ -201,7 +201,10 @@ portal pages, group access.
 
 **Agenda.** Drag sessions onto a day/room grid with conflict detection for room clashes, track
 clashes and — the one the brief doesn't ask for — **speaker double-booking**, which is the clash
-that fails publicly on the day.
+that fails publicly on the day. Clashes are saved and listed as warnings by default, because a
+programme is built by passing through invalid intermediate states; an organizer who wants the
+stricter behaviour turns on **Block clashes on save** and room and speaker double-bookings are then
+refused outright.
 
 **Post-conference recordings.** **Admin → Recordings** attaches a bounded video upload, an existing
 event video, or an HTTPS streaming URL to a session. Media stays draft until an organizer publishes

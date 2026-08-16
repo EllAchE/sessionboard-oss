@@ -15,6 +15,8 @@ import { formatRef } from '@/lib/ids';
 import type { NamedFormat, NamedRoom, NamedTrack } from './wire';
 import {
   DEFAULT_SESSION_MINUTES,
+  parseConflictPolicy,
+  type ConflictPolicy,
   type QueueItem,
   type ScheduleEntry,
   type SpeakerRef,
@@ -37,6 +39,8 @@ export type AgendaData = {
     timezone: string;
     startsOn: string | null;
     endsOn: string | null;
+    /** `AR-35`. Whether a detected clash refuses the write or is recorded as a warning. */
+    conflictPolicy: ConflictPolicy;
   };
   rooms: NamedRoom[];
   tracks: NamedTrack[];
@@ -185,6 +189,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
       timezone: eventRow.timezone,
       startsOn: eventRow.startsOn,
       endsOn: eventRow.endsOn,
+      conflictPolicy: parseConflictPolicy(eventRow.agendaConflictPolicy),
     },
     rooms: rooms.map((row) => ({
       id: row.id,

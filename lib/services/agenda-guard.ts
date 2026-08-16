@@ -1,8 +1,14 @@
 import { asc, eq, inArray, sql } from 'drizzle-orm';
 import { getDb, type Database } from '../../db/client';
-import { participant, participantRole, scheduledSession, user } from '../../db/schema';
+import { event, participant, participantRole, scheduledSession, user } from '../../db/schema';
 import { runAtomicAgendaMutation, type AgendaMutation } from './agenda-atomic';
-import type { ScheduleEntry, SpeakerRef } from './schedule';
+import {
+  parseConflictPolicy,
+  type Conflict,
+  type ConflictPolicy,
+  type ScheduleEntry,
+  type SpeakerRef,
+} from './schedule';
 
 type TransactionCallback = Parameters<Database['transaction']>[0];
 export type AgendaTransaction = Parameters<TransactionCallback>[0];
@@ -64,9 +70,28 @@ async function loadEntries(
   }));
 }
 
+/** `AR-35`. Read under the same lock as the entries so the decision cannot straddle a policy change. */
+async function loadPolicy(
+  transaction: AgendaTransaction,
+  eventId: string,
+): Promise<ConflictPolicy> {
+  const row = await transaction.query.event.findFirst({ where: eq(event.id, eventId) });
+  return parseConflictPolicy(row?.agendaConflictPolicy);
+}
+
+export type AtomicAgendaOptions = {
+  /**
+   * Clashes the event's `warn` policy let through. They committed, so this is not an error path —
+   * it is how the caller tells the organizer what they just created instead of letting a
+   * double-booking reach the printed programme unannounced.
+   */
+  onWarn?: (conflicts: Conflict[]) => void;
+};
+
 export async function mutateAgendaAtomically<T>(
   eventId: string,
   mutate: (transaction: AgendaTransaction) => Promise<AgendaMutation<T>>,
+  options: AtomicAgendaOptions = {},
 ): Promise<T> {
   const db = getDb();
   return runAtomicAgendaMutation<T, AgendaTransaction>(
@@ -78,7 +103,23 @@ export async function mutateAgendaAtomically<T>(
         );
       },
       loadEntries: (transaction) => loadEntries(transaction, eventId),
+      loadPolicy: (transaction) => loadPolicy(transaction, eventId),
+      onWarn: options.onWarn ? (conflicts) => options.onWarn?.(conflicts) : undefined,
     },
     mutate,
   );
+}
+
+/** The organizer's toggle. `agenda:manage` is the capability, because this is an agenda rule. */
+export async function setAgendaConflictPolicy(
+  eventId: string,
+  policy: ConflictPolicy,
+): Promise<ConflictPolicy> {
+  const [row] = await getDb()
+    .update(event)
+    .set({ agendaConflictPolicy: policy, updatedAt: new Date() })
+    .where(eq(event.id, eventId))
+    .returning({ policy: event.agendaConflictPolicy });
+  if (!row) throw new Error('That event could not be found');
+  return parseConflictPolicy(row.policy);
 }

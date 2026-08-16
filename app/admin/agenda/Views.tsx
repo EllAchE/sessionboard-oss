@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { AlertTriangle, CalendarX2, Users } from 'lucide-react';
-import { Badge } from '@/components/ui';
+import { Badge, Switch } from '@/components/ui';
 import {
   entriesForDay,
   formatDayLabel,
@@ -11,6 +11,7 @@ import {
   monthGrid,
   zonedDayKey,
   type Conflict,
+  type ConflictPolicy,
   type ScheduleEntry,
 } from '@/lib/services/schedule';
 import type { NamedRoom, NamedTrack } from './wire';
@@ -246,26 +247,62 @@ export function GroupedView({
   );
 }
 
-/** `A-2`'s dedicated conflicts view: every clash on the whole agenda, worst first. */
+/**
+ * `A-2`'s dedicated conflicts view: every clash on the whole agenda, worst first, and — since
+ * `AR-35` — the switch that decides whether a clash refuses the save at all.
+ *
+ * The switch lives here rather than in event settings because this is the screen an organizer is
+ * already on when the rule starts to matter, and because the list underneath it is the evidence for
+ * the decision. Room and speaker clashes are the only blockable kinds; the copy says so, so nobody
+ * flips the switch expecting it to police track collisions too.
+ */
 export function ConflictsView({
   conflicts,
   entries,
   timeZone,
   onOpen,
+  policy,
+  canManage,
+  onPolicyChange,
+  onUnschedule,
 }: {
   conflicts: Conflict[];
   entries: ScheduleEntry[];
   timeZone: string;
   onOpen: (entry: ScheduleEntry) => void;
+  policy: ConflictPolicy;
+  canManage: boolean;
+  onPolicyChange: (policy: ConflictPolicy) => void;
+  onUnschedule: (entry: ScheduleEntry) => void;
 }) {
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   const ordered = [...conflicts].sort((a, b) =>
     a.severity === b.severity ? a.kind.localeCompare(b.kind) : a.severity === 'error' ? -1 : 1,
   );
 
+  const control = (
+    <div className={styles.policyBar}>
+      <div className={styles.policyText}>
+        <span className={styles.policyTitle}>Block clashes on save</span>
+        <span className={styles.policyHint}>
+          {policy === 'block'
+            ? 'A room or speaker double-booking is refused. Track collisions are still allowed, and still listed here.'
+            : 'Clashes are saved and listed here as warnings. Turn this on to refuse room and speaker double-bookings outright.'}
+        </span>
+      </div>
+      <Switch
+        checked={policy === 'block'}
+        disabled={!canManage}
+        aria-label="Block clashes on save"
+        onCheckedChange={(checked) => onPolicyChange(checked ? 'block' : 'warn')}
+      />
+    </div>
+  );
+
   if (ordered.length === 0) {
     return (
       <div className={styles.panel}>
+        {control}
         <p className={styles.railEmpty}>
           No room, track or speaker clashes on this agenda. Back-to-back sessions are not clashes.
         </p>
@@ -275,6 +312,7 @@ export function ConflictsView({
 
   return (
     <div className={styles.panel}>
+      {control}
       {ordered.map((conflict) => {
         const first = byId.get(conflict.sessionIds[0]);
         return (
@@ -316,6 +354,26 @@ export function ConflictsView({
                     </button>
                   );
                 })}
+                {/*
+                  The one-click fix. Returning either side to the unscheduled rail resolves any
+                  clash of any kind without asking the organizer to first work out which slot is
+                  free — and it is lossless, because the rail is where the session came from.
+                */}
+                {canManage &&
+                  conflict.sessionIds.map((sessionId) => {
+                    const entry = byId.get(sessionId);
+                    if (!entry || !isPlaced(entry)) return null;
+                    return (
+                      <button
+                        key={`unschedule:${sessionId}`}
+                        type="button"
+                        className={styles.resolveButton}
+                        onClick={() => onUnschedule(entry)}
+                      >
+                        Unschedule {entry.title}
+                      </button>
+                    );
+                  })}
               </span>
             </div>
           </div>

@@ -351,6 +351,26 @@ real regardless of transport.
 
 ---
 
+## 9. Agenda conflict policy
+
+`A-2` in `01-requirements.md` asks for conflict detection, and `A-7` for speaker double-booking
+detection. Both were built as *refusals*: every write path re-detected conflicts after the mutation
+and rolled the transaction back, so a conflicting agenda could not be stored. The consequence was
+that the conflicts view and the "N conflicts on this agenda" chip could only ever render zero, and
+step 6 of the rehearsal script in [`03-plan.md`](03-plan.md) — "force a room clash and a speaker
+double-booking; confirm both surface" — was not performable.
+
+The owner's decision: **conflicts are warnings by default, and the organizer may switch their event
+to blocking.** Detection was never wrong; treating detection and enforcement as the same thing was.
+The two are separated below — severity is intrinsic to the kind of clash, enforcement is the
+organizer's call.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-35 | **[REQUIRED]** | SHIPPED | **Agenda conflicts are recorded, not refused, unless the organizer says otherwise.** `event.agenda_conflict_policy` is `warn` (default) or `block`, set from the conflicts view by anyone with `agenda:manage`. Severity is a property of the clash: a room double-booking and a speaker double-booking are `error` — physically impossible programmes; a track collision is `warning` — an editorial judgement, since parallel sessions inside a strand are a normal choice. Under `block` only `error` kinds refuse the write; under `warn` nothing refuses, and every clash surfaces as a named row — "Cicero is scheduled in X and Y at the same time" — with one-click unschedule on either side, a "Saved with a clash" toast confirming what actually committed, an amber banner during the drag, and the persistent count chip. The policy is read inside the same transaction and advisory lock as the entries, and `blockingConflicts()` is the single decision point shared by the board, the transactional guard, and `/api/v1` program reconcile, so the UI and the API cannot disagree about what saves (`lib/services/schedule.ts`, `lib/services/agenda-atomic.ts`, `lib/services/program-reconcile.ts`, migration `0020`) |
+
+---
+
 ## Decisions
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so
@@ -378,5 +398,5 @@ question that blocks a build.
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
 | [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
 | [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds) |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |

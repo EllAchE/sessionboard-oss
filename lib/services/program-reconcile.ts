@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { getDb, type Database } from '@/db/client';
-import { room, scheduledSession, sessionFormat, track } from '@/db/schema';
+import { event, room, scheduledSession, sessionFormat, track } from '@/db/schema';
 import { conflict } from '@/lib/errors';
 import {
   allocateSessionRef,
@@ -8,7 +8,14 @@ import {
   mintIcsUid,
   notifyIfPublished,
 } from '@/lib/services/agenda-mutations';
-import { detectConflicts, type ScheduleEntry } from '@/lib/services/schedule';
+import {
+  blockingConflicts,
+  detectConflicts,
+  parseConflictPolicy,
+  type Conflict,
+  type ConflictPolicy,
+  type ScheduleEntry,
+} from '@/lib/services/schedule';
 import { emitSessionScheduled } from '@/lib/webhooks';
 
 export const DELETE_MISSING_CONFIRMATION = 'DELETE_MISSING_SESSIONS' as const;
@@ -53,6 +60,18 @@ export type ProgramReconcileResult = {
   requiresDeleteConfirmation: boolean;
   summary: Record<ProgramOperationAction, number>;
   operations: ProgramOperation[];
+  /**
+   * `AR-35`. Clashes this plan leaves on the agenda, under the event's conflict policy. Populated
+   * on a dry run as well as on an apply, so an integrator can see what the push is about to do
+   * before it does it. Under `block` the same clashes would have been a `409` instead.
+   */
+  conflicts: ProgramConflict[];
+};
+
+export type ProgramConflict = {
+  kind: 'room' | 'track' | 'speaker';
+  severity: 'error' | 'warning';
+  message: string;
 };
 
 type StoredSession = Pick<
@@ -101,7 +120,12 @@ type Mutation =
     }
   | { action: 'delete'; externalId: string; current: StoredSession };
 
-type ProgramPlan = ProgramReconcileResult & { mutations: Mutation[] };
+/**
+ * `conflicts` is omitted rather than defaulted: a plan is what the reconciler intends to do, and
+ * the clashes are what that intent turns out to leave behind. They can only be known once the plan
+ * has been folded onto the stored rows, so making the field absent here keeps the ordering honest.
+ */
+type ProgramPlan = Omit<ProgramReconcileResult, 'conflicts'> & { mutations: Mutation[] };
 
 function externalKey(source: ProgramReconcileInput['source'], externalId: string): string {
   return `${source}:${externalId}`;
@@ -360,14 +384,16 @@ export function planProgramReconciliation(
 type ProgramDb = Database | Parameters<Parameters<Database['transaction']>[0]>[0];
 
 async function loadProgramState(eventId: string, database: ProgramDb) {
-  const [stored, rooms, tracks, formats] = await Promise.all([
+  const [stored, rooms, tracks, formats, eventRow] = await Promise.all([
     database.query.scheduledSession.findMany({ where: eq(scheduledSession.eventId, eventId) }),
     database.query.room.findMany({ where: eq(room.eventId, eventId) }),
     database.query.track.findMany({ where: eq(track.eventId, eventId) }),
     database.query.sessionFormat.findMany({ where: eq(sessionFormat.eventId, eventId) }),
+    database.query.event.findFirst({ where: eq(event.id, eventId) }),
   ]);
   return {
     stored,
+    policy: parseConflictPolicy(eventRow?.agendaConflictPolicy),
     taxonomy: {
       rooms: rooms.map(({ id, name }) => ({ id, name })),
       tracks: tracks.map(({ id, name }) => ({ id, name })),
@@ -376,7 +402,11 @@ async function loadProgramState(eventId: string, database: ProgramDb) {
   };
 }
 
-function publicResult(plan: ProgramPlan, applied = false): ProgramReconcileResult {
+function publicResult(
+  plan: ProgramPlan,
+  applied = false,
+  conflicts: Conflict[] = [],
+): ProgramReconcileResult {
   return {
     source: plan.source,
     mode: plan.mode,
@@ -385,10 +415,27 @@ function publicResult(plan: ProgramPlan, applied = false): ProgramReconcileResul
     requiresDeleteConfirmation: plan.requiresDeleteConfirmation,
     summary: plan.summary,
     operations: plan.operations,
+    conflicts: conflicts.map((item) => ({
+      kind: item.kind,
+      severity: item.severity,
+      message: item.message,
+    })),
   };
 }
 
-function assertProgramPlanConflictFree(plan: ProgramPlan, stored: StoredSession[]): void {
+/**
+ * The API's half of `AR-35`, and it has to answer exactly as the board does: the same detector, the
+ * same event policy, the same `blockingConflicts` call. An agenda an organizer can save by dragging
+ * must not come back `409` from a push, and one the push accepts must not be un-draggable.
+ *
+ * Returns the clashes this plan leaves touching a changed session; throws only what the policy
+ * blocks.
+ */
+function programPlanConflicts(
+  plan: ProgramPlan,
+  stored: StoredSession[],
+  policy: ConflictPolicy,
+): Conflict[] {
   const final = new Map(stored.map((row) => [row.id, row]));
   const changedSessionIds = new Set<string>();
 
@@ -420,10 +467,12 @@ function assertProgramPlanConflictFree(plan: ProgramPlan, stored: StoredSession[
     clientId: row.clientId,
     speakers: [],
   }));
-  const blocked = detectConflicts(entries).find((item) =>
+  const touching = detectConflicts(entries).filter((item) =>
     item.sessionIds.some((sessionId) => changedSessionIds.has(sessionId)),
   );
-  if (blocked) throw conflict(blocked.message);
+  const blocked = blockingConflicts(touching, policy);
+  if (blocked.length > 0) throw conflict(blocked[0].message);
+  return touching;
 }
 
 async function applyProgramPlan(eventId: string, plan: ProgramPlan, database: ProgramDb) {
@@ -484,7 +533,13 @@ export async function reconcileProgram(
 ): Promise<ProgramReconcileResult> {
   if (!input.apply) {
     const state = await loadProgramState(eventId, database);
-    return publicResult(planProgramReconciliation(input, state.stored, state.taxonomy));
+    const plan = planProgramReconciliation(input, state.stored, state.taxonomy);
+    // A dry run reports the clashes rather than throwing on them, whatever the policy: the caller
+    // asked what would happen, and "it would be refused, here is why" is the answer.
+    const previewed = plan.canApply
+      ? programPlanConflicts(plan, state.stored, 'warn')
+      : [];
+    return publicResult(plan, false, previewed);
   }
 
   const outcome = await database.transaction(async (transaction) => {
@@ -496,9 +551,9 @@ export async function reconcileProgram(
     const state = await loadProgramState(eventId, transaction);
     const plan = planProgramReconciliation(input, state.stored, state.taxonomy);
     if (!plan.canApply) return { result: publicResult(plan), notifications: [] };
-    assertProgramPlanConflictFree(plan, state.stored);
+    const conflicts = programPlanConflicts(plan, state.stored, state.policy);
     const notifications = await applyProgramPlan(eventId, plan, transaction);
-    return { result: publicResult(plan, true), notifications };
+    return { result: publicResult(plan, true, conflicts), notifications };
   });
 
   for (const sessionId of outcome.notifications) {

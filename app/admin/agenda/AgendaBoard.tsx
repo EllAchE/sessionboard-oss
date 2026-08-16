@@ -19,6 +19,7 @@ import {
   DEFAULT_SESSION_MINUTES,
   agendaDayKeys,
   applyPlacements,
+  blockingConflicts,
   conflictsBySession,
   detectConflicts,
   durationMinutes,
@@ -32,6 +33,7 @@ import {
   provisionalEntry,
   publishCounts,
   summarizeConflicts,
+  type ConflictPolicy,
   type Placement,
   type QueueItem,
   type ScheduleEntry,
@@ -42,6 +44,7 @@ import {
   placeSessionAction,
   publishAllAction,
   saveManualSessionAction,
+  setConflictPolicyAction,
   setSessionStatusAction,
   unscheduleSessionAction,
   type ActionResult,
@@ -65,9 +68,14 @@ import styles from './agenda.module.css';
  * The agenda board. One `DndContext` covers the rail and every day grid on screen, so a card can
  * travel from "waiting for a slot" to a room column in one gesture and back again.
  *
- * `previewConflicts` runs on each hovered cell against the world as the drop would leave it. A true
- * room, track or speaker overlap cannot be saved, so the board shows the reason before the server's
- * serialized validation makes the same decision.
+ * `previewConflicts` runs on each hovered cell against the world as the drop would leave it. What
+ * happens to a clash it finds is `AR-35`'s per-event `ConflictPolicy`: under `warn` — the default —
+ * the drop lands, the save goes through and the clash is named in a toast and carried into the
+ * conflicts view; under `block` the drop is refused before the round trip, and the server's
+ * serialized re-check makes the same decision under the same lock.
+ *
+ * The board never decides that on its own: it reads `event.conflictPolicy` and calls the same
+ * `blockingConflicts` the transaction does, so the preview and the write cannot disagree.
  *
  * Calendar mail is not this component's business. `actions.ts` routes every change through
  * `sendSessionInvites`, which owns `ics_sequence` and the `ics_uid` of an existing row.
@@ -103,6 +111,17 @@ function weekDayKeys(anchor: string, available: string[]): string[] {
 }
 
 type Hover = { placement: Placement; additions: ScheduleEntry[]; dayKey: string };
+
+/**
+ * `AR-35`. The clashes a write actually committed, as the server saw them after the fact. Only the
+ * two placement actions carry them; everything else returns `null`, hence the shape check rather
+ * than a cast.
+ */
+function warningsOf(data: unknown): string[] {
+  if (!data || typeof data !== 'object' || !('warnings' in data)) return [];
+  const warnings = (data as { warnings: unknown }).warnings;
+  return Array.isArray(warnings) ? warnings.filter((item): item is string => typeof item === 'string') : [];
+}
 
 type DragState = { payload: DragPayload; hover: Hover | null };
 
@@ -173,10 +192,21 @@ export function AgendaBoard({
     return previewConflicts(entries, [drag.hover.placement], labels, drag.hover.additions);
   }, [drag, entries, labels, settled]);
 
-  const blocking = useMemo(() => {
+  /**
+   * `AR-35`. Optimistic so the switch reads as instant; the server action is the authority and
+   * `router.refresh()` brings the stored value back.
+   */
+  const [policy, setPolicy] = useState<ConflictPolicy>(event.conflictPolicy);
+  useEffect(() => setPolicy(event.conflictPolicy), [event.conflictPolicy]);
+
+  /** Clashes the hovered drop would create, whatever their severity. Always shown. */
+  const hovered = useMemo(() => {
     const sessionId = drag?.hover?.placement.sessionId;
     return sessionId ? live.filter((item) => item.sessionIds.includes(sessionId)) : [];
   }, [drag, live]);
+
+  /** The subset of those the event's policy will actually refuse. Empty under `warn`. */
+  const blocking = useMemo(() => blockingConflicts(hovered, policy), [hovered, policy]);
 
   const conflictIndex = useMemo(() => conflictsBySession(live), [live]);
   const summary = useMemo(() => summarizeConflicts(live), [live]);
@@ -191,10 +221,41 @@ export function AgendaBoard({
   // Server round trips
   // -------------------------------------------------------------------------
 
+  /**
+   * Every mutation goes through here. A failure is reported and the board resynced; a success that
+   * committed clashes under a `warn` policy is reported too, because the whole point of allowing
+   * the write is that the organizer is told what they now have — a silently accepted
+   * double-booking is worse than a refused one.
+   */
   const run = (title: string, action: () => Promise<ActionResult<unknown>>) => {
     startTransition(async () => {
       const result = await action();
-      if (!result.ok) toast({ title, description: result.error, tone: 'danger' });
+      if (!result.ok) {
+        toast({ title, description: result.error, tone: 'danger' });
+      } else {
+        const warnings = warningsOf(result.data);
+        if (warnings.length > 0) {
+          toast({
+            title: 'Saved with a clash',
+            description: warnings.join(' · '),
+            tone: 'warning',
+            duration: 9000,
+            action: { label: 'Review', onClick: () => setView('conflicts') },
+          });
+        }
+      }
+      router.refresh();
+    });
+  };
+
+  const changePolicy = (next: ConflictPolicy) => {
+    setPolicy(next);
+    startTransition(async () => {
+      const result = await setConflictPolicyAction(next);
+      if (!result.ok) {
+        setPolicy(event.conflictPolicy);
+        toast({ title: 'Could not change that setting', description: result.error, tone: 'danger' });
+      }
       router.refresh();
     });
   };
@@ -281,15 +342,23 @@ export function AgendaBoard({
     const hover = hoverFor(overId, state.payload);
     if (!hover) return;
 
+    /**
+     * `AR-35`. Under `block` this is where the drop stops, before any round trip. Under `warn` the
+     * drop proceeds and the clash becomes a named, reviewable warning instead of a dead end — the
+     * server's `onWarn` will confirm what actually committed, so nothing is announced here that the
+     * database might not agree with.
+     */
     const conflicts = previewConflicts(entries, [hover.placement], labels, hover.additions).filter(
       (item) => item.sessionIds.includes(hover.placement.sessionId),
     );
-    if (conflicts.length > 0) {
+    const refused = blockingConflicts(conflicts, policy);
+    if (refused.length > 0) {
       toast({
         title: 'Choose another slot',
-        description: conflicts.map((item) => item.message).join(' · '),
+        description: refused.map((item) => item.message).join(' · '),
         tone: 'danger',
         duration: 8000,
+        action: { label: 'Allow clashes', onClick: () => changePolicy('warn') },
       });
       return;
     }
@@ -515,6 +584,12 @@ export function AgendaBoard({
           <span>{blocking.map((item) => item.message).join(' · ')}</span>
           <span className={styles.bannerCounts}>Choose another slot</span>
         </div>
+      ) : hovered.length > 0 ? (
+        <div className={`${styles.banner} ${styles.bannerWarning}`}>
+          <AlertTriangle size={15} aria-hidden />
+          <span>{hovered.map((item) => item.message).join(' · ')}</span>
+          <span className={styles.bannerCounts}>Drop to save it anyway</span>
+        </div>
       ) : summary.total === 0 ? (
         <div className={`${styles.banner} ${styles.bannerClear}`}>
           <CheckCircle2 size={15} aria-hidden />
@@ -529,6 +604,7 @@ export function AgendaBoard({
           <AlertTriangle size={15} aria-hidden />
           <span>
             {summary.total} conflict{summary.total === 1 ? '' : 's'} on this agenda.
+            {policy === 'warn' ? ' Saved as warnings — nothing is blocked.' : ''}
           </span>
           <span className={styles.bannerCounts}>
             <span>{summary.room} room</span>
@@ -601,6 +677,17 @@ export function AgendaBoard({
             entries={entries}
             timeZone={timeZone}
             onOpen={openEntry}
+            policy={policy}
+            canManage={canManage}
+            onPolicyChange={changePolicy}
+            onUnschedule={(entry) => {
+              setEntries((current) =>
+                current.map((row) =>
+                  row.id === entry.id ? { ...row, roomId: null, startsAt: null, endsAt: null } : row,
+                ),
+              );
+              run('Could not unschedule that session', () => unscheduleSessionAction(entry.id));
+            }}
           />
         ) : (
           <MonthView
