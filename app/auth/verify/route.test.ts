@@ -56,6 +56,6 @@ describe('magic-link verification redirects', () => {
 
     const response = await GET(verifyRequest('valid-token'));
 
-    expect(response.headers.get('location')).toBe('https://public.cicero.test:8443/admin');
+    expect(response.headers.get('location')).toBe('https://public.cicero.test:8443/organizer');
   });
 });

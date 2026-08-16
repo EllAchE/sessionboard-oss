@@ -232,7 +232,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             {props.round ? <Badge tone="info">{props.round.status}</Badge> : null}
             {props.round?.blindUntilClose ? <Badge>Peer scores hidden</Badge> : null}
             {props.authorHidden ? (
-              <Badge tone="warning">Anonymized — you cannot see who submitted</Badge>
+              <Badge tone="warning">Anonymized</Badge>
             ) : null}
             {props.criterionCount === 0 && props.round ? (
               <Badge tone="danger">This round has no criteria yet</Badge>
@@ -241,10 +241,8 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           {/* `V-5`: the queue above is the organizer's track routing, seen from this side. */}
           <p className={styles.muted}>
             {props.coveredTracks.length > 0
-              ? `You cover ${props.coveredTracks.join(', ')}. Submissions filed under ${
-                  props.coveredTracks.length === 1 ? 'that track' : 'those tracks'
-                } are routed to you.`
-              : 'No track is routed to you yet, so anything below was assigned by hand.'}
+              ? `You cover ${props.coveredTracks.join(', ')}.`
+              : 'No tracks assigned; items below were assigned manually.'}
           </p>
         </CardBody>
       </Card>
@@ -274,7 +272,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           </CardHeader>
           <CardBody>
             <p className={styles.muted}>
-              These are off your queue. The organizer sees them as declined and can reassign them.
+              Removed from your queue and available for reassignment.
             </p>
             <div className={styles.tableWrap}>
               <DataTable
@@ -319,7 +317,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             id="recusal-reason"
             rows={3}
             value={reason}
-            placeholder="A conflict of interest, or simply no capacity."
+            placeholder="Conflict of interest or availability."
             onChange={(event) => setReason(event.target.value)}
           />
         </div>

@@ -3,13 +3,13 @@ import { authRedirect, localAuthOrigin } from './redirect';
 
 describe('authRedirect', () => {
   it('keeps an in-app destination', () => {
-    expect(authRedirect('/events/new', '/admin')).toBe('/events/new');
+    expect(authRedirect('/events/new', '/organizer')).toBe('/events/new');
   });
 
   it('rejects absolute and protocol-relative destinations', () => {
-    expect(authRedirect('https://example.com', '/admin')).toBe('/admin');
-    expect(authRedirect('//example.com', '/admin')).toBe('/admin');
-    expect(authRedirect('/\\example.com', '/admin')).toBe('/admin');
+    expect(authRedirect('https://example.com', '/organizer')).toBe('/organizer');
+    expect(authRedirect('//example.com', '/organizer')).toBe('/organizer');
+    expect(authRedirect('/\\example.com', '/organizer')).toBe('/organizer');
   });
 
   it('uses the flow-specific fallback when no destination is supplied', () => {

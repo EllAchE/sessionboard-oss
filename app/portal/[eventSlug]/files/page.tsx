@@ -40,20 +40,14 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
       <div className={styles.pageHead}>
         <h1 className={styles.pageTitle}>Files</h1>
         <p className={styles.pageLead}>
-          Slides, headshots, signed releases — whatever {event.name} has asked you to send.{' '}
-          {uploaded > 0
-            ? `${uploaded} file${uploaded === 1 ? '' : 's'} received so far.`
-            : 'Nothing received yet.'}
+          Files requested by {event.name}. {uploaded} file{uploaded === 1 ? '' : 's'} received.
         </p>
       </div>
 
       {delivered.length > 0 && (
         <section className={styles.stackTight}>
           <h2 className={styles.sectionTitle}>What you have sent</h2>
-          <p className={styles.hint}>
-            Open a file to read the organizers&apos; feedback, reply to it, or upload a new version
-            without losing the one on record.
-          </p>
+          <p className={styles.hint}>Open a file to view feedback or upload a new version.</p>
           <ul className={styles.fileList}>
             {delivered.map((record) => (
               <li key={record.id} className={styles.fileRow}>
@@ -79,10 +73,6 @@ export default async function FilesPage({ params }: { params: Promise<{ eventSlu
       {tasks.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyTitle}>No file requests</div>
-          <p>
-            The organizers have not asked you for any documents yet. When they do — slides, a signed
-            release — the request appears here with what it accepts.
-          </p>
         </div>
       ) : (
         <section className={styles.stackTight}>

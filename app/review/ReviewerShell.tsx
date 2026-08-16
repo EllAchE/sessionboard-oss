@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
-import { ThemeToggle } from '../admin/ThemeToggle';
-import { signOutAction } from '../admin/shell-actions';
+import { ThemeToggle } from '../organizer/ThemeToggle';
+import { signOutAction } from '../organizer/shell-actions';
 import styles from './review.module.css';
 
 export function ReviewerShell({
@@ -40,7 +40,7 @@ export function ReviewerShell({
         <div className={styles.topbarRight}>
           <span className={styles.eventName}>{eventName}</span>
           {canDecide ? (
-            <Link href="/admin/submissions" className={styles.navLink}>
+            <Link href="/organizer/submissions" className={styles.navLink}>
               Organizer view
             </Link>
           ) : null}

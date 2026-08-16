@@ -436,10 +436,7 @@ export function Directory({
           <CardBody>
             <div className={styles.empty}>
               <p className={styles.emptyTitle}>Your speaker database is empty</p>
-              <p className={styles.emptyBody}>
-                Import a CSV of past speakers, add someone by hand, or drop in a set of sample
-                contacts to see how the directory, segments and sourcing pipeline fit together.
-              </p>
+              <p className={styles.emptyBody}>Import contacts, add one, or load samples.</p>
               <div className={styles.row}>
                 <Button iconLeft={<Sparkles size={14} />} loading={pending} onClick={loadSamples}>
                   Load sample contacts
@@ -472,7 +469,7 @@ export function Directory({
         open={creating}
         onOpenChange={setCreating}
         title="New contact"
-        description="Added to the organization-level database, not to any one event."
+        description="Add someone to your directory."
         footer={
           <>
             <Button variant="ghost" onClick={() => setCreating(false)}>
@@ -574,9 +571,7 @@ export function Directory({
                 checked={segmentKind === 'dynamic'}
                 onChange={() => setSegmentKind('dynamic')}
               />
-              <span className={styles.value}>
-                Dynamic — re-runs these filters, so contacts added later join on their own
-              </span>
+              <span className={styles.value}>Dynamic — updates with these filters</span>
             </label>
             <label className={styles.row}>
               <Radio
@@ -585,9 +580,7 @@ export function Directory({
                 checked={segmentKind === 'curated'}
                 onChange={() => setSegmentKind('curated')}
               />
-              <span className={styles.value}>
-                Curated — freezes today&rsquo;s {rows.length} contacts as the member list
-              </span>
+              <span className={styles.value}>Curated — keeps these {rows.length} contacts</span>
             </label>
           </fieldset>
         </div>
@@ -597,7 +590,7 @@ export function Directory({
         open={enrolling !== null}
         onOpenChange={(open) => !open && setEnrolling(null)}
         title={`Add ${enrolling?.name ?? ''} to the sourcing pipeline`}
-        description="Scoring a prospect at enrollment is what makes the board sortable later."
+        description="Set their starting stage and score."
         footer={
           <>
             <Button variant="ghost" onClick={() => setEnrolling(null)}>

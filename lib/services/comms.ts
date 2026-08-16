@@ -750,7 +750,7 @@ export type EmailTemplateRow = typeof emailTemplate.$inferSelect;
  * The shipped SMS copy deliberately uses `{{portal.url}}` where the email writes
  * `{{portal.link}}`. Custom SMS templates may now request the one-click link, and the SMS mailbox
  * gates it like the mail archive, but the plain URL keeps the default archive credential-free as
- * defence in depth. See `app/admin/sms/magic-links.ts`.
+ * defence in depth. See `app/organizer/sms/magic-links.ts`.
  */
 export const DEFAULT_TEMPLATES: Array<{
   key: string;
@@ -765,17 +765,15 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission received',
     subject: 'We received "{{submission.title}}"',
     smsBody:
-      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). We will be in touch once the programme committee has reviewed it. Your portal: {{portal.url}}',
+      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). Portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thanks for submitting **{{submission.title}}** ({{submission.ref}}) to {{event.name}}.',
-      '',
-      'You can review or edit your submission in your speaker portal at any time:',
+      'We received **{{submission.title}}** ({{submission.ref}}) for {{event.name}}.',
       '',
       '[Open your speaker portal]({{portal.link}})',
       '',
-      'We will be in touch once the programme committee has reviewed it.',
+      'We will be in touch after review.',
     ].join('\n'),
   },
   {
@@ -783,15 +781,13 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission accepted',
     subject: 'Your talk was accepted for {{event.name}}',
     smsBody:
-      '{{event.name}}: good news, "{{submission.title}}" is accepted. Your speaker onboarding tasks are waiting in your portal: {{portal.url}}',
+      '{{event.name}}: "{{submission.title}}" is accepted. Next steps: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Good news: **{{submission.title}}** ({{submission.ref}}) has been accepted for {{event.name}}.',
+      '**{{submission.title}}** ({{submission.ref}}) is accepted for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
-      '',
-      'Next, please complete your speaker onboarding:',
       '',
       '{{tasks.list}}',
       '',
@@ -803,15 +799,15 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission waitlisted',
     subject: 'Your {{event.name}} submission is on the waitlist',
     smsBody:
-      '{{event.name}}: "{{submission.title}}" is on the waitlist. Nothing to do for now; we will let you know either way. Your portal: {{portal.url}}',
+      '{{event.name}}: "{{submission.title}}" is waitlisted. We will send an update. {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}. The programme committee rated it highly, and we would like to include it if a slot opens up.',
+      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
       '',
-      'There is nothing you need to do now. We will email you as soon as we know either way, and your submission stays visible in your speaker portal in the meantime:',
+      'We will send an update when its status changes.',
       '',
       '[Open your speaker portal]({{portal.link}})',
     ].join('\n'),
@@ -822,15 +818,15 @@ export const DEFAULT_TEMPLATES: Array<{
     subject: 'An update on your {{event.name}} submission',
     // No link: the decline email has none either, and there is nothing for the speaker to do.
     smsBody:
-      '{{event.name}}: thank you for submitting "{{submission.title}}". We had more strong proposals than slots and cannot include it this year. We hope you will submit again next time.',
+      '{{event.name}}: we cannot include "{{submission.title}}" this year. Thank you for submitting.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thank you for submitting **{{submission.title}}** to {{event.name}}. We had many more strong proposals than slots this year, and we are not able to include it in the programme.',
+      'We cannot include **{{submission.title}}** in the {{event.name}} programme this year.',
       '',
       '{{submission.decisionNote}}',
       '',
-      'We hope you will submit again next time.',
+      'Thank you for submitting.',
     ].join('\n'),
   },
   {
@@ -844,7 +840,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Your session at {{event.name}} is scheduled. This email carries a calendar invitation. Accept it and the session lands on your own calendar, and it updates itself in place if we ever have to move you.',
+      'Your {{event.name}} session is scheduled. A calendar invitation is attached.',
       '',
       '- **Session:** {{session.title}} ({{session.ref}})',
       '- **Starts:** {{session.startsAt}}',
@@ -852,7 +848,7 @@ export const DEFAULT_TEMPLATES: Array<{
       '- **Room:** {{session.room|to be confirmed}}',
       '- **Track:** {{session.track|—}}',
       '',
-      'If your mail client did not show accept and decline buttons, you can [add it to your calendar directly]({{session.calendarUrl}}).',
+      '[Download the calendar invite]({{session.calendarUrl}})',
     ].join('\n'),
   },
   {
@@ -863,11 +859,11 @@ export const DEFAULT_TEMPLATES: Array<{
     // "Reply to this email" does not translate: an SMS reply lands at the provider, not the
     // organizer, so the cancellation names the support address instead.
     smsBody:
-      '{{event.name}}: "{{session.title}}" ({{session.ref}}) has been cancelled and the calendar entry withdrawn. If this is unexpected, please contact {{event.supportEmail|the programme team}}.',
+      '{{event.name}}: "{{session.title}}" ({{session.ref}}) is cancelled. Contact {{event.supportEmail|the programme team}} with questions.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      '**{{session.title}}** ({{session.ref}}) has been removed from the {{event.name}} programme, and this email cancels the calendar entry we sent you earlier.',
+      '**{{session.title}}** ({{session.ref}}) is cancelled. The calendar entry has been withdrawn.',
       '',
       'If this is unexpected, please reply to this email.',
     ].join('\n'),
@@ -879,13 +875,11 @@ export const DEFAULT_TEMPLATES: Array<{
     // `{{tasks.list}}` is a multi-line markdown list, so it is deliberately not here: over SMS it
     // collapses to one run-on line of unbounded length. One task and one link is the whole message.
     smsBody:
-      '{{event.name}} reminder: {{task.name}} is still outstanding{{task.dueAt}}. Finish it in your portal: {{portal.url}}',
+      '{{event.name}}: {{task.name}} is outstanding{{task.dueAt}}. {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'A quick reminder that **{{task.name}}** is still outstanding{{task.dueAt| }}.{{task.sessions}}',
-      '',
-      'Everything still open on your list:',
+      'Reminder: **{{task.name}}** is outstanding{{task.dueAt| }}.{{task.sessions}}',
       '',
       '{{tasks.list}}',
       '',
@@ -898,11 +892,11 @@ export const DEFAULT_TEMPLATES: Array<{
     subject: 'Your {{event.name}} draft closes {{form.closesAt}}',
     // `runDraftDeadlineReminders` builds its own `vars`: event, speaker and form fields only.
     smsBody:
-      '{{event.name}}: your draft is not submitted yet, and {{form.name}} closes {{form.closesAt}}. Finish it: {{form.url}}',
+      '{{event.name}}: your draft is not submitted. {{form.name}} closes {{form.closesAt}}. {{form.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'You have a draft submission for **{{event.name}}** that has not been submitted yet, and {{form.name}} closes on {{form.closesAt}}.',
+      'Your **{{event.name}}** draft is not submitted. {{form.name}} closes {{form.closesAt}}.',
       '',
       '[Finish your submission]({{form.url}})',
     ].join('\n'),
@@ -1063,7 +1057,7 @@ async function mintPortalLink(
 
 /**
  * Any channel may request the one-click portal credential. The SMS path was deliberately omitted
- * until its archive gained the same read-time gate as `/admin/mail`; keeping the test in one helper
+ * until its archive gained the same read-time gate as `/organizer/mail`; keeping the test in one helper
  * prevents a future send path from silently rendering `{{portal.link}}` as an empty string again.
  */
 const PORTAL_LINK_PATTERN = /\{\{\s*portal\.link/;
@@ -2279,34 +2273,34 @@ export async function getSms(eventId: string, id: string): Promise<SmsMailboxEnt
 }
 
 // ---------------------------------------------------------------------------
-// Admin event resolution
+// Organizer event resolution
 // ---------------------------------------------------------------------------
 
-export type AdminEventOption = { id: string; name: string; slug: string };
+export type OrganizerEventOption = { id: string; name: string; slug: string };
 
 /** Newest first, which is what a judge who just made an event wants to find at the top. */
-export async function listEventsForAdmin(userId: string): Promise<AdminEventOption[]> {
+export async function listEventsForOrganizer(userId: string): Promise<OrganizerEventOption[]> {
   const rows = await listEventsForUser(userId);
   return rows.map(({ id, name, slug }) => ({ id, name, slug }));
 }
 
 /**
- * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=`, then
- * from the same cookie the rest of the admin shell reads, then from the caller's newest event. The
+ * `/organizer/comms` and `/organizer/mail` carry no event segment, so the event comes from `?event=`, then
+ * from the same cookie the rest of the organizer shell reads, then from the caller's newest event. The
  * cookie step is what keeps the mailbox showing the event the sidebar says is selected.
  *
  * Both candidates are matched against the caller's own events rather than looked up directly. These
  * pages have no `requireEventContext` between them and the database, so resolving `?event=` by slug
  * would hand any signed-in organizer another event's mailbox for the price of guessing a slug.
  */
-export async function resolveAdminEvent(options: {
+export async function resolveOrganizerEvent(options: {
   eventParam?: string | null;
   cookieEventId?: string | null;
   userId: string;
-}): Promise<{ event: EventRow | null; options: AdminEventOption[] }> {
+}): Promise<{ event: EventRow | null; options: OrganizerEventOption[] }> {
   const db = getDb();
   const mine = await listEventsForUser(options.userId);
-  const all: AdminEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
+  const all: OrganizerEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
 
   const pick = (wanted: string | null | undefined) =>
     wanted ? mine.find((entry) => entry.id === wanted || entry.slug === wanted) : undefined;
@@ -2319,8 +2313,8 @@ export async function resolveAdminEvent(options: {
 }
 
 export async function listTracksAndFormats(eventId: string): Promise<{
-  tracks: AdminEventOption[];
-  formats: AdminEventOption[];
+  tracks: OrganizerEventOption[];
+  formats: OrganizerEventOption[];
 }> {
   const lookups = await loadLookups(eventId);
   return {
@@ -2329,7 +2323,7 @@ export async function listTracksAndFormats(eventId: string): Promise<{
   };
 }
 
-export async function listTasksForEvent(eventId: string): Promise<AdminEventOption[]> {
+export async function listTasksForEvent(eventId: string): Promise<OrganizerEventOption[]> {
   const db = getDb();
   const rows = await db
     .select({ id: task.id, name: task.name })

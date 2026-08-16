@@ -241,7 +241,7 @@ export function ContactProfile({
                     ) : null}
                     {contact.headshotUrl ? (
                       <span className={styles.hint}>
-                        Directory source image. Event profiles use a normalized stored copy.{' '}
+                        Source image ·{' '}
                         <a
                           href={contact.headshotUrl}
                           target="_blank"
@@ -369,10 +369,7 @@ export function ContactProfile({
                       Add to event
                     </Button>
                     <p className={styles.hint}>
-                      Creates the speaker in that event&rsquo;s roster with this name, email,
-                      company and bio already filled in. A headshot URL stays a directory source:
-                      open and download it, then upload it on the speaker record to create the
-                      event&rsquo;s controlled 512 px copy.
+                      Creates a speaker record from this contact.
                     </p>
                   </>
                 ) : null}
@@ -380,7 +377,7 @@ export function ContactProfile({
                   <Button
                     variant="ghost"
                     size="sm"
-                    href="/admin/speakers"
+                    href="/organizer/speakers"
                     iconRight={<ArrowUpRight size={14} />}
                   >
                     Open the speakers module
@@ -525,11 +522,7 @@ export function ContactProfile({
               value={draft.headshotUrl}
               onChange={(e) => setDraft({ ...draft, headshotUrl: e.currentTarget.value })}
             />
-            <span className={styles.hint}>
-              A source reference for prospecting. Event profiles never hotlink it; promote it with
-              the speaker photo uploader after adding this contact to an event. Open and download
-              the source first, then choose that local file.
-            </span>
+            <span className={styles.hint}>Source image for prospecting.</span>
           </label>
           <label className={styles.field}>
             <span className={styles.label}>Tags</span>

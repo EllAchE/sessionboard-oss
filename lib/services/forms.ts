@@ -15,7 +15,7 @@ import {
   eligibleConditionTargets,
   supportsOptions,
   uniqueFieldKey,
-} from '../../app/admin/forms/field-rules';
+} from '../../app/organizer/forms/field-rules';
 import { requireCapability } from '../context';
 import type { EventContext } from '../context';
 import { conflict, invalid, notFound } from '../errors';
@@ -60,7 +60,7 @@ export type FormKind = FormRecord['kind'];
  * It is not, and deliberately does not become, `S-17`'s Contacts / Groups / Submissions triple.
  * Those three are a property of the *attachment*, not of the form: a portal form has no address of
  * its own and reaches a speaker only through a task, so "who owes one of these" is settled by
- * `task.scope` (`S-16`) at the moment the form is attached — see `app/admin/tasks/TaskEditor.tsx`.
+ * `task.scope` (`S-16`) at the moment the form is attached — see `app/organizer/tasks/TaskEditor.tsx`.
  * Declaring it a second time here would buy nothing and cost two things. It would make a form
  * single-use where it is currently reusable, so the same "Travel and logistics" form could not be
  * per-contact on one event and per-session on the next; and it would let a form say `contacts` while

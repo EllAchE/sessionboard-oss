@@ -60,8 +60,7 @@ export default async function DeliverablePage({
       <section className={styles.stackTight}>
         <h2 className={styles.sectionTitle}>Upload a replacement</h2>
         <p className={styles.hint}>
-          Uploading here adds version {current.version + 1}. Every earlier version stays on this page
-          and stays downloadable.
+          Uploading creates version {current.version + 1}; earlier versions remain available.
         </p>
         <Uploader
           eventSlug={eventSlug}
@@ -103,7 +102,7 @@ export default async function DeliverablePage({
         eventSlug={eventSlug}
         fileId={current.id}
         comments={commentWire}
-        emptyLabel="No feedback on this one yet. Anything the organizers write appears here."
+        emptyLabel="No feedback yet."
       />
     </div>
   );

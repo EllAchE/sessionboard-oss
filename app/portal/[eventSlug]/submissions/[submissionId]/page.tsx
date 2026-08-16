@@ -91,9 +91,7 @@ export default async function SubmissionDetailPage({
               )}
             </div>
             {!submission.scheduled.published && (
-              <p className={styles.hint}>
-                The schedule is not public yet, so this slot could still move.
-              </p>
+              <p className={styles.hint}>This slot may move until the schedule is published.</p>
             )}
             {submission.scheduled.startsAt && (
               <a
@@ -117,9 +115,8 @@ export default async function SubmissionDetailPage({
             {submission.editable ? (
               <>
                 <p className={styles.muted}>
-                  Organizers cannot see a draft, and it still counts against how many sessions you
-                  may submit to “{submission.formName}”. Picking it up again opens the form with
-                  everything you typed still in place.
+                  Organizers cannot see drafts. This draft still counts toward the limit for “
+                  {submission.formName}”.
                 </p>
                 <div className={styles.taskActions} style={{ marginTop: 'var(--space-4)' }}>
                   <Link
@@ -131,8 +128,8 @@ export default async function SubmissionDetailPage({
               </>
             ) : (
               <p className={styles.muted}>
-                “{submission.formName}” has closed, so this draft can no longer be sent. Discard it
-                below if you want the slot back for another event.
+                “{submission.formName}” is closed, so this draft cannot be submitted. Discard it to
+                free the slot.
               </p>
             )}
           </CardBody>
@@ -151,7 +148,7 @@ export default async function SubmissionDetailPage({
             />
             <p className={styles.hint} style={{ marginTop: 'var(--space-4)' }}>
               {submission.formStatus === 'open'
-                ? 'This session can no longer be edited from the portal. Email the organizers if something needs changing.'
+                ? 'Email the organizers to request changes.'
                 : `“${submission.formName}” closed${
                     submission.formClosesAt
                       ? ` on ${formatDate(submission.formClosesAt, event.timezone)}`
@@ -178,8 +175,8 @@ export default async function SubmissionDetailPage({
           <CardBody>
             <p className={styles.muted}>
               {submission.status === 'draft'
-                ? 'Discarding a draft frees the slot it holds against your submission limit. Nothing reaches the organizers either way.'
-                : 'Withdrawing tells the organizers straight away and takes the session out of the programme. It is not deleted, so they can see what happened.'}
+                ? 'Discard this draft and free its submission slot?'
+                : 'Withdraw this session from the programme? Organizers will be notified.'}
             </p>
             <WithdrawForm
               eventSlug={eventSlug}

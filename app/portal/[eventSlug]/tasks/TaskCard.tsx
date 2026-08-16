@@ -81,9 +81,7 @@ export function TaskCard({
       )}
 
       {waived ? (
-        <p className={styles.muted}>
-          An organizer decided this one is not needed for you. Nothing to do.
-        </p>
+        <p className={styles.muted}>Waived by an organizer.</p>
       ) : (
         <TaskBody task={task} eventSlug={eventSlug} />
       )}
@@ -183,9 +181,7 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
       )}
 
       {full ? (
-        <p className={styles.hint}>
-          Open the file above to upload a new version — the one on record stays downloadable.
-        </p>
+        <p className={styles.hint}>Upload a new version; the current one remains available.</p>
       ) : (
         <Uploader
           eventSlug={eventSlug}
