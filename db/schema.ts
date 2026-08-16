@@ -277,6 +277,17 @@ export const event = pgTable(
      * `lib/services/schedule.ts`. Read by every agenda write path through `blockingConflicts`.
      */
     agendaConflictPolicy: text('agenda_conflict_policy').notNull().default('warn'),
+    agendaOptimizationWeights: jsonb('agenda_optimization_weights')
+      .$type<Record<string, number>>()
+      .notNull()
+      .default({
+        audienceOverlap: 85,
+        expectedAttendance: 100,
+        speakerPopularity: 55,
+        roomFit: 90,
+        venueFlow: 30,
+        scheduleCompactness: 35,
+      }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -670,6 +681,7 @@ export const submission = pgTable(
     trackId: uuid('track_id').references(() => track.id, { onDelete: 'set null' }),
     level: text('level'),
     personaId: uuid('persona_id').references(() => persona.id, { onDelete: 'set null' }),
+    expectedAttendance: integer('expected_attendance'),
 
     status: submissionStatus('status').notNull().default('draft'),
     /**
@@ -700,6 +712,10 @@ export const submission = pgTable(
     uniqueRef: unique('submission_event_ref').on(t.eventId, t.ref),
     byEventStatus: index('submission_event_status_idx').on(t.eventId, t.status),
     byForm: index('submission_form_idx').on(t.formId),
+    expectedAttendance: check(
+      'submission_expected_attendance_check',
+      sql`${t.expectedAttendance} is null or ${t.expectedAttendance} between 0 and 1000000`,
+    ),
   }),
 );
 
@@ -756,10 +772,17 @@ export const participant = pgTable(
     workflowStatus: speakerWorkflowStatus('workflow_status').notNull().default('invited'),
     dietaryNotes: text('dietary_notes'),
     accessibilityNotes: text('accessibility_notes'),
+    popularityScore: integer('popularity_score'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => ({ uniquePerEvent: unique('participant_event_user').on(t.eventId, t.userId) }),
+  (t) => ({
+    uniquePerEvent: unique('participant_event_user').on(t.eventId, t.userId),
+    popularityScore: check(
+      'participant_popularity_score_check',
+      sql`${t.popularityScore} is null or ${t.popularityScore} between 0 and 100`,
+    ),
+  }),
 );
 
 export const participantRole = pgTable(

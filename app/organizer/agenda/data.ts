@@ -4,15 +4,23 @@ import {
   event,
   participant,
   participantRole,
+  persona,
   room,
   scheduledSession,
   sessionFormat,
   submission,
+  submissionTag,
+  tag,
   track,
   user,
 } from '@/db/schema';
 import { formatRef } from '@/lib/ids';
 import type { NamedFormat, NamedRoom, NamedTrack } from './wire';
+import {
+  parseAgendaOptimizationWeights,
+  type AgendaItemSignals,
+  type AgendaOptimizationWeights,
+} from '@/lib/ai/agenda-optimizer';
 import {
   DEFAULT_SESSION_MINUTES,
   parseConflictPolicy,
@@ -21,6 +29,8 @@ import {
   type ScheduleEntry,
   type SpeakerRef,
 } from '@/lib/services/schedule';
+
+type AgendaSpeaker = SpeakerRef & { popularityScore: number | null };
 
 /**
  * The agenda's read model. Everything the board needs arrives in one payload so the grid, the side
@@ -41,12 +51,14 @@ export type AgendaData = {
     endsOn: string | null;
     /** `AR-35`. Whether a detected clash refuses the write or is recorded as a warning. */
     conflictPolicy: ConflictPolicy;
+    optimizationWeights: AgendaOptimizationWeights;
   };
   rooms: NamedRoom[];
   tracks: NamedTrack[];
   formats: NamedFormat[];
   entries: ScheduleEntry[];
   queue: QueueItem[];
+  optimizationSignals: Record<string, AgendaItemSignals>;
   /**
    * Session bodies, keyed by session id. `ScheduleEntry` deliberately has no description — the grid
    * never renders one — but the edit dialog does, and a form that opens blank would write the blank
@@ -57,8 +69,8 @@ export type AgendaData = {
 
 async function speakersBySubmission(
   submissionIds: string[],
-): Promise<Map<string, SpeakerRef[]>> {
-  const index = new Map<string, SpeakerRef[]>();
+): Promise<Map<string, AgendaSpeaker[]>> {
+  const index = new Map<string, AgendaSpeaker[]>();
   if (submissionIds.length === 0) return index;
 
   const rows = await getDb()
@@ -69,6 +81,7 @@ async function speakersBySubmission(
       displayName: participant.displayName,
       userName: user.name,
       email: user.email,
+      popularityScore: participant.popularityScore,
     })
     .from(participantRole)
     .innerJoin(participant, eq(participant.id, participantRole.participantId))
@@ -80,8 +93,27 @@ async function speakersBySubmission(
     const name = row.displayName ?? row.userName ?? row.email;
     index.set(row.submissionId, [
       ...(index.get(row.submissionId) ?? []),
-      { participantId: row.participantId, name },
+      { participantId: row.participantId, name, popularityScore: row.popularityScore },
     ]);
+  }
+  return index;
+}
+
+function speakerRefs(rows: AgendaSpeaker[]): SpeakerRef[] {
+  return rows.map(({ participantId, name }) => ({ participantId, name }));
+}
+
+async function tagsBySubmission(submissionIds: string[]): Promise<Map<string, string[]>> {
+  const index = new Map<string, string[]>();
+  if (submissionIds.length === 0) return index;
+
+  const rows = await getDb()
+    .select({ submissionId: submissionTag.submissionId, name: tag.name })
+    .from(submissionTag)
+    .innerJoin(tag, eq(tag.id, submissionTag.tagId))
+    .where(inArray(submissionTag.submissionId, submissionIds));
+  for (const row of rows) {
+    index.set(row.submissionId, [...(index.get(row.submissionId) ?? []), row.name]);
   }
   return index;
 }
@@ -89,13 +121,17 @@ async function speakersBySubmission(
 export async function loadAgenda(eventId: string): Promise<AgendaData> {
   const db = getDb();
 
-  const [eventRow, rooms, tracks, formats, sessions, accepted] = await Promise.all([
+  const [eventRow, rooms, tracks, formats, personas, sessions, accepted] = await Promise.all([
     db.query.event.findFirst({ where: eq(event.id, eventId) }),
     db.query.room.findMany({ where: eq(room.eventId, eventId), orderBy: [asc(room.position)] }),
     db.query.track.findMany({ where: eq(track.eventId, eventId), orderBy: [asc(track.position)] }),
     db.query.sessionFormat.findMany({
       where: eq(sessionFormat.eventId, eventId),
       orderBy: [asc(sessionFormat.position)],
+    }),
+    db.query.persona.findMany({
+      where: eq(persona.eventId, eventId),
+      orderBy: [asc(persona.position)],
     }),
     db.query.scheduledSession.findMany({
       where: eq(scheduledSession.eventId, eventId),
@@ -117,7 +153,15 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
       ...sessions.map((row) => row.submissionId).filter((id): id is string => Boolean(id)),
     ]),
   ];
-  const speakers = await speakersBySubmission(submissionIds);
+  const acceptedIds = new Set(accepted.map((row) => row.id));
+  const linkedSubmissionIds = submissionIds.filter((id) => !acceptedIds.has(id));
+  const [speakers, submissionTags, linkedSubmissions] = await Promise.all([
+    speakersBySubmission(submissionIds),
+    tagsBySubmission(submissionIds),
+    linkedSubmissionIds.length > 0
+      ? db.query.submission.findMany({ where: inArray(submission.id, linkedSubmissionIds) })
+      : Promise.resolve([] as typeof accepted),
+  ]);
 
   const entries: ScheduleEntry[] = sessions.map((row) => ({
     id: row.id,
@@ -132,7 +176,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
     status: row.status,
     ceuCredits: row.ceuCredits,
     clientId: row.clientId,
-    speakers: row.submissionId ? (speakers.get(row.submissionId) ?? []) : [],
+    speakers: row.submissionId ? speakerRefs(speakers.get(row.submissionId) ?? []) : [],
   }));
 
   const durationByFormat = new Map(formats.map((row) => [row.id, row.durationMinutes]));
@@ -162,7 +206,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
         durationMinutes:
           (row.formatId ? durationByFormat.get(row.formatId) : undefined) ??
           DEFAULT_SESSION_MINUTES,
-        speakers: speakers.get(row.id) ?? [],
+        speakers: speakerRefs(speakers.get(row.id) ?? []),
       })),
     ...entries
       .filter((entry) => entry.status !== 'cancelled' && (!entry.startsAt || !entry.endsAt))
@@ -181,6 +225,60 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
       })),
   ];
 
+  const submissionById = new Map(
+    [...accepted, ...linkedSubmissions].map((row) => [row.id, row]),
+  );
+  const trackNameById = new Map(tracks.map((row) => [row.id, row.name]));
+  const formatNameById = new Map(formats.map((row) => [row.id, row.name]));
+  const personaNameById = new Map(personas.map((row) => [row.id, row.name]));
+  const signalsFor = (
+    title: string,
+    descriptionMarkdown: string | null,
+    trackId: string | null,
+    formatId: string | null,
+    source: (typeof accepted)[number] | undefined,
+    speakerRows: AgendaSpeaker[],
+  ): AgendaItemSignals => ({
+    title,
+    descriptionMarkdown,
+    trackName: trackId ? (trackNameById.get(trackId) ?? null) : null,
+    tags: source ? (submissionTags.get(source.id) ?? []) : [],
+    personaName: source?.personaId ? (personaNameById.get(source.personaId) ?? null) : null,
+    level: source?.level ?? null,
+    formatName: formatId ? (formatNameById.get(formatId) ?? null) : null,
+    expectedAttendance: source?.expectedAttendance ?? null,
+    speakerPopularity: speakerRows
+      .map((speaker) => speaker.popularityScore)
+      .filter((score): score is number => typeof score === 'number'),
+  });
+  const optimizationSignals: Record<string, AgendaItemSignals> = Object.fromEntries([
+    ...accepted.map((row) => [
+      row.id,
+      signalsFor(
+        row.title,
+        row.descriptionMarkdown,
+        row.trackId,
+        row.formatId,
+        row,
+        speakers.get(row.id) ?? [],
+      ),
+    ] as const),
+    ...sessions.map((row) => {
+      const source = row.submissionId ? submissionById.get(row.submissionId) : undefined;
+      return [
+        row.id,
+        signalsFor(
+          row.title,
+          row.descriptionMarkdown,
+          row.trackId,
+          row.formatId,
+          source,
+          row.submissionId ? (speakers.get(row.submissionId) ?? []) : [],
+        ),
+      ] as const;
+    }),
+  ]);
+
   return {
     event: {
       id: eventRow.id,
@@ -190,6 +288,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
       startsOn: eventRow.startsOn,
       endsOn: eventRow.endsOn,
       conflictPolicy: parseConflictPolicy(eventRow.agendaConflictPolicy),
+      optimizationWeights: parseAgendaOptimizationWeights(eventRow.agendaOptimizationWeights),
     },
     rooms: rooms.map((row) => ({
       id: row.id,
@@ -205,6 +304,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
     })),
     entries,
     queue,
+    optimizationSignals,
     descriptions: Object.fromEntries(
       sessions
         .filter((row) => row.descriptionMarkdown)

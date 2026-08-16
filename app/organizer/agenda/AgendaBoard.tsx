@@ -114,7 +114,6 @@ export function AgendaBoard({
   entries: wireEntries,
   queue: initialQueue,
   descriptions,
-  modelConfigured,
   canManage,
 }: {
   event: AgendaData['event'];
@@ -124,7 +123,6 @@ export function AgendaBoard({
   entries: WireEntry[];
   queue: QueueItem[];
   descriptions: Record<string, string>;
-  modelConfigured: boolean;
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -512,7 +510,7 @@ export function AgendaBoard({
             onClick={() => setProposalOpen(true)}
             disabled={!canManage}
           >
-            Draft with AI
+            Build smart draft
           </Button>
           <Button
             variant="primary"
@@ -722,8 +720,8 @@ export function AgendaBoard({
 
       <AiProposalDialog
         open={proposalOpen}
-        modelConfigured={modelConfigured}
         timeZone={timeZone}
+        initialWeights={event.optimizationWeights}
         onOpenChange={setProposalOpen}
         onApply={handleProposal}
       />

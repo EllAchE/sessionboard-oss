@@ -1,18 +1,13 @@
 'use server';
 
 import { requireCapability } from '@/lib/context';
-import { aiModelConfigured } from '@/lib/ai/notice';
 import { proposeAgenda, type AgendaProposal } from '@/lib/ai/agenda';
+import type { AgendaOptimizationWeights } from '@/lib/ai/agenda-optimizer';
 import { toPublicError } from '@/lib/errors';
+import { saveAgendaOptimizationWeights } from '@/lib/services/agenda-optimization';
 import { currentEventContext } from '@/lib/services/events';
 import { DEFAULT_GRID, agendaDayKeys } from '@/lib/services/schedule';
 import { loadAgenda } from './data';
-
-/**
- * `A-8`. The proposal round-trip, kept in its own module so the board's other actions do not pull
- * `@anthropic-ai/sdk` into every request. Nothing here writes: the organizer accepts a proposal
- * through `applyProposalAction`, which is the same path a drag takes.
- */
 
 export type WireProposal = {
   status: AgendaProposal['status'];
@@ -32,16 +27,7 @@ export type WireProposal = {
   unplaced: { title: string; reason: string }[];
 };
 
-/**
- * Whether a model key is set. The assistant runs either way — `lib/ai/agenda` falls back to a
- * deterministic planner — so this only decides whether the dialog says where the drafting came
- * from, never whether the button works.
- */
-export async function agendaModelConfigured(): Promise<boolean> {
-  return aiModelConfigured();
-}
-
-/** A stale row or a down model is the organizer's to retry, not a screen the app should die on. */
+/** A stale row is the organizer's to retry, not a screen the app should die on. */
 function proposalFailed(error: unknown): WireProposal {
   return {
     status: 'error',
@@ -52,23 +38,30 @@ function proposalFailed(error: unknown): WireProposal {
   };
 }
 
-export async function proposeAgendaAction(guidance?: string | null): Promise<WireProposal> {
+export async function proposeAgendaAction(
+  requestedWeights: AgendaOptimizationWeights,
+): Promise<WireProposal> {
   try {
     const ctx = await currentEventContext();
     requireCapability(ctx, 'agenda:manage');
 
     const data = await loadAgenda(ctx.eventId);
+    const weights = await saveAgendaOptimizationWeights(ctx, requestedWeights);
     const proposal = await proposeAgenda({
-      eventName: data.event.name,
       timezone: data.event.timezone,
       dayKeys: agendaDayKeys(data.event, data.entries),
       dayStartMinute: DEFAULT_GRID.dayStartMinute,
       dayEndMinute: DEFAULT_GRID.dayEndMinute,
-      rooms: data.rooms.map((room) => ({ id: room.id, name: room.name, capacity: room.capacity })),
-      tracks: data.tracks.map((track) => ({ id: track.id, name: track.name })),
+      rooms: data.rooms.map((room) => ({
+        id: room.id,
+        name: room.name,
+        capacity: room.capacity,
+        floor: room.floor,
+      })),
       entries: data.entries,
       queue: data.queue,
-      guidance: guidance ?? null,
+      signalsByItemId: data.optimizationSignals,
+      weights,
     });
 
     return {

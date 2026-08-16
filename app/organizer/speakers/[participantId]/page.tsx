@@ -43,6 +43,7 @@ export default async function SpeakerDetailPage({
     pronouns: speaker.pronouns ?? '',
     jobTitle: speaker.jobTitle ?? '',
     company: speaker.company ?? '',
+    popularityScore: speaker.popularityScore === null ? '' : String(speaker.popularityScore),
     bioMarkdown: speaker.bioMarkdown ?? '',
     website: speaker.website ?? '',
     timezone: speaker.timezone ?? '',

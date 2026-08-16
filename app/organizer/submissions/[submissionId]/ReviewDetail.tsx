@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   Checkbox,
+  Input,
   Kbd,
   ScoreStars,
   Tag,
@@ -22,6 +23,7 @@ import {
   assignOneAction,
   decideAction,
   generateAiReviewAction,
+  saveExpectedAttendanceAction,
   saveScorecardAction,
   unassignAction,
 } from '../actions';
@@ -66,6 +68,7 @@ export type ReviewDetailProps = {
   level: string | null;
   trackName: string | null;
   formatName: string | null;
+  expectedAttendance: number | null;
   tags: Array<{ id: string; name: string }>;
   answers: Array<{ key: string; label: string; value: string }>;
   submittedAt: string | null;
@@ -155,6 +158,9 @@ export function ReviewDetail(props: ReviewDetailProps) {
   const [savedAverage, setSavedAverage] = useState<number | null>(props.myAverage);
   const [submitted, setSubmitted] = useState(props.mySubmitted);
   const [ai, setAi] = useState<AiReviewWire | null>(props.ai);
+  const [expectedAttendance, setExpectedAttendance] = useState(
+    props.expectedAttendance === null ? '' : String(props.expectedAttendance),
+  );
 
   const criteria = props.criteria;
   const roundId = props.round?.id ?? null;
@@ -235,6 +241,24 @@ export function ReviewDetail(props: ReviewDetailProps) {
     },
     [props.canDecide, props.submissionId, router],
   );
+
+  const saveForecast = useCallback(() => {
+    const value = expectedAttendance.trim() === '' ? null : Number(expectedAttendance);
+    setError(null);
+    setMessage(null);
+    startTransition(async () => {
+      const result = await saveExpectedAttendanceAction(props.submissionId, value);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setExpectedAttendance(
+        result.data.expectedAttendance === null ? '' : String(result.data.expectedAttendance),
+      );
+      setMessage('Agenda demand forecast saved.');
+      router.refresh();
+    });
+  }, [expectedAttendance, props.submissionId, router]);
 
   const generate = useCallback(() => {
     setError(null);
@@ -512,6 +536,38 @@ export function ReviewDetail(props: ReviewDetailProps) {
         </div>
 
         <aside className={styles.detailSide}>
+          {props.canDecide ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Agenda demand</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <div className={styles.stack}>
+                  <label className={styles.fieldLabel} htmlFor="expected-attendance">
+                    Expected audience
+                  </label>
+                  <Input
+                    id="expected-attendance"
+                    type="number"
+                    min={0}
+                    max={1_000_000}
+                    step={1}
+                    value={expectedAttendance}
+                    placeholder="250"
+                    onChange={(event) => setExpectedAttendance(event.target.value)}
+                  />
+                  <p className={styles.aiNote}>
+                    Used with speaker popularity to estimate demand and choose a suitable room or
+                    stage. Leave blank when there is no forecast.
+                  </p>
+                  <Button size="sm" loading={pending} onClick={saveForecast}>
+                    Save forecast
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          ) : null}
+
           {props.canDecide && props.round ? (
             <Card>
               <CardHeader>

@@ -1,0 +1,5 @@
+ALTER TABLE "event" ADD COLUMN "agenda_optimization_weights" jsonb DEFAULT '{"audienceOverlap":85,"expectedAttendance":100,"speakerPopularity":55,"roomFit":90,"venueFlow":30,"scheduleCompactness":35}'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "participant" ADD COLUMN "popularity_score" integer;--> statement-breakpoint
+ALTER TABLE "submission" ADD COLUMN "expected_attendance" integer;--> statement-breakpoint
+ALTER TABLE "participant" ADD CONSTRAINT "participant_popularity_score_check" CHECK ("participant"."popularity_score" is null or "participant"."popularity_score" between 0 and 100);--> statement-breakpoint
+ALTER TABLE "submission" ADD CONSTRAINT "submission_expected_attendance_check" CHECK ("submission"."expected_attendance" is null or "submission"."expected_attendance" between 0 and 1000000);

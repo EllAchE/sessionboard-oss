@@ -212,6 +212,7 @@ export type SpeakerProfile = SpeakerRow & {
   timezone: string | null;
   dietaryNotes: string | null;
   accessibilityNotes: string | null;
+  popularityScore: number | null;
   /** `SPK-15`: whether this speaker has any travel or logistics detail on file yet. */
   hasTravelDetail: boolean;
   updatedAt: string;
@@ -233,6 +234,7 @@ function toProfile(row: SpeakerRow, record: Participant): SpeakerProfile {
     timezone: record.timezone,
     dietaryNotes: record.dietaryNotes,
     accessibilityNotes: record.accessibilityNotes,
+    popularityScore: record.popularityScore,
     hasTravelDetail: Boolean(
       record.timezone?.trim() || record.dietaryNotes?.trim() || record.accessibilityNotes?.trim(),
     ),
@@ -306,6 +308,7 @@ export type SpeakerInput = {
   dietaryNotes?: string;
   accessibilityNotes?: string;
   headshotFileId?: string | null;
+  popularityScore?: number | null;
 };
 
 function clean(value: string | null | undefined): string | undefined {
@@ -320,6 +323,16 @@ function requireEmail(value: string | undefined): string {
     throw invalid('That does not look like an email address', { email: 'Enter a valid address' });
   }
   return email;
+}
+
+function parsePopularityScore(value: number | null | undefined): number | null | undefined {
+  if (value === undefined || value === null) return value;
+  if (!Number.isInteger(value) || value < 0 || value > 100) {
+    throw invalid('Speaker popularity must be between 0 and 100', {
+      popularityScore: 'Enter a whole number from 0 to 100',
+    });
+  }
+  return value;
 }
 
 function mergeLinks(
@@ -420,6 +433,14 @@ async function applySpeaker(
   await updateProfile(ctx, participantId, mergedProfile(current, input));
   if (input.headshotFileId !== undefined) {
     await setHeadshot(ctx, participantId, input.headshotFileId);
+  }
+
+  const popularityScore = parsePopularityScore(input.popularityScore);
+  if (popularityScore !== undefined && popularityScore !== current.popularityScore) {
+    await getDb()
+      .update(participant)
+      .set({ popularityScore, updatedAt: new Date() })
+      .where(and(eq(participant.id, participantId), eq(participant.eventId, ctx.eventId)));
   }
 
   const status = toWorkflowStatus(input.workflowStatus);
