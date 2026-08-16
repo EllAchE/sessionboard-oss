@@ -4,7 +4,7 @@ import { buildSpec } from './route';
 
 describe('OpenAPI documentation', () => {
   it('keeps docs/openapi.json in sync with the generated API contract', () => {
-    expect(buildSpec('https://cicero.elehche.workers.dev')).toEqual(committedSpec);
+    expect(buildSpec('https://cicero-three.vercel.app')).toEqual(committedSpec);
   });
 
   it('advertises the authenticated program reconciliation contract', () => {

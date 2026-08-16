@@ -12,7 +12,7 @@ deterministic fixture adapter. The response labels that boundary as `"adapter": 
 Enable fixture mode with `ACCELEVENTS_FAKE=1`, create an event API key under Admin → Integrations, and set these shell variables:
 
 ```bash
-export CICERO_URL=https://cicero.elehche.workers.dev
+export CICERO_URL=https://cicero-three.vercel.app
 export CICERO_EVENT=first-settlement
 export CICERO_API_KEY='<copy the event API key shown once>'
 ```

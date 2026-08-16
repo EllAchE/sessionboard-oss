@@ -31,7 +31,7 @@ curl --fail-with-body \
   --header "Authorization: Bearer ${CICERO_API_KEY}" \
   --header 'Content-Type: application/json' \
   --data-binary @docs/fixtures/first-settlement-accelevents-program.json \
-  'https://cicero.elehche.workers.dev/api/v1/events/first-settlement/program/reconcile'
+  'https://cicero-three.vercel.app/api/v1/events/first-settlement/program/reconcile'
 ```
 
 After reviewing every create, update, delete, noop, and error, request an ordinary apply. This stays
@@ -45,7 +45,7 @@ jq '.apply = true' docs/fixtures/first-settlement-accelevents-program.json | \
     --header "Authorization: Bearer ${CICERO_API_KEY}" \
     --header 'Content-Type: application/json' \
     --data-binary @- \
-    'https://cicero.elehche.workers.dev/api/v1/events/first-settlement/program/reconcile'
+    'https://cicero-three.vercel.app/api/v1/events/first-settlement/program/reconcile'
 ```
 
 Only after explicitly reviewing and accepting every reported replace delete, add the confirmation
@@ -60,7 +60,7 @@ jq \
     --header "Authorization: Bearer ${CICERO_API_KEY}" \
     --header 'Content-Type: application/json' \
     --data-binary @- \
-    'https://cicero.elehche.workers.dev/api/v1/events/first-settlement/program/reconcile'
+    'https://cicero-three.vercel.app/api/v1/events/first-settlement/program/reconcile'
 ```
 
 A clean First Settlement preview is checked in at

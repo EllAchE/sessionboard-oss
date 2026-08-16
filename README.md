@@ -18,22 +18,22 @@ one-command self-host that needs no API key from anyone.
 
 ## Look at the running one first
 
-**<https://cicero.elehche.workers.dev>** is deployed and seeded.
+**<https://cicero-three.vercel.app>** is deployed and seeded.
 
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/admin/mail`](https://cicero.elehche.workers.dev/admin/mail).
+[`/admin/mail`](https://cicero-three.vercel.app/admin/mail).
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
 seeded demo cannot see each other.
 
-Without signing in at all: the [public event page](https://cicero.elehche.workers.dev/demo), the
-[programme](https://cicero.elehche.workers.dev/demo/agenda), an
-[open call for speakers](https://cicero.elehche.workers.dev/submit/demo/speak) you can submit to,
-the [embeddable agenda](https://cicero.elehche.workers.dev/embed/demo/agenda) an event site would
-iframe, and the [REST API](https://cicero.elehche.workers.dev/api/v1/events/demo/agenda).
+Without signing in at all: the [public event page](https://cicero-three.vercel.app/demo), the
+[programme](https://cicero-three.vercel.app/demo/agenda), an
+[open call for speakers](https://cicero-three.vercel.app/submit/demo/speak) you can submit to,
+the [embeddable agenda](https://cicero-three.vercel.app/embed/demo/agenda) an event site would
+iframe, and the [REST API](https://cicero-three.vercel.app/api/v1/events/demo/agenda).
 
 ![The organizer dashboard, opening on outstanding speaker tasks](docs/images/dashboard.jpg)
 
@@ -271,7 +271,22 @@ The discovery location and `$skill-name` invocation follow the
 
 ## Deployment
 
-**Cloudflare Workers** is the primary target, via `@opennextjs/cloudflare`:
+**Vercel** is where the demo above runs. It is a stock Next build — no adapter, no config beyond
+`vercel.json`:
+
+```bash
+vercel link
+vercel env add DATABASE_URL production     # a POOLED Postgres URL
+vercel deploy --prod
+```
+
+`vercel.json` schedules `GET /api/cron` daily. Vercel's Hobby plan **rejects any cron running more
+than once a day at deploy time**, so an hourly schedule fails the build outright; hourly parity is
+either Pro or any external scheduler hitting that route with `Authorization: Bearer $CRON_SECRET`.
+The reminder jobs are idempotent and evaluate their own due times, so a coarser tick delays
+delivery rather than duplicating or corrupting it.
+
+**Cloudflare Workers** also builds from this same tree, via `@opennextjs/cloudflare`:
 
 ```bash
 wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url>"
@@ -279,11 +294,15 @@ wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url
 npm run cf:deploy
 ```
 
-Any Postgres works — Neon, Supabase, RDS, your own box. Hyperdrive pools the connection at the
-edge, which lets Workers use **the same `pg` driver and the same Drizzle schema** a self-hosted
-container uses. That is deliberate: it is what keeps the hosting choice reversible. Postgres, an
-S3-compatible bucket and HTTP email are all host-agnostic, so moving off Cloudflare costs a
-redeploy and nothing else.
+Be aware that this **exceeds the Workers free-tier 3 MiB bundle limit** — the server bundle is
+~13.4 MiB, and the deploy fails with API error 10027 until you are on Workers Paid. That is why the
+demo moved to Vercel; [`docs/02-architecture.md`](docs/02-architecture.md) §1 records the decision
+and what it cost.
+
+Any Postgres works — Neon, Supabase, RDS, your own box. On Workers, Hyperdrive pools the connection
+at the edge; everywhere else a pooled `DATABASE_URL` does the same job. Either way it is **the same
+`pg` driver and the same Drizzle schema** a self-hosted container uses. That is deliberate, and it
+is what let the host change without touching a line of application code.
 
 R2 is off by default, because enabling it requires a payment method on the Cloudflare account and
 that is a bad thing to demand of someone cloning an open-source project. Uploads fall back to the
@@ -300,11 +319,10 @@ handler and adds a scheduled handler that dispatches task and draft-deadline rem
 send it as a bearer token when the route is exposed publicly. Each reminder job is idempotent, so
 Cloudflare's at-least-once delivery does not intentionally duplicate messages.
 
-Two things to know before you deploy this yourself. The free plan's 10ms CPU limit is real and you
-will notice it — see the last section. And **`next build` reads `.env` and inlines what it finds
-into the bundle**, so a `.env` sitting in the working directory at build time ships to Cloudflare
-baked into the worker. Keep secrets in `wrangler secret put`, and check that `.env` holds only
-local development values before running `npm run cf:build`.
+One thing to know before you deploy this yourself: **`next build` reads `.env` and inlines what it
+finds into the bundle**, so a `.env` sitting in the working directory at build time ships baked into
+the deployed artifact. Keep secrets in `wrangler secret put` (or `vercel env add`), and check that
+`.env` holds only local development values before you build.
 
 ## Judgment calls worth arguing about
 
@@ -427,15 +445,15 @@ first dead end.
   unset. Each says so and falls back — a rule-based reader for the review, a deterministic
   earliest-free-slot planner for the agenda. Hiding an unconfigured feature hides the shape of it,
   and the shape is the point: they propose, they never decide. The demo runs without a key.
-- **The demo deployment sits on the Cloudflare Workers free plan, which caps CPU at 10ms per
-  request.** Rendering a dense admin page on a cold isolate goes over that, and Cloudflare answers
-  `error code: 1102` with a 503 — so roughly one navigation in eight fails, and reloading fixes it.
-  This is a plan limit, not a bug in the app: nothing in the code can render an admin table in 10ms
-  of CPU. The fix is one line of billing (Workers Paid, $5/month, raises the cap to 30s) or a
-  redeploy to any host without a CPU quota. A self-hosted `docker compose up` has no such ceiling —
-  `bun run bench` measures it at 41–58ms p50 with a zero error rate across 7000 requests to the five
-  public routes, and at 29–46ms of server CPU per rendered page, which is where a 10ms budget goes.
-  [`docs/performance-benchmark.md`](docs/performance-benchmark.md) has the method and the numbers.
+- **The demo no longer runs on Cloudflare, and the CPU ceiling that used to break it is gone.**
+  On the Workers free plan a 10ms-per-request CPU cap meant a dense admin page on a cold isolate
+  answered `error code: 1102` with a 503 — roughly one navigation in eight. Nothing in the code can
+  render an admin table in 10ms of CPU, so that was never fixable in the app. The demo now runs on
+  Vercel, which has no such quota. For scale rather than for the cap: `bun run bench` measures a
+  self-hosted `docker compose up` at 41–58ms p50 with a zero error rate across 7000 requests to the
+  five public routes, and 29–46ms of server CPU per rendered page — which is where a 10ms budget
+  went. [`docs/performance-benchmark.md`](docs/performance-benchmark.md) has the method and the
+  numbers, and [`docs/02-architecture.md`](docs/02-architecture.md) §1 records why the host changed.
 - **Reviewers are added by role, not by invitation.** There is no "invite a reviewer" flow and no
   per-submission manual assignment — rounds assign in bulk. The same gap is why the `manual`
   audience is hidden from the compose screen: nothing yet assigns a task to one named participant.
