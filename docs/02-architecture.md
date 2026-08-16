@@ -212,9 +212,16 @@ badly.
 ## 3. Database layer
 
 Postgres 16. Drizzle migrations live in `db/migrations/` and are always applied explicitly. The
-container entrypoint migrates before it starts Next. `bun run cf:deploy` runs `db:migrate` through a
-direct `DATABASE_URL` before deploying the Worker, whose runtime traffic uses Hyperdrive. Vercel
-operators run `db:migrate` before `vercel deploy --prod`; preview builds never mutate a database.
+container entrypoint migrates before it starts Next. `bun run cf:deploy` runs `db:migrate:remote`
+through a direct `DATABASE_URL` before deploying the Worker, whose runtime traffic uses Hyperdrive.
+Vercel operators run `db:migrate` before `vercel deploy --prod`; preview builds never mutate a
+database.
+
+The deploy variant exists because the ordinary `db:migrate` loads `.env` if one is present, and the
+`.env` a contributor gets from `.env.example` points at localhost. Migrating a development database
+and then deploying the Worker regardless is a silent failure — a production database left
+unmigrated behind a new revision — so `db:migrate:remote` reads no `.env` and refuses a localhost
+host outright.
 
 ### Event scoping is not optional
 

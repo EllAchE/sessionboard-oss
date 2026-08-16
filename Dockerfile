@@ -38,6 +38,6 @@ RUN useradd --system --uid 1001 cicero && chown -R cicero:cicero /app
 USER cicero
 EXPOSE 3000
 
-# Workers cannot migrate at boot, so `bun run cf:deploy` runs `db:migrate` before deployment. A
+# Workers cannot migrate at boot, so `bun run cf:deploy` runs `db:migrate:remote` first. A
 # container can migrate at startup, which is why `docker compose up` needs no second command.
 CMD ["sh", "-c", "node_modules/.bin/tsx db/migrate.ts && node_modules/.bin/next start"]

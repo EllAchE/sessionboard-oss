@@ -102,10 +102,11 @@ have their own optional settings. Apply migrations before serving a new applicat
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun run test` | `vitest run` — no database needed |
 | `bun run test:integration` | The database-backed suite (see below) |
-| `bun run audit` | Audit the locked dependency tree |
+| `bun run audit` | Audit the locked dependency tree (gates on high and critical) |
 | `bun run db:generate` | Generate a migration from `db/schema.ts` |
 | `bun run db:check` | Validate Drizzle migration snapshots |
 | `bun run db:migrate` | Apply migrations |
+| `bun run db:migrate:remote` | Apply migrations to a deployment target; ignores `.env`, rejects localhost |
 | `bun run db:seed` | Seed both demo conferences (idempotent) |
 | `bun run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `bun run cf:deploy` | Build and deploy to Cloudflare Workers |
@@ -309,12 +310,15 @@ delivery rather than duplicating or corrupting it.
 wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url>"
 # put the returned id and your APP_URL in wrangler.jsonc
 wrangler hyperdrive update <returned-id> --caching-disabled
-# export the same direct Postgres URL as DATABASE_URL for the migration step
+export DATABASE_URL="<your-direct-postgres-url>"   # the migration step, not the Worker
 bun run cf:deploy
 ```
 
 `cf:deploy` applies pending migrations through the direct `DATABASE_URL` and only then deploys the
-Worker. The Worker uses Hyperdrive at runtime. The path is current: `bun run cf:build` succeeds, and the
+Worker. The Worker uses Hyperdrive at runtime. Unlike `bun run db:migrate`, the deploy path reads no
+`.env` file and refuses a `DATABASE_URL` pointing at localhost, because the failure it exists to
+prevent is migrating a development database and shipping the Worker anyway. The path is current:
+`bun run cf:build` succeeds, and the
 bundle weighs **3.42 MiB gzipped** (`wrangler deploy --dry-run`, 2026-08-16). That fits **Workers
 Paid**'s 10 MiB ceiling about three times over, so on a paid account the deploy above is all there
 is to it.

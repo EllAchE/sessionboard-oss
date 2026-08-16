@@ -1,3 +1,10 @@
+# Grouped on purpose. Ungrouped, three ecosystems on a weekly cadence produce up to eleven pull
+# requests a week, each needing a signed commit and a regenerated `bun.lock` — which is more review
+# than this repository has to spend on patch bumps.
+#
+# `bun.lock` is the lockfile here. If Dependabot cannot resolve it, its pull requests will change
+# `package.json` alone and every CI job will fail at `bun install --frozen-lockfile`. That failure
+# is loud and the fix is to regenerate the lockfile on the branch, not to relax the flag.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -5,15 +12,30 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      production:
+        dependency-type: production
+        update-types: [minor, patch]
+      development:
+        dependency-type: development
+        update-types: [minor, patch]
 
+  # Covers the `Dockerfile` base images. The images pinned in `docker-compose.yml` are not read by
+  # this ecosystem and are bumped by hand.
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      docker:
+        patterns: ['*']
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ['*']

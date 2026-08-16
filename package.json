@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit": "bun audit",
+    "audit": "bun audit --audit-level=high",
     "bench": "tsx scripts/benchmark.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "eval": "tsx scripts/eval-loop.ts",
@@ -22,13 +22,14 @@
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
+    "db:migrate:remote": "MIGRATE_REQUIRE_REMOTE=1 tsx db/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env db/seed.ts",
     "db:seed:first-settlement": "tsx --env-file-if-exists=.env db/seed-first-settlement.ts",
     "docs:openapi": "tsx scripts/generate-openapi.ts",
     "docs:mcp": "tsx scripts/generate-mcp-tools.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
-    "cf:deploy": "bun run db:migrate && opennextjs-cloudflare deploy"
+    "cf:deploy": "bun run db:migrate:remote && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
@@ -69,7 +70,6 @@
     "wrangler": "^4.86.0"
   },
   "overrides": {
-    "esbuild": "^0.25.4",
     "postcss": "^8.5.26",
     "sharp": "^0.35.2"
   }

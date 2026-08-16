@@ -42,6 +42,14 @@ For database behavior, point `DATABASE_URL` at a disposable migrated Postgres da
 metadata. OpenAPI and MCP changes must be regenerated with `bun run docs:openapi` and
 `bun run docs:mcp`; CI fails if the checked-in artifacts drift.
 
+`bun run audit` gates on high and critical advisories. Moderates still print, and Dependabot opens
+weekly update pull requests, but a moderate does not block unrelated work. One known moderate is
+expected: drizzle-kit depends on the deprecated `@esbuild-kit/core-utils`, which pins esbuild 0.18
+(GHSA-67mh-4wv8-2f99). That advisory covers `esbuild serve`, which nothing here runs; drizzle-kit
+0.31.10 is the newest release and still carries it; and Bun does not support scoped `overrides`, so
+the only available silencer is a tree-wide esbuild downgrade that would also pull wrangler off its
+pinned version. Leaving it visible is the better trade.
+
 Database migrations and external sends deserve explicit rollout and rollback notes. Never aim a
 seed or integration test at data you care about.
 

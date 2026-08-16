@@ -6,6 +6,7 @@ next-env.d.ts
 *.tsbuildinfo
 .env
 .env.*
+.envrc
 !.env.example
 .DS_Store
 coverage/
