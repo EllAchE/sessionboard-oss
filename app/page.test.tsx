@@ -20,6 +20,18 @@ vi.mock('next/image', () => ({
 const { HomeContent } = await import('./page');
 
 describe('fresh-instance home page', () => {
+  it('describes the product in ordinary conference language', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable />);
+
+    expect(html).toContain('From call for speakers to a published programme.');
+    expect(html).toContain('Collect and review proposals');
+    expect(html).toContain('Build a conflict-aware schedule');
+    expect(html).toContain('Keep every speaker on track');
+    expect(html).not.toMatch(
+      /\b(?:forum|empire|imperial|petition|orator|fasti|magistrate|province|decree)\b/i,
+    );
+  });
+
   it('offers only working cold-start paths before the demo fixture is loaded', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
 

@@ -121,7 +121,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
           <Button
             size="sm"
             variant="secondary"
-            href="/admin/mail"
+            href="/organizer/mail"
             iconRight={<ArrowUpRight size={14} />}
           >
             Open the mailbox
@@ -262,7 +262,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                 </div>
               ))}
               <p className={styles.hint}>
-                Every one of these is also in <Link href="/admin/mail">the mailbox</Link> with its
+                Every one of these is also in <Link href="/organizer/mail">the mailbox</Link> with its
                 rendered body.
               </p>
             </div>

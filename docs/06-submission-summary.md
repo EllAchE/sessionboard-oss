@@ -74,7 +74,7 @@ across organizer, reviewer and speaker personas. The suite is 1,371 tests across
 
 Genuinely incomplete, and I'd rather name these than have them found: real outbound email is
 configured but unproven on the deployed instance (no verified sender domain, so the demo uses its
-own mailbox at `/admin/mail`); R2 storage and SMS are implemented and tested but never exercised
+own mailbox at `/organizer/mail`); R2 storage and SMS are implemented and tested but never exercised
 against a paid account; the requirements audit is pinned to an earlier commit and its row-by-row
 verdicts have not been re-run against the current tree; and the per-request CPU measurement that
 originally pushed us off Cloudflare's free tier has never been re-measured since the fix that

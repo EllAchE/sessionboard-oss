@@ -39,7 +39,7 @@ import { ensureParticipant, linkPrimarySpeaker } from './submissions';
 import { emitWebhook } from '../webhooks';
 
 /**
- * `V-1`–`V-12`. The review half of the admin: the queue, the scorecard, rounds and assignment, and
+ * `V-1`–`V-12`. The review half of the organizer workspace: the queue, the scorecard, rounds and assignment, and
  * the decision that makes a submission eligible for the agenda. Pure TypeScript throughout — the
  * pages and Server Actions above it only resolve an `EventContext` and translate errors.
  */
@@ -3427,8 +3427,8 @@ export type ReviewerQueue = {
   completedCount: number;
   /**
    * `V-5`: the tracks this reviewer covers, read from the same rows that filled the queue above.
-   * Naming them is what makes the queue explicable — "these arrived because you read the aqueduct
-   * talks" rather than a list somebody handed them.
+   * Naming them is what makes the queue explicable — "these arrived because you review the
+   * infrastructure track" rather than a list somebody handed them.
    */
   coveredTracks: string[];
 };
@@ -3730,7 +3730,7 @@ export function reminderBody(
 /**
  * `ABS-08`. One message per reviewer listing exactly what they still owe, through the same
  * `sendMail` path as everything else — so the send lands in `email_log` and is readable at
- * `/admin/mail` whether or not the transport delivered it.
+ * `/organizer/mail` whether or not the transport delivered it.
  */
 export async function remindOutstandingReviewers(
   ctx: EventContext,

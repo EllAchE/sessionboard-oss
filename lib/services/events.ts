@@ -18,7 +18,7 @@ import {
 import { slugify } from '@/lib/ids';
 
 /**
- * Admin routes carry no event in their path, so the current event travels in a cookie. Putting it
+ * Organizer routes carry no event in their path, so the current event travels in a cookie. Putting it
  * in the URL instead would mean every feature route learns an `[eventSlug]` segment, and the switch
  * is a rare action compared with the navigation it would tax.
  */
@@ -68,7 +68,7 @@ export async function listEventsForUser(userId: string): Promise<EventSummary[]>
 }
 
 /**
- * Which event the admin shell opens on when the cookie says nothing. The edition someone is running
+ * Which event the organizer shell opens on when the cookie says nothing. The edition someone is running
  * is almost always the next one to happen, so an event still ahead beats one already past, and the
  * soonest of those wins. Undated events sort last. Order within a tie is the caller's — newest
  * first, as `listEventsForUser` returns them.
@@ -114,7 +114,7 @@ export async function currentEventContext(): Promise<EventContext> {
 }
 
 /**
- * The cookie's raw value, for the admin pages that carry no event segment and check membership
+ * The cookie's raw value, for the organizer pages that carry no event segment and check membership
  * themselves. Unlike `currentEventId` it never throws, because those pages have their own empty
  * state for someone who has no events yet.
  */
