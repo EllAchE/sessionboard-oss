@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
@@ -79,7 +80,11 @@ const PERSONAS = [
   },
 ] as const;
 
-export default function Home() {
+export default async function Home() {
+  return <HomeContent demoAvailable={await demoEntryPointsAreAvailable()} />;
+}
+
+export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
   return (
     <main className={styles.root}>
       <nav className={styles.nav} aria-label="Primary navigation">
@@ -90,9 +95,11 @@ export default function Home() {
           <a className={styles.aboutLink} href="#about">
             About the Forum
           </a>
-          <a className={styles.demoLink} href="/demo">
-            Tour the empire
-          </a>
+          {demoAvailable ? (
+            <a className={styles.demoLink} href="/demo">
+              Tour the empire
+            </a>
+          ) : null}
           <a className={styles.agentLink} href="#agent-quick-start">
             Agent quick start
           </a>
@@ -137,27 +144,37 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className={styles.personas}>
-            <p className={styles.personasTitle} id="personas-title">
-              Or enter a conference already in motion
-            </p>
-            <ul className={styles.personaList} aria-labelledby="personas-title">
-              {PERSONAS.map((persona) => (
-                <li key={persona.label}>
-                  <a className={styles.persona} href={persona.href}>
-                    <span className={styles.personaIcon}>
-                      <persona.icon size={18} aria-hidden="true" />
-                    </span>
-                    <span className={styles.personaLabel}>
-                      {persona.label}
-                      <ArrowRight size={15} aria-hidden="true" />
-                    </span>
-                    <span className={styles.personaBlurb}>{persona.blurb}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {demoAvailable ? (
+            <div className={styles.personas}>
+              <p className={styles.personasTitle} id="personas-title">
+                Or enter a conference already in motion
+              </p>
+              <ul className={styles.personaList} aria-labelledby="personas-title">
+                {PERSONAS.map((persona) => (
+                  <li key={persona.label}>
+                    <a className={styles.persona} href={persona.href}>
+                      <span className={styles.personaIcon}>
+                        <persona.icon size={18} aria-hidden="true" />
+                      </span>
+                      <span className={styles.personaLabel}>
+                        {persona.label}
+                        <ArrowRight size={15} aria-hidden="true" />
+                      </span>
+                      <span className={styles.personaBlurb}>{persona.blurb}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className={styles.freshStart}>
+              <p className={styles.personasTitle}>Fresh instance</p>
+              <p>
+                There is no sample conference in this database yet. Create the first event, or load
+                the optional demo data from the README to unlock the guided role tours.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className={styles.heroVisual} aria-label="Cicero organizer Forum preview">
@@ -264,8 +281,9 @@ export default function Home() {
             Proclaim clear fasti, a roll of orations, and a gallery of orators without copying a
             single record or awaiting another courier.
           </p>
-          <a className={styles.textLink} href="/demo/agenda">
-            Consult the demo programme <ArrowRight size={16} aria-hidden="true" />
+          <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
+            {demoAvailable ? 'Consult the demo programme' : 'Publish your first programme'}{' '}
+            <ArrowRight size={16} aria-hidden="true" />
           </a>
         </div>
       </section>
@@ -357,39 +375,63 @@ export default function Home() {
         </div>
       </section>
 
-      <section className={styles.finalCta}>
-        <p className={styles.eyebrow}>Take command</p>
-        <h2>Enter a conference already in motion.</h2>
-        <p>
-          The live province is filled with petitions, orators, unfinished duties, and a two-day
-          programme ready for inspection. Take the seat you want to try: the magistrate who
-          governs it, a censor weighing petitions, or an orator readying for the stage.
-        </p>
-        <div className={styles.finalCtaActions}>
-          <Button
-            href={DEMO_ENTRY_LINKS.organizer}
-            variant="primary"
-            size="lg"
-            iconRight={<ArrowRight size={17} aria-hidden="true" />}
-          >
-            Open the organizer Forum
-          </Button>
-          <Button
-            href={DEMO_ENTRY_LINKS.reviewer}
-            size="lg"
-            iconRight={<ArrowRight size={17} aria-hidden="true" />}
-          >
-            Judge petitions as a reviewer
-          </Button>
-          <Button
-            href={DEMO_ENTRY_LINKS.speaker}
-            size="lg"
-            iconRight={<ArrowRight size={17} aria-hidden="true" />}
-          >
-            Prepare a talk as a speaker
-          </Button>
-        </div>
-      </section>
+      {demoAvailable ? (
+        <section className={styles.finalCta}>
+          <p className={styles.eyebrow}>Take command</p>
+          <h2>Enter a conference already in motion.</h2>
+          <p>
+            The live province is filled with petitions, orators, unfinished duties, and a two-day
+            programme ready for inspection. Take the seat you want to try: the magistrate who
+            governs it, a censor weighing petitions, or an orator readying for the stage.
+          </p>
+          <div className={styles.finalCtaActions}>
+            <Button
+              href={DEMO_ENTRY_LINKS.organizer}
+              variant="primary"
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Open the organizer Forum
+            </Button>
+            <Button
+              href={DEMO_ENTRY_LINKS.reviewer}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Judge petitions as a reviewer
+            </Button>
+            <Button
+              href={DEMO_ENTRY_LINKS.speaker}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Prepare a talk as a speaker
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <section className={styles.finalCta}>
+          <p className={styles.eyebrow}>Ready for its first event</p>
+          <h2>Convene your own conference.</h2>
+          <p>
+            This fresh instance is fully operational without fixture data. Create an account to
+            build the first event, or sign in if another organizer has already invited you.
+          </p>
+          <div className={styles.finalCtaActions}>
+            <Button
+              href="/signup"
+              variant="primary"
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Create the first event
+            </Button>
+            <Button href="/signin" size="lg">
+              Sign in
+            </Button>
+          </div>
+        </section>
+      )}
 
     </main>
   );
