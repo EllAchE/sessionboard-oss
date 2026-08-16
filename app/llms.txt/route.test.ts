@@ -72,6 +72,7 @@ describe('llms.txt', () => {
       '/{slug}/speakers/{speakerSlug}',
       '/{slug}/gallery',
       '/{slug}/sponsors',
+      '/{slug}/llms.txt',
       '/submit/{eventSlug}/{formSlug}',
       '/embed/{slug}/{view}',
       '/embed/{slug}/exhibitor-map/file',
