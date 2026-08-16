@@ -411,6 +411,33 @@ describe('createTask', () => {
     expect(created?.values).toMatchObject({ reminderDaysBefore: [14, 1] });
   });
 
+  it('keeps one positive whole-day follow-up interval after a reminder send', async () => {
+    await createTask(context(), {
+      name: 'Confirm your travel dates',
+      kind: 'acknowledge',
+      audience: 'all_participants',
+      reminderDaysAfterSend: 3,
+    });
+
+    const created = rec.inserted.find((entry) => entry.table === task);
+    expect(created?.values).toMatchObject({ reminderDaysAfterSend: 3 });
+  });
+
+  it.each([0, -2, 1.5, Number.NaN])(
+    'disables an unusable after-send interval of %s',
+    async (reminderDaysAfterSend) => {
+      await createTask(context(), {
+        name: 'Confirm your travel dates',
+        kind: 'acknowledge',
+        audience: 'all_participants',
+        reminderDaysAfterSend,
+      });
+
+      const created = rec.inserted.find((entry) => entry.table === task);
+      expect(created?.values).toMatchObject({ reminderDaysAfterSend: null });
+    },
+  );
+
   it('assigns the new task to every current participant it applies to, immediately', async () => {
     await createTask(context(), {
       name: 'Read the code of conduct',

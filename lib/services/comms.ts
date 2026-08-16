@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, like, lte, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, like, lte, notInArray, or, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import {
   emailLog,
@@ -1873,10 +1873,15 @@ export type ReminderRun = {
 };
 
 /**
- * `C-7`. Each task carries `reminder_days_before` — say `[14, 7, 1]` — which is a cadence, not a
- * schedule: the fire time is `due_at` minus each offset. A run sends at most one reminder per
- * **person per task**, for the most recent offset that has passed and has not already been covered
- * by `last_reminded_at`.
+ * `C-7`. A task can carry two independent reminder rules:
+ *
+ * - `reminder_days_before` — say `[14, 7, 1]` — fires relative to `due_at`.
+ * - `reminder_days_after_send` follows up that many days after the most recent task reminder or
+ *   nudge. It has no first-send behavior of its own: without `last_reminded_at`, there is nothing to
+ *   follow up.
+ *
+ * A run sends at most one reminder per **person per task**, when either rule is due. A dispatch
+ * attempt becomes the next after-send anchor through `last_reminded_at`.
  *
  * That comparison is what makes the route re-entrant. Cron Triggers guarantee at-least-once
  * delivery, so "run this hourly" must mean "send once per offset", not "send once per run".
@@ -1906,28 +1911,40 @@ export async function runTaskReminders(
   const db = getDb();
   const now = options.now ?? new Date();
 
+  const tasksWithReminderCadence = or(
+    isNotNull(task.dueAt),
+    isNotNull(task.reminderDaysAfterSend),
+  );
   const tasks = await db
     .select()
     .from(task)
     .where(
       options.eventId
-        ? and(eq(task.eventId, options.eventId), isNotNull(task.dueAt))
-        : isNotNull(task.dueAt),
+        ? and(eq(task.eventId, options.eventId), tasksWithReminderCadence)
+        : tasksWithReminderCadence,
     );
 
   let sent = 0;
 
   for (const row of tasks) {
-    const offsets = (row.reminderDaysBefore ?? []).filter((days) => Number.isFinite(days));
-    if (offsets.length === 0 || !row.dueAt) continue;
-
-    const fireTimes = offsets
-      .map((days) => new Date(row.dueAt!.getTime() - days * 24 * 60 * 60 * 1000))
-      .filter((when) => when.getTime() <= now.getTime())
-      .sort((a, b) => b.getTime() - a.getTime());
-
-    const fireAt = fireTimes[0];
-    if (!fireAt) continue;
+    const offsets = (row.reminderDaysBefore ?? []).filter(
+      (days) => Number.isInteger(days) && days > 0,
+    );
+    const dueAt = row.dueAt;
+    const deadlineFireAt = dueAt
+      ? (offsets
+          .map((days) => new Date(dueAt.getTime() - days * 24 * 60 * 60 * 1000))
+          .filter((when) => when.getTime() <= now.getTime())
+          .sort((a, b) => b.getTime() - a.getTime())[0] ?? null)
+      : null;
+    const configuredAfterSendDays = row.reminderDaysAfterSend;
+    const afterSendDays =
+      typeof configuredAfterSendDays === 'number' &&
+      Number.isInteger(configuredAfterSendDays) &&
+      configuredAfterSendDays > 0
+        ? configuredAfterSendDays
+        : null;
+    if (!deadlineFireAt && !afterSendDays) continue;
 
     const assignments = await db
       .select({
@@ -1943,18 +1960,39 @@ export async function runTaskReminders(
         ),
       );
 
-    const dueByParticipant = new Map<string, string[]>();
+    const byParticipant = new Map<
+      string,
+      Array<{ id: string; lastRemindedAt: Date | null }>
+    >();
     for (const assignment of assignments) {
-      if (assignment.lastRemindedAt && assignment.lastRemindedAt.getTime() >= fireAt.getTime()) {
-        continue;
-      }
-      const group = dueByParticipant.get(assignment.participantId) ?? [];
-      group.push(assignment.id);
-      dueByParticipant.set(assignment.participantId, group);
+      const group = byParticipant.get(assignment.participantId) ?? [];
+      group.push({ id: assignment.id, lastRemindedAt: assignment.lastRemindedAt });
+      byParticipant.set(assignment.participantId, group);
     }
 
-    for (const [participantId, assignmentIds] of dueByParticipant) {
-      const recipient = await recipientForParticipant(row.eventId, participantId);
+    for (const [participantId, participantAssignments] of byParticipant) {
+      const due = participantAssignments.some((assignment) => {
+        const deadlineDue = Boolean(
+          deadlineFireAt &&
+            (!assignment.lastRemindedAt ||
+              assignment.lastRemindedAt.getTime() < deadlineFireAt.getTime()),
+        );
+        const afterSendDue = Boolean(
+          afterSendDays &&
+            assignment.lastRemindedAt &&
+            assignment.lastRemindedAt.getTime() + afterSendDays * 24 * 60 * 60 * 1000 <=
+              now.getTime(),
+        );
+        return deadlineDue || afterSendDue;
+      });
+      if (!due) continue;
+
+      // Re-resolve through the outstanding-task audience immediately before dispatch. The first
+      // assignment read chose what is due; this second read prevents a task completed or waived in
+      // the meantime from being chased with stale state.
+      const recipient = (
+        await resolveRecipients(row.eventId, { kind: 'outstanding_tasks', taskId: row.id })
+      ).find((candidate) => candidate.participantId === participantId);
       if (!recipient) continue;
 
       const result = await sendTemplated({
@@ -1965,14 +2003,23 @@ export async function runTaskReminders(
         // email says which sessions it is about without a query per session.
         extraVars: taskReminderVars(row, outstandingSessions(recipient.openTasks, row.id)),
       });
+      if (!result) continue;
 
-      // Stamped even when the template is disabled, so turning reminders back on does not
-      // immediately fire the whole backlog at everyone. Every row the one email covered is
-      // stamped, or the next run would send it again for the ones that were not.
+      // Every pending row named by the one person-level email gets the same anchor. This matters
+      // when only one of several session-scoped assignments made the follow-up due: leaving the
+      // others untouched would produce duplicate emails on later hourly runs.
       await db
         .update(taskAssignment)
         .set({ lastRemindedAt: now, updatedAt: now })
-        .where(inArray(taskAssignment.id, assignmentIds));
+        .where(
+          and(
+            inArray(
+              taskAssignment.id,
+              participantAssignments.map((assignment) => assignment.id),
+            ),
+            notInArray(taskAssignment.status, ['completed', 'waived']),
+          ),
+        );
 
       if (result?.emailSent || result?.smsSent) sent += 1;
     }

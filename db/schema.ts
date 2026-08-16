@@ -1190,9 +1190,17 @@ export const task = pgTable(
     position: integer('position').notNull().default(0),
     /** `C-7`: days before `dueAt` on which a reminder fires. Empty means no reminders. */
     reminderDaysBefore: jsonb('reminder_days_before').$type<number[]>().notNull().default([]),
+    /** Days after the latest task reminder/nudge before following up again. Null disables it. */
+    reminderDaysAfterSend: integer('reminder_days_after_send'),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('task_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('task_event_idx').on(t.eventId),
+    positiveReminderDaysAfterSend: check(
+      'task_reminder_days_after_send_positive',
+      sql`${t.reminderDaysAfterSend} is null or ${t.reminderDaysAfterSend} > 0`,
+    ),
+  }),
 );
 
 export const taskAssignment = pgTable(

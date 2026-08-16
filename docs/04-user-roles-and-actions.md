@@ -186,7 +186,9 @@ as examples.
 
 Every task has completion state visible to both the assigned speaker and the organizer. Tasks can be
 scoped to a contact, group, or submission. An organizer may also set instructions, a due date,
-whether the task is required, and reminder timing.
+whether the task is required, reminders a set number of days before the deadline, and a repeating
+follow-up interval after the latest reminder or nudge. Both reminder rules stop once the assignment
+is completed or waived.
 
 Speakers can save progress on form tasks before submitting them. A file or form task cannot be
 marked complete without its required evidence, while acknowledgement and external-link tasks

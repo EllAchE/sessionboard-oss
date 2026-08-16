@@ -673,6 +673,7 @@ export type AdminTaskRow = {
   linkUrl: string | null;
   formId: string | null;
   reminderDaysBefore: number[];
+  reminderDaysAfterSend: number | null;
   participantIds: string[];
   assigned: number;
   notStarted: number;
@@ -714,6 +715,7 @@ export async function listTasksForAdmin(
         linkUrl: row.linkUrl,
         formId: row.formId,
         reminderDaysBefore: row.reminderDaysBefore ?? [],
+        reminderDaysAfterSend: row.reminderDaysAfterSend,
         // `S-16`. A submission-scoped task gives one speaker a row per session, so the same person
         // legitimately appears more than once here. The manual-selection picker wants each of them
         // named once.
