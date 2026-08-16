@@ -12,9 +12,10 @@ export type Actor = {
   name: string | null;
   /**
    * `S-10`: set when an organizer is acting as this user. The session *is* the speaker — every
-   * write is real and takes effect — but it stays attributable, so an audit trail and the
-   * "you are viewing as…" banner both have something to read. Never use this to pick a code path;
-   * an impersonated session must behave identically or it is a preview again.
+   * write is real and takes effect. This identifies the organizer to the live request and the
+   * "you are viewing as…" banner; services that promise durable attribution must persist it on the
+   * resulting record. Never use this to pick an authorization path; an impersonated session must
+   * otherwise behave identically or it is a preview again.
    */
   impersonatedByUserId: string | null;
 };
