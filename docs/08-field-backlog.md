@@ -589,8 +589,8 @@ so plainly is more useful than burying them at position 44.
 Joint-highest convergence in the catalogue, and declined anyway — the clearest case in this document
 of evidence about the brief losing to a documented product decision. `T-4a`
 (`docs/01-requirements.md:358`) is "magic-link auth everywhere — every role, no passwords anywhere in
-the system", `lib/auth.ts` opens with "Magic links everywhere, passwords nowhere", and `user` has no
-password column. `docs/06-submission-narrative.md` §"Magic-link-only auth" argues the case, including
+the system", `lib/auth.ts:26` restates it as "Magic links everywhere, passwords nowhere (`T-4a`)",
+and `user` has no password column. `docs/06-submission-narrative.md` §"Magic-link-only auth" argues the case, including
 the observation that the incumbent itself uses magic links for reviewers and AV crew. Five teams read
 the brief as permitting more; Cicero read it as permitting less on purpose, and the demo deployment's
 on-screen-magic-link path (`T-7a`, `lib/demo-access.ts`) is built on that reading.
@@ -630,8 +630,9 @@ Declined together, for one reason: **Cicero has no attendees.** There is no atte
 no attendee table, and the only attendee-facing state in the product is `localStorage` in an embed
 widget (`app/embed/views/ItineraryWidget.tsx`), by explicit design — "an attendee reading an
 embedded widget on somebody else's website has no reason to sign in." The eight-step spine in
-`docs/00-goals.md` runs from CFP to published program and stops there; attendees are the audience for
-the output, not users of the system. Mutual connections, follows, and a per-attendee metered
+`docs/00-goals.md` §"The workflow we have to make work end to end" runs from the CFP form to a
+program "published back out to the event website as an embeddable schedule and speaker gallery",
+and stops there; attendees are the audience for the output, not users of the system. Mutual connections, follows, and a per-attendee metered
 concierge each presume an identity that would have to be invented first, and inventing it is a
 larger product decision than either feature. `AD-40` is the small, bounded version of the same
 question and is ranked in Tier 2 for exactly that reason.
