@@ -24,7 +24,12 @@ import styles from './home.module.css';
 
 const AGENT_STARTER_PROMPT = `$onboard-cicero
 
-Resume Cicero onboarding from this working directory. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
+Help me set up Cicero from this Claude or ChatGPT session.
+
+Read and follow the bundled onboarding guide first:
+https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md
+
+Resume from this working directory if Cicero is already cloned; otherwise help me clone it. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. If you cannot run a step yourself, give me the exact action and wait for its result. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
 
 const FEATURES = [
   {
@@ -133,15 +138,24 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             Run submissions, review, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.actions}>
+            <CopyAgentPromptButton
+              prompt={AGENT_STARTER_PROMPT}
+              label="Copy setup prompt"
+              copiedLabel="Setup prompt copied"
+              size="lg"
+              variant="primary"
+            />
             <Button
               href="/signup"
-              variant="primary"
               size="lg"
               iconRight={<UserPlus size={17} aria-hidden="true" />}
             >
               Convene your event
             </Button>
           </div>
+          <p className={styles.agentActionHint}>
+            Paste it into Claude or ChatGPT. Your agent will guide setup one safe step at a time.
+          </p>
 
           {demoAvailable ? (
             <div className={styles.personas}>
@@ -291,15 +305,14 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             <li>
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
-                <h3>Clone the repository</h3>
-                <p>Open the repository root in Codex.</p>
-                <code>git clone https://github.com/EllAchE/sessionboard-oss.git</code>
+                <h3>Copy the setup prompt</h3>
+                <p>Paste it into a Claude or ChatGPT session with coding tools.</p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>2</span>
               <div className={styles.agentStepCopy}>
-                <h3>Paste the resumable brief</h3>
+                <h3>Let your agent find your place</h3>
                 <p>
                   <code>$onboard-cicero</code> records progress in{' '}
                   <code>.cicero/onboarding.json</code> and resumes where it stopped.
@@ -342,7 +355,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
               <Bot size={17} aria-hidden="true" />
-              Preview-first prompt
+              Claude &amp; ChatGPT setup prompt
             </span>
             <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
           </div>

@@ -20,6 +20,18 @@ vi.mock('next/image', () => ({
 const { HomeContent } = await import('./page');
 
 describe('fresh-instance home page', () => {
+  it('leads with a copyable setup prompt for Claude and ChatGPT', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+
+    expect(html).toContain('Copy setup prompt');
+    expect(html).toContain('Paste it into Claude or ChatGPT');
+    expect(html).toContain('Claude &amp; ChatGPT setup prompt');
+    expect(html.indexOf('Copy setup prompt')).toBeLessThan(html.indexOf('Convene your event'));
+    expect(html).toContain(
+      'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
+    );
+  });
+
   it('offers only working cold-start paths before the demo fixture is loaded', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
 
