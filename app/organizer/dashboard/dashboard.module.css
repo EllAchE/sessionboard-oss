@@ -32,6 +32,51 @@
   color: var(--text-faint);
 }
 
+/*
+ * ---- Milestone deadlines — E-1b ----
+ *
+ * Sits at the far end of the page head, where the eye lands after the overdue-task line. Quiet on
+ * purpose: a passed milestone dims rather than turning red, because these are advisory and colouring
+ * one as an error would be the product taking a position it has no business taking.
+ */
+
+.milestones {
+  display: flex;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.milestone {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.milestone[data-passed='true'] {
+  opacity: 0.6;
+}
+
+.milestoneLabel {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--text-faint);
+}
+
+.milestoneWhen {
+  font: var(--type-body);
+  color: var(--text-strong);
+}
+
+.milestoneRelative {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
 .tabRow {
   display: flex;
   align-items: center;
