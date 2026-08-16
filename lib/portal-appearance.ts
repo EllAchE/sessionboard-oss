@@ -32,7 +32,7 @@ export const PORTAL_LOGO: PortalLogoSpec = {
 
 /**
  * A literal hex, not a design token — unlike a track colour, which is a token because
- * `app/admin/settings/palette.ts` explains why. The accent has to survive two places a custom
+ * `app/organizer/settings/palette.ts` explains why. The accent has to survive two places a custom
  * property cannot reach: Gmail strips `:root` and Outlook's word renderer never had custom
  * properties, so `wrapInBranding` interpolates this value directly into an inline style. A token
  * name would arrive in the inbox as nothing.
@@ -80,6 +80,6 @@ export const ACCENT_PRESETS: AccentPreset[] = [
  * so a replacement is visible immediately. Organizer-facing — the speaker's portal serves the same
  * bytes through `/portal/{slug}/file/{fileId}`, which is where the role check lives for them.
  */
-export function portalLogoAdminUrl(fileId: string | null | undefined): string | null {
-  return fileId ? `/admin/settings/portal/logo/${encodeURIComponent(fileId)}` : null;
+export function portalLogoOrganizerUrl(fileId: string | null | undefined): string | null {
+  return fileId ? `/organizer/settings/portal/logo/${encodeURIComponent(fileId)}` : null;
 }

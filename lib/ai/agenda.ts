@@ -355,7 +355,7 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       placements,
       unplaced,
       notes:
-        'Drafted by the built-in planner, which fills the earliest free slot in each room. Review it as a starting point; it does not evaluate session flow or content pairings.',
+        'Drafted by the built-in planner, which fills the earliest free slot in each room. It has no view of what makes two talks a bad pair, read it as a starting grid, not a programme.',
       model: null,
     };
   }

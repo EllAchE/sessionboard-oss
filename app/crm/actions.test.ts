@@ -195,12 +195,12 @@ describe('the pipeline', () => {
 });
 
 describe('crossing into the event', () => {
-  it('refreshes the admin speaker roster, which the push just changed', async () => {
+  it('refreshes the organizer speaker roster, which the push just changed', async () => {
     // Easy to forget: this write lands outside /crm, so only invalidating CRM screens would leave
     // the roster stale.
     await actions.pushToEventAction({ contactId: 'contact-1', eventId: 'event-forum' });
 
-    expect(invalidated()).toContain('/admin/speakers');
+    expect(invalidated()).toContain('/organizer/speakers');
     expect(invalidated()).toContain('/crm/contact-1');
   });
 

@@ -22,10 +22,12 @@ export function generateMetadata(): Metadata {
 }
 
 /**
- * Runs before first paint so the stored theme is on the element the first time anything is styled.
- * Doing this in an effect instead is what produces the light-to-dark flash on every load.
+ * Runs before first paint so a stored theme is on the element the first time anything is styled.
+ * Light is deliberately the default because it is the preferred way to experience Cicero, not
+ * because of a technical constraint; we can revert to following the system preference if needed.
+ * Returning visitors keep their explicit choice without a flash on load.
  */
-const THEME_SCRIPT = `try{var t=localStorage.getItem('cicero-theme');if(!t){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){}`;
+const THEME_SCRIPT = `try{var t=localStorage.getItem('cicero-theme');if(t){document.documentElement.dataset.theme=t}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
