@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RoleOnboarding } from '@/components/RoleOnboarding';
 import { eventHasSponsors } from '@/lib/services/sponsors';
 import type { PublicEvent } from '../../embed/queries';
 import styles from './public-event.module.css';
@@ -61,6 +62,7 @@ export async function PublicChrome({
 
   return (
     <div className={styles.page}>
+      <RoleOnboarding persona="attendee" />
       <header className={styles.bar}>
         <div className={styles.barInner}>
           <span className={styles.brandRow}>

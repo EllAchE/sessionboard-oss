@@ -17,6 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
+import { RoleOnboarding } from '@/components/RoleOnboarding';
 import { CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import type { EventSummary } from '@/lib/services/events';
 import { EventSwitcher } from './EventSwitcher';
@@ -116,6 +117,7 @@ export function AdminShell({
 
   return (
     <div className={styles.root}>
+      <RoleOnboarding persona="organizer" />
       <aside className={styles.sidebar}>
         <SidebarNav
           sections={NAV}

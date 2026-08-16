@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { ShieldAlert } from 'lucide-react';
+import { RoleOnboarding } from '@/components/RoleOnboarding';
 import { Avatar, Button } from '@/components/ui';
 import { getBranding, listMySubmissions, listPortalPages } from '@/lib/services/portal';
 import { listPortalTasks, summarize } from '@/lib/services/tasks';
@@ -57,6 +58,7 @@ export default async function PortalLayout({
 
   return (
     <div className={styles.shell} style={accentStyle}>
+      {!impersonatedByUserId ? <RoleOnboarding persona="speaker" /> : null}
       {impersonatedByUserId && (
         <div className={styles.impersonation} role="alert">
           <ShieldAlert size={18} className={styles.impersonationIcon} aria-hidden />

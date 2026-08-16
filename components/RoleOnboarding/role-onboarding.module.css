@@ -1,0 +1,213 @@
+.dialog {
+  max-width: 620px;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.eyebrow,
+.stepCount {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.eyebrow {
+  color: var(--text-accent);
+}
+
+.stepCount {
+  color: var(--text-muted);
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0 0 var(--space-6);
+  padding: 0;
+  list-style: none;
+}
+
+.progressStep {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+}
+
+.progressStep:not(:last-child)::after {
+  position: absolute;
+  z-index: 0;
+  top: 5px;
+  left: 12px;
+  width: calc(100% - var(--space-1));
+  height: var(--border-width);
+  background: var(--border-default);
+  content: '';
+}
+
+.progressStep[data-state='current'],
+.progressStep[data-state='complete'] {
+  color: var(--text-body);
+}
+
+.progressStep[data-state='complete']::after {
+  background: var(--accent);
+}
+
+.progressDot {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: var(--space-3);
+  height: var(--space-3);
+  border: var(--border-width-thick) solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+}
+
+.progressStep[data-state='current'] .progressDot {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 var(--space-1) var(--accent-subtle);
+}
+
+.progressStep[data-state='complete'] .progressDot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.progressLabel {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding-right: var(--space-1);
+  background: var(--surface-raised);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-5);
+  min-height: 210px;
+  animation: reveal var(--duration-normal) var(--ease-out);
+}
+
+.iconWrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--space-16);
+  height: var(--space-16);
+  border: var(--border-width) solid color-mix(in srgb, var(--accent) 30%, var(--border-default));
+  border-radius: var(--radius-xl);
+  background: var(--accent-subtle);
+  color: var(--text-accent);
+}
+
+.sparkle {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+.stepCopy {
+  min-width: 0;
+}
+
+.stepTitle {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xl);
+}
+
+.stepDescription {
+  color: var(--text-muted);
+}
+
+.points {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.points li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--text-body);
+}
+
+.points svg {
+  margin-top: var(--space-05);
+  color: var(--text-accent);
+}
+
+.footerActions {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.stepActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+}
+
+@media (max-width: 560px) {
+  .progressLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .step {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .iconWrap {
+    width: var(--space-12);
+    height: var(--space-12);
+  }
+
+  .sparkle {
+    display: none;
+  }
+
+  .footerActions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .stepActions,
+  .stepActions > * {
+    flex: 1;
+  }
+}
