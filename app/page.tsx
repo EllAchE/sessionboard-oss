@@ -1,4 +1,9 @@
-import Image from 'next/image';
+import { CiceroBrand } from '@/components/CiceroBrand';
+import { Button } from '@/components/ui';
+import dashboardImage from '@/docs/images/dashboard.jpg';
+import publicAgendaImage from '@/docs/images/public-agenda.jpg';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import {
   ArrowRight,
   Bot,
@@ -13,12 +18,7 @@ import {
   ShieldCheck,
   UserPlus,
 } from 'lucide-react';
-import { CiceroBrand } from '@/components/CiceroBrand';
-import { Button } from '@/components/ui';
-import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
-import dashboardImage from '@/docs/images/dashboard.jpg';
-import publicAgendaImage from '@/docs/images/public-agenda.jpg';
+import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
 import styles from './home.module.css';
 
@@ -93,7 +93,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         </a>
         <div className={styles.navLinks}>
           <a className={styles.aboutLink} href="#about">
-            About Cicero
+            About
           </a>
           {demoAvailable ? (
             <a className={styles.demoLink} href="/demo">
@@ -102,14 +102,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           ) : null}
           <a className={styles.agentLink} href="#agent-quick-start">
             Agent quick start
-          </a>
-          <a
-            className={styles.githubLink}
-            href="https://github.com/EllAchE/sessionboard-oss"
-            aria-label="Cicero on GitHub"
-          >
-            <Github size={17} aria-hidden="true" />
-            <span>GitHub</span>
           </a>
           <a className={styles.signInLink} href="/signin">
             Sign in
