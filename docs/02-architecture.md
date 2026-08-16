@@ -365,11 +365,18 @@ Auth is `Authorization: Bearer <key>`, keys are per event, hashed at rest.
 ### Embeds are server-rendered routes, not a JS widget
 
 `G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers`, `/embed/:slug/sessions`, and
-`/embed/:slug/sponsors`,
-served with `frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing
-iframe. The requirement that an embed "auto-updates with no re-paste" is then free rather than
-engineered: the iframe renders live data on every load, so there is no snapshot to go stale and no
-client bundle to version.
+`/embed/:slug/sponsors`. `AR-37` adds `/embed/:slug/exhibitor-map`, which wraps the event's current
+PDF map rather than inventing a second interactive floor-plan model. All are served with
+`frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing iframe. The
+requirement that an embed "auto-updates with no re-paste" is then free rather than engineered: the
+iframe renders live data on every load, so there is no snapshot to go stale and no client bundle to
+version.
+
+The map's stable `/embed/:slug/exhibitor-map/file` route does not expose arbitrary event files. It
+joins `event_exhibitor_map` to a `file` with the same event id on every request, sends `no-store`,
+and returns 404 after the organizer removes the slot. Upload, replacement, and removal reuse the
+same storage service as speaker deliverables; only PDF input with an actual `%PDF-` signature is
+accepted.
 
 Sponsor rows add one more structural gate: only `status = published` rows enter the public page,
 embed, REST list, navigation presence check, or logo authorization. Changing a row back to draft

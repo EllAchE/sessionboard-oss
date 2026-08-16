@@ -52,7 +52,7 @@ function columns(
     {
       id: 'name',
       header: 'Speaker',
-      width: '28%',
+      space: 'wide',
       render: (row) => (
         <span className={styles.person}>
           <Avatar
@@ -87,6 +87,7 @@ function columns(
       id: 'role',
       header: 'Role',
       width: '18%',
+      space: 'wide',
       render: (row) => (
         <span className={styles.personText}>
           <span className={styles.personMeta}>{row.jobTitle || '—'}</span>
@@ -110,7 +111,8 @@ function columns(
     {
       id: 'travel',
       header: 'Travel & logistics',
-      width: '15%',
+      width: '16%',
+      space: 'wide',
       render: (row) =>
         row.hasTravelDetail ? (
           <span className={styles.badgeRow}>
@@ -128,6 +130,7 @@ function columns(
             id: 'viewAs',
             header: <span className={styles.visuallyHidden}>View as</span>,
             width: 'var(--control-md)',
+            space: 'compact' as const,
             align: 'right' as const,
             render: (row: SpeakerProfile) => (
               <ViewPortalAsRowButton participantId={row.id} name={row.name} />
@@ -139,6 +142,7 @@ function columns(
       id: 'sessions',
       header: 'Sessions',
       width: '12%',
+      space: 'wide',
       render: (row) => (
         <span className={styles.personText}>
           <span className={styles.personMeta}>
