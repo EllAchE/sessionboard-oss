@@ -874,6 +874,10 @@ const participants = await db
       company: profile.company,
       bioMarkdown: profile.bio,
       timezone: 'America/Los_Angeles',
+      // The standard demo advertises these profiles as its public speaker roster. Keep that
+      // fixture state explicit: the schema default is `invited`, which is intentionally excluded
+      // from public pages until an organizer confirms the participant.
+      workflowStatus: 'confirmed' as const,
       links: [{ label: 'Website', url: 'https://example.com' }],
     })),
   )
@@ -1441,7 +1445,7 @@ const firstSettlement = await seedFirstSettlement(db, organizer.id, now);
 console.log(
   `Seeded /${SLUG}: ${submissions.length} submissions, ${uniqueAccepted.length} speakers, ` +
     `${scheduled.length} scheduled sessions, ${tasks.length + scopedTasks.length} tasks. ` +
-    `Sign in as ${organizer.email} and read the link at /admin/mail.`,
+    `Sign in as ${organizer.email} and read the link at /organizer/mail.`,
 );
 console.log(
   `Seeded /${firstSettlement.slug}: ${firstSettlement.submissions} submissions, ` +

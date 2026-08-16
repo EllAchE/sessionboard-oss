@@ -110,7 +110,7 @@ export function composeTaskNudge(row: NudgeFacts, organizerName: string): NudgeS
     '',
     `${firstSentence(row)}${sessions}`,
     '',
-    'This link takes you straight into your speaker portal — no password needed:',
+    'Open your speaker portal:',
     '',
     // Bare, not `[Open your portal]({{portal.link}})` like the automatic templates. `gfm` autolinks
     // it in the HTML part, and `markdownToText` reduces a markdown link to its *label* — so the
@@ -119,7 +119,7 @@ export function composeTaskNudge(row: NudgeFacts, organizerName: string): NudgeS
     // bulk mail, which is the whole point of a message a human puts their name to.
     '{{portal.link}}',
     '',
-    'If it is already handled, or you need more time, just reply to this email and tell me.',
+    'Already done or need more time? Reply and let me know.',
     '',
     'Thanks,',
     '',

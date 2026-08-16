@@ -23,7 +23,7 @@ export default function PortalError({
     <main className={styles.main}>
       <div className={styles.empty}>
         <div className={styles.emptyTitle}>Something went wrong</div>
-        <p>Nothing you had entered was lost. Try again, and tell the organizers if it keeps happening.</p>
+        <p>Try again. Contact the organizers if it keeps happening.</p>
         <div className={styles.taskActions} style={{ justifyContent: 'center', marginTop: 'var(--space-6)' }}>
           <Button variant="primary" onClick={reset}>
             Try again

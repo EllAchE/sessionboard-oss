@@ -4,12 +4,9 @@ import { useEffect, useState } from "react";
 import { conferenceClock } from "@/lib/conference-clock";
 import styles from "./public-event.module.css";
 
-const UNITS = [
-  ["days", "Days"],
-  ["hours", "Hours"],
-  ["minutes", "Minutes"],
-  ["seconds", "Seconds"],
-] as const;
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
 
 export function ConferenceCountdown({
   startsOn,
@@ -31,32 +28,27 @@ export function ConferenceCountdown({
   }, []);
 
   const clock = conferenceClock(startsOn, endsOn, timeZone, now);
+  const { remaining } = clock;
 
   return (
-    <section
-      className={styles.countdown}
+    <span
+      className={styles.countdownBadge}
       data-phase={clock.phase}
       role="timer"
-      aria-label={clock.label}
+      aria-label={
+        remaining
+          ? `${clock.label} ${remaining.days} days ${remaining.hours} hours ${remaining.minutes} minutes ${remaining.seconds} seconds`
+          : clock.label
+      }
       aria-live="off"
     >
-      <p className={styles.countdownLabel}>{clock.label}</p>
-      {clock.remaining ? (
-        <div className={styles.countdownUnits}>
-          {UNITS.map(([key, label]) => (
-            <span className={styles.countdownUnit} key={key}>
-              <span className={styles.countdownValue}>
-                {String(clock.remaining?.[key] ?? 0).padStart(2, "0")}
-              </span>
-              <span className={styles.countdownUnitLabel}>{label}</span>
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className={styles.countdownComplete}>
-          Thank you for being part of it.
-        </p>
-      )}
-    </section>
+      <span className={styles.countdownBadgeLabel}>{clock.label}</span>
+      {remaining ? (
+        <span className={styles.countdownBadgeValue}>
+          {remaining.days}d {pad(remaining.hours)}h {pad(remaining.minutes)}m{" "}
+          {pad(remaining.seconds)}s
+        </span>
+      ) : null}
+    </span>
   );
 }

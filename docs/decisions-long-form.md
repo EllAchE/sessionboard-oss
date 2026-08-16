@@ -323,8 +323,16 @@ exactly as they would for the speaker. If an impersonated session took a differe
 would be a preview again.
 
 That power needs a clear boundary. Only an organizer on the event may start it, the target must also
-belong to that event, and nested impersonation is refused. The attribution field exists so an audit
-trail can distinguish assistance from the speaker's own action.
+belong to that event, and nested impersonation is refused.
+
+Full-session impersonation is a delivery shortcut, not the production permission model. It lets an
+organizer reach the speaker's notification and preference settings, and `impersonated_by` only
+identifies the organizer while that session exists. Revisioned profile and session content persists
+the organizer's identity, but task completion, task-form answers, uploads and comments do not all do
+so; those records can therefore read as though the speaker acted. Organizer-assisted edits are still
+the desired capability. One of the first production hardening changes would give them a bounded
+action path, exclude speaker-only settings, and persist both identities in an audit record for every
+mutation.
 
 ## Why I wrote the form engine
 

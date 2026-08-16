@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/lib/auth';
 import { currentEventId, listEventsForUser } from '@/lib/services/events';
-import { AdminShell } from '../admin/AdminShell';
+import { OrganizerShell } from '../organizer/OrganizerShell';
 import { CrmNav } from './CrmNav';
 import styles from './crm.module.css';
 
@@ -30,11 +30,11 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <AdminShell events={organizing} currentEventId={eventId} actorName={actor.name ?? actor.email}>
+    <OrganizerShell events={organizing} currentEventId={eventId} actorName={actor.name ?? actor.email}>
       <div className={styles.shell}>
         <CrmNav />
         {children}
       </div>
-    </AdminShell>
+    </OrganizerShell>
   );
 }

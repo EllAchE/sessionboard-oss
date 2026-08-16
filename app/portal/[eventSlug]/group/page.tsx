@@ -22,16 +22,13 @@ export default async function GroupPage({ params }: { params: Promise<{ eventSlu
     <div className={styles.stack}>
       <div className={styles.pageHead}>
         <h1 className={styles.pageTitle}>Group access</h1>
-        <p className={styles.pageLead}>
-          Co-speakers, moderators and panelists on your sessions. Adding someone gives them their own
-          portal for the session — their own bio, their own tasks — rather than a copy of yours.
-        </p>
+        <p className={styles.pageLead}>Manage co-speakers, moderators, and panelists for your sessions.</p>
       </div>
 
       {groups.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyTitle}>No sessions to share</div>
-          <p>Once you have a session, you can add the people speaking on it with you here.</p>
+          <p>Sessions you can share will appear here.</p>
         </div>
       ) : (
         groups.map(({ submission, members }) => (

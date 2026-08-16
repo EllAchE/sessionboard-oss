@@ -23,7 +23,7 @@ one-command self-host that needs no API key from anyone.
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/admin/mail`](https://cicero-three.vercel.app/admin/mail).
+[`/organizer/mail`](https://cicero-three.vercel.app/organizer/mail).
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
@@ -51,8 +51,9 @@ docker compose up
 Then open <http://localhost:3000>. That brings up the app, Postgres and MinIO, migrates the
 database before serving, and creates the file bucket — there is no second command and nothing to
 configure. Email has no API key in a fresh clone, so every message the app would send is recorded
-and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
-a real inbox.
+and readable at **`/organizer/mail`**; sign-in links included. Nothing about the walkthrough depends on
+a real inbox. The first page starts in cold-create mode; demo links appear automatically after the
+optional sample data below is loaded.
 
 To load the demo conferences:
 
@@ -104,7 +105,7 @@ from it.
 ### Sending real email
 
 Out of the box `MAIL_TRANSPORT=log`: every message is written to `email_log` and rendered at
-`/admin/mail`, sign-in links included, and nothing is delivered. That is the right default for a
+`/organizer/mail`, sign-in links included, and nothing is delivered. That is the right default for a
 clone, and nothing in the walkthrough needs more than it.
 
 To actually send, pick a transport:
@@ -121,7 +122,7 @@ Sending from an unverified domain is rejected by the provider or filed as spam b
 it is the usual reason a correctly configured transport still produces no mail.
 
 Naming a transport you have not configured — `MAIL_TRANSPORT=smtp` with no server set — falls back
-to `log` and warns on the server console. Mail keeps working and stays readable at `/admin/mail`;
+to `log` and warns on the server console. Mail keeps working and stays readable at `/organizer/mail`;
 it just is not delivered. Check that console line first if sends look successful and no one is
 receiving anything.
 
@@ -144,8 +145,8 @@ away from real sending. To flip it, in this order:
    and the app says so on the server console on the first send.
 3. **`wrangler secret put RESEND_API_KEY`** and paste the key. A secret, never a `var` — vars in
    `wrangler.jsonc` are committed.
-4. Deploy (`bun run cf:deploy`), then confirm the banner at `/admin/mail` names `resend` and send
-   yourself something from `/admin/comms`.
+4. Deploy (`bun run cf:deploy`), then confirm the banner at `/organizer/mail` names `resend` and send
+   yourself something from `/organizer/comms`.
 
 Step 3 alone is what changes behaviour, so a key without step 1 sends nothing and a key without
 step 2 sends only to you.
@@ -211,7 +212,7 @@ programme is built by passing through invalid intermediate states; an organizer 
 stricter behaviour turns on **Block clashes on save** and room and speaker double-bookings are then
 refused outright.
 
-**Post-conference recordings.** **Admin → Recordings** attaches a bounded video upload, an existing
+**Post-conference recordings.** **Organizer → Recordings** attaches a bounded video upload, an existing
 event video, or an HTTPS streaming URL to a session. Media stays draft until an organizer publishes
 it after the session ends; only then do public programme pages and embeds show **Watch recording**.
 Replacing the source unpublishes it automatically. Full-length recordings should use a streaming
@@ -347,8 +348,12 @@ actually use." These are ours, stated out loud rather than buried.
   password for a site they visit twice a year. They forget it, and the organizer becomes a help
   desk.
 - **Impersonation, not preview.** The organizer's session carries `impersonated_by` and every write
-  goes through *as the speaker* while staying attributable. A read-only "view as" is useless for
-  support — the point is to finish the stuck speaker's task for them.
+  goes through *as the speaker*. A read-only "view as" is useless for support — the point is to
+  finish the stuck speaker's task for them. Full-session impersonation is also an intentional
+  shortcut, not the production end state: it exposes speaker settings, and task, upload and comment
+  records do not all preserve the organizer as the acting identity. One of the first hardening steps
+  would keep organizer-assisted edits while scoping them away from speaker-only settings and
+  recording both the organizer and speaker on every action.
 - **Speaker double-booking detection.** A room clash is a spreadsheet error someone catches. A
   speaker booked in two rooms at once is a failure the audience watches happen.
 - **Calendar invites that update in place.** A real `METHOD:REQUEST` with a bumped `SEQUENCE`, so
@@ -411,12 +416,15 @@ coexist without either seeing the other.
 9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
-Alongside those, two unnumbered companions:
+Alongside those, three unnumbered companions:
 
 - [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
   ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
 - [`docs/decisions-long-form.md`](docs/decisions-long-form.md) — the narrative rationale: why the
   product was scoped, built and named the way it was, including what was deliberately not built
+- [`docs/handoff/sessionboard-eval.md`](docs/handoff/sessionboard-eval.md) — how to run the external
+  `sessionboard-eval-kit` against the hosted product, gather scenario evidence, judge it in fresh
+  context, and produce the real rubric score; this is not the repository's local CI eval loop
 
 ### Reference material
 
@@ -460,9 +468,9 @@ first dead end.
   earliest-free-slot planner for the agenda. Hiding an unconfigured feature hides the shape of it,
   and the shape is the point: they propose, they never decide. The demo runs without a key.
 - **The demo no longer runs on Cloudflare, and the CPU ceiling that used to break it is gone.**
-  On the Workers free plan a 10ms-per-request CPU cap meant a dense admin page on a cold isolate
+  On the Workers free plan a 10ms-per-request CPU cap meant a dense organizer page on a cold isolate
   answered `error code: 1102` with a 503 — roughly one navigation in eight. Nothing in the code can
-  render an admin table in 10ms of CPU, so that was never fixable in the app. The demo now runs on
+  render an organizer table in 10ms of CPU, so that was never fixable in the app. The demo now runs on
   Vercel, which has no such quota. For scale rather than for the cap: `bun run bench` measures a
   self-hosted `docker compose up` at 41–58ms p50 with a zero error rate across 7000 requests to the
   five public routes, and 29–46ms of server CPU per rendered page — which is where a 10ms budget
@@ -470,10 +478,10 @@ first dead end.
   numbers, and [`docs/02-architecture.md`](docs/02-architecture.md) §1 records why the host changed.
 - **The compose screen can't address one named person.** `manual` is a real audience kind in the
   service layer (`lib/services/comms.ts:293`) and the MCP surface reaches it, but it is not
-  selectable in [`app/admin/comms/Composer.tsx`](app/admin/comms/Composer.tsx) — every send from
+  selectable in [`app/organizer/comms/Composer.tsx`](app/organizer/comms/Composer.tsx) — every send from
   that screen goes to a computed group. This bullet used to also claim reviewers could only be added
   by role; that stopped being true once `inviteReviewerAction`
-  (`app/admin/submissions/rounds/actions.ts:67`) and per-submission `assignReviewers`
-  (`app/admin/submissions/actions.ts:167`) shipped, and both work today.
+  (`app/organizer/submissions/rounds/actions.ts:67`) and per-submission `assignReviewers`
+  (`app/organizer/submissions/actions.ts:167`) shipped, and both work today.
 - **The embed builder exports HTML and an iframe snippet only.** JSON, XML and iCal exports of the
-  same data are reachable through the REST API but have no button in the embed admin.
+  same data are reachable through the REST API but have no button in the embed management screen.

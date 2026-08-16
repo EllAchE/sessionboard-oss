@@ -42,6 +42,11 @@ export function formatTimeRange(
   return `${start} – ${end}`;
 }
 
+export function profileGapSummary(count: number): string {
+  if (count === 0) return 'Your profile is complete';
+  return `${count} ${count === 1 ? 'thing' : 'things'} left`;
+}
+
 const DAY_MS = 86_400_000;
 
 /** "Due in 3 days" beats a bare date on the one screen that has to make urgency obvious. */

@@ -9,7 +9,7 @@ deterministic fixture adapter. The response labels that boundary as `"adapter": 
 
 ## Repeatable fixture walkthrough
 
-Enable fixture mode with `ACCELEVENTS_FAKE=1`, create an event API key under Admin → Integrations, and set these shell variables:
+Enable fixture mode with `ACCELEVENTS_FAKE=1`, create an event API key under Organizer → Integrations, and set these shell variables:
 
 ```bash
 export CICERO_URL=https://cicero-three.vercel.app

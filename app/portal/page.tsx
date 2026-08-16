@@ -23,7 +23,7 @@ export default async function PortalIndexPage() {
         <h1 className={styles.pageTitle}>Your speaker portals</h1>
         <p className={styles.pageLead}>
           {events.length === 0
-            ? 'You are not on any events yet. Open the link an organizer sent you, or ask them to add you.'
+            ? 'You’re not on any events yet. Ask an organizer to add you.'
             : 'Pick the event you are speaking at.'}
         </p>
       </div>

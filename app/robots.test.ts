@@ -25,6 +25,7 @@ describe('robots.txt', () => {
   it('closes every signed-in, magic-linked and internal surface', () => {
     for (const path of [
       '/admin/agenda',
+      '/organizer/agenda',
       '/auth/verify',
       '/crm/pipeline',
       '/dashboard',
@@ -43,14 +44,20 @@ describe('robots.txt', () => {
   });
 
   it('closes the bare route as well as its subtree', () => {
-    for (const path of ['/admin', '/portal', '/review', '/crm', '/signin', '/api']) {
+    for (const path of ['/admin', '/organizer', '/portal', '/review', '/crm', '/signin', '/api']) {
       expect(blocked(path), path).toBe(true);
     }
   });
 
   it('does not swallow an event whose slug merely starts like a route name', () => {
     // Nothing reserves a slug against a route name, and published events live at the root.
-    for (const path of ['/review-2026', '/dashboard-summit', '/adminsummit', '/events-2026']) {
+    for (const path of [
+      '/review-2026',
+      '/dashboard-summit',
+      '/adminsummit',
+      '/organizersummit',
+      '/events-2026',
+    ]) {
       expect(blocked(path), path).toBe(false);
     }
   });

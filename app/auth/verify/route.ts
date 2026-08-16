@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { consumeMagicLink } from '@/lib/auth';
+import { appUrl } from '@/lib/env';
+import { authRedirect } from '@/app/signin/redirect';
+
+function publicRedirect(path: string): NextResponse {
+  return NextResponse.redirect(new URL(path, appUrl()));
+}
 
 /**
  * A GET that mutates, deliberately: the link arrives in an email client and a mail scanner that
@@ -8,14 +14,13 @@ import { consumeMagicLink } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
   if (!token) {
-    return NextResponse.redirect(new URL('/signin?error=missing', request.url));
+    return publicRedirect('/signin?error=missing');
   }
 
   try {
     const { redirectTo } = await consumeMagicLink(token);
-    const target = redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/admin';
-    return NextResponse.redirect(new URL(target, request.url));
+    return publicRedirect(authRedirect(redirectTo, '/organizer'));
   } catch {
-    return NextResponse.redirect(new URL('/signin?error=expired', request.url));
+    return publicRedirect('/signin?error=expired');
   }
 }

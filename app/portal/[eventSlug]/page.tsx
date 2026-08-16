@@ -13,6 +13,7 @@ import {
   SUBMISSION_STATUS_LABEL,
   formatDate,
   formatTimeRange,
+  profileGapSummary,
   relativeDue,
   submissionTone,
   taskTone,
@@ -64,8 +65,7 @@ export default async function PortalHomePage({
           />
         ) : (
           <p className={styles.pageLead}>
-            This is where {event.name} collects everything it needs from you. Work through what is
-            outstanding below — nothing here is lost if you leave and come back.
+            Complete the outstanding work below. Your progress is saved.
           </p>
         )}
       </section>
@@ -91,10 +91,6 @@ export default async function PortalHomePage({
         {outstanding.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyTitle}>You are all caught up</div>
-            <p>
-              Nothing is outstanding right now. If the organizers add a task, it will appear here and
-              you will get an email.
-            </p>
           </div>
         ) : (
           <Card padding="none">
@@ -144,10 +140,7 @@ export default async function PortalHomePage({
           <Card>
             <CardBody>
               {submissions.length === 0 ? (
-                <p className={styles.muted}>
-                  You have no sessions on {event.name} yet. Once a talk is submitted it shows up here
-                  with its status.
-                </p>
+                <p className={styles.muted}>No sessions yet.</p>
               ) : (
                 <div className={styles.stackTight}>
                   {submissions.slice(0, 5).map((entry) => (
@@ -176,9 +169,7 @@ export default async function PortalHomePage({
                     </div>
                   ))}
                   {pending.length > 0 && (
-                    <p className={styles.faint}>
-                      {pending.length} still awaiting a decision from the programme committee.
-                    </p>
+                    <p className={styles.faint}>{pending.length} awaiting a decision.</p>
                   )}
                 </div>
               )}
@@ -190,15 +181,11 @@ export default async function PortalHomePage({
           <h2 className={styles.sectionTitle}>Your profile</h2>
           <Card>
             <CardHeader>
-              <CardTitle>
-                {gaps.length === 0 ? 'Your profile is complete' : `${gaps.length} things left`}
-              </CardTitle>
+              <CardTitle>{profileGapSummary(gaps.length)}</CardTitle>
             </CardHeader>
             <CardBody>
               {gaps.length === 0 ? (
-                <p className={styles.muted}>
-                  Your bio, headshot and links are what the organizers publish on the programme.
-                </p>
+                <p className={styles.muted}>This profile appears on the public programme.</p>
               ) : (
                 <div className={styles.stackTight}>
                   {gaps.map((gap) => (
@@ -236,7 +223,7 @@ export default async function PortalHomePage({
       )}
 
       <section>
-        <h2 className={styles.sectionTitle}>Everywhere else in your portal</h2>
+        <h2 className={styles.sectionTitle}>More</h2>
         <div className={styles.typeGrid}>
           {types.map((type) => (
             <Link key={type.id} href={type.href} className={styles.typeCard}>
