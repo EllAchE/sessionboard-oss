@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { OrganizerUpdateItem } from '@/lib/services/updates';
-import { UpdatesFeed } from './UpdatesFeed';
+import { partitionUpdates, UpdatesFeed } from './UpdatesFeed';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -36,8 +36,9 @@ describe('UpdatesFeed', () => {
     expect(html).toContain('Notifications &amp; updates');
     expect(html).toContain('Cicero Forum');
     expect(html).toContain('Submissions');
-    expect(html).toContain('Since last check');
-    expect(html).toContain('All recent');
+    expect(html).toContain('All updates');
+    expect(html).toContain('Unread only');
+    expect(html).toContain('Unread');
     expect(html).toContain('New submission: Machines That Think');
     expect(html).toContain('ABS-42 from Ada Lovelace');
     expect(html).toContain('href="/admin/submissions/submission-1"');
@@ -48,5 +49,33 @@ describe('UpdatesFeed', () => {
 
     expect(html).toContain('Nothing new here');
     expect(html).toContain('No activity in this category during the current 30-day window.');
+  });
+
+  it('partitions updates at the prior-view boundary so unread can render before earlier items', () => {
+    const earlier = {
+      ...update,
+      id: 'earlier',
+      title: 'Earlier update',
+      occurredAt: '2026-08-14T12:00:00.000Z',
+    };
+    const unread = {
+      ...update,
+      id: 'unread',
+      title: 'Unread update',
+      occurredAt: '2026-08-16T10:00:00.000Z',
+    };
+
+    expect(partitionUpdates([unread, earlier], '2026-08-15T00:00:00.000Z')).toEqual({
+      unread: [unread],
+      viewed: [earlier],
+    });
+    expect(partitionUpdates([unread, earlier], null)).toEqual({
+      unread: [unread, earlier],
+      viewed: [],
+    });
+    expect(partitionUpdates([unread, earlier], 'invalid stored date')).toEqual({
+      unread: [unread, earlier],
+      viewed: [],
+    });
   });
 });

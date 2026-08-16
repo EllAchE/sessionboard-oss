@@ -20,7 +20,7 @@ import type {
 import styles from './updates.module.css';
 
 type CategoryFilter = 'all' | OrganizerUpdateCategory;
-type ScopeFilter = 'new' | 'all';
+type ScopeFilter = 'all' | 'unread';
 
 const CATEGORIES: Array<{ id: CategoryFilter; label: string }> = [
   { id: 'all', label: 'All' },
@@ -107,6 +107,73 @@ function groupByDay(
   return [...groups.entries()].map(([label, grouped]) => ({ label, items: grouped }));
 }
 
+export function partitionUpdates(
+  items: OrganizerUpdateItem[],
+  lastSeen: string | null,
+): { unread: OrganizerUpdateItem[]; viewed: OrganizerUpdateItem[] } {
+  if (!lastSeen) return { unread: items, viewed: [] };
+  const boundary = Date.parse(lastSeen);
+  if (!Number.isFinite(boundary)) return { unread: items, viewed: [] };
+  return {
+    unread: items.filter((item) => Date.parse(item.occurredAt) > boundary),
+    viewed: items.filter((item) => Date.parse(item.occurredAt) <= boundary),
+  };
+}
+
+function TimelineSection({
+  label,
+  items,
+  unread,
+  generatedAt,
+}: {
+  label: string;
+  items: OrganizerUpdateItem[];
+  unread: boolean;
+  generatedAt: string;
+}) {
+  if (items.length === 0) return null;
+  const groups = groupByDay(items, generatedAt);
+
+  return (
+    <section className={styles.updateSection} data-unread={unread}>
+      <div className={styles.sectionHeader}>
+        <h3 className={styles.sectionTitle}>{label}</h3>
+        <span className={styles.sectionCount}>{items.length}</span>
+      </div>
+      <div className={styles.timeline}>
+        {groups.map((group) => (
+          <section key={group.label} className={styles.dayGroup}>
+            <h4 className={styles.dayLabel}>{group.label}</h4>
+            <ul className={styles.updateList}>
+              {group.items.map((item) => (
+                <li key={item.id} className={styles.updateItem} data-unread={unread}>
+                  <span className={styles.icon} data-tone={item.tone}>
+                    <CategoryIcon category={item.category} />
+                  </span>
+                  <Link href={item.href} className={styles.updateLink}>
+                    <span className={styles.updateTopline}>
+                      <span className={styles.updateTitle}>{item.title}</span>
+                      <time
+                        className={styles.updateTime}
+                        dateTime={item.occurredAt}
+                        title={fullDateTime(item.occurredAt)}
+                      >
+                        {relativeTime(item.occurredAt, generatedAt)}
+                      </time>
+                    </span>
+                    <span className={styles.updateDetail}>{item.detail}</span>
+                    <span className={styles.updateCategory}>{categoryLabel(item.category)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function UpdatesFeed({
   actorId,
   eventId,
@@ -126,7 +193,7 @@ export function UpdatesFeed({
   const recordedThisMount = useRef(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [scope, setScope] = useState<ScopeFilter>('new');
+  const [scope, setScope] = useState<ScopeFilter>('all');
   const [category, setCategory] = useState<CategoryFilter>('all');
 
   useEffect(() => {
@@ -142,22 +209,18 @@ export function UpdatesFeed({
       // Private browsing and locked-down embeds may deny storage. The feed still works as recent.
     }
     setLastSeen(previous);
-    if (!previous) setScope('all');
     setReady(true);
   }, [generatedAt, storageKey]);
 
-  const newItems = useMemo(
-    () =>
-      lastSeen
-        ? items.filter((item) => Date.parse(item.occurredAt) > Date.parse(lastSeen))
-        : items,
+  const partition = useMemo(
+    () => partitionUpdates(items, lastSeen),
     [items, lastSeen],
   );
 
-  const inScope = scope === 'new' && lastSeen ? newItems : items;
+  const inScope = scope === 'unread' ? partition.unread : items;
   const visible =
     category === 'all' ? inScope : inScope.filter((item) => item.category === category);
-  const groups = groupByDay(visible, generatedAt);
+  const visiblePartition = partitionUpdates(visible, lastSeen);
   const countFor = (id: CategoryFilter) =>
     id === 'all' ? inScope.length : inScope.filter((item) => item.category === id).length;
 
@@ -172,8 +235,8 @@ export function UpdatesFeed({
             one place.
           </p>
         </div>
-        <Badge tone={newItems.length > 0 ? 'accent' : 'neutral'} size="md">
-          {ready ? `${lastSeen ? newItems.length : items.length} recent` : 'Checking…'}
+        <Badge tone={partition.unread.length > 0 ? 'accent' : 'neutral'} size="md">
+          {ready ? `${partition.unread.length} unread` : 'Checking…'}
         </Badge>
       </header>
 
@@ -183,10 +246,8 @@ export function UpdatesFeed({
             <span className={styles.summaryIcon} data-tone="accent">
               <Bell size={17} aria-hidden />
             </span>
-            <span className={styles.summaryValue}>{newItems.length}</span>
-            <span className={styles.summaryLabel}>
-              {lastSeen ? 'Since last check' : 'Recent updates'}
-            </span>
+            <span className={styles.summaryValue}>{partition.unread.length}</span>
+            <span className={styles.summaryLabel}>Unread updates</span>
           </CardBody>
         </Card>
         <Card className={styles.summaryCard}>
@@ -195,7 +256,7 @@ export function UpdatesFeed({
               <FileText size={17} aria-hidden />
             </span>
             <span className={styles.summaryValue}>
-              {newItems.filter((item) => item.category === 'submissions').length}
+              {partition.unread.filter((item) => item.category === 'submissions').length}
             </span>
             <span className={styles.summaryLabel}>Submission changes</span>
           </CardBody>
@@ -207,7 +268,7 @@ export function UpdatesFeed({
             </span>
             <span className={styles.summaryValue}>
               {
-                newItems.filter(
+                partition.unread.filter(
                   (item) => item.category === 'reviews' || item.category === 'tasks',
                 ).length
               }
@@ -221,7 +282,7 @@ export function UpdatesFeed({
               <CalendarDays size={17} aria-hidden />
             </span>
             <span className={styles.summaryValue}>
-              {newItems.filter((item) => item.category === 'program').length}
+              {partition.unread.filter((item) => item.category === 'program').length}
             </span>
             <span className={styles.summaryLabel}>Program changes</span>
           </CardBody>
@@ -238,7 +299,7 @@ export function UpdatesFeed({
               {!ready
                 ? 'Checking when this browser last opened the feed…'
                 : lastSeen
-                  ? `Last checked ${fullDateTime(lastSeen)}. Opening this page marks the feed checked on this browser.`
+                  ? `Last checked ${fullDateTime(lastSeen)}. Unread updates appear first; opening this page marks them checked for your next visit on this browser.`
                   : `First check on this browser. Showing activity since ${fullDateTime(windowStart)}.`}
             </p>
           </div>
@@ -246,21 +307,20 @@ export function UpdatesFeed({
             <button
               type="button"
               className={styles.scopeTab}
-              data-active={scope === 'new'}
-              disabled={!lastSeen}
-              aria-pressed={scope === 'new'}
-              onClick={() => setScope('new')}
-            >
-              Since last check
-            </button>
-            <button
-              type="button"
-              className={styles.scopeTab}
               data-active={scope === 'all'}
               aria-pressed={scope === 'all'}
               onClick={() => setScope('all')}
             >
-              All recent
+              All updates
+            </button>
+            <button
+              type="button"
+              className={styles.scopeTab}
+              data-active={scope === 'unread'}
+              aria-pressed={scope === 'unread'}
+              onClick={() => setScope('unread')}
+            >
+              Unread only
             </button>
           </div>
         </div>
@@ -286,44 +346,28 @@ export function UpdatesFeed({
             <CheckCircle2 size={24} aria-hidden />
             <h3>Nothing new here</h3>
             <p>
-              {scope === 'new' && lastSeen
-                ? 'You are caught up for this category. Switch to All recent to review earlier activity.'
+              {scope === 'unread'
+                ? 'You are caught up for this category. Switch to All updates to review earlier activity.'
                 : 'No activity in this category during the current 30-day window.'}
             </p>
           </div>
         ) : (
-          <div className={styles.timeline}>
-            {groups.map((group) => (
-              <section key={group.label} className={styles.dayGroup}>
-                <h3 className={styles.dayLabel}>{group.label}</h3>
-                <ul className={styles.updateList}>
-                  {group.items.map((item) => (
-                    <li key={item.id} className={styles.updateItem}>
-                      <span className={styles.icon} data-tone={item.tone}>
-                        <CategoryIcon category={item.category} />
-                      </span>
-                      <Link href={item.href} className={styles.updateLink}>
-                        <span className={styles.updateTopline}>
-                          <span className={styles.updateTitle}>{item.title}</span>
-                          <time
-                            className={styles.updateTime}
-                            dateTime={item.occurredAt}
-                            title={fullDateTime(item.occurredAt)}
-                          >
-                            {relativeTime(item.occurredAt, generatedAt)}
-                          </time>
-                        </span>
-                        <span className={styles.updateDetail}>{item.detail}</span>
-                        <span className={styles.updateCategory}>
-                          {categoryLabel(item.category)}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
+          <>
+            <TimelineSection
+              label="Unread"
+              items={visiblePartition.unread}
+              unread
+              generatedAt={generatedAt}
+            />
+            {scope === 'all' ? (
+              <TimelineSection
+                label="Earlier"
+                items={visiblePartition.viewed}
+                unread={false}
+                generatedAt={generatedAt}
+              />
+            ) : null}
+          </>
         )}
       </section>
     </div>
