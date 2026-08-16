@@ -75,10 +75,7 @@ export default async function CommsPage({
         <div>
           <p className={styles.eyebrow}>Communications</p>
           <h1 className={styles.title}>Compose</h1>
-          <p className={styles.lede}>
-            One message per recipient, with merge fields resolved against that person. Preview
-            renders against a real recipient before anything is sent.
-          </p>
+          <p className={styles.lede}>Personalized per recipient. Preview before sending.</p>
         </div>
         <EventPicker current={event.slug} options={options} basePath="/admin/comms" />
       </div>

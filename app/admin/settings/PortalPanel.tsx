@@ -176,11 +176,7 @@ export function PortalPanel({
 
   return (
     <section className={styles.panel} aria-label="Speaker portal">
-      <p className={styles.lede}>
-        How the portal looks to a speaker who signs in — not the public event pages, which are
-        dressed by the logo and banner under Event. Anything left blank falls back to Cicero&rsquo;s
-        own design, so none of this is required.
-      </p>
+      <p className={styles.lede}>Speaker portal only. Blank fields use Cicero defaults.</p>
 
       <div className={styles.formGrid}>
         <LogoSlot url={appearance.logoUrl} canManage={canManage} />
@@ -223,9 +219,7 @@ export function PortalPanel({
             </div>
           ) : null}
           <span className={styles.hint}>
-            A hex value, because the same colour rules the top of every email this event sends and
-            an inbox cannot read a design token. Clear the box to go back to Cicero&rsquo;s
-            vermilion.
+            Hex color used in the portal and event emails. Clear to use the default.
           </span>
           {error('accentColor')}
         </div>
@@ -240,9 +234,7 @@ export function PortalPanel({
             invalid={Boolean(errors.welcomeMarkdown)}
             onChange={set('welcomeMarkdown')}
           />
-          <span className={styles.hint}>
-            Replaces the default greeting. Leave it blank and Cicero explains the portal itself.
-          </span>
+          <span className={styles.hint}>Replaces the default greeting.</span>
           {error('welcomeMarkdown')}
         </label>
 
@@ -257,8 +249,7 @@ export function PortalPanel({
             onChange={set('supportEmail')}
           />
           <span className={styles.hint}>
-            Where a stuck speaker is told to write, in the portal footer and at the foot of every
-            email. Blank means they are told to reply to the message instead.
+            Shown in the portal and emails. Blank means reply to the message.
           </span>
           {error('supportEmail')}
         </label>

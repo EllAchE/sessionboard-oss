@@ -303,9 +303,7 @@ export function ConflictsView({
     return (
       <div className={styles.panel}>
         {control}
-        <p className={styles.railEmpty}>
-          No room, track or speaker clashes on this agenda. Back-to-back sessions are not clashes.
-        </p>
+        <p className={styles.railEmpty}>No conflicts.</p>
       </div>
     );
   }

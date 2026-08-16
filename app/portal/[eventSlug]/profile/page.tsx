@@ -24,10 +24,7 @@ export default async function ProfilePage({
     <div className={styles.stack}>
       <div className={styles.pageHead}>
         <h1 className={styles.pageTitle}>Your profile</h1>
-        <p className={styles.pageLead}>
-          This is what appears on the programme, in the app and on the session page. Organizers copy
-          it verbatim, so write it the way you want to be introduced.
-        </p>
+        <p className={styles.pageLead}>This profile appears on the programme and session pages.</p>
       </div>
 
       {me.headshotFileId ? (

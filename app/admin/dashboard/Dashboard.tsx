@@ -90,10 +90,7 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
         <Card className={styles.wide}>
           <CardHeader>
             <CardTitle>Who owes what</CardTitle>
-            <CardDescription>
-              Every speaker × every task assigned to them. Overdue first, then due soon, then not
-              started.
-            </CardDescription>
+            <CardDescription>One row per speaker task, sorted by urgency.</CardDescription>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={data.outstanding} />
@@ -248,7 +245,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
         open={builderOpen}
         onOpenChange={setBuilderOpen}
         title="Build a dashboard"
-        description="Pick the widgets you want. It is saved in this browser."
+        description="Choose widgets. Saved in this browser."
       >
         <Input
           value={draftName}

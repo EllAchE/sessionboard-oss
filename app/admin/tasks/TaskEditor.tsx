@@ -15,10 +15,10 @@ import styles from './editor.module.css';
  */
 
 const KINDS: Array<{ value: AdminTaskRow['kind']; label: string; hint: string }> = [
-  { value: 'form', label: 'Form', hint: 'The speaker answers a form you have already built.' },
-  { value: 'file_upload', label: 'File upload', hint: 'The speaker uploads one or more files.' },
-  { value: 'acknowledge', label: 'Acknowledgement', hint: 'The speaker ticks it off. No artifact.' },
-  { value: 'link', label: 'External link', hint: 'The speaker visits a page you link to.' },
+  { value: 'form', label: 'Form', hint: 'Answer a form' },
+  { value: 'file_upload', label: 'File upload', hint: 'Upload files' },
+  { value: 'acknowledge', label: 'Acknowledgement', hint: 'Mark complete' },
+  { value: 'link', label: 'External link', hint: 'Open a link' },
 ];
 
 const AUDIENCES: Array<{ value: AdminTaskRow['audience']; label: string }> = [
@@ -45,17 +45,17 @@ const SCOPES: Array<{ value: AdminTaskRow['scope']; label: string; hint: string 
   {
     value: 'contact',
     label: 'Per contact',
-    hint: 'One answer per person, however many sessions they are on.',
+    hint: 'One per speaker',
   },
   {
     value: 'submission',
     label: 'Per session',
-    hint: 'A separate answer for each of their accepted sessions.',
+    hint: 'One per accepted session',
   },
   {
     value: 'group',
     label: 'Per group',
-    hint: 'One answer shared by a session’s whole speaking team. Any of them can complete it.',
+    hint: 'One shared by the session team',
   },
 ];
 
@@ -168,7 +168,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
       open={open}
       onOpenChange={(next) => (next ? undefined : onClose())}
       title={editing ? `Edit ${editing.name}` : 'New task'}
-      description="Tasks appear in every assigned speaker's portal and drive the outstanding-work report."
+      description="Tasks appear in assigned speaker portals and reports."
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
@@ -261,9 +261,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
                   </option>
                 ))}
               </Select>
-              <span className={styles.hint}>
-                Pick one to make this about a single talk. Only its speakers will see it.
-              </span>
+              <span className={styles.hint}>Limit this task to one session.</span>
             </label>
           )}
         </div>
@@ -317,9 +315,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
               ))}
             </Select>
             {forms.length === 0 ? (
-              <span className={styles.hint}>
-                No forms yet. Build one under Forms, then come back.
-              </span>
+              <span className={styles.hint}>Create a form first.</span>
             ) : null}
           </label>
         ) : null}
@@ -353,7 +349,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
               placeholder="7, 1"
               onChange={(event) => set('reminderDaysBefore', event.target.value)}
             />
-            <span className={styles.hint}>Comma separated. Blank sends no reminders.</span>
+            <span className={styles.hint}>Comma-separated days. Blank disables reminders.</span>
           </label>
         </div>
 
@@ -362,7 +358,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
             checked={draft.required}
             onChange={(event) => set('required', event.target.checked)}
           />
-          <span>Required — counts against the speaker until it is done</span>
+          <span>Required — counts as outstanding until completed</span>
         </label>
       </div>
     </Dialog>

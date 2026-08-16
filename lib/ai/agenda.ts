@@ -143,7 +143,7 @@ export function validateProposal(
 
   for (const item of context.queue) {
     if (!handled.has(item.id)) {
-      rejected.push({ item, reason: 'The assistant did not find a slot for this one' });
+      rejected.push({ item, reason: 'The optimizer did not find a slot for this one' });
     }
   }
 

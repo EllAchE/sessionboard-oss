@@ -89,10 +89,7 @@ export default async function MailboxPage({
         <div>
           <p className={styles.eyebrow}>Communications</p>
           <h1 className={styles.title}>Mailbox</h1>
-          <p className={styles.lede}>
-            Every message this event has sent or tried to send, with its rendered body, its
-            calendar attachment and any error the provider returned.
-          </p>
+          <p className={styles.lede}>Sent and attempted email for this event.</p>
         </div>
         <div className={styles.headerActions}>
           {event && <EventPicker current={event.slug} options={options} basePath="/admin/mail" />}
@@ -104,9 +101,7 @@ export default async function MailboxPage({
       <div className={styles.row}>
         <Badge tone={transport === 'log' ? 'info' : 'success'}>transport: {transport}</Badge>
         {transport === 'log' && (
-          <span className={styles.subtle}>
-            Nothing leaves the server. Everything a speaker would have received is readable here.
-          </span>
+          <span className={styles.subtle}>Development mode: messages are recorded here, not delivered.</span>
         )}
         <span className={styles.spacer} />
         <RunRemindersButton />
@@ -118,7 +113,7 @@ export default async function MailboxPage({
           {messages.length === 0 && (
             <p className={styles.empty}>
               <Inbox size={20} />
-              No mail yet. Accept a submission or send a message from Compose.
+              No mail yet.
             </p>
           )}
           {messages.map((message) => (

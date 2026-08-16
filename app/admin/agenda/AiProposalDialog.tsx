@@ -121,8 +121,8 @@ export function AiProposalDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Build a smart agenda draft"
-      description="A weighted, conflict-free placement for everything waiting for a slot. Review every suggestion before applying it."
+      title="Build a smart agenda"
+      description="Weight audience demand and venue fit. Review before applying."
       size="lg"
       footer={
         <div className={styles.detailActions}>
