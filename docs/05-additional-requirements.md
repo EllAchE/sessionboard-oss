@@ -172,7 +172,7 @@ that. Two purchases are worth understanding before you decline them:
 
 | Add-on | Cost to enable | What it buys | Verdict |
 | --- | --- | --- | --- |
-| **Workers Paid** | **$5/month** | Raises the per-request CPU cap from **10 ms to 30 s** | **The only spend that fixes a real defect.** See below |
+| **Workers Paid** | **$5/month** | Raises the per-request CPU cap from **10 ms to 30 s**, and the bundle ceiling from **3 MiB to 10 MiB** | **The only spend that fixes a real defect** — and the one that puts Cicero on Cloudflare at all. See below |
 | **R2 object storage** | **$0** in practice | Uploads land in a bucket instead of Postgres | Free at our volume, but needs a checkout step |
 | **Twilio SMS** | **~$32/year floor**, ~$75 year one | Live SMS instead of the `log` archive | Fixed fees dominate; declined (§2) |
 | **Resend email** | **$0** up to 3,000/month | Real outbound mail | Free tier is enough; watch the daily cap |
@@ -181,10 +181,19 @@ that. Two purchases are worth understanding before you decline them:
 
 ### Cloudflare Workers — the $5 that actually matters
 
-The free plan caps CPU at **10 ms per invocation**; Workers Paid is **$5/month** and raises it to
-30 s (configurable to 5 min), with 10M requests included. This is not academic: the README's known
-gaps already record that rendering a dense admin page on a cold isolate exceeds 10 ms, so Cloudflare
+Workers Paid buys two separate things here, and the second one is why Cicero is not on Cloudflare
+today.
+
+**The CPU cap.** The free plan caps CPU at **10 ms per invocation**; Paid raises it to 30 s
+(configurable to 5 min), with 10M requests included. This is not academic: the README's known gaps
+already record that rendering a dense admin page on a cold isolate exceeds 10 ms, so Cloudflare
 returns `error code: 1102` and roughly **one navigation in eight fails** on the free plan.
+
+**The bundle ceiling.** Free allows a 3 MiB gzipped Worker; Paid allows 10 MiB. Cicero's upload is
+**3.42 MiB gzipped** (`wrangler deploy --dry-run`, 2026-08-16) — about 14% over the free ceiling, and
+comfortably inside Paid's with roughly 3× headroom. So on a free account `cf:deploy` is refused
+outright with API error 10027, which is the reason the hosted demo runs on Vercel rather than any
+defect in the Cloudflare path. `bun run cf:build` succeeds either way.
 
 Nothing in the code can render an admin table in 10 ms of CPU. If you self-host on Cloudflare and
 want the admin surfaces to be reliable, this is the purchase to make — and it is a better first $5
