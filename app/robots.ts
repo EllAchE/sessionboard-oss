@@ -66,14 +66,14 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: [
-          '/',
           /**
            * `/api/` is closed below: JSON responses are data for a client, not documents worth
-           * indexing, and `/api/mail` is a demo-mode inbox. The OpenAPI description is the
-           * exception — it is documentation, and `/llms.txt` points an agent straight at it. The
-           * longer, more specific rule wins wherever `Allow`/`Disallow` precedence is implemented.
+           * indexing, and `/api/mail` is a demo-mode inbox. The generated REST and MCP contracts
+           * are documentation, and `/llms.txt` points an agent straight at them. Their longer,
+           * more specific allow rules win over the API-tree disallow.
            */
           '/api/v1/openapi.json',
+          '/api/v1/mcp-tools.json',
         ],
         disallow: [
           ...PRIVATE_ROUTES.flatMap(closed),
