@@ -10,7 +10,7 @@ TanStack Start and React 19 on Vite, written in TypeScript; Convex supplies the 
 
 ## Scale
 
-Approximately 150,914 source lines across 1,137 files excluding `.git`; ≥126 commits (shallow clone), 1 distinct commit author, spanning 2026-08-09..2026-08-15.
+Approximately 150,914 source lines across 1,137 files excluding `.git`; ≥126 (shallow clone) commits, 1 distinct commit author, spanning 2026-08-09..2026-08-15.
 
 ## Feature coverage
 

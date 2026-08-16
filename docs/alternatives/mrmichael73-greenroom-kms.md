@@ -23,12 +23,12 @@ contains 25 commits by 1 contributor, spanning 2026-08-10..2026-08-10.
 | CFP intake | ✓ | Public CFP routes implement drafts, configurable and conditional form fields, deadlines, co-speakers, validation, and final submission. |
 | Review rounds & scoring | ✓ | Review rounds, weighted criteria, reviewer pools, assignments, recusals, scores, and review progress use persisted D1 records. |
 | Anonymized review | ✓ | Blind-round review queries and rendering suppress applicant identity. |
-| Decisions & notifications | ✓ | Decision updates and applicant notification are separate operations; rendered messages are written to an outbox. |
+| Decisions & notifications | ~ | Decision updates and applicant notification are separate operations, but rendered messages stop in an inspection outbox with no delivery transport. |
 | Agenda / scheduling | ✓ | Rooms, tracks, sessions, manual placement, agenda publication, and a first-fit automatic scheduler update D1 state. |
 | Conflict detection | ✓ | Placement checks detect room and speaker overlaps, with an explicit organizer override path for a warned placement. |
 | Speaker portal & tasks | ✓ | Speakers can manage profile data, sessions, assigned tasks, resources, and uploads through event-scoped portal routes. |
 | Content deliverables | ✓ | Versioned files, comments, approvals, content revisions, restore, and ZIP export are implemented. |
-| Comms / templates | ✓ | Template editing, campaigns, recipient resolution, reminders, and an organizer-visible outbox are implemented; messages remain in that outbox. |
+| Comms / templates | ~ | Template editing, campaigns, recipient resolution, reminders, and an organizer-visible outbox are implemented; no transport sends those messages beyond the application. |
 | Public event pages | ✓ | Public event, session, speaker, agenda, itinerary, gallery, personal-schedule, and calendar pages query approved data. |
 | Embeddable widgets | ✓ | Five widgets are configurable by track, fields, accent, and custom CSS, with script-loader, iframe, JSON, XML, and iCalendar outputs. |
 | Public REST API | ✗ | Machine-readable widget/calendar feeds exist, but no general versioned REST resource API or OpenAPI surface was found. |

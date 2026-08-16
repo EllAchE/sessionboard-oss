@@ -10,7 +10,7 @@ React 18 and Vite, written in TypeScript; Convex is the primary database/functio
 
 ## Scale
 
-Approximately 45,967 source lines across 538 files excluding `.git`; ≥9 commits (shallow clone), 1 distinct commit author, spanning 2026-08-13..2026-08-15.
+Approximately 45,967 source lines across 538 files excluding `.git`; ≥9 (shallow clone) commits, 1 distinct commit author, spanning 2026-08-13..2026-08-15.
 
 ## Feature coverage
 

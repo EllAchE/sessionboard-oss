@@ -10,7 +10,7 @@ A Python 3.11 Django plugin installed into Pretalx; PostgreSQL is the authoritat
 
 ## Scale
 
-Approximately 42,920 source lines across 343 files excluding `.git`; ≥88 commits (shallow clone), 5 distinct commit authors, spanning 2026-08-08..2026-08-12.
+Approximately 42,920 source lines across 343 files excluding `.git`; ≥88 (shallow clone) commits, 5 distinct commit authors, spanning 2026-08-08..2026-08-12.
 
 ## Feature coverage
 
