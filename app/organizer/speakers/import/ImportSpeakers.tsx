@@ -63,6 +63,7 @@ function previewColumns(
       id: 'line',
       header: 'Line',
       width: '8%',
+      space: 'compact',
       mono: true,
       render: (row) => row.line,
     },
@@ -83,14 +84,16 @@ function previewColumns(
       id: 'name',
       header: 'Name',
       width: '26%',
+      space: 'wide',
       strong: true,
       render: (row) => row.name,
     },
-    { id: 'email', header: 'Email', width: '26%', mono: true, render: (row) => row.email },
+    { id: 'email', header: 'Email', width: '26%', space: 'wide', mono: true, render: (row) => row.email },
     {
       id: 'detail',
       header: 'Fields',
       width: '22%',
+      space: 'wide',
       render: (row) => (
         <span className={styles.muted}>
           {row.action === 'create'

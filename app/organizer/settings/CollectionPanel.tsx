@@ -14,6 +14,7 @@ import {
   Select,
   useToast,
   type DataTableColumn,
+  type DataTableColumnSpace,
 } from '@/components/ui';
 import { COLOR_TOKENS } from './palette';
 import { createRowAction, removeRowAction, reorderRowsAction, updateRowAction } from './actions';
@@ -56,6 +57,12 @@ function columnEnabled(column: ColumnSpec, values: Draft): boolean {
 
 function stopGridKeys(event: KeyboardEvent<HTMLElement>) {
   event.stopPropagation();
+}
+
+function columnSpace(column: ColumnSpec): DataTableColumnSpace {
+  if (column.kind === 'number' || column.kind === 'color') return 'compact';
+  if (column.key === 'description') return 'wide';
+  return 'standard';
 }
 
 export function CollectionPanel({ spec, rows, canManage }: Props) {
@@ -272,6 +279,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
       id: column.key,
       header: column.label,
       width: column.width,
+      space: columnSpace(column),
       render: (row) =>
         renderControl(
           column,
@@ -287,6 +295,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
       id: 'usage',
       header: 'In use',
       width: '10%',
+      space: 'compact',
       align: 'right',
       render: (row) =>
         row.usage > 0 ? (
@@ -302,6 +311,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
       id: 'actions',
       header: <span className={styles.visuallyHidden}>Actions</span>,
       width: 'calc(var(--control-md) * 3.4)',
+      space: 'compact',
       align: 'right',
       render: (row, index) => (
         <span className={styles.rowActions}>

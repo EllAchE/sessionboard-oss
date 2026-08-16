@@ -162,6 +162,110 @@ export function viewColumns(value: unknown): string[] {
   return chosen.length > 0 ? chosen : DEFAULT_COLUMNS;
 }
 
+type Decision = 'accept' | 'decline' | 'waitlist';
+type Stage = 'accept' | 'decline' | 'hold' | null;
+
+type SelectionActionsProps = {
+  selectedCount: number;
+  pending: boolean;
+  onDecide: (decision: Decision) => void;
+  onStage: (stage: Stage) => void;
+};
+
+/**
+ * Queue placement and final decisions share one selection surface, while their labels and visual
+ * treatment keep the reversible staging actions distinct from speaker-notifying decisions.
+ */
+export function SelectionActions({
+  selectedCount,
+  pending,
+  onDecide,
+  onStage,
+}: SelectionActionsProps) {
+  return (
+    <div
+      className={styles.bulkBar}
+      role="group"
+      aria-label={`Actions for ${selectedCount} selected`}
+    >
+      <span className={styles.bulkCount}>{selectedCount} selected</span>
+      <div className={styles.bulkActions}>
+        <div className={styles.bulkActionGroup} role="group" aria-label="Queue selected submissions">
+          <span className={styles.bulkActionLabel}>Queue</span>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<Check size={14} />}
+            loading={pending}
+            onClick={() => onStage('accept')}
+          >
+            Accept queue
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            iconLeft={<X size={14} />}
+            loading={pending}
+            onClick={() => onStage('decline')}
+          >
+            Decline queue
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconLeft={<Hand size={14} />}
+            loading={pending}
+            onClick={() => onStage('hold')}
+          >
+            Hold in pending
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconLeft={<Undo2 size={14} />}
+            loading={pending}
+            onClick={() => onStage(null)}
+          >
+            Clear staging
+          </Button>
+        </div>
+        <div
+          className={styles.bulkActionGroup}
+          role="group"
+          aria-label="Decide selected submissions"
+        >
+          <span className={styles.bulkActionLabel}>Decision</span>
+          <Button
+            size="sm"
+            iconLeft={<Check size={14} />}
+            loading={pending}
+            onClick={() => onDecide('accept')}
+          >
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            iconLeft={<Clock size={14} />}
+            loading={pending}
+            onClick={() => onDecide('waitlist')}
+          >
+            Waitlist
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            iconLeft={<X size={14} />}
+            loading={pending}
+            onClick={() => onDecide('decline')}
+          >
+            Decline
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Which queue a tab commits to, or null for a tab that is not a staging queue. */
 function committedStage(tab: string): 'accept' | 'decline' | null {
   if (tab === 'accept-queue') return 'accept';
@@ -333,7 +437,7 @@ export function SubmissionQueue(props: QueueProps) {
   }, [refreshViews, viewId]);
 
   const decide = useCallback(
-    (ids: string[], decision: 'accept' | 'decline' | 'waitlist' | 'reset') => {
+    (ids: string[], decision: Decision) => {
       if (ids.length === 0 || !props.canDecide) return;
       setMessage(null);
       startTransition(async () => {
@@ -364,7 +468,7 @@ export function SubmissionQueue(props: QueueProps) {
    * has to be free of the word "decided".
    */
   const stage = useCallback(
-    (ids: string[], next: 'accept' | 'decline' | 'hold' | null) => {
+    (ids: string[], next: Stage) => {
       if (ids.length === 0 || !props.canDecide) return;
       setMessage(null);
       startTransition(async () => {
@@ -498,6 +602,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'ref',
         header: 'Ref',
         width: '92px',
+        space: 'compact',
         mono: true,
         render: (row) => (
           <Link className={styles.rowLink} href={`/organizer/submissions/${row.id}`}>
@@ -509,6 +614,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'title',
         header: 'Title',
         strong: true,
+        space: 'wide',
         render: (row) => (
           <span className={styles.cellTitle}>
             <Link className={styles.rowLink} href={`/organizer/submissions/${row.id}`}>
@@ -526,25 +632,26 @@ export function SubmissionQueue(props: QueueProps) {
       {
         id: 'submitter',
         header: 'Speaker',
-        width: '18%',
+        width: '16%',
         render: (row) => <span className={styles.titleText}>{row.submitterName}</span>,
       },
       {
         id: 'track',
         header: 'Track',
-        width: '13%',
+        width: '10%',
         render: (row) => row.trackName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'format',
         header: 'Format',
-        width: '12%',
+        width: '9%',
         render: (row) => row.formatName ?? <span className={styles.muted}>—</span>,
       },
       {
         id: 'status',
         header: 'Status',
         width: '140px',
+        space: 'compact',
         // The staging note sits under the status rather than replacing it: staging is what an
         // organizer proposes, the status is what the submission is, and they are never the same
         // claim. A row nobody staged renders exactly the single badge it always did.
@@ -563,6 +670,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'progress',
         header: 'Reviews',
         width: '84px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.assignedCount === 0 ? (
@@ -577,6 +685,7 @@ export function SubmissionQueue(props: QueueProps) {
         id: 'score',
         header: 'Score',
         width: '92px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.averageScore === null ? (
@@ -814,84 +923,12 @@ export function SubmissionQueue(props: QueueProps) {
       {message ? <p className={styles.notice}>{message}</p> : null}
 
       {selected.length > 0 && props.canDecide ? (
-        <div className={styles.bulkBar}>
-          <span className={styles.bulkCount}>{selected.length} selected</span>
-          <Button
-            size="sm"
-            iconLeft={<Check size={14} />}
-            loading={pending}
-            onClick={() => decide(selected, 'accept')}
-          >
-            Accept
-          </Button>
-          <Button
-            size="sm"
-            iconLeft={<Clock size={14} />}
-            loading={pending}
-            onClick={() => decide(selected, 'waitlist')}
-          >
-            Waitlist
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            iconLeft={<X size={14} />}
-            loading={pending}
-            onClick={() => decide(selected, 'decline')}
-          >
-            Decline
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => decide(selected, 'reset')}>
-            Reset
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelected([])}>
-            Clear
-          </Button>
-        </div>
-      ) : null}
-
-      {/* Staging is its own row: nothing on it decides anything, and mixing it into the bar above
-          would put "put this in the accept queue" one button away from "accept it". */}
-      {selected.length > 0 && props.canDecide ? (
-        <div className={styles.bulkBar}>
-          <span className={styles.bulkCount}>Stage {selected.length} without deciding</span>
-          <Button
-            size="sm"
-            variant="secondary"
-            iconLeft={<Check size={14} />}
-            loading={pending}
-            onClick={() => stage(selected, 'accept')}
-          >
-            To accept queue
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            iconLeft={<X size={14} />}
-            loading={pending}
-            onClick={() => stage(selected, 'decline')}
-          >
-            To decline queue
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            iconLeft={<Hand size={14} />}
-            loading={pending}
-            onClick={() => stage(selected, 'hold')}
-          >
-            Hold in pending
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            iconLeft={<Undo2 size={14} />}
-            loading={pending}
-            onClick={() => stage(selected, null)}
-          >
-            Clear staging
-          </Button>
-        </div>
+        <SelectionActions
+          selectedCount={selected.length}
+          pending={pending}
+          onDecide={(decision) => decide(selected, decision)}
+          onStage={(next) => stage(selected, next)}
+        />
       ) : null}
 
       <DataTable
