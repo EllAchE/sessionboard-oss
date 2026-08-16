@@ -281,7 +281,29 @@ Stated plainly, because a pricing table that hides its uncertainty is worse than
 
 ---
 
-## 7. Assisted chasing
+## 7. Review surface: circulating and exporting a decision
+
+Two gaps found by reading the review surfaces against how a program committee actually works. A
+committee argues about proposals asynchronously — by pasting links at each other, and by working
+the results in a spreadsheet — and both of those paths lost information on the way out of the tool.
+
+Numbered after §6 rather than before it so the existing `#6-what-the-add-ons-cost-a-self-hoster`
+anchors, which three rows above link to, keep resolving.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-28 | **[IMPORTANT]** | SHIPPED | **A submission permalink is copyable in one click** from both review surfaces: every queue row and the submission detail header (`app/admin/submissions/CopyPermalinkButton.tsx`). `/admin/submissions/{id}` already resolved and was already linked; what was missing was getting the absolute URL out of the page without selecting the address bar, which a row in a queue of forty does not let you do. The origin is read at click time, so the copied link is on whichever host the reader is already using. The row's own link is untouched — copying is an addition, not a replacement — and the affordance is offered to reviewers as well as organizers, since circulating a link is not a decision |
+| AR-29 | **[IMPORTANT]** | SHIPPED | **The review results export carries `submission.decision_note`**, in a `Decision note` column beside `Submission status` (`reviewResultsCsv`, `lib/services/review.ts`). The export already carried per-criterion scores, criterion weights and reviewer comments, so it answered what was decided and by whom — but never why, leaving the organizer's reasoning locked in the tool the moment anyone opened the results in a spreadsheet. The note repeats on each reviewer row of its submission, matching every other submission-level column in that file. `ai_review.rationale_markdown` is deliberately **excluded**: it is advisory by construction (`03-plan.md` §2), and a paragraph of model prose sitting between `Submission status` and `Reviewer comment` reads as reasoning that decided something, carrying none of the caveat the AI panel carries on screen |
+
+A third fix shipped alongside these is a defect repair rather than a new requirement, so it gets no
+AR ID: the embed's multi-session `.ics` download minted its own `{session.id}@cicero.events` UID at
+a hardcoded `SEQUENCE:0`, giving a session a second calendar identity distinct from the
+`scheduled_session.ics_uid` used by the speaker invite and the `C-3a` per-session download. It now
+carries the stored UID and sequence (`app/embed/calendar.ts`, `app/embed/calendar.test.ts`).
+
+---
+
+## 8. Assisted chasing
 
 The ask: the outstanding-task dashboard (`B-1`) tells an organizer who is blocking the event, and
 then abandons them. The chase itself — the thing that actually consumes a coordinator's week — was
@@ -297,7 +319,7 @@ within one event cycle; build **assisted chasing** — the tool drafts, a human 
 
 The related finding is that escalation runs **by medium, not by attempt count**: the tool's email,
 then the coordinator's own address, then a cc, then a text, then a phone call. Each step up is a
-deliberate signal. That is why AR-30 exists: the same reviewed draft has to be able to leave through
+deliberate signal. That is why AR-32 exists: the same reviewed draft has to be able to leave through
 the organizer's own mail client, not only through Cicero's transport.
 
 Cicero already had the send primitives — `previewParticipantEmail` and `sendParticipantEmail` in
@@ -305,11 +327,11 @@ Cicero already had the send primitives — `previewParticipantEmail` and `sendPa
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-28 | **[REQUIRED]** | SHIPPED | **Every outstanding-task row can be chased from where it is read.** A per-row "Draft a nudge" control on the `B-1` report opens a composer prefilled with copy specific to that person and that task — overdue by how long, which sessions it blocks, a one-click portal link. Composition is a pure function (`composeTaskNudge`) so the wording is regression-tested rather than buried in JSX (`lib/services/task-nudge.ts`, `app/admin/dashboard/OutstandingTasks.tsx`, `app/admin/dashboard/NudgeComposer.tsx`) |
-| AR-29 | **[REQUIRED]** | SHIPPED | **Nothing leaves without a human reading it.** The composer is two-step: edit, then render, then send — and any edit invalidates the rendering. This is enforced on the server, not in the client: `sendTaskNudge` requires the reviewed subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the recipient and re-renders the message and refuses if either moved. There is no bulk action, no "remind all", and no code path from a table row to an outbound message that skips the render |
-| AR-30 | **[IMPORTANT]** | SHIPPED | **The draft can escalate to the organizer's own address.** Once rendered, the composer offers *Copy* and *Send from my own email* (`mailto:`) beside *Send from Cicero* — the same reviewed text, handed to the human instead of the transport. This is the escalation-by-medium finding, and it is the one thing an autosender structurally cannot do |
-| AR-31 | **[IMPORTANT]** | SHIPPED | **A settled task is never chased.** Completed and waived assignments get no button, and both the draft and send paths re-check status against the live report — so a task finished while the composer was open fails closed. A successful send stamps `task_assignment.last_reminded_at`, which is the same field the cron reminder reads, so the automatic reminder does not chase someone a human chased an hour ago. The row shows when that person was last reminded |
-| AR-32 | **[EXCLUDED]** | — | **Autonomous or scheduled chasing from this surface.** Declined on the evidence above. Cicero does keep its opt-in `task.reminder` cron flow, which is a template an organizer configured in advance for a whole event; this surface is the opposite act — one person, one task, one message, sent by a named human. Conflating them is exactly how the tools in that archive lost their users |
+| AR-30 | **[REQUIRED]** | SHIPPED | **Every outstanding-task row can be chased from where it is read.** A per-row "Draft a nudge" control on the `B-1` report opens a composer prefilled with copy specific to that person and that task — overdue by how long, which sessions it blocks, a one-click portal link. Composition is a pure function (`composeTaskNudge`) so the wording is regression-tested rather than buried in JSX (`lib/services/task-nudge.ts`, `app/admin/dashboard/OutstandingTasks.tsx`, `app/admin/dashboard/NudgeComposer.tsx`) |
+| AR-31 | **[REQUIRED]** | SHIPPED | **Nothing leaves without a human reading it.** The composer is two-step: edit, then render, then send — and any edit invalidates the rendering. This is enforced on the server, not in the client: `sendTaskNudge` requires the reviewed subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the recipient and re-renders the message and refuses if either moved. There is no bulk action, no "remind all", and no code path from a table row to an outbound message that skips the render |
+| AR-32 | **[IMPORTANT]** | SHIPPED | **The draft can escalate to the organizer's own address.** Once rendered, the composer offers *Copy* and *Send from my own email* (`mailto:`) beside *Send from Cicero* — the same reviewed text, handed to the human instead of the transport. This is the escalation-by-medium finding, and it is the one thing an autosender structurally cannot do |
+| AR-33 | **[IMPORTANT]** | SHIPPED | **A settled task is never chased.** Completed and waived assignments get no button, and both the draft and send paths re-check status against the live report — so a task finished while the composer was open fails closed. A successful send stamps `task_assignment.last_reminded_at`, which is the same field the cron reminder reads, so the automatic reminder does not chase someone a human chased an hour ago. The row shows when that person was last reminded |
+| AR-34 | **[EXCLUDED]** | — | **Autonomous or scheduled chasing from this surface.** Declined on the evidence above. Cicero does keep its opt-in `task.reminder` cron flow, which is a template an organizer configured in advance for a whole event; this surface is the opposite act — one person, one task, one message, sent by a named human. Conflating them is exactly how the tools in that archive lost their users |
 
 **Behavior on the `log` transport.** The hosted deployment runs `MAIL_TRANSPORT=log` on purpose
 (§2, and the on-screen magic link judges sign in with depends on it). Assisted chasing is fully
@@ -345,7 +367,7 @@ question that blocks a build.
 | Document | Relationship |
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
-| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §7 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
+| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
 | [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7 |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |

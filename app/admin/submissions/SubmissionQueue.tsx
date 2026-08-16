@@ -28,6 +28,7 @@ import {
   Select,
   type DataTableColumn,
 } from '../../../components/ui';
+import { CopyPermalinkButton } from './CopyPermalinkButton';
 import {
   decideAction,
   deleteViewAction,
@@ -514,6 +515,11 @@ export function SubmissionQueue(props: QueueProps) {
               <span className={styles.titleText}>{row.title}</span>
             </Link>
             {row.hasAiReview ? <Sparkles size={12} aria-label="Has an AI suggestion" /> : null}
+            <CopyPermalinkButton
+              path={`/admin/submissions/${row.id}`}
+              subject={row.displayRef}
+              compact
+            />
           </span>
         ),
       },
