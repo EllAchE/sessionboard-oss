@@ -48,7 +48,9 @@ leave `includeOptional` false for the required baseline. `submissionNotes` shoul
 organizer and explain that the hosted demo exposes on-screen magic links for reserved demo
 addresses, so harness mode needs neither an Anthropic key nor a real inbox.
 
-Do not commit `evalconfig.json`, saved auth state, run artifacts, or credentials to Cicero.
+Do not commit `evalconfig.json`, saved auth state, raw evidence, screenshots, or credentials to
+Cicero. The sanitized scored summary is the exception: preserve it under
+`docs/evals/sessionboard/` with `bun run eval:archive` before starting remediation.
 
 ## Run the no-key harness path
 
@@ -117,3 +119,8 @@ Below 60% rubric coverage the kit correctly withholds the headline score. Do not
 unscored plan or partial run as 0% product completion, and do not claim 100% from Cicero's own test
 suite. Fix product findings only after preserving the baseline report, then start a new run against
 the updated deployment so the before/after comparison remains auditable.
+
+Starting that new run is a separate approval boundary. Follow
+[`sessionboard-eval-loop.md`](sessionboard-eval-loop.md): finish the approved cycle, check in with
+the preserved score and the changes made, and wait for an explicit response before creating the
+next run.
