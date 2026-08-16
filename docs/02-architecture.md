@@ -275,7 +275,7 @@ and submission-content approval before returning the storage stream.
 ### `email_log` doubles as the dev mailbox
 
 With `MAIL_TRANSPORT=log` — or alongside any real transport — every send is recorded and
-`/admin/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
+`/organizer/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
 single point of failure during judging. A judge who never receives a message can still see it.
 
 ### Reserved recipients are why `T-6` and `T-7a` can both hold

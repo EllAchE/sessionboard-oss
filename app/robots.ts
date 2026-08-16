@@ -9,7 +9,7 @@ import type { MetadataRoute } from 'next';
 
 /**
  * Both halves of closing a route off, because neither one alone is right. Robots patterns match by
- * prefix, so `/admin/` leaves the bare `/admin` crawlable — and a bare `/admin` overshoots in the
+ * prefix, so `/organizer/` leaves the bare `/organizer` crawlable — and a bare `/organizer` overshoots in the
  * other direction, swallowing any event whose organizer picked a slug starting with those letters.
  * Published events live at the root as `/{slug}` and nothing reserves a slug against a route name,
  * so `/review` as a pattern would hide a real conference called `review-2026`. `$` ends the match
@@ -27,11 +27,11 @@ function closed(path: string): string[] {
  */
 const PRIVATE_ROUTES = [
   '/admin',
+  '/organizer',
   '/auth',
   '/crm',
   '/dashboard',
   '/events',
-  '/organizer',
   '/portal',
   '/review',
   '/signin',

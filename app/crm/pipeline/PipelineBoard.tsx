@@ -203,10 +203,7 @@ export function PipelineBoard({ columns }: Props) {
           <CardBody>
             <div className={styles.empty}>
               <p className={styles.emptyTitle}>No one is being sourced yet</p>
-              <p className={styles.emptyBody}>
-                Open the directory, pick a contact and choose Enroll to put them on the board with a
-                score and a rationale.
-              </p>
+              <p className={styles.emptyBody}>Enroll a contact from the directory.</p>
               <Button variant="primary" href="/crm">
                 Go to the directory
               </Button>
