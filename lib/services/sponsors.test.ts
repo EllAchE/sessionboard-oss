@@ -28,8 +28,8 @@ import {
  * nudge is a different bug from renumbering none.
  *
  * Cross-kind name uniqueness is a database property rather than a service one: the fake ignores
- * `where`, so it cannot prove a `kind`-scoped lookup. `db/migrations/sponsor-entities.test.ts` pins
- * the constraint's shape, and it was exercised against real Postgres on the upgrade path.
+ * `where`, so it cannot prove a `kind`-scoped lookup. The constraint lives in `db/schema.ts`, and
+ * integration CI verifies that the generated baseline applies to a clean Postgres database.
  */
 
 type Recorder = {
