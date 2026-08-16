@@ -81,6 +81,7 @@ export type MagicLinkRequest = {
   name?: string | null;
   eventId?: string | null;
   redirectTo?: string | null;
+  developmentOrigin?: string;
 };
 
 /**
@@ -109,7 +110,11 @@ export async function requestMagicLink(
     expiresAt: addMinutes(MAGIC_TTL_MINUTES),
   });
 
-  const link = `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
+  const origin =
+    process.env.NODE_ENV === 'development' && request.developmentOrigin
+      ? request.developmentOrigin.replace(/\/+$/, '')
+      : appUrl();
+  const link = `${origin}/auth/verify?token=${encodeURIComponent(token)}`;
   const body = [
     `Hi${account.name ? ` ${escapeMarkdownText(account.name)}` : ''},`,
     '',

@@ -27,7 +27,6 @@ import {
   formatDayLabel,
   formatZonedRange,
   isPlaced,
-  pad2,
   placementFor,
   previewConflicts,
   provisionalEntry,
@@ -81,34 +80,16 @@ import styles from './agenda.module.css';
  * `sendSessionInvites`, which owns `ics_sequence` and the `ics_uid` of an existing row.
  */
 
-type ViewId = 'day' | 'week' | 'list' | 'room' | 'track' | 'conflicts' | 'month';
+type ViewId = 'conference' | 'list' | 'room' | 'track' | 'conflicts' | 'month';
 
 const VIEWS: { id: ViewId; label: string }[] = [
-  { id: 'day', label: 'Day' },
-  { id: 'week', label: 'Week' },
+  { id: 'conference', label: 'Conference' },
   { id: 'list', label: 'List' },
   { id: 'room', label: 'Room' },
   { id: 'track', label: 'Track' },
   { id: 'conflicts', label: 'Conflicts' },
   { id: 'month', label: 'Month' },
 ];
-
-const GRID_VIEWS: ViewId[] = ['day', 'week'];
-
-/** The Monday–Sunday window `anchor` falls in, narrowed to days the agenda actually has. */
-function weekDayKeys(anchor: string, available: string[]): string[] {
-  const [year, month, day] = anchor.split('-').map(Number);
-  const at = Date.UTC(year, (month ?? 1) - 1, day ?? 1);
-  const monday = at - ((new Date(at).getUTCDay() + 6) % 7) * 86_400_000;
-  const window = new Set(
-    Array.from({ length: 7 }, (_, index) => {
-      const cell = new Date(monday + index * 86_400_000);
-      return `${cell.getUTCFullYear()}-${pad2(cell.getUTCMonth() + 1)}-${pad2(cell.getUTCDate())}`;
-    }),
-  );
-  const inWeek = available.filter((key) => window.has(key));
-  return inWeek.length > 0 ? inWeek : [anchor];
-}
 
 type Hover = { placement: Placement; additions: ScheduleEntry[]; dayKey: string };
 
@@ -162,7 +143,7 @@ export function AgendaBoard({
   useEffect(() => setEntries(fromWire(wireEntries)), [wireEntries]);
   useEffect(() => setQueue(initialQueue), [initialQueue]);
 
-  const [view, setView] = useState<ViewId>('day');
+  const [view, setView] = useState<ViewId>('conference');
   const [drag, setDrag] = useState<DragState | null>(null);
   const [dialog, setDialog] = useState<{
     draft: SessionDraft;
@@ -506,7 +487,6 @@ export function AgendaBoard({
       return result;
     });
 
-  const visibleDays = view === 'week' ? weekDayKeys(dayKey, dayKeys) : [dayKey];
   const dialogConflicts = dialog?.draft.sessionId
     ? (conflictIndex.get(dialog.draft.sessionId) ?? [])
     : [];
@@ -561,7 +541,7 @@ export function AgendaBoard({
             </button>
           ))}
         </div>
-        {GRID_VIEWS.includes(view) && (
+        {view === 'conference' && (
           <div className={styles.dayTabs}>
             {dayKeys.map((key) => (
               <button
@@ -625,7 +605,7 @@ export function AgendaBoard({
         onDragEnd={onDragEnd}
         onDragCancel={() => setDrag(null)}
       >
-        {GRID_VIEWS.includes(view) ? (
+        {view === 'conference' ? (
           <div className={styles.workspace}>
             <UnscheduledRail queue={queue} onSchedule={openQueued} />
             <div className={styles.boardMain}>
@@ -635,21 +615,14 @@ export function AgendaBoard({
                 dayKey={dayKey}
                 timeZone={timeZone}
               />
-              {visibleDays.map((key) => (
-                <div key={key} className={styles.weekDay}>
-                  {view === 'week' && (
-                    <h3 className={styles.weekDayTitle}>{formatDayLabel(key, timeZone)}</h3>
-                  )}
-                  <DayGrid
-                    entries={entries}
-                    rooms={rooms}
-                    dayKey={key}
-                    timeZone={timeZone}
-                    conflictsBySessionId={conflictIndex}
-                    onOpen={openEntry}
-                  />
-                </div>
-              ))}
+              <DayGrid
+                entries={entries}
+                rooms={rooms}
+                dayKey={dayKey}
+                timeZone={timeZone}
+                conflictsBySessionId={conflictIndex}
+                onOpen={openEntry}
+              />
             </div>
           </div>
         ) : view === 'list' ? (
@@ -696,7 +669,7 @@ export function AgendaBoard({
             anchorKey={dayKey}
             onSelectDay={(selected) => {
               setDayKey(selected);
-              setView('day');
+              setView('conference');
             }}
           />
         )}
