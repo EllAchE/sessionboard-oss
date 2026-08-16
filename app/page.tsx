@@ -117,7 +117,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             variant="primary"
             size="sm"
           >
-            Create account
+            Sign up
           </Button>
         </div>
       </nav>
