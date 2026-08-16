@@ -147,7 +147,8 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         id: 'filename',
         header: 'File',
         strong: true,
-        width: '28%',
+        width: '20%',
+        space: 'wide',
         render: (row) => (
           <span className={styles.inlineRow}>
             <Link
@@ -170,6 +171,7 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         id: 'versions',
         header: 'Version',
         width: '104px',
+        space: 'compact',
         render: (row) => (
           <span className={styles.inlineRow}>
             <span className={styles.versionNumber}>v{row.version}</span>
@@ -185,6 +187,7 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         id: 'comments',
         header: 'Feedback',
         width: '92px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.commentCount > 0 ? (
@@ -199,12 +202,14 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         id: 'kind',
         header: 'Kind',
         width: '104px',
+        space: 'compact',
         render: (row) => <Badge tone="neutral">{fileKindLabel(row.kind)}</Badge>,
       },
       {
         id: 'size',
         header: 'Size',
         width: '88px',
+        space: 'compact',
         align: 'right',
         mono: true,
         render: (row) => formatBytes(row.sizeBytes),
@@ -212,7 +217,8 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
       {
         id: 'owner',
         header: 'Belongs to',
-        width: '20%',
+        width: '13%',
+        space: 'wide',
         render: (row) =>
           row.ownerName || row.ownerEmail ? (
             <span className={styles.owner}>
@@ -226,7 +232,8 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
       {
         id: 'submission',
         header: 'Submission',
-        width: '24%',
+        width: '16%',
+        space: 'wide',
         render: (row) =>
           row.submissionId ? (
             <Link className={styles.fileLink} href={`/organizer/submissions/${row.submissionId}`}>
@@ -240,6 +247,7 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         id: 'status',
         header: 'Status',
         width: '108px',
+        space: 'compact',
         render: (row) =>
           row.submissionStatus ? (
             <Badge tone={STATUS_TONE[row.submissionStatus] ?? 'neutral'}>

@@ -1,5 +1,5 @@
 {
-  "id": "82389c3a-1693-4923-9e1a-236d6dc3ce14",
+  "id": "2b95d817-0440-4943-aa8e-2b0e2bdbdefa",
   "prevId": "03fdbdfa-5190-4478-a51b-47efd30ccf7a",
   "version": "7",
   "dialect": "postgresql",
@@ -1847,6 +1847,80 @@
           "value": "\"event\".\"agenda_conflict_policy\" in ('warn', 'block')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.event_exhibitor_map": {
+      "name": "event_exhibitor_map",
+      "schema": "",
+      "columns": {
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "file_id": {
+          "name": "file_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "event_exhibitor_map_event_id_event_id_fk": {
+          "name": "event_exhibitor_map_event_id_event_id_fk",
+          "tableFrom": "event_exhibitor_map",
+          "tableTo": "event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_exhibitor_map_file_id_file_id_fk": {
+          "name": "event_exhibitor_map_file_id_file_id_fk",
+          "tableFrom": "event_exhibitor_map",
+          "tableTo": "file",
+          "columnsFrom": [
+            "file_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "event_exhibitor_map_file_unique": {
+          "name": "event_exhibitor_map_file_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "file_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.field_library_entry": {
@@ -6240,12 +6314,6 @@
           "notNull": true,
           "default": "'[]'::jsonb"
         },
-        "reminder_days_after_send": {
-          "name": "reminder_days_after_send",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -6328,12 +6396,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "task_reminder_days_after_send_positive": {
-          "name": "task_reminder_days_after_send_positive",
-          "value": "\"task\".\"reminder_days_after_send\" is null or \"task\".\"reminder_days_after_send\" > 0"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.task_assignment": {
