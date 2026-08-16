@@ -204,7 +204,7 @@ shape, and resulting attendee access.
 The contract fixtures, live client, fake gateway, and tests live under `lib/accelevents/`. Run:
 
 ```bash
-npm test -- lib/accelevents/accelevents.test.ts
+bun run test -- lib/accelevents/accelevents.test.ts
 ```
 
 With no vendor credential, `ACCELEVENTS_FAKE=1` exercises speaker creation, duplicate-email

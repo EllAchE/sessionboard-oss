@@ -24,6 +24,36 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
 
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run db:check
+
+  # `bun run audit` gates on high and critical only. Moderate advisories still surface in the job
+  # log and in Dependabot's weekly pull requests, but they do not block unrelated work on a
+  # schedule nobody in this repo controls. One known moderate lives here: drizzle-kit pulls the
+  # deprecated `@esbuild-kit/core-utils`, which pins esbuild 0.18 (GHSA-67mh-4wv8-2f99, esbuild's
+  # dev server). Nothing in this repo runs `esbuild serve`, drizzle-kit 0.31.10 is the latest
+  # release and still depends on it, and Bun does not support scoped overrides — so the only way to
+  # silence it would be a tree-wide esbuild downgrade that also drags wrangler off its pinned 0.28.
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run audit
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -34,6 +64,23 @@ jobs:
           bun-version: 1.3.10
       - run: bun install --frozen-lockfile
       - run: bun run build
+
+  # Generated artifacts and the Compose file are contracts, not build output: a drifted
+  # `openapi.json` or an invalid `docker-compose.yml` should report as itself rather than as
+  # "Build failed".
+  contracts:
+    name: Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: bun run docs:openapi
+      - run: bun run docs:mcp
+      - run: git diff --exit-code -- docs/openapi.json docs/mcp-tools.json
+      - run: docker compose config --quiet
 
   test:
     name: Test
@@ -54,7 +101,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16.14-alpine3.23
         env:
           POSTGRES_USER: cicero
           POSTGRES_PASSWORD: cicero

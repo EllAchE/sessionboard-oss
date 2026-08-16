@@ -1,4 +1,10 @@
-# Delivery plan
+# Historical competition delivery plan
+
+> **Historical record.** This was the 24-hour August 2026 competition plan. Its deadline,
+> workstream ownership, freeze rules, Cloudflare-first assumption, and no-review exception are not
+> current maintenance policy. Use [`../AGENTS.md`](../AGENTS.md) and
+> [`../CONTRIBUTING.md`](../CONTRIBUTING.md) for current workflow, and
+> [`02-architecture.md`](02-architecture.md) for current deployment architecture.
 
 Scope, sequencing and verification. [`00-goals.md`](00-goals.md) says what we are building,
 [`01-requirements.md`](01-requirements.md) enumerates it, [`02-architecture.md`](02-architecture.md)

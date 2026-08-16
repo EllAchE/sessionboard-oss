@@ -20,8 +20,9 @@
   // (An earlier version of this note said "13.4 MiB against 3 MiB". That compared an uncompressed
   // size to a compressed limit; Cloudflare weighs the gzipped upload. Corrected above.)
   //
-  // One thing a reviver must change: APP_URL below is this account's own workers.dev host. Point it
-  // at your own origin. docs/02-architecture.md section 1 has the full reasoning.
+  // A different Cloudflare account must change two values: APP_URL below must point at its own
+  // origin, and the Hyperdrive binding id must be the id returned by that account's
+  // `wrangler hyperdrive create`. docs/02-architecture.md section 1 has the full reasoning.
   //
   // Magic links, calendar invites and embed snippets are all read outside a request — in an inbox,
   // a calendar client, or someone else's website — so a relative path is never enough and this has
