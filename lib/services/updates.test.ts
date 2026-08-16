@@ -60,7 +60,7 @@ describe('organizer update feed', () => {
     ]);
     expect(feed[0]).toMatchObject({
       detail: 'ABS-42 is now accepted',
-      href: '/admin/submissions/submission-1',
+      href: '/organizer/submissions/submission-1',
       tone: 'success',
     });
     expect(feed[1].detail).toBe('ABS-42 from Ada Lovelace');
@@ -86,7 +86,7 @@ describe('organizer update feed', () => {
       category: 'speakers',
       title: 'Speaker profile changed: Ada Lovelace',
       detail: 'Ada Lovelace · Edited their speaker profile',
-      href: '/admin/submissions/files/history',
+      href: '/organizer/submissions/files/history',
     });
   });
 

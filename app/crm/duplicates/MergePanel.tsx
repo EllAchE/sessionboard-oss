@@ -161,10 +161,7 @@ export function MergePanel({ groups, fields }: Props) {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>Duplicates</h1>
-          <p className={styles.subtitle}>
-            Contacts that share a name but arrived under different addresses. Merging keeps one
-            record and moves the notes, activity and event links onto it.
-          </p>
+          <p className={styles.subtitle}>Review contacts with matching names.</p>
         </div>
       </div>
 
@@ -173,10 +170,7 @@ export function MergePanel({ groups, fields }: Props) {
           <CardBody>
             <div className={styles.empty}>
               <p className={styles.emptyTitle}>No near-duplicates found</p>
-              <p className={styles.emptyBody}>
-                Every contact in the directory has a distinct name. This page fills up on its own
-                after an import that overlaps what you already had.
-              </p>
+              <p className={styles.emptyBody}>No matching names in the directory.</p>
               <Button variant="primary" href="/crm/import">
                 Import a CSV
               </Button>

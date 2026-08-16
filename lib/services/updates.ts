@@ -193,7 +193,7 @@ function scheduleState(row: ScheduleUpdateSource): string {
 }
 
 /**
- * `AR-36`. Compose existing durable lifecycle facts into one organizer feed. Some tables retain
+ * `AR-38`. Compose existing durable lifecycle facts into one organizer feed. Some tables retain
  * exact events (`submittedAt`, `decidedAt`, revisions, comments); tables with only `updatedAt` can
  * expose their latest state but cannot pretend to reconstruct several edits between two visits.
  */
@@ -212,7 +212,7 @@ export function buildOrganizerUpdateFeed(
         title: `New submission: ${row.title}`,
         detail: `${ref} from ${row.submitterName?.trim() || row.submitterEmail}`,
         occurredAt: row.submittedAt.toISOString(),
-        href: `/admin/submissions/${row.id}`,
+        href: `/organizer/submissions/${row.id}`,
         tone: 'info',
       });
     }
@@ -228,7 +228,7 @@ export function buildOrganizerUpdateFeed(
           ? `${ref} is now ${submissionStatusLabel(row.status)}`
           : `${ref} was decided and is currently ${submissionStatusLabel(row.status)}`,
         occurredAt: row.decidedAt.toISOString(),
-        href: `/admin/submissions/${row.id}`,
+        href: `/organizer/submissions/${row.id}`,
         tone: currentDecision ? decisionTone(row.status) : 'neutral',
       });
     }
@@ -244,7 +244,7 @@ export function buildOrganizerUpdateFeed(
         title: `Submission withdrawn: ${row.title}`,
         detail: `${ref} was withdrawn from consideration`,
         occurredAt: row.updatedAt.toISOString(),
-        href: `/admin/submissions/${row.id}`,
+        href: `/organizer/submissions/${row.id}`,
         tone: 'danger',
       });
     }
@@ -258,7 +258,7 @@ export function buildOrganizerUpdateFeed(
       title: `Review completed: ${row.submissionTitle}`,
       detail: `${row.reviewerName?.trim() || row.reviewerEmail} finished ${row.roundName} for ${formatRef('submission', row.submissionRef)}`,
       occurredAt: row.completedAt.toISOString(),
-      href: `/admin/submissions/${row.submissionId}`,
+      href: `/organizer/submissions/${row.submissionId}`,
       tone: 'success',
     });
   }
@@ -281,7 +281,7 @@ export function buildOrganizerUpdateFeed(
         title: `Speaker added: ${name}`,
         detail: `Current speaker status: ${row.workflowStatus}`,
         occurredAt: row.createdAt.toISOString(),
-        href: '/admin/speakers',
+        href: '/organizer/speakers',
         tone: 'info',
       });
     }
@@ -300,7 +300,7 @@ export function buildOrganizerUpdateFeed(
         title: `Speaker updated: ${name}`,
         detail: `Current speaker status: ${row.workflowStatus}`,
         occurredAt: row.updatedAt.toISOString(),
-        href: '/admin/speakers',
+        href: '/organizer/speakers',
         tone: row.workflowStatus === 'confirmed' ? 'success' : 'neutral',
       });
     }
@@ -315,7 +315,7 @@ export function buildOrganizerUpdateFeed(
         title: `Task assigned: ${row.taskName}`,
         detail: `${name} · ${taskStatusLabel(row.status)}`,
         occurredAt: row.createdAt.toISOString(),
-        href: '/admin/tasks',
+        href: '/organizer/tasks',
         tone: 'neutral',
       });
     }
@@ -327,7 +327,7 @@ export function buildOrganizerUpdateFeed(
         title: taskTitle(row.status, row.taskName),
         detail: `${name} · ${taskStatusLabel(row.status)}`,
         occurredAt: changedAt.toISOString(),
-        href: '/admin/tasks',
+        href: '/organizer/tasks',
         tone: taskTone(row.status),
       });
     }
@@ -341,7 +341,7 @@ export function buildOrganizerUpdateFeed(
         title: `Session added: ${row.title}`,
         detail: scheduleState(row),
         occurredAt: row.createdAt.toISOString(),
-        href: '/admin/agenda',
+        href: '/organizer/agenda',
         tone: 'info',
       });
     }
@@ -352,7 +352,7 @@ export function buildOrganizerUpdateFeed(
         title: `Agenda updated: ${row.title}`,
         detail: scheduleState(row),
         occurredAt: row.updatedAt.toISOString(),
-        href: '/admin/agenda',
+        href: '/organizer/agenda',
         tone:
           row.status === 'cancelled'
             ? 'danger'
@@ -372,7 +372,7 @@ export function buildOrganizerUpdateFeed(
       title: `${isSpeaker ? 'Speaker profile' : 'Session content'} changed: ${revision.entityLabel}`,
       detail: `${revision.editorName} · ${revision.summary}`,
       occurredAt: revision.createdAt.toISOString(),
-      href: '/admin/submissions/files/history',
+      href: '/organizer/submissions/files/history',
       tone: 'neutral',
     });
   }
@@ -386,7 +386,7 @@ export function buildOrganizerUpdateFeed(
       title: `File uploaded: ${row.filename}`,
       detail: uploader ? `Uploaded by ${uploader}` : 'Uploaded to this event',
       occurredAt: row.createdAt.toISOString(),
-      href: '/admin/submissions/files',
+      href: '/organizer/submissions/files',
       tone: 'info',
     });
   }
@@ -399,7 +399,7 @@ export function buildOrganizerUpdateFeed(
       title: `New comment on ${row.filename}`,
       detail: `${row.authorName} added a deliverable comment`,
       occurredAt: row.createdAt.toISOString(),
-      href: '/admin/submissions/files/deliverables',
+      href: '/organizer/submissions/files/deliverables',
       tone: 'info',
     });
   }
