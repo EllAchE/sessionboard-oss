@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { eventHasSponsors } from '@/lib/services/sponsors';
 import type { PublicEvent } from '../../embed/queries';
+import { ConferenceCountdown } from './ConferenceCountdown';
 import styles from './public-event.module.css';
 
 type Tab = {
@@ -79,6 +80,14 @@ export async function PublicChrome({
                 </span>
               ) : null}
             </span>
+            {event.startsOn ? (
+              <ConferenceCountdown
+                startsOn={event.startsOn}
+                endsOn={event.endsOn}
+                timeZone={event.timezone}
+                initialNow={Date.now()}
+              />
+            ) : null}
           </span>
           <nav className={styles.nav}>
             {tabs.map((tab) => (

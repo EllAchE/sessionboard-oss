@@ -275,7 +275,7 @@ and submission-content approval before returning the storage stream.
 ### `email_log` doubles as the dev mailbox
 
 With `MAIL_TRANSPORT=log` — or alongside any real transport — every send is recorded and
-`/admin/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
+`/organizer/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
 single point of failure during judging. A judge who never receives a message can still see it.
 
 ### Reserved recipients are why `T-6` and `T-7a` can both hold
@@ -365,7 +365,7 @@ Auth is `Authorization: Bearer <key>`, keys are per event, hashed at rest.
 ### Embeds are server-rendered routes, not a JS widget
 
 `G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers`, `/embed/:slug/sessions`, and
-`/embed/:slug/sponsors`. `AR-36` adds `/embed/:slug/exhibitor-map`, which wraps the event's current
+`/embed/:slug/sponsors`. `AR-37` adds `/embed/:slug/exhibitor-map`, which wraps the event's current
 PDF map rather than inventing a second interactive floor-plan model. All are served with
 `frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing iframe. The
 requirement that an embed "auto-updates with no re-paste" is then free rather than engineered: the

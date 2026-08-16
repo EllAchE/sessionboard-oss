@@ -4,7 +4,7 @@ import { icsFilename } from '@/lib/ics';
 /**
  * Downloads the calendar body attached to one logged message. `MAIL_TRANSPORT=log` is the default,
  * so on the demo deployment this is the only place the `.ics` a speaker would have received is
- * actually reachable — part of what makes `/admin/mail` satisfy `T-7a`.
+ * actually reachable — part of what makes `/organizer/mail` satisfy `T-7a`.
  */
 export const dynamic = 'force-dynamic';
 

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import dashboardImage from '@/docs/images/dashboard.jpg';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
@@ -29,17 +30,17 @@ const FEATURES = [
   {
     icon: <FileCheck size={20} aria-hidden="true" />,
     title: 'Receive petitions. Reach a verdict.',
-    body: 'Proclaim your call for orators, send each proposal before the right council, and record every decision without excavating a spreadsheet ruin.',
+    body: 'Publish your call for speakers, route proposals, and record decisions.',
   },
   {
     icon: <CalendarCheck size={20} aria-hidden="true" />,
     title: 'Set the imperial calendar',
-    body: 'Marshal orations across chambers and themes while Cicero exposes every clash before the gates open.',
+    body: 'Schedule sessions across rooms and tracks, with conflicts flagged as you work.',
   },
   {
     icon: <ListChecks size={20} aria-hidden="true" />,
     title: 'Ready every orator for the Forum',
-    body: 'Survey missing biographies, portraits, scrolls, and approvals at a glance, then send a dispatch from the same command post.',
+    body: 'Track missing bios, headshots, files, and approvals, then contact speakers.',
   },
 ];
 
@@ -63,23 +64,27 @@ const PERSONAS = [
     href: DEMO_ENTRY_LINKS.organizer,
     icon: Landmark,
     label: 'Run the conference',
-    blurb: 'Organizer — the programme, the fasti, and every outstanding duty.',
+    blurb: 'Organizer — programme, schedule, and outstanding tasks.',
   },
   {
     href: DEMO_ENTRY_LINKS.reviewer,
     icon: Scale,
     label: 'Score the petitions',
-    blurb: 'Reviewer — weigh the docket before you and record a verdict.',
+    blurb: 'Reviewer — assigned proposals and scoring.',
   },
   {
     href: DEMO_ENTRY_LINKS.speaker,
     icon: Megaphone,
     label: 'Give a talk',
-    blurb: 'Speaker — an accepted oration, your profile, and stage duties.',
+    blurb: 'Speaker — your sessions, profile, and tasks.',
   },
 ] as const;
 
-export default function Home() {
+export default async function Home() {
+  return <HomeContent demoAvailable={await demoEntryPointsAreAvailable()} />;
+}
+
+export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
   return (
     <main className={styles.root}>
       <nav className={styles.nav} aria-label="Primary navigation">
@@ -90,9 +95,11 @@ export default function Home() {
           <a className={styles.aboutLink} href="#about">
             About the Forum
           </a>
-          <a className={styles.demoLink} href="/demo">
-            Tour the empire
-          </a>
+          {demoAvailable ? (
+            <a className={styles.demoLink} href="/demo">
+              Tour the empire
+            </a>
+          ) : null}
           <a className={styles.agentLink} href="#agent-quick-start">
             Agent quick start
           </a>
@@ -123,8 +130,7 @@ export default function Home() {
           <p className={styles.eyebrow}>From first proclamation to final ovation</p>
           <h1>Convene the crowd. Command the programme.</h1>
           <p className={styles.heroLead}>
-            Cicero gathers petitions, councils, fasti, orator duties, and dispatches in one
-            Forum, so organizers can govern the programme instead of chasing it.
+            Run submissions, review, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.actions}>
             <Button
@@ -137,27 +143,34 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className={styles.personas}>
-            <p className={styles.personasTitle} id="personas-title">
-              Or enter a conference already in motion
-            </p>
-            <ul className={styles.personaList} aria-labelledby="personas-title">
-              {PERSONAS.map((persona) => (
-                <li key={persona.label}>
-                  <a className={styles.persona} href={persona.href}>
-                    <span className={styles.personaIcon}>
-                      <persona.icon size={18} aria-hidden="true" />
-                    </span>
-                    <span className={styles.personaLabel}>
-                      {persona.label}
-                      <ArrowRight size={15} aria-hidden="true" />
-                    </span>
-                    <span className={styles.personaBlurb}>{persona.blurb}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {demoAvailable ? (
+            <div className={styles.personas}>
+              <p className={styles.personasTitle} id="personas-title">
+                Or enter a conference already in motion
+              </p>
+              <ul className={styles.personaList} aria-labelledby="personas-title">
+                {PERSONAS.map((persona) => (
+                  <li key={persona.label}>
+                    <a className={styles.persona} href={persona.href}>
+                      <span className={styles.personaIcon}>
+                        <persona.icon size={18} aria-hidden="true" />
+                      </span>
+                      <span className={styles.personaLabel}>
+                        {persona.label}
+                        <ArrowRight size={15} aria-hidden="true" />
+                      </span>
+                      <span className={styles.personaBlurb}>{persona.blurb}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className={styles.freshStart}>
+              <p className={styles.personasTitle}>Fresh instance</p>
+              <p>No demo event yet. Create an event or load demo data from the README.</p>
+            </div>
+          )}
         </div>
 
         <div className={styles.heroVisual} aria-label="Cicero organizer Forum preview">
@@ -175,11 +188,11 @@ export default function Home() {
           />
           <div className={`${styles.callout} ${styles.calloutTasks}`}>
             <ListChecks size={17} aria-hidden="true" />
-            <span>Every outstanding duty, on one tablet</span>
+            <span>Outstanding tasks in one view</span>
           </div>
           <div className={`${styles.callout} ${styles.calloutSchedule}`}>
             <CalendarCheck size={17} aria-hidden="true" />
-            <span>Every clash exposed before the gates open</span>
+            <span>Conflicts flagged before publishing</span>
           </div>
         </div>
       </section>
@@ -193,13 +206,8 @@ export default function Home() {
         </div>
         <div className={styles.aboutBody}>
           <p>
-            Cicero is an open-source Forum for the work between a proclamation for orators and the
-            day the gates open. It unites petitions, councils, fasti, orator duties, dispatches, and
-            the public programme without making the organizer govern a tangle of systems.
-          </p>
-          <p>
-            Magistrates retain command: raise it on your own infrastructure, adapt the customs, and
-            proclaim fasti that any citizen may read without presenting a seal.
+            Cicero is an open-source system for submissions, review, scheduling, speaker tasks,
+            communications, and the public programme. Self-host it and adapt it to your event.
           </p>
           <dl className={styles.aboutFacts}>
             <div>
@@ -233,10 +241,6 @@ export default function Home() {
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>One commanding Forum</p>
           <h2>All roads lead from proposal to stage.</h2>
-          <p>
-            The whole programme travels together, from the first petition to the final public
-            calendar.
-          </p>
         </div>
         <div className={styles.features}>
           {FEATURES.map((feature) => (
@@ -260,12 +264,10 @@ export default function Home() {
         <div className={styles.programmeCopy}>
           <p className={styles.eyebrow}>Published from the Forum</p>
           <h2>A public programme worthy of the city.</h2>
-          <p>
-            Proclaim clear fasti, a roll of orations, and a gallery of orators without copying a
-            single record or awaiting another courier.
-          </p>
-          <a className={styles.textLink} href="/demo/agenda">
-            Consult the demo programme <ArrowRight size={16} aria-hidden="true" />
+          <p>Publish the agenda, sessions, and speaker directory from the same data.</p>
+          <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
+            {demoAvailable ? 'Consult the demo programme' : 'Publish your first programme'}{' '}
+            <ArrowRight size={16} aria-hidden="true" />
           </a>
         </div>
       </section>
@@ -281,9 +283,8 @@ export default function Home() {
             Give your agent a brief. Keep every decree reviewable.
           </h2>
           <p>
-            Cicero ships with a stateful repo-local guide. It discovers how far you have already
-            reached, records only non-secret progress in your working directory, walks the next
-            missing step, and hands ongoing programme work to a preview-first agent.
+            The bundled onboarding skill tracks setup progress and hands event changes to a
+            preview-first agent.
           </p>
 
           <ol className={styles.agentSteps}>
@@ -291,7 +292,7 @@ export default function Home() {
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
                 <h3>Clone the repository</h3>
-                <p>Open the repository root in Codex so it discovers both bundled skills.</p>
+                <p>Open the repository root in Codex.</p>
                 <code>git clone https://github.com/EllAchE/sessionboard-oss.git</code>
               </div>
             </li>
@@ -300,8 +301,8 @@ export default function Home() {
               <div className={styles.agentStepCopy}>
                 <h3>Paste the resumable brief</h3>
                 <p>
-                  The guide establishes <code>.cicero/onboarding.json</code>, asks only what it
-                  cannot discover, and resumes from the same point next time.
+                  <code>$onboard-cicero</code> records progress in{' '}
+                  <code>.cicero/onboarding.json</code> and resumes where it stopped.
                 </p>
               </div>
             </li>
@@ -310,10 +311,8 @@ export default function Home() {
               <div className={styles.agentStepCopy}>
                 <h3>Hand off when ready</h3>
                 <p>
-                  When you reach{' '}
-                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a>, expose the
-                  event key as <code>CICERO_API_KEY</code>. The guide never stores its value and
-                  the programme agent still previews before every apply.
+                  Add <code>CICERO_API_KEY</code> when prompted. Event changes are previewed before
+                  they are applied.
                 </p>
               </div>
             </li>
@@ -352,44 +351,64 @@ export default function Home() {
           </pre>
           <p className={styles.agentPromptSafety}>
             <ShieldCheck size={17} aria-hidden="true" />
-            Applying changes and deleting records always require separate confirmation.
+            Changes and deletions require confirmation.
           </p>
         </div>
       </section>
 
-      <section className={styles.finalCta}>
-        <p className={styles.eyebrow}>Take command</p>
-        <h2>Enter a conference already in motion.</h2>
-        <p>
-          The live province is filled with petitions, orators, unfinished duties, and a two-day
-          programme ready for inspection. Take the seat you want to try: the magistrate who
-          governs it, a censor weighing petitions, or an orator readying for the stage.
-        </p>
-        <div className={styles.finalCtaActions}>
-          <Button
-            href={DEMO_ENTRY_LINKS.organizer}
-            variant="primary"
-            size="lg"
-            iconRight={<ArrowRight size={17} aria-hidden="true" />}
-          >
-            Open the organizer Forum
-          </Button>
-          <Button
-            href={DEMO_ENTRY_LINKS.reviewer}
-            size="lg"
-            iconRight={<ArrowRight size={17} aria-hidden="true" />}
-          >
-            Judge petitions as a reviewer
-          </Button>
-          <Button
-            href={DEMO_ENTRY_LINKS.speaker}
-            size="lg"
-            iconRight={<ArrowRight size={17} aria-hidden="true" />}
-          >
-            Prepare a talk as a speaker
-          </Button>
-        </div>
-      </section>
+      {demoAvailable ? (
+        <section className={styles.finalCta}>
+          <p className={styles.eyebrow}>Take command</p>
+          <h2>Enter a conference already in motion.</h2>
+          <p>Explore the seeded event as an organizer, reviewer, or speaker.</p>
+          <div className={styles.finalCtaActions}>
+            <Button
+              href={DEMO_ENTRY_LINKS.organizer}
+              variant="primary"
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Open the organizer Forum
+            </Button>
+            <Button
+              href={DEMO_ENTRY_LINKS.reviewer}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Judge petitions as a reviewer
+            </Button>
+            <Button
+              href={DEMO_ENTRY_LINKS.speaker}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Prepare a talk as a speaker
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <section className={styles.finalCta}>
+          <p className={styles.eyebrow}>Ready for its first event</p>
+          <h2>Convene your own conference.</h2>
+          <p>
+            This fresh instance is fully operational without fixture data. Create an account to
+            build the first event, or sign in if another organizer has already invited you.
+          </p>
+          <div className={styles.finalCtaActions}>
+            <Button
+              href="/signup"
+              variant="primary"
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Create the first event
+            </Button>
+            <Button href="/signin" size="lg">
+              Sign in
+            </Button>
+          </div>
+        </section>
+      )}
 
     </main>
   );

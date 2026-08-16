@@ -43,9 +43,9 @@ The production base URL is <https://cicero-three.vercel.app>.
 | Purpose | URL | Pre-demo expectation |
 | --- | --- | --- |
 | Home | <https://cicero-three.vercel.app> | Live |
-| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
-| Organizer dashboard | <https://cicero-three.vercel.app/admin> | Live after sign-in |
-| Captured demo mail | <https://cicero-three.vercel.app/admin/mail> | Live after sign-in |
+| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/organizer> | Live; submit `organizer@example.com`; the page returns the demo magic link |
+| Organizer dashboard | <https://cicero-three.vercel.app/organizer> | Live after sign-in |
+| Captured demo mail | <https://cicero-three.vercel.app/organizer/mail> | Live after sign-in |
 | Existing public demo | <https://cicero-three.vercel.app/demo> | Live fallback |
 | Existing demo agenda | <https://cicero-three.vercel.app/demo/agenda> | Live fallback |
 | Existing public CFP | <https://cicero-three.vercel.app/submit/demo/speak> | Live fallback |
@@ -132,15 +132,15 @@ The checkpoint column tells the producer what must be visibly true before the dr
 | --- | --- | --- | --- |
 | 0:00–1:30 | Required: value first | Sign in as `organizer@example.com`, select **The First Settlement** if deployed, and open the dashboard. Say: “Sessionboard has no central task-completion report; Cicero starts with the accepted speakers who still owe us something.” | Outstanding people, exact tasks, counters, and linked actions are visible. |
 | 1:30–3:00 | Required: organizer cold start | In a fresh profile, sign up with an approved disposable address. Create an event, set dates/timezone, then add two tracks, two rooms, and a format. Return to the seeded organizer. | A new organizer reaches event creation without an invitation; tenant separation is evident. |
-| 3:00–5:00 | Required: event and CFP configuration | Open Roman Admin → Settings and Order of Debate to show branding, taxonomy, required fields, and a custom field. Switch to the seeded `demo` form for the prebuilt conditional rule and routed track/category, unless approved disposable Roman configuration was prepared. | Event-scoped taxonomy and conditional/routed form configuration are visible without overstating the Roman seed. |
+| 3:00–5:00 | Required: event and CFP configuration | Open Roman Organizer → Settings and Order of Debate to show branding, taxonomy, required fields, and a custom field. Switch to the seeded `demo` form for the prebuilt conditional rule and routed track/category, unless approved disposable Roman configuration was prepared. | Event-scoped taxonomy and conditional/routed form configuration are visible without overstating the Roman seed. |
 | 5:00–7:00 | Required: cold submission | In incognito, use the seeded `demo` CFP to trigger its conditional question, or `/submit/first-settlement/motions` if an approved Roman condition was prepared. Start cold, progress through the multi-step flow, review, and submit. | Account is created in-flow; confirmation is captured; redirect reaches the portal. |
-| 7:00–9:30 | Required: speaker self-service | Show Home, Submissions, Profile, Tasks, and portal resources. Update a disposable bio, upload approved headshot/slides, complete a task, and show an organizer-authored HTML resource. Demonstrate **View portal as** and return to Admin Mode. | Profile/file/task changes are visible to both roles; impersonation can perform work and is reversible. |
+| 7:00–9:30 | Required: speaker self-service | Show Home, Submissions, Profile, Tasks, and portal resources. Update a disposable bio, upload approved headshot/slides, complete a task, and show an organizer-authored HTML resource. Demonstrate **View portal as** and return to Organizer Mode. | Profile/file/task changes are visible to both roles; impersonation can perform work and is reversible. |
 | 9:30–12:30 | Required: evaluation | Use the seeded `demo` event for its two rounds, or an approved disposable Roman second round. Show routed reviewer assignments, scorecard criteria, named scores, round one, queue state, round two, and acceptance. | The submission moves through multi-round evaluation to accepted; acceptance mail appears. |
 | 12:30–15:30 | Required: agenda | Show the unscheduled rail, drag a disposable accepted session into a slot, provoke room/track and speaker conflicts, switch among list/day/week/room/track views, then return to a valid slot. Keep changes draft until the approved publish moment. | Three conflict classes are visible; draft is private; publish exposes only the intended version. |
 | 15:30–17:30 | Required: communications and calendar | Show templates, task reminder, filtered manual audience, and send log. Open the attached `.ics` in a real calendar, reschedule the same session, then show stable `UID` and increased `SEQUENCE`. | The original calendar item updates rather than duplicating; the send log records it. |
 | 17:30–18:30 | Required: dashboard closure | Return to the dashboard and show that the completed task left outstanding work while remaining auditable on the speaker. | Dashboard reflects the write without a report rebuild. |
 | 18:30–20:00 | Required: public output | Open event, sessions, speakers, gallery, agenda, itinerary, and embeds signed out. Show the changed title/time in public agenda and embed without replacing the iframe snippet. | Public and embedded surfaces agree, work without auth, and reflect publication. |
-| 20:00–21:30 | Required: Accelevents outbound | Admin → Integrations → **Push accepted speakers**. Use fixture mode unless a real push was separately approved. Explain verified live scope: speaker create/list, duplicate email treated as already present. | Summary shows `created`, `alreadyThere`, `skipped`, and `failed`; log retains outcomes. |
+| 20:00–21:30 | Required: Accelevents outbound | Organizer → Integrations → **Push accepted speakers**. Use fixture mode unless a real push was separately approved. Explain verified live scope: speaker create/list, duplicate email treated as already present. | Summary shows `created`, `alreadyThere`, `skipped`, and `failed`; log retains outcomes. |
 | 21:30–23:00 | Bonus: Accelevents-shaped program update | Show live OpenAPI first. If the provisional reconcile route exists, preview the First Settlement collection, apply the approved change, repeat for no-ops, and verify the public agenda. | Stable external IDs yield create/update/delete/no-op; second applied run is idempotent. |
 | 23:00–24:00 | Bonus: full outbound CRUD fixture | If deployed, reset the deterministic fake Accelevents program, preview drift, safely apply creates/updates, approve the fixture delete, and repeat. Never describe this as live remote support. | Response says `adapter: "fake"`; expected counts and final all-noop result are visible. |
 | 24:00–25:00 | Bonus and close | Show the `$manage-cicero-event` prompt, then summarize: open source, Cloudflare deployed, self-hostable, no passwords, API bonus, safe automation. | Audience can name the replacement spine and added value. |
@@ -159,7 +159,7 @@ prepared scenario, and state exactly which approval remains.
 | Cold submission and account creation | Required | `P-1`–`P-4` | Incognito multi-step submission and portal redirect |
 | Draft/resume, review, redirect, confirmation | Important | `F-11`, `F-12`, `P-6`, `P-7` | Draft, review, mail, portal |
 | Profile, files, portal pages/HTML | Required | `S-1`–`S-7`, `T-5` | Speaker portal and deliverables |
-| Full organizer impersonation | Required | `S-10` | Complete a task as speaker; return to Admin Mode |
+| Full organizer impersonation | Required | `S-10` | Complete a task as speaker; return to Organizer Mode |
 | Speaker tasks and completion | Required | `S-14`, `S-15` | Portal tasks and organizer state |
 | Statuses, scoring, rounds, evaluation plans | Required | `V-1`–`V-5`, coupled to `F-3` | Queue, scorecard, assignments, acceptance |
 | Agenda placement, conflicts, views, fields | Required | `A-1`–`A-4`, `A-7` | Drag, room/track/speaker warnings, view switcher |
@@ -180,7 +180,7 @@ prepared scenario, and state exactly which approval remains.
 | --- | --- |
 | Lead with outstanding tasks | Cicero supplies a central completion view the incumbent's FAQ says it lacks. |
 | Passwordless cold paths | Infrequent speakers do not create and forget another password; evaluation needs no inbox. |
-| Full impersonation | Support can finish a stuck task while the action remains attributable; read-only preview cannot. |
+| Full impersonation | Support can finish a stuck task; the live session identifies the organizer, but durable per-action attribution remains a documented hardening gap. |
 | Speaker double-booking | Cicero protects against the public failure, not only room and track collisions. |
 | Stable calendar UID and sequence | Rescheduling updates an accepted calendar entry instead of creating a stale duplicate. |
 | Live server-rendered embeds | Public pages and iframes update from one source without replacing markup. |
@@ -409,7 +409,7 @@ route, create a production key, or bypass the application with a database write.
 ## Required Accelevents outbound segment
 
 The requirement is one-way accepted-speaker push: Cicero → Accelevents. Choose the Roman event,
-open Admin → Integrations, inspect accepted speakers, and click **Push accepted speakers** only in
+open Organizer → Integrations, inspect accepted speakers, and click **Push accepted speakers** only in
 the approved environment.
 
 The real client is based on Accelevents speaker create/list at
@@ -564,7 +564,7 @@ or remote Accelevents calls to make the screen look right during a demo.
 | --- | --- |
 | First Settlement returns 404 | State that targeted seed approval is pending; use `/demo`; show Roman source and expected URLs. |
 | Admin returns Cloudflare 503/1102 | Reload once. The README documents the free-plan 10 ms CPU ceiling. Then use open public tabs and captured evidence. |
-| Sign-in email unavailable | Use the on-page magic link or `/admin/mail`; for a seeded speaker, use organizer impersonation. |
+| Sign-in email unavailable | Use the on-page magic link or `/organizer/mail`; for a seeded speaker, use organizer impersonation. |
 | Upload or task write fails | Show pre-seeded file/task state; do not retry with personal files. |
 | Calendar client cannot import | Show captured mail attachment and UID/SEQUENCE fixture; do not send another real invitation. |
 | Reconcile route missing from OpenAPI | Stop the write segment, show proposed contract/fixture, and use the public read API. |
@@ -578,7 +578,7 @@ or remote Accelevents calls to make the screen look right during a demo.
 
 - [ ] Approval owner and scope are written down for every live mutation.
 - [ ] Live home, sign-in, `demo` pages, embed, and public API respond.
-- [ ] Organizer magic link works without an inbox and `/admin/mail` is reachable.
+- [ ] Organizer magic link works without an inbox and `/organizer/mail` is reachable.
 - [ ] First Settlement is verified live after an approved targeted seed, or fallback wording is in
       the speaker notes.
 - [ ] Event switcher selects the intended event before every write.

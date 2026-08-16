@@ -81,6 +81,7 @@ export type MagicLinkRequest = {
   name?: string | null;
   eventId?: string | null;
   redirectTo?: string | null;
+  developmentOrigin?: string;
 };
 
 /**
@@ -109,13 +110,17 @@ export async function requestMagicLink(
     expiresAt: addMinutes(MAGIC_TTL_MINUTES),
   });
 
-  const link = `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
+  const origin =
+    process.env.NODE_ENV === 'development' && request.developmentOrigin
+      ? request.developmentOrigin.replace(/\/+$/, '')
+      : appUrl();
+  const link = `${origin}/auth/verify?token=${encodeURIComponent(token)}`;
   const body = [
     `Hi${account.name ? ` ${escapeMarkdownText(account.name)}` : ''},`,
     '',
     `[Sign in to Cicero](${link})`,
     '',
-    `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+    `Single-use; expires in ${MAGIC_TTL_MINUTES} minutes.`,
     'If you did not ask for it, you can ignore this email.',
   ].join('\n');
 
@@ -128,7 +133,7 @@ export async function requestMagicLink(
       '',
       link,
       '',
-      `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+      `Single-use; expires in ${MAGIC_TTL_MINUTES} minutes.`,
       'If you did not ask for it, you can ignore this email.',
     ].join('\n'),
     eventId: request.eventId ?? null,
@@ -298,9 +303,11 @@ export async function signOut(): Promise<void> {
  * speaker is stuck cannot help them — and useless for judging.
  *
  * Here the organizer's session is replaced by a real session as the target user. Every write lands
- * as the speaker and takes effect. `impersonatedByUserId` keeps it attributable and drives the
- * banner and the exit route; nothing else in the codebase branches on it, because a session that
- * behaves differently is a preview wearing a different name.
+ * as the speaker and takes effect. `impersonatedByUserId` identifies the organizer while this
+ * session exists and drives the banner and exit route. Services that need durable attribution must
+ * persist both identities themselves; not every mutation does that yet. Nothing branches on this
+ * value for authorization, because a session that behaves differently is a preview wearing a
+ * different name.
  */
 export async function startImpersonation(ctx: EventContext, targetUserId: string): Promise<void> {
   if (!ctx.roles.includes('organizer')) {

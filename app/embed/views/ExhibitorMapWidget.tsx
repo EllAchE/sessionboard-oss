@@ -11,7 +11,7 @@ function mapStyle(options: EmbedOptions): CSSProperties {
   } as CSSProperties;
 }
 
-/** `AR-36`. A browser-native PDF surface, deliberately without Cicero-authored map interactions. */
+/** `AR-37`. A browser-native PDF surface, deliberately without Cicero-authored map interactions. */
 export function ExhibitorMapWidget({
   eventName,
   file,

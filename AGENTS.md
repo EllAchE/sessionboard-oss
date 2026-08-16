@@ -36,6 +36,18 @@ this checkout — do not repeat it.
 - After opening a PR, remove only the worktree and branch this session created; leave every other
   worktree and every other session's dirty state alone.
 
+## Session Completion and Delivery
+
+Every repository-changing task—code, documentation, configuration, or guidance—must finish with a
+pushed branch and an open pull request. A local commit is only an intermediate checkpoint and is
+never sufficient delivery.
+
+- Before ending the session, verify that the remote branch and pull request both exist, then report
+  the PR URL and its review state to the user.
+- Do not describe repository-changing work as complete when no PR was opened. If the user explicitly
+  asks to keep the work local, or publishing is blocked by credentials, permissions, or an external
+  outage, state that exception and the remaining publish step clearly.
+
 ## PR Conventions
 
 - Commits must be signed (existing history in this repo is `gpgsig`-signed; keep it that way).

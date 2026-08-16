@@ -1,5 +1,5 @@
 /**
- * `AR-36`. Pure exhibitor-map contract shared by upload validation, admin copy, and public routes.
+ * `AR-37`. Pure exhibitor-map contract shared by upload validation, organizer copy, and public routes.
  * The first version is intentionally one static PDF rather than structured booth geometry.
  */
 

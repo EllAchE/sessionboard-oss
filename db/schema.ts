@@ -1050,7 +1050,7 @@ export const file = pgTable(
 );
 
 /**
- * `AR-36`. One deliberately simple exhibitor map per event. The PDF remains an ordinary
+ * `AR-37`. One deliberately simple exhibitor map per event. The PDF remains an ordinary
  * event-scoped `file`; this row is the public slot that makes exactly that file reachable from the
  * map embed. Keeping the slot separate from sponsor/exhibitor records is intentional: the first
  * version does not model booths, regions, floors, or wayfinding.
@@ -1339,7 +1339,7 @@ export const emailTemplate = pgTable(
 );
 
 /**
- * Doubles as the dev mailbox rendered at `/admin/mail`, which satisfies `T-7a` and removes email
+ * Doubles as the dev mailbox rendered at `/organizer/mail`, which satisfies `T-7a` and removes email
  * deliverability as a single point of failure during judging: a judge who never receives a message
  * can still read it.
  */

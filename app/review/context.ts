@@ -6,13 +6,13 @@ import { EVENT_COOKIE, listEventsForUser, type EventSummary } from '@/lib/servic
 
 /**
  * The reviewer surface resolves its own event rather than calling `currentEventId`, whose fallback
- * looks for an organizer membership — a reviewer who has never opened the admin has no event cookie
+ * looks for an organizer membership — a reviewer who has never opened the organizer workspace has no event cookie
  * and no organizer row, and would be told the event does not exist.
  */
 export type ReviewerSession = {
   ctx: EventContext;
   event: EventSummary;
-  /** An organizer may open this surface; they keep author identity and their own admin routes. */
+  /** An organizer may open this surface; they keep author identity and their own organizer routes. */
   canDecide: boolean;
 };
 

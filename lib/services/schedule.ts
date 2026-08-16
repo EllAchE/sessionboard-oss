@@ -4,7 +4,7 @@
  * conflict detection has to run in two places at once: on the server before a write, and in the
  * browser on every drag frame so the organizer sees a clash before they let go of the mouse.
  *
- * Database access for these types lives in `app/admin/agenda/data.ts`; keeping it out of here is
+ * Database access for these types lives in `app/organizer/agenda/data.ts`; keeping it out of here is
  * what lets a client component import `detectConflicts` without dragging `pg` into the bundle.
  */
 

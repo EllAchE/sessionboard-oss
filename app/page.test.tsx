@@ -1,0 +1,42 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it, vi } from 'vitest';
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+
+(globalThis as typeof globalThis & { React: typeof React }).React = React;
+
+vi.mock('next/image', () => ({
+  default: ({
+    priority,
+    alt,
+    ...props
+  }: React.ImgHTMLAttributes<HTMLImageElement> & { priority?: boolean }) => {
+    void priority;
+    // eslint-disable-next-line @next/next/no-img-element -- a test stub for Next's image component
+    return <img alt={alt ?? ''} {...props} />;
+  },
+}));
+
+const { HomeContent } = await import('./page');
+
+describe('fresh-instance home page', () => {
+  it('offers only working cold-start paths before the demo fixture is loaded', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+
+    expect(html).toContain('Fresh instance');
+    expect(html).toContain('Create the first event');
+    expect(html).toContain('href="/signup"');
+    expect(html).not.toContain('href="/demo"');
+    expect(html).not.toContain('href="/demo/agenda"');
+    for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
+  });
+
+  it('restores every public and role tour after the demo fixture is loaded', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable />);
+
+    expect(html).toContain('href="/demo"');
+    expect(html).toContain('href="/demo/agenda"');
+    for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).toContain(href.replaceAll('&', '&amp;'));
+    expect(html).not.toContain('Fresh instance');
+  });
+});

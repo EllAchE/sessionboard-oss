@@ -115,16 +115,13 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>Bulk email</h1>
-          <p className={styles.subtitle}>
-            One message, personalized per recipient. Every send is logged and readable in the
-            organizer mailbox.
-          </p>
+          <p className={styles.subtitle}>Send personalized email to selected contacts.</p>
         </div>
         <div className={styles.headActions}>
           <Button
             size="sm"
             variant="secondary"
-            href="/admin/mail"
+            href="/organizer/mail"
             iconRight={<ArrowUpRight size={14} />}
           >
             Open the mailbox
@@ -162,9 +159,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
         <Card>
           <CardHeader>
             <CardTitle>Message</CardTitle>
-            <CardDescription>
-              Merge tags are replaced per recipient before the message goes out.
-            </CardDescription>
+            <CardDescription>Merge tags resolve for each recipient.</CardDescription>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>
@@ -267,7 +262,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                 </div>
               ))}
               <p className={styles.hint}>
-                Every one of these is also in <Link href="/admin/mail">the mailbox</Link> with its
+                Every one of these is also in <Link href="/organizer/mail">the mailbox</Link> with its
                 rendered body.
               </p>
             </div>

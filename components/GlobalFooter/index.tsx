@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  ExternalLink,
   Gift,
   Github,
   Globe2,
@@ -11,6 +10,7 @@ import {
   Twitter,
 } from 'lucide-react';
 import { CiceroMark } from '@/components/CiceroBrand';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import styles from './GlobalFooter.module.css';
 
@@ -55,11 +55,14 @@ const SOCIAL_LINKS = [
   },
 ] as const;
 
-const SOURCE_URL = 'https://github.com/EllAchE/sessionboard-oss';
 const MERCH_URL =
   'https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&start_radio=1';
 
-export function GlobalFooter() {
+export async function GlobalFooter() {
+  return <GlobalFooterContent demoAvailable={await demoEntryPointsAreAvailable()} />;
+}
+
+export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean }) {
   return (
     <footer className={styles.footer} aria-label="Cicero footer">
       <div className={styles.inner}>
@@ -71,14 +74,25 @@ export function GlobalFooter() {
           <p>Open-source conference operations, from call for speakers to show day.</p>
         </div>
 
-        <nav className={styles.links} aria-label="Cicero demo, creator, and source links">
-          {DEMO_LINKS.map(({ href, icon: Icon, label }) => (
-            <Link key={label} className={styles.link} href={href}>
-              <Icon size={15} aria-hidden="true" />
-              <span>{label}</span>
-            </Link>
-          ))}
-          <span className={styles.divider} aria-hidden="true" />
+        <nav
+          className={styles.links}
+          aria-label={
+            demoAvailable
+              ? 'Cicero demo and creator links'
+              : 'Cicero creator links'
+          }
+        >
+          {demoAvailable ? (
+            <>
+              {DEMO_LINKS.map(({ href, icon: Icon, label }) => (
+                <Link key={label} className={styles.link} href={href}>
+                  <Icon size={15} aria-hidden="true" />
+                  <span>{label}</span>
+                </Link>
+              ))}
+              <span className={styles.divider} aria-hidden="true" />
+            </>
+          ) : null}
           {SOCIAL_LINKS.map(({ href, icon: Icon, label }) => (
             <a key={label} className={styles.link} href={href} target="_blank" rel="noreferrer">
               <Icon size={15} aria-hidden="true" />
@@ -86,10 +100,6 @@ export function GlobalFooter() {
             </a>
           ))}
           <span className={styles.divider} aria-hidden="true" />
-          <a className={styles.link} href={SOURCE_URL} target="_blank" rel="noreferrer">
-            <ExternalLink size={15} aria-hidden="true" />
-            <span>Original repo</span>
-          </a>
           <a className={styles.merch} href={MERCH_URL} target="_blank" rel="noreferrer">
             <Gift size={15} aria-hidden="true" />
             <span>Free merch</span>
