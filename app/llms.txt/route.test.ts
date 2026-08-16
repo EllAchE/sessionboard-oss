@@ -34,27 +34,14 @@ describe('llms.txt', () => {
     }
   });
 
-  it('translates the vocabulary the product actually speaks in', () => {
-    const glossary = buildLlmsTxt(ORIGIN).split('## Glossary')[1];
+  it('uses ordinary conference vocabulary without a translation glossary', () => {
+    const body = buildLlmsTxt(ORIGIN);
 
-    for (const term of [
-      'petition',
-      'scroll',
-      'orator',
-      'oration',
-      'fasti',
-      'chamber',
-      'theme',
-      'council',
-      'duty',
-      'dispatch',
-      'inscription',
-      'edict',
-      'alliance',
-      'aqueduct key',
-    ]) {
-      expect(glossary).toContain(`- ${term}`);
-    }
+    expect(body).toContain('Submission form');
+    expect(body).toContain('Speakers');
+    expect(body).toContain('published schedule');
+    expect(body).not.toContain('## Glossary');
+    expect(body).not.toMatch(/\b(?:petition|orator|oration|fasti|aqueduct key)\b/i);
   });
 
   it('serves plain text', async () => {

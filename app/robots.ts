@@ -49,7 +49,7 @@ const DEV_ROUTES = [
 
 /**
  * The call for speakers itself is meant to be found, linked, and indexed — that is the whole point
- * of publishing it at a public URL. The upload step and the confirmation page after a petition are
+ * of publishing it at a public URL. The upload step and the confirmation page after a submission are
  * dead ends that only make sense mid-flow.
  */
 const SUBMIT_FLOW_PATHS = ['/submit/*/*/upload', '/submit/*/*/done'];

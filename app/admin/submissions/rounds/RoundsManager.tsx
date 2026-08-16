@@ -107,7 +107,7 @@ export type RoundsManagerProps = {
   workload: WorkloadWire[];
   /** `F-3`/`V-5`: which reviewers cover which track. Auto-assign below reads exactly this. */
   routing: RoutingWire;
-  /** Submissions eligible for assignment in this round — everything still awaiting a verdict. */
+  /** Submissions eligible for assignment in this round — everything still awaiting a decision. */
   pendingSubmissionIds: string[];
   recusals: RecusalWire[];
   outstandingReviewerCount: number;
@@ -440,7 +440,7 @@ export function RoundsManager(props: RoundsManagerProps) {
           <p className={styles.subtitle}>
             {props.rounds.length} round{props.rounds.length === 1 ? '' : 's'} ·{' '}
             {props.pendingSubmissionIds.length} submission
-            {props.pendingSubmissionIds.length === 1 ? '' : 's'} awaiting a verdict
+            {props.pendingSubmissionIds.length === 1 ? '' : 's'} awaiting a decision
           </p>
         </div>
         <div className={styles.actions}>

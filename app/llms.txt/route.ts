@@ -11,9 +11,8 @@ export const dynamic = 'force-dynamic';
  * against — and the origin is per deployment, so a self-hoster's `llms.txt` must advertise their
  * own domain rather than whichever `APP_URL` was set when the bundle was built.
  *
- * The other job here is translation. Every product surface speaks Roman, so an agent quoting a
- * Cicero page has to guess that a petition is a submission unless something tells it. The glossary
- * is that something, and it is the section most worth keeping current.
+ * Keep the vocabulary here aligned with the plain conference terms used throughout the product so
+ * agents can describe the app without translating branded metaphors.
  */
 
 /** Long enough that agents are not re-fetching a document that changes on deploys, not sessions. */
@@ -29,8 +28,6 @@ export function buildLlmsTxt(origin = appUrl()): string {
     '',
     'Cicero is MIT-licensed and self-hosted. Public programme pages and read APIs require no',
     'credentials. Organizer, reviewer, speaker, and CRM routes are private.',
-    '',
-    'Cicero uses Roman terms; see the glossary below.',
     '',
     'In the paths below, `{slug}` is an event’s URL slug and `{speakerSlug}` a speaker’s.',
     '',
@@ -77,28 +74,6 @@ export function buildLlmsTxt(origin = appUrl()): string {
     'Excluded in `/robots.txt` and not worth fetching: `/admin` (organizer), `/portal` (speaker),',
     '`/review` (reviewer), `/crm`, `/dashboard`, `/events`, `/organizer`, `/signin`, `/signup`,',
     '`/auth` (single-use sign-in tokens), and the internal design and diagnostic pages.',
-    '',
-    '## Glossary',
-    '',
-    '- assembly — an event or conference',
-    '- Forum — an event’s public home page; also the organizer’s dashboard',
-    '- Curia — the organizer’s admin area',
-    '- petition — a submission or proposal',
-    '- scroll — a submission form (a CFP form)',
-    '- proclamation — a published call for speakers',
-    '- orator — a speaker',
-    '- oration — a session or talk',
-    '- fasti — the schedule or agenda',
-    '- chamber — a room',
-    '- theme — a track',
-    '- council, councillor — a review committee and a reviewer',
-    '- duty — an outstanding speaker task, such as a missing bio or headshot',
-    '- dispatch — an email or SMS sent to a speaker',
-    '- courier archive — the record of messages the app sent, or would have sent',
-    '- inscription — an embed snippet for an event website',
-    '- edict — an event setting',
-    '- alliance — a third-party integration',
-    '- aqueduct key — an API key, scoped to one event',
     '',
     '## Source',
     '',
