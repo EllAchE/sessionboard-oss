@@ -874,6 +874,10 @@ const participants = await db
       company: profile.company,
       bioMarkdown: profile.bio,
       timezone: 'America/Los_Angeles',
+      // The standard demo advertises these profiles as its public speaker roster. Keep that
+      // fixture state explicit: the schema default is `invited`, which is intentionally excluded
+      // from public pages until an organizer confirms the participant.
+      workflowStatus: 'confirmed' as const,
       links: [{ label: 'Website', url: 'https://example.com' }],
     })),
   )
