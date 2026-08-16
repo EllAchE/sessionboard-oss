@@ -178,18 +178,6 @@
   min-width: 0;
 }
 
-.weekDay {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.weekDayTitle {
-  font: var(--type-label);
-  color: var(--text-muted);
-  margin: 0;
-}
-
 .rail {
   position: sticky;
   top: var(--space-4);
