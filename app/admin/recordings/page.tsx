@@ -27,6 +27,7 @@ export default async function RecordingsPage() {
       </header>
       <RecordingsBoard
         eventSlug={event.slug}
+        eventTimeZone={event.timezone}
         rows={model.rows.map((row) => ({
           ...row,
           session: {

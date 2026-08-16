@@ -26,7 +26,7 @@ export function CiceroMark({
         width="58"
         height="58"
         rx="7"
-        fill="var(--border-strong)"
+        fill="var(--stone-400)"
       />
       <rect
         x="5"
@@ -34,10 +34,10 @@ export function CiceroMark({
         width="54"
         height="54"
         rx="5"
-        fill="var(--surface-raised)"
+        fill="var(--stone-0)"
       />
       <path
-        fill="var(--accent)"
+        fill="var(--vermilion-500)"
         d="M15.5 15.5h33v3h-33zM15.5 45.5h33v3h-33zM15.5 15.5h3v33h-3zM25.5 15.5h3v33h-3zM35.5 15.5h3v33h-3zM45.5 15.5h3v33h-3z"
       />
     </svg>
