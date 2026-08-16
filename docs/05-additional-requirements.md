@@ -428,6 +428,26 @@ implementation commitment.
 
 ---
 
+## 14. External task-management sync
+
+The ask: many organizing teams already run all work in **Linear or another task-management system**
+such as Jira, Asana, Trello, or GitHub Issues. A Cicero to-do produced for a speaker or submission
+should appear there automatically, without the organizer re-entering it, and progress recorded in
+either system should be reflected in the other.
+
+**Decision for the current release: accepted as product direction, but not scheduled to build.** The
+`[EXCLUDED]` tag below describes the release boundary, not a one-way-export product decision. When
+this work enters scope, the intended feature is a durable sync with the following shape.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-40 | **[EXCLUDED]** | — | **Organization-level provider connection and project mapping.** An organizer connects a Cicero organization once to a provider workspace, then maps each Cicero event to the provider team and project where its work belongs. An event may override organization defaults. Provider credentials and provider membership stay at the organization connection; individual event organizers do not each install a separate integration. Build against a provider-neutral connector contract, with **Linear as the first provider**, so Jira, Asana, Trello, or GitHub Issues can be added without changing Cicero's task model |
+| AR-41 | **[EXCLUDED]** | — | **Cicero task assignments automatically create and maintain external to-dos.** When a speaker submission causes Cicero to fan out a `task_assignment` — per contact, per submission, or once for a session group — the mapped provider receives one corresponding work item without a manual export step. Its title and description identify the task, speaker or group, event, and submission; carry due date and stable Cicero links; and retain provider ID and URL so retries and backfills update the same item instead of creating duplicates. Changes to the Cicero task's name, due date, scope, or cancellation propagate outward |
+| AR-42 | **[EXCLUDED]** | — | **Task state synchronizes in both directions.** Cicero `not_started`, `in_progress`, `completed`, and `waived` states map explicitly to provider states. Completing, waiving, reopening, or starting a task in Cicero updates the external work item; moving the external item between mapped states updates the Cicero assignment and the speaker/organizer views. Provider webhooks drive the normal path, a reconciliation job repairs missed deliveries, and every transition is idempotent, loop-safe, event-scoped, and visible in a sync log. A provider's completed and canceled states map separately so finishing a requirement is not confused with an organizer waiving it |
+| AR-43 | **[EXCLUDED]** | — | **Project context travels with the task.** The mapped external project can carry links to the Cicero event, submission, speaker record, and relevant organizer-authored documents so the operations team can understand the to-do without hunting through Cicero. Start with canonical links and provider project metadata; copying document bodies, comments, files, or speaker PII into the provider requires a separate privacy and retention decision and is not implicit in task sync |
+
+---
+
 ## Decisions
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so
@@ -453,7 +473,7 @@ question that blocks a build.
 | Document | Relationship |
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
-| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3, 5, 10, 12 and 13 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP, intelligent agenda optimization, the update rundown, and post-conference speaker messaging are not mentioned at all |
+| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3, 5, 10, 12, 13 and 14 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP, intelligent agenda optimization, the update rundown, and post-conference speaker messaging are not mentioned at all. AR-40–AR-43 specify an owner-requested task-management sync under the brief's existing optional `N-2` "other integrations" umbrella without changing that frozen row |
 | [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule, AR-25's transport choice, and AR-37's public-file authorization boundary are recorded there |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, and AR-35 in W4 (crossing W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized; AR-37 belongs to W6 on W2's file-storage primitives, AR-38 starts in W6 while a future append-only activity table must cross W0 deliberately, and AR-39 would be a post-v1 W5 goal that stays unassigned until that work is authorized |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, and AR-35 in W4 (crossing W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized; AR-37 belongs to W6 on W2's file-storage primitives, AR-38 starts in W6 while a future append-only activity table must cross W0 deliberately, and AR-39 would be a post-v1 W5 goal that stays unassigned until that work is authorized. AR-40–AR-43 have no workstream or estimate while excluded; this preserves §2's recommendation against building unspecified integrations in the current scope |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |
