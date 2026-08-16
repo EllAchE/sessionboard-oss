@@ -56,6 +56,7 @@ const input = (over: Partial<TaskFormInput> = {}): TaskFormInput => ({
   linkUrl: '',
   formId: '',
   reminderDaysBefore: '',
+  reminderDaysAfterSend: '',
   ...over,
 });
 
@@ -131,6 +132,21 @@ describe('reminder cadence parsing', () => {
 
     expect(sentInput().reminderDaysBefore).toEqual([]);
   });
+
+  it('reads a positive whole-day follow-up interval after a send', async () => {
+    await actions.createTaskAction(input({ reminderDaysAfterSend: '3' }));
+
+    expect(sentInput().reminderDaysAfterSend).toBe(3);
+  });
+
+  it.each(['', '0', '-2', '1.5', 'soon'])(
+    'disables after-send follow-ups for %j',
+    async (value) => {
+      await actions.createTaskAction(input({ reminderDaysAfterSend: value }));
+
+      expect(sentInput().reminderDaysAfterSend).toBeNull();
+    },
+  );
 });
 
 describe('form linkage', () => {

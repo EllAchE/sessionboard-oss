@@ -1050,6 +1050,27 @@ export const file = pgTable(
 );
 
 /**
+ * `AR-37`. One deliberately simple exhibitor map per event. The PDF remains an ordinary
+ * event-scoped `file`; this row is the public slot that makes exactly that file reachable from the
+ * map embed. Keeping the slot separate from sponsor/exhibitor records is intentional: the first
+ * version does not model booths, regions, floors, or wayfinding.
+ */
+export const eventExhibitorMap = pgTable(
+  'event_exhibitor_map',
+  {
+    eventId: uuid('event_id')
+      .primaryKey()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    fileId: uuid('file_id')
+      .notNull()
+      .references(() => file.id, { onDelete: 'restrict' }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ oneMapSlotPerFile: unique('event_exhibitor_map_file_unique').on(t.fileId) }),
+);
+
+/**
  * A post-conference recording is deliberately separate from the agenda's publication state. An
  * organizer may attach and review media while the programme remains public, then publish the
  * recording only after the session has ended. Exactly one source is retained: either an
@@ -1190,9 +1211,17 @@ export const task = pgTable(
     position: integer('position').notNull().default(0),
     /** `C-7`: days before `dueAt` on which a reminder fires. Empty means no reminders. */
     reminderDaysBefore: jsonb('reminder_days_before').$type<number[]>().notNull().default([]),
+    /** Days after the latest task reminder/nudge before following up again. Null disables it. */
+    reminderDaysAfterSend: integer('reminder_days_after_send'),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('task_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('task_event_idx').on(t.eventId),
+    positiveReminderDaysAfterSend: check(
+      'task_reminder_days_after_send_positive',
+      sql`${t.reminderDaysAfterSend} is null or ${t.reminderDaysAfterSend} > 0`,
+    ),
+  }),
 );
 
 export const taskAssignment = pgTable(

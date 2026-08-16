@@ -26,6 +26,7 @@ export type TaskFormInput = {
   linkUrl: string;
   formId: string;
   reminderDaysBefore: string;
+  reminderDaysAfterSend: string;
 };
 
 const PATH = '/organizer/tasks';
@@ -67,6 +68,7 @@ function parseDeadline(value: string): Date | null {
 /** The panel posts strings because that is what an input holds; parsing belongs on this side. */
 function toServiceInput(input: TaskFormInput): tasks.TaskInput {
   const due = parseDeadline(input.dueAt);
+  const afterSend = Number(input.reminderDaysAfterSend.trim());
   return {
     name: input.name,
     descriptionMarkdown: input.descriptionMarkdown,
@@ -84,7 +86,11 @@ function toServiceInput(input: TaskFormInput): tasks.TaskInput {
     reminderDaysBefore: input.reminderDaysBefore
       .split(',')
       .map((part) => Number(part.trim()))
-      .filter((days) => Number.isFinite(days) && days > 0),
+      .filter((days) => Number.isInteger(days) && days > 0),
+    reminderDaysAfterSend:
+      input.reminderDaysAfterSend.trim() !== '' && Number.isInteger(afterSend) && afterSend > 0
+        ? afterSend
+        : null,
   };
 }
 

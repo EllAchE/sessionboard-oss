@@ -16,6 +16,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "eval": "tsx scripts/eval-loop.ts",
     "eval:loop": "tsx scripts/eval-loop.ts --loop",
+    "eval:archive": "tsx scripts/archive-sessionboard-eval.ts",
     "verify:headshots": "tsx scripts/verify-speaker-headshots.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",

@@ -72,6 +72,7 @@ const BLANK: TaskFormInput = {
   linkUrl: '',
   formId: '',
   reminderDaysBefore: '7, 1',
+  reminderDaysAfterSend: '',
 };
 
 /** `<input type="date">` wants `YYYY-MM-DD`; the row carries a full ISO timestamp. */
@@ -93,6 +94,7 @@ export function draftFrom(row: OrganizerTaskRow): TaskFormInput {
     linkUrl: row.linkUrl ?? '',
     formId: row.formId ?? '',
     reminderDaysBefore: row.reminderDaysBefore.join(', '),
+    reminderDaysAfterSend: row.reminderDaysAfterSend?.toString() ?? '',
   };
 }
 
@@ -352,6 +354,21 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
             <span className={styles.hint}>Comma-separated days. Blank disables reminders.</span>
           </label>
         </div>
+
+        <label className={styles.field}>
+          <span className={styles.label}>Follow up days after sending</span>
+          <Input
+            type="number"
+            min={1}
+            step={1}
+            value={draft.reminderDaysAfterSend}
+            placeholder="3"
+            onChange={(event) => set('reminderDaysAfterSend', event.target.value)}
+          />
+          <span className={styles.hint}>
+            Days after the latest reminder or nudge. Repeats while pending; blank disables.
+          </span>
+        </label>
 
         <label className={styles.checkbox}>
           <Checkbox

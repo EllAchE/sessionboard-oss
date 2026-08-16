@@ -225,10 +225,11 @@ so a reschedule *updates the existing calendar entry in place* rather than addin
 
 ![The mailbox, showing a rendered reminder with its links pulled out](docs/images/mailbox.jpg)
 
-**Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary
-and speaker gallery — all server-rendered, all readable with no account, each with a copyable embed
-snippet, per-embed filters and styling. The embed is an auto-resizing iframe over a live route, so
-"updates without re-pasting the snippet" comes for free.
+**Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary,
+speaker gallery, sponsor wall, and a static PDF exhibitor map — all server-rendered, all readable
+with no account, each with a copyable embed snippet. Program widgets support per-embed filters and
+styling; the exhibitor map displays the organizer's uploaded PDF as-is. Every embed is an
+auto-resizing iframe over a live route, so "updates without re-pasting the snippet" comes for free.
 
 **Integrations.** A rate-limited public REST API with read/write event keys and a generated
 [`docs/openapi.json`](docs/openapi.json) schema, a Streamable HTTP MCP server with a generated
@@ -416,7 +417,7 @@ coexist without either seeing the other.
 9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
-Alongside those, three unnumbered companions:
+Alongside those, four unnumbered companions:
 
 - [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
   ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
@@ -425,6 +426,8 @@ Alongside those, three unnumbered companions:
 - [`docs/handoff/sessionboard-eval.md`](docs/handoff/sessionboard-eval.md) — how to run the external
   `sessionboard-eval-kit` against the hosted product, gather scenario evidence, judge it in fresh
   context, and produce the real rubric score; this is not the repository's local CI eval loop
+- [`docs/handoff/sessionboard-eval-loop.md`](docs/handoff/sessionboard-eval-loop.md) — the
+  approval-gated overnight cycle: preserve one run, fix its findings, then check in before any rerun
 
 ### Reference material
 

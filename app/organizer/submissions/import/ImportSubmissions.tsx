@@ -134,11 +134,12 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
 
   const previewColumns = useMemo<Array<DataTableColumn<ImportPreview['rows'][number]>>>(
     () => [
-      { id: 'title', header: 'Title', strong: true, width: '30%', render: (row) => row.title },
+      { id: 'title', header: 'Title', strong: true, width: '30%', space: 'wide', render: (row) => row.title },
       {
         id: 'speaker',
         header: 'Speaker',
         width: '24%',
+        space: 'wide',
         render: (row) => (
           <span className={styles.stacked}>
             <span>{row.speakerName ?? <span className={queue.muted}>No name</span>}</span>
@@ -165,6 +166,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
         id: 'status',
         header: 'Status',
         width: '104px',
+        space: 'compact',
         render: (row) => (
           <Badge tone={row.status === 'accepted' ? 'success' : 'info'}>{row.status}</Badge>
         ),
@@ -175,16 +177,16 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
 
   const errorColumns = useMemo<Array<DataTableColumn<{ line: number; message: string }>>>(
     () => [
-      { id: 'line', header: 'Line', width: '72px', align: 'right', mono: true, render: (row) => row.line },
-      { id: 'message', header: 'Problem', render: (row) => row.message },
+      { id: 'line', header: 'Line', width: '72px', space: 'compact', align: 'right', mono: true, render: (row) => row.line },
+      { id: 'message', header: 'Problem', space: 'wide', render: (row) => row.message },
     ],
     [],
   );
 
   const failedColumns = useMemo<Array<DataTableColumn<{ title: string; message: string }>>>(
     () => [
-      { id: 'title', header: 'Title', strong: true, width: '36%', render: (row) => row.title },
-      { id: 'message', header: 'Why it did not land', render: (row) => row.message },
+      { id: 'title', header: 'Title', strong: true, width: '36%', space: 'wide', render: (row) => row.title },
+      { id: 'message', header: 'Why it did not land', space: 'wide', render: (row) => row.message },
     ],
     [],
   );

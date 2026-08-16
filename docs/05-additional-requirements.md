@@ -384,7 +384,51 @@ optimizer.
 
 ---
 
-## 11. External task-management sync
+## 11. Exhibitor map
+
+The first version is deliberately a document, not a floor-plan editor. An organizer should be able
+to publish the map they already have without recreating booths or exhibitor data in Cicero. The
+upload is the configuration: no coordinates, booth records, or map-specific authoring are required.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-37 | **[REQUIRED]** | SHIPPED | **An organizer can upload one PDF exhibitor map for an event and expose it as an embed.** Organizer → Exhibitor map uploads, replaces, or removes the current PDF through the ordinary event-scoped storage path; server validation checks the MIME type, `.pdf` extension, 25 MB ceiling, and `%PDF-` signature. Uploading publishes immediately, while replacement keeps the stable embed URL and removal revokes it before deleting the bytes. The same screen previews the map and copies script or iframe snippets for `/embed/:slug/exhibitor-map`; its current-slot-only file route is unauthenticated, responsive, non-cacheable, and offers inline, open, and download paths. The embedded result remains the uploaded static document — there are no interactive booths, hotspots, search, wayfinding, or map-region links (`event_exhibitor_map`, `lib/services/exhibitor-map.ts`, `app/organizer/exhibitor-map/**`, `app/embed/views/ExhibitorMapWidget.tsx`, migration `0021`) |
+
+**Future work, not part of AR-37:** multiple floors or maps, structured booth placement, clickable
+exhibitor regions, map search and filtering, attendee wayfinding, and richer embed presentation or
+accessibility controls. Those enhancements should build on the basic upload-and-embed path rather
+than block it.
+
+---
+
+## 12. Notifications and update rundown
+
+An organizer should not have to inspect the submission queue, review rounds, speaker roster, task
+board, content history, deliverables, and agenda one by one just to learn what moved while they were
+away. Cicero needs one event-scoped place that answers: **what changed, when, who was involved, and
+where can I act on it?** This is an in-app operational feed, distinct from the outbound email/SMS
+delivery preferences in §3.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-38 | **[REQUIRED]** | PARTIAL | **An organizer-facing Notifications & updates section gives a chronological rundown of material changes since that organizer last used Cicero.** Each entry is event-scoped, names the change and its time, attributes the person when the underlying record knows them, and links to the relevant organizer workflow. Unread changes lead the default feed, visually distinct from already-viewed changes retained below; an unread-only view is available without hiding older context by default. The first slice at `/organizer/updates` covers submissions and decisions, completed reviews, speaker/profile changes, task state, schedule changes, attributed content revisions, uploads, and file comments over the latest 30 days; it groups and filters those entries and remembers the last time this browser checked the feed per organizer and event. The requirement remains PARTIAL until the watermark is durable across browsers/devices and every material mutation writes an append-only activity event: tables that retain only `updated_at` can currently report the latest state change, not reconstruct several successive edits made between visits. |
+
+---
+
+## 13. Post-conference speaker messaging
+
+Cicero sends nothing merely because a session or an event has ended. Organizers who want to reach
+speakers afterwards do it manually today, through the same reviewed composer as any other message.
+This section records a possible future addition; it is not a requirement and carries no
+implementation commitment.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-39 | **[EXCLUDED]** | — | **Add automatic post-conference speaker messaging as a possible future feature.** Cicero currently sends no message merely because a session or event has ended; organizers can manually message accepted or scheduled speakers today. A future addition could provide an opt-in, organizer-editable follow-up after the conference, such as a thank-you, feedback request, recording link, or next-event invitation, while respecting the existing notification preferences and delivery log. This is a recorded product idea, not current implementation scope. |
+
+---
+
+## 14. External task-management sync
 
 The ask: many organizing teams already run all work in **Linear or another task-management system**
 such as Jira, Asana, Trello, or GitHub Issues. A Cicero to-do produced for a speaker or submission
@@ -397,10 +441,10 @@ this work enters scope, the intended feature is a durable sync with the followin
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-37 | **[EXCLUDED]** | — | **Organization-level provider connection and project mapping.** An organizer connects a Cicero organization once to a provider workspace, then maps each Cicero event to the provider team and project where its work belongs. An event may override organization defaults. Provider credentials and provider membership stay at the organization connection; individual event organizers do not each install a separate integration. Build against a provider-neutral connector contract, with **Linear as the first provider**, so Jira, Asana, Trello, or GitHub Issues can be added without changing Cicero's task model |
-| AR-38 | **[EXCLUDED]** | — | **Cicero task assignments automatically create and maintain external to-dos.** When a speaker submission causes Cicero to fan out a `task_assignment` — per contact, per submission, or once for a session group — the mapped provider receives one corresponding work item without a manual export step. Its title and description identify the task, speaker or group, event, and submission; carry due date and stable Cicero links; and retain provider ID and URL so retries and backfills update the same item instead of creating duplicates. Changes to the Cicero task's name, due date, scope, or cancellation propagate outward |
-| AR-39 | **[EXCLUDED]** | — | **Task state synchronizes in both directions.** Cicero `not_started`, `in_progress`, `completed`, and `waived` states map explicitly to provider states. Completing, waiving, reopening, or starting a task in Cicero updates the external work item; moving the external item between mapped states updates the Cicero assignment and the speaker/organizer views. Provider webhooks drive the normal path, a reconciliation job repairs missed deliveries, and every transition is idempotent, loop-safe, event-scoped, and visible in a sync log. A provider's completed and canceled states map separately so finishing a requirement is not confused with an organizer waiving it |
-| AR-40 | **[EXCLUDED]** | — | **Project context travels with the task.** The mapped external project can carry links to the Cicero event, submission, speaker record, and relevant organizer-authored documents so the operations team can understand the to-do without hunting through Cicero. Start with canonical links and provider project metadata; copying document bodies, comments, files, or speaker PII into the provider requires a separate privacy and retention decision and is not implicit in task sync |
+| AR-40 | **[EXCLUDED]** | — | **Organization-level provider connection and project mapping.** An organizer connects a Cicero organization once to a provider workspace, then maps each Cicero event to the provider team and project where its work belongs. An event may override organization defaults. Provider credentials and provider membership stay at the organization connection; individual event organizers do not each install a separate integration. Build against a provider-neutral connector contract, with **Linear as the first provider**, so Jira, Asana, Trello, or GitHub Issues can be added without changing Cicero's task model |
+| AR-41 | **[EXCLUDED]** | — | **Cicero task assignments automatically create and maintain external to-dos.** When a speaker submission causes Cicero to fan out a `task_assignment` — per contact, per submission, or once for a session group — the mapped provider receives one corresponding work item without a manual export step. Its title and description identify the task, speaker or group, event, and submission; carry due date and stable Cicero links; and retain provider ID and URL so retries and backfills update the same item instead of creating duplicates. Changes to the Cicero task's name, due date, scope, or cancellation propagate outward |
+| AR-42 | **[EXCLUDED]** | — | **Task state synchronizes in both directions.** Cicero `not_started`, `in_progress`, `completed`, and `waived` states map explicitly to provider states. Completing, waiving, reopening, or starting a task in Cicero updates the external work item; moving the external item between mapped states updates the Cicero assignment and the speaker/organizer views. Provider webhooks drive the normal path, a reconciliation job repairs missed deliveries, and every transition is idempotent, loop-safe, event-scoped, and visible in a sync log. A provider's completed and canceled states map separately so finishing a requirement is not confused with an organizer waiving it |
+| AR-43 | **[EXCLUDED]** | — | **Project context travels with the task.** The mapped external project can carry links to the Cicero event, submission, speaker record, and relevant organizer-authored documents so the operations team can understand the to-do without hunting through Cicero. Start with canonical links and provider project metadata; copying document bodies, comments, files, or speaker PII into the provider requires a separate privacy and retention decision and is not implicit in task sync |
 
 ---
 
@@ -429,7 +473,7 @@ question that blocks a build.
 | Document | Relationship |
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
-| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all. AR-37–AR-40 specify an owner-requested task-management sync under the brief's existing optional `N-2` "other integrations" umbrella without changing that frozen row |
-| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized. AR-37–AR-40 have no workstream or estimate while excluded; this preserves §2's recommendation against building unspecified integrations in the current scope |
+| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3, 5, 10, 12, 13 and 14 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP, intelligent agenda optimization, the update rundown, and post-conference speaker messaging are not mentioned at all. AR-40–AR-43 specify an owner-requested task-management sync under the brief's existing optional `N-2` "other integrations" umbrella without changing that frozen row |
+| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule, AR-25's transport choice, and AR-37's public-file authorization boundary are recorded there |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, and AR-35 in W4 (crossing W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized; AR-37 belongs to W6 on W2's file-storage primitives, AR-38 starts in W6 while a future append-only activity table must cross W0 deliberately, and AR-39 would be a post-v1 W5 goal that stays unassigned until that work is authorized. AR-40–AR-43 have no workstream or estimate while excluded; this preserves §2's recommendation against building unspecified integrations in the current scope |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |

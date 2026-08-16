@@ -780,6 +780,7 @@ export async function copyTasksFromEvent(
         required: row.required,
         position: row.position,
         reminderDaysBefore: row.reminderDaysBefore,
+        reminderDaysAfterSend: row.reminderDaysAfterSend,
       })),
     );
   }
@@ -851,6 +852,8 @@ export type TaskInput = {
   linkUrl?: string | null;
   formId?: string | null;
   reminderDaysBefore?: number[];
+  /** Repeat interval after the latest reminder/nudge; null means deadline-only reminders. */
+  reminderDaysAfterSend?: number | null;
 };
 
 function normalizeTaskInput(input: TaskInput): TaskInput {
@@ -858,6 +861,7 @@ function normalizeTaskInput(input: TaskInput): TaskInput {
   const participantIds = [...new Set(input.participantIds?.filter(Boolean) ?? [])];
   const scope = input.scope ?? 'contact';
   const submissionId = input.submissionId?.trim() || null;
+  const reminderDaysAfterSend = input.reminderDaysAfterSend;
   if (!name) throw invalid('Give the task a name');
   if (input.kind === 'link' && !input.linkUrl?.trim()) {
     throw invalid('A link task needs the URL the speaker should open');
@@ -886,8 +890,14 @@ function normalizeTaskInput(input: TaskInput): TaskInput {
     linkUrl: input.kind === 'link' ? (input.linkUrl?.trim() ?? null) : null,
     formId: input.kind === 'form' ? (input.formId ?? null) : null,
     reminderDaysBefore: (input.reminderDaysBefore ?? [])
-      .filter((days) => Number.isFinite(days) && days > 0)
+      .filter((days) => Number.isInteger(days) && days > 0)
       .sort((a, b) => b - a),
+    reminderDaysAfterSend:
+      typeof reminderDaysAfterSend === 'number' &&
+      Number.isInteger(reminderDaysAfterSend) &&
+      reminderDaysAfterSend > 0
+        ? reminderDaysAfterSend
+        : null,
   };
 }
 
@@ -1178,6 +1188,7 @@ export async function createTask(ctx: EventContext, input: TaskInput): Promise<{
       required: clean.required ?? true,
       position,
       reminderDaysBefore: clean.reminderDaysBefore ?? [],
+      reminderDaysAfterSend: clean.reminderDaysAfterSend ?? null,
     })
     .returning({ id: task.id });
 
@@ -1225,6 +1236,7 @@ export async function updateTask(
       dueAt: clean.dueAt ?? null,
       required: clean.required ?? true,
       reminderDaysBefore: clean.reminderDaysBefore ?? [],
+      reminderDaysAfterSend: clean.reminderDaysAfterSend ?? null,
     })
     .where(eq(task.id, taskId));
 

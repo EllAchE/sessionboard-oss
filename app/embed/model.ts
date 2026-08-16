@@ -103,6 +103,7 @@ export const EMBED_VIEWS = [
   'speakers',
   'gallery',
   'sponsors',
+  'exhibitor-map',
 ] as const;
 
 export type EmbedView = (typeof EMBED_VIEWS)[number];
@@ -114,6 +115,7 @@ export const EMBED_VIEW_LABEL: Record<EmbedView, string> = {
   speakers: 'Speakers list',
   gallery: 'Speaker gallery',
   sponsors: 'Sponsor wall',
+  'exhibitor-map': 'Exhibitor map',
 };
 
 export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
@@ -123,6 +125,7 @@ export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
   speakers: 'An alphabetical speaker directory that drills into a profile.',
   gallery: 'A photo grid of speakers with a detail panel.',
   sponsors: 'Published sponsors and exhibitors, grouped by type and tier.',
+  'exhibitor-map': 'The event’s uploaded PDF map as a static document.',
 };
 
 export function isEmbedView(value: string): value is EmbedView {

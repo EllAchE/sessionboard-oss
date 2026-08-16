@@ -96,6 +96,7 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
       id: 'name',
       header: 'Form',
       width: '34%',
+      space: 'wide',
       render: (row) => (
         <span className={styles.nameCell}>
           <Link className={styles.nameLink} href={`/organizer/forms/${row.id}`}>
@@ -105,32 +106,36 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
         </span>
       ),
     },
-    { id: 'kind', header: 'Type', width: '16%', render: (row) => KIND_LABEL[row.kind] },
+    { id: 'kind', header: 'Type', width: '13%', render: (row) => KIND_LABEL[row.kind] },
     {
       id: 'status',
       header: 'Status',
-      width: '12%',
+      width: '11%',
+      space: 'compact',
       render: (row) => <Badge tone={STATUS_TONE[row.status]}>{row.status}</Badge>,
     },
     {
       id: 'fields',
       header: 'Questions',
-      width: '10%',
+      width: '9%',
+      space: 'compact',
       align: 'right',
       render: (row) => row.fieldCount,
     },
     {
       id: 'submissions',
       header: 'Submissions',
-      width: '12%',
+      width: '11%',
+      space: 'compact',
       align: 'right',
       render: (row) => row.submissionCount,
     },
-    { id: 'closes', header: 'Closes', width: '12%', render: (row) => formatDate(row.closesAt) },
+    { id: 'closes', header: 'Closes', width: '13%', render: (row) => formatDate(row.closesAt) },
     {
       id: 'actions',
       header: '',
-      width: '10%',
+      width: '9%',
+      space: 'compact',
       align: 'right',
       render: (row) => (
         <span className={styles.rowActions}>

@@ -329,7 +329,8 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   relevant participant, submission, session, and task audiences.
 - [x] **C-5 · I · COMPLETE — Send log.** Per-recipient status, timestamps, and content are retained.
 - [x] **C-6 · O · COMPLETE — Branded email layout.** Event branding wraps rendered messages.
-- [x] **C-7 · O · COMPLETE — Reminder cadence per task.** Reminder-day offsets are configurable.
+- [x] **C-7 · O · COMPLETE — Reminder cadence per task.** Deadline offsets and a repeating
+  days-after-send follow-up interval are configurable; neither path chases completed or waived work.
 
 ## 9. Dashboard
 

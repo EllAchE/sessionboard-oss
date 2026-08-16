@@ -12,6 +12,7 @@ function columns(): Array<DataTableColumn<SpeakerRow>> {
       id: 'name',
       header: 'Speaker',
       width: '30%',
+      space: 'wide',
       render: (row) => (
         <div className={styles.person}>
           <Avatar name={row.name} size="sm" />
@@ -41,6 +42,7 @@ function columns(): Array<DataTableColumn<SpeakerRow>> {
       id: 'sessions',
       header: 'Accepted',
       width: '28%',
+      space: 'wide',
       render: (row) =>
         row.acceptedSessions.length === 0 ? (
           <span className={styles.personMeta}>{row.submissions} submitted, none accepted</span>

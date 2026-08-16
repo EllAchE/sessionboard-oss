@@ -164,6 +164,13 @@
   margin-top: var(--space-2);
 }
 
+.agentActionHint {
+  max-width: 54ch;
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--text-faint);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
+}
+
 .personas {
   width: 100%;
   max-width: 540px;
