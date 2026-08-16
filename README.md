@@ -416,7 +416,7 @@ coexist without either seeing the other.
 9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
 10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
 
-Alongside those, three unnumbered companions:
+Alongside those, four unnumbered companions:
 
 - [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
   ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
@@ -425,6 +425,8 @@ Alongside those, three unnumbered companions:
 - [`docs/handoff/sessionboard-eval.md`](docs/handoff/sessionboard-eval.md) — how to run the external
   `sessionboard-eval-kit` against the hosted product, gather scenario evidence, judge it in fresh
   context, and produce the real rubric score; this is not the repository's local CI eval loop
+- [`docs/handoff/sessionboard-eval-loop.md`](docs/handoff/sessionboard-eval-loop.md) — the
+  approval-gated overnight cycle: preserve one run, fix its findings, then check in before any rerun
 
 ### Reference material
 

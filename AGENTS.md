@@ -36,6 +36,20 @@ this checkout — do not repeat it.
 - After opening a PR, remove only the worktree and branch this session created; leave every other
   worktree and every other session's dirty state alone.
 
+## External Sessionboard eval rerun gate
+
+The hosted `sbek` evaluation mutates its target while it creates proposals, reviews, sessions, and
+agenda data. An explicit approval starts **one evaluation cycle**: finish or resume that run, judge
+it in fresh context, preserve its scored baseline, and remediate findings within the authority the
+user gave. Before creating another run with `sbek plan`, report the preserved score, coverage,
+manual checks, defects, fixes, deployment state, and proposed next scope, then wait for a new
+explicit approval. Never infer approval for a rerun from the original cycle request, an unattended
+or overnight instruction, or the absence of a reply. Continuing unfinished scenarios in the same
+run is not a rerun.
+
+Follow `docs/handoff/sessionboard-eval-loop.md` for the cycle and archive the scored summary with
+`bun run eval:archive -- --run <evaluator-run-directory>` before changing the product.
+
 ## PR Conventions
 
 - Commits must be signed (existing history in this repo is `gpgsig`-signed; keep it that way).
