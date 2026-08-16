@@ -20,6 +20,20 @@ the scrollable source of truth for what is complete and what still needs work.
   First Settlement routes remain unseeded and return 404, as the demo runbook records.
 - Uncommitted changes and unmerged branches were not credited.
 
+> **Superseded on 2026-08-15 — read this before the line above.** The audit body below is a dated
+> snapshot of revision `416101e` and is left as written, but two of its statements are no longer
+> true of the running deployment:
+>
+> 1. **The Worker host is dead.** Production moved to Vercel and now serves from
+>    <https://cicero-three.vercel.app>. `bun run cf:deploy` fails with Cloudflare API error 10027 —
+>    the OpenNext bundle is 13.4 MiB against the free tier's 3 MiB ceiling — so `Z-1` is knowingly
+>    not met by the deployed instance. [`02-architecture.md`](02-architecture.md) §1 has the full
+>    reasoning and the option that was declined.
+> 2. **First Settlement is live, not 404.** The production database was rebuilt and reseeded on
+>    2026-08-15; `/first-settlement` and its agenda, sessions and speaker routes all return 200.
+>
+> The row-by-row verdicts below were not re-audited on 2026-08-15 and still describe `416101e`.
+
 | Priority | Complete | Partial | Outstanding | Excluded | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Required | 54 | 2 | 2 | — | 58 |
@@ -394,8 +408,13 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
 
 ## 13. Bonus criteria
 
-- [x] **Z-1 · B · COMPLETE — Cloudflare deployment.** Workers configuration and deployment tooling
-  are present.
+- [ ] **Z-1 · B · NOT MET as deployed — Cloudflare deployment.** *Revised 2026-08-15; this row read
+  COMPLETE at `416101e`.* The Workers configuration and deployment tooling are still present and
+  still correct, which is what the original verdict measured — but they do not produce a running
+  deployment. `cf:deploy` fails with Cloudflare API error 10027: the OpenNext bundle is 13.4 MiB
+  against the free tier's 3 MiB ceiling. Production runs on Vercel instead. Workers Paid ($5/mo,
+  10 MiB) would likely close this and was deliberately declined; see
+  [`02-architecture.md`](02-architecture.md) §1.
 - [x] **Z-2 · B · COMPLETE — Airtable persistence.** Speakers, submissions, and agenda data can be
   mirrored one-way into a configured Airtable base.
 - [ ] **Z-3 · B · OUTSTANDING — Forge hosting.** Source is hosted on GitHub rather than Forge.

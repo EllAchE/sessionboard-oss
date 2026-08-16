@@ -7,6 +7,13 @@
   "compatibility_date": "2025-03-25",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 
+  // NOTE (2026-08-15): this file no longer describes where Cicero actually runs. Production moved
+  // to Vercel because the OpenNext bundle is 13.4 MiB against the Workers free tier's 3 MiB ceiling
+  // (`cf:deploy` fails with Cloudflare API error 10027). Everything here is kept intact and correct
+  // for anyone who upgrades to Workers Paid and revives the path — but APP_URL below is that
+  // account's old workers.dev host and serves nothing today. Anyone reviving this must set it to
+  // their own origin. docs/02-architecture.md section 1 has the reasoning.
+  //
   // Magic links, calendar invites and embed snippets are all read outside a request — in an inbox,
   // a calendar client, or someone else's website — so a relative path is never enough and this has
   // to be the real origin. Self-hosters set APP_URL in the environment instead.

@@ -53,21 +53,21 @@ The production base URL is <https://cicero-three.vercel.app>.
 | Existing public agenda API | <https://cicero-three.vercel.app/api/v1/events/demo/agenda> | Live fallback |
 | Live OpenAPI | <https://cicero-three.vercel.app/api/v1/openapi.json> | Live; proves whether a provisional route is deployed |
 
-After a separately approved targeted production seed, the First Settlement links are expected to
-be:
+The First Settlement seed was approved and run against production on 2026-08-15, so these links are
+live. Statuses below were re-verified against the deployment that same day:
 
-| Purpose | Expected URL | Status before that approval |
+| Purpose | URL | Status |
 | --- | --- | --- |
-| Public Roman event | <https://cicero-three.vercel.app/first-settlement> | **Not live; last observed 404** |
-| Public agenda | <https://cicero-three.vercel.app/first-settlement/agenda> | **Not live** |
-| Session list | <https://cicero-three.vercel.app/first-settlement/sessions> | **Not live** |
-| Speaker directory | <https://cicero-three.vercel.app/first-settlement/speakers> | **Not live** |
-| Speaker gallery | <https://cicero-three.vercel.app/first-settlement/gallery> | **Not live** |
-| Itinerary | <https://cicero-three.vercel.app/first-settlement/itinerary> | **Not live** |
-| Public CFP, “Order of Debate” | <https://cicero-three.vercel.app/submit/first-settlement/motions> | **Not live** |
-| Agenda embed | <https://cicero-three.vercel.app/embed/first-settlement/agenda> | **Not live** |
-| Speaker embed | <https://cicero-three.vercel.app/embed/first-settlement/speakers> | **Not live** |
-| Public agenda API | <https://cicero-three.vercel.app/api/v1/events/first-settlement/agenda> | **Not live** |
+| Public Roman event | <https://cicero-three.vercel.app/first-settlement> | Live |
+| Public agenda | <https://cicero-three.vercel.app/first-settlement/agenda> | Live |
+| Session list | <https://cicero-three.vercel.app/first-settlement/sessions> | Live |
+| Speaker directory | <https://cicero-three.vercel.app/first-settlement/speakers> | Live |
+| Speaker gallery | <https://cicero-three.vercel.app/first-settlement/gallery> | Live; 307 to `speakers?view=gallery`, which is the canonical route |
+| Itinerary | <https://cicero-three.vercel.app/first-settlement/itinerary> | Live |
+| Public CFP, “Order of Debate” | <https://cicero-three.vercel.app/submit/first-settlement/motions> | Live |
+| Agenda embed | <https://cicero-three.vercel.app/embed/first-settlement/agenda> | Live |
+| Speaker embed | <https://cicero-three.vercel.app/embed/first-settlement/speakers> | Live |
+| Public agenda API | <https://cicero-three.vercel.app/api/v1/events/first-settlement/agenda> | Live |
 
 The seed in [`../db/seeds/first-settlement.ts`](../db/seeds/first-settlement.ts) creates **The First
 Settlement**, a Europe/Rome event around the January 27 BCE settlement. It includes eleven motions,
