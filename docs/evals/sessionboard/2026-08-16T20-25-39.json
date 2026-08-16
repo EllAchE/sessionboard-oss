@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "kind": "scored-report",
+    "runId": "2026-08-16T20-25-39",
+    "evaluatorRef": "d8fafa41cdc484309e3fda953c5567cc2d462734",
+    "productRef": null,
+    "reportSha256": "c3f55e7367c169581db2f145c405c600357b4e29918fc5b4bfe15ef2c87811bd",
+    "sourceSessions": [],
+    "limitations": []
+  },
+  "targetUrl": "https://cicero-three.vercel.app",
+  "startedAt": "2026-08-16T20:26:11.759Z",
+  "finishedAt": "2026-08-16T23:53:57.896Z",
+  "kitVersion": "0.1.0",
+  "models": {
+    "agent": "harness (in-session agent)",
+    "judge": "harness (in-session judge)"
+  },
+  "score": {
+    "overallPct": 84.6,
+    "coveragePct": 98.3,
+    "withheld": false,
+    "manualPending": 16
+  },
+  "areas": [
+    {
+      "area": "call-for-papers",
+      "title": "Call for Papers",
+      "optional": false,
+      "pct": 85.1,
+      "coveragePct": 97.4,
+      "pendingManual": [
+        "CFP-08",
+        "CFP-14"
+      ]
+    },
+    {
+      "area": "abstract-management",
+      "title": "Abstract Management (Review Depth & Disposition)",
+      "optional": false,
+      "pct": 87,
+      "coveragePct": 96.4,
+      "pendingManual": [
+        "ABS-07",
+        "ABS-09",
+        "ABS-13",
+        "ABS-14"
+      ]
+    },
+    {
+      "area": "speaker-management",
+      "title": "Speaker Management",
+      "optional": false,
+      "pct": 84.4,
+      "coveragePct": 97,
+      "pendingManual": [
+        "SPK-06",
+        "SPK-07",
+        "SPK-10",
+        "SPK-13",
+        "SPK-16"
+      ]
+    },
+    {
+      "area": "content-management",
+      "title": "Content Management & Speaker Deliverables",
+      "optional": false,
+      "pct": 93.5,
+      "coveragePct": 100,
+      "pendingManual": [
+        "CNT-08",
+        "CNT-14"
+      ]
+    },
+    {
+      "area": "ai-agenda",
+      "title": "AI Agenda & Schedule Builder",
+      "optional": false,
+      "pct": 63.9,
+      "coveragePct": 100,
+      "pendingManual": []
+    },
+    {
+      "area": "public-widgets",
+      "title": "Public & Embeddable Widgets",
+      "optional": false,
+      "pct": 85.3,
+      "coveragePct": 100,
+      "pendingManual": [
+        "EMB-11",
+        "EMB-15",
+        "EMB-16"
+      ]
+    }
+  ],
+  "defects": [
+    {
+      "area": "call-for-papers",
+      "severity": "major",
+      "description": "The rejection notification for 'Your AI Pair Programmer Is Lying to You' is logged as sent with the correct declined template and recipient, but its rendered body incorrectly names the accepted 'Taming 40-Minute CI' talk. This can mislead a submitter about which proposal was rejected.",
+      "where": "/admin/mail (submission.declined message for ABS-16)"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "major",
+      "description": "Round scorecards are limited to numeric criteria plus a fixed generic Comment field; organizers cannot configure dropdown choices such as Accept/Maybe/Reject or create an independent long-text criterion.",
+      "where": "/admin/submissions/rounds"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "Activating Export CSV provides no visible success feedback or filename, leaving the organizer unable to confirm from the UI that the export started.",
+      "where": "/admin/submissions"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "major",
+      "description": "Organizer-side speaker file handling is incomplete: a portal-uploaded headshot is reduced to a Photo on file badge and replacement control, with no filename, uploader/timestamp metadata, view/download action, or working central Files page.",
+      "where": "/admin/speakers/:id and /admin/files"
+    },
+    {
+      "area": "content-management",
+      "severity": "major",
+      "description": "The generic Task reminder preview leaves task.name, task.dueAt, and task.sessions empty when Any outstanding task is selected, producing a malformed subject and body. Organizers must select one concrete task to get a valid reminder.",
+      "where": "/admin/comms"
+    },
+    {
+      "area": "content-management",
+      "severity": "major",
+      "description": "The central file library does not associate speaker-task uploads with their session or submission and leaves Submission and Status blank, weakening organizer traceability and filtering.",
+      "where": "/admin/submissions/files"
+    },
+    {
+      "area": "content-management",
+      "severity": "minor",
+      "description": "A task whose instructions explicitly request a PDF exposes only the generic Any file type constraint, so the upload UI does not enforce or communicate a PDF-specific type restriction.",
+      "where": "/portal/demo/files"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "major",
+      "description": "Speaker and room overlap protection fails silently: Save disables briefly and then re-enables while the scheduling modal remains open, but no inline error, toast, conflict badge, speaker name, room name, or clashing session explains why the placement was rejected.",
+      "where": "/admin/agenda"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "The embed generator provides script, iframe, and shareable URL outputs but no JSON, XML, or standalone iCal output choices, and it has no custom CSS editor or explicit publication-status filter. This limits integrations and styling/filtering flexibility while the supported embed flow remains functional.",
+      "where": "/admin/embeds"
+    }
+  ]
+}
