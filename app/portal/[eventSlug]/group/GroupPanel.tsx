@@ -108,9 +108,7 @@ export function GroupPanel({
                   Give them access
                 </SubmitButton>
               </div>
-              <span className={styles.hint}>
-                They get an email with their own sign-in link and their own tasks for this session.
-              </span>
+              <span className={styles.hint}>They’ll receive portal access and their own tasks.</span>
             </form>
           ) : (
             <p className={styles.hint}>

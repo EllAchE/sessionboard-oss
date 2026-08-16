@@ -50,10 +50,7 @@ export default async function TemplatesPage({
         <div>
           <p className={styles.eyebrow}>Communications</p>
           <h1 className={styles.title}>Email templates</h1>
-          <p className={styles.lede}>
-            Submission confirmations, decisions, calendar invitations and reminders all read from
-            here. Editing one changes what the product sends without a deploy.
-          </p>
+          <p className={styles.lede}>Edit automatic emails and reminders without deploying.</p>
         </div>
         <EventPicker current={event.slug} options={options} basePath="/admin/comms/templates" />
       </div>

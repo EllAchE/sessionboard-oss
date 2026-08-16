@@ -81,10 +81,7 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
 
   return (
     <section className={styles.panel} aria-label="Notifications">
-      <p className={styles.lede}>
-        How Cicero reaches you — reminders, decisions and anything else addressed to your account,
-        across every event you organize.
-      </p>
+      <p className={styles.lede}>How Cicero contacts you across all events.</p>
 
       <div className={styles.formGrid}>
         <label className={styles.field}>
@@ -115,7 +112,7 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
       <div className={styles.switchRow}>
         <span className={styles.switchText}>
           <span className={styles.switchLabel}>Email</span>
-          <span className={styles.hint}>Reminders, decisions and session details by email.</span>
+          <span className={styles.hint}>Reminders, decisions, and schedule changes.</span>
         </span>
         <Switch checked={notifyEmail} aria-label="Email alerts" onCheckedChange={setNotifyEmail} />
       </div>
@@ -137,10 +134,7 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
       </div>
 
       <h3>Delivery guardrails</h3>
-      <p className={styles.hint}>
-        Quiet hours apply to text messages in your timezone. Email remains available, and no more
-        than the hourly ceiling can be sent to your number.
-      </p>
+      <p className={styles.hint}>Quiet hours and hourly limits apply only to texts.</p>
       <div className={styles.formGrid}>
         <label className={styles.field}>
           <span className={styles.label}>Your timezone</span>

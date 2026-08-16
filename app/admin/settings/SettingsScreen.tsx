@@ -61,11 +61,7 @@ export function SettingsScreen({
         <div>
           <p className={styles.eyebrow}>Settings</p>
           <h1 className={styles.title}>{event.name}</h1>
-          <p className={styles.lede}>
-            The lists every other screen picks from. A CFP form can only offer the tracks, formats
-            and personas that exist here, and the agenda can only place a session in a room that
-            does.
-          </p>
+          <p className={styles.lede}>Shared options used by forms and the agenda.</p>
         </div>
       </header>
 

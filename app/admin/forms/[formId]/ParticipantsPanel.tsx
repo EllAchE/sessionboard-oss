@@ -95,10 +95,7 @@ export function ParticipantsPanel({
     return (
       <Card padding="md">
         <p className={styles.panelTitle}>Participants are off for this form</p>
-        <p className={styles.help}>
-          Turn on <strong>Collect participants</strong> in Settings and the public form gains a
-          participant step, with the fields and roles you configure here.
-        </p>
+        <p className={styles.help}>Enable participants in Settings to configure this step.</p>
       </Card>
     );
   }
@@ -132,9 +129,7 @@ export function ParticipantsPanel({
             </div>
           ))}
           {fields.length === 0 && (
-            <p className={styles.help}>
-              This form has no participant questions yet. Publishing it adds the built-in set.
-            </p>
+            <p className={styles.help}>No participant questions. Built-ins are added when published.</p>
           )}
         </div>
       </Card>
@@ -230,10 +225,7 @@ export function ParticipantsPanel({
               disabled={busy}
               onChange={(event) => setCap(event.target.value)}
             />
-            <span className={styles.help}>
-              Blank means as many as the per-role limits allow. Both are enforced when a talk is
-              submitted and when a speaker shares one from their portal.
-            </span>
+            <span className={styles.help}>Blank means no overall cap. Role limits still apply.</span>
           </div>
         </div>
       </Card>

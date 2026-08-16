@@ -104,9 +104,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
 
   return (
     <section className={styles.panel} aria-label="Event">
-      <p className={styles.lede}>
-        What the public pages, the calendar invites and every merge field call this event.
-      </p>
+      <p className={styles.lede}>Used on public pages, calendar invites, and merge fields.</p>
 
       <div className={styles.formGrid}>
         <label className={styles.field}>
@@ -123,9 +121,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
         <label className={styles.field}>
           <span className={styles.label}>URL</span>
           <Input value={`/${event.slug}`} readOnly disabled className={styles.mono} />
-          <span className={styles.hint}>
-            Fixed once the event exists — links, embeds and invites already point here.
-          </span>
+          <span className={styles.hint}>Cannot change after creation.</span>
         </label>
 
         <label className={styles.fieldWide}>
@@ -171,7 +167,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
               <option key={zone} value={zone} />
             ))}
           </datalist>
-          <span className={styles.hint}>IANA name. Every agenda time is rendered in it.</span>
+          <span className={styles.hint}>IANA timezone used for agenda times.</span>
           {error('timezone')}
         </label>
 

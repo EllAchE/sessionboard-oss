@@ -167,8 +167,7 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
           <span className={styles.eyebrow}>Submissions</span>
           <h1 className={styles.title}>Forms</h1>
           <p className={styles.subtitle}>
-            A call for speakers collects talks; a portal form collects anything else you need from a
-            speaker once they are accepted.
+            CFP forms collect talks. Portal forms collect post-acceptance information.
           </p>
         </div>
         <div className={styles.actions}>
@@ -183,7 +182,7 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
       {forms.length === 0 && !creating ? (
         <Card>
           <div className={styles.empty}>
-            <p>No forms yet. A call for speakers arrives with the six built-in fields already on it.</p>
+            <p>No forms yet.</p>
             <Button variant="primary" onClick={() => setCreating(true)}>
               Create the first one
             </Button>
@@ -215,9 +214,7 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
                 placeholder="2026 Call for Speakers"
                 onChange={(event) => setName(event.target.value)}
               />
-              <span className={styles.help}>
-                Organizers see this name. The public heading is set in the form&rsquo;s settings.
-              </span>
+              <span className={styles.help}>Internal name; set the public title in Settings.</span>
             </div>
 
             <div className={styles.kindChoice}>

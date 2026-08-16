@@ -951,7 +951,7 @@ export function SubmissionQueue(props: QueueProps) {
         open={saveOpen}
         onOpenChange={setSaveOpen}
         title="Save this view"
-        description="Keeps the current tab, filters, sort and columns under a name you can come back to."
+        description="Save these filters, sort, and columns."
         size="sm"
         footer={
           <>
@@ -999,16 +999,14 @@ export function SubmissionQueue(props: QueueProps) {
           </>
         }
       >
-        <p className={styles.tabHint}>
-          Anything already decided is skipped rather than decided twice.
-        </p>
+        <p className={styles.tabHint}>Already decided submissions are skipped.</p>
       </Dialog>
 
       <Dialog
         open={columnsOpen}
         onOpenChange={setColumnsOpen}
         title="Columns"
-        description="Choose what the queue shows. At least one column stays on."
+        description="Choose visible columns. At least one is required."
         size="sm"
         footer={
           <>

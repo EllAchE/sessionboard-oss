@@ -132,7 +132,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
           />
         </section>
       ) : (
-        <p className={styles.empty}>The programme has not been published yet. Check back soon.</p>
+        <p className={styles.empty}>Programme not published yet.</p>
       )}
     </PublicChrome>
   );

@@ -652,9 +652,8 @@ export function RoundsManager(props: RoundsManagerProps) {
               </span>
             </div>
             <p className={styles.aiNote}>
-              Blind hides other reviewers&rsquo; scores until the round closes. Anonymized hides the
-              author from reviewers — names, contact details, affiliations and bios are stripped
-              from what they see, while organizers keep all of it for conflict checks and decisions.
+              Blind hides peer scores until close. Anonymized hides speaker identities from
+              reviewers.
             </p>
           </div>
         </CardBody>
@@ -667,9 +666,7 @@ export function RoundsManager(props: RoundsManagerProps) {
         <CardBody>
           <div className={styles.stack}>
             <p className={styles.aiNote}>
-              The track a submitter picks is what decides who reads the talk. Auto-assign draws
-              each submission&rsquo;s reviewers from the track it was filed under, and the same
-              rows are what a reviewer sees as their own queue.
+              Track coverage determines auto-assignment.
             </p>
             <p className={styles.aiNote}>{coverageSummary(liveRouting)}</p>
 
@@ -704,26 +701,21 @@ export function RoundsManager(props: RoundsManagerProps) {
             ))}
 
             {routingRules.length === 0 ? (
-              <p className={styles.muted}>
-                This event has no tracks yet. Add them under Settings and they will appear here
-                for routing.
-              </p>
+              <p className={styles.muted}>Add tracks in Settings to configure routing.</p>
             ) : null}
 
             {gaps.length > 0 ? (
               <p className={styles.notice}>
                 {gaps.map((gap) => gap.trackName).join(', ')}{' '}
-                {gaps.length === 1 ? 'has' : 'have'} nobody assigned. Submissions filed there
-                are reported below rather than handed to whoever happens to be free.
+                {gaps.length === 1 ? 'has' : 'have'} no assigned reviewers.
               </p>
             ) : null}
 
             {props.routing.untrackedPending > 0 ? (
               <p className={styles.notice}>
-                {props.routing.untrackedPending} waiting submission
-                {props.routing.untrackedPending === 1 ? '' : 's'} arrived without a track, so
-                routing has nothing to key on. Set a track on the submission, or send them to
-                the whole pool from the unrouted list.
+                {props.routing.untrackedPending} submission
+                {props.routing.untrackedPending === 1 ? ' has' : 's have'} no track. Assign one or
+                send them to the full pool.
               </p>
             ) : null}
           </div>
@@ -849,8 +841,8 @@ export function RoundsManager(props: RoundsManagerProps) {
                   </Button>
                 </div>
                 <p className={styles.aiNote}>
-                  Weight scales a criterion against the others; the maximum is the scale a reviewer
-                  scores on. Every average is reported back on 1–5 whatever the maximum.
+                  Weight sets relative importance; maximum sets the input scale. Results normalize
+                  to 1–5.
                 </p>
               </div>
             </CardBody>
@@ -863,9 +855,7 @@ export function RoundsManager(props: RoundsManagerProps) {
             <CardBody>
               <div className={styles.stack}>
                 <p className={styles.aiNote}>
-                  Round reviewer pool · selections are scoped to {selectedRound.name}. Reviewers
-                  with assignments in this round remain selected after reload; a new round starts
-                  with an empty pool.
+                  Assignments stay selected. New rounds start empty.
                 </p>
                 <div className={styles.inlineStack}>
                   <Input
@@ -894,8 +884,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                   </Button>
                 </div>
                 <p className={styles.aiNote}>
-                  Invited reviewers receive a passwordless link to their event-scoped review queue.
-                  Inviting the same address again sends a fresh link without duplicating access.
+                  Invited reviewers receive access by email. Reinviting refreshes access.
                 </p>
                 {reviewerInvite && reviewerInvite.delivery !== 'email' ? (
                   <div className={styles.inlineStack}>
@@ -1009,8 +998,7 @@ export function RoundsManager(props: RoundsManagerProps) {
                         Assign these across every selected reviewer
                       </Button>
                       <span className={styles.aiNote}>
-                        A deliberate override: it ignores track coverage for these submissions only,
-                        and still keeps a reviewer off their own talk.
+                        Assign across all selected reviewers, ignoring track coverage.
                       </span>
                     </div>
                   </div>
@@ -1070,9 +1058,8 @@ export function RoundsManager(props: RoundsManagerProps) {
             <CardBody>
               <div className={styles.stack}>
                 <p className={styles.aiNote}>
-                  A recusal outlives the assignment it was made on: releasing the work hands the
-                  talk to somebody else and still keeps this reviewer off it. Clearing the recusal
-                  is the separate decision that lets them be assigned it again.
+                  Releasing reassigns the work but keeps the recusal. Clearing allows future
+                  assignment.
                 </p>
                 {activeRecusals.map((recusal) => (
                   <div key={recusal.id} className={styles.criterionEditor}>

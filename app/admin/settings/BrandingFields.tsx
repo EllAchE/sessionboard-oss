@@ -124,11 +124,7 @@ export function BrandingFields({ event, canManage }: { event: EventWire; canMana
   return (
     <section className={styles.subPanel} aria-label="Branding">
       <h2 className={styles.subTitle}>Branding</h2>
-      <p className={styles.hint}>
-        Both appear on the public event pages. The banner sits behind the title; the logo sits beside
-        the event name in the header. The portal a speaker signs in to is dressed separately, under
-        Speaker portal.
-      </p>
+      <p className={styles.hint}>Used on public event pages: banner behind the title, logo in the header.</p>
       <div className={styles.formGrid}>
         <Slot kind="logo" url={event.logoUrl} canManage={canManage} />
         <Slot kind="banner" url={event.bannerUrl} canManage={canManage} />

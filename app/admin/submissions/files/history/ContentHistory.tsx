@@ -167,10 +167,7 @@ export function ContentHistory({
         <div className={queue.headings}>
           <span className={queue.eyebrow}>Content</span>
           <h1 className={queue.title}>Sessions and speakers</h1>
-          <p className={queue.subtitle}>
-            Edit the copy, set what is cleared for the public agenda, and roll back anything that
-            went wrong.
-          </p>
+          <p className={queue.subtitle}>Edit public copy, approve it, or restore earlier versions.</p>
         </div>
       </header>
 
@@ -221,10 +218,7 @@ export function ContentHistory({
                   </li>
                 ))}
               </ul>
-              <p className={queue.hint}>
-                Only approved sessions reach the public agenda and embeds. Every change to this
-                control is attributed in the history.
-              </p>
+              <p className={queue.hint}>Only approved sessions appear publicly.</p>
             </CardBody>
           </Card>
 
@@ -284,10 +278,7 @@ export function ContentHistory({
           </CardHeader>
           <CardBody>
             {shown.length === 0 ? (
-              <p className={queue.muted}>
-                Nothing has been edited yet. Every save, approval change and restore is recorded here
-                with who made it and when.
-              </p>
+              <p className={queue.muted}>No changes yet.</p>
             ) : (
               <ul className={styles.rowList}>
                 {shown.map((entry) => (

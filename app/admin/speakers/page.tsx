@@ -44,9 +44,7 @@ export default async function AdminSpeakersPage() {
         <div>
           <p className={styles.eyebrow}>Program</p>
           <h1 className={styles.title}>Speakers</h1>
-          <p className={styles.subtitle}>
-            Everyone on this event&rsquo;s roster, with their profile, travel and logistics state.
-          </p>
+          <p className={styles.subtitle}>This event&rsquo;s speakers and their profile, travel, and logistics.</p>
         </div>
         {manages ? (
           <div className={styles.headActions}>

@@ -158,10 +158,7 @@ export function DeliverableDetail({
           <CardBody>
             <div className={styles.stack}>
               {comments.length === 0 ? (
-                <p className={queue.muted}>
-                  No feedback yet. Anything written here appears on the speaker&apos;s portal against
-                  this file.
-                </p>
+                <p className={queue.muted}>No feedback yet.</p>
               ) : (
                 <ul className={styles.rowList}>
                   {comments.map((comment) => (
@@ -203,7 +200,6 @@ export function DeliverableDetail({
                 >
                   {pending ? 'Posting…' : 'Post feedback'}
                 </Button>
-                <span className={styles.faint}>The speaker sees this on their portal.</span>
               </div>
             </div>
           </CardBody>

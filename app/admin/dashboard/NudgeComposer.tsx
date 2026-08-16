@@ -262,16 +262,11 @@ export function NudgeComposer({
               <p className={styles.draftPreviewSubject}>{draft.rendered.subject}</p>
               <pre className={styles.draftPreviewText}>{draft.rendered.text}</pre>
               {draft.dynamicFields.includes('portal.link') ? (
-                <p className={styles.draftNote}>
-                  The sign-in link above is a placeholder. A single-use one is minted only when the
-                  message is sent, so this draft can be copied around without carrying a credential.
-                </p>
+                <p className={styles.draftNote}>The sign-in link is added only when sent.</p>
               ) : null}
             </div>
           ) : (
-            <p className={styles.draftNote}>
-              Edit freely, then read the rendered message before it can be sent.
-            </p>
+            <p className={styles.draftNote}>Review before sending.</p>
           )}
         </div>
       )}

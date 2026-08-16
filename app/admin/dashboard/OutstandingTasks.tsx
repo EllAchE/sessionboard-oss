@@ -334,7 +334,7 @@ export function OutstandingTasks({
         columns={columns}
         rows={compact ? visible.slice(0, 10) : visible}
         getRowId={(row) => row.id}
-        emptyState="Nothing outstanding. Every assigned task is complete."
+        emptyState="All assigned tasks are complete."
       />
       {compact && visible.length > 10 ? (
         <p className={styles.counterHint}>

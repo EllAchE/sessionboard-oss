@@ -207,7 +207,7 @@ export function ImportSpeakers({
       <Step
         number={1}
         title="Choose a CSV"
-        note="Quoted cells, commas and newlines inside quotes, and a spreadsheet's byte-order mark all read correctly."
+        note="Standard CSV quoting is supported."
       >
         <input
           ref={picker}
@@ -269,7 +269,7 @@ export function ImportSpeakers({
         <Step
           number={2}
           title="Map the columns"
-          note="Matched by header name where we recognise one. Change anything that landed wrong."
+          note="Review the suggested column matches."
         >
           <div className={styles.mapTable}>
             <div className={`${styles.mapRow} ${styles.mapHeadRow}`}>
@@ -310,7 +310,7 @@ export function ImportSpeakers({
         <Step
           number={3}
           title="Preview"
-          note="Speakers are matched on email, so re-importing the same file updates rather than duplicates."
+          note="Existing emails are updated, not duplicated."
         >
           <div className={styles.summaryRow}>
             <Badge tone="success">{creating} to add</Badge>
