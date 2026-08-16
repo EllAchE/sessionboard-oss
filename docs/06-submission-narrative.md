@@ -263,7 +263,7 @@ site they visit twice a year. They forget it, and the organizer becomes a help d
 The real cost of this choice is deliberate and worth stating: **if email does not arrive, nobody gets
 in.** Cicero pays that cost three ways.
 
-1. **`email_log` doubles as the dev mailbox.** Every send is recorded and rendered at `/admin/mail`,
+1. **`email_log` doubles as the dev mailbox.** Every send is recorded and rendered at `/organizer/mail`,
    sign-in links included, under any transport. A judge who never receives a message can still read
    it. That single choice removes email deliverability as a single point of failure during judging.
 2. **Reserved recipients are undeliverable by construction.** The seeds are built entirely from
@@ -376,7 +376,7 @@ Two smaller deployment decisions in the same spirit:
 - **Self-host is a real target, not a README paragraph.** `docker compose up` starts app + Postgres +
   MinIO, migrates before serving, and creates the bucket. `MAIL_TRANSPORT` defaults to `log`, so a
   fresh clone needs no API key from anyone and every message — sign-in links included — is readable
-  at `/admin/mail`.
+  at `/organizer/mail`.
 
 ---
 
@@ -434,7 +434,7 @@ Verified by me on the current tree, not quoted:
   transports (`log`, `smtp`, `resend`) behind an `auto` resolver that degrades to `log` and warns
   rather than failing silently. What is missing is deployment configuration — a verified Resend
   sender domain, an API key secret, and a `MAIL_FROM` that is not Resend's shared test sender. The
-  demo therefore delivers nothing externally; everything is readable at `/admin/mail`. This is a
+  demo therefore delivers nothing externally; everything is readable at `/organizer/mail`. This is a
   choice with a cost: it is what makes the inbox-free demo work, and it is why this row is not green.
 - **`C-3` — calendar invites landing on a speaker's calendar.** The ICS itself is correct and pinned
   by golden-byte tests: `METHOD:REQUEST` with real organizer and attendees, a stable UID with a

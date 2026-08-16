@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * `/llms.txt` (llmstxt.org): one plain-text map of the public surface for an agent that has just
- * arrived and would otherwise have to crawl `/admin` to find out it cannot.
+ * arrived and would otherwise have to crawl `/organizer` to find out it cannot.
  *
  * It is generated, not a file in `public/`, for two reasons. The links have to be absolute — an
  * agent reads this the way an inbox reads a magic link, with no page to resolve `/demo/agenda`
@@ -87,7 +87,7 @@ export function buildLlmsTxt(origin = appUrl()): string {
     '',
     '## Not part of the public surface',
     '',
-    'Excluded in `/robots.txt` and not worth fetching: `/admin` (organizer), `/portal` (speaker),',
+    'Excluded in `/robots.txt` and not worth fetching: `/organizer` (organizer), `/portal` (speaker),',
     '`/review` (reviewer), `/crm`, `/dashboard`, `/events`, `/organizer`, `/signin`, `/signup`,',
     '`/auth` (single-use sign-in tokens), and the internal design and diagnostic pages.',
     '',
@@ -95,7 +95,7 @@ export function buildLlmsTxt(origin = appUrl()): string {
     '',
     '- assembly — an event or conference',
     '- Forum — an event’s public home page; also the organizer’s dashboard',
-    '- Curia — the organizer’s admin area',
+    '- Curia — the organizer’s workspace',
     '- petition — a submission or proposal',
     '- scroll — a submission form (a CFP form)',
     '- proclamation — a published call for speakers',

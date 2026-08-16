@@ -159,7 +159,7 @@ Source map for the audit:
   `lib/services/portal.ts`;
 - public/API ingress: `app/(public)/submit/actions.ts`, `app/api/v1/_lib/schemas.ts`, and
   `app/api/v1/events/[slug]/forms/[formId]/submissions/route.ts`;
-- agenda conflicts and placement: `lib/services/schedule.ts`, `app/admin/agenda/actions.ts`, and
+- agenda conflicts and placement: `lib/services/schedule.ts`, `app/organizer/agenda/actions.ts`, and
   `db/schema.ts`;
 - public names, slugs, search, and avatars: `app/embed/model.ts`, `app/embed/queries.ts`, and
   `components/ui/Avatar/index.tsx`;

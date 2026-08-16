@@ -197,7 +197,7 @@ export async function pushToEventAction(input: {
     const actor = await requireCrmOrganizer();
     const result = await crm.pushContactToEvent(actor, input);
     revalidatePath(`/crm/${input.contactId}`);
-    revalidatePath('/admin/speakers');
+    revalidatePath('/organizer/speakers');
     revalidatePath('/crm/dashboard');
     return {
       ok: true,

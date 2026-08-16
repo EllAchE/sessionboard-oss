@@ -49,7 +49,7 @@ export function getGateway(): AccelEventsGateway | null {
 
 export type SpeakerCandidate = SpeakerSource & {
   displayName: string;
-  /** Accepted talks this person is on, for the admin list. */
+  /** Accepted talks this person is on, for the organizer list. */
   sessionTitles: string[];
   lastSync: {
     status: 'pending' | 'synced' | 'failed';

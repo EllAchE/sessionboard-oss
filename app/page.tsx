@@ -329,7 +329,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
                 <h3>Hand off when ready</h3>
                 <p>
                   When you reach{' '}
-                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a>, expose the
+                  <a href="/signin?next=/organizer/integrations">Organizer → Integrations</a>, expose the
                   event key as <code>CICERO_API_KEY</code>. The guide never stores its value and
                   the programme agent still previews before every apply.
                 </p>

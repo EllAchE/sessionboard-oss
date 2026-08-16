@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  *
  * The proof is `isPublicSponsorLogo`: the id in the path must be the one *currently* occupying the
  * logo slot of a sponsor row on the event named by the slug. That is a narrower thing than "a file
- * on this event", which is what the private `/admin/sponsors/logo/[fileId]` checks and what would
+ * on this event", which is what the private `/organizer/sponsors/logo/[fileId]` checks and what would
  * make this route a hole. A file id belonging to another event's sponsor fails on the event id; a
  * headshot, a slide deck or a signed contract sitting in this event's `file` table fails because no
  * sponsor row points at it. So this route cannot be walked to reach anything but a logo an organizer
