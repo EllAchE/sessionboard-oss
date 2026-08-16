@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import {
@@ -13,13 +14,15 @@ import {
   MessageSquare,
   Plug,
   Settings,
+  UserRound,
   Video,
   Users,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
-import { CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
+import { Avatar, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import type { EventSummary } from '@/lib/services/events';
 import { EventSwitcher } from './EventSwitcher';
+import { InfoPanel } from './InfoPanel';
 import { QuickActions } from './QuickActions';
 import { ThemeToggle } from './ThemeToggle';
 import styles from './admin.module.css';
@@ -88,7 +91,11 @@ export function AdminShell({
   const activeId = useMemo(() => {
     const all = NAV.flatMap((section) => section.items);
     return all
-      .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+      .filter(
+        (item) =>
+          pathname === item.href ||
+          (item.href !== '/admin' && pathname.startsWith(`${item.href}/`)),
+      )
       .sort((a, b) => b.href.length - a.href.length)[0]?.id;
   }, [pathname]);
 
@@ -110,6 +117,13 @@ export function AdminShell({
         onSelect: () => router.push('/events/new'),
       },
       { id: 'portal', label: 'Open the speaker portal', group: 'Actions', onSelect: () => router.push('/portal') },
+      {
+        id: 'account',
+        label: 'Account settings',
+        group: 'Account',
+        icon: <UserRound size={15} />,
+        onSelect: () => router.push('/admin/account'),
+      },
     ],
     [router],
   );
@@ -127,8 +141,17 @@ export function AdminShell({
         <header className={styles.topbar}>
           <EventSwitcher events={events} currentEventId={currentEventId} />
           <div className={styles.topbarRight}>
+            <InfoPanel onOpenCommand={() => setCommandOpen(true)} />
             <ThemeToggle />
-            <span className={styles.actor}>{actorName}</span>
+            <Link
+              href="/admin/account"
+              className={styles.profileLink}
+              data-active={pathname === '/admin/account'}
+              aria-label={`Open account settings for ${actorName}`}
+            >
+              <Avatar name={actorName} size="xs" />
+              <span className={styles.actor}>{actorName}</span>
+            </Link>
           </div>
         </header>
         <main className={styles.content}>{children}</main>

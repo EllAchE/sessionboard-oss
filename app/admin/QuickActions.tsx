@@ -7,13 +7,12 @@ import {
   CalendarPlus,
   Gauge,
   HeartPulse,
-  Keyboard,
   MessageCircleMore,
   Search,
   Sparkles,
   UserRound,
 } from 'lucide-react';
-import { Button, Dialog, IconButton, Kbd } from '@/components/ui';
+import { Button, Dialog } from '@/components/ui';
 import styles from './quick-actions.module.css';
 
 type Convenience = {
@@ -72,23 +71,26 @@ export function QuickActions({
 
   return (
     <>
-      <IconButton
+      <button
         className={styles.trigger}
-        label="Open health and quick actions"
-        variant="secondary"
+        type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
         <HeartPulse size={20} aria-hidden="true" />
-        <span className={styles.triggerStatus} aria-hidden="true" />
-      </IconButton>
+        <span>Health</span>
+        <span className={styles.triggerState}>
+          <span className={styles.triggerStatus} aria-hidden="true" />
+          Ready
+        </span>
+      </button>
 
       <Dialog
         open={open}
         onOpenChange={setOpen}
-        title="Health & quick actions"
-        description="Hotkeys and useful places, kept close by."
+        title="Workspace health & quick actions"
+        description="See what the status means and jump to common places."
         className={styles.drawer}
       >
         <div className={styles.stack}>
@@ -98,17 +100,21 @@ export function QuickActions({
             </span>
             <div className={styles.healthCopy}>
               <strong>Organizer workspace ready</strong>
-              <span>You are connected to this event workspace.</span>
+              <span>A signed-in organizer and active event are available.</span>
             </div>
             <span className={styles.ready}>Ready</span>
           </div>
+          <p className={styles.healthNote}>
+            <strong>What Health means:</strong> you are signed in and an active event is selected in
+            this browser. It does not run a live infrastructure or third-party service check.
+          </p>
 
-          <section className={styles.section} aria-labelledby="quick-actions-shortcuts">
+          <section className={styles.section} aria-labelledby="quick-actions-links">
             <div className={styles.sectionHeading}>
-              <Keyboard size={15} aria-hidden="true" />
-              <h3 id="quick-actions-shortcuts">Shortcuts</h3>
+              <Sparkles size={15} aria-hidden="true" />
+              <h3 id="quick-actions-links">Quick actions</h3>
             </div>
-            <div className={styles.list}>
+            <nav className={styles.list} aria-label="Quick actions">
               <button className={styles.row} type="button" onClick={openCommand}>
                 <span className={styles.rowIcon} aria-hidden="true">
                   <Search size={17} />
@@ -117,30 +123,8 @@ export function QuickActions({
                   <strong>Search and jump</strong>
                   <span>Find any organizer view or action</span>
                 </span>
-                <span className={styles.keys} aria-label="Command or Control K">
-                  <Kbd>⌘ / Ctrl</Kbd>
-                  <Kbd>K</Kbd>
-                </span>
+                <ArrowUpRight className={styles.rowArrow} size={15} aria-hidden="true" />
               </button>
-              <div className={styles.row}>
-                <span className={styles.rowIcon} aria-hidden="true">
-                  <Keyboard size={17} />
-                </span>
-                <span className={styles.rowCopy}>
-                  <strong>Close a panel</strong>
-                  <span>Return to the view beneath it</span>
-                </span>
-                <Kbd>Esc</Kbd>
-              </div>
-            </div>
-          </section>
-
-          <section className={styles.section} aria-labelledby="quick-actions-conveniences">
-            <div className={styles.sectionHeading}>
-              <Sparkles size={15} aria-hidden="true" />
-              <h3 id="quick-actions-conveniences">Conveniences</h3>
-            </div>
-            <nav className={styles.list} aria-label="Convenient links">
               {conveniences.map((item) => (
                 <a className={styles.row} href={item.href} key={item.href}>
                   <span className={styles.rowIcon}>{item.icon}</span>
