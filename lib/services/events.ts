@@ -295,7 +295,10 @@ const updateEventSchema = z
   })
   .partial();
 
-/** Exported for the tests: the write path's rules should be checkable without a database. */
+/**
+ * Exported for the tests: the write path's rules should be checkable without a database.
+ * `deadlinePatch` below carries the one rule zod cannot state, and is exported for the same reason.
+ */
 export const eventWriteSchemas = { create: createEventSchema, update: updateEventSchema };
 
 export type CreateEventInput = {
@@ -358,7 +361,7 @@ type DeadlineKey = (typeof DEADLINE_FIELDS)[number]['key'];
  * fixing the programme before the roster is a legitimate way to run an edition, and a rule
  * forbidding it would be this file inventing policy it has no business inventing.
  */
-function deadlinePatch(
+export function deadlinePatch(
   readings: Partial<Record<DeadlineKey, string | null>>,
   timezone: string,
   startsAt: Date,
