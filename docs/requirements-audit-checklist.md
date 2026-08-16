@@ -491,6 +491,9 @@ covering real recipients, the log transport, and seeded demo identities.
   ICS generation, deployment configuration, and tests.
 - `bun run test`: **75 test files, 825 tests, all passed** (up from 35 files / 381 tests at the
   previous audit).
+  *Updated 2026-08-16:* the suite now runs **129 files, 1371 tests, all passed**. The row verdicts
+  above were not re-audited against that tree — only this count was re-measured, so treat the
+  verdicts as pinned to `416101e` and this number as current.
 - `bun run typecheck`: passed.
 - `bun run lint`: passed.
 - `bun run build`: production build passed.

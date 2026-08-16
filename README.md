@@ -60,6 +60,11 @@ To load the demo conferences:
 docker compose exec app npm run db:seed
 ```
 
+(`npm` rather than `bun` is deliberate here, and only here: the Dockerfile's runtime stage is
+`node:22-slim`, so the running container has npm and no bun. Every command you run on your own
+machine below uses `bun`, because `bun.lock` is the lockfile — `npm install` would ignore it and
+resolve a different tree.)
+
 The seed creates two idempotent cases:
 
 - **Cicero Forum** — a fictional Roman-themed conference with 14 submissions mid-review, 7
@@ -74,10 +79,10 @@ Run it twice and you get the same two events, not four.
 
 ```bash
 cp .env.example .env       # defaults already point at the compose Postgres and MinIO
-npm install
-npm run db:migrate
-npm run db:seed            # optional
-npm run dev
+bun install
+bun run db:migrate
+bun run db:seed            # optional
+bun run dev
 ```
 
 Everything in `.env.example` is documented inline. The only variable that must be right in a real
@@ -86,15 +91,15 @@ from it.
 
 | Script | |
 |---|---|
-| `npm run dev` | Next dev server |
-| `npm run typecheck` | `tsc --noEmit` |
+| `bun run dev` | Next dev server |
+| `bun run typecheck` | `tsc --noEmit` |
 | `npm test` | `vitest run` — no database needed |
-| `npm run test:integration` | The database-backed suite (see below) |
-| `npm run db:generate` | Generate a migration from `db/schema.ts` |
-| `npm run db:migrate` | Apply migrations |
-| `npm run db:seed` | Seed both demo conferences (idempotent) |
-| `npm run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
-| `npm run cf:deploy` | Build and deploy to Cloudflare Workers |
+| `bun run test:integration` | The database-backed suite (see below) |
+| `bun run db:generate` | Generate a migration from `db/schema.ts` |
+| `bun run db:migrate` | Apply migrations |
+| `bun run db:seed` | Seed both demo conferences (idempotent) |
+| `bun run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
+| `bun run cf:deploy` | Build and deploy to Cloudflare Workers |
 
 ### Sending real email
 
@@ -139,7 +144,7 @@ away from real sending. To flip it, in this order:
    and the app says so on the server console on the first send.
 3. **`wrangler secret put RESEND_API_KEY`** and paste the key. A secret, never a `var` — vars in
    `wrangler.jsonc` are committed.
-4. Deploy (`npm run cf:deploy`), then confirm the banner at `/admin/mail` names `resend` and send
+4. Deploy (`bun run cf:deploy`), then confirm the banner at `/admin/mail` names `resend` and send
    yourself something from `/admin/comms`.
 
 Step 3 alone is what changes behaviour, so a key without step 1 sends nothing and a key without
@@ -164,7 +169,7 @@ Leave it off on any instance running a real event.
 `npm test` is the fast one and needs nothing: everything it touches is either pure or mocked at the
 service boundary. Keep it that way — it is what makes the suite runnable on any checkout.
 
-`npm run test:integration` runs `*.integration.test.ts` against a real Postgres, because the rules
+`bun run test:integration` runs `*.integration.test.ts` against a real Postgres, because the rules
 worth calling security — who may read a submission, whether an anonymized round actually withholds
 the author, whether blind review actually withholds a peer — are enforced in SQL, and a mocked
 database will agree with whatever the test expects. Each test builds its own event and tears it
@@ -173,8 +178,8 @@ down, so no ordering or truncation is implied.
 ```bash
 docker compose up -d postgres          # or any Postgres you like
 export DATABASE_URL=postgresql://cicero:cicero@localhost:5434/cicero_test
-npm run db:migrate
-npm run test:integration
+bun run db:migrate
+bun run test:integration
 ```
 
 Point `DATABASE_URL` at a throwaway database. The suite writes real rows, and while it cleans up
@@ -294,7 +299,7 @@ delivery rather than duplicating or corrupting it.
 ```bash
 wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url>"
 # put the returned id in wrangler.jsonc
-npm run cf:deploy
+bun run cf:deploy
 ```
 
 This path is complete and current — it is not a leftover. `bun run cf:build` succeeds, and the

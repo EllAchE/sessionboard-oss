@@ -326,6 +326,18 @@ The UI never calls its own HTTP API. Both entry points call the same service fun
 one implementation of every rule and no drift between what the REST surface enforces and what the
 admin screens enforce.
 
+**Two files break the "no React, no Next imports" line, and it is worth naming them rather than
+letting the rule read as absolute** (audited 2026-08-16; these are the only two in `lib/services`):
+
+- `lib/services/submissions.ts` imports `cache` from `react`. Deliberate — it is the `Z-4` fix that
+  deduplicates repeated reads within a single render pass.
+- `lib/services/events.ts` imports `cookies` from `next/headers` to resolve the currently-selected
+  event. This one is a genuine leak of a request-scoped concern into the domain layer: it makes
+  those two functions unusable from the REST handlers and from any non-request caller. The right
+  shape is to take the selected event id as a parameter and let each entry point resolve it. Not
+  changed here because the service-signature freeze is still in force; recorded so the next person
+  does not have to rediscover it.
+
 **The service layer is what makes parallel agents possible.** `db/schema.ts` and the service
 signatures are written first and then frozen, which means every workstream codes against types
 instead of against each other. Two agents touching submissions never need to agree on anything at
