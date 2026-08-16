@@ -74,7 +74,7 @@ services:
       S3_ACCESS_KEY_ID: cicero
       S3_SECRET_ACCESS_KEY: cicero-secret
       S3_FORCE_PATH_STYLE: 'true'
-      # No API key in a clone, so every send is recorded to email_log and read at /admin/mail.
+      # No API key in a clone, so every send is recorded to email_log and read at /organizer/mail.
       MAIL_TRANSPORT: log
       MAIL_FROM: cicero@localhost
     ports:

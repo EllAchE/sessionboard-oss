@@ -2,7 +2,7 @@ import { invalid } from '../errors';
 import { markdownLength } from '../markdown';
 
 /**
- * The form engine's contract. `app/admin/forms/**` (the builder), `app/(public)/submit/**` (the
+ * The form engine's contract. `app/organizer/forms/**` (the builder), `app/(public)/submit/**` (the
  * runtime) and `lib/services/forms.ts` all agree here and nowhere else.
  */
 

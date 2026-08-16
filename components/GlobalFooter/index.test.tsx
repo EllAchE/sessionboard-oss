@@ -10,7 +10,7 @@ describe('GlobalFooter demo links', () => {
   it('does not advertise role tours on an unseeded instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
-    expect(html).toContain('aria-label="Cicero creator and source links"');
+    expect(html).toContain('aria-label="Cicero creator links"');
     expect(html).not.toContain('Organizer demo');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
   });

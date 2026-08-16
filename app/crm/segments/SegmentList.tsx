@@ -43,10 +43,7 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>Segments</h1>
-          <p className={styles.subtitle}>
-            A saved slice of the directory. Dynamic segments re-run their filters; curated ones keep
-            the list they were saved with.
-          </p>
+          <p className={styles.subtitle}>Saved groups of contacts.</p>
         </div>
         <div className={styles.headActions}>
           <Button size="sm" variant="primary" href="/crm" iconLeft={<Bookmark size={14} />}>
@@ -62,10 +59,7 @@ export function SegmentList({ segments }: { segments: SegmentView[] }) {
           <CardBody>
             <div className={styles.empty}>
               <p className={styles.emptyTitle}>No segments yet</p>
-              <p className={styles.emptyBody}>
-                Filter the directory down to the people you keep coming back to, then choose Save as
-                segment.
-              </p>
+              <p className={styles.emptyBody}>Save a filtered directory view as a segment.</p>
               <Button variant="primary" href="/crm">
                 Go to the directory
               </Button>

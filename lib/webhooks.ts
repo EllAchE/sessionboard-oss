@@ -265,7 +265,7 @@ async function deliver(
 
 /**
  * Lifecycle writes are authoritative even when an integrator is down. Delivery is therefore
- * best-effort after the database mutation, with every failure retained for the admin log.
+ * best-effort after the database mutation, with every failure retained for the organizer log.
  */
 export async function emitWebhook(
   eventId: string,

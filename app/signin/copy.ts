@@ -10,8 +10,7 @@ export type DeliveryState = 'email' | 'logged' | 'demo';
 const COPY = {
   'sign-in': {
     title: 'Sign in to Cicero',
-    description:
-      'We email you a link. Organizers, reviewers and speakers all sign in the same way, and none of them have a password to forget.',
+    description: 'We’ll email you a sign-in link.',
     submit: 'Email me a link',
     switchPrompt: 'New to Cicero?',
     switchLabel: 'Create an account',
@@ -20,8 +19,7 @@ const COPY = {
   },
   'sign-up': {
     title: 'Create your Cicero account',
-    description:
-      'Enter your email address. We will create your account and give you a secure link to continue — no password needed.',
+    description: 'Enter your email to create an account. We’ll send a sign-in link.',
     submit: 'Create my account',
     switchPrompt: 'Already have an account?',
     switchLabel: 'Sign in',
@@ -44,9 +42,6 @@ export function deliveryCopy(intent: AuthIntent, delivery: DeliveryState, email:
 
   return {
     lead: intent === 'sign-up' ? 'Your account is ready.' : 'Your secure sign-in link is ready.',
-    hint:
-      delivery === 'demo'
-        ? 'This is a seeded demo account, at a reserved domain with no inbox behind it. Use the link above to continue.'
-        : 'Email delivery is disabled on this demo. Use the link above to continue.',
+    hint: null,
   };
 }

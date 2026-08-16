@@ -78,10 +78,7 @@ export function FieldManager({ fields, types }: Props) {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>Custom fields</h1>
-          <p className={styles.subtitle}>
-            Your own columns on every contact. A dropdown field also becomes a filter in the
-            directory.
-          </p>
+          <p className={styles.subtitle}>Add fields to contact records.</p>
         </div>
       </div>
 
@@ -91,9 +88,7 @@ export function FieldManager({ fields, types }: Props) {
         <Card>
           <CardHeader>
             <CardTitle>New field</CardTitle>
-            <CardDescription>
-              For example a dropdown named Speaker Type with Internal and External.
-            </CardDescription>
+            <CardDescription>Example: Speaker type with Internal and External.</CardDescription>
           </CardHeader>
           <CardBody>
             <div className={styles.stack}>
