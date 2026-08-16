@@ -167,7 +167,7 @@ author red-boxed the **entire Portals section** of Sessionboard's doc index (`00
 | S-7 | **[REQUIRED]** | **Raw HTML embed support** in those wiki pages, so existing reference material can be pasted in. **Accepted stored-XSS surface** — authoring is organizer-only and organizers are trusted, so the risk is an organizer attacking their own speakers. Do not extend authoring to speakers without sanitizing first, and serve embeds from a separate origin if that ever changes |
 | S-8 | **[IMPORTANT]** | Speaker links: LinkedIn, X, Facebook, personal website |
 | S-9 | **[IMPORTANT]** | View and edit a submission after it is submitted |
-| S-10 † | **[REQUIRED]** | Admin **impersonation** — "Back to Admin Mode" implies organizers can view the portal as a given speaker. Promoted from IMPORTANT on three independent grounds: it is the largest support-cost saver in the portal, it is nearly free under magic-link auth (`T-4a`), and it is the escape hatch that lets a judge reach a speaker's portal without waiting on an inbox (`D-3`, `T-7a`). **Must be full impersonation, not preview** — Sessionboard's "View portal as…" cannot complete tasks, which is what makes it useless for support and for judging |
+| S-10 † | **[REQUIRED]** | Admin **impersonation** — "Back to Organizer Mode" implies organizers can view the portal as a given speaker. Promoted from IMPORTANT on three independent grounds: it is the largest support-cost saver in the portal, it is nearly free under magic-link auth (`T-4a`), and it is the escape hatch that lets a judge reach a speaker's portal without waiting on an inbox (`D-3`, `T-7a`). **Must be full impersonation, not preview** — Sessionboard's "View portal as…" cannot complete tasks, which is what makes it useless for support and for judging |
 | S-11 | **[OPTIONAL]** | Portal appearance / branding settings |
 | S-12 | **[OPTIONAL]** | Multiple portal types (contact / group / submission portals); switching between them |
 | S-13 | **[OPTIONAL]** | Group portal access sharing (co-speakers, sponsors) |
@@ -354,7 +354,7 @@ comped tickets and badges. The direction is program → registration.
 | T-1 | **[REQUIRED]** | Open-source license |
 | T-2 | **[REQUIRED]** | Deployed and publicly reachable |
 | T-3 | **[REQUIRED]** | Self-hostable — the entire premise is not paying a vendor |
-| T-4 | **[REQUIRED]** | Two distinct authenticated roles: organizer/admin and speaker/participant |
+| T-4 | **[REQUIRED]** | Two distinct authenticated roles: organizer (called admin in the source brief) and speaker/participant |
 | T-4a | **[REQUIRED]** | **Magic-link auth everywhere** — every role, no passwords anywhere in the system. Email a signed, short-lived, single-use link; exchange it for a session |
 | T-4b | **[IMPORTANT]** | Long-lived sessions for speakers (weeks). A speaker returns to the portal once a month; forcing a new link every visit is the failure mode magic links are supposed to avoid |
 | T-5 | **[REQUIRED]** | File storage for headshots, slides, and documents |

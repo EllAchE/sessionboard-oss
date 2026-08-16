@@ -377,7 +377,7 @@ export function ContactProfile({
                   <Button
                     variant="ghost"
                     size="sm"
-                    href="/admin/speakers"
+                    href="/organizer/speakers"
                     iconRight={<ArrowUpRight size={14} />}
                   >
                     Open the speakers module

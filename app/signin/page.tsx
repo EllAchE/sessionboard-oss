@@ -12,7 +12,7 @@ export default async function SignInPage({
 }) {
   const { next, email } = await searchParams;
 
-  const safeNext = authRedirect(next, '/admin');
+  const safeNext = authRedirect(next, '/organizer');
 
   return (
     <main className={styles.root}>

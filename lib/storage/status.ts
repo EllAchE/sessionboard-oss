@@ -1,5 +1,5 @@
 /**
- * Pure storage-status values shared with the client-side admin files view. At 250 MiB blobs are
+ * Pure storage-status values shared with the client-side organizer files view. At 250 MiB blobs are
  * already half of common free Postgres quotas and copied into every full backup; 500 MiB is the
  * practical handoff to R2/S3, not a database engine hard limit.
  */
