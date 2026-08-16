@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Button, Input, useToast } from '@/components/ui';
 import { COMMON_EVENT_TYPES, COMMON_TIMEZONES } from '@/lib/event-dates';
-import { createEventAction } from '@/app/admin/shell-actions';
+import { createEventAction } from '@/app/organizer/shell-actions';
 import styles from './new-event.module.css';
 
 /**

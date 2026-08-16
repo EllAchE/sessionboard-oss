@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const { redirectTo } = await consumeMagicLink(token);
-    return publicRedirect(authRedirect(redirectTo, '/admin'));
+    return publicRedirect(authRedirect(redirectTo, '/organizer'));
   } catch {
     return publicRedirect('/signin?error=expired');
   }

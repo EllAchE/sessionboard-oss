@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['pg'],
   typedRoutes: false,
   /**
+   * `/organizer` names the role that owns this workspace. Keep the old route working so saved
+   * links, email logs, and external integrations migrate without becoming dead ends.
+   */
+  async redirects() {
+    return [
+      { source: '/admin', destination: '/organizer', permanent: true },
+      { source: '/admin/:path*', destination: '/organizer/:path*', permanent: true },
+    ];
+  },
+  /**
    * `G-1`–`G-3`. The embed routes exist to be framed by somebody else's event website, so they opt
    * out of the same-origin framing default explicitly rather than inheriting whatever a proxy adds.
    */

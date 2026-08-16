@@ -9,7 +9,7 @@ import {
 } from '../../db/schema';
 import { isAppError, type AppError } from '../errors';
 import type { EventContext } from '../context';
-import { listTasksForAdmin } from './dashboard';
+import { listTasksForOrganizer } from './dashboard';
 import {
   assertCompletable,
   createTask,
@@ -497,7 +497,7 @@ describe('selected-speaker assignments', () => {
     ]);
   });
 
-  it('assigns exactly two selected speakers and exposes the same rows to admin and portal reads', async () => {
+  it('assigns exactly two selected speakers and exposes the same rows to organizer and portal reads', async () => {
     const created = await createTask(context(), {
       name: 'Confirm travel details',
       kind: 'acknowledge',
@@ -515,7 +515,7 @@ describe('selected-speaker assignments', () => {
     ]);
     expect(assignments.every((row) => row.taskId === created.id)).toBe(true);
 
-    const adminRows = await listTasksForAdmin(context());
+    const adminRows = await listTasksForOrganizer(context());
     expect(adminRows[0]).toMatchObject({
       assigned: 2,
       participantIds: ['participant-1', 'participant-3'],

@@ -1445,7 +1445,7 @@ const firstSettlement = await seedFirstSettlement(db, organizer.id, now);
 console.log(
   `Seeded /${SLUG}: ${submissions.length} submissions, ${uniqueAccepted.length} speakers, ` +
     `${scheduled.length} scheduled sessions, ${tasks.length + scopedTasks.length} tasks. ` +
-    `Sign in as ${organizer.email} and read the link at /admin/mail.`,
+    `Sign in as ${organizer.email} and read the link at /organizer/mail.`,
 );
 console.log(
   `Seeded /${firstSettlement.slug}: ${firstSettlement.submissions} submissions, ` +

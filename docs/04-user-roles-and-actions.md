@@ -50,11 +50,12 @@ The remaining work is validation and implementation work rather than another act
 | Prospective speaker    | Starts a proposal through a public CFP                      | None initially; account created during submission |
 | Speaker / participant  | Maintains their proposal, profile, files, and assigned work | Magic link                                        |
 | Reviewer               | Scores only the proposals assigned to them                  | Magic link                                        |
-| Organizer / admin      | Configures and operates the conference program              | Magic link                                        |
+| Organizer              | Configures and operates the conference program              | Magic link                                        |
 
-The requirements formally name organizer/admin and speaker/participant as the two core authenticated
-roles. Reviewers are a constrained supporting workflow: they can score assigned proposals but do not
-receive organizer powers merely by being reviewers.
+The source requirements sometimes say “admin”; Cicero consistently calls that role **organizer**.
+Organizer and speaker are the two core authenticated roles. Reviewers are a constrained supporting
+workflow: they can score assigned proposals but do not receive organizer powers merely by being
+reviewers.
 
 ## End-to-end lifecycle
 
@@ -234,7 +235,7 @@ Blind and author-anonymized review modes may hide speaker identity from reviewer
 gain event configuration, acceptance, scheduling, communication, or publishing controls. Final
 acceptance decisions remain with organizers.
 
-## Organizers and administrators
+## Organizer workspace
 
 Organizers control the program from event setup through publication.
 
@@ -546,7 +547,7 @@ deep functionality in any one screen.
 - [Accelevents API contract](reference/accelevents-api.md)
 - [Frozen competition brief](reference/source-brief.txt)
 - [Sessionboard coverage survey](reference/sessionboard-survey.md)
-- Current task behavior: `app/admin/tasks/TaskEditor.tsx`
-- Current agenda behavior: `app/admin/agenda/AgendaBoard.tsx`
+- Current task behavior: `app/organizer/tasks/TaskEditor.tsx`
+- Current agenda behavior: `app/organizer/agenda/AgendaBoard.tsx`
 - Current embed behavior: `public/embed.js` and `app/embed/`
-- Current Accelevents behavior: `lib/accelevents/` and `app/admin/integrations/`
+- Current Accelevents behavior: `lib/accelevents/` and `app/organizer/integrations/`

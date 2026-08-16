@@ -8,7 +8,7 @@ import { smtpConfigured, type SmtpConfig } from './smtp';
  * Kept apart from `./index` so it can be read without dragging the database in, and because the
  * failure this guards is a configuration failure rather than a send failure: an unconfigured
  * `MAIL_TRANSPORT=smtp` degrades to `log`, where every message still lands in `email_log` and reads
- * as sent at `/admin/mail` while never leaving the machine. Degrading is the right behaviour —
+ * as sent at `/organizer/mail` while never leaving the machine. Degrading is the right behaviour —
  * losing acceptance emails because a provider key expired would be worse — but it has to be *loud*,
  * or a self-hoster's first real send is discovered missing by the speaker who never got it.
  */
@@ -19,7 +19,7 @@ export type ResolvedMail =
   | { transport: 'log'; warning: string | null };
 
 const FALLBACK =
-  'Falling back to the log transport: mail is recorded in email_log and readable at /admin/mail, but nothing is delivered.';
+  'Falling back to the log transport: mail is recorded in email_log and readable at /organizer/mail, but nothing is delivered.';
 
 /** Reads the discrete SMTP variables `.env.example` documents, alongside `SMTP_URL`. */
 export function smtpConfigFromEnv(): SmtpConfig {
@@ -55,7 +55,7 @@ export function resolveMailTransport(): ResolvedMail {
    * secret rather than a commit: whichever transport has credentials wins, and with none it is the
    * dev mailbox. Unlike naming a transport outright this is not a promise that mail will leave, so
    * landing on `log` here is an answer rather than a misconfiguration and stays quiet. Which
-   * transport actually won is never a guess — `/admin/mail` names it in the banner.
+   * transport actually won is never a guess — `/organizer/mail` names it in the banner.
    */
   if (configured === 'auto') {
     return resendFromEnv() ?? smtpFromEnv() ?? { transport: 'log', warning: null };
