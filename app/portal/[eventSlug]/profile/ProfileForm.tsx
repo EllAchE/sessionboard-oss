@@ -137,8 +137,7 @@ export function ProfileForm({
                   }}
                 />
                 <p id="headshot-help" className={styles.hint}>
-                  Optional on your first save. JPEG, PNG, GIF or WebP up to 10 MB; center-cropped and
-                  stored as an optimized 512 px WebP.
+                  JPEG, PNG, GIF or WebP up to 10 MB. Cropped to 512 px.
                 </p>
                 <FieldError state={state} field="headshot" />
               </div>
@@ -233,7 +232,7 @@ export function ProfileForm({
                 Gender
               </label>
               <Input id="gender" name="gender" defaultValue={me.gender ?? ''} placeholder="Woman" />
-              <span className={styles.hint}>Optional, and yours to word however you like.</span>
+              <span className={styles.hint}>Optional.</span>
               <FieldError state={state} field="gender" />
             </div>
             <div className={styles.field}>
@@ -265,7 +264,7 @@ export function ProfileForm({
                 defaultValue={me.timezone ?? ''}
                 placeholder="Europe/London"
               />
-              <span className={styles.hint}>Used when organizers schedule anything with you.</span>
+              <span className={styles.hint}>Used for scheduling.</span>
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="phone">
@@ -307,7 +306,7 @@ export function ProfileForm({
             <div className={styles.switchRow}>
               <span className={styles.switchText}>
                 <span className={styles.switchLabel}>Email</span>
-                <span className={styles.hint}>Reminders, decisions and session details by email.</span>
+                <span className={styles.hint}>Reminders, decisions, and schedule changes.</span>
               </span>
               <input type="hidden" name="notifyEmail" value={notifyEmail ? 'on' : ''} />
               <Switch checked={notifyEmail} aria-label="Email alerts" onCheckedChange={setNotifyEmail} />
@@ -458,8 +457,7 @@ export function ProfileForm({
               </div>
             )}
             <span className={styles.hint}>
-              LinkedIn, X, Facebook, your own site — anything you want on the programme. Addresses
-              without https:// are fixed up for you.
+              URLs without https:// are fixed automatically.
             </span>
           </div>
         </CardBody>

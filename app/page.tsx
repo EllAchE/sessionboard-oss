@@ -30,17 +30,17 @@ const FEATURES = [
   {
     icon: <FileCheck size={20} aria-hidden="true" />,
     title: 'Receive petitions. Reach a verdict.',
-    body: 'Proclaim your call for orators, send each proposal before the right council, and record every decision without excavating a spreadsheet ruin.',
+    body: 'Publish your call for speakers, route proposals, and record decisions.',
   },
   {
     icon: <CalendarCheck size={20} aria-hidden="true" />,
     title: 'Set the imperial calendar',
-    body: 'Marshal orations across chambers and themes while Cicero exposes every clash before the gates open.',
+    body: 'Schedule sessions across rooms and tracks, with conflicts flagged as you work.',
   },
   {
     icon: <ListChecks size={20} aria-hidden="true" />,
     title: 'Ready every orator for the Forum',
-    body: 'Survey missing biographies, portraits, scrolls, and approvals at a glance, then send a dispatch from the same command post.',
+    body: 'Track missing bios, headshots, files, and approvals, then contact speakers.',
   },
 ];
 
@@ -64,19 +64,19 @@ const PERSONAS = [
     href: DEMO_ENTRY_LINKS.organizer,
     icon: Landmark,
     label: 'Run the conference',
-    blurb: 'Organizer — the programme, the fasti, and every outstanding duty.',
+    blurb: 'Organizer — programme, schedule, and outstanding tasks.',
   },
   {
     href: DEMO_ENTRY_LINKS.reviewer,
     icon: Scale,
     label: 'Score the petitions',
-    blurb: 'Reviewer — weigh the docket before you and record a verdict.',
+    blurb: 'Reviewer — assigned proposals and scoring.',
   },
   {
     href: DEMO_ENTRY_LINKS.speaker,
     icon: Megaphone,
     label: 'Give a talk',
-    blurb: 'Speaker — an accepted oration, your profile, and stage duties.',
+    blurb: 'Speaker — your sessions, profile, and tasks.',
   },
 ] as const;
 
@@ -130,8 +130,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <p className={styles.eyebrow}>From first proclamation to final ovation</p>
           <h1>Convene the crowd. Command the programme.</h1>
           <p className={styles.heroLead}>
-            Cicero gathers petitions, councils, fasti, orator duties, and dispatches in one
-            Forum, so organizers can govern the programme instead of chasing it.
+            Run submissions, review, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.actions}>
             <Button
@@ -169,10 +168,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           ) : (
             <div className={styles.freshStart}>
               <p className={styles.personasTitle}>Fresh instance</p>
-              <p>
-                There is no sample conference in this database yet. Create the first event, or load
-                the optional demo data from the README to unlock the guided role tours.
-              </p>
+              <p>No demo event yet. Create an event or load demo data from the README.</p>
             </div>
           )}
         </div>
@@ -192,11 +188,11 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           />
           <div className={`${styles.callout} ${styles.calloutTasks}`}>
             <ListChecks size={17} aria-hidden="true" />
-            <span>Every outstanding duty, on one tablet</span>
+            <span>Outstanding tasks in one view</span>
           </div>
           <div className={`${styles.callout} ${styles.calloutSchedule}`}>
             <CalendarCheck size={17} aria-hidden="true" />
-            <span>Every clash exposed before the gates open</span>
+            <span>Conflicts flagged before publishing</span>
           </div>
         </div>
       </section>
@@ -210,13 +206,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         </div>
         <div className={styles.aboutBody}>
           <p>
-            Cicero is an open-source Forum for the work between a proclamation for orators and the
-            day the gates open. It unites petitions, councils, fasti, orator duties, dispatches, and
-            the public programme without making the organizer govern a tangle of systems.
-          </p>
-          <p>
-            Magistrates retain command: raise it on your own infrastructure, adapt the customs, and
-            proclaim fasti that any citizen may read without presenting a seal.
+            Cicero is an open-source system for submissions, review, scheduling, speaker tasks,
+            communications, and the public programme. Self-host it and adapt it to your event.
           </p>
           <dl className={styles.aboutFacts}>
             <div>
@@ -250,10 +241,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>One commanding Forum</p>
           <h2>All roads lead from proposal to stage.</h2>
-          <p>
-            The whole programme travels together, from the first petition to the final public
-            calendar.
-          </p>
         </div>
         <div className={styles.features}>
           {FEATURES.map((feature) => (
@@ -277,10 +264,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.programmeCopy}>
           <p className={styles.eyebrow}>Published from the Forum</p>
           <h2>A public programme worthy of the city.</h2>
-          <p>
-            Proclaim clear fasti, a roll of orations, and a gallery of orators without copying a
-            single record or awaiting another courier.
-          </p>
+          <p>Publish the agenda, sessions, and speaker directory from the same data.</p>
           <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
             {demoAvailable ? 'Consult the demo programme' : 'Publish your first programme'}{' '}
             <ArrowRight size={16} aria-hidden="true" />
@@ -299,9 +283,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             Give your agent a brief. Keep every decree reviewable.
           </h2>
           <p>
-            Cicero ships with a stateful repo-local guide. It discovers how far you have already
-            reached, records only non-secret progress in your working directory, walks the next
-            missing step, and hands ongoing programme work to a preview-first agent.
+            The bundled onboarding skill tracks setup progress and hands event changes to a
+            preview-first agent.
           </p>
 
           <ol className={styles.agentSteps}>
@@ -309,7 +292,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
                 <h3>Clone the repository</h3>
-                <p>Open the repository root in Codex so it discovers both bundled skills.</p>
+                <p>Open the repository root in Codex.</p>
                 <code>git clone https://github.com/EllAchE/sessionboard-oss.git</code>
               </div>
             </li>
@@ -318,8 +301,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               <div className={styles.agentStepCopy}>
                 <h3>Paste the resumable brief</h3>
                 <p>
-                  The guide establishes <code>.cicero/onboarding.json</code>, asks only what it
-                  cannot discover, and resumes from the same point next time.
+                  <code>$onboard-cicero</code> records progress in{' '}
+                  <code>.cicero/onboarding.json</code> and resumes where it stopped.
                 </p>
               </div>
             </li>
@@ -328,10 +311,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               <div className={styles.agentStepCopy}>
                 <h3>Hand off when ready</h3>
                 <p>
-                  When you reach{' '}
-                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a>, expose the
-                  event key as <code>CICERO_API_KEY</code>. The guide never stores its value and
-                  the programme agent still previews before every apply.
+                  Add <code>CICERO_API_KEY</code> when prompted. Event changes are previewed before
+                  they are applied.
                 </p>
               </div>
             </li>
@@ -370,7 +351,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </pre>
           <p className={styles.agentPromptSafety}>
             <ShieldCheck size={17} aria-hidden="true" />
-            Applying changes and deleting records always require separate confirmation.
+            Changes and deletions require confirmation.
           </p>
         </div>
       </section>
@@ -379,11 +360,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <section className={styles.finalCta}>
           <p className={styles.eyebrow}>Take command</p>
           <h2>Enter a conference already in motion.</h2>
-          <p>
-            The live province is filled with petitions, orators, unfinished duties, and a two-day
-            programme ready for inspection. Take the seat you want to try: the magistrate who
-            governs it, a censor weighing petitions, or an orator readying for the stage.
-          </p>
+          <p>Explore the seeded event as an organizer, reviewer, or speaker.</p>
           <div className={styles.finalCtaActions}>
             <Button
               href={DEMO_ENTRY_LINKS.organizer}

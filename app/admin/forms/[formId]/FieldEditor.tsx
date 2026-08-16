@@ -266,10 +266,7 @@ export function FieldEditor({
                 </Button>
               </>
             ) : (
-              <span className={styles.help}>
-                This built-in reads its choices from the event&rsquo;s tracks, formats, levels and
-                tags, so they are managed there rather than here.
-              </span>
+              <span className={styles.help}>Choices come from Event settings.</span>
             )}
           </div>
         ) : null}
@@ -314,8 +311,7 @@ export function FieldEditor({
                 onChange={(event) => update({ charLimitGroup: event.target.value })}
               />
               <span className={styles.help}>
-                Questions sharing a group name are counted together against the largest maximum in
-                the group, and the submitter sees one live counter for all of them.
+                Questions in this group share the highest maximum.
               </span>
             </div>
           </>
@@ -326,17 +322,11 @@ export function FieldEditor({
         <div className={styles.field}>
           <span className={styles.label}>Conditional logic</span>
           <span className={styles.help}>
-            A question can depend on <strong>one earlier question</strong>, and on nothing else. Only
-            questions above this one are offered, and a question that is itself conditional is never
-            offered — conditions do not chain, which is what makes it impossible to build a loop or a
-            cascade that renders for nobody.
+            Show this only when an earlier, unconditional question matches.
           </span>
 
           {eligible.length === 0 ? (
-            <span className={styles.help}>
-              Nothing above this question can drive a condition yet. Move it further down the form,
-              or add a question before it.
-            </span>
+            <span className={styles.help}>Add or move a question above this one to use conditions.</span>
           ) : draft.showIf ? (
             <div className={styles.conditionBox}>
               <div className={styles.field}>

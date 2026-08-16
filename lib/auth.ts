@@ -120,7 +120,7 @@ export async function requestMagicLink(
     '',
     `[Sign in to Cicero](${link})`,
     '',
-    `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+    `Single-use; expires in ${MAGIC_TTL_MINUTES} minutes.`,
     'If you did not ask for it, you can ignore this email.',
   ].join('\n');
 
@@ -133,7 +133,7 @@ export async function requestMagicLink(
       '',
       link,
       '',
-      `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+      `Single-use; expires in ${MAGIC_TTL_MINUTES} minutes.`,
       'If you did not ask for it, you can ignore this email.',
     ].join('\n'),
     eventId: request.eventId ?? null,

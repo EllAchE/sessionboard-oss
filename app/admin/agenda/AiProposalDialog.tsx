@@ -79,7 +79,7 @@ export function AiProposalDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Draft an agenda"
-      description="A suggested, conflict-free placement for everything still waiting for a slot. Nothing is saved until you apply it."
+      description="Suggest slots for unscheduled sessions. Review before applying."
       size="lg"
       footer={
         <div className={styles.detailActions}>

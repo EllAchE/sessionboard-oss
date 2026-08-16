@@ -166,7 +166,7 @@ export function TemplateManager({
         }}
         size="lg"
         title={draft?.isNew ? 'New template' : `Edit ${draft?.name ?? ''}`}
-        description="Bodies are markdown. Merge fields resolve per recipient at send time."
+        description="Markdown with per-recipient merge fields."
         footer={
           <>
             <Button variant="ghost" onClick={() => setDraft(null)}>
@@ -236,12 +236,9 @@ export function TemplateManager({
                 id="templateSmsBody"
                 value={draft.smsBody ?? ''}
                 onChange={(e) => setDraft({ ...draft, smsBody: e.target.value })}
-                placeholder="Leave blank to fall back to a trimmed version of the email body above."
+                placeholder="Optional"
               />
-              <span className={styles.subtle}>
-                Sent to anyone who prefers text over email. Empty falls back to the email body,
-                stripped of markdown and truncated.
-              </span>
+              <span className={styles.subtle}>Defaults to a plain-text version of the email.</span>
             </div>
 
             <div className={styles.row}>

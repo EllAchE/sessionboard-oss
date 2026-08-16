@@ -88,7 +88,7 @@ export function QuickActions({
         open={open}
         onOpenChange={setOpen}
         title="Health & quick actions"
-        description="Hotkeys and useful places, kept close by."
+        description="Shortcuts and system status."
         className={styles.drawer}
       >
         <div className={styles.stack}>
@@ -98,7 +98,6 @@ export function QuickActions({
             </span>
             <div className={styles.healthCopy}>
               <strong>Organizer workspace ready</strong>
-              <span>You are connected to this event workspace.</span>
             </div>
             <span className={styles.ready}>Ready</span>
           </div>
@@ -178,10 +177,7 @@ export function QuickActions({
             {helperOpen ? (
               <div className={styles.helperNote} id={helperId} role="status">
                 <strong>Not implemented yet</strong>
-                <p>
-                  A live LLM helper would be straightforward to add later. This preview does not start an agent, send a
-                  prompt or use any model tokens.
-                </p>
+                <p>This helper is not implemented.</p>
                 <Button variant="secondary" size="sm" onClick={() => setHelperOpen(false)}>
                   Got it
                 </Button>

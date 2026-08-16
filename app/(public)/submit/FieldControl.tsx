@@ -216,7 +216,7 @@ export function FieldControl({
             </label>
           ))}
           {(field.options ?? []).length === 0 && (
-            <p className={styles.help}>The organizers have not set up any choices for this yet.</p>
+            <p className={styles.help}>No choices configured.</p>
           )}
         </div>
       );

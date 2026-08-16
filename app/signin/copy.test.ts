@@ -10,17 +10,17 @@ describe('authentication copy', () => {
     });
   });
 
-  it('directs log-transport users to the on-page link', () => {
+  it('does not explain the log transport', () => {
     expect(deliveryCopy('sign-up', 'logged', 'new@example.com')).toEqual({
       lead: 'Your account is ready.',
-      hint: 'Email delivery is disabled on this demo. Use the link above to continue.',
+      hint: null,
     });
   });
 
-  it('explains why a seeded demo identity gets its link on screen', () => {
+  it('does not explain seeded demo delivery', () => {
     expect(deliveryCopy('sign-in', 'demo', 'organizer@example.com')).toEqual({
       lead: 'Your secure sign-in link is ready.',
-      hint: 'This is a seeded demo account, at a reserved domain with no inbox behind it. Use the link above to continue.',
+      hint: null,
     });
   });
 
