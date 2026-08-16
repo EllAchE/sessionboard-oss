@@ -52,7 +52,8 @@ Then open <http://localhost:3000>. That brings up the app, Postgres and MinIO, m
 database before serving, and creates the file bucket — there is no second command and nothing to
 configure. Email has no API key in a fresh clone, so every message the app would send is recorded
 and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
-a real inbox.
+a real inbox. The first page starts in cold-create mode; demo links appear automatically after the
+optional sample data below is loaded.
 
 To load the demo conferences:
 
