@@ -72,6 +72,7 @@ function row(overrides: Partial<OutstandingTaskRow> = {}): OutstandingTaskRow {
     daysUntilDue: null,
     urgency: 'open',
     lastRemindedAt: null,
+    awaitingAction: false,
     ...overrides,
   };
 }

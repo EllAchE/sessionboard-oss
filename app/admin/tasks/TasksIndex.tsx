@@ -263,7 +263,11 @@ export function TasksIndex({
           label="Overdue"
           tone={summary.overdue > 0 ? 'danger' : 'success'}
         />
-        <Counter value={summary.dueSoon} label="Due within a week" tone="warning" />
+        <Counter
+          value={summary.awaitingAction}
+          label="Awaiting me"
+          tone={summary.awaitingAction > 0 ? 'danger' : 'success'}
+        />
         <Counter value={summary.outstanding} label="Outstanding" />
         <Counter value={`${summary.completionPct}%`} label="Completion" />
       </div>
@@ -295,7 +299,7 @@ export function TasksIndex({
             <CardTitle>Who owes what</CardTitle>
           </CardHeader>
           <CardBody>
-            <OutstandingTasks rows={assignments} />
+            <OutstandingTasks rows={assignments} initialFilter="awaiting_me" />
           </CardBody>
         </Card>
       ) : (

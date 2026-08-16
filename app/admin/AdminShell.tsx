@@ -17,7 +17,7 @@ import {
   Users,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
-import { CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
+import { Badge, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import type { EventSummary } from '@/lib/services/events';
 import { EventSwitcher } from './EventSwitcher';
 import { QuickActions } from './QuickActions';
@@ -73,16 +73,41 @@ export function AdminShell({
   events,
   currentEventId,
   actorName,
+  awaitingTaskActions,
 }: {
   children: React.ReactNode;
   events: EventSummary[];
   currentEventId: string;
   actorName: string;
+  awaitingTaskActions: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
   const currentEvent = events.find((event) => event.id === currentEventId) ?? events[0];
+  const navigation = useMemo(
+    () =>
+      NAV.map((section) => ({
+        ...section,
+        items: section.items.map((item) =>
+          item.id === 'tasks' && awaitingTaskActions > 0
+            ? {
+                ...item,
+                badge: (
+                  <Badge
+                    tone="danger"
+                    aria-label={`${awaitingTaskActions} task follow-ups awaiting you`}
+                    title="Overdue task follow-ups awaiting you"
+                  >
+                    {awaitingTaskActions > 99 ? '99+' : awaitingTaskActions}
+                  </Badge>
+                ),
+              }
+            : item,
+        ),
+      })),
+    [awaitingTaskActions],
+  );
 
   /** Longest matching href wins, so /admin/forms/abc highlights Forms rather than Overview. */
   const activeId = useMemo(() => {
@@ -118,7 +143,7 @@ export function AdminShell({
     <div className={styles.root}>
       <aside className={styles.sidebar}>
         <SidebarNav
-          sections={NAV}
+          sections={navigation}
           activeId={activeId}
           header={<CiceroBrand markSize={22} />}
         />

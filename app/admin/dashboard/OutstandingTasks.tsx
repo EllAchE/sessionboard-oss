@@ -11,6 +11,7 @@ import styles from './dashboard.module.css';
 
 type SortKey = 'urgency' | 'person' | 'task' | 'due' | 'status';
 type Direction = 'asc' | 'desc';
+type TaskFilter = 'awaiting_me' | 'outstanding' | TaskUrgency | 'all';
 
 const URGENCY_ORDER: Record<TaskUrgency, number> = {
   overdue: 0,
@@ -124,12 +125,14 @@ function downloadCsv(rows: OutstandingTaskRow[]): void {
 export function OutstandingTasks({
   rows,
   compact = false,
+  initialFilter = 'outstanding',
 }: {
   rows: OutstandingTaskRow[];
   compact?: boolean;
+  initialFilter?: TaskFilter;
 }) {
   const [query, setQuery] = useState('');
-  const [urgency, setUrgency] = useState<'outstanding' | TaskUrgency | 'all'>('outstanding');
+  const [urgency, setUrgency] = useState<TaskFilter>(initialFilter);
   const [taskId, setTaskId] = useState('all');
   const [acceptedOnly, setAcceptedOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('urgency');
@@ -146,8 +149,15 @@ export function OutstandingTasks({
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const filtered = rows.filter((row) => {
+      if (urgency === 'awaiting_me' && !row.awaitingAction) return false;
       if (urgency === 'outstanding' && row.urgency === 'done') return false;
-      if (urgency !== 'outstanding' && urgency !== 'all' && row.urgency !== urgency) return false;
+      if (
+        urgency !== 'awaiting_me' &&
+        urgency !== 'outstanding' &&
+        urgency !== 'all' &&
+        row.urgency !== urgency
+      )
+        return false;
       if (taskId !== 'all' && row.taskId !== taskId) return false;
       if (acceptedOnly && !row.accepted) return false;
       if (!needle) return true;
@@ -291,6 +301,7 @@ export function OutstandingTasks({
           aria-label="Filter by urgency"
           onChange={(e) => setUrgency(e.target.value as typeof urgency)}
         >
+          <option value="awaiting_me">Awaiting me</option>
           <option value="outstanding">Outstanding</option>
           <option value="overdue">Overdue only</option>
           <option value="due_soon">Due within a week</option>
@@ -334,7 +345,11 @@ export function OutstandingTasks({
         columns={columns}
         rows={compact ? visible.slice(0, 10) : visible}
         getRowId={(row) => row.id}
-        emptyState="Nothing outstanding. Every assigned task is complete."
+        emptyState={
+          urgency === 'awaiting_me'
+            ? 'Nothing is awaiting your follow-up.'
+            : 'Nothing outstanding. Every assigned task is complete.'
+        }
       />
       {compact && visible.length > 10 ? (
         <p className={styles.counterHint}>
