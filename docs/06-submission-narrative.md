@@ -365,7 +365,7 @@ moving `@opennextjs/cloudflare` from `devDependencies` to `dependencies` so Verc
 it, and a docs section.
 
 That is the payoff of a decision made on day one and argued for in writing before it was needed:
-**Postgres, S3-compatible storage and HTTP email are all host-agnostic, so the host is reversible.**
+**Postgres, S3-compatible storage and Resend's submission endpoints are host-agnostic, so the host is reversible.**
 The rejected alternative makes it concrete — SQLite plus `better-sqlite3` plus local disk would have
 been faster to stand up and would have turned this same fallback into a rewrite: different driver,
 different storage story, every query migrated. The escape hatch was worth more than the head start,
