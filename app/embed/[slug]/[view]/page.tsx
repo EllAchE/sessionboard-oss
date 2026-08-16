@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { getPublicExhibitorMap } from '@/lib/services/exhibitor-map';
 import { EmbedBody } from '../../EmbedBody';
+import { ExhibitorMapWidget } from '../../views/ExhibitorMapWidget';
 import {
   EMBED_VIEW_LABEL,
   isEmbedView,
@@ -36,6 +38,22 @@ export default async function EmbedViewPage({
 }) {
   const [{ slug, view }, search] = await Promise.all([params, searchParams]);
   if (!isEmbedView(view)) notFound();
+
+  if (view === 'exhibitor-map') {
+    const published = await getPublicExhibitorMap(slug);
+    if (!published) notFound();
+    return (
+      <ExhibitorMapWidget
+        eventName={published.eventName}
+        file={
+          published.file && published.fileUrl
+            ? { filename: published.file.filename, url: published.fileUrl }
+            : null
+        }
+        options={parseEmbedOptions(search)}
+      />
+    );
+  }
 
   const bundle = await loadPublicBundle(slug);
   if (!bundle) notFound();

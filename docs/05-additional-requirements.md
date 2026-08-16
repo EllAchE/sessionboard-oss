@@ -371,6 +371,23 @@ organizer's call.
 
 ---
 
+## 10. Exhibitor map
+
+The first version is deliberately a document, not a floor-plan editor. An organizer should be able
+to publish the map they already have without recreating booths or exhibitor data in Cicero. The
+upload is the configuration: no coordinates, booth records, or map-specific authoring are required.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-36 | **[REQUIRED]** | SHIPPED | **An organizer can upload one PDF exhibitor map for an event and expose it as an embed.** Admin → Exhibitor map uploads, replaces, or removes the current PDF through the ordinary event-scoped storage path; server validation checks the MIME type, `.pdf` extension, 25 MB ceiling, and `%PDF-` signature. Uploading publishes immediately, while replacement keeps the stable embed URL and removal revokes it before deleting the bytes. The same screen previews the map and copies script or iframe snippets for `/embed/:slug/exhibitor-map`; its current-slot-only file route is unauthenticated, responsive, non-cacheable, and offers inline, open, and download paths. The embedded result remains the uploaded static document — there are no interactive booths, hotspots, search, wayfinding, or map-region links (`event_exhibitor_map`, `lib/services/exhibitor-map.ts`, `app/admin/exhibitor-map/**`, `app/embed/views/ExhibitorMapWidget.tsx`, migration `0021`) |
+
+**Future work, not part of AR-36:** multiple floors or maps, structured booth placement, clickable
+exhibitor regions, map search and filtering, attendee wayfinding, and richer embed presentation or
+accessibility controls. Those enhancements should build on the basic upload-and-embed path rather
+than block it.
+
+---
+
 ## Decisions
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so
@@ -397,6 +414,6 @@ question that blocks a build.
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
 | [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
-| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds) |
+| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule, AR-25's transport choice, and AR-36's public-file authorization boundary are recorded there |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds), and AR-36 in W6 on W2's file-storage primitives |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |
