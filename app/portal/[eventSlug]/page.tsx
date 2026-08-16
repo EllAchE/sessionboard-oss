@@ -13,6 +13,7 @@ import {
   SUBMISSION_STATUS_LABEL,
   formatDate,
   formatTimeRange,
+  profileGapSummary,
   relativeDue,
   submissionTone,
   taskTone,
@@ -190,9 +191,7 @@ export default async function PortalHomePage({
           <h2 className={styles.sectionTitle}>Your profile</h2>
           <Card>
             <CardHeader>
-              <CardTitle>
-                {gaps.length === 0 ? 'Your profile is complete' : `${gaps.length} things left`}
-              </CardTitle>
+              <CardTitle>{profileGapSummary(gaps.length)}</CardTitle>
             </CardHeader>
             <CardBody>
               {gaps.length === 0 ? (
