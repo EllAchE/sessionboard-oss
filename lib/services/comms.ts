@@ -2346,12 +2346,22 @@ export async function runEventDeadlineReminders(
           baseSms: person.notifySms,
           phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
         });
+        /*
+         * Scoped to this event, unlike the form-deadline guard above. A milestone is a property of
+         * the edition, so the same organizer running two conferences holds two genuinely different
+         * `deadline.speakers` dates — and a guard keyed only on address and template key would read
+         * the first event's send as covering the second and drop it silently. The address alone is
+         * enough for `form.deadline` because a form belongs to one event and its recipients are that
+         * event's speakers; it is not enough here, and `email_log_event_created_idx` already covers
+         * the column.
+         */
         const alreadyEmailed = delivery.notifyEmail
           ? await db
               .select({ id: emailLog.id })
               .from(emailLog)
               .where(
                 and(
+                  eq(emailLog.eventId, row.id),
                   eq(emailLog.toEmail, person.email),
                   eq(emailLog.templateKey, milestone.templateKey),
                   gte(emailLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
@@ -2366,6 +2376,7 @@ export async function runEventDeadlineReminders(
                 .from(smsLog)
                 .where(
                   and(
+                    eq(smsLog.eventId, row.id),
                     eq(smsLog.toPhone, person.phone),
                     eq(smsLog.templateKey, milestone.templateKey),
                     gte(smsLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),

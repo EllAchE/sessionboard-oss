@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { deadlinePatch, eventWriteSchemas, pickDefaultEvent } from './events';
+import {
+  assertUntouchedDeadlinesFit,
+  deadlinePatch,
+  eventWriteSchemas,
+  pickDefaultEvent,
+} from './events';
 
 const TODAY = new Date('2026-08-12T00:00:00Z');
 
@@ -153,6 +158,51 @@ describe('the event deadlines', () => {
         STARTS_AT,
       ),
     ).not.toThrow();
+  });
+
+  /**
+   * The rule has a second half, because the two sides of the comparison can each move. `updateEvent`
+   * calls this only when the window itself changed, which is why nothing here needs a `now`: a
+   * milestone in the past is fine and always was.
+   */
+  describe('when the window moves under a milestone the caller did not send', () => {
+    const EARLIER = new Date('2026-09-20T16:00:00Z');
+    const stored = { speakerDeadlineAt: new Date('2026-10-01T17:00:00Z'), agendaDeadlineAt: null };
+
+    it('refuses a start that would leave the stored milestone inside the event', () => {
+      expect(() => assertUntouchedDeadlinesFit(stored, {}, EARLIER)).toThrow(
+        /after the event starts/,
+      );
+    });
+
+    it('reports the problem against the field the organizer just touched', () => {
+      try {
+        assertUntouchedDeadlinesFit(stored, {}, EARLIER);
+        expect.unreachable('the start should have been refused');
+      } catch (error) {
+        expect((error as { details?: Record<string, string> }).details?.startsAt).toMatch(
+          /speaker deadline/,
+        );
+      }
+    });
+
+    it('says nothing about a milestone the same write is already replacing', () => {
+      const replacing = { speakerDeadlineAt: new Date('2026-09-01T17:00:00Z') };
+      expect(() => assertUntouchedDeadlinesFit(stored, replacing, EARLIER)).not.toThrow();
+    });
+
+    it('says nothing about one the same write is clearing', () => {
+      expect(() =>
+        assertUntouchedDeadlinesFit(stored, { speakerDeadlineAt: null }, EARLIER),
+      ).not.toThrow();
+    });
+
+    it('leaves a start the stored milestones still fit alone', () => {
+      expect(() => assertUntouchedDeadlinesFit(stored, {}, STARTS_AT)).not.toThrow();
+      expect(() =>
+        assertUntouchedDeadlinesFit({ speakerDeadlineAt: null, agendaDeadlineAt: null }, {}, EARLIER),
+      ).not.toThrow();
+    });
   });
 });
 

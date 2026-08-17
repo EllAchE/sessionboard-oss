@@ -386,6 +386,34 @@ export function deadlinePatch(
   return patch;
 }
 
+/**
+ * `AR-49`. `deadlinePatch`'s rule, applied to the milestones the caller did *not* send.
+ *
+ * Pulling the conference earlier is the case that matters: a stored deadline does not move when the
+ * window does, so without this an edition could end up persisting a roster date in the middle of
+ * itself — a state `deadlinePatch` refuses to be handed directly. Refusing the window change rather
+ * than quietly clearing or clamping the milestone keeps the organizer the one who decides what the
+ * new date is, and the problem is reported against `startsAt` because that is the field they just
+ * touched.
+ *
+ * The caller only invokes this when the window actually moved. A milestone that is merely in the
+ * past is nobody's error and must stay writable — see §16 of `docs/05-additional-requirements.md`.
+ */
+export function assertUntouchedDeadlinesFit(
+  current: Partial<Record<DeadlineKey, Date | null>>,
+  patch: Partial<Record<DeadlineKey, unknown>>,
+  startsAt: Date,
+): void {
+  for (const { key, what } of DEADLINE_FIELDS) {
+    if (patch[key] !== undefined) continue;
+    const at = current[key];
+    if (!at || at.getTime() <= startsAt.getTime()) continue;
+    throw invalid(`The ${what} falls after the event starts`, {
+      startsAt: `Move the ${what} first — it falls after this start`,
+    });
+  }
+}
+
 function windowOrThrow(timezone: string, startsAt: string, endsAt: string): EventWindow {
   const resolved = resolveEventWindow(timezone, startsAt, endsAt);
   if (!resolved.ok) {
@@ -480,6 +508,12 @@ export async function updateEvent(ctx: EventContext, input: UpdateEventInput) {
     else if (rezone && current[key]) readings[key] = utcToLocalInput(current[key]!, current.timezone);
   }
   Object.assign(patch, deadlinePatch(readings, timezone, startsAt));
+
+  // A milestone the caller left alone still has to satisfy the rule the caller's own writes do,
+  // but only once the window has actually moved under it.
+  if (startsAt.getTime() !== current.startsAt.getTime()) {
+    assertUntouchedDeadlinesFit(current, patch, startsAt);
+  }
 
   if (Object.keys(patch).length === 0) return current;
 
