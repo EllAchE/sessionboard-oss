@@ -5,7 +5,7 @@ import type { OutstandingTaskRow, TaskUrgency } from './dashboard';
 function row(
   participantId: string,
   urgency: TaskUrgency,
-  status: OutstandingTaskRow['status'] = 'pending',
+  status: OutstandingTaskRow['status'] = 'not_started',
 ): OutstandingTaskRow {
   return {
     id: `${participantId}-${urgency}-${status}`,
@@ -17,7 +17,7 @@ function row(
     sessionTitles: [],
     taskId: 'task-1',
     taskName: 'Headshot',
-    taskKind: 'file',
+    taskKind: 'file_upload',
     required: true,
     status,
     dueAt: null,
