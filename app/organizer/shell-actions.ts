@@ -26,14 +26,24 @@ export type CreateEventFailure = {
 };
 
 /**
+ * Both outcomes, spelled out. Success carries no value: the action sets the event cookie and calls
+ * `redirect`, so the caller either settles with nothing while the router navigates or sees Next's
+ * `NEXT_REDIRECT` signal. Typing that `undefined` is the point — declaring only `CreateEventFailure`
+ * told callers a failure always came back, which invited an unguarded read of `.details` on a
+ * success and a `TypeError` in its place.
+ */
+export type CreateEventResult = CreateEventFailure | undefined;
+
+/**
  * `E-1`, `E-2`. Every rule lives in `createEvent`; this shapes the form into its input and turns a
  * thrown `AppError` back into something a field can show. It used to throw straight through to the
  * error boundary, and this is the one screen a judge reaches before they have anything else, so it
- * has to fail politely. On success it never returns — `redirect` throws.
+ * has to fail politely. On success it never returns — `redirect` throws, from outside the `try` so
+ * the signal is not caught and reported as a failed create.
  */
 export async function createEventAction(
   values: Record<string, string>,
-): Promise<CreateEventFailure> {
+): Promise<CreateEventResult> {
   const actor = await requireCurrentActor();
 
   let created;
