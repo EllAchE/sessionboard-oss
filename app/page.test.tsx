@@ -48,7 +48,7 @@ describe('fresh-instance home page', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
 
     expect(html).toContain('Fresh instance');
-    expect(html).toContain('Create the first event');
+    expect(html).toContain('Create your first event');
     expect(html).toContain('href="/signup"');
     expect(html).not.toContain('href="/demo"');
     expect(html).not.toContain('href="/demo/agenda"');
