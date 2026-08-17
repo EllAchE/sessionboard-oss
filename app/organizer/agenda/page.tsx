@@ -2,7 +2,7 @@ import { can } from '@/lib/context';
 import { currentEventContext } from '@/lib/services/events';
 import { AgendaBoard } from './AgendaBoard';
 import { agendaModelConfigured } from './ai-actions';
-import { loadAgenda, toWire } from './data';
+import { loadAgenda, toWire, unavailabilityToWire } from './data';
 
 /**
  * The board's server shell. Everything the client needs arrives in one payload from `loadAgenda`,
@@ -27,6 +27,7 @@ export default async function AgendaPage() {
       tracks={data.tracks}
       formats={data.formats}
       entries={toWire(data.entries)}
+      unavailability={unavailabilityToWire(data.unavailability)}
       queue={data.queue}
       descriptions={data.descriptions}
       modelConfigured={modelConfigured}

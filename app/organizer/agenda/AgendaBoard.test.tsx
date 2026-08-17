@@ -42,6 +42,7 @@ describe('AgendaBoard conference view', () => {
           tracks={[]}
           formats={[]}
           entries={[]}
+          unavailability={[]}
           queue={[]}
           descriptions={{}}
           modelConfigured={false}
