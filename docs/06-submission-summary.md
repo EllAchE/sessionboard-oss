@@ -1,8 +1,8 @@
 # Cicero — submission (short form)
 
-## Philosophy First
+## Philosophy
 
-Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, and how that ultimately manifested in Cicero.
+Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, the experience/process of building and how that ultimately manifested in Cicero.
 
 ### Agent-first, portal-second
 
@@ -82,6 +82,22 @@ accept a talk or publish a schedule. Cicero drafts a targeted task reminder but 
 send it. External programme updates can be previewed and replayed idempotently before they are
 applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.
+
+## The Journey & The Tools
+
+I've spent a decent amount of time vibe coding so I've built up a good stable of tools, skills, tricks and process for shipping quickly. However still learned so much doing this. Here's my process and learnings. A TLDR first
+
+- Establish an efficient working environment first
+- Build eval loops and run them autonomously
+- Figure out a way to codify "taste"
+
+I started by creating a new cicero/sessionboard-oss repo, but still was agents from my primary working codebase. The reasoning behind this was that I built a lot of tooling centered around that repo. It worked decently for a while, but was ultimately I decided that the setup time was worth it for the performance benefits I would get from running everything from the root repo. From there, super smooth sailing. Takeaway - Establish an efficient working environment first
+
+The next learning I need to give credit to the Smol team for. They built a great eval tool set that I was able to run to assess the coverage of my own product. I ran it multiple times and even attempted to set it to run overnight in a remote dev box one night. I saw massive massive value in codifying outcomes and giving a verofocatopm step. You move so much faster, because you can just let an agent keep trying and verifying until it reaches its goal.
+
+I've laid this philosophy out before at String, but without going deeply into it, There's an order of magnitude greater efficiency that you can achieve with a well structured eval loop and when you're still directing each action/agentic session. Building for verification loops is the next paradigm in agentic coding; if you aren't already doing it you're falling behind the frontier. The trade off of letting an agent run like this is that your agent can drift quite far from the original requirements. The best way to mitigate that is strong verifciation, simplicity and tests.
+
+The last point is less a learning and more an unsolved problem - in this projectthe biggest challenge came in the final stage, when I needed to incorporate taste. What that meant - baking in all the lifetime learnings I've had about good product design, good UI and good UX in a way that an agent could follow; not just in places where I saw bad design but app wide. I have yet to succeed in getting an agent to generalize good UX/UI/product design beyond any 1 place in which I am call out a bad design decision. I have seen so many skills promise this but have yet to see one deliver on that promise.. Would love to change that though!
 
 ## What it is
 
