@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import {
   durationMinutes,
   formatClock,
@@ -16,6 +16,7 @@ import {
   type PublicBundle,
   type PublicSession,
 } from '../model';
+import { starActionLabel, useMySchedule } from '../my-schedule';
 import { RecordingLink, SessionChips, ShowMore, SpeakerRoster } from './parts';
 import styles from '../embed.module.css';
 
@@ -158,6 +159,9 @@ export function AgendaWidget({
   const initialDay = days.findIndex((day) => day.date === options.day);
   const [dayIndex, setDayIndex] = useState(initialDay === -1 ? 0 : initialDay);
   const [openId, setOpenId] = useState<string | null>(null);
+  /* `EMB-09`. The grid writes into the same store the itinerary reads, so a talk starred here is
+     already in the attendee's schedule by the time they open that tab. */
+  const { isStarred, toggle: toggleStar } = useMySchedule(bundle.event.slug);
 
   const roomOrder = useMemo(
     () => [...bundle.rooms.map((room) => room.name)].sort((a, b) => a.localeCompare(b)),
@@ -184,6 +188,17 @@ export function AgendaWidget({
           <button type="button" className={styles.controlButton} onClick={() => setOpenId(null)}>
             <ArrowLeft size={14} aria-hidden />
             Back to agenda
+          </button>
+          <button
+            type="button"
+            className={styles.starButton}
+            data-starred={isStarred(open.id)}
+            aria-pressed={isStarred(open.id)}
+            aria-label={starActionLabel(open.title, isStarred(open.id))}
+            onClick={() => toggleStar(open.id)}
+          >
+            <Star size={14} aria-hidden fill={isStarred(open.id) ? 'currentColor' : 'none'} />
+            {isStarred(open.id) ? 'In my schedule' : 'Add to my schedule'}
           </button>
         </div>
         <div className={styles.detail}>
@@ -316,49 +331,88 @@ export function AgendaWidget({
             );
           })}
 
-          {layout.placements.map((entry) => (
-            <button
-              key={entry.session.id}
-              type="button"
-              className={styles.block}
-              data-compact={entry.endRow - entry.startRow <= 2}
-              id={`session-${entry.session.ref}`}
-              aria-label={`${entry.session.title}, ${formatTimeRange(entry.session, bundle.event.timezone)}, ${entry.session.room ?? 'room to be announced'}${entry.session.track ? `, ${entry.session.track} track` : ''}`}
-              style={
-                {
-                  gridColumn: entry.column + 2,
-                  gridRow: `${entry.startRow} / ${entry.endRow}`,
-                  '--lane': entry.lane,
-                  '--lanes': entry.lanes,
-                } as CSSProperties
-              }
-              onClick={() => setOpenId(entry.session.id)}
-            >
-              <span className={styles.blockTime}>
-                {formatTimeRange(entry.session, bundle.event.timezone)}
-              </span>
-              <span className={styles.blockTitle}>{entry.session.title}</span>
-              <span className={styles.blockMeta}>
-                {[entry.session.track, entry.session.format].filter(Boolean).join(' · ')}
-              </span>
-            </button>
-          ))}
+          {/*
+            The block and its star are siblings inside the placed cell rather than nested controls:
+            one opens the session, the other adds it to the schedule, and a button inside a button is
+            neither valid markup nor operable from a keyboard.
+          */}
+          {layout.placements.map((entry) => {
+            const starred = isStarred(entry.session.id);
+            return (
+              <div
+                key={entry.session.id}
+                className={styles.blockShell}
+                style={
+                  {
+                    gridColumn: entry.column + 2,
+                    gridRow: `${entry.startRow} / ${entry.endRow}`,
+                    '--lane': entry.lane,
+                    '--lanes': entry.lanes,
+                  } as CSSProperties
+                }
+              >
+                <button
+                  type="button"
+                  className={styles.block}
+                  data-compact={entry.endRow - entry.startRow <= 2}
+                  data-starred={starred}
+                  id={`session-${entry.session.ref}`}
+                  aria-label={`${entry.session.title}, ${formatTimeRange(entry.session, bundle.event.timezone)}, ${entry.session.room ?? 'room to be announced'}${entry.session.track ? `, ${entry.session.track} track` : ''}`}
+                  onClick={() => setOpenId(entry.session.id)}
+                >
+                  <span className={styles.blockTime}>
+                    {formatTimeRange(entry.session, bundle.event.timezone)}
+                  </span>
+                  <span className={styles.blockTitle}>{entry.session.title}</span>
+                  <span className={styles.blockMeta}>
+                    {[entry.session.track, entry.session.format].filter(Boolean).join(' · ')}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.blockStar}
+                  data-starred={starred}
+                  aria-pressed={starred}
+                  aria-label={starActionLabel(entry.session.title, starred)}
+                  onClick={() => toggleStar(entry.session.id)}
+                >
+                  <Star size={12} aria-hidden fill={starred ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {layout.undated.length > 0 ? (
         <div className={styles.itineraryList} style={{ marginTop: 'var(--space-4)' }}>
-          {layout.undated.map((session) => (
-            <article key={session.id} className={styles.sessionCard}>
-              <h3 className={styles.sessionTitle}>{session.title}</h3>
-              <SessionChips session={session} options={options} />
-              <SpeakerRoster session={session} speakerBase={speakerBase} />
-              <RecordingLink session={session} />
-              {options.showDescription ? (
-                <ShowMore text={session.descriptionText} html={session.descriptionHtml} />
-              ) : null}
-            </article>
-          ))}
+          {layout.undated.map((session) => {
+            const starred = isStarred(session.id);
+            return (
+              <article key={session.id} className={styles.itineraryCard}>
+                <div className={styles.itineraryBody}>
+                  <h3 className={styles.sessionTitle}>{session.title}</h3>
+                  <SessionChips session={session} options={options} />
+                  <SpeakerRoster session={session} speakerBase={speakerBase} />
+                  <RecordingLink session={session} />
+                  {options.showDescription ? (
+                    <ShowMore text={session.descriptionText} html={session.descriptionHtml} />
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className={styles.starButton}
+                  data-starred={starred}
+                  aria-pressed={starred}
+                  aria-label={starActionLabel(session.title, starred)}
+                  onClick={() => toggleStar(session.id)}
+                >
+                  <Star size={14} aria-hidden fill={starred ? 'currentColor' : 'none'} />
+                  {starred ? 'In my schedule' : 'Add to my schedule'}
+                </button>
+              </article>
+            );
+          })}
         </div>
       ) : null}
     </div>

@@ -19,3 +19,19 @@ describe('organizer route compatibility', () => {
     });
   });
 });
+
+describe('public API CORS', () => {
+  it('lets a cross-origin caller preflight and call every /api/v1 route', async () => {
+    expect(nextConfig.headers).toBeTypeOf('function');
+
+    const headerGroups = await nextConfig.headers!();
+    const apiGroup = headerGroups.find((group) => group.source === '/api/v1/:path*');
+
+    expect(apiGroup).toBeDefined();
+    const headers = Object.fromEntries(apiGroup!.headers.map(({ key, value }) => [key, value]));
+
+    expect(headers['Access-Control-Allow-Origin']).toBe('*');
+    expect(headers['Access-Control-Allow-Methods']).toContain('POST');
+    expect(headers['Access-Control-Allow-Headers']).toContain('Authorization');
+  });
+});

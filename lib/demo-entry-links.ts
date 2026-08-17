@@ -19,10 +19,23 @@ export const DEMO_ENTRY_LINKS = {
 } as const;
 
 /**
- * The fourth way into the same seeded event: the site it publishes to attendees. It takes no
- * account, so it is not a sign-in entry point and stays out of `DEMO_ENTRY_LINKS`, whose every
- * value is a passwordless sign-in URL that callers hand to a signed-out visitor as a role tour.
- * Gate it on the same `demoEntryPointsAreAvailable` check regardless: an unseeded instance has no
- * event at this slug to show.
+ * The fourth way into the same seeded event: the site it publishes to attendees, page by page. None
+ * of these takes an account, so they are not sign-in entry points and stay out of
+ * `DEMO_ENTRY_LINKS`, whose every value is a passwordless sign-in URL that callers hand to a
+ * signed-out visitor as a role tour — `app/page.test.tsx` iterates that constant asserting none of
+ * its values reach a fresh instance, and these carry no identity to keep out. Gate them on the same
+ * `demoEntryPointsAreAvailable` check regardless: an unseeded instance has no event at this slug.
  */
-export const DEMO_PUBLIC_SITE_LINK = `/${DEMO_EVENT_SLUG}`;
+export const DEMO_PUBLIC_LINKS = {
+  event: `/${DEMO_EVENT_SLUG}`,
+  agenda: `/${DEMO_EVENT_SLUG}/agenda`,
+  sessions: `/${DEMO_EVENT_SLUG}/sessions`,
+  speakers: `/${DEMO_EVENT_SLUG}/speakers`,
+  sponsors: `/${DEMO_EVENT_SLUG}/sponsors`,
+} as const;
+
+/** The event's front door, for callers that want the site rather than one of its pages. */
+export const DEMO_PUBLIC_SITE_LINK = DEMO_PUBLIC_LINKS.event;
+
+/** The published showcase of every embed view, running against the demo event. */
+export const EMBED_SHOWCASE_PATH = '/embeds';

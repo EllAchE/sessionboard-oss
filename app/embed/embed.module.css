@@ -935,9 +935,26 @@ a.sponsorMark:hover .sponsorName {
   pointer-events: none;
 }
 
+/*
+  The lane arithmetic lives on the shell so the block and its star can sit side by side in one placed
+  cell. The block itself then just fills what the shell was given.
+*/
+.blockShell {
+  position: relative;
+  width: calc(100% / var(--lanes, 1) - var(--space-1));
+  margin-left: calc(100% * var(--lane, 0) / var(--lanes, 1) + var(--space-05));
+  margin-right: var(--space-05);
+  z-index: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .block {
-  margin: 0 var(--space-05);
+  flex: 1;
+  min-width: 0;
   padding: var(--space-1) var(--space-2);
+  /* Clears the star, which is absolutely positioned over this edge. */
+  padding-right: var(--space-8);
   border-radius: var(--radius-sm);
   border: var(--border-width) solid var(--border-accent);
   border-left-width: var(--border-width-thick);
@@ -948,13 +965,55 @@ a.sponsorMark:hover .sponsorName {
   display: flex;
   flex-direction: column;
   gap: var(--space-05);
-  width: calc(100% / var(--lanes, 1) - var(--space-1));
-  margin-left: calc(100% * var(--lane, 0) / var(--lanes, 1) + var(--space-05));
-  z-index: 1;
   min-height: 0;
   transition:
     border-color var(--duration-fast) var(--ease-standard),
     box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/* A block already in the schedule keeps the full accent border, so the grid reads at a glance. */
+.block[data-starred='true'] {
+  border-color: var(--accent);
+}
+
+/*
+  Sits over the block's reserved right-hand padding. It is always visible rather than revealed on
+  hover, because a touch device never hovers and this is the whole point of the grid now.
+*/
+.blockStar {
+  position: absolute;
+  top: var(--space-05);
+  right: var(--space-05);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  padding: 0;
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-faint);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.blockStar:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.blockStar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.blockStar[data-starred='true'] {
+  border-color: var(--border-accent);
+  background: var(--accent-subtle);
+  color: var(--text-accent);
 }
 
 /*

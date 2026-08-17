@@ -42,10 +42,7 @@
 .mosaicRule,
 .about,
 .productsOverview,
-.product,
-.programme,
-.agentQuickStart,
-.finalCta {
+.agentQuickStart {
   width: min(100% - var(--space-12), var(--content-max));
   margin-inline: auto;
 }
@@ -112,11 +109,16 @@
   box-shadow: var(--shadow-sm);
 }
 
+/*
+ * Centred rather than top-aligned: the hero copy lost the role-demo list to the products section,
+ * and against the full-viewport minimum the shorter column left a screen-height gap under "Create
+ * an event" while the dashboard preview sat alone at the top of the right column.
+ */
 .hero {
   min-height: calc(100vh - 88px);
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  align-items: start;
+  align-items: center;
   gap: clamp(var(--space-10), 6vw, var(--space-20));
   padding-block: var(--space-20) var(--space-24);
 }
@@ -186,6 +188,11 @@
     inset 0 0 0 3px rgba(255, 255, 255, 0.58);
 }
 
+.agentStarterCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .agentStarterLabel {
   display: inline-flex;
   align-items: center;
@@ -201,6 +208,12 @@
   flex: 0 0 auto;
 }
 
+.agentStarterHint {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
+}
+
 .manualStart {
   display: flex;
   flex-wrap: wrap;
@@ -212,18 +225,6 @@
 .manualStart > span {
   color: var(--text-faint);
   font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
-}
-
-.personas {
-  width: 100%;
-  max-width: 540px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-5);
-  border-top: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 70%, transparent);
 }
 
 .freshStart {
@@ -244,96 +245,12 @@
   font: var(--type-body);
 }
 
-.personasTitle {
+.freshStartTitle {
   margin: 0;
   color: var(--text-faint);
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
-}
-
-.personaList {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.persona {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.92)),
-    url('/assets/roman/materials/carrara-marble.webp') center / 280px 280px;
-  box-shadow:
-    0 10px 24px rgba(52, 47, 39, 0.06),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease;
-}
-
-.persona:hover {
-  border-color: var(--border-accent);
-  transform: translateY(-1px);
-  box-shadow:
-    0 14px 30px rgba(52, 47, 39, 0.1),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.72);
-}
-
-.persona:focus-visible {
-  outline: none;
-  border-color: var(--border-accent);
-  box-shadow: var(--ring-focus);
-}
-
-.personaIcon {
-  grid-row: span 2;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-accent) 55%, var(--border-default));
-  border-radius: var(--radius-xs);
-  background: rgba(253, 244, 241, 0.84);
-  color: var(--text-accent);
-}
-
-.personaLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-strong);
-  font: var(--weight-semibold) var(--text-md) / 1.2 var(--font-ui);
-}
-
-.persona:hover .personaLabel,
-.persona:focus-visible .personaLabel {
-  color: var(--text-accent);
-}
-
-.personaBlurb {
-  color: var(--text-muted);
-  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .persona {
-    transition: none;
-  }
-
-  .persona:hover {
-    transform: none;
-  }
 }
 
 .heroVisual {
@@ -514,10 +431,6 @@
   margin-top: var(--space-2);
 }
 
-.product {
-  padding-block: var(--space-24) var(--space-32);
-}
-
 .productsOverview {
   padding-block: var(--space-24) var(--space-8);
 }
@@ -533,13 +446,48 @@
  * Four role cards share the row that used to hold three, so the icon sits above the copy instead of
  * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
  * break short headings like "Score proposals, not spreadsheets." across three lines.
+ *
+ * A flex column rather than the base card's grid: each card now ends with the demo link for its
+ * role, and `margin-top: auto` on that link keeps all four sitting on the same baseline however
+ * many lines the title and body above them take.
  */
 .feature.roleProduct {
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
 }
 
-.feature.roleProduct .featureIcon {
-  grid-row: auto;
+.roleProductDemo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  color: var(--text-accent);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-ui);
+  text-decoration: none;
+  transition: gap 120ms ease;
+}
+
+.roleProductDemo:hover {
+  gap: var(--space-3);
+}
+
+.roleProductDemo:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--ring-focus);
+}
+
+.roleProductDemo svg {
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roleProductDemo {
+    transition: none;
+  }
 }
 
 .feature .roleProductRole {
@@ -547,14 +495,6 @@
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
-}
-
-.speakerProduct {
-  margin-top: var(--space-24);
-  padding-inline: var(--space-12);
-  border-block: var(--border-width) solid rgba(111, 101, 87, 0.34);
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 0 0 5px rgba(255, 255, 255, 0.24);
 }
 
 .sectionHeading {
@@ -566,9 +506,7 @@
 
 .aboutHeading h2,
 .sectionHeading h2,
-.programmeCopy h2,
-.agentQuickIntro h2,
-.finalCta h2 {
+.agentQuickIntro h2 {
   margin: 0;
   color: var(--text-strong);
   font: var(--weight-regular) clamp(2.4rem, 5vw, 4rem) / 1.04 var(--font-display);
@@ -577,20 +515,11 @@
 
 .aboutBody > p,
 .sectionHeading > p:last-child,
-.programmeCopy > p,
-.agentQuickIntro > p:not(.eyebrow),
-.finalCta > p:not(.eyebrow) {
+.agentQuickIntro > p:not(.eyebrow) {
   max-width: 58ch;
   margin: 0;
   color: var(--text-muted);
   font: var(--weight-regular) var(--text-lg) / var(--leading-loose) var(--font-ui);
-}
-
-.features {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-6);
-  margin-top: var(--space-16);
 }
 
 .feature {
@@ -634,43 +563,6 @@
   font: var(--type-body);
 }
 
-.programme {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
-  align-items: center;
-  gap: clamp(var(--space-10), 7vw, var(--space-24));
-  padding: var(--space-12);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.91)),
-    url('/assets/roman/materials/carrara-marble.webp') center / 520px 520px;
-  box-shadow:
-    0 18px 42px rgba(52, 47, 39, 0.08),
-    inset 0 0 0 5px rgba(255, 255, 255, 0.62);
-}
-
-.programmeVisual {
-  overflow: hidden;
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-lg);
-}
-
-.programmeVisual img {
-  width: 100%;
-  height: auto;
-}
-
-.programmeCopy,
-.finalCta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-4);
-}
-
 .textLink {
   display: inline-flex;
   align-items: center;
@@ -683,6 +575,17 @@
 
 .textLink:hover {
   gap: var(--space-3);
+}
+
+.aboutFactLink {
+  color: inherit;
+  text-decoration-color: var(--border-default);
+  text-underline-offset: 3px;
+}
+
+.aboutFactLink:hover {
+  color: var(--text-accent);
+  text-decoration-color: currentColor;
 }
 
 .agentQuickStart {
@@ -801,6 +704,31 @@
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
 }
 
+.agentPromptActions,
+.agentProviders {
+  display: flex;
+  align-items: center;
+}
+
+.agentPromptActions {
+  gap: var(--space-4);
+}
+
+.agentProviders {
+  gap: var(--space-2);
+}
+
+.agentProviders img {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.agentProvidersMore {
+  color: var(--stone-300);
+  font: var(--weight-medium) var(--text-xs) / 1 var(--font-ui);
+  white-space: nowrap;
+}
+
 .agentPromptLabel svg,
 .agentPromptSafety svg {
   color: var(--vermilion-300);
@@ -854,35 +782,6 @@
   color: var(--stone-400);
 }
 
-.finalCta {
-  align-items: center;
-  margin-bottom: var(--space-20);
-  padding: var(--space-24) var(--space-10);
-  border: var(--border-width) solid var(--border-strong);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.9)),
-    url('/assets/roman/artifacts/mosaic-floor.webp') center / 760px auto;
-  box-shadow:
-    0 18px 42px rgba(52, 47, 39, 0.09),
-    inset 0 0 0 6px rgba(255, 255, 255, 0.6),
-    inset 0 0 0 7px rgba(116, 106, 91, 0.2);
-  text-align: center;
-}
-
-.finalCta h2,
-.finalCta > p:not(.eyebrow) {
-  max-width: 720px;
-}
-
-.finalCtaActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
-}
-
 @media (max-width: 1020px) {
   .hero {
     min-height: auto;
@@ -926,9 +825,7 @@
   }
 
   .about,
-  .features,
   .roleProducts,
-  .programme,
   .agentQuickStart {
     grid-template-columns: 1fr;
   }
@@ -937,13 +834,6 @@
     max-width: 18ch;
   }
 
-  .features {
-    gap: var(--space-8);
-  }
-
-  .programmeCopy {
-    max-width: 660px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -951,10 +841,7 @@
   .hero,
   .about,
   .productsOverview,
-  .product,
-  .programme,
-  .agentQuickStart,
-  .finalCta {
+  .agentQuickStart {
     width: min(100% - var(--space-8), var(--content-max));
   }
 
@@ -989,8 +876,7 @@
   }
 
   .agentStarter,
-  .manualStart,
-  .finalCtaActions {
+  .manualStart {
     width: 100%;
   }
 
@@ -998,8 +884,7 @@
     grid-template-columns: 1fr;
   }
 
-  .manualStart > *,
-  .finalCtaActions > * {
+  .manualStart > * {
     flex: 1 1 100%;
   }
 
@@ -1039,10 +924,8 @@
     border-radius: 0;
   }
 
-  .product,
   .productsOverview,
   .about,
-  .programme,
   .agentQuickStart {
     padding-block: var(--space-20);
   }
@@ -1051,16 +934,8 @@
     padding-inline: 0;
   }
 
-  .speakerProduct {
-    padding-inline: var(--space-5);
-  }
-
   .aboutFacts {
     grid-template-columns: 1fr;
-  }
-
-  .programme {
-    padding-inline: var(--space-5);
   }
 
   .agentQuickStart {
@@ -1072,8 +947,14 @@
     box-shadow: var(--shadow-lg);
   }
 
-  .features {
-    margin-top: var(--space-12);
+  .agentPromptHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agentPromptActions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .roleProducts {
@@ -1082,10 +963,6 @@
 
   .feature {
     grid-template-columns: auto 1fr;
-  }
-
-  .finalCta {
-    padding: var(--space-16) var(--space-5);
   }
 
   .mosaicRule {
