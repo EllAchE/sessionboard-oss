@@ -1,6 +1,7 @@
 import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { renderToStaticMarkup as renderRaw } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { ToastProvider } from '../../../components/ui';
 import {
   COLUMNS,
   DEFAULT_COLUMNS,
@@ -16,6 +17,14 @@ import {
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
+
+/**
+ * The export control reports its outcome through the toast context, so the queue now needs the same
+ * provider the app mounts in `app/layout.tsx`. On a server render the provider adds no markup of its
+ * own — it only supplies the context — so every assertion below still reads the queue's own HTML.
+ */
+const renderToStaticMarkup = (node: React.ReactElement) =>
+  renderRaw(<ToastProvider>{node}</ToastProvider>);
 
 const props: QueueProps = {
   rows: [],
@@ -38,11 +47,24 @@ const props: QueueProps = {
 };
 
 describe('SubmissionQueue review results export', () => {
-  it('links an organizer export to the currently selected round', () => {
+  /**
+   * `ABS-13`. This used to assert an `<a href>`. The control is now a button that fetches the file
+   * itself, because a link hands the request to the browser and the page can then say nothing about
+   * whether the export succeeded, failed on a permission, or never fired. See `ReviewExportButton`.
+   */
+  it('offers an organizer an export control for the currently selected round', () => {
     const html = renderToStaticMarkup(<SubmissionQueue {...props} />);
 
     expect(html).toContain('Export CSV');
-    expect(html).toContain('href="/organizer/submissions/export?round=round-1"');
+    expect(html).toContain('aria-label="Export review results as CSV"');
+    // The outcome has somewhere to be announced before anything has been exported.
+    expect(html).toContain('role="status"');
+  });
+
+  it('offers no export while no round is selected', () => {
+    const html = renderToStaticMarkup(<SubmissionQueue {...props} roundId="" />);
+
+    expect(html).not.toContain('Export CSV');
   });
 
   it('does not expose the organizer export to reviewers', () => {
