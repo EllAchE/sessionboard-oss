@@ -27,6 +27,7 @@
     "db:seed:first-settlement": "tsx --env-file-if-exists=.env db/seed-first-settlement.ts",
     "docs:openapi": "tsx scripts/generate-openapi.ts",
     "docs:mcp": "tsx scripts/generate-mcp-tools.ts",
+    "docs:submission": "tsx scripts/generate-submission-html.ts",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
     "cf:deploy": "bun run db:migrate:remote && opennextjs-cloudflare deploy"

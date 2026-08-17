@@ -6,7 +6,7 @@
 
 **Live demo:** <https://cicero-three.vercel.app>
 
-**Readable HTML:** <https://cicero-three.vercel.app/submission/summary>
+**Readable HTML:** [`submission/summary.html`](submission/summary.html)
 
 **Source:** <https://github.com/EllAchE/sessionboard-oss>
 

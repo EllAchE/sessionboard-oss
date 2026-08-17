@@ -6,15 +6,6 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['pg'],
   typedRoutes: false,
   /**
-   * Submission pages import the checked-in Markdown as source text. Webpack turns those files into
-   * strings at build time, so the Cloudflare bundle never needs filesystem access at runtime and
-   * the public HTML remains a true view of the canonical documents.
-   */
-  webpack(config) {
-    config.module.rules.push({ test: /\.md$/i, type: 'asset/source' });
-    return config;
-  },
-  /**
    * `/organizer` names the role that owns this workspace. Keep the old route working so saved
    * links, email logs, and external integrations migrate without becoming dead ends.
    */

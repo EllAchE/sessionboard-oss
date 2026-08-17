@@ -11,38 +11,31 @@ not on the same revision when this evidence was captured.
 
 **Hosted demo:** <https://cicero-three.vercel.app>
 
-**Readable HTML:** <https://cicero-three.vercel.app/submission/evidence>
+**Readable HTML:** [`submission/evidence.html`](submission/evidence.html)
 
-## Readable submission mirror: current-branch verification
+## Standalone submission mirror: current-branch verification
 
-After the original product walkthrough below, the three canonical submission documents were wired
-to public HTML views and verified from the current PR branch against the same isolated seeded
-Postgres and MinIO stack. The app ran at `http://localhost:3218`, with its local Hyperdrive binding
-pointed explicitly at that seeded database.
+The three canonical Markdown documents are mirrored into standalone, checked-in HTML files. They
+are repository artifacts, not application routes, and can be opened directly or served from any
+local static file server.
 
-| Route | Source | Browser result |
+| HTML artifact | Canonical source | Browser result |
 | --- | --- | --- |
-| `/submission` | `docs/06-submission-narrative.md` | Full write-up, internal document links, relative GitHub source links, headings, code and feature tables rendered |
-| `/submission/summary` | `docs/06-submission-summary.md` | Short-form copy rendered and the Short form tab was identified as the active document |
-| `/submission/evidence` | `docs/06-submission-evidence.md` | Evidence tables and all five locally bundled screenshots resolved from emitted Next.js assets |
+| `docs/submission/index.html` | `docs/06-submission-narrative.md` | Full write-up, cross-document links, source links, headings, code and feature tables rendered |
+| `docs/submission/summary.html` | `docs/06-submission-summary.md` | Short-form copy rendered and the Short form tab was identified as the active document |
+| `docs/submission/evidence.html` | `docs/06-submission-evidence.md` | Evidence tables and all five relative screenshot assets loaded successfully |
 
-`bun run lint`, `bun run typecheck`, `bun run build`, `bun run db:check`, and the full 1,433-test
-suite passed. A headless browser then navigated through all three documents and recorded four
-full-page screenshots plus a video; those visual artifacts are attached to
+`bun run docs:submission` regenerates all three files. CI runs the generator and fails if
+`docs/submission/` changes, making drift between the prose sources and reading copies visible. A
+headless browser navigated through all three standalone documents and recorded screenshots plus a
+video; those visual artifacts are attached to
 [PR #185](https://github.com/EllAchE/sessionboard-oss/pull/185).
 
-The production demo cannot expose these new routes until this PR is merged and deployed. That is a
-deployment-order constraint, not hidden parity: the hosted core checks in this document remain the
-current production evidence, while the submission mirror is current-branch evidence. The HTML
-routes must be repeated against the hosted origin as part of the final pre-submission deploy check.
-
-The production origin was rechecked after the PR branch was pushed. `/demo/agenda` remained healthy
-and its browser view reported 11 published sessions across five rooms. A subsequent API read
-returned HTTP 200 with 12 sessions across five rooms and zero unscheduled sessions; the hosted seed
-is mutable, so those counts are point-in-time evidence rather than a fixture guarantee.
-`/submission` returned the expected 404 because the branch was still unmerged. No preview-deployment
-check appeared on the PR, so there is no separate hosted branch environment to cite in place of
-that final production deploy.
+The production origin was rechecked separately after the PR branch was pushed. `/demo/agenda`
+remained healthy and its browser view reported 11 published sessions across five rooms. A
+subsequent API read returned HTTP 200 with 12 sessions across five rooms and zero unscheduled
+sessions; the hosted seed is mutable, so those counts are point-in-time evidence rather than a
+fixture guarantee. The standalone submission artifacts are intentionally outside that deployment.
 
 ## Current source: local production build and seeded walkthrough
 
