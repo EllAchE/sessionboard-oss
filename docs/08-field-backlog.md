@@ -336,16 +336,22 @@ explicitly declining an assignment — proposing is the reading that fits.
 
 *Touches:* reviewer affiliation column (W0), `lib/services/review.ts` auto-assign and queue (W3).
 
-### 16. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M**
+### 16. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M** · **built**
 
-`scorecard_criterion` (`db/schema.ts:853`) carries `weight` and `max_score` and nothing else, and
-`score.value` is `integer` (`db/schema.ts:947`) — the rubric is numeric by construction. Adding
-single-select and free-text criteria means a type discriminator on the criterion, a widened answer
+`scorecard_criterion` (`db/schema.ts:853`) carried `weight` and `max_score` and nothing else, and
+`score.value` was `integer` (`db/schema.ts:947`) — the rubric was numeric by construction. Adding
+single-select and free-text criteria meant a type discriminator on the criterion, a widened answer
 column on `score`, and a decision about what a non-numeric criterion contributes to
-`weightedScore` (`lib/review-scoring.ts`) and to the CSV export. That last part is the real cost:
+`weightedScore` (`lib/review-scoring.ts`) and to the CSV export. That last part was the real cost:
 the weighted average is load-bearing for the decision queue's bar
-(`review_round.decision_queue_bar_tenths`), so "this criterion has no number" has to mean something
+(`review_round.decision_queue_bar_tenths`), so "this criterion has no number" had to mean something
 precise rather than being silently skipped.
+
+The answer taken was to make it mean *out of scope for the number*: `aggregateScorecard` reads only
+the numeric criteria, non-numeric ones are stored with `weight: 0` so no later reader has to exclude
+them twice, and submission gating moved to a separate `scorecardComplete()` — ratings and dropdowns
+are required, a written criterion is an invitation. The bar therefore means exactly what it always
+did. Landed against eval finding `ABS-03`.
 
 *Touches:* `scorecard_criterion` + `score` (W0), `lib/review-scoring.ts`, `lib/services/review.ts`,
 reviewer scorecard (W3).
