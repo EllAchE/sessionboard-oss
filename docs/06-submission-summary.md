@@ -6,7 +6,11 @@
 
 **Live demo:** <https://cicero-three.vercel.app>
 
-**Readable HTML:** [`submission/summary.html`](submission/summary.html)
+**Readable HTML:** <https://cicero-submission.elehche.workers.dev/submission/summary.html>
+
+**Repository mirror:** [`submission/summary.html`](submission/summary.html)
+
+**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
 
 **Source:** <https://github.com/EllAchE/sessionboard-oss>
 

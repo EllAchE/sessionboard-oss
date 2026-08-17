@@ -12,7 +12,10 @@
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="index.html" aria-label="Cicero submission home"><svg class="brand-mark" width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="7" fill="#b0a794"/><rect x="5" y="5" width="54" height="54" rx="5" fill="#fff"/><path fill="#b7391f" d="M15.5 15.5h33v3h-33zM15.5 45.5h33v3h-33zM15.5 15.5h3v33h-3zM25.5 15.5h3v33h-3zM35.5 15.5h3v33h-3zM45.5 15.5h3v33h-3z"/></svg><span>Cicero</span></a>
-      <a class="back-link" href="../../README.md">← Back to repository README</a>
+      <nav class="topbar-links" aria-label="Related resources">
+        <a class="back-link" href="https://cicero-field-survey.elehche.workers.dev/" target="_blank" rel="noreferrer">Field survey ↗</a>
+        <a class="back-link" href="https://github.com/EllAchE/sessionboard-oss#readme" target="_blank" rel="noreferrer">Repository ↗</a>
+      </nav>
     </div>
   </header>
   <main class="page">
@@ -39,11 +42,14 @@ not on the same revision when this evidence was captured.</p>
 <p><strong>Verified:</strong> 2026-08-16</p>
 <p><strong>Source revision:</strong> <code>ce8d88b</code> (<code>origin/main</code> at the start of the verification)</p>
 <p><strong>Hosted demo:</strong> <a href="https://cicero-three.vercel.app/" target="_blank" rel="noreferrer">https://cicero-three.vercel.app</a></p>
-<p><strong>Readable HTML:</strong> <a href="evidence.html"><code>submission/evidence.html</code></a></p>
+<p><strong>Readable HTML:</strong> <a href="https://cicero-submission.elehche.workers.dev/submission/evidence.html" target="_blank" rel="noreferrer">https://cicero-submission.elehche.workers.dev/submission/evidence.html</a></p>
+<p><strong>Repository mirror:</strong> <a href="evidence.html"><code>submission/evidence.html</code></a></p>
+<p><strong>Field survey:</strong> <a href="https://cicero-field-survey.elehche.workers.dev/" target="_blank" rel="noreferrer">https://cicero-field-survey.elehche.workers.dev/</a></p>
 <h2 id="standalone-submission-mirror-current-branch-verification">Standalone submission mirror: current-branch verification</h2>
 <p>The three canonical Markdown documents are mirrored into standalone, checked-in HTML files. They
-are repository artifacts, not application routes, and can be opened directly or served from any
-local static file server.</p>
+remain repository artifacts rather than application routes, can be opened directly or served from
+any local static file server, and are published separately at
+<a href="https://cicero-submission.elehche.workers.dev/" target="_blank" rel="noreferrer">https://cicero-submission.elehche.workers.dev/</a>.</p>
 <table>
 <thead>
 <tr>
@@ -73,11 +79,39 @@ local static file server.</p>
 headless browser navigated through all three standalone documents and recorded screenshots plus a
 video; those visual artifacts are attached to
 <a href="https://github.com/EllAchE/sessionboard-oss/pull/185" target="_blank" rel="noreferrer">PR #185</a>.</p>
+<h2 id="public-artifact-workers-live-verification">Public artifact Workers: live verification</h2>
+<p>The repository artifacts were published independently from the application on 16 August 2026:</p>
+<table>
+<thead>
+<tr>
+<th>Public origin</th>
+<th>Deployment shape</th>
+<th>Live result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://cicero-submission.elehche.workers.dev/" target="_blank" rel="noreferrer">https://cicero-submission.elehche.workers.dev/</a></td>
+<td>Generated submission HTML, stylesheet and evidence images behind a dedicated static Worker; source-document links redirect to GitHub</td>
+<td>Root redirected to the full write-up; full, short-form and evidence pages returned HTTP 200; stylesheet and sampled evidence image returned HTTP 200</td>
+</tr>
+<tr>
+<td><a href="https://cicero-field-survey.elehche.workers.dev/" target="_blank" rel="noreferrer">https://cicero-field-survey.elehche.workers.dev/</a></td>
+<td>One self-contained generated survey document behind a second dedicated static Worker</td>
+<td>Root returned HTTP 200 with all 71 feature rows and no external asset dependency</td>
+</tr>
+</tbody></table>
+<p>Both origins returned content security, anti-framing, referrer and MIME-sniffing protections. Browser
+verification found no console warnings or errors. The submission stylesheet loaded, all five lazy
+evidence images completed with non-zero natural widths, and the survey&#39;s search, reset,
+“Only beyond-the-brief” mode and feature-detail interaction worked. The reciprocal survey-to-write-up
+link was also navigated successfully. These are public static Workers, not routes in the Cicero
+Next.js application; the production build route table remains unchanged.</p>
 <p>The production origin was rechecked separately after the PR branch was pushed. <code>/demo/agenda</code>
 remained healthy and its browser view reported 11 published sessions across five rooms. A
 subsequent API read returned HTTP 200 with 12 sessions across five rooms and zero unscheduled
 sessions; the hosted seed is mutable, so those counts are point-in-time evidence rather than a
-fixture guarantee. The standalone submission artifacts are intentionally outside that deployment.</p>
+fixture guarantee. The standalone submission artifacts remain outside the application deployment
+and are served by their own static Worker.</p>
 <h2 id="current-source-local-production-build-and-seeded-walkthrough">Current source: local production build and seeded walkthrough</h2>
 <p>The current source was run as the production Docker image, backed by fresh Postgres and MinIO
 containers. Host ports <code>3217</code>, <code>5545</code>, <code>9100</code>, and <code>9101</code> were used so unrelated local stacks were

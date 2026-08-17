@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FIELD_SURVEY_SITE_URL,
   renderStandalonePage,
   renderSubmissionMarkdown,
   SUBMISSION_DOCUMENTS,
@@ -42,6 +43,7 @@ describe('standalone submission HTML', () => {
     expect(html).toContain('<!doctype html>');
     expect(html).toContain('href="../06-submission-summary.md"');
     expect(html).toContain('href="summary.html" aria-current="page"');
+    expect(html).toContain(`href="${FIELD_SURVEY_SITE_URL}"`);
     expect(html).toContain('<h1 id="short-form">Short form</h1>');
   });
 });

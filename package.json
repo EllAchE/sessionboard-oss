@@ -30,6 +30,9 @@
     "docs:openapi": "tsx scripts/generate-openapi.ts",
     "docs:mcp": "tsx scripts/generate-mcp-tools.ts",
     "docs:submission": "tsx scripts/generate-submission-html.ts",
+    "artifacts:prepare": "tsx scripts/prepare-readable-site-assets.ts",
+    "deploy:submission": "bun run artifacts:prepare && wrangler deploy --config wrangler.submission.jsonc",
+    "deploy:field-survey": "bun run artifacts:prepare && wrangler deploy --config wrangler.field-survey.jsonc",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
     "cf:deploy": "bun run db:migrate:remote && opennextjs-cloudflare deploy"

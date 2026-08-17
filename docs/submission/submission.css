@@ -95,6 +95,12 @@ svg {
   text-decoration: none;
 }
 
+.topbar-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .back-link:hover {
   color: var(--ink);
 }
@@ -409,8 +415,12 @@ svg {
     padding-block: 40px 32px;
   }
 
+  .topbar-links {
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
   .back-link {
-    max-width: 140px;
     text-align: right;
   }
 

@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A source-verified feature survey of 32 Sessionboard clone codebases.">
 <title>Sessionboard clones — the full feature grid</title>
 <style>
 :root {
@@ -88,6 +94,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
   color: var(--ink-faint); margin: 0;
 }
 .lede { color: var(--ink-muted); font-size: 17px; }
+.companion { font-size: 14px; }
 .muted { color: var(--ink-muted); }
 .small { font-size: 13px; }
 
@@ -192,6 +199,8 @@ footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--ink-
   table.grid thead th.corner, table.grid tbody th.rowhead { min-width: 220px; max-width: 220px; }
 }
 </style>
+</head>
+<body>
 <div class="wrap">
   <header class="masthead">
     <p class="eyebrow">Kill My SaaS — Sessionboard clone · surveyed 2026-08-16</p>
@@ -199,6 +208,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--ink-
     <p class="lede">Every feature found across every entrant's Sessionboard clone that published source, read from
       code at a pinned commit rather than from a README. Cicero is the first column. Nothing is ranked — teams
       solving one specification is a natural experiment, and the output is the spread of choices, not a scoreboard.</p>
+    <p class="companion">Companion: <a href="https://cicero-submission.elehche.workers.dev/">read the Cicero submission write-up</a>.</p>
     <div class="stats">
       <div class="stat"><b>41</b><span>submissions found</span></div>
       <div class="stat"><b>32</b><span>source analyzed</span></div>
@@ -368,3 +378,5 @@ footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--ink-
   });
 })();
 </script>
+</body>
+</html>

@@ -11,13 +11,18 @@ not on the same revision when this evidence was captured.
 
 **Hosted demo:** <https://cicero-three.vercel.app>
 
-**Readable HTML:** [`submission/evidence.html`](submission/evidence.html)
+**Readable HTML:** <https://cicero-submission.elehche.workers.dev/submission/evidence.html>
+
+**Repository mirror:** [`submission/evidence.html`](submission/evidence.html)
+
+**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
 
 ## Standalone submission mirror: current-branch verification
 
 The three canonical Markdown documents are mirrored into standalone, checked-in HTML files. They
-are repository artifacts, not application routes, and can be opened directly or served from any
-local static file server.
+remain repository artifacts rather than application routes, can be opened directly or served from
+any local static file server, and are published separately at
+<https://cicero-submission.elehche.workers.dev/>.
 
 | HTML artifact | Canonical source | Browser result |
 | --- | --- | --- |
@@ -31,11 +36,28 @@ headless browser navigated through all three standalone documents and recorded s
 video; those visual artifacts are attached to
 [PR #185](https://github.com/EllAchE/sessionboard-oss/pull/185).
 
+## Public artifact Workers: live verification
+
+The repository artifacts were published independently from the application on 16 August 2026:
+
+| Public origin | Deployment shape | Live result |
+| --- | --- | --- |
+| <https://cicero-submission.elehche.workers.dev/> | Generated submission HTML, stylesheet and evidence images behind a dedicated static Worker; source-document links redirect to GitHub | Root redirected to the full write-up; full, short-form and evidence pages returned HTTP 200; stylesheet and sampled evidence image returned HTTP 200 |
+| <https://cicero-field-survey.elehche.workers.dev/> | One self-contained generated survey document behind a second dedicated static Worker | Root returned HTTP 200 with all 71 feature rows and no external asset dependency |
+
+Both origins returned content security, anti-framing, referrer and MIME-sniffing protections. Browser
+verification found no console warnings or errors. The submission stylesheet loaded, all five lazy
+evidence images completed with non-zero natural widths, and the survey's search, reset,
+“Only beyond-the-brief” mode and feature-detail interaction worked. The reciprocal survey-to-write-up
+link was also navigated successfully. These are public static Workers, not routes in the Cicero
+Next.js application; the production build route table remains unchanged.
+
 The production origin was rechecked separately after the PR branch was pushed. `/demo/agenda`
 remained healthy and its browser view reported 11 published sessions across five rooms. A
 subsequent API read returned HTTP 200 with 12 sessions across five rooms and zero unscheduled
 sessions; the hosted seed is mutable, so those counts are point-in-time evidence rather than a
-fixture guarantee. The standalone submission artifacts are intentionally outside that deployment.
+fixture guarantee. The standalone submission artifacts remain outside the application deployment
+and are served by their own static Worker.
 
 ## Current source: local production build and seeded walkthrough
 

@@ -6,6 +6,7 @@ import { Marked, type RendererObject, type Tokens } from 'marked';
 const REPOSITORY_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DOCS_DIRECTORY = path.join(REPOSITORY_ROOT, 'docs');
 const OUTPUT_DIRECTORY = path.join(DOCS_DIRECTORY, 'submission');
+export const FIELD_SURVEY_SITE_URL = 'https://cicero-field-survey.elehche.workers.dev/';
 
 export const SUBMISSION_DOCUMENTS = [
   {
@@ -154,7 +155,10 @@ export function renderStandalonePage(document: SubmissionDocument, markdown: str
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="index.html" aria-label="Cicero submission home">${ciceroMark()}<span>Cicero</span></a>
-      <a class="back-link" href="../../README.md">← Back to repository README</a>
+      <nav class="topbar-links" aria-label="Related resources">
+        <a class="back-link" href="${FIELD_SURVEY_SITE_URL}" target="_blank" rel="noreferrer">Field survey ↗</a>
+        <a class="back-link" href="https://github.com/EllAchE/sessionboard-oss#readme" target="_blank" rel="noreferrer">Repository ↗</a>
+      </nav>
     </div>
   </header>
   <main class="page">

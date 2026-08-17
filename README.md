@@ -431,9 +431,12 @@ current policy.
 - [`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md) — actor and permission model
 - [`docs/api/program-reconcile.md`](docs/api/program-reconcile.md) — safe inbound program reconciliation
 - [`docs/06-submission-narrative.md`](docs/06-submission-narrative.md) — full competition submission
-- [`docs/submission/index.html`](docs/submission/index.html) — standalone HTML mirror of the submission
+- [Public submission write-up](https://cicero-submission.elehche.workers.dev/) — readable HTML on its own Worker
+- [`docs/submission/index.html`](docs/submission/index.html) — checked-in HTML mirror of the submission
 - [`docs/06-submission-summary.md`](docs/06-submission-summary.md) — short-form application copy
 - [`docs/06-submission-evidence.md`](docs/06-submission-evidence.md) — dated local and hosted demo proof
+- [Public field survey](https://cicero-field-survey.elehche.workers.dev/) — source-verified comparison of 32 codebases
+- [`docs/alternatives/visual/index.html`](docs/alternatives/visual/index.html) — checked-in field-survey HTML
 - [`docs/openapi.json`](docs/openapi.json) and [`docs/mcp-tools.json`](docs/mcp-tools.json) — generated contracts
 
 The goals, original requirements, delivery plan, submission narrative, and pinned requirements audit
