@@ -157,18 +157,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </a>
           {demoAvailable ? (
             <a className={styles.demoLink} href="/demo">
-              Explore the demo
+              Demo
             </a>
           ) : null}
-          <a className={styles.agentLink} href="#agent-quick-start">
-            Agent setup
-          </a>
           <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
-            API docs
+            Docs
           </a>
-          <a className={styles.signInLink} href="/signin">
+        </div>
+        <div className={styles.navAuth}>
+          <Button
+            className={styles.navSignIn}
+            href="/signin"
+            variant="secondary"
+            size="sm"
+          >
             Sign in
-          </a>
+          </Button>
           <Button
             className={styles.navCta}
             href="/signup"
