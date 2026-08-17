@@ -544,7 +544,7 @@ export function EmbedStudio({
                 {feeds.map((feed) => (
                   <div key={feed.format} className={styles.savedRow}>
                     <div className={styles.savedName}>
-                      <Badge variant="neutral">{feed.format.toUpperCase()}</Badge>
+                      <Badge tone="neutral">{feed.format.toUpperCase()}</Badge>
                       <span className={styles.savedMeta}>{feed.label}</span>
                     </div>
                     <Button

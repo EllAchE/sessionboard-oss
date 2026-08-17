@@ -99,6 +99,12 @@ Cicero had already recorded against itself.
 *Touches:* `app/embed/**`, `lib/ics.ts`, `public/embed.js` (W6, borrowing W5's calendar primitives).
 No schema change.
 
+**Shipped.** `app/embed/[slug]/[view]/[format]/route.ts` serves `feed.json`, `feed.xml` and a
+subscribable `feed.ics` off the same query string the script and iframe snippets carry, so the
+organizer's filters, field selection and limit are one configuration rendered six ways. The studio
+also gained the two controls this item implied but did not name: a custom-CSS field and an explicit
+publication-status filter.
+
 ### 2. `AD-19` — Hash-chained audit ledger, taken as the append-only half · convergence 1 · **M**
 
 Ranked second on a convergence of 1, which is the largest single departure from axis 1 in this
