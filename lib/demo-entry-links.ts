@@ -39,3 +39,26 @@ export const DEMO_PUBLIC_SITE_LINK = DEMO_PUBLIC_LINKS.event;
 
 /** The published showcase of every embed view, running against the demo event. */
 export const EMBED_SHOWCASE_PATH = '/embeds';
+
+/**
+ * The five things a visitor can go and look at, and what to call each one. Both surfaces that offer
+ * them -- the `Demos` menu in the site navigation and the first row of the global footer -- read
+ * their destinations and labels from here, because the two used to name the same five places
+ * differently: the menu said `Organizer dashboard` where the footer said `Organizer demo`, and its
+ * fifth entry was `Public agenda`, one page of the published event already listed beside it, rather
+ * than the embed showcase the footer offered.
+ *
+ * The three role tours come first and the two public destinations follow, because the published
+ * event is what the three roles above it produce rather than a fourth workspace, and the showcase
+ * renders that same event through the widgets.
+ *
+ * Icons and one-line blurbs stay with each surface: the menu has room for a blurb and the footer
+ * does not, and they draw from different icon vocabularies.
+ */
+export const DEMO_TOURS = [
+  { key: 'organizer', href: DEMO_ENTRY_LINKS.organizer, label: 'Organizer demo' },
+  { key: 'reviewer', href: DEMO_ENTRY_LINKS.reviewer, label: 'Reviewer demo' },
+  { key: 'speaker', href: DEMO_ENTRY_LINKS.speaker, label: 'Speaker demo' },
+  { key: 'event', href: DEMO_PUBLIC_SITE_LINK, label: 'Published event' },
+  { key: 'embeds', href: EMBED_SHOWCASE_PATH, label: 'Embed showcase' },
+] as const;

@@ -40,7 +40,6 @@
 /* The primary navigation lives in `components/SiteNav`, styles included. */
 .hero,
 .mosaicRule,
-.about,
 .attendees,
 .productsOverview,
 .agentQuickStart {
@@ -287,61 +286,11 @@
   opacity: 0.82;
 }
 
-.about {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: clamp(var(--space-12), 8vw, var(--space-24));
-  padding: var(--space-24) var(--space-12);
-  border-bottom: var(--border-width) solid rgba(111, 101, 87, 0.34);
-}
-
-.about::before {
-  content: 'CICERO';
-  position: absolute;
-  right: var(--space-8);
-  bottom: calc(var(--space-5) * -1);
-  color: var(--text-strong);
-  font: var(--weight-regular) clamp(5rem, 15vw, 11rem) / 0.75 var(--font-display);
-  letter-spacing: var(--tracking-inscribed);
-  opacity: 0.025;
-  pointer-events: none;
-}
-
-.aboutHeading,
-.aboutBody {
-  position: relative;
-  z-index: 1;
-}
-
-.aboutHeading {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.aboutHeading h2 {
-  max-width: 14ch;
-}
-
-.aboutBody {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-5);
-}
-
-.aboutBody > p:first-child {
-  color: var(--text-body);
-  font-size: var(--text-xl);
-}
-
-.aboutLinks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-5);
-  margin-top: var(--space-2);
-}
+/*
+ * The `.about` band that stood here is gone with its section, and with it the oversized `CICERO`
+ * watermark it carried as an `::before`. The watermark was positioned against that band's own
+ * padding and overhung its bottom edge, so it does not transplant onto a neighbour as-is.
+ */
 
 .productsOverview {
   padding-block: var(--space-24) var(--space-8);
@@ -424,7 +373,6 @@
   gap: var(--space-4);
 }
 
-.aboutHeading h2,
 .sectionHeading h2,
 .agentQuickIntro h2 {
   margin: 0;
@@ -433,7 +381,6 @@
   letter-spacing: var(--tracking-tighter);
 }
 
-.aboutBody > p,
 .sectionHeading > p:last-child,
 .agentQuickIntro > p:not(.eyebrow) {
   max-width: 58ch;
@@ -590,7 +537,6 @@
   gap: clamp(var(--space-12), 7vw, var(--space-24));
   margin-block: var(--space-24);
   padding: var(--space-16) var(--space-12);
-  border-block: var(--border-width) solid rgba(111, 101, 87, 0.34);
 }
 
 .agentQuickIntro {
@@ -749,20 +695,14 @@
 }
 
 @media (max-width: 820px) {
-  .about,
   .roleProducts,
   .agentQuickStart {
     grid-template-columns: 1fr;
-  }
-
-  .aboutHeading h2 {
-    max-width: 18ch;
   }
 }
 
 @media (max-width: 640px) {
   .hero,
-  .about,
   .attendees,
   .productsOverview,
   .agentQuickStart {
@@ -828,14 +768,9 @@
   }
 
   .productsOverview,
-  .about,
   .attendees,
   .agentQuickStart {
     padding-block: var(--space-20);
-  }
-
-  .about {
-    padding-inline: 0;
   }
 
   .agentQuickStart {

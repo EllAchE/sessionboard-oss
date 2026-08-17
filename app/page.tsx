@@ -14,7 +14,6 @@ import {
   CalendarDays,
   ClipboardCheck,
   ExternalLink,
-  Github,
   Globe2,
   Handshake,
   KeyRound,
@@ -141,11 +140,14 @@ export default async function Home() {
 export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
   return (
     <main className={styles.root}>
-      {/* Bare hashes rather than `/#about`: this is the page those sections are on. */}
+      {/*
+        Bare hashes rather than `/#products`: this is the page those sections are on. `About` used
+        to lead this list and pointed at a section that restated the products section above it and
+        the agent section below it; both the section and the link to it are gone.
+      */}
       <SiteNav
         demoAvailable={demoAvailable}
         links={[
-          { href: '#about', label: 'About' },
           { href: '#products', label: 'Product' },
           { href: '/docs/api', label: 'API' },
         ]}
@@ -306,39 +308,21 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         </a>
       </section>
 
-      <section className={styles.about} id="about" aria-labelledby="about-title">
-        <div className={styles.aboutHeading}>
-          <p className={styles.eyebrow}>Open source and self-hostable</p>
-          <h2 id="about-title">Build on the workflow, not around it.</h2>
-        </div>
-        <div className={styles.aboutBody}>
-          <p>
-            Connect Cicero to the tools your event already uses, publish live views anywhere, and
-            extend the workflow without waiting on a vendor roadmap.
-          </p>
-          {/*
-            The three-fact list that used to sit here said `Automate — REST API and webhooks`,
-            `Publish — Live embeddable views`, and `Adapt — Role-scoped agents`. Each one now has a
-            better home within a screen of this paragraph: the API is a navigation item, the embeds
-            are running live in the attendee section directly above, and the agent section directly
-            below is three concrete setup steps rather than a two-word claim. Restating them here
-            made the page longer without telling a reader anything the neighbouring sections do not
-            already show them.
-          */}
-          <div className={styles.aboutLinks}>
-            <a className={styles.textLink} href="#agent-quick-start">
-              Set up with an AI guide <ArrowRight size={16} aria-hidden="true" />
-            </a>
-            <a
-              className={styles.textLink}
-              href="https://github.com/EllAchE/sessionboard-oss"
-            >
-              View source on GitHub <Github size={16} aria-hidden="true" />
-            </a>
-          </div>
-        </div>
-      </section>
+      {/*
+        An `Open source and self-hostable` section sat here, between the attendee section and the
+        agent section below. It had already been reduced to one paragraph and two links once, and
+        what was left restated its neighbours: the paragraph promised the API, the embeds, and the
+        extensibility that the API navigation item, the attendee section directly above, and this
+        agent section directly below each demonstrate, and its two links pointed at the agent
+        section and at GitHub, which the footer carries. The `Open source and self-hostable` claim
+        itself still leads the footer, next to the licence and the repository.
 
+        Its `border-bottom` and this section's `border-block` also stacked two hairlines in the gap
+        between them, and the second of this section's pair drew a rule under the last section on
+        the page. No other band here separates itself with a line -- the mosaic between the hero and
+        the products section is a full illustrated strip, not a rule -- so both are gone rather than
+        collapsed to one.
+      */}
       <section
         className={styles.agentQuickStart}
         id="agent-quick-start"

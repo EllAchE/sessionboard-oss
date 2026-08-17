@@ -1,10 +1,10 @@
 'use client';
 
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import { DEMO_TOURS } from '@/lib/demo-entry-links';
 import {
-  CalendarDays,
   ChevronDown,
   ClipboardCheck,
+  Code2,
   Globe2,
   LayoutDashboard,
   Megaphone,
@@ -14,48 +14,43 @@ import styles from './DemoMenu.module.css';
 
 /**
  * Every seeded demo, signed-in and public, behind the one navigation entry that used to open the
- * public event page alone. The three role links reuse `DEMO_ENTRY_LINKS`, so they sign the visitor
- * in as the seeded identity for that role rather than dropping them on a login form.
+ * public event page alone. Destinations and labels come from `DEMO_TOURS`, so this menu and the
+ * first row of the global footer offer the same five places under the same five names. They used to
+ * disagree on both: this menu said `Organizer dashboard` where the footer said `Organizer demo`, and
+ * its fifth entry was `Public agenda` -- one page of the published event listed directly above it --
+ * rather than the embed showcase.
  *
- * `label` has to stay separable from the demo links elsewhere on the page and in the global footer:
- * automated walkthroughs match a click target by the start of its text and treat two matches as an
- * error. The footer ships `Organizer demo`, `Reviewer demo`, and `Speaker demo`, and the role cards
- * in the page body ship `Run the conference`, `Score the proposals`, `Give a talk`, and `Browse the
- * programme`, so no label here may be a prefix of one of those or of another label in this list.
- * Check all three files before rewording any of them.
+ * The three role links resolve to `DEMO_ENTRY_LINKS`, so they sign the visitor in as the seeded
+ * identity for that role rather than dropping them on a login form.
+ *
+ * A label here is now deliberately the same string as its counterpart in the footer, so an
+ * automated walkthrough can no longer pick a click target by matching link text across the whole
+ * page -- it has to scope the match to this menu or to the footer first. Within either surface the
+ * five stay distinct, and none is a prefix of the role cards in the page body (`Run the
+ * conference`, `Score the proposals`, `Give a talk`, `Browse the programme`).
  */
-const DEMO_DESTINATIONS = [
-  {
-    href: DEMO_ENTRY_LINKS.organizer,
-    icon: LayoutDashboard,
-    label: 'Organizer dashboard',
-    blurb: 'Programme, schedule, and outstanding tasks',
-  },
-  {
-    href: DEMO_ENTRY_LINKS.reviewer,
-    icon: ClipboardCheck,
-    label: 'Reviewer queue',
-    blurb: 'Assigned proposals and blind scoring',
-  },
-  {
-    href: DEMO_ENTRY_LINKS.speaker,
-    icon: Megaphone,
-    label: 'Speaker portal',
-    blurb: 'Sessions, profile, and deliverables',
-  },
-  {
-    href: '/demo',
-    icon: Globe2,
-    label: 'Public event page',
-    blurb: 'What attendees see, no account needed',
-  },
-  {
-    href: '/demo/agenda',
-    icon: CalendarDays,
-    label: 'Public agenda',
-    blurb: 'The live programme by time and room',
-  },
-] as const;
+const DEMO_BLURBS: Record<(typeof DEMO_TOURS)[number]['key'], string> = {
+  organizer: 'Programme, schedule, and outstanding tasks',
+  reviewer: 'Assigned proposals and blind scoring',
+  speaker: 'Sessions, profile, and deliverables',
+  event: 'What attendees see, no account needed',
+  embeds: 'Every embeddable view, with its snippet',
+};
+
+const DEMO_ICONS: Record<(typeof DEMO_TOURS)[number]['key'], typeof LayoutDashboard> = {
+  organizer: LayoutDashboard,
+  reviewer: ClipboardCheck,
+  speaker: Megaphone,
+  event: Globe2,
+  embeds: Code2,
+};
+
+const DEMO_DESTINATIONS = DEMO_TOURS.map(({ key, href, label }) => ({
+  href,
+  icon: DEMO_ICONS[key],
+  label,
+  blurb: DEMO_BLURBS[key],
+}));
 
 export function DemoMenu({ className }: { className?: string }) {
   const panelId = useId();

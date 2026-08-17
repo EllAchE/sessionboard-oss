@@ -39,9 +39,23 @@ describe('GlobalFooter links', () => {
     expect(html).toContain('<span>Agents</span>');
     // The showcase explains itself on an unseeded instance, so it needs no demo gate of its own.
     expect(html).toContain('href="/embeds"');
-    expect(html).toContain('<span>Sample embeds</span>');
+    expect(html).toContain('<span>Embed showcase</span>');
     expect(html).toContain('href="/docs/api"');
     expect(html).toContain('<span>API</span>');
+  });
+
+  /**
+   * The landing page reached the repository through its `Open source and self-hostable` section
+   * until that section was removed, and the `GitHub` entry below is the author's profile next to
+   * LinkedIn and X. Without this the footer makes an open-source claim and offers no way to read
+   * the source.
+   */
+  it('links the source the open-source claim beside it refers to', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
+
+    expect(html).toContain('href="https://github.com/EllAchE/sessionboard-oss"');
+    expect(html).toContain('<span>Source</span>');
+    expect(html).toContain('Open source and self-hostable conference operations');
   });
 
   /**
@@ -53,10 +67,10 @@ describe('GlobalFooter links', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable />);
 
     const [demoRow] = html.split('<span>Agents</span>');
-    expect(demoRow).toContain('<span>Sample event</span>');
-    expect(demoRow).toContain('<span>Sample embeds</span>');
-    expect(html.indexOf('<span>Sample event</span>')).toBeLessThan(
-      html.indexOf('<span>Sample embeds</span>'),
+    expect(demoRow).toContain('<span>Published event</span>');
+    expect(demoRow).toContain('<span>Embed showcase</span>');
+    expect(html.indexOf('<span>Published event</span>')).toBeLessThan(
+      html.indexOf('<span>Embed showcase</span>'),
     );
     expect(html.indexOf('<span>API</span>')).toBeLessThan(html.indexOf('<span>GitHub</span>'));
   });
@@ -90,20 +104,20 @@ describe('GlobalFooter links', () => {
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).toContain(href.replaceAll('&', '&amp;'));
   });
 
-  it('offers the published sample event beside the role tours', () => {
+  it('offers the published event beside the role tours', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable />);
 
     expect(html).toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
-    expect(html).toContain('Sample event');
-    expect(html.indexOf('Speaker demo')).toBeLessThan(html.indexOf('Sample event'));
+    expect(html).toContain('Published event');
+    expect(html.indexOf('Speaker demo')).toBeLessThan(html.indexOf('Published event'));
   });
 
-  /** The sample event lives in the same seed as the role identities, so it goes when they do. */
-  it('hides the sample event on an unseeded instance', () => {
+  /** The published event lives in the same seed as the role identities, so it goes when they do. */
+  it('hides the published event on an unseeded instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
     expect(html).not.toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
-    expect(html).not.toContain('Sample event');
+    expect(html).not.toContain('Published event');
   });
 
   /**
@@ -116,7 +130,7 @@ describe('GlobalFooter links', () => {
     expect(html.match(/class="[^"]*row[^"]*"/g) ?? []).toHaveLength(2);
     for (const productLink of [
       'Organizer demo',
-      'Sample event',
+      'Published event',
       '<span>Agents</span>',
       '<span>API</span>',
     ]) {
