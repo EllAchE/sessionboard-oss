@@ -590,19 +590,27 @@ async function readEntity(
 /** Postgres' unique-violation SQLSTATE, which is how a lost numbering race announces itself. */
 const UNIQUE_VIOLATION = '23505';
 
+/**
+ * Walks `cause`, because drizzle rethrows the driver's error wrapped in a `DrizzleQueryError` that
+ * carries the SQL and the params but not the SQLSTATE. Checking only the thrown object read every
+ * lost race as an unrelated failure, which turned the retry below into dead code.
+ */
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    Boolean(error) &&
-    typeof error === 'object' &&
-    (error as { code?: unknown }).code === UNIQUE_VIOLATION
-  );
+  for (let current = error; current && typeof current === 'object'; ) {
+    if ((current as { code?: unknown }).code === UNIQUE_VIOLATION) return true;
+    const next = (current as { cause?: unknown }).cause;
+    if (next === current) return false;
+    current = next;
+  }
+  return false;
 }
 
 /**
- * Enough attempts to outlast a realistic pile-up on a single entity, and few enough that a genuine
- * constraint bug surfaces as an error instead of a hang.
+ * Each round of the race is won by someone, so one writer among `k` simultaneous ones can lose at
+ * most `k - 1` times. Eight is comfortably past any realistic pile-up on a single session or
+ * sponsor, and small enough that a genuine constraint bug surfaces as an error rather than a hang.
  */
-const NUMBERING_ATTEMPTS = 5;
+const NUMBERING_ATTEMPTS = 8;
 
 /**
  * Claims the next revision number for one entity.
