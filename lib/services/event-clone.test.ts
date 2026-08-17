@@ -5,7 +5,7 @@ import * as schema from '../../db/schema';
 import type { EventContext } from '../context';
 import { isAppError, type AppError } from '../errors';
 import { CLONE_PLAN, copiedTables } from './event-clone-plan';
-import { cloneEvent } from './event-clone';
+import { cloneEvent, suggestNextEditionName, suggestNextEditionWindow } from './event-clone';
 
 /**
  * `AD-1`. What the executor actually writes.
@@ -640,6 +640,53 @@ describe('what the organizer is told', () => {
     expect(text).toMatch(/drafts/i);
     expect(text).toMatch(/re-?upload/i);
     expect(text).toMatch(/API keys/i);
+  });
+});
+
+describe('what the duplicate form suggests', () => {
+  it('bumps a trailing year', () => {
+    expect(suggestNextEditionName('Cascadia Systems Conf 2026')).toBe('Cascadia Systems Conf 2027');
+    expect(suggestNextEditionName('PyCon US 2026')).toBe('PyCon US 2027');
+    expect(suggestNextEditionName('Forum 2029')).toBe('Forum 2030');
+  });
+
+  it('bumps a year that is followed by punctuation rather than ending the string', () => {
+    expect(suggestNextEditionName('Cascadia 2026!')).toBe('Cascadia 2027!');
+  });
+
+  it('leaves a year in the middle alone', () => {
+    expect(suggestNextEditionName('Since 2019 Conference')).toBe('Since 2019 Conference (copy)');
+  });
+
+  it('falls back to a suffix rather than guessing', () => {
+    expect(suggestNextEditionName('The Forum')).toBe('The Forum (copy)');
+  });
+
+  it('does not mistake a four-digit number for a year', () => {
+    expect(suggestNextEditionName('Room 1400')).toBe('Room 1400 (copy)');
+  });
+
+  /** 52 weeks, so a Monday-to-Wednesday conference stays Monday-to-Wednesday. */
+  it('moves the window on by 364 days, preserving the weekday and the time of day', () => {
+    const next = suggestNextEditionWindow('2026-10-12T09:00', '2026-10-14T17:00');
+    expect(next).toEqual({ startsAt: '2027-10-11T09:00', endsAt: '2027-10-13T17:00' });
+    expect(new Date('2026-10-12').getUTCDay()).toBe(new Date('2027-10-11').getUTCDay());
+  });
+
+  it('crosses a leap day without drifting', () => {
+    expect(suggestNextEditionWindow('2028-02-28T09:00', '2028-02-29T17:00')).toEqual({
+      startsAt: '2029-02-26T09:00',
+      endsAt: '2029-02-27T17:00',
+    });
+  });
+
+  /** The suggestion is a starting point in a form; the service still demands an explicit window. */
+  it('is never used by the service itself', async () => {
+    const error = await rejection(
+      cloneEvent(context(), { name: 'Cascadia 2027', startsAt: '', endsAt: '' }),
+    );
+    expect(error.code).toBe('invalid');
+    expect(rec.inserts).toEqual([]);
   });
 });
 

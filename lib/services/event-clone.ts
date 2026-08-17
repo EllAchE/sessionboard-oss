@@ -277,6 +277,51 @@ function cloneNotes(copied: Record<string, number>): string[] {
   return notes;
 }
 
+// ---------------------------------------------------------------------------
+// What the form offers, which is not what the service assumes
+// ---------------------------------------------------------------------------
+
+/**
+ * The split that keeps the date trap closed while still being usable: `cloneEvent` refuses to
+ * invent a window, and the duplicate form arrives pre-filled with a suggestion the organizer has
+ * to look at and confirm. A default they can see and edit is not the same failure as a value that
+ * silently carried over — the point of AD-1's warning is that nobody was asked.
+ */
+
+/**
+ * The year has to be the last *word*, not merely the last digits: "Cascadia 2026" and "Cascadia
+ * 2026!" are editions, "Since 2019 Conference" is a tagline and bumping it would rename the event
+ * to something false.
+ */
+const TRAILING_YEAR = /(?<![0-9])(20[0-9]{2})(?=[^a-zA-Z0-9]*$)/;
+
+/** "Cascadia Systems Conf 2026" becomes "…2027"; anything else gets a suffix rather than a guess. */
+export function suggestNextEditionName(name: string): string {
+  const match = name.match(TRAILING_YEAR);
+  if (!match) return `${name} (copy)`.slice(0, 200);
+  const next = String(Number(match[1]) + 1);
+  return `${name.slice(0, match.index!)}${next}${name.slice(match.index! + 4)}`.slice(0, 200);
+}
+
+/**
+ * 364 days, not 365 and not "the same date". A conference that ran Monday-to-Wednesday runs
+ * Monday-to-Wednesday next year too, and 52 weeks is the only offset that preserves the weekday.
+ * The organizer still confirms it.
+ */
+export function suggestNextEditionWindow(
+  startsAtLocal: string,
+  endsAtLocal: string,
+): { startsAt: string; endsAt: string } {
+  const shift = (local: string): string => {
+    const [date, time] = local.split('T');
+    if (!date || !time) return local;
+    const [y, m, d] = date.split('-').map(Number);
+    const moved = new Date(Date.UTC(y, m - 1, d + 364));
+    return `${moved.toISOString().slice(0, 10)}T${time}`;
+  };
+  return { startsAt: shift(startsAtLocal), endsAt: shift(endsAtLocal) };
+}
+
 /** The events this actor could clone from: the ones they organize. */
 export async function listClonableEvents(userId: string): Promise<
   Array<{ id: string; name: string; slug: string; startsOn: string }>
