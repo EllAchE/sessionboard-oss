@@ -11,6 +11,7 @@ import {
   Contact,
   FileText,
   LayoutDashboard,
+  Link2,
   Mail,
   Map as MapIcon,
   MessageSquare,
@@ -78,6 +79,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
       { id: 'mail', label: 'Mailbox', href: '/organizer/mail', icon: <Mail size={15} /> },
       { id: 'sms', label: 'SMS', href: '/organizer/sms', icon: <MessageSquare size={15} /> },
       { id: 'embeds', label: 'Embeds', href: '/organizer/embeds', icon: <Plug size={15} /> },
+      { id: 'share-links', label: 'Share links', href: '/organizer/share-links', icon: <Link2 size={15} /> },
     ],
   },
   {
