@@ -1564,7 +1564,7 @@ async function loadSubmission(submissionId: string) {
 /** `F-12`, called by the form engine once a submission leaves draft. */
 export async function sendSubmissionConfirmation(submissionId: string): Promise<SendOutcome> {
   const row = await loadSubmission(submissionId);
-  return fanOutSubmissionTemplate(row.eventId, submissionId, 'submission.confirmation');
+  return fanOutSubmissionTemplate(row, 'submission.confirmation');
 }
 
 /**
@@ -1585,15 +1585,20 @@ export async function sendDecisionNotice(submissionId: string): Promise<SendOutc
   if (!key) {
     throw invalid('Only an accepted, waitlisted or declined submission has a decision to send');
   }
-  return fanOutSubmissionTemplate(row.eventId, submissionId, key);
+  return fanOutSubmissionTemplate(row, key);
 }
 
 async function fanOutSubmissionTemplate(
-  eventId: string,
-  submissionId: string,
+  row: typeof submission.$inferSelect,
   key: string,
 ): Promise<SendOutcome> {
-  const participantIds = await participantsForSubmission(submissionId);
+  const participantIds = await participantsForSubmission(row.id);
+  const submissionVars: TemplateVars = {
+    'submission.title': row.title,
+    'submission.ref': formatRef('submission', row.ref),
+    'submission.status': row.status,
+    'submission.decisionNote': row.decisionNote ?? '',
+  };
   const outcome: SendOutcome = {
     recipients: 0,
     sent: 0,
@@ -1604,10 +1609,18 @@ async function fanOutSubmissionTemplate(
   };
 
   for (const participantId of participantIds) {
-    const recipient = await recipientForParticipant(eventId, participantId);
+    const recipient = await recipientForParticipant(row.eventId, participantId);
     if (!recipient) continue;
     outcome.recipients += 1;
-    applyDispatch(outcome, await sendTemplated({ eventId, key, recipient }));
+    applyDispatch(
+      outcome,
+      await sendTemplated({
+        eventId: row.eventId,
+        key,
+        recipient,
+        extraVars: submissionVars,
+      }),
+    );
   }
 
   return outcome;

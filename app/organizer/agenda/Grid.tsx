@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { AlertTriangle, Users } from 'lucide-react';
+import { AlertTriangle, CalendarOff, Users } from 'lucide-react';
 import {
   DEFAULT_GRID,
   blockGeometry,
@@ -144,7 +144,12 @@ function Block({
 
   const { offsetSlots, spanSlots } = blockGeometry(entry, timeZone, grid);
   const severity = worstSeverity(conflicts);
+  /**
+   * The block is small and gets one line, so it names the worst thing rather than everything. A
+   * person in two places at once beats a speaker-declared window, which beats a bare count.
+   */
   const speakerClash = conflicts.some((conflict) => conflict.kind === 'speaker');
+  const unavailable = conflicts.some((conflict) => conflict.kind === 'availability');
 
   /**
    * Space now belongs to the `KeyboardSensor`, which lifts the block so the arrows can move it, so
@@ -199,8 +204,16 @@ function Block({
       )}
       {severity && (
         <span className={styles.blockFlag}>
-          <AlertTriangle size={11} aria-hidden />
-          {speakerClash ? 'Speaker clash' : `${conflicts.length} conflict`}
+          {unavailable && !speakerClash ? (
+            <CalendarOff size={11} aria-hidden />
+          ) : (
+            <AlertTriangle size={11} aria-hidden />
+          )}
+          {speakerClash
+            ? 'Speaker clash'
+            : unavailable
+              ? 'Speaker unavailable'
+              : `${conflicts.length} conflict`}
         </span>
       )}
     </div>

@@ -20,7 +20,9 @@ import {
   type QueueItem,
   type ScheduleEntry,
   type SpeakerRef,
+  type SpeakerUnavailability,
 } from '@/lib/services/schedule';
+import { listEventUnavailability } from '@/lib/services/speaker-availability';
 
 /**
  * The agenda's read model. Everything the board needs arrives in one payload so the grid, the side
@@ -47,6 +49,12 @@ export type AgendaData = {
   formats: NamedFormat[];
   entries: ScheduleEntry[];
   queue: QueueItem[];
+  /**
+   * `AD-2`. The blackout windows every speaker on this event has declared. Loaded with the rest of
+   * the snapshot rather than on demand: the detector runs on every drag frame in the browser, and a
+   * fetch per frame is not a thing that can work.
+   */
+  unavailability: SpeakerUnavailability[];
   /**
    * Session bodies, keyed by session id. `ScheduleEntry` deliberately has no description — the grid
    * never renders one — but the edit dialog does, and a form that opens blank would write the blank
@@ -89,7 +97,7 @@ async function speakersBySubmission(
 export async function loadAgenda(eventId: string): Promise<AgendaData> {
   const db = getDb();
 
-  const [eventRow, rooms, tracks, formats, sessions, accepted] = await Promise.all([
+  const [eventRow, rooms, tracks, formats, sessions, accepted, unavailability] = await Promise.all([
     db.query.event.findFirst({ where: eq(event.id, eventId) }),
     db.query.room.findMany({ where: eq(room.eventId, eventId), orderBy: [asc(room.position)] }),
     db.query.track.findMany({ where: eq(track.eventId, eventId), orderBy: [asc(track.position)] }),
@@ -105,6 +113,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
       where: and(eq(submission.eventId, eventId), eq(submission.status, 'accepted')),
       orderBy: [asc(submission.ref)],
     }),
+    listEventUnavailability(eventId),
   ]);
 
   if (!eventRow) {
@@ -205,6 +214,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
     })),
     entries,
     queue,
+    unavailability,
     descriptions: Object.fromEntries(
       sessions
         .filter((row) => row.descriptionMarkdown)
@@ -216,8 +226,11 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
 export {
   toWire,
   fromWire,
+  unavailabilityToWire,
+  unavailabilityFromWire,
   type NamedFormat,
   type NamedRoom,
   type NamedTrack,
   type WireEntry,
+  type WireUnavailability,
 } from './wire';

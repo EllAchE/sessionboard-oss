@@ -348,6 +348,7 @@ An organizer can:
 - Detect overlapping use of the same room.
 - Detect track clashes.
 - Detect a speaker assigned to overlapping sessions.
+- Detect a session placed inside a window the speaker declared themselves unavailable in.
 - Keep sessions in draft while rearranging them.
 - Publish individual sessions or a day of sessions.
 - Return published sessions to draft or cancel them.
@@ -358,11 +359,15 @@ An organizer can:
 
 Therefore, for the concrete question "Can an organizer look at a particular speaker's time and move
 them?": the organizer can locate that speaker's session and move the session to another time or room.
-The conflict detector warns if the new placement double-books the speaker.
+The conflict detector warns if the new placement double-books the speaker, or falls inside a
+window that speaker declared unavailable in their portal.
+
+Speakers declare **unavailability**, not availability: a window means "not then," and a speaker
+with no windows may be scheduled anywhere. The organizer sees a violation as a warning next to
+the other conflict kinds and can still place the session deliberately.
 
 The requirements do not define:
 
-- A separate speaker-availability calendar such as "available only after 2 PM."
 - A required agenda view grouped or filtered solely by speaker.
 - Moving a speaker without moving the session to which they are attached.
 - Automatically finding a slot from travel availability or personal calendar data.
