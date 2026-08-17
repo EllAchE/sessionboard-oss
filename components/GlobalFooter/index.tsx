@@ -1,8 +1,14 @@
 import { CiceroMark } from '@/components/CiceroBrand';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_PUBLIC_LINKS,
+  EMBED_SHOWCASE_PATH,
+} from '@/lib/demo-entry-links';
 import {
   Bot,
+  CalendarDays,
+  Code2,
   FileCheck,
   Gift,
   Github,
@@ -31,6 +37,16 @@ const DEMO_LINKS = [
     label: 'Speaker demo',
     icon: Megaphone,
   },
+  /*
+   * The one demo link that signs nobody in — the published event site is public. It sits with the
+   * others because a visitor looking for "the demo" wants the whole conference, not only the three
+   * workspaces.
+   */
+  {
+    href: DEMO_PUBLIC_LINKS.event,
+    label: 'Attendee demo',
+    icon: CalendarDays,
+  },
 ] as const;
 
 const RESOURCE_LINKS = [
@@ -38,6 +54,11 @@ const RESOURCE_LINKS = [
     href: '/#agent-quick-start',
     label: 'Agents',
     icon: Bot,
+  },
+  {
+    href: EMBED_SHOWCASE_PATH,
+    label: 'Embeds',
+    icon: Code2,
   },
   /**
    * The rendered reference at `/docs/api`, not the raw `openapi.json` this used to point at — a

@@ -1,5 +1,5 @@
 import { ToastProvider } from '@/components/ui';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_LINKS } from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -114,5 +114,38 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('href="/demo/agenda"');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).toContain(href.replaceAll('&', '&amp;'));
     expect(html).not.toContain('Fresh instance');
+  });
+
+  it('shows what an attendee sees, live, once the demo fixture is loaded', () => {
+    const html = renderHome(true);
+
+    expect(html).toContain('For attendees');
+    expect(html).toContain('Give attendees the programme, not a PDF.');
+    // The real widget, not a screenshot of one, and off the critical path.
+    expect(html).toContain('src="/embed/demo/gallery"');
+    expect(html).toContain('loading="lazy"');
+    for (const href of Object.values(DEMO_PUBLIC_LINKS)) expect(html).toContain(`href="${href}"`);
+    expect(html).toContain('Browse the programme');
+    expect(html).toContain('href="/embeds"');
+  });
+
+  it('keeps the attendee story without a live frame on a fresh instance', () => {
+    const html = renderHome(false);
+
+    // The claim survives, because it is true of any published event; only the demo data goes.
+    expect(html).toContain('For attendees');
+    expect(html).toContain('href="/embeds"');
+    expect(html).not.toContain('<iframe');
+    expect(html).not.toContain('/embed/demo/gallery');
+  });
+
+  it('keeps every demo entry point separable by its first word', () => {
+    const html = renderHome(true);
+    const labels = [...html.matchAll(/<span class="[^"]*persona[Ll]abel[^"]*">([^<]+)/g)].map(
+      (match) => match[1].trim(),
+    );
+
+    expect(labels).toHaveLength(4);
+    expect(new Set(labels.map((label) => label.split(' ')[0])).size).toBe(labels.length);
   });
 });
