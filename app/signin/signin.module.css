@@ -149,6 +149,20 @@
   color: var(--text-muted);
 }
 
+/*
+ * Who this page is not for. Set apart from `.hint` because it is addressed to somebody who should
+ * stop reading and go open their invitation instead, and a line that says "you are in the wrong
+ * place" has to survive being skimmed.
+ */
+.note {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
 /* The demo way in, offered under the form only where a deployment has opted into it. */
 .demo {
   display: flex;
