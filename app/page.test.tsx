@@ -253,24 +253,27 @@ describe('fresh-instance home page', () => {
     }
   });
 
-  it('makes products and docs discoverable from the primary navigation', () => {
+  it('makes products, the agent quick start, and docs discoverable from the primary navigation', () => {
     const html = renderHome(false);
 
     expect(html).toContain('href="#products"');
     expect(html).toContain('Products');
+    expect(html).toContain('href="#agent-quick-start"');
+    expect(html).toContain('>Agent quick start<');
     expect(html).toContain('href="/docs/api"');
     expect(html).toContain('>API<');
-    expect(html).not.toContain('Agent quick start');
   });
 
-  it('orders the navigation products, docs, then demo', () => {
+  it('orders the navigation products, agents, docs, then demo', () => {
     const html = renderHome(true);
 
     // `About` led this list and pointed at a section that is gone; nothing anchors to it now.
     expect(html).not.toContain('href="#about"');
     expect(html).not.toContain('id="about"');
 
-    const navOrder = ['href="#products"', 'href="/docs/api"'].map((marker) => html.indexOf(marker));
+    const navOrder = ['href="#products"', 'href="#agent-quick-start"', 'href="/docs/api"'].map(
+      (marker) => html.indexOf(marker),
+    );
     expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));
     expect(navOrder.at(-1)).toBeLessThan(html.indexOf('>Demos'));
   });
@@ -294,15 +297,36 @@ describe('fresh-instance home page', () => {
   });
 
   /**
-   * The agent section is still on the page, but the in-body anchor to it went with the `About`
-   * section that held it. The footer's `Agents` entry is the remaining link, and it is absolute
-   * (`/#agent-quick-start`) because the footer renders on every page.
+   * The in-body anchor to the agent section went with the `About` section that held it, leaving the
+   * footer's `Agents` entry as the only route to it -- at the bottom of a long page, for the section
+   * this product leads with. The top bar now carries it as a bare hash -- this is the page that
+   * section is on. `GlobalFooter` keeps its own absolute `/#agent-quick-start` and is rendered by the
+   * layout rather than by this page, so it is not in this HTML.
    */
-  it('keeps the agent section on the page once the anchor to it is gone', () => {
+  it('links the agent section from the top bar', () => {
     const html = renderHome(false);
 
     expect(html).toContain('id="agent-quick-start"');
+    expect(html).toContain('href="#agent-quick-start"');
     expect(html).not.toContain('Set up with an AI guide');
+  });
+
+  /**
+   * The hero card and the MCP panel offer the same prompt, so they show the same marks -- one
+   * `AGENT_PROVIDERS` list feeds both rows. The hero used to name Claude and ChatGPT in prose only,
+   * which read as the two clients that work rather than the two worth naming.
+   */
+  it('shows the supported agent marks beside both copies of the setup prompt', () => {
+    const html = renderHome(false);
+    const hero = html.slice(html.indexOf('<main'), html.indexOf('id="products"'));
+    const agentSection = html.slice(html.indexOf('id="agent-quick-start"'));
+
+    for (const mark of ['openai.svg', 'claude.svg', 'google-antigravity.svg']) {
+      expect(hero).toContain(`/brand/agents/${mark}`);
+      expect(agentSection).toContain(`/brand/agents/${mark}`);
+    }
+    expect(hero).toContain('aria-label="Supported AI agents"');
+    expect(agentSection).toContain('aria-label="Supported AI agents"');
   });
 
   /**
