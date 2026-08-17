@@ -40,7 +40,6 @@
 /* The primary navigation lives in `components/SiteNav`, styles included. */
 .hero,
 .mosaicRule,
-.attendees,
 .productsOverview,
 .agentQuickStart {
   width: min(100% - var(--space-12), var(--content-max));
@@ -350,13 +349,6 @@
     transition: none;
   }
 
-  .attendeeLink {
-    transition: none;
-  }
-
-  .attendeeLink:hover {
-    transform: none;
-  }
 }
 
 .feature .roleProductRole {
@@ -442,92 +434,6 @@
 
 .textLink:hover {
   gap: var(--space-3);
-}
-
-/*
- * The section markup asked for `.product`, which this file never defined, so it rendered classless
- * and full-bleed between two centred neighbours. It carries the same measure as every other band on
- * the page and matches `.productsOverview`'s block rhythm, since it plays the same part.
- */
-.attendees {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-10);
-  padding-block: var(--space-16) var(--space-8);
-}
-
-/*
- * Full width now that no widget frame shares the row, so the five deep links read as a band of
- * cards rather than a narrow sidebar column. `auto-fit` lets the row drop to four, then three, then
- * two, then one without a breakpoint of its own.
- *
- * The minimum is 200px rather than a rounder 230 so all five fit on one line at the page measure:
- * 1200px less four 16px gaps leaves 227 a card, and anything above that orphaned the sponsor wall
- * on a second row of its own.
- */
-.attendeeLinks {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/*
- * Icon above the copy rather than beside it, for the reason the role cards stack theirs: at the
- * card widths this row produces, a side-by-side icon leaves "Day-by-day agenda" about 120px to sit
- * in and breaks every label across three lines.
- */
-.attendeeLink {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background: rgba(255, 255, 255, 0.72);
-  text-decoration: none;
-  transition:
-    border-color 120ms ease,
-    transform 120ms ease;
-}
-
-.attendeeLink:hover {
-  border-color: var(--border-accent);
-  transform: translateY(-1px);
-}
-
-.attendeeLink:focus-visible {
-  outline: none;
-  border-color: var(--border-accent);
-  box-shadow: var(--ring-focus);
-}
-
-.attendeeLink .featureIcon {
-  width: 36px;
-  height: 36px;
-}
-
-.attendeeLinkLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-strong);
-  font: var(--weight-semibold) var(--text-md) / 1.2 var(--font-ui);
-}
-
-.attendeeLink:hover .attendeeLinkLabel,
-.attendeeLink:focus-visible .attendeeLinkLabel {
-  color: var(--text-accent);
-}
-
-.attendeeLinkBlurb {
-  color: var(--text-muted);
-  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
 }
 
 .agentQuickStart {
@@ -703,7 +609,6 @@
 
 @media (max-width: 640px) {
   .hero,
-  .attendees,
   .productsOverview,
   .agentQuickStart {
     width: min(100% - var(--space-8), var(--content-max));
@@ -768,7 +673,6 @@
   }
 
   .productsOverview,
-  .attendees,
   .agentQuickStart {
     padding-block: var(--space-20);
   }
