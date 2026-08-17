@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import { Info, Keyboard, Search } from 'lucide-react';
+import { useHotkeyContext } from '@/components/hotkeys/HotkeyProvider';
+import { KeyCaps } from '@/components/hotkeys/KeyCaps';
 import { Button, Dialog, Kbd } from '@/components/ui';
+import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import styles from './quick-actions.module.css';
 
 /**
@@ -10,6 +13,10 @@ import styles from './quick-actions.module.css';
  * the one that closes whatever is on top. The full list is generated from the registry against the
  * screen you are on, so this deliberately points at it rather than trying to reproduce it — the
  * hand-written version of that list documented two shortcuts out of the twenty-odd that shipped.
+ *
+ * The caps themselves come from the registry too. They were written out here once, and by the time
+ * the keys were rebound this panel was advertising `?` for a shortcut that had become ⌘⌃/ — the
+ * failure that two rows of hand-written help are always one change away from.
  */
 export function ShortcutList({
   onOpenCommand,
@@ -18,6 +25,10 @@ export function ShortcutList({
   onOpenCommand: () => void;
   onOpenShortcuts?: () => void;
 }) {
+  const { platform } = useHotkeyContext();
+  const paletteBinding = getBinding(SCOPES.organizerGlobal, 'command-palette');
+  const shortcutsBinding = getBinding(SCOPES.organizerGlobal, 'shortcuts-help');
+
   return (
     <section className={styles.section} aria-labelledby="cicero-shortcuts">
       <div className={styles.sectionHeading}>
@@ -33,10 +44,9 @@ export function ShortcutList({
             <strong>Search and jump</strong>
             <span>Find any organizer view or action</span>
           </span>
-          <span className={styles.keys} aria-label="Command or Control K">
-            <Kbd>⌘ / Ctrl</Kbd>
-            <Kbd>K</Kbd>
-          </span>
+          {paletteBinding ? (
+            <KeyCaps className={styles.keys} binding={paletteBinding} platform={platform} />
+          ) : null}
         </button>
         <div className={styles.row}>
           <span className={styles.rowIcon} aria-hidden="true">
@@ -57,7 +67,9 @@ export function ShortcutList({
               <strong>See every shortcut</strong>
               <span>What these keys do on this screen</span>
             </span>
-            <Kbd>?</Kbd>
+            {shortcutsBinding ? (
+              <KeyCaps className={styles.keys} binding={shortcutsBinding} platform={platform} />
+            ) : null}
           </button>
         ) : null}
       </div>

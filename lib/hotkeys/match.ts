@@ -223,11 +223,6 @@ export function formatChordString(chord: string, platform: Platform): string[] {
 }
 
 /**
- * Canonical spelling of a chord, used to detect two bindings claiming the same keystroke. Shift is
- * only part of the identity where it is part of the match, so `?` and `shift+?` collapse together
- * rather than being reported as two distinct chords that in fact collide.
- */
-/**
  * A chord in the spelling `aria-keyshortcuts` wants: DOM modifier names, `+`-joined, and both
  * keyboards' forms separated by a space where a chord has two ("Meta+Control+S Control+Alt+S").
  * Listing both is the honest answer for a matcher that accepts both, and it keeps the attribute
@@ -259,6 +254,11 @@ const ARIA_KEYS: Record<string, string> = {
   ' ': 'Space',
 };
 
+/**
+ * Canonical spelling of a chord, used to detect two bindings claiming the same keystroke. Shift is
+ * only part of the identity where it is part of the match, so `?` and `shift+?` collapse together
+ * rather than being reported as two distinct chords that in fact collide.
+ */
 export function chordSignature(chord: Chord): string {
   const parts: string[] = [];
   if (chord.mod) parts.push('mod');

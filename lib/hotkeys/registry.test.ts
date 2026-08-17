@@ -1,15 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { chordSignature, parseChord } from './match';
-import { SCOPES, activePrefixes, allScopes, findBinding, getScope, resolveBindings } from './registry';
+import {
+  SCOPES,
+  allScopes,
+  findBinding,
+  getScope,
+  globalSignatures,
+  resolveBindings,
+} from './registry';
 import type { ScopeDef } from './types';
 
 function signaturesOf(scope: ScopeDef): string[] {
   return scope.bindings.flatMap((binding) =>
-    binding.chords.map((chord) => {
-      const base = chordSignature(parseChord(chord));
-      return binding.prefix ? `${binding.prefix}>${base}` : base;
-    }),
+    binding.chords.map((chord) => chordSignature(parseChord(chord))),
   );
+}
+
+/** ⌘⌃ or Ctrl+Alt, held. What a keystroke on the workspace modifier looks like to the matcher. */
+function hyper(key: string, extra: { shiftKey?: boolean } = {}) {
+  return { key, metaKey: true, ctrlKey: true, ...extra };
 }
 
 describe('registry integrity', () => {
@@ -39,59 +48,146 @@ describe('registry integrity', () => {
 });
 
 /**
- * The migration fence. These are the exact chords the two hand-rolled `window` listeners shipped
- * before this engine existed; anyone who had them in their fingers should not be able to tell that
- * anything changed. A deliberate change to the set has to come here and say so.
+ * The three rules that make this scheme what it is. Each one exists because breaking it is easy,
+ * looks harmless in a diff, and is felt by whoever is using the workspace rather than by whoever
+ * made the change.
  */
-describe('migrated chords', () => {
-  it('reproduces the submissions queue', () => {
-    const scope = getScope(SCOPES.submissionsQueue);
+describe('the single-chord scheme', () => {
+  it('puts every shortcut on a modifier, bar Escape and Enter', () => {
+    const bare = ['escape', 'enter'];
+    for (const scope of allScopes()) {
+      for (const binding of scope.bindings) {
+        for (const chord of binding.chords) {
+          const parsed = parseChord(chord);
+          if (bare.includes(parsed.key) && !parsed.mod && !parsed.hyper) continue;
+          expect(
+            parsed.hyper || parsed.mod,
+            `${scope.id}/${binding.id} binds "${chord}" with no modifier`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('chains nothing: one binding is one keystroke', () => {
+    for (const scope of allScopes()) {
+      for (const binding of scope.bindings) {
+        for (const chord of binding.chords) {
+          expect(parseChord(chord).key, `${scope.id}/${binding.id} has an empty key`).not.toBe('');
+          expect(chord.includes(' '), `${scope.id}/${binding.id} spells a sequence`).toBe(false);
+        }
+      }
+    }
+  });
+
+  /**
+   * The rule that matters most on a screen full of decisions. Resolution lets an inner scope shadow
+   * an outer one, so a queue binding on ⌘⌃A would quietly turn "go to the agenda" — pressed from
+   * habit, without looking — into "accept this submission".
+   */
+  it('lets no screen claim a chord the shell uses everywhere', () => {
+    const global = globalSignatures();
+    for (const scope of allScopes()) {
+      if (scope.id === SCOPES.organizerGlobal) continue;
+      for (const binding of scope.bindings) {
+        for (const chord of binding.chords) {
+          const signature = chordSignature(parseChord(chord));
+          // Escape and Enter are activation, not navigation; the shell does not bind either.
+          expect(
+            global.has(signature),
+            `${scope.id}/${binding.id} shadows the global "${chord}"`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+});
+
+/**
+ * The map itself. A rebind is a decision about somebody's hands, so changing one of these has to be
+ * a deliberate edit here that says which key moved and why.
+ */
+describe('the chord map', () => {
+  it('navigates the whole workspace from the shell', () => {
+    const scope = getScope(SCOPES.organizerGlobal);
     expect(scope).toBeDefined();
     expect(new Set(signaturesOf(scope as ScopeDef))).toEqual(
       new Set([
-        'j',
-        'k',
-        'x',
-        'o',
-        'enter',
-        'escape',
-        'a',
-        'd',
-        'w',
-        'shift+a',
-        'shift+d',
-        'shift+h',
-        'shift+c',
+        'mod+k',
+        'hyper+.',
+        'hyper+/',
+        'hyper+o',
+        'hyper+u',
+        'hyper+s',
+        'hyper+a',
+        'hyper+t',
+        'hyper+shift+f',
+        'hyper+c',
+        'hyper+p',
+        'hyper+n',
+        'hyper+v',
+        'hyper+e',
       ]),
     );
   });
 
-  it('reproduces the review detail screen', () => {
+  it('decides submissions from the queue', () => {
+    const scope = getScope(SCOPES.submissionsQueue);
+    expect(scope).toBeDefined();
+    expect(new Set(signaturesOf(scope as ScopeDef))).toEqual(
+      new Set([
+        'hyper+arrowdown',
+        'hyper+arrowup',
+        'hyper+x',
+        'enter',
+        'escape',
+        'hyper+y',
+        'hyper+r',
+        'hyper+w',
+        'hyper+shift+y',
+        'hyper+shift+r',
+        'hyper+shift+h',
+        'hyper+shift+c',
+      ]),
+    );
+  });
+
+  it('scores and decides from the review screen', () => {
     const scope = getScope(SCOPES.submissionDetail);
     expect(scope).toBeDefined();
     expect(new Set(signaturesOf(scope as ScopeDef))).toEqual(
       new Set([
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'arrowup',
-        'arrowdown',
-        's',
-        'c',
-        'j',
-        'k',
-        'u',
-        'a',
-        'w',
-        'd',
+        'hyper+1',
+        'hyper+2',
+        'hyper+3',
+        'hyper+4',
+        'hyper+5',
+        'hyper+6',
+        'hyper+7',
+        'hyper+8',
+        'hyper+9',
+        'hyper+arrowup',
+        'hyper+arrowdown',
+        'hyper+shift+s',
+        'mod+enter',
+        'hyper+]',
+        'hyper+[',
+        'hyper+backspace',
+        'hyper+y',
+        'hyper+w',
+        'hyper+r',
       ]),
     );
+  });
+
+  it('keeps the queue and the review screen deciding on the same three keys', () => {
+    const queue = getScope(SCOPES.submissionsQueue) as ScopeDef;
+    const detail = getScope(SCOPES.submissionDetail) as ScopeDef;
+    for (const id of ['accept', 'waitlist', 'decline']) {
+      const inQueue = queue.bindings.find((binding) => binding.id === id);
+      const inDetail = detail.bindings.find((binding) => binding.id === id);
+      expect(inDetail?.chords, `${id} differs between the two screens`).toEqual(inQueue?.chords);
+    }
   });
 });
 
@@ -103,14 +199,20 @@ describe('resolveBindings', () => {
   });
 
   it('lets an inner scope take a key an outer scope also wants', () => {
-    const resolved = resolveBindings([SCOPES.organizerGlobal, SCOPES.agenda]);
-    // The agenda's `1`–`6` view switch and the shell's `g`-prefixed keys coexist, but were the
-    // shell ever to claim a bare `1`, only the agenda's would survive resolution.
-    const bare = resolved.filter(
-      (entry) => !entry.binding.prefix && entry.binding.chords.includes('1'),
-    );
-    expect(bare).toHaveLength(1);
-    expect(bare[0].scope.id).toBe(SCOPES.agenda);
+    /**
+     * The agenda and the tasks screen both use ⌘⌃1 for their first view, and only one of them is
+     * ever mounted — but stacking them is how the resolver is asked which of two claimants wins,
+     * without inventing scopes that do not ship.
+     */
+    const stacked = [SCOPES.agenda, SCOPES.tasks];
+    expect(findBinding(stacked, hyper('1'))?.scope.id).toBe(SCOPES.tasks);
+
+    /**
+     * The agenda's `view` survives resolution even so, because shadowing is per keystroke and only
+     * one of its six was taken. ⌘⌃3 still reaches it — a range does not lose its other keys because
+     * something above claimed one of them.
+     */
+    expect(findBinding(stacked, hyper('3'))?.scope.id).toBe(SCOPES.agenda);
   });
 
   it('silences everything under a modal scope', () => {
@@ -135,48 +237,44 @@ describe('resolveBindings', () => {
 describe('findBinding', () => {
   const stack = [SCOPES.organizerGlobal, SCOPES.submissionsQueue];
 
-  it('fires the innermost binding for a plain keystroke', () => {
-    const match = findBinding(stack, { key: 'a' }, null);
+  it('fires the innermost binding for a keystroke both scopes could want', () => {
+    const match = findBinding(stack, hyper('y'));
     expect(match?.binding.id).toBe('accept');
     expect(match?.scope.id).toBe(SCOPES.submissionsQueue);
   });
 
-  it('holds a prefixed binding back until its prefix is armed', () => {
-    expect(findBinding(stack, { key: 'a' }, null)?.binding.id).toBe('accept');
-    expect(findBinding(stack, { key: 'a' }, 'g')?.binding.id).toBe('goto-agenda');
+  it('still reaches the shell for a key the screen does not claim', () => {
+    expect(findBinding(stack, hyper('a'))?.binding.id).toBe('goto-agenda');
   });
 
-  it('will not fire an unprefixed binding while a prefix is armed', () => {
-    // `g` then `j` means nothing; it must not fall through to "next submission".
-    expect(findBinding(stack, { key: 'j' }, 'g')).toBeNull();
+  it('tells "accept" from "propose accepting" by the shift', () => {
+    expect(findBinding(stack, hyper('y'))?.binding.id).toBe('accept');
+    expect(findBinding(stack, hyper('y', { shiftKey: true }))?.binding.id).toBe('stage-accept');
   });
 
   it('reports which key of a range fired, so the score binding knows the digit', () => {
-    const match = findBinding([SCOPES.submissionDetail], { key: '7' }, null);
+    const match = findBinding([SCOPES.submissionDetail], hyper('7'));
     expect(match?.binding.id).toBe('score');
-    expect(match?.chord).toBe('7');
+    expect(match?.chord).toBe('hyper+7');
   });
 
   it('keeps looking when the caller vetoes a candidate', () => {
     // What the provider does while the user is typing: only `allowInInput` bindings survive.
-    const typing = findBinding(stack, { key: 'k', metaKey: true }, null, (candidate) =>
+    const typing = findBinding(stack, { key: 'k', metaKey: true }, (candidate) =>
       Boolean(candidate.binding.allowInInput),
     );
     expect(typing?.binding.id).toBe('command-palette');
-    expect(findBinding(stack, { key: 'a' }, null, () => false)).toBeNull();
+    expect(findBinding(stack, hyper('y'), () => false)).toBeNull();
   });
 
-  it('never lets a modified keystroke reach a bare letter', () => {
-    expect(findBinding(stack, { key: 'a', metaKey: true }, null)).toBeNull();
-  });
-});
-
-describe('activePrefixes', () => {
-  it('arms g wherever the shell is mounted', () => {
-    expect(activePrefixes([SCOPES.organizerGlobal])).toEqual(new Set(['g']));
+  it('leaves a bare letter alone, which is the whole point of the rebind', () => {
+    expect(findBinding(stack, { key: 'y' })).toBeNull();
+    expect(findBinding(stack, { key: 'a' })).toBeNull();
+    expect(findBinding(stack, { key: 'g' })).toBeNull();
   });
 
-  it('arms nothing under a modal scope', () => {
-    expect(activePrefixes([SCOPES.organizerGlobal, SCOPES.dialog]).size).toBe(0);
+  it('does not fire a workspace chord for ⌘ alone, or ⌘⌥', () => {
+    expect(findBinding(stack, { key: 'a', metaKey: true })).toBeNull();
+    expect(findBinding(stack, { key: 'a', metaKey: true, altKey: true })).toBeNull();
   });
 });

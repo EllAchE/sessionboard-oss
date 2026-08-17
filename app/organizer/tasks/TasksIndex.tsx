@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { HotkeyHint } from '@/components/hotkeys/HotkeyHint';
 import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import {
   Badge,
@@ -18,7 +19,8 @@ import {
   useToast,
 } from '@/components/ui';
 import type { DataTableColumn } from '@/components/ui';
-import { SCOPES } from '@/lib/hotkeys/registry';
+import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
+import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import type {
   OrganizerTaskRow,
   OutstandingTaskRow,
@@ -50,6 +52,15 @@ const SCOPE_LABEL: Record<OrganizerTaskRow['scope'], string> = {
   submission: 'per session',
   group: 'shared per group',
 };
+
+/**
+ * One of this screen's chords, in the spelling `aria-keyshortcuts` wants. Read from the registry
+ * rather than written beside the control, so the announcement and the engine cannot drift apart.
+ */
+function tasksShortcut(bindingId: string): string | undefined {
+  const chord = getBinding(SCOPES.tasks, bindingId)?.chords[0];
+  return chord ? ariaKeyshortcuts(chord) : undefined;
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return 'No deadline';
@@ -267,7 +278,14 @@ export function TasksIndex({
                 Copy
               </Button>
             ) : null}
-            <Button variant="primary" size="sm" iconLeft={<Plus size={14} />} onClick={openNew}>
+            <Button
+              variant="primary"
+              size="sm"
+              iconLeft={<Plus size={14} />}
+              iconRight={<HotkeyHint scope={SCOPES.tasks} binding="new-task" />}
+              aria-keyshortcuts={tasksShortcut('new-task')}
+              onClick={openNew}
+            >
               New task
             </Button>
           </div>
@@ -291,17 +309,21 @@ export function TasksIndex({
             type="button"
             className={styles.tab}
             data-active={view === 'assignments'}
+            aria-keyshortcuts={tasksShortcut('view-people')}
             onClick={() => setView('assignments')}
           >
             By person
+            <HotkeyHint scope={SCOPES.tasks} binding="view-people" />
           </button>
           <button
             type="button"
             className={styles.tab}
             data-active={view === 'tasks'}
+            aria-keyshortcuts={tasksShortcut('view-tasks')}
             onClick={() => setView('tasks')}
           >
             By task
+            <HotkeyHint scope={SCOPES.tasks} binding="view-tasks" />
           </button>
         </div>
       </div>

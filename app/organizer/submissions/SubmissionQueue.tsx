@@ -24,11 +24,11 @@ import {
   DataTable,
   Dialog,
   Input,
-  Kbd,
   Select,
   type DataTableColumn,
 } from '../../../components/ui';
 import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
+import { KeyLegend } from '@/components/hotkeys/KeyLegend';
 import { SCOPES } from '@/lib/hotkeys/registry';
 import { CopyPermalinkButton } from './CopyPermalinkButton';
 import { ReviewExportButton } from './ReviewExportButton';
@@ -897,44 +897,29 @@ export function SubmissionQueue(props: QueueProps) {
         emptyState="No submissions match these filters."
       />
 
-      <div className={styles.hintBar}>
-        <span className={styles.hint}>
-          <Kbd>j</Kbd>
-          <Kbd>k</Kbd> move
-        </span>
-        <span className={styles.hint}>
-          <Kbd>x</Kbd> select
-        </span>
-        <span className={styles.hint}>
-          <Kbd>o</Kbd> open
-        </span>
-        {props.canDecide ? (
-          <>
-            <span className={styles.hint}>
-              <Kbd>a</Kbd> accept
-            </span>
-            <span className={styles.hint}>
-              <Kbd>w</Kbd> waitlist
-            </span>
-            <span className={styles.hint}>
-              <Kbd>d</Kbd> decline
-            </span>
-            <span className={styles.hint}>
-              <Kbd>⇧a</Kbd>
-              <Kbd>⇧d</Kbd> stage
-            </span>
-            <span className={styles.hint}>
-              <Kbd>⇧h</Kbd> hold
-            </span>
-            <span className={styles.hint}>
-              <Kbd>⇧c</Kbd> clear staging
-            </span>
-          </>
-        ) : null}
-        <span className={styles.hint}>
-          <Kbd>esc</Kbd> clear selection
-        </span>
-      </div>
+      <KeyLegend
+        scope={SCOPES.submissionsQueue}
+        className={styles.hintBar}
+        rowClassName={styles.hint}
+        rows={[
+          { id: 'next', text: 'next' },
+          { id: 'prev', text: 'previous' },
+          { id: 'toggle', text: 'select' },
+          { id: 'open', text: 'open' },
+          ...(props.canDecide
+            ? [
+                { id: 'accept', text: 'accept' },
+                { id: 'waitlist', text: 'waitlist' },
+                { id: 'decline', text: 'decline' },
+                { id: 'stage-accept', text: 'stage accept' },
+                { id: 'stage-decline', text: 'stage decline' },
+                { id: 'stage-hold', text: 'hold' },
+                { id: 'stage-clear', text: 'clear staging' },
+              ]
+            : []),
+          { id: 'clear', text: 'clear selection' },
+        ]}
+      />
 
       <Dialog
         open={saveOpen}
