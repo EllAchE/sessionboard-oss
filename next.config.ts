@@ -30,6 +30,26 @@ const nextConfig: NextConfig = {
         headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
       },
       /**
+       * Every documented operation is meant to be called from wherever an integration lives, not
+       * only from this app's own origin — that's the whole point of publishing a versioned REST API
+       * and an OpenAPI reference for it. Route handlers already send
+       * `Access-Control-Allow-Origin: *` on their actual JSON responses (`_lib/respond.ts`), but a
+       * request that carries an `Authorization` header or a JSON body is not a CORS-simple request:
+       * the browser sends an `OPTIONS` preflight first, and Next's automatic 204 for an
+       * undefined `OPTIONS` handler carries none of these headers on its own. This is what lets that
+       * preflight — and so the real request behind it — succeed cross-origin, including from the
+       * "Try it" panel of an API reference (`/docs/api/scalar`) not served from this origin.
+       */
+      {
+        source: '/api/v1/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, PATCH, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          { key: 'Access-Control-Max-Age', value: '86400' },
+        ],
+      },
+      /**
        * `AD-9`. A share-link URL *is* the credential, so the headers exist to stop it travelling.
        *
        * `Referrer-Policy: no-referrer` is the one that matters: these pages render organizer-supplied
