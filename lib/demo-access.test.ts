@@ -6,6 +6,7 @@ vi.mock('@opennextjs/cloudflare', () => ({ getCloudflareContext }));
 import {
   demoEventSlugs,
   demoSignInEmail,
+  demoSignInEmailFor,
   magicLinkPrecheck,
   membershipsAreDemoOnly,
 } from './demo-access';
@@ -121,5 +122,42 @@ describe('demo configuration', () => {
     expect(demoEventSlugs()).toEqual(DEMO);
     vi.stubEnv('DEMO_EVENT_SLUGS', ' Sandbox , showcase ,');
     expect(demoEventSlugs()).toEqual(['sandbox', 'showcase']);
+  });
+});
+
+describe('the identity the demo button signs in as', () => {
+  it('keeps the identity the role tour named, rather than the organizer', () => {
+    enableOnScreenLinks();
+    expect(demoSignInEmailFor('reviewer.cicero@example.com')).toBe('reviewer.cicero@example.com');
+    expect(demoSignInEmailFor('vitruvius@example.com')).toBe('vitruvius@example.com');
+  });
+
+  it('falls back to the advertised address when the URL named nobody', () => {
+    enableOnScreenLinks();
+    for (const requested of [null, undefined, '', '   ']) {
+      expect(demoSignInEmailFor(requested)).toBe('organizer@example.com');
+    }
+  });
+
+  /** The sentence beside the button promises a link, which is true of these three and of nobody else. */
+  it('ignores any address that is not a seeded entry identity', () => {
+    enableOnScreenLinks();
+    for (const requested of [
+      'real.organizer@acme.com',
+      'attacker@example.com',
+      'octavian@first-settlement.example',
+    ]) {
+      expect(demoSignInEmailFor(requested), requested).toBe('organizer@example.com');
+    }
+  });
+
+  it('matches case-insensitively, since the address arrives from a URL', () => {
+    enableOnScreenLinks();
+    expect(demoSignInEmailFor(' Reviewer.Cicero@Example.com ')).toBe('reviewer.cicero@example.com');
+  });
+
+  it('offers nothing at all unless the deployment opted in', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    expect(demoSignInEmailFor('reviewer.cicero@example.com')).toBeNull();
   });
 });
