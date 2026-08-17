@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "kind": "scored-report",
+    "runId": "2026-08-16T23-54-19",
+    "evaluatorRef": "d8fafa41cdc484309e3fda953c5567cc2d462734",
+    "productRef": null,
+    "reportSha256": "a3f2cdd35197924689d50651749b640f90fa9fbb7d48ac5cdab69827cd84ab89",
+    "sourceSessions": [],
+    "limitations": []
+  },
+  "targetUrl": "https://cicero-three.vercel.app",
+  "startedAt": "2026-08-16T23:54:28.736Z",
+  "finishedAt": "2026-08-17T00:14:11.019Z",
+  "kitVersion": "0.1.0",
+  "models": {
+    "agent": "harness (in-session agent)",
+    "judge": "harness (in-session judge)"
+  },
+  "score": {
+    "overallPct": null,
+    "coveragePct": 0,
+    "withheld": true,
+    "manualPending": 1
+  },
+  "areas": [
+    {
+      "area": "speaker-crm",
+      "title": "Speaker CRM (Cross-Event Speaker Database)",
+      "optional": true,
+      "pct": 100,
+      "coveragePct": 100,
+      "pendingManual": [
+        "CRM-11"
+      ]
+    }
+  ],
+  "defects": [
+    {
+      "area": "speaker-crm",
+      "severity": "major",
+      "description": "Merging duplicate contacts permanently collapses the records immediately from the comparison action without a separate confirmation, cannot-be-undone warning, or apparent undo path. A mistaken primary/field selection can therefore destroy contact data without a final safety check.",
+      "where": "/crm/duplicates"
+    }
+  ]
+}
