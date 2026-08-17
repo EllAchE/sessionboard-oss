@@ -374,9 +374,19 @@ roadmap list.</p>
 <td>Demand for booths, hotspots, wayfinding, search, or region links as a first-class product</td>
 </tr>
 <tr>
+<td>First-class PowerPoint and Google Slides decks</td>
+<td>Speaker deck support is only PDF and Keynote today; PowerPoint and Google Slides are accepted as opaque bytes rather than as understood deck formats</td>
+<td>Organizer or speaker demand for PowerPoint and Google Slides as supported deck formats, which we do want to add</td>
+</tr>
+<tr>
 <td>Arbitrary event resource uploads</td>
 <td>Every upload path is bound to a known slot — headshot, speaker deliverable, submission form file field, exhibitor-map PDF, recording — so type validation, size caps, and publication rules can be specific to each one. Speaker-facing reference material is organizer-written portal pages rather than attached files. A general &quot;attach anything to the event&quot; library would need its own permission, visibility, and retention model</td>
 <td>Organizers wanting to publish documents that are not one of the known slots — a speaker handbook, an event history page, a media kit, a sponsor prospectus — at which point a generic resource library with per-file audience control is a better answer than another bespoke slot</td>
+</tr>
+<tr>
+<td>Headshot crop and framing control</td>
+<td>Squareness is already enforced on the way in — the browser center-crops to a 512 px square and the server rejects anything that is not exactly that — so the gallery never has to reason about mixed aspect ratios. What is deferred is letting the person choose the crop: a center crop of a wide or tall portrait can cut off the subject, and the upload surfaces say so rather than fixing it</td>
+<td>Enough off-center portraits to be a real complaint, at which point a crop/zoom step at upload time, with the resulting frame stored alongside the image, beats asking speakers to pre-crop</td>
 </tr>
 </tbody></table>
 <h3 id="known-gaps-not-strategic-exclusions">Known gaps, not strategic exclusions</h3>
