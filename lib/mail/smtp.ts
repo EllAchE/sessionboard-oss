@@ -27,9 +27,38 @@ export function smtpConfigured(config: SmtpConfig): boolean {
 }
 
 /**
- * Self-host only. `nodemailer` is imported lazily because a static import would drag a pile of Node
- * built-ins into the Workers bundle for a transport that can never run there — Workers has no raw
- * TCP for SMTP. Selecting this transport on Workers is a configuration error, not a fallback.
+ * Kept separate from the connection so the exact MIME input can be verified without opening a
+ * socket. Nodemailer's `icalEvent` is intentionally different from a generic attachment: it emits
+ * the calendar inside `multipart/alternative` for Outlook and a second `.ics` file for clients that
+ * expose only attachments.
+ */
+export function nodemailerMessage(mail: OutgoingMail): Record<string, unknown> {
+  const method = mail.ics ? calendarMimeMethod(mail.ics) : null;
+  return {
+    from: mail.from,
+    to: mail.to,
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    replyTo: mail.replyTo,
+    ...(mail.ics && method
+      ? {
+          // The method must survive onto the MIME part or the invite reads as a plain attachment
+          // and a cancellation sent as `REQUEST` re-invites the speaker instead of withdrawing.
+          icalEvent: {
+            method,
+            content: mail.ics.body,
+            filename: method === 'CANCEL' ? 'cancel.ics' : 'invite.ics',
+          },
+        }
+      : {}),
+  };
+}
+
+/**
+ * `nodemailer` is imported lazily because ordinary Resend messages use HTTP and should not pay to
+ * initialise an SMTP client. Current Workers runtimes expose outbound TCP through `node:net`; port
+ * 25 remains blocked there, so deployments on Workers must use a submission port such as 465/587.
  */
 export function smtpTransport(config: SmtpConfig, allowInsecure: boolean): MailTransport {
   return {
@@ -52,26 +81,7 @@ export function smtpTransport(config: SmtpConfig, allowInsecure: boolean): MailT
         ...(allowInsecure ? { tls: { rejectUnauthorized: false } } : {}),
       } as never);
 
-      const info = (await transporter.sendMail({
-        from: mail.from,
-        to: mail.to,
-        subject: mail.subject,
-        html: mail.html,
-        text: mail.text,
-        replyTo: mail.replyTo,
-        ...(mail.ics
-          ? {
-              // The method must survive onto the MIME part or the invite reads as a plain
-              // attachment and `C-3`'s update-in-place behaviour silently stops working — and a
-              // cancellation sent as `REQUEST` re-invites the speaker instead of withdrawing.
-              icalEvent: {
-                method: calendarMimeMethod(mail.ics),
-                content: mail.ics.body,
-                filename: mail.ics.method === 'CANCEL' ? 'cancel.ics' : 'invite.ics',
-              },
-            }
-          : {}),
-      })) as { messageId?: string };
+      const info = (await transporter.sendMail(nodemailerMessage(mail))) as { messageId?: string };
 
       return { providerMessageId: info.messageId };
     },
