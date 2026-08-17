@@ -1,7 +1,11 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { detectConflicts, type ScheduleEntry } from '@/lib/services/schedule';
+import {
+  detectConflicts,
+  type ScheduleEntry,
+  type SpeakerUnavailability,
+} from '@/lib/services/schedule';
 import type { NamedTrack } from './wire';
 import { ConflictsView, GroupedView } from './Views';
 
@@ -146,5 +150,83 @@ describe('ConflictsView (A-2, AR-35)', () => {
 
     expect(html).not.toContain('Unschedule');
     expect(html).toContain('disabled');
+  });
+});
+
+/**
+ * `AD-2`. The point of the kind is that an organizer sees it *where they already look*, so this
+ * asserts it renders through the same rail, with the same resolve action, as the three that came
+ * before it — not in a panel of its own that has to be found.
+ */
+describe('ConflictsView with a speaker-declared window', () => {
+  const talk: ScheduleEntry = {
+    id: 'session-1',
+    ref: 1,
+    title: 'On Duties',
+    submissionId: null,
+    roomId: 'room-1',
+    trackId: null,
+    formatId: null,
+    startsAt: new Date('2026-10-12T16:00:00Z'),
+    endsAt: new Date('2026-10-12T17:00:00Z'),
+    status: 'draft',
+    ceuCredits: null,
+    clientId: null,
+    speakers: [{ participantId: 'p-cicero', name: 'Cicero' }],
+  };
+
+  const declared: SpeakerUnavailability[] = [
+    {
+      participantId: 'p-cicero',
+      startsAt: new Date('2026-10-12T15:00:00Z'),
+      endsAt: new Date('2026-10-12T20:00:00Z'),
+      timezone: 'Europe/Rome',
+      note: 'Flight lands 14:00',
+    },
+  ];
+
+  const render = (windows: SpeakerUnavailability[], policy: 'warn' | 'block' = 'warn') =>
+    renderToStaticMarkup(
+      <ConflictsView
+        conflicts={detectConflicts([talk], {}, windows)}
+        entries={[talk]}
+        timeZone="UTC"
+        onOpen={vi.fn()}
+        policy={policy}
+        canManage
+        onPolicyChange={vi.fn()}
+        onUnschedule={vi.fn()}
+      />,
+    );
+
+  it('names the speaker, the session and their reason', () => {
+    const html = render(declared);
+    expect(html).toContain('Speaker unavailable');
+    expect(html).toContain('Cicero');
+    expect(html).toContain('On Duties');
+    expect(html).toContain('Flight lands 14:00');
+  });
+
+  /** One session, so one resolve button — the rail must not offer to unschedule a phantom second. */
+  it('offers exactly one resolve action', () => {
+    const html = render(declared);
+    expect(html.match(/Unschedule On Duties/g)).toHaveLength(1);
+  });
+
+  /** It is a warning, so the row must not carry the styling reserved for a physically impossible clash. */
+  it('renders as a warning rather than an error', () => {
+    const html = render(declared);
+    expect(html).toContain('conflictWarning');
+    expect(html).not.toContain('conflictError');
+  });
+
+  /** The empty state, at the surface a user actually sees. */
+  it('says there are no conflicts when nobody declared anything', () => {
+    expect(render([])).toContain('No conflicts.');
+  });
+
+  /** `block` is about double-bookings; the copy must not promise it polices a declared window. */
+  it('does not claim the block policy refuses a declared window', () => {
+    expect(render(declared, 'block')).toContain('speaker-declared unavailability are still allowed');
   });
 });

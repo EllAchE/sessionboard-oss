@@ -53,7 +53,15 @@ import {
 } from './actions';
 import { AiProposalDialog } from './AiProposalDialog';
 import type { AgendaData } from './data';
-import { fromWire, type NamedFormat, type NamedRoom, type NamedTrack, type WireEntry } from './wire';
+import {
+  fromWire,
+  unavailabilityFromWire,
+  type NamedFormat,
+  type NamedRoom,
+  type NamedTrack,
+  type WireEntry,
+  type WireUnavailability,
+} from './wire';
 import { DayGrid, OrphanedNotice, UnscheduledRail, parseCellId, type DragPayload } from './Grid';
 import { agendaCollisionDetection, cellCoordinateGetter } from './keyboardCoordinates';
 import {
@@ -115,6 +123,7 @@ export function AgendaBoard({
   tracks,
   formats,
   entries: wireEntries,
+  unavailability: wireUnavailability,
   queue: initialQueue,
   descriptions,
   modelConfigured,
@@ -125,6 +134,8 @@ export function AgendaBoard({
   tracks: NamedTrack[];
   formats: NamedFormat[];
   entries: WireEntry[];
+  /** `AD-2`. Speaker-declared blackout windows, for the availability conflict kind. */
+  unavailability: WireUnavailability[];
   queue: QueueItem[];
   descriptions: Record<string, string>;
   modelConfigured: boolean;
@@ -168,13 +179,32 @@ export function AgendaBoard({
     [rooms, tracks],
   );
 
-  const settled = useMemo(() => detectConflicts(entries, labels), [entries, labels]);
+  /**
+   * `AD-2`. Rehydrated once rather than on every detection pass: the drag path below runs the
+   * detector on each hovered cell, and rebuilding a few dozen `Date`s per frame for a set that
+   * never changes during a drag is pure waste.
+   */
+  const unavailability = useMemo(
+    () => unavailabilityFromWire(wireUnavailability),
+    [wireUnavailability],
+  );
+
+  const settled = useMemo(
+    () => detectConflicts(entries, labels, unavailability),
+    [entries, labels, unavailability],
+  );
 
   /** What the board renders while a drag is in flight: the agenda as this drop would leave it. */
   const live = useMemo(() => {
     if (!drag?.hover) return settled;
-    return previewConflicts(entries, [drag.hover.placement], labels, drag.hover.additions);
-  }, [drag, entries, labels, settled]);
+    return previewConflicts(
+      entries,
+      [drag.hover.placement],
+      labels,
+      drag.hover.additions,
+      unavailability,
+    );
+  }, [drag, entries, labels, settled, unavailability]);
 
   /**
    * `AR-35`. Optimistic so the switch reads as instant; the server action is the authority and
@@ -341,9 +371,13 @@ export function AgendaBoard({
      * server's `onWarn` will confirm what actually committed, so nothing is announced here that the
      * database might not agree with.
      */
-    const conflicts = previewConflicts(entries, [hover.placement], labels, hover.additions).filter(
-      (item) => item.sessionIds.includes(hover.placement.sessionId),
-    );
+    const conflicts = previewConflicts(
+      entries,
+      [hover.placement],
+      labels,
+      hover.additions,
+      unavailability,
+    ).filter((item) => item.sessionIds.includes(hover.placement.sessionId));
     const refused = blockingConflicts(conflicts, policy);
     if (refused.length > 0) {
       toast({

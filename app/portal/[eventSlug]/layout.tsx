@@ -34,6 +34,8 @@ export default async function PortalLayout({
     { id: 'tasks', label: 'Tasks', href: `${base}/tasks`, count: summary.outstanding, alert: summary.overdue > 0 },
     { id: 'files', label: 'Files', href: `${base}/files` },
     { id: 'profile', label: 'Profile', href: `${base}/profile` },
+    /** `AD-2`. Unbadged: no windows means no constraint, so an empty tab is not an outstanding task. */
+    { id: 'availability', label: 'Availability', href: `${base}/availability` },
     { id: 'group', label: 'Group', href: `${base}/group` },
   ];
   if (pages.length > 0) tabs.push({ id: 'pages', label: 'Info', href: `${base}/pages` });

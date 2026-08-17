@@ -52,10 +52,37 @@ function participatesInConflicts(entry: ScheduleEntry): entry is PlacedEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Conflicts — `A-2` (room, track) and `A-7` (speaker)
+// Conflicts — `A-2` (room, track), `A-7` (speaker) and `AD-2` (availability)
 // ---------------------------------------------------------------------------
 
-export type ConflictKind = 'room' | 'track' | 'speaker';
+/**
+ * `AD-2`. A window a speaker declared they cannot present in, as the detector sees it.
+ *
+ * **Absolute instants, deliberately.** This type carries no zone for comparison, because by the time
+ * a window reaches here the zone question is already answered: the portal converted the speaker's
+ * local wall clock into an instant on write. Comparing a window to a session is then the same
+ * arithmetic as comparing two sessions — `overlaps` over two pairs of epoch milliseconds — and there
+ * is no second place for a zone to be applied, or forgotten, or applied twice.
+ *
+ * The alternative shape, storing a wall clock plus an IANA zone and converting at compare time, is
+ * what makes the two sides of this feature disagree. A speaker in Rome writing "09:00–12:00" and an
+ * organizer in Los Angeles reading "09:00–12:00" would each be shown a true statement about a
+ * different nine hours, and the detector would have to pick one of them to be right. Resolving the
+ * zone once, at the moment a human types the numbers, is the only point at which the intended
+ * instant is unambiguous — and it is where `zonedTimeToUtc` below already resolves the offset twice
+ * so a window authored on a DST changeover day lands on the hour the speaker meant.
+ *
+ * `timezone` is the zone the window was authored in, carried so an organizer can be told the
+ * speaker's own wall clock alongside the event-local translation. Detection never reads it.
+ */
+export type SpeakerUnavailability = Interval & {
+  participantId: string;
+  /** IANA zone the window was authored in. Display only — never used to compute an overlap. */
+  timezone: string;
+  note: string | null;
+};
+
+export type ConflictKind = 'room' | 'track' | 'speaker' | 'availability';
 
 /**
  * How bad a clash is. This is a property of the *kind* and of nothing else — in particular it is
@@ -67,6 +94,14 @@ export type ConflictKind = 'room' | 'track' | 'speaker';
  * programme as written cannot physically happen. Two talks at once on one track is an editorial
  * judgement — plenty of conferences deliberately run parallel sessions inside a strand — so a track
  * collision is a `warning` the organizer should see and may well accept.
+ *
+ * `availability` is a `warning` for a sharper reason than "it seems softer". Nothing about the
+ * programme is impossible: the speaker said they would rather not, and an organizer can pick up the
+ * phone and ask. Making it an `error` would put it in the set `block` policy refuses, which would
+ * hand every speaker a unilateral veto over the organizer's board — a speaker could make a slot
+ * unschedulable by adding a blackout after the fact, and the organizer's only recourse would be to
+ * edit the speaker's own declaration. Advisory is the correct power balance, and it is also the only
+ * reading under which the empty state and the full state behave the same way.
  */
 export type ConflictSeverity = 'error' | 'warning';
 
@@ -74,6 +109,7 @@ const SEVERITY_BY_KIND: Record<ConflictKind, ConflictSeverity> = {
   room: 'error',
   speaker: 'error',
   track: 'warning',
+  availability: 'warning',
 };
 
 export function severityForKind(kind: ConflictKind): ConflictSeverity {
@@ -118,8 +154,14 @@ export function blockingConflicts(
 export type Conflict = {
   kind: ConflictKind;
   severity: ConflictSeverity;
-  /** Always sorted, so the same clash produces the same key from either direction. */
-  sessionIds: [string, string];
+  /**
+   * The sessions involved. Two for a collision between sessions, sorted so the same clash produces
+   * the same key from either direction; **one** for `availability`, which is a clash between one
+   * session and a fact about the world outside the agenda. Every consumer already iterates this
+   * rather than reading both ends, so a one-element conflict renders one "Open" button and one
+   * "Unschedule" button without any of them special-casing the kind.
+   */
+  sessionIds: string[];
   /** Room, track or participant id, depending on `kind`. */
   subjectId: string | null;
   subjectName: string | null;
@@ -140,10 +182,20 @@ function pair(a: ScheduleEntry, b: ScheduleEntry): [string, string] {
 }
 
 /**
- * Every overlapping pair, checked three ways. O(n²) over one event's sessions, which is a few
- * hundred rows at most — an interval tree would be faster and harder to prove right.
+ * Every overlapping pair, checked three ways, plus each placed session against the blackout windows
+ * its speakers declared. O(n²) over one event's sessions, which is a few hundred rows at most — an
+ * interval tree would be faster and harder to prove right.
+ *
+ * `unavailability` defaults to empty and empty means *no constraint*, which is what makes this safe
+ * to add to the five existing call sites without touching any of them. A speaker who never opens the
+ * portal contributes nothing, exactly as before — see the blackout-versus-availability note on the
+ * `speaker_unavailability` table for why the model is oriented this way round.
  */
-export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels = {}): Conflict[] {
+export function detectConflicts(
+  entries: ScheduleEntry[],
+  labels: ScheduleLabels = {},
+  unavailability: SpeakerUnavailability[] = [],
+): Conflict[] {
   const placed = entries.filter(participatesInConflicts);
   const found = new Map<string, Conflict>();
 
@@ -195,6 +247,40 @@ export function detectConflicts(entries: ScheduleEntry[], labels: ScheduleLabels
     }
   }
 
+  /**
+   * `AD-2`. Unlike the three above this is not a pairwise check — a session can violate a declared
+   * window while being the only thing on the board — so it runs over the placed sessions once
+   * rather than over their pairs. Windows are grouped by participant first so a programme with many
+   * speakers does not walk the whole list for every session.
+   */
+  if (unavailability.length > 0) {
+    const windowsByParticipant = new Map<string, SpeakerUnavailability[]>();
+    for (const window of unavailability) {
+      windowsByParticipant.set(window.participantId, [
+        ...(windowsByParticipant.get(window.participantId) ?? []),
+        window,
+      ]);
+    }
+
+    for (const entry of placed) {
+      for (const speaker of entry.speakers) {
+        for (const window of windowsByParticipant.get(speaker.participantId) ?? []) {
+          if (!overlaps(entry, window)) continue;
+          add({
+            kind: 'availability',
+            severity: severityForKind('availability'),
+            sessionIds: [entry.id],
+            subjectId: speaker.participantId,
+            subjectName: speaker.name,
+            message: window.note
+              ? `${speaker.name} is unavailable when ${entry.title} is scheduled — ${window.note}`
+              : `${speaker.name} said they are unavailable when ${entry.title} is scheduled`,
+          });
+        }
+      }
+    }
+  }
+
   return [...found.values()];
 }
 
@@ -220,7 +306,13 @@ export function worstSeverity(conflicts: Conflict[]): ConflictSeverity | null {
   return null;
 }
 
-export type ConflictSummary = { total: number; room: number; track: number; speaker: number };
+export type ConflictSummary = {
+  total: number;
+  room: number;
+  track: number;
+  speaker: number;
+  availability: number;
+};
 
 export function summarizeConflicts(conflicts: Conflict[]): ConflictSummary {
   return {
@@ -228,6 +320,7 @@ export function summarizeConflicts(conflicts: Conflict[]): ConflictSummary {
     room: conflicts.filter((conflict) => conflict.kind === 'room').length,
     track: conflicts.filter((conflict) => conflict.kind === 'track').length,
     speaker: conflicts.filter((conflict) => conflict.kind === 'speaker').length,
+    availability: conflicts.filter((conflict) => conflict.kind === 'availability').length,
   };
 }
 
@@ -274,16 +367,22 @@ export function previewConflicts(
   placements: Placement[],
   labels: ScheduleLabels = {},
   additions: ScheduleEntry[] = [],
+  unavailability: SpeakerUnavailability[] = [],
 ): Conflict[] {
-  return detectConflicts(applyPlacements([...entries, ...additions], placements), labels);
+  return detectConflicts(
+    applyPlacements([...entries, ...additions], placements),
+    labels,
+    unavailability,
+  );
 }
 
 export function conflictsForSession(
   entries: ScheduleEntry[],
   sessionId: string,
   labels: ScheduleLabels = {},
+  unavailability: SpeakerUnavailability[] = [],
 ): Conflict[] {
-  return detectConflicts(entries, labels).filter((conflict) =>
+  return detectConflicts(entries, labels, unavailability).filter((conflict) =>
     conflict.sessionIds.includes(sessionId),
   );
 }
