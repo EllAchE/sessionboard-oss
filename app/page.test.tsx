@@ -156,10 +156,15 @@ describe('fresh-instance home page', () => {
     const html = renderHome(true);
     const products = html.slice(html.indexOf('id="products"'), html.indexOf('id="about"'));
 
-    for (const href of Object.values(DEMO_ENTRY_LINKS)) {
-      expect(products).toContain(asAttribute(href));
+    expect(html).not.toContain('Or explore a conference already in progress');
+    for (const [label, href] of [
+      ['Run the conference', DEMO_ENTRY_LINKS.organizer],
+      ['Score the proposals', DEMO_ENTRY_LINKS.reviewer],
+      ['Give a talk', DEMO_ENTRY_LINKS.speaker],
+      ['Browse the programme', DEMO_PUBLIC_SITE_LINK],
+    ] as const) {
+      expect(products).toContain(`href="${asAttribute(href)}">${label}`);
     }
-    expect(products).toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
 
     const firstWords = [...products.matchAll(/<a [^>]*href="[^"]*"[^>]*>\s*(\S+)/g)].map(
       (match) => match[1],
