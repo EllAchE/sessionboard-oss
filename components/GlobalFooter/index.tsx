@@ -1,20 +1,19 @@
-import Link from 'next/link';
+import { CiceroMark } from '@/components/CiceroBrand';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
 import {
   Bot,
   CalendarDays,
   FileCheck,
   Gift,
   Github,
-  Globe2,
   Landmark,
   Linkedin,
   Megaphone,
   Scale,
-  Twitter,
+  Twitter
 } from 'lucide-react';
-import { CiceroMark } from '@/components/CiceroBrand';
-import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
+import Link from 'next/link';
 import styles from './GlobalFooter.module.css';
 
 const DEMO_LINKS = [
@@ -48,7 +47,7 @@ const DEMO_LINKS = [
 const RESOURCE_LINKS = [
   {
     href: '/#agent-quick-start',
-    label: 'Agent setup',
+    label: 'Agents',
     icon: Bot,
   },
   /**
@@ -58,17 +57,12 @@ const RESOURCE_LINKS = [
    */
   {
     href: '/docs/api',
-    label: 'API docs',
+    label: 'API',
     icon: FileCheck,
   },
 ] as const;
 
 const SOCIAL_LINKS = [
-  {
-    href: 'https://www.elehche.com/',
-    label: 'Website',
-    icon: Globe2,
-  },
   {
     href: 'https://github.com/EllAchE',
     label: 'GitHub',

@@ -22,13 +22,18 @@ describe('GlobalFooter links', () => {
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
   });
 
+  /**
+   * The destinations are the contract here, not the wording: these two links are the only way to
+   * reach agent setup and the API reference from a page that is not the landing page. Assert the
+   * hrefs first so a future relabel cannot quietly drop either one.
+   */
   it('keeps agent setup and API docs available on every instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
     expect(html).toContain('href="/#agent-quick-start"');
-    expect(html).toContain('Agent setup');
+    expect(html).toContain('<span>Agents</span>');
     expect(html).toContain('href="/docs/api"');
-    expect(html).toContain('API docs');
+    expect(html).toContain('<span>API</span>');
   });
 
   it('sends API docs to the rendered reference rather than the raw spec', () => {
@@ -84,10 +89,15 @@ describe('GlobalFooter links', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable />);
 
     expect(html.match(/class="[^"]*row[^"]*"/g) ?? []).toHaveLength(2);
-    for (const productLink of ['Organizer demo', 'Sample event', 'Agent setup', 'API docs']) {
-      expect(html.indexOf(productLink)).toBeLessThan(html.indexOf('Website'));
+    for (const productLink of [
+      'Organizer demo',
+      'Sample event',
+      '<span>Agents</span>',
+      '<span>API</span>',
+    ]) {
+      expect(html.indexOf(productLink)).toBeLessThan(html.indexOf('<span>GitHub</span>'));
     }
-    expect(html.indexOf('LinkedIn')).toBeLessThan(html.indexOf('Free merch'));
+    expect(html.indexOf('<span>LinkedIn</span>')).toBeLessThan(html.indexOf('Free merch'));
   });
 
   /** One row is still one row on a fresh instance: resources and creators must not merge. */
