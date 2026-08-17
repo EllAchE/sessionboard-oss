@@ -420,12 +420,13 @@ Recorded for symmetry — the same reading pass that produced the list above pro
 <!-- generated:differentiators -->
 | ID | Capability | Absent in |
 |---|---|--:|
-| CD-1 | Sponsors / exhibitors with a publication-gated public wall | 30/32 |
-| CD-2 | Consent-aware SMS (E.164 normalization, OTP verification, quiet hours) | 26/32 |
-| CD-3 | Streamable-HTTP MCP server with role-scoped agent skills | 18/32 |
-| CD-4 | Post-conference recording ingestion with publication gates | 17/32 |
-| CD-5 | Signed outbound webhooks | 16/32 |
-| CD-6 | Cross-event speaker CRM (segments, sourcing) | 15/32 |
-| CD-7 | Versioned public REST API with a generated OpenAPI contract | 12/32 |
-| CD-8 | Reversible CRM merges | 9/32 |
+| CD-1 | Embeddable venue/exhibitor-hall map (organizer PDF upload, public widget) | 32/32 |
+| CD-2 | Sponsors / exhibitors with a publication-gated public wall | 30/32 |
+| CD-3 | Consent-aware SMS (E.164 normalization, OTP verification, quiet hours) | 26/32 |
+| CD-4 | Streamable-HTTP MCP server with role-scoped agent skills | 18/32 |
+| CD-5 | Post-conference recording ingestion with publication gates | 17/32 |
+| CD-6 | Signed outbound webhooks | 16/32 |
+| CD-7 | Cross-event speaker CRM (segments, sourcing) | 15/32 |
+| CD-8 | Versioned public REST API with a generated OpenAPI contract | 12/32 |
+| CD-9 | Reversible CRM merges | 9/32 |
 <!-- /generated:differentiators -->
