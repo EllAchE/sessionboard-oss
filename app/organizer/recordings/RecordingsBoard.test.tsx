@@ -1,10 +1,14 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/ui';
 import { RecordingsBoard, formatSessionDateTime } from './RecordingsBoard';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 
 describe('recordings presentation', () => {
   it('formats session timestamps in the event timezone on both server and client', () => {

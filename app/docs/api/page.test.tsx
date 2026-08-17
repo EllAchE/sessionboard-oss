@@ -68,6 +68,16 @@ describe('API reference page', () => {
     expect(html).toContain('href="/api/v1/openapi.json"');
   });
 
+  /**
+   * The closing footnote also links home, so position is the assertion: the way back has to be in
+   * the header, not only under a page as long as the endpoint list.
+   */
+  it('offers a way back to the home page before the reference begins', () => {
+    const back = html.indexOf('href="/"');
+    expect(back, 'no link back to the home page').toBeGreaterThan(-1);
+    expect(back).toBeLessThan(html.indexOf('<h1'));
+  });
+
   it('says which credential an endpoint wants', () => {
     expect(html).toContain('Public');
     expect(html).toContain('Event API key');

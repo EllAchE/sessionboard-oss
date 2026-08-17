@@ -32,8 +32,10 @@ workstream ownership, open-PR references, and deployment observations inside the
   [`05-additional-requirements.md`](05-additional-requirements.md) — frozen scope ledgers
 - [`03-plan.md`](03-plan.md) — 24-hour competition delivery plan
 - [`requirements-audit-checklist.md`](requirements-audit-checklist.md) — audit pinned to commit `416101e`
-- [`06-submission-summary.md`](06-submission-summary.md) and
-  [`06-submission-narrative.md`](06-submission-narrative.md) — submitted write-up
+- [`06-submission-form-answers.md`](06-submission-form-answers.md) — copy-ready submission form draft
+- [`06-submission-summary.md`](06-submission-summary.md),
+  [`06-submission-narrative.md`](06-submission-narrative.md), and
+  [`06-submission-evidence.md`](06-submission-evidence.md) — short form, public write-up, and dated proof
 - [`decisions-long-form.md`](decisions-long-form.md) — build-time product rationale
 - [`reference/source-brief.txt`](reference/source-brief.txt) and
   [`reference/screenshots/README.md`](reference/screenshots/README.md) — source brief and evidence

@@ -84,9 +84,15 @@
   min-width: 0;
 }
 
+/*
+ * Semibold because .brandMeta below is --type-label, which is weight 500: at the default weight the
+ * dates and venue came out heavier than the event name they sit under. Spectral ships a real 600
+ * cut (app/fonts.ts), so this is a designed weight rather than a synthesised bold.
+ */
 .brandName {
   font-family: var(--font-display);
   font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
   color: var(--text-strong);
   text-decoration: none;
@@ -172,9 +178,11 @@
   padding: var(--space-12) var(--space-5) var(--space-8);
 }
 
+/* Matches .brandName, so the event's name carries the same weight wherever the published site says it. */
 .heroTitle {
   font-family: var(--font-display);
   font-size: var(--text-5xl);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-tight);
   color: var(--text-strong);

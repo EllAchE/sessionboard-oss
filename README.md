@@ -75,15 +75,26 @@ docker compose exec app npm run db:seed
 machine below uses `bun`, because `bun.lock` is the lockfile — `npm install` would ignore it and
 resolve a different tree.)
 
-The seed creates two idempotent cases:
+The seed creates four idempotent cases. The first three are one conference at three scales, so you
+can see what a screen does under load without writing a fixture for it:
 
-- **Cicero Forum** — a fictional Roman-themed conference with 14 submissions mid-review, 7
-  historically inspired speakers, 4 tracks, 3 rooms, and a two-day agenda with gaps still in it.
-- **The First Settlement** — a Roman Senate-themed programme inspired by the sessions of
-  13–16 January 27 BCE, with motions, consular review, a partly scheduled agenda, and outstanding
-  speaker tasks.
+- **Cicero Forum** (`/demo`) — **the default sample event**, at the medium size: 96 submissions
+  mid-review, 45 speakers, 4 tracks, 5 rooms, and a two-day agenda with gaps still in it. The first
+  14 proposals and 7 speakers are hand-written and are what you meet first; the rest is generated,
+  and is what gives the review queue and the agenda grid some weight.
+- **Provincial Assembly** (`/demo-small`) — the same conference sized like a meetup: 18 submissions,
+  8 speakers, one day, two rooms.
+- **Imperial Congress** (`/demo-large`) — and sized like a large one: 384 submissions, 180 speakers,
+  three days, ten rooms. Open this when the question is whether a list paginates, a grid stays
+  readable, or a query falls over.
+- **The First Settlement** (`/first-settlement`) — a Roman Senate-themed programme inspired by the
+  sessions of 13–16 January 27 BCE, with motions, consular review, a partly scheduled agenda, and
+  outstanding speaker tasks.
 
-Run it twice and you get the same two events, not four.
+Every generated speaker gets a procedurally drawn portrait and an address on an IANA-reserved
+domain (`@demo-large.example` and friends), so nothing the seed writes can receive mail.
+
+Run it twice and you get the same four events, not eight.
 
 ## Local development
 
@@ -110,7 +121,7 @@ have their own optional settings. Apply migrations before serving a new applicat
 | `bun run db:check` | Validate Drizzle migration snapshots |
 | `bun run db:migrate` | Apply migrations |
 | `bun run db:migrate:remote` | Apply migrations to a deployment target; ignores `.env`, rejects localhost |
-| `bun run db:seed` | Seed both demo conferences (idempotent) |
+| `bun run db:seed` | Seed all four demo conferences, `demo` included (idempotent) |
 | `bun run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `bun run cf:deploy` | Build and deploy to Cloudflare Workers |
 
@@ -430,6 +441,7 @@ current policy.
 - [`docs/04-demo-runbook.md`](docs/04-demo-runbook.md) — presenter-ready walkthrough and safety gates
 - [`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md) — actor and permission model
 - [`docs/api/program-reconcile.md`](docs/api/program-reconcile.md) — safe inbound program reconciliation
+- [`docs/06-submission-form-answers.md`](docs/06-submission-form-answers.md) — copy-ready competition form answers
 - [`docs/06-submission-narrative.md`](docs/06-submission-narrative.md) — full competition submission
 - [Public submission write-up](https://cicero-submission.elehche.workers.dev/) — readable HTML on its own Worker
 - [`docs/submission/index.html`](docs/submission/index.html) — checked-in HTML mirror of the submission

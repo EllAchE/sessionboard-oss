@@ -10,7 +10,7 @@ import {
   membershipsAreDemoOnly,
 } from './demo-access';
 
-const DEMO = ['demo', 'first-settlement'];
+const DEMO = ['demo', 'demo-small', 'demo-large', 'first-settlement'];
 
 afterEach(() => {
   vi.unstubAllEnvs();

@@ -96,6 +96,7 @@ const COLUMNS: Array<DataTableColumn<OrganizerTaskRow>> = [
     header: 'Progress',
     width: '22%',
     space: 'wide',
+    truncate: false,
     render: (row) => (
       <span className={styles.barTrack} title={`${row.completionPct}% complete`}>
         <span
@@ -123,6 +124,7 @@ const COLUMNS: Array<DataTableColumn<OrganizerTaskRow>> = [
     align: 'right',
     width: '8%',
     space: 'compact',
+    truncate: false,
     render: (row) =>
       row.overdue > 0 ? <Badge tone="danger">{row.overdue}</Badge> : <span aria-hidden>—</span>,
   },

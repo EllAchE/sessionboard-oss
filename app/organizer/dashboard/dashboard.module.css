@@ -264,7 +264,13 @@
   flex-direction: column;
 }
 
+/*
+ * `overflow` and `text-overflow` are ignored on an inline box, so each of these has to be a block
+ * to truncate itself. Inside a stacked cell nothing else can do it for them: the cell's own
+ * ellipsis reaches the text it owns directly, never text nested in a wrapper.
+ */
 .personName {
+  display: block;
   color: var(--text-strong);
   font-weight: var(--weight-medium);
   overflow: hidden;
@@ -273,6 +279,7 @@
 }
 
 .personMeta {
+  display: block;
   font: var(--type-label);
   color: var(--text-faint);
   overflow: hidden;
@@ -288,7 +295,11 @@
 }
 
 .taskName {
+  display: block;
   color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .due {

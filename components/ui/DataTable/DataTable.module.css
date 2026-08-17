@@ -127,15 +127,32 @@
   color: var(--text-muted);
 }
 
-.selectCell {
+/*
+ * The selection column holds one control and no text. It has to out-specify `.row td` — which owns
+ * the shared padding and the truncation ellipsis — or the box is squeezed by a right padding meant
+ * for prose and the cell paints a `…` beside it, as if a label had been cut off.
+ */
+.row td.selectCell,
+.head th.selectCell {
   width: var(--control-lg);
   padding-left: var(--space-3);
-  padding-right: 0;
+  padding-right: var(--space-2);
   text-align: left;
+  text-overflow: clip;
 }
 
 .selectCell input {
   vertical-align: middle;
+}
+
+/*
+ * `text-overflow` only ever truncates inline text the cell owns directly. A column of badges,
+ * buttons or stacked wrappers clips at the column edge instead, so the ellipsis it would paint
+ * beside that clipped box reads as missing text rather than as truncation. Those columns opt out,
+ * and whatever they render owns its own truncation.
+ */
+.row td.noTruncate {
+  text-overflow: clip;
 }
 
 .empty {
