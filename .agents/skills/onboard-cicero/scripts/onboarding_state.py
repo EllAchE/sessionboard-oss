@@ -26,11 +26,15 @@ MILESTONES = (
     "program-built",
     "program-published",
     "api-key-ready",
+    "mcp-connected",
     "handoff-ready",
 )
 HOSTING_MODES = ("unknown", "existing", "local-docker", "self-hosted-other", "cloudflare")
 ACCOUNT_STATUSES = ("unknown", "needed", "ready")
 API_KEY_STATUSES = ("unknown", "missing", "read-only", "configured")
+# `skipped` is a first-class outcome, not a failure: the skills drive the REST API directly, so an
+# organizer who wants no MCP client still reaches `handoff-ready` without a dishonest `connected`.
+MCP_STATUSES = ("unknown", "skipped", "connected")
 SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -50,6 +54,7 @@ def default_state() -> dict[str, Any]:
         "hosting": {"mode": "unknown"},
         "account": {"status": "unknown"},
         "api_key": {"status": "unknown", "environment_variable": "CICERO_API_KEY"},
+        "mcp": {"status": "unknown"},
         "progress": {"completed": [], "next": MILESTONES[0]},
         "updated_at": now(),
     }
@@ -98,6 +103,11 @@ def normalize(state: dict[str, Any]) -> dict[str, Any]:
         raise StateError("account.status is invalid")
     if not isinstance(api_key, dict) or api_key.get("status") not in API_KEY_STATUSES:
         raise StateError("api_key.status is invalid")
+    # Absent in states written before the MCP milestone existed. Default rather than reject, so an
+    # interrupted onboarding resumes instead of failing to load.
+    mcp = state.get("mcp", {"status": "unknown"})
+    if not isinstance(mcp, dict) or mcp.get("status") not in MCP_STATUSES:
+        raise StateError("mcp.status is invalid")
 
     return {
         "version": VERSION,
@@ -109,6 +119,7 @@ def normalize(state: dict[str, Any]) -> dict[str, Any]:
             "status": api_key["status"],
             "environment_variable": "CICERO_API_KEY",
         },
+        "mcp": {"status": mcp["status"]},
         "progress": {
             "completed": completed,
             "next": next_milestone(completed),
@@ -143,6 +154,11 @@ def require_mark_preconditions(state: dict[str, Any], milestones: list[str]) -> 
         raise StateError("event-ready requires an exact event slug")
     if "api-key-ready" in requested and state["api_key"]["status"] != "configured":
         raise StateError("api-key-ready requires api-key status configured")
+    if "mcp-connected" in requested and state["mcp"]["status"] == "unknown":
+        raise StateError(
+            "mcp-connected requires mcp status connected or skipped; "
+            "record a verified tools/list, or the user's explicit choice to skip the MCP client"
+        )
     if "handoff-ready" in requested:
         prerequisites = set(MILESTONES[:-1])
         if not prerequisites.issubset(completed) or state["api_key"]["status"] != "configured":
@@ -222,6 +238,7 @@ def build_parser() -> argparse.ArgumentParser:
     setter.add_argument("--hosting", choices=HOSTING_MODES)
     setter.add_argument("--account", choices=ACCOUNT_STATUSES)
     setter.add_argument("--api-key", choices=API_KEY_STATUSES)
+    setter.add_argument("--mcp", choices=MCP_STATUSES)
 
     marker = commands.add_parser("mark", help="mark one or more verified milestones complete")
     marker.add_argument("milestones", nargs="+", choices=MILESTONES)
@@ -278,6 +295,13 @@ def run(args: argparse.Namespace) -> int:
             if args.api_key != state["api_key"]["status"]:
                 reopen_from(state, "api-key-ready")
             state["api_key"]["status"] = args.api_key
+            changed = True
+        if args.mcp is not None:
+            # A connection proved against one key says nothing about another, so a changed status
+            # reopens the milestone. Reopening `api-key-ready` above already clears this one too.
+            if args.mcp != state["mcp"]["status"]:
+                reopen_from(state, "mcp-connected")
+            state["mcp"]["status"] = args.mcp
             changed = True
         if not changed:
             raise StateError("set requires at least one value")

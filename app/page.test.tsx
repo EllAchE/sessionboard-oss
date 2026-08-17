@@ -1,5 +1,9 @@
 import { ToastProvider } from '@/components/ui';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_LINKS } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_PUBLIC_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
+} from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -39,6 +43,39 @@ describe('fresh-instance home page', () => {
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
     );
+  });
+
+  /**
+   * The prompt is one instruction and one URL on purpose. It used to restate the whole onboarding
+   * contract, which both buried the section under a wall of monospace and duplicated rules that
+   * `onboard-cicero/SKILL.md` already owns. Guard the size, not the exact wording.
+   */
+  it('keeps the pasted setup prompt to a single short instruction', () => {
+    const html = renderHome(false);
+    const prompt = html.slice(html.indexOf('Set up Cicero for my conference'));
+
+    expect(prompt.slice(0, 400)).toContain('onboard-cicero/SKILL.md');
+    expect(html).not.toContain('Walk me through one unfinished milestone at a time');
+    expect(html).not.toContain('hand off to $manage-cicero-event');
+  });
+
+  /**
+   * The MCP server is deployed and event-scoped, so the section leads with the endpoint and states
+   * the API-key prerequisite rather than implying the integration is unavailable.
+   */
+  it('leads the agent section with the MCP server and its key prerequisite', () => {
+    const html = renderHome(false);
+
+    expect(html).toContain('MCP server');
+    expect(html).toContain('/api/v1/events/{event-slug}/mcp');
+    expect(html).toContain('href="/api/v1/mcp-tools.json"');
+    expect(html).toContain('event API key as a Bearer token');
+    expect(html).toContain('Integrations');
+    expect(html).toContain('Let your AI assistant handle the hard work.');
+    expect(html.indexOf('MCP server')).toBeLessThan(
+      html.indexOf('Claude &amp; ChatGPT setup prompt'),
+    );
+    expect(html).not.toContain('setup checklist');
   });
 
   it('describes the product through organizer, reviewer, speaker, and attendee outcomes', () => {
@@ -84,9 +121,30 @@ describe('fresh-instance home page', () => {
 
     expect(html).toContain('href="#products"');
     expect(html).toContain('Products');
-    expect(html).toContain('href="/api/v1/openapi.json"');
-    expect(html).toContain('>Docs<');
+    expect(html).toContain('href="/docs/api"');
+    expect(html).toContain('>API<');
     expect(html).not.toContain('Agent quick start');
+  });
+
+  it('orders the navigation about, products, docs, then demo', () => {
+    const html = renderHome(true);
+
+    const navOrder = ['href="#about"', 'href="#products"', 'href="/docs/api"'].map(
+      (marker) => html.indexOf(marker),
+    );
+    expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));
+    expect(navOrder.at(-1)).toBeLessThan(html.indexOf('>Demos'));
+  });
+
+  it('collects every demo behind the navigation demo menu', () => {
+    const html = renderHome(true);
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('Organizer dashboard');
+    expect(html).toContain('Reviewer queue');
+    expect(html).toContain('Speaker portal');
+    expect(html).toContain('Public event page');
+    expect(html).toContain('Public agenda');
   });
 
   it('keeps agent setup reachable from the page body once it leaves the navigation', () => {
@@ -139,13 +197,43 @@ describe('fresh-instance home page', () => {
     expect(html).not.toContain('/embed/demo/gallery');
   });
 
-  it('keeps every demo entry point separable by its first word', () => {
+  /**
+   * The published site is what the three role tours produce, so it is offered the same way they
+   * are: a card in the hero tour list and a button in the closing one, both after the roles.
+   */
+  it('shows the sample published event alongside the role tours', () => {
     const html = renderHome(true);
-    const labels = [...html.matchAll(/<span class="[^"]*persona[Ll]abel[^"]*">([^<]+)/g)].map(
-      (match) => match[1].trim(),
-    );
 
-    expect(labels).toHaveLength(4);
-    expect(new Set(labels.map((label) => label.split(' ')[0])).size).toBe(labels.length);
+    expect(html).toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
+    expect(html).toContain('Browse the programme');
+    expect(html).toContain('the published event site. No account needed.');
+    expect(html).toContain('Tour the published event');
+    expect(html.indexOf('Give a talk')).toBeLessThan(html.indexOf('Browse the programme'));
+    expect(html.indexOf('Prepare a talk as a speaker')).toBeLessThan(
+      html.indexOf('Tour the published event'),
+    );
   });
+
+  /**
+   * Automated walkthroughs pick a click target by matching link text from the start and treat two
+   * matches as an error, so no tour label may be a prefix of another anywhere on the page.
+   */
+  it('keeps every demo tour label separable from the start of its text', () => {
+    const html = renderHome(true);
+    const labels = [
+      'Run the conference',
+      'Score the proposals',
+      'Give a talk',
+      'Browse the programme',
+      'Try the reviewer queue',
+      'Open the organizer dashboard',
+      'Rate proposals as a reviewer',
+      'Prepare a talk as a speaker',
+      'Tour the published event',
+    ];
+
+    for (const label of labels) {
+      expect(html).toContain(label);
+      expect(labels.filter((other) => other.startsWith(label))).toEqual([label]);
+    }  });
 });

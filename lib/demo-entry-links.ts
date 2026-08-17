@@ -19,12 +19,12 @@ export const DEMO_ENTRY_LINKS = {
 } as const;
 
 /**
- * The attendee-facing pages of the same demo event — the published programme, which needs no
- * account at all.
- *
- * Deliberately a separate constant rather than more `DEMO_ENTRY_LINKS` keys: that one means
- * "passwordless sign-in link", and `app/page.test.tsx` iterates its values asserting that none of
- * them reach a fresh instance. These carry no identity, so they do not belong under that rule.
+ * The fourth way into the same seeded event: the site it publishes to attendees, page by page. None
+ * of these takes an account, so they are not sign-in entry points and stay out of
+ * `DEMO_ENTRY_LINKS`, whose every value is a passwordless sign-in URL that callers hand to a
+ * signed-out visitor as a role tour — `app/page.test.tsx` iterates that constant asserting none of
+ * its values reach a fresh instance, and these carry no identity to keep out. Gate them on the same
+ * `demoEntryPointsAreAvailable` check regardless: an unseeded instance has no event at this slug.
  */
 export const DEMO_PUBLIC_LINKS = {
   event: `/${DEMO_EVENT_SLUG}`,
@@ -33,6 +33,9 @@ export const DEMO_PUBLIC_LINKS = {
   speakers: `/${DEMO_EVENT_SLUG}/speakers`,
   sponsors: `/${DEMO_EVENT_SLUG}/sponsors`,
 } as const;
+
+/** The event's front door, for callers that want the site rather than one of its pages. */
+export const DEMO_PUBLIC_SITE_LINK = DEMO_PUBLIC_LINKS.event;
 
 /** The published showcase of every embed view, running against the demo event. */
 export const EMBED_SHOWCASE_PATH = '/embeds';

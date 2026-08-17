@@ -7,6 +7,7 @@ import {
   DEMO_ENTRY_LINKS,
   DEMO_EVENT_SLUG,
   DEMO_PUBLIC_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
   EMBED_SHOWCASE_PATH,
 } from '@/lib/demo-entry-links';
 import {
@@ -21,9 +22,11 @@ import {
   Github,
   Globe2,
   Handshake,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
   Megaphone,
+  Plug,
   ShieldCheck,
   Sparkles,
   UserMinus,
@@ -32,16 +35,19 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
+import { DemoMenu } from './DemoMenu';
 import styles from './home.module.css';
 
-const AGENT_STARTER_PROMPT = `$onboard-cicero
+/**
+ * Deliberately one instruction and one URL. The guide at that URL already owns resuming from saved
+ * state, asking only for unknown facts, one milestone at a time, and confirmation before any live
+ * change -- restating those rules here only gave the page a wall of text to render and a second
+ * copy to keep in sync. Anything this prompt should do belongs in `onboard-cicero/SKILL.md`.
+ */
+const AGENT_STARTER_PROMPT = `Set up Cicero for my conference, then connect its MCP server so you can run the event for me. Follow the guide at https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md`;
 
-Help me set up Cicero from this Claude or ChatGPT session.
-
-Read and follow the bundled onboarding guide first:
-https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md
-
-Resume from this working directory if Cicero is already cloned; otherwise help me clone it. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. If you cannot run a step yourself, give me the exact action and wait for its result. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
+/** Event-scoped by construction, so the slug stays a placeholder until the organizer has an event. */
+const MCP_ENDPOINT = '/api/v1/events/{event-slug}/mcp';
 
 const ORGANIZER_FEATURES = [
   {
@@ -142,8 +148,11 @@ const ROLE_PRODUCTS = [
 /**
  * The seeded demo entry points (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
  * visitor reaches a populated view of the role they care about without reading the page first. The
- * three sign-in entry points also close the page and sit in the global footer; the attendee one
- * needs no account, because the published programme is public.
+ * same entry points also close the page and sit in the global footer.
+ *
+ * The published event site rides along as a fourth card. It is what the other three produce, and it
+ * is the only one a visitor can open without becoming somebody: no sign-in, so it is the cheapest
+ * look at a finished conference. It comes last because it reads as the result of the work above it.
  *
  * `label` leads with a verb rather than the role noun on purpose, and the role noun opens `blurb`
  * instead. Automated walkthroughs pick a click target by matching label text from the start and
@@ -178,10 +187,10 @@ const PERSONAS = [
     blurb: 'Speaker — your sessions, profile, and tasks.',
   },
   {
-    href: DEMO_PUBLIC_LINKS.event,
+    href: DEMO_PUBLIC_SITE_LINK,
     icon: CalendarDays,
     label: 'Browse the programme',
-    blurb: 'Attendee — the public event site, no sign-in.',
+    blurb: 'Attendee — the published event site. No account needed.',
   },
 ] as const;
 
@@ -236,21 +245,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <a className={styles.brand} href="/" aria-label="Cicero home">
           <CiceroBrand markSize={34} />
         </a>
+        {/*
+          Demo sits last because it is the only entry that leaves the marketing page for a live
+          product surface, and because it opens a menu rather than jumping to a section -- a
+          trigger that expands in place reads as the end of the row, not a step in it.
+        */}
         <div className={styles.navLinks}>
-          <a className={styles.productsLink} href="#products">
-            Product
-          </a>
           <a className={styles.aboutLink} href="#about">
             About
           </a>
-          {demoAvailable ? (
-            <a className={styles.demoLink} href="/demo">
-              Demos
-            </a>
-          ) : null}
-          <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
-            Docs
+          <a className={styles.productsLink} href="#products">
+            Product
           </a>
+          <a className={styles.apiDocsLink} href="/docs/api">
+            API
+          </a>
+          {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
         </div>
         <div className={styles.navAuth}>
           <Button
@@ -601,36 +611,40 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.agentQuickIntro}>
           <p className={styles.eyebrow}>
             <Sparkles size={17} aria-hidden="true" />
-            For organizers · AI-guided setup
+            For organizers · Agent-first
           </p>
           <h2 id="agent-quick-start-title">
-            Let your AI assistant handle the setup checklist.
+            Let your AI assistant handle the hard work.
           </h2>
           <p>
-            Paste one prompt into Claude or ChatGPT. Cicero’s onboarding guide finds what is
-            already done, walks through what is missing, and keeps you in control of every change.
+            Cicero is built to be driven by an agent. Connect its MCP server and Claude or ChatGPT
+            works the event itself — reading submissions, reconciling the program, drafting speaker
+            email — instead of narrating what you should click.
           </p>
 
           <ol className={styles.agentSteps}>
             <li>
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
-                <h3>Copy one prompt</h3>
-                <p>Paste it into a Claude or ChatGPT session with coding tools.</p>
+                <h3>Copy one line</h3>
+                <p>Paste it into Claude or ChatGPT. The guide sets up hosting and your event.</p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>2</span>
               <div className={styles.agentStepCopy}>
-                <h3>Pick up wherever you left off</h3>
-                <p>The guide remembers completed milestones and returns to the next open step.</p>
+                <h3>Create a key</h3>
+                <p>
+                  Organizer → <strong>Integrations</strong> → Create key. Read-only or read and
+                  write; shown once, hashed at rest.
+                </p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>3</span>
               <div className={styles.agentStepCopy}>
-                <h3>Review before anything changes</h3>
-                <p>Event updates are previewed first, and destructive actions need confirmation.</p>
+                <h3>Connect the MCP</h3>
+                <p>Point your client at your event’s URL. Ten tools, scoped by that key.</p>
               </div>
             </li>
           </ol>
@@ -658,6 +672,24 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.agentPrompt}>
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
+              <Plug size={17} aria-hidden="true" />
+              MCP server
+            </span>
+            <a className={styles.textLink} href="/api/v1/mcp-tools.json">
+              Tool manifest
+            </a>
+          </div>
+          <pre>
+            <code>{MCP_ENDPOINT}</code>
+          </pre>
+          <p className={styles.agentPromptNote}>
+            <KeyRound size={17} aria-hidden="true" />
+            Streamable HTTP, authenticated with an event API key as a Bearer token. Keys are
+            event-scoped, so you need your own event first — the prompt below gets you there.
+          </p>
+
+          <div className={styles.agentPromptHeader}>
+            <span className={styles.agentPromptLabel}>
               <Sparkles size={17} aria-hidden="true" />
               Claude &amp; ChatGPT setup prompt
             </span>
@@ -678,8 +710,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <p className={styles.eyebrow}>See every side</p>
           <h2>Explore a conference already in motion.</h2>
           <p>
-            See how organizers move the event forward, how reviewers decide the programme, and how
-            speakers get ready.
+            See how organizers move the event forward, how reviewers decide the programme, how
+            speakers get ready, and what attendees read when it is all published.
           </p>
           <div className={styles.finalCtaActions}>
             <Button
@@ -703,6 +735,13 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
               Prepare a talk as a speaker
+            </Button>
+            <Button
+              href={DEMO_PUBLIC_SITE_LINK}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Tour the published event
             </Button>
           </div>
         </section>
