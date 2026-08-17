@@ -546,11 +546,11 @@
  * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
  * break short headings like "Score proposals, not spreadsheets." across three lines.
  */
-.roleProduct {
+.feature.roleProduct {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.roleProduct .featureIcon {
+.feature.roleProduct .featureIcon {
   grid-row: auto;
 }
 
