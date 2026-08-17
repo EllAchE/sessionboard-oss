@@ -78,6 +78,20 @@ function persist(boards: CustomDashboard[]): void {
   }
 }
 
+/**
+ * The one line an organizer reads before anything else, so the two numbers in it have to be about
+ * the same thing: `overdueParticipants` counts people who are actually late, not everyone holding
+ * an assignment that has not come due.
+ */
+function subtitleOf(summary: TaskCompletionSummary): string {
+  if (summary.overdue === 0) {
+    return `${summary.outstanding} task${summary.outstanding === 1 ? '' : 's'} outstanding, none overdue.`;
+  }
+  const tasks = `${summary.overdue} overdue task${summary.overdue === 1 ? '' : 's'}`;
+  const people = `${summary.overdueParticipants} participant${summary.overdueParticipants === 1 ? '' : 's'}`;
+  return `${tasks} across ${people}.`;
+}
+
 function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
   switch (id) {
     case 'counters':
@@ -186,9 +200,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
           <p className={styles.eyebrow}>Dashboard</p>
           <h1 className={styles.title}>{data.eventName}</h1>
           <p className={styles.subtitle}>
-            {data.taskSummary.overdue > 0
-              ? `${data.taskSummary.overdue} overdue tasks across ${data.taskSummary.blockedSpeakers} speakers.`
-              : `${data.taskSummary.outstanding} tasks outstanding, none overdue.`}
+            {subtitleOf(data.taskSummary)}
           </p>
         </div>
       </div>

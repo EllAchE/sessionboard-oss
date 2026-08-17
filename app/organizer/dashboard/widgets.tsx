@@ -65,7 +65,11 @@ export function CountersWidget({
             value={tasks.overdue}
             label="Overdue tasks"
             tone={tasks.overdue > 0 ? 'danger' : 'success'}
-            hint={`${tasks.blockedSpeakers} speakers blocked`}
+            hint={
+              tasks.overdue > 0
+                ? `across ${tasks.overdueParticipants} participant${tasks.overdueParticipants === 1 ? '' : 's'}`
+                : undefined
+            }
           />
           <Counter
             value={`${tasks.completionPct}%`}

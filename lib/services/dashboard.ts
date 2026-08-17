@@ -185,7 +185,13 @@ export type TaskCompletionSummary = {
   dueSoon: number;
   completed: number;
   waived: number;
-  blockedSpeakers: number;
+  /**
+   * Distinct participants carrying at least one *overdue* task — not one outstanding task. Both
+   * surfaces that read this pair it with `overdue` in the same sentence ("N overdue tasks across M
+   * participants"), so counting anyone merely not-yet-due inflated M against the N beside it: an
+   * event with three late tasks and nine assignments due next month read as twelve people behind.
+   */
+  overdueParticipants: number;
   completionPct: number;
 };
 
@@ -204,7 +210,7 @@ export function summarizeTaskCompletion(rows: OutstandingTaskRow[]): TaskComplet
     dueSoon: dueSoon.length,
     completed: completed.length,
     waived: waived.length,
-    blockedSpeakers: new Set(outstanding.map((row) => row.participantId)).size,
+    overdueParticipants: new Set(overdue.map((row) => row.participantId)).size,
     completionPct: rows.length === 0 ? 0 : Math.round((settled / rows.length) * 100),
   };
 }
