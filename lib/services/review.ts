@@ -32,6 +32,7 @@ import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef, slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { eventPersonName } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
@@ -2310,11 +2311,17 @@ export async function loadQueue(
         formatId: submission.formatId,
         level: submission.level,
         stagedDecision: submission.stagedDecision,
+        /* This event's name for them, which is the one the organizer set — see `eventPersonName`. */
+        submitterDisplayName: participant.displayName,
         submitterName: user.name,
         submitterEmail: user.email,
       })
       .from(submission)
       .innerJoin(user, eq(user.id, submission.submitterUserId))
+      .leftJoin(
+        participant,
+        and(eq(participant.userId, user.id), eq(participant.eventId, ctx.eventId)),
+      )
       .where(eq(submission.eventId, ctx.eventId))
       .orderBy(asc(submission.ref)),
     db
@@ -2432,7 +2439,11 @@ export async function loadQueue(
       formatName: row.formatId ? (formatNames.get(row.formatId) ?? null) : null,
       level: row.level,
       tagIds: tagsBySubmission.get(row.id) ?? [],
-      submitterName: row.submitterName ?? row.submitterEmail,
+      submitterName: eventPersonName({
+        displayName: row.submitterDisplayName,
+        name: row.submitterName,
+        email: row.submitterEmail,
+      }),
       submitterEmail: row.submitterEmail,
       averageScore: summary.average,
       spread: summary.spread,
@@ -2598,9 +2609,26 @@ export async function loadSubmissionReview(
   const round = await resolveRound(ctx, roundId ?? null);
   const criteria = round ? await listCriteria(round.id) : [];
 
-  const [submitter, trackRow, formatRow, tagRows, speakerRows, assignmentRows, aiRow, fieldRows] =
+  const [
+    submitter,
+    submitterParticipant,
+    trackRow,
+    formatRow,
+    tagRows,
+    speakerRows,
+    assignmentRows,
+    aiRow,
+    fieldRows,
+  ] =
     await Promise.all([
       db.query.user.findFirst({ where: eq(user.id, row.submitterUserId) }),
+      /* What this event calls them, which is what the organizer set — see `eventPersonName`. */
+      db.query.participant.findFirst({
+        where: and(
+          eq(participant.userId, row.submitterUserId),
+          eq(participant.eventId, ctx.eventId),
+        ),
+      }),
       row.trackId
         ? db.query.track.findFirst({ where: eq(trackTable.id, row.trackId) })
         : Promise.resolve(undefined),
@@ -2735,7 +2763,9 @@ export async function loadSubmissionReview(
     submittedAt: row.submittedAt,
     decidedAt: row.decidedAt,
     decisionNote: row.decisionNote,
-    submitterName: submitter?.name ?? submitter?.email ?? 'Unknown',
+    submitterName: submitter
+      ? eventPersonName({ ...submitter, displayName: submitterParticipant?.displayName ?? null })
+      : 'Unknown',
     submitterEmail: submitter?.email ?? '',
     speakers: speakerRows.map((speaker) => ({
       participantId: speaker.participantId,
@@ -3691,12 +3721,14 @@ export async function loadReviewerQueue(
       trackId: submission.trackId,
       formatId: submission.formatId,
       level: submission.level,
+      submitterDisplayName: participant.displayName,
       submitterName: user.name,
       submitterEmail: user.email,
     })
     .from(reviewAssignment)
     .innerJoin(submission, eq(submission.id, reviewAssignment.submissionId))
     .innerJoin(user, eq(user.id, submission.submitterUserId))
+    .leftJoin(participant, and(eq(participant.userId, user.id), eq(participant.eventId, ctx.eventId)))
     .where(
       and(
         eq(reviewAssignment.reviewRoundId, round.id),
@@ -3757,7 +3789,11 @@ export async function loadReviewerQueue(
       status: row.status,
       comment: row.comment,
       completedAt: row.completedAt,
-      submitterName: row.submitterName ?? row.submitterEmail,
+      submitterName: eventPersonName({
+        displayName: row.submitterDisplayName,
+        name: row.submitterName,
+        email: row.submitterEmail,
+      }),
       average: aggregate.average,
       scoredCount: aggregate.scoredCount,
     };
