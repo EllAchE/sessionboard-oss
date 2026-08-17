@@ -112,7 +112,7 @@
   min-height: calc(100vh - 88px);
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  align-items: center;
+  align-items: start;
   gap: clamp(var(--space-10), 6vw, var(--space-20));
   padding-block: var(--space-20) var(--space-24);
 }
@@ -182,12 +182,6 @@
     inset 0 0 0 3px rgba(255, 255, 255, 0.58);
 }
 
-.agentStarterCopy {
-  min-width: 0;
-  display: grid;
-  gap: var(--space-2);
-}
-
 .agentStarterLabel {
   display: inline-flex;
   align-items: center;
@@ -201,12 +195,6 @@
 
 .agentStarterLabel svg {
   flex: 0 0 auto;
-}
-
-.agentStarterCopy > p:last-child {
-  margin: 0;
-  color: var(--text-muted);
-  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
 }
 
 .manualStart {
