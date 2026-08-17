@@ -9,8 +9,20 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request): Promise<Response> {
-  const params = await request.formData();
   if (!env('TWILIO_AUTH_TOKEN')) return new Response('Twilio is not configured', { status: 503 });
+
+  // Parsing comes after the configuration check and inside a guard on purpose. This endpoint is
+  // unauthenticated by construction — the signature check needs the parsed body — so anything on
+  // the internet can POST it an empty or malformed request. Letting `formData()` throw returns a
+  // 500, and a 500 is the one answer Twilio retries, so a scanner that cannot even form a request
+  // would earn itself a retry schedule. 400 is both the truth and terminal.
+  let params: FormData;
+  try {
+    params = await request.formData();
+  } catch {
+    return new Response('Expected a Twilio form-encoded body', { status: 400 });
+  }
+
   if (!(await isAuthenticTwilioRequest(request, params))) {
     return new Response('Invalid Twilio signature', { status: 401 });
   }
