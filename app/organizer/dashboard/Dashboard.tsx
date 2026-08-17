@@ -88,7 +88,7 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
       return (
         <Card className={styles.wide}>
           <CardHeader>
-            <CardTitle>Who owes what</CardTitle>
+            <CardTitle>Outstanding tasks</CardTitle>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={data.outstanding} />
