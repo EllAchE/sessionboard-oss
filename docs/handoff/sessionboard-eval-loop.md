@@ -28,6 +28,31 @@ approved run -> browse serially -> judge fresh -> score -> archive baseline
 Reopening an unfinished scenario or checking the current plan does not cross the gate. Creating a
 new timestamped run directory does.
 
+## Approved cycle record
+
+The current cycle, recorded per step 1 below. Supersede this section when the operator approves the
+next one; do not accumulate a log here, because a stale entry reads as a live authorization.
+
+| Field | Value |
+|---|---|
+| Approved | 2026-08-17, explicit operator request, attended |
+| Run | `runs/2026-08-17T05-46-05` |
+| Target | <https://cicero-three.vercel.app> |
+| Scope | the 18 required scenarios **and** the 2 optional Speaker CRM scenarios |
+| Evaluator ref | `d8fafa4` — the same ref that produced both preserved baselines |
+| Product ref at plan time | `1017ca9` |
+| Authority | score, archive the baseline, remediate, and open PRs |
+| **Withheld** | merging, deploying, and hosted configuration changes |
+
+`ANTHROPIC_API_KEY` stays unset by operator decision, so ABS-14 is expected to score `cannot_judge`
+again and coverage is expected to cap near 98%. That is the documented outcome in
+[`sessionboard-eval-remediation.md`](sessionboard-eval-remediation.md), not a new finding — judge it
+as that file directs rather than as a product gap.
+
+Because merges are not authorized in this cycle, fixes land as open PRs and the hosted target keeps
+serving whatever `main` deploys on its own. Record the product ref again when the run finishes: the
+repository moves fast enough that the scored deployment will not be the ref above.
+
 ## 1. Establish the approved scope
 
 Record the operator's approval in the session handoff before touching the hosted fixture. State:
