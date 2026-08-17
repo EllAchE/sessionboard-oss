@@ -1,8 +1,9 @@
 # Database migrations
 
-The migration history was rebased into `0000_init.sql` while Cicero had no persistent deployment
-that depended on the earlier migration identifiers. The remaining snapshot and `_journal.json` are
-the minimum metadata Drizzle needs to generate and apply later migrations.
+The original migration identifiers are part of Cicero's upgrade contract. Persistent local and
+hosted databases record each journal timestamp in `drizzle.__drizzle_migrations`; deleting or
+rebasing those entries makes Drizzle replay an initial schema over populated databases.
 
-Treat this baseline as immutable once a persistent database is created. Future schema changes
-should append migrations instead of regenerating `0000_init.sql`.
+Treat every committed migration, snapshot, and journal timestamp as immutable. Future schema
+changes must append a new migration. If a migration has shipped, do not squash, renumber, rename,
+or regenerate it even when a fresh database can be built successfully from a shorter baseline.

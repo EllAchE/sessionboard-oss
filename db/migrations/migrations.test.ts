@@ -7,8 +7,8 @@ import journal from './meta/_journal.json' with { type: 'json' };
  * CI has no Postgres, so these are file-text assertions over the emitted SQL rather than a run
  * against a live database. That is a genuinely weaker test — it cannot tell you the statement
  * executes — but it catches the failure modes that actually happen to a generated migration:
- * the journal and the `.sql` files drifting apart, and a later migration quietly rewriting the
- * baseline instead of appending to it.
+ * the journal and the `.sql` files drifting apart, and the historical timestamps that populated
+ * databases use as their upgrade cursor being rebased.
  */
 
 function migration(tag: string): string[] {
@@ -28,13 +28,37 @@ describe('migration journal', () => {
     });
   });
 
-  /**
-   * `db/migrations/README.md` declares `0000_init` immutable. Nothing after it may drop or recreate
-   * a table the baseline already owns — a regenerated baseline is how a deployed database and the
-   * schema silently diverge.
-   */
-  it('keeps every migration after the baseline purely additive', () => {
-    for (const entry of journal.entries.slice(1)) {
+  it('preserves the shipped migration history before appending new changes', () => {
+    expect(journal.entries.slice(0, 23).map(({ idx, when, tag }) => ({ idx, when, tag }))).toEqual([
+      { idx: 0, when: 1786494184318, tag: '0000_init' },
+      { idx: 1, when: 1786514437439, tag: '0001_file_blob' },
+      { idx: 2, when: 1786516730864, tag: '0002_file_versions_and_revisions' },
+      { idx: 3, when: 1786517387905, tag: '0003_crm_speaker_database' },
+      { idx: 4, when: 1786517972798, tag: '0004_approval_gate_and_speaker_status' },
+      { idx: 5, when: 1786588565129, tag: '0005_burly_the_watchers' },
+      { idx: 6, when: 1786594323438, tag: '0006_simple_switch' },
+      { idx: 7, when: 1786604771140, tag: '0007_charming_wrecker' },
+      { idx: 8, when: 1786609052455, tag: '0008_tiny_maximus' },
+      { idx: 9, when: 1786610788696, tag: '0009_robust_misty_knight' },
+      { idx: 10, when: 1786612872318, tag: '0010_dark_the_hand' },
+      { idx: 11, when: 1786614949413, tag: '0011_furry_microbe' },
+      { idx: 12, when: 1786629670262, tag: '0012_tan_rictor' },
+      { idx: 13, when: 1786647510357, tag: '0013_dazzling_scarlet_spider' },
+      { idx: 14, when: 1786648298357, tag: '0014_classy_paper_doll' },
+      { idx: 15, when: 1786649614413, tag: '0015_charming_sebastian_shaw' },
+      { idx: 16, when: 1786649746298, tag: '0016_pretty_daredevil' },
+      { idx: 17, when: 1786650161677, tag: '0017_smart_thanos' },
+      { idx: 18, when: 1786650500000, tag: '0018_form_invariant_repairs' },
+      { idx: 19, when: 1786650650229, tag: '0019_boring_adam_warlock' },
+      { idx: 20, when: 1786852524963, tag: '0020_foamy_reaper' },
+      { idx: 21, when: 1786898707065, tag: '0021_nappy_the_twelve' },
+      { idx: 22, when: 1786920093620, tag: '0022_boring_zarda' },
+    ]);
+  });
+
+  /** New migrations must not destructively rewrite the schema that the historical chain owns. */
+  it('keeps newly appended migrations purely additive', () => {
+    for (const entry of journal.entries.slice(23)) {
       for (const statement of migration(entry.tag)) {
         expect(statement).not.toMatch(/^DROP\s+TABLE/i);
         expect(statement).not.toMatch(/\bDROP\s+COLUMN\b/i);
@@ -43,8 +67,8 @@ describe('migration journal', () => {
   });
 });
 
-describe('0001_speaker_unavailability', () => {
-  const statements = migration('0001_speaker_unavailability');
+describe('0023_speaker_unavailability', () => {
+  const statements = migration('0023_speaker_unavailability');
   const createTable = statements.find((statement) =>
     /^CREATE TABLE "speaker_unavailability"/.test(statement),
   );
@@ -108,8 +132,8 @@ describe('0001_speaker_unavailability', () => {
  * columns below are not schema taste — each one is load-bearing for a security claim the feature
  * makes, and each is asserted here so a later regeneration cannot quietly drop it.
  */
-describe('0002_share_link', () => {
-  const statements = migration('0002_share_link');
+describe('0024_share_link', () => {
+  const statements = migration('0024_share_link');
   const createTable = statements.find((statement) => /^CREATE TABLE "share_link"/.test(statement));
 
   it('creates the table with the columns the feature reads', () => {
@@ -215,12 +239,12 @@ describe('0002_share_link', () => {
  * perfectly to an empty database and cannot apply to one that already holds a revision. CI migrates
  * a clean server, so nothing but these assertions stands between that and every deployed database.
  *
- * Regenerated from `0002` to `0003` after `0002_share_link` took that index on main. The hand
- * correction below does not survive `db:generate`, so it has to be re-applied by whoever renumbers
- * this migration next — which is what these tests are here to force.
+ * Renumbered to follow the restored historical migration chain. The hand correction below does not
+ * survive `db:generate`, so it has to be re-applied by whoever regenerates this migration — which
+ * is what these tests are here to force.
  */
-describe('0003_bumpy_post', () => {
-  const statements = migration('0003_bumpy_post');
+describe('0025_bumpy_post', () => {
+  const statements = migration('0025_bumpy_post');
   const at = (pattern: RegExp) => statements.findIndex((statement) => pattern.test(statement));
 
   it('adds both new entity kinds to the enum', () => {
