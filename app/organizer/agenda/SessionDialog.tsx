@@ -142,7 +142,7 @@ export function SessionDialog({
   conflicts: Conflict[];
   status: ScheduleEntry['status'] | null;
   onOpenChange: (open: boolean) => void;
-  onSave: (payload: SavePayload) => Promise<void>;
+  onSave: (payload: SavePayload) => Promise<string | null>;
   onDelete: (sessionId: string) => Promise<void>;
   onUnschedule: (sessionId: string) => Promise<void>;
   onStatusChange: (sessionId: string, next: 'draft' | 'published' | 'cancelled') => Promise<void>;
@@ -193,7 +193,7 @@ export function SessionDialog({
 
     setError(null);
     startTransition(async () => {
-      await onSave({
+      const saveError = await onSave({
         sessionId: form.sessionId,
         sourceSubmissionId: form.sourceSubmissionId,
         title: form.title.trim(),
@@ -206,6 +206,7 @@ export function SessionDialog({
         ceuCredits: form.ceuCredits.trim() || null,
         clientId: form.clientId.trim() || null,
       });
+      setError(saveError);
     });
   };
 
@@ -405,7 +406,11 @@ export function SessionDialog({
           </div>
         </div>
 
-        {error && <p className={styles.error}>{error}</p>}
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </Dialog>
   );
