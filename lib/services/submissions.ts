@@ -29,6 +29,7 @@ import {
   splitAnswers,
   validateAnswers,
   validateParticipantCounts,
+  visibleFields,
   type AnswerMap,
   type AnswerValue,
   type BuiltinKey,
@@ -627,7 +628,7 @@ export type DraftValueSource = {
 export function rehydrateDraftValues(
   row: DraftValueSource,
   tagIds: string[],
-  fields: RuntimeField[],
+  fields: readonly FormFieldSpec[],
 ): AnswerMap {
   const values: AnswerMap = { ...row.answers };
   for (const field of fields) {
@@ -655,6 +656,24 @@ export function rehydrateDraftValues(
     }
   }
   return values;
+}
+
+export type AskedSource = DraftValueSource & { tagIds: string[] };
+
+/**
+ * `CFP-S2`. The questions a submission was actually asked, in form order.
+ *
+ * Every surface that shows a submission after the fact has to answer this, and none of them can
+ * answer it from `answers` alone: a question conditioned on "Session format is Workshop" is gated
+ * by a value that lives in a column. Rehydrating the built-ins first is what makes the condition
+ * resolvable at all — filter them out and `isFieldVisible` sees a rule pointing at nothing, treats
+ * it as no rule, and shows a workshop question on a talk.
+ *
+ * Pass the whole form. Callers drop the built-ins from what they render afterwards, which is a
+ * different question from what was asked.
+ */
+export function askedQuestions<T extends FormFieldSpec>(fields: T[], row: AskedSource): T[] {
+  return visibleFields(fields, rehydrateDraftValues(row, row.tagIds, fields));
 }
 
 /** Rehydrates a draft into the shape the runtime renders, built-in columns folded back in. */

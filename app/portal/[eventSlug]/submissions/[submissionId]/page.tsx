@@ -41,7 +41,7 @@ export default async function SubmissionDetailPage({
   }
 
   const [fields, levelOptions, taxonomy, members] = await Promise.all([
-    submissionFields(submission.formId),
+    submissionFields(submission.formId, submission),
     submissionLevelOptions(submission.formId),
     submissionTaxonomy(submission.formId, event.id),
     listGroupMembers(submission.id, me.id),
