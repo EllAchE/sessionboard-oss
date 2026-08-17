@@ -289,20 +289,16 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
               <Plug size={17} aria-hidden="true" />
-              MCP server
+              MCP server <code>{MCP_ENDPOINT}</code>
             </span>
             <a className={styles.textLink} href="/api/v1/mcp-tools.json">
               Tool manifest
             </a>
           </div>
-          <pre>
-            <code>{MCP_ENDPOINT}</code>
-          </pre>
           <p className={styles.agentPromptNote}>
             <KeyRound size={17} aria-hidden="true" />
             Streamable HTTP, authenticated with an event API key as a Bearer token. Create one under
-            Organizer → Integrations, either read-only or read and write. The key is shown once and
-            stored as a hash.
+            Organizer → Integrations, either read-only or read and write. 
           </p>
 
           <div className={styles.agentPromptHeader}>
