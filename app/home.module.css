@@ -582,13 +582,17 @@
 
 /*
  * Full width now that no widget frame shares the row, so the five deep links read as a band of
- * cards rather than a narrow sidebar column. `auto-fit` lets the row drop to three, then two, then
- * one without a breakpoint of its own.
+ * cards rather than a narrow sidebar column. `auto-fit` lets the row drop to four, then three, then
+ * two, then one without a breakpoint of its own.
+ *
+ * The minimum is 200px rather than a rounder 230 so all five fit on one line at the page measure:
+ * 1200px less four 16px gaps leaves 227 a card, and anything above that orphaned the sponsor wall
+ * on a second row of its own.
  */
 .attendeeLinks {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-4);
   margin: 0;
   padding: 0;
