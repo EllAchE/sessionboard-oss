@@ -30,6 +30,7 @@ import {
   zonedTimeToUtc,
   type QueueItem,
   type ScheduleEntry,
+  type SpeakerUnavailability,
 } from './schedule';
 
 /**
@@ -325,7 +326,13 @@ describe('detectConflicts', () => {
       }),
     ]);
 
-    expect(summarizeConflicts(conflicts)).toEqual({ total: 3, room: 1, track: 1, speaker: 1 });
+    expect(summarizeConflicts(conflicts)).toEqual({
+      total: 3,
+      room: 1,
+      track: 1,
+      speaker: 1,
+      availability: 0,
+    });
   });
 
   it('ignores unscheduled and cancelled sessions', () => {
@@ -671,5 +678,285 @@ describe('publish state (A-6)', () => {
       ),
     ).toBe(false);
     expect(canPublish(rows[0])).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// `AD-2` — speaker-declared unavailability
+// ---------------------------------------------------------------------------
+
+/**
+ * The three things that can go wrong with this feature, in order of how expensive they are:
+ *
+ *  1. The empty state stops being safe, and a speaker who never opened the portal becomes
+ *     unschedulable. This is why the model is blackout-shaped, and the first two tests below.
+ *  2. A window means a different instant to the speaker than to the organizer. Windows are stored as
+ *     absolute instants for exactly this reason; the zone tests assert the conversion happens once,
+ *     at authoring time, and that the authoring zone never leaks into the comparison.
+ *  3. The advisory contract breaks and a speaker's declaration starts refusing an organizer's save.
+ */
+describe('speaker unavailability', () => {
+  const CICERO = { participantId: 'p-cicero', name: 'Marcus Tullius' };
+  const VITRUVIUS = { participantId: 'p-vitruvius', name: 'Vitruvius' };
+
+  function window(over: Partial<SpeakerUnavailability> = {}): SpeakerUnavailability {
+    return {
+      participantId: CICERO.participantId,
+      startsAt: at('2026-10-12T16:00:00Z'),
+      endsAt: at('2026-10-12T20:00:00Z'),
+      timezone: TZ,
+      note: null,
+      ...over,
+    };
+  }
+
+  const talk = entry({
+    id: 'a',
+    title: 'On Duties',
+    roomId: ROOM_A,
+    startsAt: at('2026-10-12T17:00:00Z'),
+    endsAt: at('2026-10-12T18:00:00Z'),
+    speakers: [CICERO],
+  });
+
+  it('reports no conflict when nobody has declared anything', () => {
+    expect(detectConflicts([talk])).toEqual([]);
+    expect(detectConflicts([talk], {}, [])).toEqual([]);
+  });
+
+  /**
+   * The empty state stated as the property that matters rather than as a special case: adding
+   * speakers, sessions and rooms can never on its own produce an availability conflict. Only a
+   * window a speaker actually wrote can.
+   */
+  it('never invents a conflict from sessions alone, however many there are', () => {
+    const crowded = [
+      talk,
+      entry({
+        id: 'b',
+        roomId: ROOM_B,
+        startsAt: at('2026-10-12T17:00:00Z'),
+        endsAt: at('2026-10-12T18:00:00Z'),
+        speakers: [VITRUVIUS],
+      }),
+    ];
+    expect(detectConflicts(crowded, {}, []).filter((c) => c.kind === 'availability')).toEqual([]);
+  });
+
+  it('flags a session that lands inside a declared window', () => {
+    const conflicts = detectConflicts([talk], {}, [window()]);
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].kind).toBe('availability');
+    expect(conflicts[0].subjectId).toBe(CICERO.participantId);
+    expect(conflicts[0].subjectName).toBe('Marcus Tullius');
+    expect(conflicts[0].message).toContain('Marcus Tullius');
+    expect(conflicts[0].message).toContain('On Duties');
+  });
+
+  /** One session, one conflict. The pair invariant the other kinds hold does not apply here. */
+  it('names only the one session involved', () => {
+    const conflicts = detectConflicts([talk], {}, [window()]);
+    expect(conflicts[0].sessionIds).toEqual(['a']);
+  });
+
+  it('carries the speaker note into the message when one was given', () => {
+    const conflicts = detectConflicts([talk], {}, [window({ note: 'Flight lands 14:00' })]);
+    expect(conflicts[0].message).toContain('Flight lands 14:00');
+  });
+
+  /** Half-open, same as everything else — a window ending at 17:00 does not touch a 17:00 start. */
+  it('does not flag a session that begins exactly when a window ends', () => {
+    const abutting = window({
+      startsAt: at('2026-10-12T16:00:00Z'),
+      endsAt: at('2026-10-12T17:00:00Z'),
+    });
+    expect(detectConflicts([talk], {}, [abutting])).toEqual([]);
+  });
+
+  it('does not flag a session that ends exactly when a window begins', () => {
+    const abutting = window({
+      startsAt: at('2026-10-12T18:00:00Z'),
+      endsAt: at('2026-10-12T20:00:00Z'),
+    });
+    expect(detectConflicts([talk], {}, [abutting])).toEqual([]);
+  });
+
+  it('flags a one-minute encroachment at either edge', () => {
+    const early = window({
+      startsAt: at('2026-10-12T15:00:00Z'),
+      endsAt: at('2026-10-12T17:01:00Z'),
+    });
+    const late = window({
+      startsAt: at('2026-10-12T17:59:00Z'),
+      endsAt: at('2026-10-12T21:00:00Z'),
+    });
+    expect(detectConflicts([talk], {}, [early])).toHaveLength(1);
+    expect(detectConflicts([talk], {}, [late])).toHaveLength(1);
+  });
+
+  it('does not attribute one speaker window to another speaker', () => {
+    const somebodyElse = window({ participantId: VITRUVIUS.participantId });
+    expect(detectConflicts([talk], {}, [somebodyElse])).toEqual([]);
+  });
+
+  it('leaves unscheduled and cancelled sessions alone', () => {
+    const unplaced = entry({ id: 'u', speakers: [CICERO] });
+    const cancelled = { ...talk, id: 'c', status: 'cancelled' as const };
+    expect(detectConflicts([unplaced, cancelled], {}, [window()])).toEqual([]);
+  });
+
+  /** Two windows covering the same talk are one problem for the organizer, so they read as one row. */
+  it('collapses overlapping windows from the same speaker into a single conflict', () => {
+    const conflicts = detectConflicts([talk], {}, [
+      window(),
+      window({ startsAt: at('2026-10-12T17:30:00Z'), endsAt: at('2026-10-12T23:00:00Z') }),
+    ]);
+    expect(conflicts).toHaveLength(1);
+  });
+
+  it('reports one conflict per co-speaker when both declared the same window', () => {
+    const joint = { ...talk, speakers: [CICERO, VITRUVIUS] };
+    const conflicts = detectConflicts([joint], {}, [
+      window(),
+      window({ participantId: VITRUVIUS.participantId }),
+    ]);
+    expect(conflicts).toHaveLength(2);
+    expect(conflicts.map((c) => c.subjectId).sort()).toEqual(['p-cicero', 'p-vitruvius']);
+  });
+
+  it('counts into the summary alongside the other kinds', () => {
+    expect(summarizeConflicts(detectConflicts([talk], {}, [window()]))).toEqual({
+      total: 1,
+      room: 0,
+      track: 0,
+      speaker: 0,
+      availability: 1,
+    });
+  });
+
+  it('surfaces through the per-session and drag-preview entry points', () => {
+    expect(conflictsForSession([talk], 'a', {}, [window()])).toHaveLength(1);
+    expect(previewConflicts([talk], [], {}, [], [window()])).toHaveLength(1);
+    expect(previewConflicts([talk], [], {}, [], [])).toEqual([]);
+  });
+
+  /**
+   * The advisory contract, asserted rather than assumed. Even with `block` — the strictest policy an
+   * organizer can set — a declared window must not refuse the save, or a speaker could make a slot
+   * unschedulable after the fact and the organizer's only recourse would be to edit the speaker's
+   * own declaration.
+   */
+  it('never blocks a save, even under the block policy', () => {
+    const conflicts = detectConflicts([talk], {}, [window()]);
+    expect(conflicts[0].severity).toBe('warning');
+    expect(severityForKind('availability')).toBe('warning');
+    expect(blockingConflicts(conflicts, 'block')).toEqual([]);
+    expect(blockingConflicts(conflicts, 'warn')).toEqual([]);
+  });
+});
+
+/**
+ * The timezone half. Windows are compared as instants, so the only place a zone can be wrong is the
+ * conversion the portal runs when the speaker types a wall clock — which is why these tests author
+ * their windows through `zonedTimeToUtc` exactly as the portal action does, rather than writing the
+ * UTC answer by hand and proving nothing.
+ */
+describe('speaker unavailability across timezones', () => {
+  const CICERO = { participantId: 'p-cicero', name: 'Marcus Tullius' };
+
+  /** Precisely what `saveUnavailabilityAction` does, so a drift there fails a test here. */
+  function declare(
+    dayKey: string,
+    fromMinute: number,
+    toMinute: number,
+    timezone: string,
+  ): SpeakerUnavailability {
+    return {
+      participantId: CICERO.participantId,
+      startsAt: zonedTimeToUtc(dayKey, fromMinute, timezone),
+      endsAt: zonedTimeToUtc(dayKey, toMinute, timezone),
+      timezone,
+      note: null,
+    };
+  }
+
+  function talkAt(startIso: string, endIso: string): ScheduleEntry {
+    return entry({
+      id: 'a',
+      title: 'On Duties',
+      startsAt: at(startIso),
+      endsAt: at(endIso),
+      speakers: [CICERO],
+    });
+  }
+
+  /**
+   * The case the whole design exists for. The speaker is in Rome and the conference is in Los
+   * Angeles. "I cannot present on the morning of 12 October" means the Roman morning, which is the
+   * small hours in Los Angeles — a naive wall-clock comparison would instead block the Californian
+   * morning, nine hours away from anything the speaker said.
+   */
+  it('resolves a window against the zone the speaker authored it in, not the event zone', () => {
+    // 09:00–12:00 in Rome on 12 Oct 2026 (CEST, UTC+2) is 07:00–10:00 UTC.
+    const romanMorning = declare('2026-10-12', 9 * 60, 12 * 60, 'Europe/Rome');
+    expect(romanMorning.startsAt.toISOString()).toBe('2026-10-12T07:00:00.000Z');
+
+    // A talk at 08:00 UTC is inside the speaker's stated morning.
+    expect(detectConflicts([talkAt('2026-10-12T08:00:00Z', '2026-10-12T09:00:00Z')], {}, [romanMorning]))
+      .toHaveLength(1);
+
+    // 09:00 Los Angeles on the same date is 16:00 UTC — long after the Roman morning ended.
+    expect(detectConflicts([talkAt('2026-10-12T16:00:00Z', '2026-10-12T17:00:00Z')], {}, [romanMorning]))
+      .toEqual([]);
+  });
+
+  /**
+   * The same wall clock in two zones is two different windows, and the stored instant is the only
+   * thing that distinguishes them. If the authoring zone were ever dropped on the way to storage
+   * these two would be indistinguishable — which is the silent failure this feature is worse than
+   * useless for having.
+   */
+  it('stores the same wall clock in two zones as two different instants', () => {
+    const rome = declare('2026-10-12', 9 * 60, 12 * 60, 'Europe/Rome');
+    const losAngeles = declare('2026-10-12', 9 * 60, 12 * 60, 'America/Los_Angeles');
+    expect(rome.startsAt.getTime()).not.toBe(losAngeles.startsAt.getTime());
+    expect(losAngeles.startsAt.getTime() - rome.startsAt.getTime()).toBe(9 * 3_600_000);
+  });
+
+  /**
+   * The bug nobody finds until the conference is in November. US DST ended on 1 Nov 2026, so 09:00
+   * local that day is UTC-8 rather than the UTC-7 that held the day before. `zonedTimeToUtc` resolves
+   * the offset twice for exactly this, and a window authored on the changeover must land on the hour
+   * the speaker meant rather than an hour either side of it.
+   */
+  it('lands on the intended hour on a DST changeover day', () => {
+    const beforeChangeover = declare('2026-10-31', 9 * 60, 10 * 60, 'America/Los_Angeles');
+    const onChangeover = declare('2026-11-01', 9 * 60, 10 * 60, 'America/Los_Angeles');
+    expect(beforeChangeover.startsAt.toISOString()).toBe('2026-10-31T16:00:00.000Z');
+    expect(onChangeover.startsAt.toISOString()).toBe('2026-11-01T17:00:00.000Z');
+
+    // A 09:30 local talk on the changeover day is inside the window; 09:30 as it would have been
+    // read under the previous offset (16:30 UTC) is not.
+    expect(detectConflicts([talkAt('2026-11-01T17:30:00Z', '2026-11-01T18:00:00Z')], {}, [onChangeover]))
+      .toHaveLength(1);
+    expect(detectConflicts([talkAt('2026-11-01T16:00:00Z', '2026-11-01T16:30:00Z')], {}, [onChangeover]))
+      .toEqual([]);
+  });
+
+  /** The authoring zone is display metadata. Two identical instants clash the same whatever it says. */
+  it('ignores the authoring zone when computing the overlap', () => {
+    const asRome = declare('2026-10-12', 9 * 60, 12 * 60, 'Europe/Rome');
+    const relabelled = { ...asRome, timezone: 'Pacific/Auckland' };
+    const talk = talkAt('2026-10-12T08:00:00Z', '2026-10-12T09:00:00Z');
+    expect(detectConflicts([talk], {}, [asRome])).toHaveLength(1);
+    expect(detectConflicts([talk], {}, [relabelled])).toHaveLength(1);
+  });
+
+  /** A window is an instant range, so it crosses midnight in some zone by construction. */
+  it('handles a window that spans midnight in the event zone', () => {
+    const overnight = declare('2026-10-12', 22 * 60, 26 * 60, 'Europe/Rome');
+    expect(overnight.endsAt.toISOString()).toBe('2026-10-13T00:00:00.000Z');
+    expect(detectConflicts([talkAt('2026-10-12T21:00:00Z', '2026-10-12T22:00:00Z')], {}, [overnight]))
+      .toHaveLength(1);
   });
 });
