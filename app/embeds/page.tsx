@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { ArrowRight, Code2, ExternalLink, RefreshCw, ShieldCheck } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
@@ -68,17 +69,17 @@ export function EmbedsShowcase({
   return (
     <main className={styles.root}>
       <nav className={styles.nav} aria-label="Primary navigation">
-        <a className={styles.brand} href="/" aria-label="Cicero home">
+        <Link className={styles.brand} href="/" aria-label="Cicero home">
           <CiceroBrand markSize={34} />
-        </a>
+        </Link>
         <div className={styles.navLinks}>
-          <a className={styles.navLink} href="/#products">
+          <Link className={styles.navLink} href="/#products">
             Products
-          </a>
+          </Link>
           {samples.length > 0 ? (
-            <a className={styles.navLink} href={`/${DEMO_EVENT_SLUG}`}>
+            <Link className={styles.navLink} href={`/${DEMO_EVENT_SLUG}`}>
               Demo
-            </a>
+            </Link>
           ) : null}
           <Button className={styles.navCta} href="/signup" variant="primary" size="sm">
             Sign up
@@ -179,10 +180,12 @@ function SampleCard({ sample, conference }: { sample: EmbedSample; conference: s
         <p>{sample.summary}</p>
         <div className={styles.sampleLinks}>
           {sample.publicPath ? (
-            <a className={styles.textLink} href={sample.publicPath}>
+            <Link className={styles.textLink} href={sample.publicPath}>
               As a full page <ArrowRight size={15} aria-hidden="true" />
-            </a>
+            </Link>
           ) : null}
+          {/* A plain anchor: the widget route is a bare document meant to be loaded whole, not a
+              page of this app to soft-navigate into. */}
           <a className={styles.textLink} href={sample.framePath}>
             The embed on its own <ExternalLink size={15} aria-hidden="true" />
           </a>
