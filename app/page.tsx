@@ -1,7 +1,7 @@
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
-import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
+import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import {
@@ -18,8 +18,8 @@ import {
   Megaphone,
   ShieldCheck,
   Sparkles,
-  UserRound,
   UserPlus,
+  UserRound,
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
@@ -85,19 +85,19 @@ const ROLE_PRODUCTS = [
     icon: LayoutDashboard,
     role: 'Organizer',
     title: 'Keep the whole conference moving.',
-    body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up from one workspace.',
+    body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up.',
   },
   {
     icon: Megaphone,
     role: 'Speaker',
     title: 'Stay ready from proposal to stage.',
-    body: 'Submit a talk, maintain your profile, send deliverables, and keep every event task in view.',
+    body: 'Submit a talk, maintain your profile, send deliverables, and upload your slides.',
   },
   {
     icon: CalendarDays,
     role: 'Attendee',
     title: 'Plan the day from the live programme.',
-    body: 'Browse the agenda, discover speakers, and build a personal itinerary without an account.',
+    body: 'Browse the agenda, discover speakers, and build a personal itinerary, no account needed.',
   },
 ] as const;
 
@@ -157,18 +157,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </a>
           {demoAvailable ? (
             <a className={styles.demoLink} href="/demo">
-              Explore the demo
+              Demo
             </a>
           ) : null}
-          <a className={styles.agentLink} href="#agent-quick-start">
-            Agent setup
-          </a>
           <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
-            API docs
+            Docs
           </a>
-          <a className={styles.signInLink} href="/signin">
+        </div>
+        <div className={styles.navAuth}>
+          <Button
+            className={styles.navSignIn}
+            href="/signin"
+            variant="secondary"
+            size="sm"
+          >
             Sign in
-          </a>
+          </Button>
           <Button
             className={styles.navCta}
             href="/signup"
@@ -300,10 +304,10 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             <LayoutDashboard size={17} aria-hidden="true" />
             For organizers
           </p>
-          <h2>Keep the entire conference moving from one workspace.</h2>
+          <h2>Keep the entire conference moving.</h2>
           <p>
-            Cicero connects the operational work that usually breaks across forms, spreadsheets,
-            inboxes, and scheduling tools—so every handoff carries the right context forward.
+            Cicero links the operational work that breaks across forms, spreadsheets,
+            inboxes, and scheduling tools so every handoff carries the right context forward.
           </p>
         </div>
         <div className={styles.features}>

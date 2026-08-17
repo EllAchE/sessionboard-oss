@@ -64,15 +64,21 @@ describe('fresh-instance home page', () => {
     );
   });
 
-  it('makes products, agent setup, and API docs discoverable from the primary navigation', () => {
+  it('makes products and docs discoverable from the primary navigation', () => {
     const html = renderHome(false);
 
     expect(html).toContain('href="#products"');
     expect(html).toContain('Products');
-    expect(html).toContain('Agent setup');
-    expect(html).not.toContain('Agent quick start');
     expect(html).toContain('href="/api/v1/openapi.json"');
-    expect(html).toContain('API docs');
+    expect(html).toContain('>Docs<');
+    expect(html).not.toContain('Agent quick start');
+  });
+
+  it('keeps agent setup reachable from the page body once it leaves the navigation', () => {
+    const html = renderHome(false);
+
+    expect(html).toContain('href="#agent-quick-start"');
+    expect(html).toContain('Set up with an AI guide');
   });
 
   it('offers only working cold-start paths before the demo fixture is loaded', () => {

@@ -327,6 +327,18 @@ roadmap list.
   desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
   especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
   host-site compatibility pass.
+- The landing experience for a reviewer or speaker who arrives without an invitation link was not
+  thought through deeply. The design assumed invited arrival: an organizer sends a magic link and it
+  lands the person on the one surface they need. Someone who instead types the domain, follows a
+  colleague's link, or returns months later gets a page written mostly for organizers and evaluators
+  — the role cards name organizer, speaker, and attendee but not reviewer, and none of them is an
+  entry point. Sign-in with no `next` defaults to `/organizer`, and the routing that corrects it is a
+  chain of redirects rather than a deliberate destination: the organizer layout bounces a reviewer to
+  `/review` and a speaker to `/portal`, but sends anyone with no event membership to `/events/new`,
+  which asks a speaker or reviewer waiting to be added to create a conference instead. The right
+  answer is probably an explicit post-authentication router that resolves a person's roles before
+  choosing a destination, plus a signed-out landing path that lets a speaker or reviewer say which
+  event they belong to, rather than more redirect rules layered on the organizer shell.
 - The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
   not been proven there even though message generation and `.ics` behavior are tested.
 - R2 and Twilio adapters are implemented and tested but have not been exercised against paid
