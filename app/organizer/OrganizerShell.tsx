@@ -108,17 +108,17 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     title: 'Reach',
     items: [
       /**
-       * One entry, not three. Compose, Templates, Email and SMS are already four tabs of one screen
-       * (`comms/CommsTabs`); listing three of them here as separate destinations made the organizer
-       * pick a channel before knowing what they wanted to do, and left "Comms" and "Mailbox" sitting
-       * next to each other with the same icon and no way to tell which was which.
+       * One entry, not three. Compose, Templates and Sent are three tabs of one screen
+       * (`comms/CommsTabs`); listing channels here as separate destinations made the organizer pick
+       * one before knowing what they wanted to do, and left "Comms" and "Mailbox" sitting next to
+       * each other with the same icon and no way to tell which was which.
        */
       {
         id: 'messages',
         label: 'Messages',
         href: '/organizer/comms',
         icon: <MessageSquare size={15} />,
-        covers: ['/organizer/mail', '/organizer/sms'],
+        covers: ['/organizer/sent', '/organizer/mail', '/organizer/sms'],
       },
       { id: 'guest-links', label: 'Guest links', href: '/organizer/share-links', icon: <Link2 size={15} /> },
     ],
@@ -209,22 +209,23 @@ export function OrganizerShell({
         })),
       ),
       /**
-       * The sidebar collapsed these into Messages, but they are still the words an organizer types.
-       * The palette is where a name that lost its sidebar row keeps its search term.
+       * The sidebar collapsed these into Messages and the screen collapsed them into Sent, but they
+       * are still the words an organizer types. The palette is where a name that lost its row keeps
+       * its search term — each one lands on Sent with that channel already filtered.
        */
       {
         id: 'messages-email',
         label: 'Email log',
         group: 'Reach',
         icon: <Mail size={15} />,
-        onSelect: () => router.push('/organizer/mail'),
+        onSelect: () => router.push('/organizer/sent?channel=email'),
       },
       {
         id: 'messages-sms',
         label: 'SMS log',
         group: 'Reach',
         icon: <MessageSquare size={15} />,
-        onSelect: () => router.push('/organizer/sms'),
+        onSelect: () => router.push('/organizer/sent?channel=sms'),
       },
       {
         id: 'new-event',

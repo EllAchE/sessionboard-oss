@@ -129,8 +129,8 @@ export async function sendCampaignAction(data: FormData): Promise<ActionResult<S
       channel: channelFromForm(data),
       smsBody: String(data.get('smsBody') ?? '') || null,
     });
-    revalidatePath('/organizer/mail');
-    revalidatePath('/organizer/sms');
+    /** One log for both channels now; the old paths only redirect, so revalidating them is moot. */
+    revalidatePath('/organizer/sent');
     return { ok: true, data: outcome };
   } catch (error) {
     return fail(error);
@@ -152,7 +152,7 @@ export async function runRemindersAction(): Promise<
     const ctx = await requireEventContext(await currentEventId());
     requireCapability(ctx, 'event:manage');
     const result = await runScheduledJobs({ eventId: ctx.eventId });
-    revalidatePath('/organizer/mail');
+    revalidatePath('/organizer/sent');
     return {
       ok: true,
       data: {

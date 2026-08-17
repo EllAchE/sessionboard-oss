@@ -61,7 +61,7 @@ export async function sendNudgeAction(input: {
     const result = await sendTaskNudge(await sendableContext(), input);
     revalidatePath('/organizer');
     revalidatePath('/organizer/tasks');
-    revalidatePath('/organizer/mail');
+    revalidatePath('/organizer/sent');
     return { ok: true, data: result };
   } catch (error) {
     return fail(error);
