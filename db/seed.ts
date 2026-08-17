@@ -244,6 +244,19 @@ const [demo] = await db
 
 await db.insert(membership).values([
   { userId: organizer.id, eventId: demo.id, role: 'organizer' as const },
+  /**
+   * The chair speaks at her own conference, which is ordinary and which the demo needs to be true:
+   * the organizer workspace offers "Speaker portal", and the identity behind `DEMO_ENTRY_LINKS`
+   * arrived there holding no speaking role at all — a portal with no sessions, no tasks and nothing
+   * to look at, reached from a button that promises the participant experience. She is given the
+   * opening address below, so the portal she opens is a populated one rather than an empty shell.
+   *
+   * Roles are separate rows (`membership_user_event_role`), so this adds to her organizer grant
+   * rather than replacing it, and the two surfaces stay independent: `can()` still reads organizer
+   * capabilities everywhere, and `portal:use` now comes from a role she genuinely holds instead of
+   * from the organizer bundle.
+   */
+  { userId: organizer.id, eventId: demo.id, role: 'speaker' as const },
   ...reviewers.map((reviewer) => ({
     userId: reviewer.id,
     eventId: demo.id,
@@ -825,6 +838,34 @@ const SUBMISSIONS: SeedSubmission[] = [
       'Write down mutual obligations\nPrefer repeatable cooperation\nLeave room for peaceful exit',
     daysAgo: 5,
   },
+  /**
+   * The chair's own opening address, last in the list so every index-addressed row above it keeps
+   * its meaning — `submissionTag`, the co-speaker, and the `accepted[n]` placements all count from
+   * the front.
+   *
+   * It carries no review assignments, and that is the accurate shape rather than an omission: the
+   * review rounds below take their subjects from the head of this list and from what is still
+   * undecided, and a programme chair's opening remarks are scheduled, not scored. What the demo
+   * shows as a result is the invited-talk path — filed, decided with the rest, never in front of
+   * the panel — beside twelve proposals that went through it properly.
+   *
+   * Round one takes the first twelve non-draft rows, so keeping this one last is also what holds
+   * that shape: move it up and it displaces a proposal that should have been reviewed.
+   */
+  {
+    email: 'organizer@example.com',
+    title: 'Opening address: what this forum is for',
+    abstract:
+      'A short welcome from the programme chair: why these four tracks, what the committee looked ' +
+      'for in a proposal, and what the two days are meant to leave the room with.',
+    format: keynote,
+    track: governance,
+    level: 'Introductory',
+    status: 'accepted',
+    takeaways:
+      'Know what the programme is arguing for\nFind the sessions built for your work\nLeave with something you can use on Monday',
+    daysAgo: 34,
+  },
 ];
 
 const submissions = await db
@@ -929,6 +970,19 @@ const PROFILES: Record<string, DemoProfile> = {
     title: 'Political strategist',
     company: 'Servilian House',
     bio: 'Works across competing factions and plans for the second-order consequences of every alliance.',
+    pronouns: 'she/her',
+    gender: 'woman',
+  },
+  /**
+   * The chair, last so the portraits already handed out keep their slots. A participant row is what
+   * the portal keys off — without one she reaches it and is told she is not speaking here — and it
+   * is also what puts her on the public speaker roster and beside her session on the agenda, which
+   * is where an opening address belongs.
+   */
+  'organizer@example.com': {
+    title: 'Programme chair',
+    company: 'Cicero Forum',
+    bio: 'Chairs the programme committee. Spends the year between editions arguing about track boundaries and the week before the event about room sizes.',
     pronouns: 'she/her',
     gender: 'woman',
   },
@@ -1201,7 +1255,7 @@ if (stagedByChair) {
 }
 
 // ---------------------------------------------------------------------------
-// Agenda. Five accepted talks are placed; two are deliberately left in the
+// Agenda. Six accepted talks are placed; two are deliberately left in the
 // unscheduled rail so the drag-and-drop has something to do on first load.
 // ---------------------------------------------------------------------------
 
@@ -1212,6 +1266,11 @@ const placements: Array<{
   start: Date;
   minutes: number;
 }> = [
+  /**
+   * The opening address, first on the first morning, which is also why it is first in this array:
+   * `ref` counts down the list, so the session numbering opens where the day does.
+   */
+  { submission: accepted[7], room: outerPeristyle, start: at(day1, 9, 0), minutes: 20 },
   { submission: accepted[1], room: outerPeristyle, start: at(day1, 9, 30), minutes: 45 },
   { submission: accepted[0], room: basilicaGallery, start: at(day1, 11, 0), minutes: 30 },
   { submission: accepted[2], room: basilicaGallery, start: at(day1, 13, 30), minutes: 30 },
