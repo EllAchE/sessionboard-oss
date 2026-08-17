@@ -1,27 +1,18 @@
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
-import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import {
   DEMO_ENTRY_LINKS,
-  DEMO_EVENT_SLUG,
-  DEMO_PUBLIC_LINKS,
   DEMO_PUBLIC_SITE_LINK,
   EMBED_SHOWCASE_PATH,
 } from '@/lib/demo-entry-links';
 import {
   ArrowRight,
-  CalendarCheck,
   CalendarDays,
   ClipboardCheck,
   ExternalLink,
-  EyeOff,
-  FileCheck,
-  Gauge,
   Github,
-  Globe2,
-  Handshake,
   KeyRound,
   LayoutDashboard,
   ListChecks,
@@ -29,9 +20,7 @@ import {
   Plug,
   ShieldCheck,
   Sparkles,
-  UserMinus,
   UserPlus,
-  UserRound,
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
@@ -49,93 +38,22 @@ const AGENT_STARTER_PROMPT = `Set up Cicero for my conference, then connect its 
 /** Event-scoped by construction, so the slug stays a placeholder until the organizer has an event. */
 const MCP_ENDPOINT = '/api/v1/events/{event-slug}/mcp';
 
-const ORGANIZER_FEATURES = [
-  {
-    icon: <LayoutDashboard size={20} aria-hidden="true" />,
-    title: 'Know what needs attention',
-    body: 'See live counts, blocked speakers, overdue work, and the next action—not a wall of decorative metrics.',
-  },
-  {
-    icon: <ClipboardCheck size={20} aria-hidden="true" />,
-    title: 'Review with the right structure',
-    body: 'Route proposals into scored rounds, assign reviewers, preserve blind review, and make decisions in bulk or one at a time.',
-  },
-  {
-    icon: <CalendarCheck size={20} aria-hidden="true" />,
-    title: 'Build a schedule that catches collisions',
-    body: 'Drag sessions onto rooms and times while Cicero flags room, track, and speaker conflicts before they reach the public agenda.',
-  },
-  {
-    icon: <Globe2 size={20} aria-hidden="true" />,
-    title: 'Publish without copying data',
-    body: 'Turn the working schedule into public session, speaker, agenda, and embed views that stay in sync.',
-  },
-];
-
-const REVIEWER_FEATURES = [
-  {
-    icon: <ClipboardCheck size={20} aria-hidden="true" />,
-    title: 'Open one queue, not an inbox',
-    body: 'See the proposals assigned to you in the open round, what you have already scored, and what is still waiting.',
-  },
-  {
-    icon: <Gauge size={20} aria-hidden="true" />,
-    title: 'Score the criteria the organizer set',
-    body: 'Rate each weighted criterion, answer the written prompts, and watch your average update before you submit.',
-  },
-  {
-    icon: <EyeOff size={20} aria-hidden="true" />,
-    title: 'Judge without the anchoring',
-    body: 'Peer scores stay hidden until the round closes, and anonymized rounds keep author names off the proposal.',
-  },
-  {
-    icon: <UserMinus size={20} aria-hidden="true" />,
-    title: 'Declare a conflict in one step',
-    body: 'Recuse yourself with a reason and the assignment leaves your queue and returns to the organizer.',
-  },
-];
-
-const SPEAKER_FEATURES = [
-  {
-    icon: <FileCheck size={20} aria-hidden="true" />,
-    title: 'Submit without a setup detour',
-    body: 'Start from the public call, save a draft, create an account in the flow, and return without starting over.',
-  },
-  {
-    icon: <UserRound size={20} aria-hidden="true" />,
-    title: 'Find everything in one portal',
-    body: 'Keep your bio, headshot, sessions, resources, and organizer requests together instead of searching old email threads.',
-  },
-  {
-    icon: <ListChecks size={20} aria-hidden="true" />,
-    title: 'Send the right files every time',
-    body: 'Upload slides and documents with version history, organizer comments, and a clear completion state.',
-  },
-  {
-    icon: <CalendarDays size={20} aria-hidden="true" />,
-    title: 'Stay ready for the day',
-    body: 'See outstanding tasks, download calendar invitations, and receive schedule updates without duplicate calendar events.',
-  },
-];
-
 /**
- * Each card carries the seeded demo for its own role (`lib/demo-entry-links.ts`), so a visitor
- * picks a tour from the description of what that role does rather than from a separate list of
- * three names above the fold. The attendee tour is the published event site, which needs no
- * sign-in: it is what the other three produce, and the cheapest look at a finished conference.
+ * The four experiences, and the only route into the seeded demo from the page body. Each card
+ * carries the demo for its own role (`lib/demo-entry-links.ts`), so a visitor picks a tour from the
+ * description of what that role does rather than from a separate list of names above the fold. The
+ * attendee tour is the published event site, which needs no sign-in: it is what the other three
+ * produce, and the cheapest look at a finished conference.
  *
  * `demoLabel` leads with a verb rather than the role noun on purpose. Automated walkthroughs pick a
  * click target by matching label text from the start and treat two matches as an error rather than
  * choosing between them, and the footer already ships `Organizer demo`, `Reviewer demo`, and
  * `Speaker demo` on this same page. That rules out the role nouns and their stems here --
  * `Organize`, `Review` and `Speak` are each still a prefix of the matching footer label -- so `Run`,
- * `Score`, `Give`, and `Browse` keep all seven entry points separable at their first word. Only the
- * start of the link text disambiguates, so the role stays legible from `role` and `body` without
- * reintroducing the clash.
- *
- * The reviewer section and the closing call to action add two more links to the same demo
- * identities, so they open on `Try` and `Rate`, which no other label on the page or in the footer
- * starts with. Re-check the whole page and the footer before rewording any of these.
+ * `Score`, `Give`, and `Browse` keep every entry point separable at its first word. Only the start
+ * of the link text disambiguates, so the role stays legible from `role` and `body` without
+ * reintroducing the clash. `DemoMenu` in the navigation holds a third copy of the same rule; check
+ * it and the footer before rewording any of these.
  */
 const ROLE_PRODUCTS = [
   {
@@ -171,46 +89,6 @@ const ROLE_PRODUCTS = [
     demoLabel: 'Browse the programme',
   },
 ] as const;
-
-/**
- * The published event site an attendee actually reads. Every one of these is the demo conference's
- * own page, not a marketing mock-up of it.
- */
-const ATTENDEE_LINKS = [
-  {
-    href: DEMO_PUBLIC_LINKS.event,
-    icon: Globe2,
-    label: 'Programme home',
-    blurb: 'The page an attendee lands on.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.agenda,
-    icon: CalendarCheck,
-    label: 'Day-by-day agenda',
-    blurb: 'Times and rooms as a grid.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.sessions,
-    icon: ListChecks,
-    label: 'Session catalogue',
-    blurb: 'Search and filter the programme.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.speakers,
-    icon: UserRound,
-    label: 'Speaker directory',
-    blurb: 'Bios, headshots, and sessions.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.sponsors,
-    icon: Handshake,
-    label: 'Sponsor wall',
-    blurb: 'Sponsors and exhibitors by tier.',
-  },
-] as const;
-
-/** The live speaker gallery widget, framed on this page exactly as a host site would embed it. */
-const GALLERY_EMBED_SRC = `/embed/${DEMO_EVENT_SLUG}/gallery`;
 
 export default async function Home() {
   return <HomeContent demoAvailable={await demoEntryPointsAreAvailable()} />;
@@ -366,171 +244,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </article>
           ))}
         </div>
-      </section>
-
-      <section className={styles.product} id="organizers">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>
-            <LayoutDashboard size={17} aria-hidden="true" />
-            For organizers
-          </p>
-          <h2>Keep the entire conference moving.</h2>
-          <p>
-            Cicero links the operational work that breaks across forms, spreadsheets,
-            inboxes, and scheduling tools so every handoff carries the right context forward.
-          </p>
-        </div>
-        <div className={styles.features}>
-          {ORGANIZER_FEATURES.map((feature) => (
-            <article className={styles.feature} key={feature.title}>
-              <span className={styles.featureIcon}>{feature.icon}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className={styles.product} id="reviewers">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>
-            <ClipboardCheck size={17} aria-hidden="true" />
-            For reviewers
-          </p>
-          <h2>Give reviewers a queue they can finish.</h2>
-          <p>
-            Review is where a programme is decided, so Cicero gives reviewers their own workspace:
-            the proposals assigned to them, the criteria the organizer set, and nothing that would
-            bias the score.
-          </p>
-        </div>
-        <div className={styles.features}>
-          {REVIEWER_FEATURES.map((feature) => (
-            <article className={styles.feature} key={feature.title}>
-              <span className={styles.featureIcon}>{feature.icon}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.body}</p>
-            </article>
-          ))}
-        </div>
-        {demoAvailable ? (
-          <a className={styles.textLink} href={DEMO_ENTRY_LINKS.reviewer}>
-            Try the reviewer queue <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        ) : null}
-      </section>
-
-      <section className={styles.programme}>
-        <div className={styles.programmeVisual}>
-          <Image
-            src={publicAgendaImage}
-            alt="A public Cicero agenda laid out by time and room"
-            sizes="(max-width: 820px) 94vw, 58vw"
-          />
-        </div>
-        <div className={styles.programmeCopy}>
-          <p className={styles.eyebrow}>For organizers</p>
-          <h2>Publish once. Keep every public view in sync.</h2>
-          <p>
-            The agenda, session pages, speaker directory, and website embeds all read from the
-            programme your team already manages in Cicero.
-          </p>
-          <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
-            {demoAvailable ? 'Explore the demo programme' : 'Publish your first programme'}{' '}
-            <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        </div>
-      </section>
-
-      <section className={`${styles.product} ${styles.speakerProduct}`} id="speakers">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>
-            <Megaphone size={17} aria-hidden="true" />
-            For speakers
-          </p>
-          <h2>Give speakers one clear place to get ready.</h2>
-          <p>
-            Speakers can submit, update their profile, deliver files, and track what is left
-            without asking an organizer to relay every step by email.
-          </p>
-        </div>
-        <div className={styles.features}>
-          {SPEAKER_FEATURES.map((feature) => (
-            <article className={styles.feature} key={feature.title}>
-              <span className={styles.featureIcon}>{feature.icon}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.body}</p>
-            </article>
-          ))}
-        </div>
-        {demoAvailable ? (
-          <a className={styles.textLink} href={DEMO_ENTRY_LINKS.speaker}>
-            Explore the speaker portal <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        ) : null}
-      </section>
-
-      <section className={styles.product} id="attendees" aria-labelledby="attendees-title">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>
-            <CalendarDays size={17} aria-hidden="true" />
-            For attendees
-          </p>
-          <h2 id="attendees-title">Give attendees the programme, not a PDF.</h2>
-          <p>
-            The moment a session is scheduled and published it appears on the event site and in
-            every widget on your own website — no export, no re-upload, no stale copy to chase.
-          </p>
-        </div>
-
-        {demoAvailable ? (
-          <>
-            <div className={styles.attendeeShowcase}>
-              <div className={styles.attendeeFrame}>
-                <div className={styles.windowBar} aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                {/*
-                  The real widget, not a screenshot: this is the speaker gallery a visitor would get
-                  from the snippet on `/embeds`, rendering the demo conference as it stands now. A
-                  plain lazy iframe rather than `embed.js` keeps it out of the critical path and
-                  visible without JavaScript.
-                */}
-                <iframe
-                  className={styles.attendeeEmbed}
-                  src={GALLERY_EMBED_SRC}
-                  title="Live speaker gallery from the demo conference"
-                  loading="lazy"
-                />
-              </div>
-              <ul className={styles.attendeeLinks}>
-                {ATTENDEE_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <a className={styles.attendeeLink} href={link.href}>
-                      <span className={styles.featureIcon}>
-                        <link.icon size={20} aria-hidden="true" />
-                      </span>
-                      <span className={styles.attendeeLinkLabel}>
-                        {link.label}
-                        <ArrowRight size={15} aria-hidden="true" />
-                      </span>
-                      <span className={styles.attendeeLinkBlurb}>{link.blurb}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
-              See every embed running live <ArrowRight size={16} aria-hidden="true" />
-            </a>
-          </>
-        ) : (
-          <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
-            See what the embeds publish <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        )}
       </section>
 
       <section className={styles.about} id="about" aria-labelledby="about-title">
@@ -689,70 +402,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </p>
         </div>
       </section>
-
-      {demoAvailable ? (
-        <section className={styles.finalCta}>
-          <p className={styles.eyebrow}>See every side</p>
-          <h2>Explore a conference already in motion.</h2>
-          <p>
-            See how organizers move the event forward, how reviewers decide the programme, how
-            speakers get ready, and what attendees read when it is all published.
-          </p>
-          <div className={styles.finalCtaActions}>
-            <Button
-              href={DEMO_ENTRY_LINKS.organizer}
-              variant="primary"
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Open the organizer dashboard
-            </Button>
-            <Button
-              href={DEMO_ENTRY_LINKS.reviewer}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Rate proposals as a reviewer
-            </Button>
-            <Button
-              href={DEMO_ENTRY_LINKS.speaker}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Prepare a talk as a speaker
-            </Button>
-            <Button
-              href={DEMO_PUBLIC_SITE_LINK}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Tour the published event
-            </Button>
-          </div>
-        </section>
-      ) : (
-        <section className={styles.finalCta}>
-          <p className={styles.eyebrow}>Ready for its first event</p>
-          <h2>Run your own conference.</h2>
-          <p>
-            This fresh instance is fully operational without fixture data. Create an account to
-            build the first event, or sign in if another organizer has already invited you.
-          </p>
-          <div className={styles.finalCtaActions}>
-            <Button
-              href="/signup"
-              variant="primary"
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Create your first event
-            </Button>
-            <Button href="/signin" size="lg">
-              Sign in
-            </Button>
-          </div>
-        </section>
-      )}
 
     </main>
   );

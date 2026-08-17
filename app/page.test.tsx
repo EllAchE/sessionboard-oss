@@ -1,9 +1,5 @@
 import { ToastProvider } from '@/components/ui';
-import {
-  DEMO_ENTRY_LINKS,
-  DEMO_PUBLIC_LINKS,
-  DEMO_PUBLIC_SITE_LINK,
-} from '@/lib/demo-entry-links';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -30,6 +26,12 @@ const renderHome = (demoAvailable: boolean) =>
     </ToastProvider>,
   );
 
+/** Everything between the navigation and the role cards, which is exactly the hero. */
+const heroOf = (html: string) => html.slice(html.indexOf('</nav>'), html.indexOf('id="products"'));
+
+/** As the markup escapes it, since every demo sign-in URL carries query parameters. */
+const asAttribute = (href: string) => href.replaceAll('&', '&amp;');
+
 describe('fresh-instance home page', () => {
   it('leads with a concise copyable setup prompt', () => {
     const html = renderHome(false);
@@ -37,7 +39,6 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('AI-guided setup');
     expect(html).toContain('Copy prompt');
     expect(html).not.toContain('Copy AI setup prompt');
-    expect(html).toContain('one safe step at a time');
     expect(html).not.toContain('Let Claude or ChatGPT walk through setup with you');
     expect(html).toContain('Paste into your agent');
     expect(html).toContain('alt="OpenAI"');
@@ -86,20 +87,10 @@ describe('fresh-instance home page', () => {
 
     expect(html).toContain('From call for speakers to first day');
     expect(html).toContain('One conference, four purpose-built experiences.');
-    expect(html).toContain('Organizer');
-    expect(html).toContain('Reviewer');
-    expect(html).toContain('Speaker');
-    expect(html).toContain('Attendee');
+    expect(html).toContain('Keep the whole conference moving.');
+    expect(html).toContain('Score proposals, not spreadsheets.');
+    expect(html).toContain('Stay ready from proposal to stage.');
     expect(html).toContain('Plan the day from the live programme.');
-    expect(html).toContain('For organizers');
-    expect(html).toContain('Know what needs attention');
-    expect(html).toContain('Build a schedule that catches collisions');
-    expect(html).toContain('For reviewers');
-    expect(html).toContain('Open one queue, not an inbox');
-    expect(html).toContain('Judge without the anchoring');
-    expect(html).toContain('For speakers');
-    expect(html).toContain('Find everything in one portal');
-    expect(html).toContain('Send the right files every time');
     expect(html).toContain('Open source and self-hostable');
     expect(html).not.toContain('MIT');
     expect(html).not.toContain('License');
@@ -108,19 +99,62 @@ describe('fresh-instance home page', () => {
     );
   });
 
-  it('ranks the reviewer above the attendee and keeps them in the closing tour', () => {
+  it('ranks the reviewer above the attendee', () => {
     const html = renderHome(true);
 
-    expect(html).toContain('Score proposals, not spreadsheets.');
     expect(html.indexOf('Score proposals, not spreadsheets.')).toBeLessThan(
       html.indexOf('Plan the day from the live programme.'),
     );
-    expect(html).toContain('Try the reviewer queue');
-    expect(html).toContain('Rate proposals as a reviewer');
   });
 
-  it('hangs each role demo off the card that describes the role', () => {
+  /**
+   * The page argued the same case three times: four summary role cards, then a full section per
+   * role carrying twelve feature cards, then a closing call to action repeating the demo links a
+   * fourth time. The role cards carry the demo now, so the rest is gone; these are the headings
+   * that would come back with any of it.
+   */
+  it('drops the marketing sections the role cards replaced', () => {
     const html = renderHome(true);
+
+    for (const heading of [
+      'Keep the entire conference moving.',
+      'Give reviewers a queue they can finish.',
+      'Give speakers one clear place to get ready.',
+      'Publish once. Keep every public view in sync.',
+      'Give attendees the programme, not a PDF.',
+      'Explore a conference already in motion.',
+      'Run your own conference.',
+    ]) {
+      expect(html).not.toContain(heading);
+    }
+    expect(html).not.toContain('<iframe');
+    // The embed showcase keeps its own entry point in the about section.
+    expect(html).toContain('href="/embeds"');
+  });
+
+  /**
+   * The hero sells and the section below it converts. Its three persona demo links used to compete
+   * with the setup calls to action above the fold, and they now hang off the role cards instead.
+   */
+  it('keeps the hero to the pitch and the two ways to start an event', () => {
+    const hero = heroOf(renderHome(true));
+
+    expect(hero).toContain('Create an event');
+    expect(hero).toContain('AI-guided setup');
+    expect(hero).not.toContain('href="/demo');
+    for (const href of Object.values(DEMO_ENTRY_LINKS)) {
+      expect(hero).not.toContain(asAttribute(href));
+    }
+  });
+
+  /**
+   * Automated walkthroughs match link text from its start and treat two matches as an error, so no
+   * two links in the section may share a first word. Checked against what actually rendered rather
+   * than against a hand-kept list, which is what let the earlier collisions through.
+   */
+  it('makes every role card its own way into the demo', () => {
+    const html = renderHome(true);
+    const products = html.slice(html.indexOf('id="products"'), html.indexOf('id="about"'));
 
     expect(html).not.toContain('Or explore a conference already in progress');
     for (const [label, href] of [
@@ -129,12 +163,14 @@ describe('fresh-instance home page', () => {
       ['Give a talk', DEMO_ENTRY_LINKS.speaker],
       ['Browse the programme', DEMO_PUBLIC_SITE_LINK],
     ] as const) {
-      expect(html).toContain(label);
-      expect(html.indexOf('One conference, four purpose-built experiences.')).toBeLessThan(
-        html.indexOf(label),
-      );
-      expect(html).toContain(href.replaceAll('&', '&amp;'));
+      expect(products).toContain(`href="${asAttribute(href)}">${label}`);
     }
+
+    const firstWords = [...products.matchAll(/<a [^>]*href="[^"]*"[^>]*>\s*(\S+)/g)].map(
+      (match) => match[1],
+    );
+    expect(firstWords).toHaveLength(4);
+    expect(new Set(firstWords).size).toBe(4);
   });
 
   it('makes products and docs discoverable from the primary navigation', () => {
@@ -179,7 +215,6 @@ describe('fresh-instance home page', () => {
     const html = renderHome(false);
 
     expect(html).toContain('Fresh instance');
-    expect(html).toContain('Create your first event');
     expect(html).toContain('href="/signup"');
     expect(html).not.toContain('href="/demo"');
     expect(html).not.toContain('href="/demo/agenda"');
@@ -195,49 +230,22 @@ describe('fresh-instance home page', () => {
     expect(html).not.toContain('Fresh instance');
   });
 
-  it('shows what an attendee sees, live, once the demo fixture is loaded', () => {
-    const html = renderHome(true);
-
-    expect(html).toContain('For attendees');
-    expect(html).toContain('Give attendees the programme, not a PDF.');
-    // The real widget, not a screenshot of one, and off the critical path.
-    expect(html).toContain('src="/embed/demo/gallery"');
-    expect(html).toContain('loading="lazy"');
-    for (const href of Object.values(DEMO_PUBLIC_LINKS)) expect(html).toContain(`href="${href}"`);
-    expect(html).toContain('Browse the programme');
-    expect(html).toContain('href="/embeds"');
-  });
-
-  it('keeps the attendee story without a live frame on a fresh instance', () => {
-    const html = renderHome(false);
-
-    // The claim survives, because it is true of any published event; only the demo data goes.
-    expect(html).toContain('For attendees');
-    expect(html).toContain('href="/embeds"');
-    expect(html).not.toContain('<iframe');
-    expect(html).not.toContain('/embed/demo/gallery');
-  });
-
   /**
    * The published site is what the three role tours produce, so it is offered the same way they
-   * are: a role card in the products section and a button in the closing tour, both after the roles.
+   * are: the fourth role card, after the three that sign the visitor in.
    */
   it('shows the sample published event alongside the role tours', () => {
     const html = renderHome(true);
 
     expect(html).toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
     expect(html).toContain('Browse the programme');
-    expect(html).toContain('no account needed.');
-    expect(html).toContain('Tour the published event');
     expect(html.indexOf('Give a talk')).toBeLessThan(html.indexOf('Browse the programme'));
-    expect(html.indexOf('Prepare a talk as a speaker')).toBeLessThan(
-      html.indexOf('Tour the published event'),
-    );
   });
 
   /**
    * Automated walkthroughs pick a click target by matching link text from the start and treat two
-   * matches as an error, so no tour label may be a prefix of another anywhere on the page.
+   * matches as an error, so no tour label may be a prefix of another anywhere on the page or in
+   * the global footer, which ships `Organizer demo`, `Reviewer demo`, and `Speaker demo`.
    */
   it('keeps every demo tour label separable from the start of its text', () => {
     const html = renderHome(true);
@@ -246,15 +254,16 @@ describe('fresh-instance home page', () => {
       'Score the proposals',
       'Give a talk',
       'Browse the programme',
-      'Try the reviewer queue',
-      'Open the organizer dashboard',
-      'Rate proposals as a reviewer',
-      'Prepare a talk as a speaker',
-      'Tour the published event',
+      'Organizer dashboard',
+      'Reviewer queue',
+      'Speaker portal',
+      'Public event page',
+      'Public agenda',
     ];
 
     for (const label of labels) {
       expect(html).toContain(label);
       expect(labels.filter((other) => other.startsWith(label))).toEqual([label]);
-    }  });
+    }
+  });
 });
