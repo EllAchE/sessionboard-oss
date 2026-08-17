@@ -1,5 +1,5 @@
 {
-  "$comment": "Feature catalog for the alternative-designs survey. `areas` are the brief's baseline everyone was measured on; `extras` are capabilities other entrants shipped that Cicero did not, each attributed to the project slugs in projects.json; `ciceroDifferentiators` are Cicero capabilities counted absent across the analyzed field. Hand-maintained — `bun run alternatives:build` validates every attribution against projects.json.",
+  "$comment": "Feature catalog for the alternative-designs survey. `areas` are the brief's baseline everyone was measured on; `extras` are capabilities other entrants shipped that Cicero did not when the field was read on 2026-08-16, each attributed to the project slugs in projects.json — an extra Cicero has built since carries `ciceroShipped` with the pull request that closed it, and is never silently deleted; `ciceroDifferentiators` are Cicero capabilities counted absent across the analyzed field. Hand-maintained — `bun run alternatives:build` validates every attribution against projects.json.",
   "areas": [
     {
       "id": "cfp-intake",
@@ -91,7 +91,12 @@
         "maddiedreese-ProgramLoom",
         "TheThingInTheThing-namos-sessions-webapp",
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 199,
+        "on": "2026-08-17",
+        "note": "`lib/services/event-clone.ts` plans a structure-only clone and `app/organizer/duplicate/` previews it before applying; people and operational history are deliberately excluded."
+      }
     },
     {
       "id": "AD-2",
@@ -105,7 +110,12 @@
         "TheThingInTheThing-namos-sessions-webapp",
         "0xOsprey-saas-killa",
         "yisding-openboard.events"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 194,
+        "on": "2026-08-17",
+        "note": "A `speaker_unavailability` window declared in the portal is read by `lib/services/speaker-availability.ts` and enforced through the same agenda guard as double-booking."
+      }
     },
     {
       "id": "AD-3",
@@ -120,7 +130,12 @@
         "iankar8-event-manager-os",
         "westoque-session-hero",
         "akakabrian-sessionslate"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 210,
+        "on": "2026-08-17",
+        "note": "`app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as `feed.json`, `feed.xml` and a subscribable `feed.ics` off the same query string the iframe and script snippets carry."
+      }
     },
     {
       "id": "AD-4",
@@ -134,7 +149,12 @@
         "westoque-session-hero",
         "SteveMLC-lectern",
         "realgenekim-curtain-call-cfp"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 200,
+        "on": "2026-08-17",
+        "note": "Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage."
+      }
     },
     {
       "id": "AD-5",
@@ -206,7 +226,12 @@
         "Phantastic-AI-fireside",
         "mkly-gatherpulse",
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 201,
+        "on": "2026-08-17",
+        "note": "`lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account."
+      }
     },
     {
       "id": "AD-10",
@@ -230,7 +255,12 @@
       "projects": [
         "conorbronsdon-callboard-app",
         "red-omotenashi"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 188,
+        "on": "2026-08-17",
+        "note": "`app/(public)/[slug]/llms.txt/route.ts` generates a per-event file from current published state, alongside the site-level `app/llms.txt`."
+      }
     },
     {
       "id": "AD-12",
@@ -520,7 +550,12 @@
       "tier": "Shipped by one team each",
       "projects": [
         "akakabrian-sessionslate"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 212,
+        "on": "2026-08-17",
+        "note": "`scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning."
+      }
     },
     {
       "id": "AD-38",

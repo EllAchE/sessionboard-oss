@@ -45,7 +45,7 @@ the companion submission at <https://cicero-submission.elehche.workers.dev/>.
 |---|---|
 | [`feature-matrix.md`](feature-matrix.md) | All 71 features × all 32 projects, unfiltered. |
 | [`visual/index.html`](visual/index.html) | The same grid, browsable, with filtering and rollups. |
-| [`../07-comparative-requirements.md`](../07-comparative-requirements.md) | `AD-1`…`AD-48` — what the field built that Cicero did not. |
+| [`../07-comparative-requirements.md`](../07-comparative-requirements.md) | `AD-1`…`AD-48` — what the field built that Cicero did not, and which of them Cicero has closed since. |
 | [`data/survey.json`](data/survey.json) | Machine-readable rollup: counts, scale, stack, area totals. |
 
 To add a project to the survey, use the `survey-alternative-designs` skill in
@@ -61,6 +61,29 @@ that begin no earlier than 2026-08-08 — everyone built inside the same short w
 deduplicated, each attributed to the projects that have it. Ordered by how many independent teams
 arrived at the same thing — convergence is the signal.
 
+Everything here describes Cicero as it stood when the field was read on 2026-08-16. **Seven of the
+48 have been closed since**, and are marked in place below rather than deleted — the attribution and
+the fact that the field arrived at the gap first are both worth keeping. `AD-4` is the one item the
+survey mis-scored: `lib/services/content.ts` already recorded, listed, diffed and restored
+revisions, and [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) added the monotonic
+revision number the item actually names.
+
+| | | |
+|---|---|---|
+| `AD-1` | Whole-event cloning / reusable event templates | [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) |
+| `AD-2` | Speaker availability / blackout windows | [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) |
+| `AD-3` | Richer embed output formats | [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) |
+| `AD-4` | Revision history with organizer restore | [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) |
+| `AD-9` | Tokenized no-login share links | [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) |
+| `AD-11` | Per-event `llms.txt` | [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) |
+| `AD-37` | Mixed-type rubric criteria | [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) |
+
+The per-project notes in this directory are *not* rewritten when Cicero closes a gap. Each one is a
+reading of one repository at one pinned commit, and a sentence like "Cicero's Airtable integration
+is one-way" is a record of what was true on the day it was written. The table above and
+[`../07-comparative-requirements.md`](../07-comparative-requirements.md) are the current-state
+answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backlog.md).
+
 ### Shipped by many teams
 
 1. **Whole-event cloning / reusable event templates.** Copy forms, tracks, rooms, scorecards, task
@@ -68,6 +91,9 @@ arrived at the same thing — convergence is the signal.
    the copy before applying, and deliberately exclude operational history.
    — `agrimsingh/conference-engine`, `jpoehnelt/session-party`, `maddiedreese/ProgramLoom`,
    `TheThingInTheThing/namos-sessions-webapp`, `adityak6798/ManageMyConference`
+   **Closed since:** `lib/services/event-clone.ts` plans a structure-only clone and
+   `app/organizer/duplicate/` previews it before applying
+   ([#199](https://github.com/EllAchE/sessionboard-oss/pull/199)).
 
 2. **Speaker availability / blackout windows as a scheduling constraint.** Collected during CFP or
    in the portal as dates, times, or dayparts, then surfaced as explicit conflicts against the
@@ -75,17 +101,26 @@ arrived at the same thing — convergence is the signal.
    unavailable at a time they were never scheduled.
    — `nayamoss/namos-sessions-public`, `TheThingInTheThing/namos-sessions-webapp`,
    `0xOsprey/saas-killa`, `yisding/openboard.events`
+   **Closed since:** a `speaker_unavailability` window declared in the portal is enforced through
+   the same agenda guard as double-booking
+   ([#194](https://github.com/EllAchE/sessionboard-oss/pull/194)).
 
 3. **Richer embed output formats.** JSON, XML, subscribable iCalendar, and script-loader snippets
    emitted from the same widget configuration, alongside the iframe. This confirms a gap we had
    already recorded against ourselves.
    — `mrmichael73/greenroom-kms` (script/iframe/JSON/XML/iCal), `d4mr/opensesh`,
    `iankar8/event-manager-os`, `westoque/session-hero`, `akakabrian/sessionslate` (XML program feed)
+   **Closed since:** `app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as
+   `feed.json`, `feed.xml` and a subscribable `feed.ics`
+   ([#210](https://github.com/EllAchE/sessionboard-oss/pull/210)).
 
 4. **Revision history with organizer restore.** Attributed, numbered snapshots of proposal and
    session titles/abstracts that an organizer can roll back.
    — `conorbronsdon/callboard-app`, `westoque/session-hero`, `SteveMLC/lectern`,
    `realgenekim/curtain-call-cfp` (append-only whole-application history with time travel)
+   **Mis-scored, and closed since:** record → list → diff → restore already existed in
+   `lib/services/content.ts`; the monotonic revision number and agenda/sponsor coverage landed in
+   [#200](https://github.com/EllAchE/sessionboard-oss/pull/200).
 
 5. **Bidirectional Airtable sync.** Cicero's Airtable integration is one-way. Others reconcile in
    both directions with field ownership, conflict handling, retries, and dead letters.
@@ -117,6 +152,9 @@ arrived at the same thing — convergence is the signal.
    — `iankar8/event-manager-os` (guest advisors with comments), `Phantastic-AI/fireside`
    (rotatable per-deliverable), `mkly/gatherpulse` (single-use file fulfillment),
    `adityak6798/ManageMyConference` (expiring report shares with scheduled delivery)
+   **Closed since:** `lib/services/share-links.ts` issues expiring, revocable links over six
+   programme views, so an unpublished programme can be reviewed without an account
+   ([#201](https://github.com/EllAchE/sessionboard-oss/pull/201)).
 
 ### Shipped by two teams
 
@@ -126,6 +164,8 @@ arrived at the same thing — convergence is the signal.
 
 11. **Per-event `llms.txt`** generated from current public state, for AI agents reading the event.
     — `conorbronsdon/callboard-app`, `red/omotenashi`
+    **Closed since:** `app/(public)/[slug]/llms.txt/route.ts`, alongside the site-level `app/llms.txt`
+    ([#188](https://github.com/EllAchE/sessionboard-oss/pull/188)).
 
 12. **Accelevents integration** with preview/apply diffs against a real external event platform.
     — `iankar8/event-manager-os`, `jpoehnelt/session-party`
@@ -182,6 +222,8 @@ arrived at the same thing — convergence is the signal.
     write fails. — `red/omotenashi`
 37. **Mixed-type rubric criteria** (numeric, single-select, and free text in one scorecard).
     — `akakabrian/sessionslate`
+    **Closed since:** `scorecard_criterion.type` carries all three, and only numeric criteria feed
+    the weighted average ([#212](https://github.com/EllAchE/sessionboard-oss/pull/212)).
 38. **AI-seeded scorecards that the server refuses** until every unchanged suggestion is confirmed or
     edited. — `twilwa/session-bored`
 39. **Cancellable queued decision notices** with an audit reason and recipient correction before a
@@ -222,6 +264,10 @@ Counted across the 32 analyzed projects — how many of them lack each thing.
 Sponsors is the clearest differentiator: 26 of 32 projects have no sponsor entity at all, 3 have
 scaffolding only, and 3 shipped it. Nobody skipped CFP intake or agenda scheduling — those are the
 floor everyone cleared.
+
+The seven gaps Cicero has closed since the survey are deliberately **not** promoted into this table.
+The counts above come from a pass that checked every project for that capability; extras attribution
+is positive-only, so "absent in 32 − convergence" would be an upper bound dressed up as a count.
 
 Two caveats on reading this table. It measures presence, not quality, and it is a comparison against
 32 hackathon-window projects, not against the commercial products in this space. And several Cicero
