@@ -46,6 +46,15 @@
   align-items: center;
 }
 
+/**
+ * A slot whose child renders nothing still arrives as an element, so the wrapper is drawn and
+ * `.content`'s gap pads the button for an icon that is not there. The hint badges do exactly that
+ * for as long as the modifier is not held, which is nearly always.
+ */
+.icon:empty {
+  display: none;
+}
+
 .spinner {
   position: absolute;
   top: 50%;
