@@ -15,6 +15,13 @@
       "when": 1786924493976,
       "tag": "0001_speaker_unavailability",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786928042093,
+      "tag": "0002_share_link",
+      "breakpoints": true
     }
   ]
 }
