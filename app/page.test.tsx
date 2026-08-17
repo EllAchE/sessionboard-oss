@@ -5,7 +5,6 @@ import {
   DEMO_PUBLIC_LINKS,
   DEMO_PUBLIC_SITE_LINK,
   DEMO_TOURS,
-  EMBED_SHOWCASE_PATH,
 } from '@/lib/demo-entry-links';
 import { readFileSync } from 'node:fs';
 import React from 'react';
@@ -160,8 +159,8 @@ describe('fresh-instance home page', () => {
    */
   it('makes every role card its own way into the demo', () => {
     const html = renderHome(true);
-    // Ends at the attendee section, whose deep links are not role cards and carry their own labels.
-    const products = html.slice(html.indexOf('id="products"'), html.indexOf('id="attendees"'));
+    // Ends at the agent section, whose two guide links are not role cards and carry their own labels.
+    const products = html.slice(html.indexOf('id="products"'), html.indexOf('id="agent-quick-start"'));
 
     expect(html).not.toContain('Or explore a conference already in progress');
     for (const [label, href] of [
@@ -181,28 +180,35 @@ describe('fresh-instance home page', () => {
   });
 
   /*
-   * This section was dropped by a merge rather than by a decision: it landed on main in #254 after
-   * this page's rewrite was already written, so the rewrite's conflict resolution deleted it as
-   * "not mine" and every check stayed green. These assertions are the tripwire that was missing.
+   * The `For attendees` section is gone by request: its heading, its five deep links into the
+   * seeded event's public pages, and its `/embeds` link. This page previously lost that section to
+   * a merge rather than a decision -- it landed on main in #254 after the page's rewrite was
+   * written, and the conflict resolution deleted it as "not mine" with every check green -- so the
+   * removal is asserted here rather than left to whichever way the next merge falls.
+   *
+   * `DEMO_PUBLIC_LINKS.event` is exempt: it is `DEMO_PUBLIC_SITE_LINK`, which the attendee role
+   * card above still opens.
    */
-  it('points attendees at the programme and the embeds at their showcase', () => {
-    const html = renderHome(true);
+  it('carries no attendee section', () => {
+    for (const html of [renderHome(true), renderHome(false)]) {
+      expect(html).not.toContain('id="attendees"');
+      expect(html).not.toContain('Give attendees the programme, not a PDF.');
+      expect(html).not.toContain('For attendees');
 
-    expect(html).toContain('id="attendees"');
-    expect(html).toContain('Give attendees the programme, not a PDF.');
-
-    for (const href of Object.values(DEMO_PUBLIC_LINKS)) {
-      expect(html).toContain(`href="${href}"`);
+      const deepLinks = Object.entries(DEMO_PUBLIC_LINKS).filter(([page]) => page !== 'event');
+      for (const [, href] of deepLinks) {
+        expect(html).not.toContain(`href="${href}"`);
+      }
+      expect(html).not.toContain('See every embed running live');
+      expect(html).not.toContain('See what the embeds publish');
     }
-    expect(html).toContain(`href="${EMBED_SHOWCASE_PATH}"`);
-    expect(html).toContain('See every embed running live');
   });
 
   /*
-   * The section framed a live `/embed/.../gallery` iframe under a class this page's stylesheet never
-   * defined, so it rendered unconstrained between two centred neighbours and took a screenful to say
-   * what the showcase link says in a line. `/embeds` runs every widget against the real conference;
-   * nothing on the landing page needs to run one of them a second time.
+   * The attendee section that used to sit here framed a live `/embed/.../gallery` iframe under a
+   * class this page's stylesheet never defined, so it rendered unconstrained between two centred
+   * neighbours and took a screenful to say what a link says in a line. `/embeds` runs every widget
+   * against the real conference; nothing on the landing page needs to run one of them inline.
    */
   it('runs no embed inline', () => {
     const html = renderHome(true);
@@ -232,23 +238,19 @@ describe('fresh-instance home page', () => {
     expect([...used].filter((name) => !defined.has(name))).toEqual([]);
   });
 
-  it('keeps the attendee section between the role cards and agent setup', () => {
+  it('runs the role cards straight into agent setup', () => {
     const html = renderHome(true);
 
-    expect(html.indexOf('id="products"')).toBeLessThan(html.indexOf('id="attendees"'));
-    expect(html.indexOf('id="attendees"')).toBeLessThan(html.indexOf('id="agent-quick-start"'));
+    expect(html.indexOf('id="products"')).toBeLessThan(html.indexOf('id="agent-quick-start"'));
   });
 
-  it('keeps the attendee claim on a fresh instance and drops only the demo data', () => {
+  it('publishes no seeded link on a fresh instance', () => {
     const html = renderHome(false);
 
-    // The section argues something true of any instance, so only its seeded contents stand down.
-    expect(html).toContain('Give attendees the programme, not a PDF.');
     expect(html).not.toContain('<iframe');
     for (const href of Object.values(DEMO_PUBLIC_LINKS)) {
       expect(html).not.toContain(`href="${href}"`);
     }
-    expect(html).toContain('See what the embeds publish');
   });
 
   it('makes products and docs discoverable from the primary navigation', () => {
@@ -333,7 +335,6 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('Fresh instance');
     expect(html).toContain('href="/signup"');
     expect(html).not.toContain('href="/demo"');
-    expect(html).not.toContain('href="/demo/agenda"');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
   });
 
@@ -341,7 +342,6 @@ describe('fresh-instance home page', () => {
     const html = renderHome(true);
 
     expect(html).toContain('href="/demo"');
-    expect(html).toContain('href="/demo/agenda"');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).toContain(href.replaceAll('&', '&amp;'));
     expect(html).not.toContain('Fresh instance');
   });

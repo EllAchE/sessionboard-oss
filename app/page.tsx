@@ -2,20 +2,12 @@ import { SiteNav } from '@/components/SiteNav';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import {
-  DEMO_ENTRY_LINKS,
-  DEMO_PUBLIC_LINKS,
-  DEMO_PUBLIC_SITE_LINK,
-  EMBED_SHOWCASE_PATH,
-} from '@/lib/demo-entry-links';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
 import {
   ArrowRight,
-  CalendarCheck,
   CalendarDays,
   ClipboardCheck,
   ExternalLink,
-  Globe2,
-  Handshake,
   KeyRound,
   LayoutDashboard,
   ListChecks,
@@ -24,7 +16,6 @@ import {
   ShieldCheck,
   Sparkles,
   UserPlus,
-  UserRound,
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
@@ -90,46 +81,6 @@ const ROLE_PRODUCTS = [
     body: 'Browse the agenda, discover speakers, and build a personal itinerary, no account needed.',
     demoHref: DEMO_PUBLIC_SITE_LINK,
     demoLabel: 'Browse the programme',
-  },
-] as const;
-
-/**
- * The published event site an attendee actually reads. Every one of these is the demo conference's
- * own page, not a marketing mock-up of it.
- *
- * The attendee role card above links to the programme's front door; these are the pages behind it.
- * The card answers "is there something here for me", this answers "what does it actually contain".
- */
-const ATTENDEE_LINKS = [
-  {
-    href: DEMO_PUBLIC_LINKS.event,
-    icon: Globe2,
-    label: 'Programme home',
-    blurb: 'The page an attendee lands on.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.agenda,
-    icon: CalendarCheck,
-    label: 'Day-by-day agenda',
-    blurb: 'Times and rooms as a grid.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.sessions,
-    icon: ListChecks,
-    label: 'Session catalogue',
-    blurb: 'Search and filter the programme.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.speakers,
-    icon: UserRound,
-    label: 'Speaker directory',
-    blurb: 'Bios, headshots, and sessions.',
-  },
-  {
-    href: DEMO_PUBLIC_LINKS.sponsors,
-    icon: Handshake,
-    label: 'Sponsor wall',
-    blurb: 'Sponsors and exhibitors by tier.',
   },
 ] as const;
 
@@ -262,61 +213,21 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
       </section>
 
       {/*
-        This section used to frame a live `/embed/.../gallery` iframe here, under
-        `className={styles.product}` -- a class `home.module.css` never defined. With no class the
-        section escaped the width constraint every neighbour carries, so it rendered full-bleed and
-        pulled the page's rhythm apart around it, and a fixed-height widget frame took a screenful
-        to say what the link below it says in a line. The embeds have a home that shows all of them
-        against the real conference with the snippet that produces each one -- `/embeds` -- so this
-        section points there instead of running one of them inline.
+        A `For attendees` section sat here, between the role cards above and the agent section
+        below: a `Give attendees the programme, not a PDF.` heading, five deep links into the
+        seeded event's public pages, and a link to `/embeds`. It is gone by request. The programme
+        it pointed at is still one click from the page -- the attendee role card above opens the
+        published event site -- and `/embeds` keeps its own home, reachable from the navigation.
       */}
-      <section className={styles.attendees} id="attendees" aria-labelledby="attendees-title">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>
-            <CalendarDays size={17} aria-hidden="true" />
-            For attendees
-          </p>
-          <h2 id="attendees-title">Give attendees the programme, not a PDF.</h2>
-          <p>
-            The moment a session is scheduled and published it appears on the event site and in
-            every widget on your own website. You never export it, re-upload it, or chase down a
-            copy that has gone stale.
-          </p>
-        </div>
-
-        {demoAvailable ? (
-          <ul className={styles.attendeeLinks}>
-            {ATTENDEE_LINKS.map((link) => (
-              <li key={link.label}>
-                <a className={styles.attendeeLink} href={link.href}>
-                  <span className={styles.featureIcon}>
-                    <link.icon size={20} aria-hidden="true" />
-                  </span>
-                  <span className={styles.attendeeLinkLabel}>
-                    {link.label}
-                    <ArrowRight size={15} aria-hidden="true" />
-                  </span>
-                  <span className={styles.attendeeLinkBlurb}>{link.blurb}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
-          {demoAvailable ? 'See every embed running live' : 'See what the embeds publish'}{' '}
-          <ArrowRight size={16} aria-hidden="true" />
-        </a>
-      </section>
 
       {/*
-        An `Open source and self-hostable` section sat here, between the attendee section and the
+        An `Open source and self-hostable` section sat here, between that attendee section and the
         agent section below. It had already been reduced to one paragraph and two links once, and
         what was left restated its neighbours: the paragraph promised the API, the embeds, and the
-        extensibility that the API navigation item, the attendee section directly above, and this
-        agent section directly below each demonstrate, and its two links pointed at the agent
-        section and at GitHub, which the footer carries. The `Open source and self-hostable` claim
-        itself still leads the footer, next to the licence and the repository.
+        extensibility that the API navigation item, the attendee section above, and this agent
+        section directly below each demonstrate, and its two links pointed at the agent section and
+        at GitHub, which the footer carries. The `Open source and self-hostable` claim itself still
+        leads the footer, next to the licence and the repository.
 
         Its `border-bottom` and this section's `border-block` also stacked two hairlines in the gap
         between them, and the second of this section's pair drew a rule under the last section on
