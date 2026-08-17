@@ -221,7 +221,13 @@ describe('what must never be copied', () => {
 
   /** Named explicitly as well, so a re-categorisation cannot quietly unlock one of them. */
   it('never copies a token, a key or a secret', () => {
-    for (const name of ['magic_token', 'unsubscribe_token', 'api_key', 'webhook_endpoint']) {
+    for (const name of [
+      'magic_token',
+      'unsubscribe_token',
+      'api_key',
+      'webhook_endpoint',
+      'share_link',
+    ]) {
       expect(CLONE_PLAN[name]?.action, `${name} must be skipped`).toBe('skip');
       expect((CLONE_PLAN[name] as { category: string }).category).toBe('credential');
     }
@@ -402,7 +408,7 @@ describe('the shape of the decision', () => {
   it('copies configuration and skips the rest', () => {
     const scoped = deriveEventScopedTables();
     const copied = copiedTables();
-    expect(scoped.length).toBe(50);
+    expect(scoped.length).toBe(51);
     expect(copied.length).toBe(16);
     expect(copied.sort()).toEqual(
       [
