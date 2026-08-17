@@ -42,8 +42,8 @@ describe('summarizeTaskCompletion', () => {
     expect(summary.overdue).toBe(1);
     expect(summary.overdueParticipants).toBe(1);
     expect(summary.outstanding).toBe(3);
-  });
     expect(summary.awaitingAction).toBe(1);
+  });
 
   it('counts one participant once however many tasks they are late on', () => {
     const summary = summarizeTaskCompletion([
