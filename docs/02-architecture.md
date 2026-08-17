@@ -295,8 +295,10 @@ a magic link is handing out a session for whatever address was typed into the bo
 transport those two are in direct conflict, which is what kept the deployment on `log`.
 
 The resolution is that the demo identities are undeliverable *by construction*, rather than delivery
-being off for everyone. Both seeds are built entirely from IANA-reserved domains
-(`organizer@example.com`, the senate at `@first-settlement.example`), and `sendMail` routes any
+being off for everyone. Every seeded event is built entirely from IANA-reserved domains
+(`organizer@example.com`, the senate at `@first-settlement.example`, and the generated rosters that
+fill the three sized sample events at `@demo.example`, `@demo-small.example` and
+`@demo-large.example`), and `sendMail` routes any
 recipient at a reserved domain to the log transport whatever else is configured — real addresses in
 the same run still get real mail, and the provider is never asked to bounce six hundred fictional
 senators. An on-screen link for such an address therefore cannot lock a real person out of anything,
