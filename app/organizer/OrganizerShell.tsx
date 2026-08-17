@@ -27,9 +27,9 @@ import { useHotkeyContext, useHotkeys } from '@/components/hotkeys/HotkeyProvide
 import { Avatar, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import { SCOPES } from '@/lib/hotkeys/registry';
 import type { EventSummary } from '@/lib/services/events';
+import { ActionsPanel } from './ActionsPanel';
 import { EventSwitcher } from './EventSwitcher';
 import { InfoPanel } from './InfoPanel';
-import { QuickActions } from './QuickActions';
 import { ThemeToggle } from './ThemeToggle';
 import styles from './organizer.module.css';
 
@@ -48,6 +48,9 @@ const GOTO_HREFS: Record<string, string> = {
   'goto-forms': '/organizer/forms',
   'goto-comms': '/organizer/comms',
   'goto-speakers': '/organizer/speakers',
+  'goto-new-event': '/events/new',
+  'goto-portal': '/portal',
+  // `goto-public` is deliberately absent: its destination depends on the event in hand.
 };
 
 const NAV: { id: string; title: string; items: NavEntry[] }[] = [
@@ -116,19 +119,41 @@ export function OrganizerShell({
   const pathname = usePathname();
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const { openShortcuts } = useHotkeyContext();
   const currentEvent = events.find((event) => event.id === currentEventId) ?? events[0];
+
+  /**
+   * The actions panel lists these same moves, so it has to get out of the way when one of them
+   * fires — otherwise `.` then `g` `o` navigates underneath a panel that stays open over the
+   * result.
+   */
+  const go = (href: string) => {
+    setActionsOpen(false);
+    router.push(href);
+  };
 
   /**
    * The outermost scope, claimed once for the whole workspace. Everything a screen registers lands
    * inside it, so these keys keep working anywhere the screen has not deliberately shadowed them.
    */
   useHotkeys(SCOPES.organizerGlobal, {
-    'command-palette': () => setCommandOpen((open) => !open),
-    'shortcuts-help': openShortcuts,
-    ...Object.fromEntries(
-      Object.entries(GOTO_HREFS).map(([id, href]) => [id, () => router.push(href)]),
-    ),
+    'command-palette': () => {
+      setActionsOpen(false);
+      setCommandOpen((open) => !open);
+    },
+    'shortcuts-help': () => {
+      setActionsOpen(false);
+      openShortcuts();
+    },
+    'actions-panel': () => setActionsOpen((open) => !open),
+    ...Object.fromEntries(Object.entries(GOTO_HREFS).map(([id, href]) => [id, () => go(href)])),
+    /**
+     * Left undefined while no event is in hand rather than bound to a dead route. An unhandled
+     * binding is inert but stays in the `?` overlay, which is the honest reading: the key exists,
+     * it has nowhere to go yet.
+     */
+    'goto-public': currentEvent?.slug ? () => go(`/${currentEvent.slug}`) : undefined,
   });
 
   /** Longest matching href wins, so /organizer/forms/abc highlights Forms rather than Overview. */
@@ -203,9 +228,11 @@ export function OrganizerShell({
         </header>
         <main className={styles.content}>{children}</main>
       </div>
-      <QuickActions
+      <ActionsPanel
         currentEventSlug={currentEvent?.slug}
         onOpenCommand={() => setCommandOpen(true)}
+        open={actionsOpen}
+        onOpenChange={setActionsOpen}
       />
       {/*
         `hotkey={false}` hands ⌘K to the registry. The palette keeps its own listener for consumers

@@ -32,22 +32,12 @@
 }
 
 .trigger > svg {
-  color: var(--status-success-fg);
+  color: var(--text-accent);
 }
 
-.triggerState {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--status-success-fg);
-  font: var(--type-label);
-}
-
-.triggerStatus {
-  width: var(--space-2);
-  height: var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--status-success-fg);
+/* The key that opens the panel, on the panel's own button — the one place everyone already looks. */
+.triggerKeys {
+  margin-left: var(--space-1);
 }
 
 .infoTriggerText {
@@ -67,7 +57,14 @@
   gap: var(--space-6);
 }
 
-.health {
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-loose);
+}
+
+.status {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -78,7 +75,7 @@
   color: var(--status-success-fg);
 }
 
-.healthIcon,
+.statusIcon,
 .rowIcon,
 .helperIcon {
   display: inline-flex;
@@ -87,7 +84,7 @@
   flex: 0 0 auto;
 }
 
-.healthCopy,
+.statusCopy,
 .rowCopy,
 .helperCopy {
   display: flex;
@@ -96,14 +93,14 @@
   flex-direction: column;
 }
 
-.healthCopy strong,
+.statusCopy strong,
 .rowCopy strong,
 .helperCopy strong {
   font: var(--type-body);
   font-weight: var(--weight-semibold);
 }
 
-.healthCopy span,
+.statusCopy span,
 .rowCopy span,
 .helperCopy span {
   color: var(--text-muted);
@@ -111,20 +108,20 @@
   line-height: var(--leading-normal);
 }
 
-.healthCopy span {
+.statusCopy span {
   color: var(--status-success-fg);
   opacity: 0.82;
 }
 
-.healthNote {
-  margin: calc(var(--space-4) * -1) 0 0;
+.statusNote {
+  margin: 0;
   padding: 0 var(--space-1);
   color: var(--text-muted);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
 }
 
-.healthNote strong {
+.statusNote strong {
   color: var(--text-body);
 }
 
@@ -215,11 +212,6 @@ a.row:focus-visible,
   gap: var(--space-1);
 }
 
-.rowArrow {
-  flex: 0 0 auto;
-  color: var(--text-faint);
-}
-
 .helper {
   display: flex;
   width: 100%;
@@ -287,7 +279,13 @@ a.row:focus-visible,
     width: 100%;
   }
 
-  .keys {
+  /*
+    No hardware keyboard to press, so the caps are noise here. Written as descendants rather than
+    as bare `.keys` because `KeyCaps` brings its own `display` from another stylesheet, and one
+    class each would leave which of the two wins to the order the bundles happen to land in.
+  */
+  .list .keys,
+  .trigger .triggerKeys {
     display: none;
   }
 
