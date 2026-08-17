@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
+import { BookOpen, ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { curlFor, exampleFor, type WorkedExample } from './examples';
 import { SchemaBlock } from './SchemaFields';
@@ -219,6 +219,14 @@ export default function ApiDocsPage() {
             <ExternalLink size={15} aria-hidden="true" />
             <span>Architecture and setup docs</span>
           </a>
+          {/*
+            Both routes read the same spec. The link exists so the two renderings can be compared
+            side by side rather than from memory, while we decide which one Cicero keeps.
+          */}
+          <Link className={styles.action} href="/docs/api/scalar">
+            <BookOpen size={15} aria-hidden="true" />
+            <span>Open in Scalar</span>
+          </Link>
         </div>
       </header>
 

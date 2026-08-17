@@ -1,0 +1,12 @@
+.caps {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.connector {
+  color: var(--text-muted);
+  font: var(--type-label);
+}

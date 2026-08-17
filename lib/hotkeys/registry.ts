@@ -33,6 +33,17 @@ const GOTO: Array<{ id: string; key: string; label: string }> = [
   { id: 'goto-forms', key: 'f', label: 'Go to forms' },
   { id: 'goto-comms', key: 'c', label: 'Go to comms' },
   { id: 'goto-speakers', key: 'p', label: 'Go to speakers' },
+  /**
+   * The three destinations the actions panel offers that the sidebar does not. They are here rather
+   * than in that panel so the panel can draw its rows from this table instead of captioning them by
+   * hand — a caption written beside a row is free to disagree with the key that actually fires.
+   *
+   * `v` for the portal because `p` is already speakers, and it is the "view it as a speaker does"
+   * key; `e` because the public programme is the event's own page.
+   */
+  { id: 'goto-new-event', key: 'n', label: 'Go to the new event form' },
+  { id: 'goto-portal', key: 'v', label: 'Go to the speaker portal' },
+  { id: 'goto-public', key: 'e', label: 'Go to the public programme' },
 ];
 
 const ORGANIZER_GLOBAL: ScopeDef = {
@@ -50,6 +61,18 @@ const ORGANIZER_GLOBAL: ScopeDef = {
       id: 'shortcuts-help',
       chords: ['?'],
       label: 'Show keyboard shortcuts',
+      group: 'General',
+    },
+    /**
+     * `app/organizer/ActionsPanel.tsx`. A bare `.` for the same reason `?` is a bare `?`: it is a
+     * key nothing else in the workspace wants, it survives every keyboard layout that can type a
+     * full stop, and it sits next to the two keys it belongs with rather than behind a modifier
+     * the browser might already have spoken for.
+     */
+    {
+      id: 'actions-panel',
+      chords: ['.'],
+      label: 'Open the actions panel',
       group: 'General',
     },
     ...GOTO.map(
@@ -200,6 +223,15 @@ const SCOPE_DEFS: Record<string, ScopeDef> = {
 
 export function getScope(id: string): ScopeDef | undefined {
   return SCOPE_DEFS[id];
+}
+
+/**
+ * One binding by scope and id, for a surface that wants to draw the keys beside the button that
+ * does the same thing. Reading the table is the point: a hand-written cap next to a row is a second
+ * copy of the shortcut, and the copy is the one that goes stale.
+ */
+export function getBinding(scopeId: string, bindingId: string): Binding | undefined {
+  return SCOPE_DEFS[scopeId]?.bindings.find((binding) => binding.id === bindingId);
 }
 
 /** Every scope, for the registry integrity tests. */
