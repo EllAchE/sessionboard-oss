@@ -77,6 +77,15 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
       { id: 'recordings', label: 'Recordings', href: '/organizer/recordings', icon: <Video size={15} /> },
       { id: 'speakers', label: 'Speakers', href: '/organizer/speakers', icon: <Users size={15} /> },
       { id: 'crm', label: 'Speaker CRM', href: '/crm', icon: <Contact size={15} /> },
+      /**
+       * Sponsors and the exhibitor map sat under Setup, which read them as configuration. They are
+       * neither: both publish to the attendee-facing event — `/[slug]/sponsors` and
+       * `/[slug]/exhibitor-map` — and an organizer curates them the way they curate Speakers, by
+       * adding the real thing rather than by setting an option. Program is where the event's content
+       * lives, so they belong beside Speakers and not beside Integrations.
+       */
+      { id: 'sponsors', label: 'Sponsors', href: '/organizer/sponsors', icon: <Building2 size={15} /> },
+      { id: 'exhibitor-map', label: 'Exhibitor map', href: '/organizer/exhibitor-map', icon: <MapIcon size={15} /> },
     ],
   },
   {
@@ -119,8 +128,6 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     title: 'Setup',
     items: [
       { id: 'settings', label: 'Settings', href: '/organizer/settings', icon: <Settings size={15} /> },
-      { id: 'sponsors', label: 'Sponsors', href: '/organizer/sponsors', icon: <Building2 size={15} /> },
-      { id: 'exhibitor-map', label: 'Exhibitor map', href: '/organizer/exhibitor-map', icon: <MapIcon size={15} /> },
       /** Configuration and a snippet to paste, which is Setup's job, not outreach. */
       { id: 'embeds', label: 'Embeds', href: '/organizer/embeds', icon: <Code2 size={15} /> },
       { id: 'integrations', label: 'Integrations', href: '/organizer/integrations', icon: <Plug size={15} /> },
