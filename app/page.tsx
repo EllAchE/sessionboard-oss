@@ -3,7 +3,13 @@ import { Button } from '@/components/ui';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_EVENT_SLUG,
+  DEMO_PUBLIC_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
+  EMBED_SHOWCASE_PATH,
+} from '@/lib/demo-entry-links';
 import {
   ArrowRight,
   CalendarCheck,
@@ -15,6 +21,7 @@ import {
   Gauge,
   Github,
   Globe2,
+  Handshake,
   KeyRound,
   LayoutDashboard,
   ListChecks,
@@ -139,7 +146,7 @@ const ROLE_PRODUCTS = [
 ] as const;
 
 /**
- * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
+ * The seeded demo entry points (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
  * visitor reaches a populated view of the role they care about without reading the page first. The
  * same entry points also close the page and sit in the global footer.
  *
@@ -150,12 +157,12 @@ const ROLE_PRODUCTS = [
  * `label` leads with a verb rather than the role noun on purpose, and the role noun opens `blurb`
  * instead. Automated walkthroughs pick a click target by matching label text from the start and
  * treat two matches as an error rather than choosing between them, and the footer already ships
- * `Organizer demo`, `Reviewer demo`, and `Speaker demo` on this same page. That rules out the role
- * nouns and their stems here -- `Organize`, `Review` and `Speak` are each still a prefix of the
- * matching footer label -- so `Run`, `Score` and `Give` keep all six entry points separable at their
- * first word. Only the start of the link text disambiguates, so naming the role inside `blurb`
- * stays clear for a reader without reintroducing the clash. Re-check the whole page before
- * rewording any of these.
+ * `Organizer demo`, `Reviewer demo`, `Speaker demo`, and `Attendee demo` on this same page. That
+ * rules out the role nouns and their stems here -- `Organize`, `Review`, `Speak` and `Attend` are
+ * each still a prefix of the matching footer label -- so `Run`, `Score`, `Give` and `Browse` keep
+ * all eight entry points separable at their first word. Only the start of the link text
+ * disambiguates, so naming the role inside `blurb` stays clear for a reader without reintroducing
+ * the clash. Re-check the whole page before rewording any of these.
  *
  * The reviewer section and the closing call to action add two more links to the same demo identity,
  * so they open on `Try` and `Rate`, which no other label on the page or in the footer starts with.
@@ -186,6 +193,46 @@ const PERSONAS = [
     blurb: 'Attendee — the published event site. No account needed.',
   },
 ] as const;
+
+/**
+ * The published event site an attendee actually reads. Every one of these is the demo conference's
+ * own page, not a marketing mock-up of it.
+ */
+const ATTENDEE_LINKS = [
+  {
+    href: DEMO_PUBLIC_LINKS.event,
+    icon: Globe2,
+    label: 'Programme home',
+    blurb: 'The page an attendee lands on.',
+  },
+  {
+    href: DEMO_PUBLIC_LINKS.agenda,
+    icon: CalendarCheck,
+    label: 'Day-by-day agenda',
+    blurb: 'Times and rooms as a grid.',
+  },
+  {
+    href: DEMO_PUBLIC_LINKS.sessions,
+    icon: ListChecks,
+    label: 'Session catalogue',
+    blurb: 'Search and filter the programme.',
+  },
+  {
+    href: DEMO_PUBLIC_LINKS.speakers,
+    icon: UserRound,
+    label: 'Speaker directory',
+    blurb: 'Bios, headshots, and sessions.',
+  },
+  {
+    href: DEMO_PUBLIC_LINKS.sponsors,
+    icon: Handshake,
+    label: 'Sponsor wall',
+    blurb: 'Sponsors and exhibitors by tier.',
+  },
+] as const;
+
+/** The live speaker gallery widget, framed on this page exactly as a host site would embed it. */
+const GALLERY_EMBED_SRC = `/embed/${DEMO_EVENT_SLUG}/gallery`;
 
 export default async function Home() {
   return <HomeContent demoAvailable={await demoEntryPointsAreAvailable()} />;
@@ -451,6 +498,69 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         ) : null}
       </section>
 
+      <section className={styles.product} id="attendees" aria-labelledby="attendees-title">
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>
+            <CalendarDays size={17} aria-hidden="true" />
+            For attendees
+          </p>
+          <h2 id="attendees-title">Give attendees the programme, not a PDF.</h2>
+          <p>
+            The moment a session is scheduled and published it appears on the event site and in
+            every widget on your own website — no export, no re-upload, no stale copy to chase.
+          </p>
+        </div>
+
+        {demoAvailable ? (
+          <>
+            <div className={styles.attendeeShowcase}>
+              <div className={styles.attendeeFrame}>
+                <div className={styles.windowBar} aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                {/*
+                  The real widget, not a screenshot: this is the speaker gallery a visitor would get
+                  from the snippet on `/embeds`, rendering the demo conference as it stands now. A
+                  plain lazy iframe rather than `embed.js` keeps it out of the critical path and
+                  visible without JavaScript.
+                */}
+                <iframe
+                  className={styles.attendeeEmbed}
+                  src={GALLERY_EMBED_SRC}
+                  title="Live speaker gallery from the demo conference"
+                  loading="lazy"
+                />
+              </div>
+              <ul className={styles.attendeeLinks}>
+                {ATTENDEE_LINKS.map((link) => (
+                  <li key={link.label}>
+                    <a className={styles.attendeeLink} href={link.href}>
+                      <span className={styles.featureIcon}>
+                        <link.icon size={20} aria-hidden="true" />
+                      </span>
+                      <span className={styles.attendeeLinkLabel}>
+                        {link.label}
+                        <ArrowRight size={15} aria-hidden="true" />
+                      </span>
+                      <span className={styles.attendeeLinkBlurb}>{link.blurb}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
+              See every embed running live <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          </>
+        ) : (
+          <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
+            See what the embeds publish <ArrowRight size={16} aria-hidden="true" />
+          </a>
+        )}
+      </section>
+
       <section className={styles.about} id="about" aria-labelledby="about-title">
         <div className={styles.aboutHeading}>
           <p className={styles.eyebrow}>Open source and self-hostable</p>
@@ -468,7 +578,11 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </div>
             <div>
               <dt>Publish</dt>
-              <dd>Live embeddable views</dd>
+              <dd>
+                <a className={styles.aboutFactLink} href={EMBED_SHOWCASE_PATH}>
+                  Live embeddable views
+                </a>
+              </dd>
             </div>
             <div>
               <dt>Adapt</dt>
