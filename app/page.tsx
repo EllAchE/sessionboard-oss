@@ -125,7 +125,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Conference operations, end to end</p>
-          <h1>From call for speakers to a published programme.</h1>
+          <h1>From call for speakers to public program</h1>
           <p className={styles.heroLead}>
             Run submissions, review, scheduling, speaker tasks, and publishing in one place.
           </p>
@@ -406,7 +406,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               size="lg"
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
-              Create the first event
+              Create your event
             </Button>
             <Button href="/signin" size="lg">
               Sign in
