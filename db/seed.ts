@@ -1071,20 +1071,43 @@ await db.insert(score).values(
   ),
 );
 
-/** Round two is live: the first reviewer routed to a talk is done, anyone after them is not. */
-const secondPassSubjects = submissions.filter((row) => row.status === 'under_review');
+/**
+ * Round two is live and half-worked.
+ *
+ * Its subjects are everything still genuinely in play — under review, newly submitted, and the
+ * waitlisted talk a second pass exists to reconsider. Three `under_review` rows made a queue too
+ * short to judge the surface by.
+ *
+ * Completion alternates on submission *and* reviewer position. The old rule finished whichever
+ * reviewer was routed first, and `reviewers[0]` is the identity behind `DEMO_ENTRY_LINKS.reviewer`
+ * — so the one reviewer login the demo hands out opened a queue where every card was already
+ * scored and there was nothing to do. Alternating leaves both reviewers holding real work.
+ */
+const secondPassStatuses = new Set(['under_review', 'submitted', 'waitlisted']);
+const secondPassSubjects = submissions.filter((row) => secondPassStatuses.has(row.status));
+/**
+ * Rotated so the scored cards read as separate opinions rather than one comment pasted four times.
+ * Keyed by subject rather than by assignment: the alternating rule completes at most one reviewer
+ * per subject, so every note is used once and none says anything a different format would contradict.
+ */
+const secondPassNotes = [
+  'Worth a slot. The argument is clear and the examples are its own.',
+  'Strong material, but the outline promises more than the session length can hold.',
+  'The middle section is the original part here; I would lead with it.',
+  'Solid and useful. Not what I would build the track around.',
+];
 const secondAssignments = await db
   .insert(reviewAssignment)
   .values(
-    secondPassSubjects.flatMap((row) =>
+    secondPassSubjects.flatMap((row, subjectIndex) =>
       routedReviewers(row.trackId).map((reviewer, index) =>
-        index === 0
+        (subjectIndex + index) % 2 === 1
           ? {
               reviewRoundId: rounds[1].id,
               submissionId: row.id,
               reviewerUserId: reviewer.id,
               status: 'completed' as const,
-              comment: 'Worth a slot if the schedule allows a third knowledge talk.',
+              comment: secondPassNotes[subjectIndex % secondPassNotes.length],
               completedAt: ago(1),
             }
           : {
