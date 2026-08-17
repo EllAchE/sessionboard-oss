@@ -194,6 +194,19 @@ export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
  * stands somewhere on a floor and a sponsor does not. Two tables would duplicate name, tier, logo
  * and link to buy nothing, and a company that is both would become two unrelated rows.
  */
+/**
+ * `AD-9`. Which single widget a share link opens. Deliberately the bundle-driven subset of
+ * `EMBED_VIEWS` — `exhibitor-map` is absent because it reads a floorplan file through its own
+ * loader rather than the programme bundle, and has no draft state to preview.
+ */
+export const shareLinkView = pgEnum('share_link_view', [
+  'agenda',
+  'itinerary',
+  'sessions',
+  'speakers',
+  'gallery',
+  'sponsors',
+]);
 export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
 /** A sponsor is staged privately until an organizer explicitly puts it on public surfaces. */
 export const sponsorStatus = pgEnum('sponsor_status', ['draft', 'published']);
@@ -1592,6 +1605,47 @@ export const apiKey = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ byPrefix: index('api_key_prefix_idx').on(t.prefix) }),
+);
+
+/**
+ * `AD-9`: a bearer link that shows one view of one event's programme to someone with no account —
+ * the keynote speaker, sponsor or venue contact an organizer needs to send a draft agenda to.
+ *
+ * Shaped after `api_key` on purpose. `prefix` is the first characters of the token, indexed and not
+ * secret, so a row can be found in one indexed lookup and named in a log or on screen without the
+ * secret half; `tokenHash` is the SHA-256 that the presented token must match. Revocation is a
+ * timestamp rather than a delete, so `viewCount` and `lastViewedAt` survive the revoke and an
+ * organizer can still answer "was this link used before I killed it?".
+ *
+ * `expiresAt` is NOT NULL where `api_key` has no expiry at all: a key belongs to a system the
+ * organizer runs, but a share link is handed to an outsider and must stop working on its own.
+ *
+ * There is no `userId`. The holder is not an account and never becomes one by following the link.
+ */
+export const shareLink = pgTable(
+  'share_link',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    /** Who the organizer sent it to, in their own words: "Ada — keynote", "Vitruvius (venue)". */
+    label: text('label').notNull(),
+    view: shareLinkView('view').notNull().default('agenda'),
+    prefix: text('prefix').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    /** Attribution survives the minter losing their account, so this nulls rather than cascades. */
+    createdByUserId: uuid('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    lastViewedAt: timestamp('last_viewed_at', { withTimezone: true }),
+    viewCount: integer('view_count').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byPrefix: index('share_link_prefix_idx').on(t.prefix),
+    byEvent: index('share_link_event_idx').on(t.eventId),
+  }),
 );
 
 /**

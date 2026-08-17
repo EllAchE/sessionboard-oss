@@ -29,6 +29,29 @@ const nextConfig: NextConfig = {
         source: '/embed.js',
         headers: [{ key: 'Access-Control-Allow-Origin', value: '*' }],
       },
+      /**
+       * `AD-9`. A share-link URL *is* the credential, so the headers exist to stop it travelling.
+       *
+       * `Referrer-Policy: no-referrer` is the one that matters: these pages render organizer-supplied
+       * outbound links — a sponsor's website, a speaker's own links, the event site — and the default
+       * policy would hand the token to each of those third parties in the `Referer` header the moment
+       * a reader clicked one.
+       *
+       * `X-Robots-Tag` backs up the per-page `robots: { index: false }` for anything that fetches the
+       * URL without executing a document (a crawler following a link pasted into a public channel).
+       * `no-store` keeps a shared or corporate proxy cache from retaining an unpublished programme,
+       * and `frame-ancestors 'none'` is the opposite of the embed rule above on purpose: an embed
+       * exists to be framed by a stranger's site, and a private preview does not.
+       */
+      {
+        source: '/s/:path*',
+        headers: [
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+        ],
+      },
     ];
   },
 };

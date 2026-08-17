@@ -27,6 +27,7 @@ import type { EventContext } from '../context';
 import { can, requireCapability } from '../context';
 import { toCsv } from '../csv';
 import { appUrl } from '../env';
+import { DEFAULT_TIMEZONE, zonedDateKey } from '../event-dates';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef, slugify } from '../ids';
 import { sendMail } from '../mail';
@@ -2120,6 +2121,28 @@ export type ReviewResultsExport = {
   filename: string;
 };
 
+/**
+ * The name the organizer reads back in the confirmation and then finds in their downloads folder.
+ * Anonymous `review-results.csv` files become indistinguishable the moment someone exports a second
+ * round, so the event, the round and the day it was taken all belong in the name — the date in the
+ * event's own timezone, because that is the calendar the organizer is working in.
+ */
+export function reviewResultsFilename(input: {
+  eventSlug: string | null;
+  roundName: string;
+  roundId: string;
+  timezone: string;
+  now?: Date;
+}): string {
+  const parts = [
+    slugify(input.eventSlug ?? ''),
+    slugify(input.roundName) || input.roundId,
+    'reviews',
+    zonedDateKey(input.now ?? new Date(), input.timezone),
+  ].filter((part) => part.length > 0);
+  return `${parts.join('-')}.csv`;
+}
+
 export async function buildReviewResultsExport(
   ctx: EventContext,
   roundId: string,
@@ -2127,7 +2150,7 @@ export async function buildReviewResultsExport(
   requireCapability(ctx, 'submission:decide');
   const round = await requireRound(ctx, roundId);
   const db = getDb();
-  const [criteria, allSubmissions] = await Promise.all([
+  const [criteria, allSubmissions, eventRows] = await Promise.all([
     listCriteria(round.id),
     db
       .select({
@@ -2140,6 +2163,10 @@ export async function buildReviewResultsExport(
       .from(submission)
       .where(eq(submission.eventId, ctx.eventId))
       .orderBy(asc(submission.ref)),
+    db
+      .select({ slug: event.slug, timezone: event.timezone })
+      .from(event)
+      .where(eq(event.id, ctx.eventId)),
   ]);
   const submissions = allSubmissions.filter((row) => row.status !== 'draft');
   const submissionIds = submissions.map((row) => row.id);
@@ -2251,7 +2278,12 @@ export async function buildReviewResultsExport(
         reviewers: assignmentsBySubmission.get(row.id) ?? [],
       })),
     ),
-    filename: `review-results-${slugify(round.name) || round.id}.csv`,
+    filename: reviewResultsFilename({
+      eventSlug: eventRows[0]?.slug ?? null,
+      roundName: round.name,
+      roundId: round.id,
+      timezone: eventRows[0]?.timezone ?? DEFAULT_TIMEZONE,
+    }),
   };
 }
 

@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  event,
   participantRole,
   reviewAssignment,
   score,
@@ -12,6 +13,7 @@ import { parseCsvRows } from '../csv';
 import {
   buildReviewResultsExport,
   reviewResultsCsv,
+  reviewResultsFilename,
   type CriterionSpec,
   type ReviewResultsExportSubmission,
 } from './review';
@@ -80,6 +82,7 @@ function fakeDb(input: {
             );
           }
           if (table === score) return filters.includes(String(row.assignmentId));
+          if (table === event) return filters.includes(String(row.id));
           return true;
         });
         return Promise.resolve(selected.map((row) => projected(row, projection))).then(onOk, onErr);
@@ -317,6 +320,13 @@ describe('buildReviewResultsExport', () => {
 
   beforeEach(() => {
     selectCount = 0;
+    // The filename carries the export's date, so the clock has to stand still for it to be asserted.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-17T18:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('is limited to organizers', async () => {
@@ -349,6 +359,7 @@ describe('buildReviewResultsExport', () => {
 
   it('includes only submissions and people in the active event and assignments in the selected round', async () => {
     const rows = new Map<unknown, StoredRow[]>([
+      [event, [{ id: 'event-1', slug: 'cicero-forum', timezone: 'America/Los_Angeles' }]],
       [scorecardCriterion, CRITERIA.map((row) => ({ ...row, reviewRoundId: 'round-1' }))],
       [
         submission,
@@ -448,6 +459,160 @@ describe('buildReviewResultsExport', () => {
     expect(csv).not.toContain('Other event');
     expect(csv).not.toContain('Wrong Round');
     expect(csv).not.toContain('Cross-event Person');
-    expect(result.filename).toBe('review-results-selected.csv');
+    // `ABS-13`: the name the organizer is told to look for names the event, the round and the day.
+    expect(result.filename).toBe('cicero-forum-selected-reviews-2026-08-17.csv');
+  });
+
+  it('still names the file when the event row cannot be read', async () => {
+    state.db = fakeDb({
+      round: {
+        id: 'round-1',
+        eventId: 'event-1',
+        name: 'Selected',
+        position: 0,
+        status: 'open',
+        blindUntilClose: false,
+        anonymized: false,
+        opensAt: null,
+        closesAt: null,
+        createdAt: new Date(),
+      },
+      rows: new Map<unknown, StoredRow[]>(),
+    });
+
+    const result = await buildReviewResultsExport(context(), 'round-1');
+    expect(result.filename).toBe('selected-reviews-2026-08-17.csv');
+  });
+});
+
+/**
+ * `ABS-13`. The evaluator's pending manual check is "open the downloaded file and verify it contains
+ * one row per submission with title, per-criterion or aggregate scores, recommendation, and review
+ * status". These are the machine-checked half of that, so a column rename cannot quietly break the
+ * export's contract with the results table on screen.
+ */
+describe('review results export contract', () => {
+  const header = () => parseCsvRows(reviewResultsCsv({ name: 'Initial Review' }, CRITERIA, SUBMISSIONS))[0];
+
+  it('carries the title, the scores, the outcome and the review status the results table shows', () => {
+    const columns = header();
+
+    // Identity and title.
+    expect(columns).toContain('Submission ref');
+    expect(columns).toContain('Title');
+    // The outcome — the submission's own decision, and the note that explains it.
+    expect(columns).toContain('Submission status');
+    expect(columns).toContain('Decision note');
+    // Aggregate *and* per-criterion scoring: the rubric accepts either, the export gives both.
+    expect(columns).toContain('Aggregate score (1-5)');
+    expect(columns).toContain('Reviewer score (1-5)');
+    for (const criterion of CRITERIA) {
+      expect(columns).toContain(
+        `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
+      );
+    }
+    // Where each reviewer got to, and how much of the panel that represents.
+    expect(columns).toContain('Review status');
+    expect(columns).toContain('Reviews completed');
+    expect(columns).toContain('Reviews assigned');
+  });
+
+  it('grows a column per criterion, in the configured order of the round', () => {
+    const columns = header();
+    const relevance = columns.indexOf('Relevance, fit (max 5; weight 2)');
+    const recommendation = columns.indexOf('Recommendation (max 3; weight 1)');
+
+    expect(relevance).toBeGreaterThan(-1);
+    expect(recommendation).toBe(relevance + 1);
+  });
+
+  /**
+   * Every submission reaches the file exactly once per reviewer, and an unreviewed one still gets a
+   * row. One row per *assignment* is the deliberate shape — it is what preserves disagreement
+   * between reviewers — so the invariant worth pinning is that no submission is ever dropped.
+   */
+  it('accounts for every submission, including one nobody reviewed', () => {
+    const rows = parseCsvRows(reviewResultsCsv({ name: 'Initial Review' }, CRITERIA, SUBMISSIONS));
+    const body = rows.slice(1);
+    const titleColumn = rows[0].indexOf('Title');
+    const statusColumn = rows[0].indexOf('Review status');
+
+    const perSubmission = new Map<string, string[][]>();
+    for (const row of body) {
+      perSubmission.set(row[0], [...(perSubmission.get(row[0]) ?? []), row]);
+    }
+
+    expect([...perSubmission.keys()].sort()).toEqual(['ABS-1', 'ABS-2']);
+    expect(body).toHaveLength(
+      SUBMISSIONS.reduce((total, entry) => total + Math.max(entry.reviewers.length, 1), 0),
+    );
+
+    // The submission with two reviewers keeps both, and both name the same proposal.
+    expect(perSubmission.get('ABS-1')).toHaveLength(2);
+    for (const row of perSubmission.get('ABS-1') ?? []) {
+      expect(row[titleColumn]).toBe('Scaling "CI", safely');
+    }
+    expect(new Set((perSubmission.get('ABS-1') ?? []).map((row) => row[statusColumn]))).toEqual(
+      new Set(['pending', 'completed']),
+    );
+
+    // The unreviewed one is present rather than silently absent, with the review columns empty.
+    const unreviewed = perSubmission.get('ABS-2') ?? [];
+    expect(unreviewed).toHaveLength(1);
+    expect(unreviewed[0][titleColumn]).toBe('Unscored proposal');
+    expect(unreviewed[0][statusColumn]).toBe('');
+  });
+});
+
+describe('reviewResultsFilename', () => {
+  const now = new Date('2026-08-18T04:30:00.000Z');
+
+  it('names the event, the round and the day, so two exports never collide', () => {
+    expect(
+      reviewResultsFilename({
+        eventSlug: 'cicero-forum',
+        roundName: 'Round 1',
+        roundId: 'round-1',
+        timezone: 'UTC',
+        now,
+      }),
+    ).toBe('cicero-forum-round-1-reviews-2026-08-18.csv');
+  });
+
+  it('dates the file in the timezone of the event, not of the server', () => {
+    // The same instant is still the 17th in Los Angeles; that is the organizer's calendar.
+    expect(
+      reviewResultsFilename({
+        eventSlug: 'cicero-forum',
+        roundName: 'Round 1',
+        roundId: 'round-1',
+        timezone: 'America/Los_Angeles',
+        now,
+      }),
+    ).toBe('cicero-forum-round-1-reviews-2026-08-17.csv');
+  });
+
+  it('slugifies a round name that would otherwise be an unusable filename', () => {
+    expect(
+      reviewResultsFilename({
+        eventSlug: 'cicero-forum',
+        roundName: 'Final / "Program" review',
+        roundId: 'round-9',
+        timezone: 'UTC',
+        now,
+      }),
+    ).toBe('cicero-forum-final-program-review-reviews-2026-08-18.csv');
+  });
+
+  it('falls back to the round id when the name slugifies to nothing', () => {
+    expect(
+      reviewResultsFilename({
+        eventSlug: null,
+        roundName: '???',
+        roundId: 'round-7',
+        timezone: 'UTC',
+        now,
+      }),
+    ).toBe('round-7-reviews-2026-08-18.csv');
   });
 });

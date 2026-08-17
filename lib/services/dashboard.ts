@@ -2,6 +2,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   event,
+  fileRequest,
   form,
   participant,
   participantRole,
@@ -672,6 +673,8 @@ export type OrganizerTaskRow = {
   descriptionMarkdown: string | null;
   linkUrl: string | null;
   formId: string | null;
+  /** `file_upload` only: what the task's upload will accept. Empty means no constraint. */
+  acceptedTypes: string[];
   reminderDaysBefore: number[];
   reminderDaysAfterSend: number | null;
   participantIds: string[];
@@ -691,10 +694,13 @@ export async function listTasksForOrganizer(
   requireCapability(ctx, 'submission:read_all');
   const db = getDb();
 
-  const [tasks, assignments] = await Promise.all([
+  const [tasks, assignments, requests] = await Promise.all([
     db.query.task.findMany({ where: eq(task.eventId, ctx.eventId) }),
     listTaskCompletion(ctx, now),
+    db.query.fileRequest.findMany({ where: eq(fileRequest.eventId, ctx.eventId) }),
   ]);
+  // The editor has to round-trip the type constraint, and a task owns at most one request.
+  const acceptedByRequest = new Map(requests.map((row) => [row.id, row.acceptedTypes ?? []]));
 
   return tasks
     .map((row) => {
@@ -714,6 +720,7 @@ export async function listTasksForOrganizer(
         descriptionMarkdown: row.descriptionMarkdown,
         linkUrl: row.linkUrl,
         formId: row.formId,
+        acceptedTypes: row.fileRequestId ? (acceptedByRequest.get(row.fileRequestId) ?? []) : [],
         reminderDaysBefore: row.reminderDaysBefore ?? [],
         reminderDaysAfterSend: row.reminderDaysAfterSend,
         // `S-16`. A submission-scoped task gives one speaker a row per session, so the same person

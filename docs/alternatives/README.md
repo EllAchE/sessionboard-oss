@@ -38,6 +38,9 @@ The prose on this page is hand-written. Everything below is generated from
 `bun run alternatives:build` — do not hand-edit it, and rerun the build after changing the data.
 `bun run alternatives:check` fails CI if a generated file is stale.
 
+The public reading copy is at <https://cicero-field-survey.elehche.workers.dev/> and links back to
+the companion submission at <https://cicero-submission.elehche.workers.dev/>.
+
 | | |
 |---|---|
 | [`feature-matrix.md`](feature-matrix.md) | All 71 features × all 32 projects, unfiltered. |

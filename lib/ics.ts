@@ -129,21 +129,12 @@ function personLine(
   return `${prefix}:mailto:${person.email}`;
 }
 
-/**
- * The general form. `buildInvite` / `buildCancellation` / `buildDownload` are the intended entry
- * points; this stays exported so an unusual method does not require a new wrapper.
- */
-export function buildCalendar(event: CalendarEvent, method: CalendarMethod): string {
+function veventLines(event: CalendarEvent, method: CalendarMethod): string[] {
   const cancelled = method === 'CANCEL';
   const stamp = event.stamp ?? new Date();
   const attendees = method === 'PUBLISH' ? [] : (event.attendees ?? []);
 
   const lines: string[] = [
-    'BEGIN:VCALENDAR',
-    `PRODID:${PRODID}`,
-    'VERSION:2.0',
-    'CALSCALE:GREGORIAN',
-    `METHOD:${method}`,
     'BEGIN:VEVENT',
     `UID:${event.uid}`,
     `SEQUENCE:${event.sequence}`,
@@ -175,8 +166,76 @@ export function buildCalendar(event: CalendarEvent, method: CalendarMethod): str
     `TRANSP:${cancelled ? 'TRANSPARENT' : 'OPAQUE'}`,
     `LAST-MODIFIED:${formatIcsDate(stamp)}`,
     'END:VEVENT',
-    'END:VCALENDAR',
   );
+
+  return lines;
+}
+
+/**
+ * The general form. `buildInvite` / `buildCancellation` / `buildDownload` are the intended entry
+ * points; this stays exported so an unusual method does not require a new wrapper.
+ */
+export function buildCalendar(event: CalendarEvent, method: CalendarMethod): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    `PRODID:${PRODID}`,
+    'VERSION:2.0',
+    'CALSCALE:GREGORIAN',
+    `METHOD:${method}`,
+    ...veventLines(event, method),
+    'END:VCALENDAR',
+  ];
+
+  return `${lines.map(foldLine).join('\r\n')}\r\n`;
+}
+
+export type CalendarFeedOptions = {
+  /** Shown as the calendar's name in the subscriber's client rather than a raw URL. */
+  name?: string | null;
+  description?: string | null;
+  /** IANA zone the sessions belong to. Advisory: every stamp is still absolute UTC. */
+  timezone?: string | null;
+  /** How often a subscribed client should re-poll. Minutes; omit for the one-hour default. */
+  refreshMinutes?: number;
+};
+
+/**
+ * `AD-3`. One VCALENDAR carrying many VEVENTs, for a URL a calendar client *subscribes* to rather
+ * than downloads once. Same `METHOD:PUBLISH` bodies as `buildDownload`, and deliberately the same
+ * `UID` / `SEQUENCE` the invite and the per-session download already use — a subscriber who also
+ * accepted an invite must end up with one entry, not two.
+ *
+ * `REFRESH-INTERVAL` is the RFC 7986 property and `X-PUBLISHED-TTL` is the Outlook spelling of the
+ * same idea; clients honour one or the other, so both are emitted. `NAME` / `X-WR-CALNAME` are the
+ * same pairing for the display name.
+ */
+export function buildFeed(events: CalendarEvent[], options: CalendarFeedOptions = {}): string {
+  const duration = `PT${Math.max(1, Math.round(options.refreshMinutes ?? 60))}M`;
+  const header = [
+    'BEGIN:VCALENDAR',
+    `PRODID:${PRODID}`,
+    'VERSION:2.0',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+
+  if (options.name) {
+    header.push(`NAME:${escapeText(options.name)}`, `X-WR-CALNAME:${escapeText(options.name)}`);
+  }
+  if (options.description) {
+    header.push(
+      `DESCRIPTION:${escapeText(options.description)}`,
+      `X-WR-CALDESC:${escapeText(options.description)}`,
+    );
+  }
+  if (options.timezone) header.push(`X-WR-TIMEZONE:${escapeText(options.timezone)}`);
+  header.push(`REFRESH-INTERVAL;VALUE=DURATION:${duration}`, `X-PUBLISHED-TTL:${duration}`);
+
+  const lines = [
+    ...header,
+    ...events.flatMap((event) => veventLines(event, 'PUBLISH')),
+    'END:VCALENDAR',
+  ];
 
   return `${lines.map(foldLine).join('\r\n')}\r\n`;
 }

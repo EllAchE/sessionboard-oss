@@ -19,8 +19,15 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1786930700609,
-      "tag": "0002_scorecard_field_types",
+      "when": 1786928042093,
+      "tag": "0002_share_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786932074568,
+      "tag": "0003_scorecard_field_types",
       "breakpoints": true
     }
   ]

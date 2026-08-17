@@ -2,6 +2,7 @@ node_modules/
 .next/
 .open-next/
 .wrangler/
+.wrangler-artifacts/
 next-env.d.ts
 *.tsbuildinfo
 .env

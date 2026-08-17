@@ -107,6 +107,13 @@ describe('rollups', () => {
 describe('renderVisual', () => {
   const html = renderVisual(survey);
 
+  it('emits a complete, mobile-readable HTML document linked to the submission', () => {
+    expect(html).toContain('<!doctype html>');
+    expect(html).toContain('<meta name="viewport"');
+    expect(html).toContain('href="https://cicero-submission.elehche.workers.dev/"');
+    expect(html).toContain('</html>');
+  });
+
   it('emits one grid row per feature, unfiltered', () => {
     const rows = html.match(/<tr data-row="/g) ?? [];
     expect(rows.length).toBe(summarize(survey).counts.totalFeatureRows);
