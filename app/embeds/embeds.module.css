@@ -29,7 +29,7 @@
     url('/assets/roman/materials/carrara-marble.webp') center top / 760px 760px repeat;
 }
 
-.nav,
+/* The primary navigation lives in `components/SiteNav`, styles included. */
 .hero,
 .jumpList,
 .samples,
@@ -37,49 +37,6 @@
 .freshStart {
   width: min(100% - var(--space-12), var(--content-max));
   margin-inline: auto;
-}
-
-.nav {
-  min-height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-6);
-  margin-top: var(--space-4);
-  padding-inline: var(--space-5);
-  border: var(--border-width) solid color-mix(in srgb, var(--border-default) 78%, transparent);
-  border-radius: var(--radius-xs);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow:
-    0 10px 30px rgba(52, 47, 39, 0.06),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(14px);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-}
-
-.navLinks {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
-}
-
-.navLink {
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.navLink:hover {
-  color: var(--text-accent);
-}
-
-.navCta {
-  box-shadow: var(--shadow-sm);
 }
 
 .hero {
@@ -349,11 +306,6 @@
 }
 
 @media (max-width: 760px) {
-  .nav {
-    flex-wrap: wrap;
-    padding-block: var(--space-4);
-  }
-
   .outro,
   .freshStart {
     padding: var(--space-8);

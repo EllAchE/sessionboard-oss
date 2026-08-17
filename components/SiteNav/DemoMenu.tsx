@@ -10,7 +10,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import styles from './demo-menu.module.css';
+import styles from './DemoMenu.module.css';
 
 /**
  * Every seeded demo, signed-in and public, behind the one navigation entry that used to open the
