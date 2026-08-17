@@ -1,5 +1,5 @@
 import { ToastProvider } from '@/components/ui';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -87,7 +87,7 @@ describe('fresh-instance home page', () => {
       ['Run the conference', DEMO_ENTRY_LINKS.organizer],
       ['Score the proposals', DEMO_ENTRY_LINKS.reviewer],
       ['Give a talk', DEMO_ENTRY_LINKS.speaker],
-      ['Browse the programme', '/demo/agenda'],
+      ['Browse the programme', DEMO_PUBLIC_SITE_LINK],
     ] as const) {
       expect(html).toContain(label);
       expect(html.indexOf('One conference, four purpose-built experiences.')).toBeLessThan(
@@ -105,6 +105,27 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('href="/api/v1/openapi.json"');
     expect(html).toContain('>Docs<');
     expect(html).not.toContain('Agent quick start');
+  });
+
+  it('orders the navigation about, products, docs, then demo', () => {
+    const html = renderHome(true);
+
+    const navOrder = ['href="#about"', 'href="#products"', 'href="/api/v1/openapi.json"'].map(
+      (marker) => html.indexOf(marker),
+    );
+    expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));
+    expect(navOrder.at(-1)).toBeLessThan(html.indexOf('>Demos'));
+  });
+
+  it('collects every demo behind the navigation demo menu', () => {
+    const html = renderHome(true);
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('Organizer dashboard');
+    expect(html).toContain('Reviewer queue');
+    expect(html).toContain('Speaker portal');
+    expect(html).toContain('Public event page');
+    expect(html).toContain('Public agenda');
   });
 
   it('keeps agent setup reachable from the page body once it leaves the navigation', () => {
@@ -132,5 +153,46 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('href="/demo/agenda"');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).toContain(href.replaceAll('&', '&amp;'));
     expect(html).not.toContain('Fresh instance');
+  });
+
+  /**
+   * The published site is what the three role tours produce, so it is offered the same way they
+   * are: a role card in the products section and a button in the closing tour, both after the roles.
+   */
+  it('shows the sample published event alongside the role tours', () => {
+    const html = renderHome(true);
+
+    expect(html).toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
+    expect(html).toContain('Browse the programme');
+    expect(html).toContain('no account needed.');
+    expect(html).toContain('Tour the published event');
+    expect(html.indexOf('Give a talk')).toBeLessThan(html.indexOf('Browse the programme'));
+    expect(html.indexOf('Prepare a talk as a speaker')).toBeLessThan(
+      html.indexOf('Tour the published event'),
+    );
+  });
+
+  /**
+   * Automated walkthroughs pick a click target by matching link text from the start and treat two
+   * matches as an error, so no tour label may be a prefix of another anywhere on the page.
+   */
+  it('keeps every demo tour label separable from the start of its text', () => {
+    const html = renderHome(true);
+    const labels = [
+      'Run the conference',
+      'Score the proposals',
+      'Give a talk',
+      'Browse the programme',
+      'Try the reviewer queue',
+      'Open the organizer dashboard',
+      'Rate proposals as a reviewer',
+      'Prepare a talk as a speaker',
+      'Tour the published event',
+    ];
+
+    for (const label of labels) {
+      expect(html).toContain(label);
+      expect(labels.filter((other) => other.startsWith(label))).toEqual([label]);
+    }
   });
 });

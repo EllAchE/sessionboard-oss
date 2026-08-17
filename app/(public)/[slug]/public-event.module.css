@@ -26,8 +26,31 @@
 .brandRow {
   display: flex;
   align-items: center;
+  /* Wider than the gap inside the box, so the box and the countdown read as two things. */
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/*
+ * The event's identity — logo, name, dates, venue — framed as one object. Before this it shared an
+ * undivided row with the countdown, and the meta line and the countdown ran together as one strip
+ * of small grey text. The inset panel groups it; the accent rule on the leading edge is what says
+ * it is the subject of the page rather than just another item in the bar.
+ *
+ * Sunken rather than raised because the bar is already `--surface-raised`: in light mode a card
+ * surface is the same white as the bar, so an inset panel is the one fill that separates in both
+ * themes.
+ */
+.identity {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
   min-width: 0;
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width) solid var(--border-hairline);
+  border-left: var(--space-1) solid var(--border-accent);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
 }
 
 /* E-3 — the square mark, beside the event name in the header. */
@@ -72,9 +95,10 @@
   white-space: nowrap;
 }
 
+/* Body rather than muted: inside the box this is the event's dates and venue, not incidental chrome. */
 .brandMeta {
   font: var(--type-label);
-  color: var(--text-muted);
+  color: var(--text-body);
 }
 
 .nav {
@@ -103,13 +127,28 @@
   color: var(--text-accent);
 }
 
+/*
+ * Stacked and outlined so it reads as a separate, secondary instrument beside the identity box
+ * rather than a continuation of its meta line.
+ */
 .countdownBadge {
   display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-1);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-05);
   white-space: nowrap;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
 }
 
+/* Live is the one state worth colour: the conference is happening now. */
+.countdownBadge[data-phase='live'] {
+  border-color: var(--border-accent);
+  background: var(--accent-subtle);
+}
+
+.countdownBadge[data-phase='live'] .countdownBadgeLabel,
 .countdownBadge[data-phase='live'] .countdownBadgeValue {
   color: var(--text-accent);
 }
@@ -489,6 +528,18 @@ a.sponsorLink:hover .sponsorName {
   .barInner {
     align-items: stretch;
     padding: var(--space-3) var(--space-4);
+  }
+
+  /* Narrow enough that the box and the countdown stack instead of squeezing the event name. */
+  .brandRow {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    width: 100%;
+  }
+
+  .identity {
+    flex: 1 1 100%;
+    padding: var(--space-2) var(--space-3);
   }
 
   .nav {

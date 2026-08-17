@@ -1,10 +1,10 @@
 'use client';
 
-import { Fragment, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Dialog, Kbd } from '@/components/ui';
-import { formatChordString } from '@/lib/hotkeys/match';
 import { resolveBindings } from '@/lib/hotkeys/registry';
 import type { Binding, Platform, ResolvedBinding } from '@/lib/hotkeys/types';
+import { KeyCaps } from './KeyCaps';
 import styles from './shortcuts.module.css';
 
 /**
@@ -51,7 +51,7 @@ export function ShortcutsDialog({
                     <div className={styles.row} key={binding.id}>
                       <dt className={styles.label}>{binding.label}</dt>
                       <dd className={styles.keys}>
-                        <Caps binding={binding} platform={platform} />
+                        <KeyCaps binding={binding} platform={platform} />
                       </dd>
                     </div>
                   ))}
@@ -68,30 +68,6 @@ export function ShortcutsDialog({
     </Dialog>
   );
 }
-
-/**
- * Key caps for one binding. `display` wins where a literal rendering would be noise — nine rows
- * for a 1–9 score range, or two rows for one action with a synonym key. Connector words in a
- * display list ("then", "or") are drawn as plain text so they do not read as keys.
- */
-function Caps({ binding, platform }: { binding: Binding; platform: Platform }) {
-  const caps = binding.display ?? formatChordString(binding.chords[0] ?? '', platform);
-  return (
-    <>
-      {caps.map((cap, index) => (
-        <Fragment key={`${cap}-${index}`}>
-          {CONNECTORS.has(cap) ? (
-            <span className={styles.connector}>{cap}</span>
-          ) : (
-            <Kbd>{cap}</Kbd>
-          )}
-        </Fragment>
-      ))}
-    </>
-  );
-}
-
-const CONNECTORS = new Set(['then', 'or', '–']);
 
 interface DisplaySection {
   scopeId: string;
