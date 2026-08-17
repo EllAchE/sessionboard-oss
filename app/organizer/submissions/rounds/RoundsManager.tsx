@@ -1,16 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import { BellRing, ChevronLeft, Plus, Trash2, Undo2, UserMinus, UserPlus } from 'lucide-react';
-import {
-  describeRoundDates,
-  fromRoundDateDraft,
-  roundDatesAreOutOfOrder,
-  toRoundDateDraft,
-  type RoundDateDraft,
-  type RoundDateWire,
-} from '../../../../lib/review-round-dates';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import {
   Badge,
   Button,
@@ -26,6 +18,14 @@ import {
   type DataTableColumn,
 } from '../../../../components/ui';
 import {
+  describeRoundDates,
+  fromRoundDateDraft,
+  roundDatesAreOutOfOrder,
+  toRoundDateDraft,
+  type RoundDateDraft,
+  type RoundDateWire,
+} from '../../../../lib/review-round-dates';
+import {
   addCriterionAction,
   autoAssignAction,
   deleteCriterionAction,
@@ -34,6 +34,7 @@ import {
   updateCriterionAction,
   updateRoundAction,
 } from '../actions';
+import styles from '../submissions.module.css';
 import {
   clearRecusalAction,
   createRoundAction,
@@ -51,7 +52,6 @@ import {
   type RoutingWire,
   type UnroutedWire,
 } from './routing-summary';
-import styles from '../submissions.module.css';
 
 export type RoundWire = {
   id: string;
@@ -569,7 +569,7 @@ export function RoundsManager(props: RoundsManagerProps) {
               />,
             ])}
             {props.rounds.length === 0 ? (
-              <p className={styles.muted}>No rounds yet. Create the first one below.</p>
+              <p className={styles.muted}>No rounds yet. Create your first one below.</p>
             ) : null}
 
             <div className={styles.criterionEditor}>

@@ -1,7 +1,7 @@
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -35,7 +35,7 @@ describe('fresh-instance home page', () => {
   it('describes the product in ordinary conference language', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable />);
 
-    expect(html).toContain('From call for speakers to a published programme.');
+    expect(html).toContain('From call for speakers to public program');
     expect(html).toContain('Collect and review proposals');
     expect(html).toContain('Build a conflict-aware schedule');
     expect(html).toContain('Keep every speaker on track');
@@ -48,7 +48,7 @@ describe('fresh-instance home page', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
 
     expect(html).toContain('Fresh instance');
-    expect(html).toContain('Create the first event');
+    expect(html).toContain('Create your first event');
     expect(html).toContain('href="/signup"');
     expect(html).not.toContain('href="/demo"');
     expect(html).not.toContain('href="/demo/agenda"');
