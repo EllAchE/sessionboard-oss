@@ -1,0 +1,2 @@
+CREATE TYPE "public"."review_assignment_origin" AS ENUM('assigned', 'self_opened');--> statement-breakpoint
+ALTER TABLE "review_assignment" ADD COLUMN "origin" "review_assignment_origin" DEFAULT 'assigned' NOT NULL;
