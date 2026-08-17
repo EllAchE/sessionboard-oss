@@ -454,11 +454,7 @@ export function RoundsManager(props: RoundsManagerProps) {
           </p>
         </div>
         <div className={styles.actions}>
-          <Button
-            variant="ghost"
-            iconLeft={<ChevronLeft size={14} />}
-            onClick={() => router.push('/organizer/submissions')}
-          >
+          <Button variant="ghost" iconLeft={<ChevronLeft size={14} />} href="/organizer/submissions">
             Back to queue
           </Button>
         </div>

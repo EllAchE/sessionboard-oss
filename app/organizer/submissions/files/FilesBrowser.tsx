@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { AlertTriangle, ChevronLeft, Database, Download, FileDown, MessageSquare } from 'lucide-react';
 import {
   Badge,
@@ -129,7 +128,6 @@ function formatDate(iso: string): string {
  * is one keystroke away because `DataTable` already owns roving focus and space-to-toggle.
  */
 export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: StorageUsage }) {
-  const router = useRouter();
   const { toast } = useToast();
   const downloadForm = useRef<HTMLFormElement>(null);
   const downloadIds = useRef<HTMLInputElement>(null);
@@ -349,11 +347,7 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
           </p>
         </div>
         <div className={queue.actions}>
-          <Button
-            variant="ghost"
-            iconLeft={<ChevronLeft size={14} />}
-            onClick={() => router.push('/organizer/submissions')}
-          >
+          <Button variant="ghost" iconLeft={<ChevronLeft size={14} />} href="/organizer/submissions">
             Back to queue
           </Button>
           <Button
