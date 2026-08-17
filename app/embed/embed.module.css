@@ -202,7 +202,9 @@
 .gallery {
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: repeat(var(--embed-columns, 3), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--embed-columns, 3), minmax(0, 240px));
+  justify-content: center;
+  justify-items: center;
 }
 
 .speakerCard {
@@ -222,8 +224,14 @@
   box-shadow: var(--shadow-md);
 }
 
+/*
+  `height: auto` is load-bearing: `next/image` emits `height="640"`, which lands as a presentational
+  hint the browser treats as a used height, and a box with both dimensions resolved ignores
+  `aspect-ratio`. Without it the stored 512 px square renders as a tall rectangle.
+*/
 .headshot {
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: var(--radius-md);
@@ -1151,6 +1159,11 @@ a.sponsorMark:hover .sponsorName {
 
 /* ---- Speaker gallery ---- */
 
+/*
+  Capped rather than column-width: at three columns on a full-width page an uncapped card made the
+  headshot ~330 px, which reads as a poster wall rather than a gallery. The column count an organizer
+  picked in the embed studio still decides how many cards sit in a row.
+*/
 .galleryCard {
   border: var(--border-width) solid var(--border-hairline);
   border-radius: var(--radius-md);
@@ -1159,6 +1172,8 @@ a.sponsorMark:hover .sponsorName {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  width: 100%;
+  max-width: 240px;
   min-width: 0;
   text-align: left;
   color: inherit;
@@ -1230,9 +1245,12 @@ a.sponsorMark:hover .sponsorName {
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
-  .gallery,
   .sessionList,
   .sponsorGrid {
     grid-template-columns: repeat(min(var(--embed-columns, 3), 2), minmax(0, 1fr));
+  }
+
+  .gallery {
+    grid-template-columns: repeat(min(var(--embed-columns, 3), 2), minmax(0, 240px));
   }
 }

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
 import {
   ArrowRight,
   CalendarCheck,
@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
+import { DemoMenu } from './DemoMenu';
 import styles from './home.module.css';
 
 const AGENT_STARTER_PROMPT = `$onboard-cicero
@@ -136,7 +137,11 @@ const ROLE_PRODUCTS = [
 /**
  * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
  * visitor reaches a populated view of the role they care about without reading the page first. The
- * same three entry points also close the page and sit in the global footer.
+ * same entry points also close the page and sit in the global footer.
+ *
+ * The published event site rides along as a fourth card. It is what the other three produce, and it
+ * is the only one a visitor can open without becoming somebody: no sign-in, so it is the cheapest
+ * look at a finished conference. It comes last because it reads as the result of the work above it.
  *
  * `label` leads with a verb rather than the role noun on purpose, and the role noun opens `blurb`
  * instead. Automated walkthroughs pick a click target by matching label text from the start and
@@ -170,6 +175,12 @@ const PERSONAS = [
     label: 'Give a talk',
     blurb: 'Speaker — your sessions, profile, and tasks.',
   },
+  {
+    href: DEMO_PUBLIC_SITE_LINK,
+    icon: CalendarDays,
+    label: 'Browse the programme',
+    blurb: 'Attendee — the published event site. No account needed.',
+  },
 ] as const;
 
 export default async function Home() {
@@ -183,21 +194,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <a className={styles.brand} href="/" aria-label="Cicero home">
           <CiceroBrand markSize={34} />
         </a>
+        {/*
+          Demo sits last because it is the only entry that leaves the marketing page for a live
+          product surface, and because it opens a menu rather than jumping to a section -- a
+          trigger that expands in place reads as the end of the row, not a step in it.
+        */}
         <div className={styles.navLinks}>
-          <a className={styles.productsLink} href="#products">
-            Product
-          </a>
           <a className={styles.aboutLink} href="#about">
             About
           </a>
-          {demoAvailable ? (
-            <a className={styles.demoLink} href="/demo">
-              Demos
-            </a>
-          ) : null}
+          <a className={styles.productsLink} href="#products">
+            Product
+          </a>
           <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
             Docs
           </a>
+          {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
         </div>
         <div className={styles.navAuth}>
           <Button
@@ -558,8 +570,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <p className={styles.eyebrow}>See every side</p>
           <h2>Explore a conference already in motion.</h2>
           <p>
-            See how organizers move the event forward, how reviewers decide the programme, and how
-            speakers get ready.
+            See how organizers move the event forward, how reviewers decide the programme, how
+            speakers get ready, and what attendees read when it is all published.
           </p>
           <div className={styles.finalCtaActions}>
             <Button
@@ -583,6 +595,13 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
               Prepare a talk as a speaker
+            </Button>
+            <Button
+              href={DEMO_PUBLIC_SITE_LINK}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Tour the published event
             </Button>
           </div>
         </section>
