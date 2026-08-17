@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ExternalLink, Film, Trash2, Upload } from 'lucide-react';
 import { Badge, Button, Card, Input, Select, useToast } from '@/components/ui';
 import { formatBytes } from '@/lib/services/file-format';
@@ -300,7 +301,17 @@ export function RecordingsBoard({
   eventTimeZone: string;
   onRefresh?: () => void;
 }) {
-  const refresh = onRefresh ?? (() => window.location.reload());
+  /**
+   * Every mutation on this page already calls `revalidatePath('/organizer/recordings')` server-side,
+   * so the only thing the client has to do is ask for the refreshed tree. This used to be
+   * `window.location.reload()`, which threw the whole document away instead: a full navigation that
+   * re-ran the organizer layout's auth and event queries, re-downloaded and re-parsed every script
+   * the shell loads, rehydrated the entire nav, and dropped the reader's scroll position — all to
+   * repaint one badge. The RSC payload the router fetches instead is roughly two orders of magnitude
+   * smaller, and `AgendaBoard` next door has always refreshed this way.
+   */
+  const router = useRouter();
+  const refresh = onRefresh ?? (() => router.refresh());
   if (rows.length === 0) {
     return (
       <Card className={styles.empty}>
