@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { eventWriteSchemas, pickDefaultEvent } from './events';
+import {
+  assertUntouchedDeadlinesFit,
+  deadlinePatch,
+  eventWriteSchemas,
+  pickDefaultEvent,
+} from './events';
 
 const TODAY = new Date('2026-08-12T00:00:00Z');
 
@@ -87,6 +92,117 @@ describe('the event write schema', () => {
     expect(eventWriteSchemas.update.safeParse({ timezone: 'Pacific Time' }).success).toBe(false);
     expect(eventWriteSchemas.update.safeParse({ name: '  ' }).success).toBe(false);
     expect(eventWriteSchemas.update.safeParse({ startsAt: '2026-10-12' }).success).toBe(false);
+  });
+});
+
+/**
+ * `AR-50`. The milestones are informative, so almost the only thing that can go wrong with them is
+ * getting written in the wrong timezone or being impossible to take back off once set.
+ */
+describe('the event deadlines', () => {
+  it('reads a blank deadline as clearing it rather than as an error', () => {
+    for (const blank of ['', '   ', null]) {
+      const result = created({ speakerDeadlineAt: blank });
+      expect(result.success).toBe(true);
+      expect(result.success && result.data.speakerDeadlineAt).toBeNull();
+    }
+  });
+
+  it('holds a deadline to a date and a time of day', () => {
+    expect(issueOn(created({ agendaDeadlineAt: '2026-10-01' }), 'agendaDeadlineAt')).toBe(true);
+    expect(created({ agendaDeadlineAt: '2026-10-01T17:00' }).success).toBe(true);
+  });
+
+  it('leaves both out of an update that did not mention them', () => {
+    const result = eventWriteSchemas.update.safeParse({ venueName: 'Curia Julia' });
+    expect(result.success && result.data.speakerDeadlineAt).toBeUndefined();
+    expect(result.success && result.data.agendaDeadlineAt).toBeUndefined();
+  });
+
+  const STARTS_AT = new Date('2026-10-12T16:00:00Z'); // 09:00 in Los Angeles
+
+  it('reads the wall clock in the event timezone, not the machine one', () => {
+    const patch = deadlinePatch(
+      { speakerDeadlineAt: '2026-09-12T17:00' },
+      'America/Los_Angeles',
+      STARTS_AT,
+    );
+    expect((patch.speakerDeadlineAt as Date).toISOString()).toBe('2026-09-13T00:00:00.000Z');
+
+    const rome = deadlinePatch({ speakerDeadlineAt: '2026-09-12T17:00' }, 'Europe/Rome', STARTS_AT);
+    expect((rome.speakerDeadlineAt as Date).toISOString()).toBe('2026-09-12T15:00:00.000Z');
+  });
+
+  it('writes only the milestones the caller actually sent', () => {
+    const patch = deadlinePatch({ agendaDeadlineAt: null }, 'America/Los_Angeles', STARTS_AT);
+    expect(patch).toEqual({ agendaDeadlineAt: null });
+    expect(deadlinePatch({}, 'America/Los_Angeles', STARTS_AT)).toEqual({});
+  });
+
+  it('refuses a milestone that falls after the doors open', () => {
+    expect(() =>
+      deadlinePatch({ agendaDeadlineAt: '2026-10-13T09:00' }, 'America/Los_Angeles', STARTS_AT),
+    ).toThrow(/after the event starts/);
+
+    // The moment the event starts is still a legitimate deadline; only past it is a slip.
+    expect(() =>
+      deadlinePatch({ agendaDeadlineAt: '2026-10-12T09:00' }, 'America/Los_Angeles', STARTS_AT),
+    ).not.toThrow();
+  });
+
+  it('does not order the two against each other', () => {
+    expect(() =>
+      deadlinePatch(
+        { speakerDeadlineAt: '2026-10-01T17:00', agendaDeadlineAt: '2026-09-01T17:00' },
+        'America/Los_Angeles',
+        STARTS_AT,
+      ),
+    ).not.toThrow();
+  });
+
+  /**
+   * The rule has a second half, because the two sides of the comparison can each move. `updateEvent`
+   * calls this only when the window itself changed, which is why nothing here needs a `now`: a
+   * milestone in the past is fine and always was.
+   */
+  describe('when the window moves under a milestone the caller did not send', () => {
+    const EARLIER = new Date('2026-09-20T16:00:00Z');
+    const stored = { speakerDeadlineAt: new Date('2026-10-01T17:00:00Z'), agendaDeadlineAt: null };
+
+    it('refuses a start that would leave the stored milestone inside the event', () => {
+      expect(() => assertUntouchedDeadlinesFit(stored, {}, EARLIER)).toThrow(
+        /after the event starts/,
+      );
+    });
+
+    it('reports the problem against the field the organizer just touched', () => {
+      try {
+        assertUntouchedDeadlinesFit(stored, {}, EARLIER);
+        expect.unreachable('the start should have been refused');
+      } catch (error) {
+        expect((error as { details?: Record<string, string> }).details?.startsAt).toMatch(
+          /speaker deadline/,
+        );
+      }
+    });
+
+    it('says nothing about a milestone the same write is already replacing', () => {
+      const replacing = { speakerDeadlineAt: new Date('2026-09-01T17:00:00Z') };
+      expect(() => assertUntouchedDeadlinesFit(stored, replacing, EARLIER)).not.toThrow();
+    });
+
+    it('says nothing about one the same write is clearing', () => {
+      expect(() =>
+        assertUntouchedDeadlinesFit(stored, { speakerDeadlineAt: null }, EARLIER),
+      ).not.toThrow();
+    });
+
+    it('leaves a start the stored milestones still fit alone', () => {
+      expect(() => assertUntouchedDeadlinesFit(stored, {}, STARTS_AT)).not.toThrow();
+      expect(() =>
+        assertUntouchedDeadlinesFit({ speakerDeadlineAt: null, agendaDeadlineAt: null }, {}, EARLIER),
+      ).not.toThrow();
+    });
   });
 });
 

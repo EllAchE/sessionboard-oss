@@ -288,6 +288,19 @@ export const event = pgTable(
      */
     startsOn: text('starts_on').notNull(),
     endsOn: text('ends_on').notNull(),
+    /**
+     * `AR-50`. The two internal milestones that pace an edition between the call closing and the
+     * doors opening: when the speaker roster is meant to be settled, and when the agenda is.
+     *
+     * Nothing enforces them. No write is refused, warned on or scored for being past one, because
+     * a talk moved the week of the show is ordinary conference work and a product that argued
+     * about it would be wrong. They exist to be read — on the dashboard, in the portal, on the
+     * public page — and to give the reminder run something to count down to.
+     *
+     * Nullable with no default: an edition that sets neither behaves exactly as it did before.
+     */
+    speakerDeadlineAt: timestamp('speaker_deadline_at', { withTimezone: true }),
+    agendaDeadlineAt: timestamp('agenda_deadline_at', { withTimezone: true }),
     websiteUrl: text('website_url'),
     venueName: text('venue_name'),
     venueAddress: text('venue_address'),

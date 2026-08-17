@@ -758,6 +758,8 @@ export const EVENT_COLUMN_PLAN: Record<string, ColumnRule> = {
   endsAt: input("Required, and last year's dates are the trap AD-1 warns about."),
   startsOn: input('Derived from the new window by `resolveEventWindow`, never authored.'),
   endsOn: input('Derived from the new window by `resolveEventWindow`, never authored.'),
+  speakerDeadlineAt: clear('The speaker deadline belongs to the source edition, not its clone.'),
+  agendaDeadlineAt: clear('The agenda deadline belongs to the source edition, not its clone.'),
   websiteUrl: copy(),
   venueName: copy(),
   venueAddress: copy(),

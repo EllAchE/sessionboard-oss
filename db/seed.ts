@@ -184,6 +184,14 @@ const reviewers = [
 /** `E-1`: doors at 09:00 on day one, close at 17:00 on day two, both read in the event's own zone. */
 const demoWindow = requireEventWindow(TIMEZONE, `${isoDate(day1)}T09:00`, `${isoDate(day2)}T17:00`);
 
+/**
+ * `AR-50`: the two advisory milestones, a fortnight and a week before the doors. Both are still
+ * ahead of a freshly seeded demo — a milestone that had already passed would show the surfaces in
+ * their dimmed state and read as something the demo had failed to do.
+ */
+const rosterSettledAt = at(new Date(day1.getTime() - 14 * DAY), 17);
+const agendaSettledAt = at(new Date(day1.getTime() - 7 * DAY), 17);
+
 const [demo] = await db
   .insert(event)
   .values({
@@ -203,6 +211,8 @@ const [demo] = await db
     endsAt: demoWindow.endsAt,
     startsOn: demoWindow.startsOn,
     endsOn: demoWindow.endsOn,
+    speakerDeadlineAt: rosterSettledAt,
+    agendaDeadlineAt: agendaSettledAt,
     websiteUrl: 'https://example.com/cicero-forum',
     venueName: 'The Getty Villa',
     venueAddress: '17985 Pacific Coast Highway, Pacific Palisades, CA',

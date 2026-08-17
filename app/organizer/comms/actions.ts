@@ -142,7 +142,11 @@ export async function sendCampaignAction(data: FormData): Promise<ActionResult<S
  * Scoped to the current event: cron speaks for the deployment, an organizer only for their own.
  */
 export async function runRemindersAction(): Promise<
-  ActionResult<{ taskRemindersSent: number; deadlineRemindersSent: number }>
+  ActionResult<{
+    taskRemindersSent: number;
+    deadlineRemindersSent: number;
+    eventDeadlineRemindersSent: number;
+  }>
 > {
   try {
     const ctx = await requireEventContext(await currentEventId());
@@ -154,6 +158,7 @@ export async function runRemindersAction(): Promise<
       data: {
         taskRemindersSent: result.taskRemindersSent,
         deadlineRemindersSent: result.deadlineRemindersSent,
+        eventDeadlineRemindersSent: result.eventDeadlineRemindersSent,
       },
     };
   } catch (error) {
