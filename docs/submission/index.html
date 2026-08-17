@@ -47,8 +47,7 @@
 <h2 id="philosophy-first">Philosophy First</h2>
 <p>Anyone here has context for what was built, and why. What I want to share with you is th philosophy behind my product decisions, and how that ultimately manifested in Cicero.</p>
 <h3 id="agent-first-portal-second">Agent-first, portal-second</h3>
-<p>The way I want someone to use this product is by talking to an agent, not by opening a tab.
-I do not just want that for this product. I think that is the future of all SAAS.
+<p>The future of all &quot;SaaS&quot; is agent-first. The way I want someone to use this product is by talking to an agent, not by opening a tab.
 That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
 is a first-class surface rather than an integration afterthought, and why the REST API is essential.</p>
 <p>The portal still has role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
@@ -67,21 +66,29 @@ I did not implement the in app agent because:</p>
 <p>The person to design for is the one who performs an operation five hundred times, not the one who
 performs it once. So each design decision gets measured the same way: what is this person spending
 the most operations on, and can it be automated away so completely that they never touch it again?</p>
-<p>The sharpest test of that is also something that did not ship: automatic insertion recalculation.
-An organizer moves one session and the rest of the day settles around it — placements that still
+<p>Unfortunately I did not have a chance to actually speak with any users here so I had to make some
+speculation about who that would be. But I will walk through 1 example that gives you an idea of
+my thought process for this. That example is actually something that did not ship: automatic agenda recalculation (There is a draft PR for it).</p>
+<p>The idea is this, as new events are added or moved we automatically recalculate the agenda. An organizer moves one session or a session is
+added and the rest of the day settles around it — placements that still
 work stay put, the ones that break get recomputed, and the organizer approves a result instead of
-dragging fifteen cards behind the one they actually meant to move. There is a draft PR for it.</p>
-<p>Here is the honest part, because wanting to build that is the same instinct that bloats products: I
-do not know that it is worth building. It is my guess about where an organizer&#39;s hours go. The first
+dragging fifteen cards behind the one they actually meant to move. To make this work you would have to add
+projections in this case, topic metadata to optimize for allowing people with interest in a specific topic to see all speakers
+covering that topic rather than booking them concurrently and other custom rules, Attendee, count projections, etcetera. </p>
+<p>Without speaking to users I do not know that it is worth building. It is my guess about where an organizer&#39;s hours go. The first
 thing I would do with real users is find out whether recalculation saves the afternoon I think it
 saves, or whether it solves a problem they have already routed around — or whether the manual drag
 is where the judgment actually lives, in which case automating it away makes the product worse. I
 owe reviewers and speakers the same conversation. I designed hardest for organizer repetition
 because that is the loop I can see from here, not because I have evidence it is the expensive one.</p>
-<p>The shipped version of this tenet is the keyboard layer, and it stops at the organizer workspace on
-purpose: a speaker visits twice a year and needs an obvious, forgiving flow rather than a shortcut
-sheet. If reviewers working a large committee round, or speakers at an event that keeps them busy,
-turn out to live in the tool the way an organizer does, the keyboard layer should follow them there.</p>
+<p>The shipped version of this tenet is the keyboard/hotkey layer - I am a huge fan of the product at Linear
+and how quickly I am able to navigate that space using their hotkeys. I believe more SaaS should incorporate
+this for their power users. To me, the power users of Sessionboard are the reviewers and they should also
+have keyboard first enablement to let them move more quickly when making changes in the app. The keyboard
+enablement stops at the organizer workspace on purpose: a speaker visits twice a year and needs an obvious,
+forgiving flow rather than a shortcut sheet. If reviewers working a large committee round, or speakers at
+an event that keeps them busy, turn out to live in the tool the way an organizer does, the keyboard layer
+should follow them there.</p>
 <h3 id="opinionated-over-flexible-and-subtract-before-adding">Opinionated over flexible, and subtract before adding</h3>
 <p>Given the choice between one right answer and a setting that lets each operator pick, I ship the
 answer. A configuration surface is a decision handed back to the user along with the obligation to
@@ -96,14 +103,14 @@ which two screens are one screen, which flow loses a click, which action sits fu
 person lands and deserves a hot path straight to it. The work I am describing shrinks the product.</p>
 <h3 id="the-line-all-three-sit-behind">The line all three sit behind</h3>
 <blockquote>
-<p>Keep the human in control, but remove the clerical work that makes conference operations
-miserable.</p>
+<p>Keep the human in control, but remove the clerical work that makes conference operations miserable.</p>
 </blockquote>
 <p>Agent-first is not agent-autonomous. AI proposes review notes and agenda placements but does not
 accept a talk or publish a schedule. Cicero drafts a targeted task reminder but does not silently
 send it. External programme updates can be previewed and replayed idempotently before they are
 applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.</p>
+<p>Thanks for coming to my Ted Talk :). The above was mostly me writing, but with a bit of AI assistance/drafting. The below is purely generated so read at your own expense. If you just want the facts of the features head, I would recommend looking at the field survey that I also created and linked here. </p>
 <h2 id="the-submission">The Submission</h2>
 <p>The submission is best understood in three buckets:</p>
 <ol>
