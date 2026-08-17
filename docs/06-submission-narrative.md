@@ -37,31 +37,84 @@ That distinction matters. A long feature list is not evidence of a finished prod
 is not a shipped capability. Cicero's central claim is narrower and stronger: the complete working
 spine exists, the additional work has a reason, and the omissions are named rather than hidden.
 
-## 1. The problem and the product point of view
+## 1. How I build
 
-The competition brief explicitly says that the incumbent has features the AI Engineer team does not
-use, and that exact visual cloning is not the goal. We treated that as a product constraint:
+The feature list is the visible part of this submission. What decided it — and what would decide the
+next hundred choices after it — is three tenets, in this order.
 
-> Coverage of the real conference workflow beats feature parity with an accumulated product.
+### Agent-first, portal-second
 
-A beautiful CFP builder that ends before review is not a replacement. A polished agenda without a
-speaker portal still leaves the organizer in spreadsheets and email. The priority was therefore to
-make the whole journey coherent:
+The way I want someone to use this product is by talking to an agent, not by opening a tab. That is
+why the landing page leads with an agent quick start instead of a product tour, why the MCP server
+is a first-class surface rather than an integration afterthought, and why the REST API is
+load-bearing rather than a checkbox: an agent that can only read is a worse organizer than a person
+with a mouse.
 
-```text
-create event → open CFP → receive proposals → review → decide → schedule
-     → onboard speakers → communicate → publish → embed and integrate
-```
+The feature that would make this literal did not land. Call it agent mail — an outbound channel
+whose recipient is a coding agent rather than a person, so the Claude or Codex session already open
+on the organizer's machine is told when there is something to decide. Three accepted speakers have
+not uploaded slides. A room is double-booked at 14:00. A reviewer's queue has gone stale. The agent
+raises it and offers to handle it; the organizer answers in the session they were already in. They
+do not go looking, and they do not find out by opening the portal on a Tuesday.
 
-The product thesis underneath the implementation is equally simple:
+The portal still has a job under that model, and it is a narrow one: visual review. Looking at an
+agenda, reading a proposal, checking what the public page actually renders. Those are judgments a
+person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
+— the reading, the reconciling, the drafting, the chasing — is work an agent should be doing on
+someone's behalf, and the portal is where they go to confirm it looks right.
+
+A related but separate question — whether the setup agent can be mailed its own API key on first run
+— is answered in section 6, and the answer there is no.
+
+### Power users first
+
+The person to design for is the one who performs an operation five hundred times, not the one who
+performs it once. So each design decision gets measured the same way: what is this person spending
+the most operations on, and can it be automated away so completely that they never touch it again?
+
+The sharpest test of that is also something that did not ship: automatic insertion recalculation.
+An organizer moves one session and the rest of the day settles around it — placements that still
+work stay put, the ones that break get recomputed, and the organizer approves a result instead of
+dragging fifteen cards behind the one they actually meant to move. There is a draft PR for it.
+
+Here is the honest part, because wanting to build that is the same instinct that bloats products: I
+do not know that it is worth building. It is my guess about where an organizer's hours go. The first
+thing I would do with real users is find out whether recalculation saves the afternoon I think it
+saves, or whether it solves a problem they have already routed around — or whether the manual drag
+is where the judgment actually lives, in which case automating it away makes the product worse. I
+owe reviewers and speakers the same conversation. I designed hardest for organizer repetition
+because that is the loop I can see from here, not because I have evidence it is the expensive one.
+
+The shipped version of this tenet is the keyboard layer, and it stops at the organizer workspace on
+purpose: a speaker visits twice a year and needs an obvious, forgiving flow rather than a shortcut
+sheet. If reviewers working a large committee round, or speakers at an event that keeps them busy,
+turn out to live in the tool the way an organizer does, the keyboard layer should follow them there.
+
+### Opinionated over flexible, and subtract before adding
+
+Given the choice between one right answer and a setting that lets each operator pick, I ship the
+answer. A configuration surface is a decision handed back to the user along with the obligation to
+understand the tradeoff, and most of the time they would rather have the tradeoff made well. My
+instinct on a maturing product is to remove features, not to add them.
+
+This submission visibly violates that, and I would rather name it than have a reviewer find it:
+Cicero is feature-rich, more so than I would build for a real first release. The breadth is
+deliberate — it is how a submission demonstrates that a surface was considered rather than skipped —
+but it is not the state I would want to be defending a year in.
+
+So when I say I would talk to users, I do not mean collecting feature requests. I mean consolidating:
+which two screens are one screen, which flow loses a click, which action sits furthest from where a
+person lands and deserves a hot path straight to it. The work I am describing shrinks the product.
+
+### The line all three sit behind
 
 > Keep the human in control, but remove the clerical work that makes conference operations
 > miserable.
 
-That boundary is visible throughout the system. AI proposes review notes and agenda placements but
-does not accept a talk or publish a schedule. Cicero can draft a targeted task reminder but does not
-silently send it. External programme updates can be previewed and replayed idempotently before they
-are applied. The product helps a person move faster without pretending it understands the political,
+Agent-first is not agent-autonomous. AI proposes review notes and agenda placements but does not
+accept a talk or publish a schedule. Cicero drafts a targeted task reminder but does not silently
+send it. External programme updates can be previewed and replayed idempotently before they are
+applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.
 
 ## 2. The requested feature set is covered end to end
