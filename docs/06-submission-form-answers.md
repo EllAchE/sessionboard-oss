@@ -271,7 +271,8 @@ unnecessary private context.
 
 ### Process overview
 
-Copy/paste answer:
+Copy/paste answer, led by the [`Philosophy First`](#philosophy-first) section above pasted in full
+and unabridged ahead of the paragraphs below:
 
 > I began by converting the brief and screenshots into a tagged requirements ledger instead of
 > coding directly from an inconsistent prose document. I separated required, important, optional,
@@ -357,15 +358,18 @@ happy to discuss what that could look like.
 
 The form answers can become a public post with this shorter structure:
 
-1. **The thesis:** replace the conference-programme workflow, not every screen in a mature SaaS.
-2. **The spine:** CFP → speaker portal → review → agenda → communications → public programme.
-3. **The product calls:** outstanding-task dashboard, no passwords, safe event duplication, private
+1. **The philosophy:** the [`Philosophy First`](#philosophy-first) section above, reproduced in full
+   rather than condensed — agent-first/portal-second, power users first, opinionated over flexible,
+   and the line all three sit behind.
+2. **The thesis:** replace the conference-programme workflow, not every screen in a mature SaaS.
+3. **The spine:** CFP → speaker portal → review → agenda → communications → public programme.
+4. **The product calls:** outstanding-task dashboard, no passwords, safe event duplication, private
    draft previews, speaker availability/conflicts, attendee schedules, and stable calendar updates.
-4. **How it was built:** freeze the kernel, divide work by directory, run Claude Code as the primary
+5. **How it was built:** freeze the kernel, divide work by directory, run Claude Code as the primary
    builder and Codex as the independent reviewer.
-5. **What failed honestly:** parallel-work collisions, docs/deployment drift, the Workers free-tier
+6. **What failed honestly:** parallel-work collisions, docs/deployment drift, the Workers free-tier
    ceiling, and outbound-email configuration.
-6. **What shipped:** a seeded app, Docker self-host, 1,983 tests, public/embedded/portable programme
+7. **What shipped:** a seeded app, Docker self-host, 1,983 tests, public/embedded/portable programme
    output, API/OpenAPI/MCP, and explicit deployment gaps.
 
 Use [`06-submission-narrative.md`](06-submission-narrative.md) as the source for that post rather

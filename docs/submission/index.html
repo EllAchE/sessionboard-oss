@@ -44,63 +44,51 @@
 <p><strong>Evidence:</strong> <a href="evidence.html"><code>06-submission-evidence.md</code></a></p>
 <p><strong>Short form:</strong> <a href="summary.html"><code>06-submission-summary.md</code></a></p>
 <p><strong>Copy-ready form answers:</strong> <a href="../06-submission-form-answers.md"><code>06-submission-form-answers.md</code></a></p>
-<h2 id="the-submission-in-one-sentence">The submission in one sentence</h2>
-<p>Cicero is a self-hostable, open-source replacement for the part of Sessionboard an event team
-actually uses: it carries a conference from call for speakers, through review and scheduling, to
-speaker onboarding, communications, a published programme, and an attendee&#39;s personal
-schedule—then adds the operational visibility, safe automation, and keyboard ergonomics that
-frequent organizers need.</p>
-<p>The submission is best understood in three buckets:</p>
-<ol>
-<li><strong>The requested feature set:</strong> the end-to-end replacement spine in the competition brief.</li>
-<li><strong>Additional features we shipped:</strong> deliberate product improvements beyond that baseline.</li>
-<li><strong>Future features we chose not to ship:</strong> useful next steps whose complexity, risk, or evidence did
-not justify putting them in the first release.</li>
-</ol>
-<p>That distinction matters. A long feature list is not evidence of a finished product, and a roadmap
-is not a shipped capability. Cicero&#39;s central claim is narrower and stronger: the complete working
-spine exists, the additional work has a reason, and the omissions are named rather than hidden.</p>
-<h2 id="1-how-i-build">1. How I build</h2>
-<p>The feature list is the visible part of this submission. What decided it — and what would decide the
-next hundred choices after it — is three tenets, in this order.</p>
+<h2 id="philosophy-first">Philosophy First</h2>
+<p>Anyone here has context for what was built, and why. What I want to share with you is th philosophy behind my product decisions, and how that ultimately manifested in Cicero.</p>
 <h3 id="agent-first-portal-second">Agent-first, portal-second</h3>
-<p>The way I want someone to use this product is by talking to an agent, not by opening a tab. That is
-why the landing page leads with an agent quick start instead of a product tour, why the MCP server
-is a first-class surface rather than an integration afterthought, and why the REST API is
-load-bearing rather than a checkbox: an agent that can only read is a worse organizer than a person
-with a mouse.</p>
-<p>The feature that would make this literal did not land. Call it agent mail — an outbound channel
-whose recipient is a coding agent rather than a person, so the Claude or Codex session already open
-on the organizer&#39;s machine is told when there is something to decide. Three accepted speakers have
-not uploaded slides. A room is double-booked at 14:00. A reviewer&#39;s queue has gone stale. The agent
-raises it and offers to handle it; the organizer answers in the session they were already in. They
-do not go looking, and they do not find out by opening the portal on a Tuesday.</p>
-<p>The portal still has a job under that model, and it is a narrow one: visual review. Looking at an
-agenda, reading a proposal, checking what the public page actually renders. Those are judgments a
-person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
+<p>The future of all &quot;SaaS&quot; is agent-first. The way I want someone to use this product is by talking to an agent, not by opening a tab.
+That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
+is a first-class surface rather than an integration afterthought, and why the REST API is essential.</p>
+<p>The portal still has role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
 — the reading, the reconciling, the drafting, the chasing — is work an agent should be doing on
 someone&#39;s behalf, and the portal is where they go to confirm it looks right.</p>
-<p>A related but separate question — whether the setup agent can be mailed its own API key on first run
-— is answered in section 6, and the answer there is no.</p>
+<p>The portal complements what you can do with an agent and natural language queries of what you want.
+The final form of this is an in-app agent, with that you basically have a full feature set all living within 1 space.
+I did not implement the in app agent because:</p>
+<ol>
+<li>I did not wanna link tokens,</li>
+<li>Was short on time</li>
+<li>You expose new attack vectors with a full-access agent</li>
+</ol>
+<p>Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you&#39;re an organizer. So if your day Includes working with other tools as well, you&#39;re not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case a MCP server and/or API is essential; you need them to make the best version possible of the product.</p>
 <h3 id="power-users-first">Power users first</h3>
 <p>The person to design for is the one who performs an operation five hundred times, not the one who
 performs it once. So each design decision gets measured the same way: what is this person spending
 the most operations on, and can it be automated away so completely that they never touch it again?</p>
-<p>The sharpest test of that is also something that did not ship: automatic insertion recalculation.
-An organizer moves one session and the rest of the day settles around it — placements that still
+<p>Unfortunately I did not have a chance to actually speak with any users here so I had to make some
+speculation about who that would be. But I will walk through 1 example that gives you an idea of
+my thought process for this. That example is actually something that did not ship: automatic agenda recalculation (There is a draft PR for it).</p>
+<p>The idea is this, as new events are added or moved we automatically recalculate the agenda. An organizer moves one session or a session is
+added and the rest of the day settles around it — placements that still
 work stay put, the ones that break get recomputed, and the organizer approves a result instead of
-dragging fifteen cards behind the one they actually meant to move. There is a draft PR for it.</p>
-<p>Here is the honest part, because wanting to build that is the same instinct that bloats products: I
-do not know that it is worth building. It is my guess about where an organizer&#39;s hours go. The first
+dragging fifteen cards behind the one they actually meant to move. To make this work you would have to add
+projections in this case, topic metadata to optimize for allowing people with interest in a specific topic to see all speakers
+covering that topic rather than booking them concurrently and other custom rules, Attendee, count projections, etcetera. </p>
+<p>Without speaking to users I do not know that it is worth building. It is my guess about where an organizer&#39;s hours go. The first
 thing I would do with real users is find out whether recalculation saves the afternoon I think it
 saves, or whether it solves a problem they have already routed around — or whether the manual drag
 is where the judgment actually lives, in which case automating it away makes the product worse. I
 owe reviewers and speakers the same conversation. I designed hardest for organizer repetition
 because that is the loop I can see from here, not because I have evidence it is the expensive one.</p>
-<p>The shipped version of this tenet is the keyboard layer, and it stops at the organizer workspace on
-purpose: a speaker visits twice a year and needs an obvious, forgiving flow rather than a shortcut
-sheet. If reviewers working a large committee round, or speakers at an event that keeps them busy,
-turn out to live in the tool the way an organizer does, the keyboard layer should follow them there.</p>
+<p>The shipped version of this tenet is the keyboard/hotkey layer - I am a huge fan of the product at Linear
+and how quickly I am able to navigate that space using their hotkeys. I believe more SaaS should incorporate
+this for their power users. To me, the power users of Sessionboard are the reviewers and they should also
+have keyboard first enablement to let them move more quickly when making changes in the app. The keyboard
+enablement stops at the organizer workspace on purpose: a speaker visits twice a year and needs an obvious,
+forgiving flow rather than a shortcut sheet. If reviewers working a large committee round, or speakers at
+an event that keeps them busy, turn out to live in the tool the way an organizer does, the keyboard layer
+should follow them there.</p>
 <h3 id="opinionated-over-flexible-and-subtract-before-adding">Opinionated over flexible, and subtract before adding</h3>
 <p>Given the choice between one right answer and a setting that lets each operator pick, I ship the
 answer. A configuration surface is a decision handed back to the user along with the obligation to
@@ -115,14 +103,25 @@ which two screens are one screen, which flow loses a click, which action sits fu
 person lands and deserves a hot path straight to it. The work I am describing shrinks the product.</p>
 <h3 id="the-line-all-three-sit-behind">The line all three sit behind</h3>
 <blockquote>
-<p>Keep the human in control, but remove the clerical work that makes conference operations
-miserable.</p>
+<p>Keep the human in control, but remove the clerical work that makes conference operations miserable.</p>
 </blockquote>
 <p>Agent-first is not agent-autonomous. AI proposes review notes and agenda placements but does not
 accept a talk or publish a schedule. Cicero drafts a targeted task reminder but does not silently
 send it. External programme updates can be previewed and replayed idempotently before they are
 applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.</p>
+<p>Thanks for coming to my Ted Talk :). The above was mostly me writing, but with a bit of AI assistance/drafting. The below is purely generated so read at your own expense. If you just want the facts of the features head, I would recommend looking at the field survey that I also created and linked here. </p>
+<h2 id="the-submission">The Submission</h2>
+<p>The submission is best understood in three buckets:</p>
+<ol>
+<li><strong>The requested feature set:</strong> the end-to-end replacement spine in the competition brief.</li>
+<li><strong>Additional features we shipped:</strong> deliberate product improvements beyond that baseline.</li>
+<li><strong>Future features we chose not to ship:</strong> useful next steps whose complexity, risk, or evidence did
+not justify putting them in the first release.</li>
+</ol>
+<p>That distinction matters. A long feature list is not evidence of a finished product, and a roadmap
+is not a shipped capability. Cicero&#39;s central claim is narrower and stronger: the complete working
+spine exists, the additional work has a reason, and the omissions are named rather than hidden.</p>
 <h2 id="2-the-requested-feature-set-is-covered-end-to-end">2. The requested feature set is covered end to end</h2>
 <p>The original requirements remain separately traceable in <a href="../01-requirements.md"><code>01-requirements.md</code></a>.
 The following table is the submission-level view: what a judge should test, why it matters, and what
