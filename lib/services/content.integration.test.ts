@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { and, eq, sql } from 'drizzle-orm';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getDb } from '@/db/client';
@@ -129,7 +127,7 @@ describe('revision numbers', () => {
   });
 
   /** The list is ordered by number rather than by insertion, so a renumber must be visible. */
-  it("reruns the migration's own backfill to the same numbering", async () => {
+  it('agrees with the canonical numbering recomputed from scratch', async () => {
     const fixture = await seed();
     const ctx = fixture.ctx();
     const db = getDb();
@@ -143,22 +141,24 @@ describe('revision numbers', () => {
     const before = await rowsFor(fixture, fixture.sponsorId);
 
     /**
-     * The statement shipped in `0003`, run verbatim. It is what every existing database's history
-     * was numbered by, and it is idempotent by construction — recomputing over rows that already
-     * hold the right numbers must be a no-op, or a re-run after a failed deploy would reshuffle
-     * numbers people have already quoted to each other.
+     * The numbering below is the definition `revision_number` is supposed to satisfy: dense per
+     * `(event, kind, entity)`, ordered by `created_at` with `id` as the tiebreak because two edits
+     * inside one millisecond would otherwise be ordered arbitrarily. `recordRevision` assigns its
+     * numbers at insert time instead, so recomputing here is an independent derivation of the same
+     * answer — if the two disagree, one of them is numbering by insertion order rather than by
+     * time, and "revision 4" means different things to the writer and to the reader.
      */
-    const migration = readFileSync(
-      fileURLToPath(new URL('../../db/migrations/0003_bumpy_post.sql', import.meta.url)),
-      'utf8',
-    );
-    const backfill = migration
-      .split('--> statement-breakpoint')
-      .map((statement) => statement.trim().replace(/;$/, ''))
-      .find((statement) => statement.startsWith('UPDATE "content_revision"'));
-    expect(backfill).toBeDefined();
-
-    await db.execute(sql.raw(backfill!));
+    await db.execute(sql`
+      UPDATE "content_revision" AS "target" SET "revision_number" = "numbered"."rank"
+      FROM (
+        SELECT "id", row_number() OVER (
+          PARTITION BY "event_id", "entity_kind", "entity_id"
+          ORDER BY "created_at" ASC, "id" ASC
+        ) AS "rank"
+        FROM "content_revision"
+      ) AS "numbered"
+      WHERE "target"."id" = "numbered"."id"
+    `);
 
     expect(await rowsFor(fixture, fixture.sponsorId)).toEqual(before);
   });
