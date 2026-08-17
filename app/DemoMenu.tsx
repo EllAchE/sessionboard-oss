@@ -19,9 +19,10 @@ import styles from './demo-menu.module.css';
  *
  * `label` has to stay separable from the demo links elsewhere on the page and in the global footer:
  * automated walkthroughs match a click target by the start of its text and treat two matches as an
- * error. The footer ships `Organizer demo`, `Reviewer demo`, and `Speaker demo`, and the page body
- * ships `Try the reviewer queue` and `Explore the speaker portal`, so no label here may be a prefix
- * of one of those or of another label in this list. Check both files before rewording any of them.
+ * error. The footer ships `Organizer demo`, `Reviewer demo`, and `Speaker demo`, and the role cards
+ * in the page body ship `Run the organizer dashboard`, `Score the review queue`, `Give a talk from
+ * the portal`, and `Browse the public agenda`, so no label here may be a prefix of one of those or
+ * of another label in this list. Check all three files before rewording any of them.
  */
 const DEMO_DESTINATIONS = [
   {
