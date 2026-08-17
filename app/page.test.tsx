@@ -1,5 +1,10 @@
 import { ToastProvider } from '@/components/ui';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_EVENT_SLUG,
+  DEMO_PUBLIC_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
+} from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -121,14 +126,11 @@ describe('fresh-instance home page', () => {
       'Give reviewers a queue they can finish.',
       'Give speakers one clear place to get ready.',
       'Publish once. Keep every public view in sync.',
-      'Give attendees the programme, not a PDF.',
       'Explore a conference already in motion.',
       'Run your own conference.',
     ]) {
       expect(html).not.toContain(heading);
     }
-    expect(html).not.toContain('<iframe');
-    // The embed showcase keeps its own entry point in the about section.
     expect(html).toContain('href="/embeds"');
   });
 
@@ -154,7 +156,8 @@ describe('fresh-instance home page', () => {
    */
   it('makes every role card its own way into the demo', () => {
     const html = renderHome(true);
-    const products = html.slice(html.indexOf('id="products"'), html.indexOf('id="about"'));
+    // Ends at the attendee section, whose deep links are not role cards and carry their own labels.
+    const products = html.slice(html.indexOf('id="products"'), html.indexOf('id="attendees"'));
 
     expect(html).not.toContain('Or explore a conference already in progress');
     for (const [label, href] of [
@@ -171,6 +174,46 @@ describe('fresh-instance home page', () => {
     );
     expect(firstWords).toHaveLength(4);
     expect(new Set(firstWords).size).toBe(4);
+  });
+
+  /*
+   * This section was dropped by a merge rather than by a decision: it landed on main in #254 after
+   * this page's rewrite was already written, so the rewrite's conflict resolution deleted it as
+   * "not mine" and every check stayed green. These assertions are the tripwire that was missing.
+   */
+  it('shows attendees the live programme, not a description of it', () => {
+    const html = renderHome(true);
+
+    expect(html).toContain('id="attendees"');
+    expect(html).toContain('Give attendees the programme, not a PDF.');
+
+    // The real widget, framed on the page: a screenshot here would drift from the product.
+    expect(html).toContain(`src="/embed/${DEMO_EVENT_SLUG}/gallery"`);
+    expect(html).toContain('loading="lazy"');
+
+    for (const href of Object.values(DEMO_PUBLIC_LINKS)) {
+      expect(html).toContain(`href="${href}"`);
+    }
+    expect(html).toContain('See every embed running live');
+  });
+
+  it('keeps the attendee section between the role cards and about', () => {
+    const html = renderHome(true);
+
+    expect(html.indexOf('id="products"')).toBeLessThan(html.indexOf('id="attendees"'));
+    expect(html.indexOf('id="attendees"')).toBeLessThan(html.indexOf('id="about"'));
+  });
+
+  it('keeps the attendee claim on a fresh instance and drops only the demo data', () => {
+    const html = renderHome(false);
+
+    // The section argues something true of any instance, so only its seeded contents stand down.
+    expect(html).toContain('Give attendees the programme, not a PDF.');
+    expect(html).not.toContain('<iframe');
+    for (const href of Object.values(DEMO_PUBLIC_LINKS)) {
+      expect(html).not.toContain(`href="${href}"`);
+    }
+    expect(html).toContain('See what the embeds publish');
   });
 
   it('makes products and docs discoverable from the primary navigation', () => {
