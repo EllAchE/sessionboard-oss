@@ -36,6 +36,11 @@ deployment-order constraint, not hidden parity: the hosted core checks in this d
 current production evidence, while the submission mirror is current-branch evidence. The HTML
 routes must be repeated against the hosted origin as part of the final pre-submission deploy check.
 
+The production origin was rechecked after the PR branch was pushed. `/demo/agenda` remained healthy
+and rendered 11 published sessions across five rooms. `/submission` returned the expected 404
+because the branch was still unmerged. No preview-deployment check appeared on the PR, so there is
+no separate hosted branch environment to cite in place of that final production deploy.
+
 ## Current source: local production build and seeded walkthrough
 
 The current source was run as the production Docker image, backed by fresh Postgres and MinIO
