@@ -1,23 +1,5 @@
 # Cicero — full submission narrative
 
-**Live demo:** <https://cicero-three.vercel.app>
-
-**Readable HTML:** <https://cicero-submission.elehche.workers.dev/>
-
-**Repository mirror:** [`submission/index.html`](submission/index.html)
-
-**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
-
-**Source:** <https://github.com/EllAchE/sessionboard-oss>
-
-**License:** MIT
-
-**Evidence:** [`06-submission-evidence.md`](06-submission-evidence.md)
-
-**Short form:** [`06-submission-summary.md`](06-submission-summary.md)
-
-**Copy-ready form answers:** [`06-submission-form-answers.md`](06-submission-form-answers.md)
-
 ## Philosophy First
 
 Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, and how that ultimately manifested in Cicero.
@@ -589,3 +571,23 @@ consequential moments, and honest extension boundaries.
 The required spine works. The additional features make it more useful than a literal clone. The
 future list is specific enough to guide a next release without being presented as present-day
 capability. That is the standard this submission asks to be judged against.
+
+## Links
+
+**Live demo:** <https://cicero-three.vercel.app>
+
+**Readable HTML:** <https://cicero-submission.elehche.workers.dev/>
+
+**Repository mirror:** [`submission/index.html`](submission/index.html)
+
+**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
+
+**Source:** <https://github.com/EllAchE/sessionboard-oss>
+
+**License:** MIT
+
+**Evidence:** [`06-submission-evidence.md`](06-submission-evidence.md)
+
+**Short form:** [`06-submission-summary.md`](06-submission-summary.md)
+
+**Copy-ready form answers:** [`06-submission-form-answers.md`](06-submission-form-answers.md)
