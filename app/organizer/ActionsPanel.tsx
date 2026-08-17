@@ -1,6 +1,9 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useHotkeyContext } from '@/components/hotkeys/HotkeyProvider';
+import { KeyCaps } from '@/components/hotkeys/KeyCaps';
+import { Button, Dialog, Kbd } from '@/components/ui';
+import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import {
   Activity,
   CalendarPlus,
@@ -13,10 +16,7 @@ import {
   UserRound,
   Zap,
 } from 'lucide-react';
-import { useHotkeyContext } from '@/components/hotkeys/HotkeyProvider';
-import { KeyCaps } from '@/components/hotkeys/KeyCaps';
-import { Button, Dialog, Kbd } from '@/components/ui';
-import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
+import { useId, useState } from 'react';
 import styles from './quick-actions.module.css';
 
 /**
@@ -229,7 +229,6 @@ export function ActionsPanel({
                 workspace to open this panel and <Kbd>Esc</Kbd> to close it.{' '}
               </>
             ) : null}
-            Every row below works from the keyboard too.
           </p>
 
           <ActionsList

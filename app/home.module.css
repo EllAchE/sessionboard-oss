@@ -42,10 +42,7 @@
 .mosaicRule,
 .about,
 .productsOverview,
-.product,
-.programme,
-.agentQuickStart,
-.finalCta {
+.agentQuickStart {
   width: min(100% - var(--space-12), var(--content-max));
   margin-inline: auto;
 }
@@ -434,10 +431,6 @@
   margin-top: var(--space-2);
 }
 
-.product {
-  padding-block: var(--space-24) var(--space-32);
-}
-
 .productsOverview {
   padding-block: var(--space-24) var(--space-8);
 }
@@ -495,6 +488,14 @@
   .roleProductDemo {
     transition: none;
   }
+
+  .attendeeLink {
+    transition: none;
+  }
+
+  .attendeeLink:hover {
+    transform: none;
+  }
 }
 
 .feature .roleProductRole {
@@ -502,14 +503,6 @@
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
-}
-
-.speakerProduct {
-  margin-top: var(--space-24);
-  padding-inline: var(--space-12);
-  border-block: var(--border-width) solid rgba(111, 101, 87, 0.34);
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 0 0 5px rgba(255, 255, 255, 0.24);
 }
 
 .sectionHeading {
@@ -521,9 +514,7 @@
 
 .aboutHeading h2,
 .sectionHeading h2,
-.programmeCopy h2,
-.agentQuickIntro h2,
-.finalCta h2 {
+.agentQuickIntro h2 {
   margin: 0;
   color: var(--text-strong);
   font: var(--weight-regular) clamp(2.4rem, 5vw, 4rem) / 1.04 var(--font-display);
@@ -532,20 +523,11 @@
 
 .aboutBody > p,
 .sectionHeading > p:last-child,
-.programmeCopy > p,
-.agentQuickIntro > p:not(.eyebrow),
-.finalCta > p:not(.eyebrow) {
+.agentQuickIntro > p:not(.eyebrow) {
   max-width: 58ch;
   margin: 0;
   color: var(--text-muted);
   font: var(--weight-regular) var(--text-lg) / var(--leading-loose) var(--font-ui);
-}
-
-.features {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-6);
-  margin-top: var(--space-16);
 }
 
 .feature {
@@ -587,43 +569,6 @@
   margin: 0;
   color: var(--text-muted);
   font: var(--type-body);
-}
-
-.programme {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
-  align-items: center;
-  gap: clamp(var(--space-10), 7vw, var(--space-24));
-  padding: var(--space-12);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.91)),
-    url('/assets/roman/materials/carrara-marble.webp') center / 520px 520px;
-  box-shadow:
-    0 18px 42px rgba(52, 47, 39, 0.08),
-    inset 0 0 0 5px rgba(255, 255, 255, 0.62);
-}
-
-.programmeVisual {
-  overflow: hidden;
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-lg);
-}
-
-.programmeVisual img {
-  width: 100%;
-  height: auto;
-}
-
-.programmeCopy,
-.finalCta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-4);
 }
 
 .textLink {
@@ -738,26 +683,6 @@
 .aboutFactLink:hover {
   color: var(--text-accent);
   text-decoration-color: currentColor;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .attendeeLink {
-    transition: none;
-  }
-
-  .attendeeLink:hover {
-    transform: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .attendeeShowcase {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .attendeeEmbed {
-    height: 520px;
-  }
 }
 
 .agentQuickStart {
@@ -954,35 +879,6 @@
   color: var(--stone-400);
 }
 
-.finalCta {
-  align-items: center;
-  margin-bottom: var(--space-20);
-  padding: var(--space-24) var(--space-10);
-  border: var(--border-width) solid var(--border-strong);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.9)),
-    url('/assets/roman/artifacts/mosaic-floor.webp') center / 760px auto;
-  box-shadow:
-    0 18px 42px rgba(52, 47, 39, 0.09),
-    inset 0 0 0 6px rgba(255, 255, 255, 0.6),
-    inset 0 0 0 7px rgba(116, 106, 91, 0.2);
-  text-align: center;
-}
-
-.finalCta h2,
-.finalCta > p:not(.eyebrow) {
-  max-width: 720px;
-}
-
-.finalCtaActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
-}
-
 @media (max-width: 1020px) {
   .hero {
     min-height: auto;
@@ -1026,24 +922,24 @@
   }
 
   .about,
-  .features,
+  .attendeeShowcase,
   .roleProducts,
-  .programme,
   .agentQuickStart {
     grid-template-columns: 1fr;
+  }
+
+  /*
+   * Stacked, the frame no longer shares the row with the link list, so the viewport-relative height
+   * has nothing left to track and a fixed one keeps the gallery from swallowing a phone screen.
+   */
+  .attendeeEmbed {
+    height: 520px;
   }
 
   .aboutHeading h2 {
     max-width: 18ch;
   }
 
-  .features {
-    gap: var(--space-8);
-  }
-
-  .programmeCopy {
-    max-width: 660px;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1051,10 +947,7 @@
   .hero,
   .about,
   .productsOverview,
-  .product,
-  .programme,
-  .agentQuickStart,
-  .finalCta {
+  .agentQuickStart {
     width: min(100% - var(--space-8), var(--content-max));
   }
 
@@ -1089,8 +982,7 @@
   }
 
   .agentStarter,
-  .manualStart,
-  .finalCtaActions {
+  .manualStart {
     width: 100%;
   }
 
@@ -1098,8 +990,7 @@
     grid-template-columns: 1fr;
   }
 
-  .manualStart > *,
-  .finalCtaActions > * {
+  .manualStart > * {
     flex: 1 1 100%;
   }
 
@@ -1139,10 +1030,8 @@
     border-radius: 0;
   }
 
-  .product,
   .productsOverview,
   .about,
-  .programme,
   .agentQuickStart {
     padding-block: var(--space-20);
   }
@@ -1151,16 +1040,8 @@
     padding-inline: 0;
   }
 
-  .speakerProduct {
-    padding-inline: var(--space-5);
-  }
-
   .aboutFacts {
     grid-template-columns: 1fr;
-  }
-
-  .programme {
-    padding-inline: var(--space-5);
   }
 
   .agentQuickStart {
@@ -1182,20 +1063,12 @@
     justify-content: space-between;
   }
 
-  .features {
-    margin-top: var(--space-12);
-  }
-
   .roleProducts {
     margin-top: var(--space-12);
   }
 
   .feature {
     grid-template-columns: auto 1fr;
-  }
-
-  .finalCta {
-    padding: var(--space-16) var(--space-5);
   }
 
   .mosaicRule {

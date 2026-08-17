@@ -304,13 +304,61 @@
   gap: var(--space-2);
 }
 
+/* The channel icon rides inside the recipient line, so the truncation moves to the text itself. */
 .mailTo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
   font: var(--type-body);
   font-weight: var(--weight-medium);
   color: var(--text-strong);
+}
+
+.channelIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.mailToText {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* --- channel filter, above the sent list --------------------------------- */
+
+/*
+ * Deliberately not sticky. `.mailSearch` below it is, and two sticky bars at `top: 0` would stack
+ * on top of each other the moment the list scrolls.
+ */
+.channelFilter {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.channelOption {
+  padding: var(--space-05) var(--space-2);
+  border-radius: var(--radius-full);
+  border: var(--border-width) solid var(--border-hairline);
+  font: var(--type-body);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.channelOption:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.channelOptionActive {
+  border-color: var(--border-accent);
+  background: var(--surface-sunken);
+  color: var(--text-accent);
+  font-weight: var(--weight-medium);
 }
 
 .mailWhen {

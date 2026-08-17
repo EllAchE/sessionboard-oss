@@ -174,6 +174,25 @@
   padding: var(--space-2) var(--space-3);
 }
 
+/* ---- Empty queue ---- */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 60ch;
+}
+
+.emptyHeadline {
+  font: var(--type-heading);
+  color: var(--text-strong);
+}
+
+.emptyBody {
+  font: var(--type-body);
+  color: var(--text-muted);
+}
+
 /* ---- Progress ---- */
 
 .progressCard {

@@ -3,8 +3,12 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Switch, useToast } from '@/components/ui';
+import {
+  AlertOverrideGrid,
+  type CategoryOverrides,
+  type ChannelOverrides,
+} from '@/components/notifications/AlertOverrideGrid';
 import { PhoneVerificationControl } from '@/components/notifications/PhoneVerificationControl';
-import { NOTIFICATION_CATEGORY_ROWS } from '@/lib/notification-categories';
 import {
   saveMyNotificationDeliveryPrefsAction,
   saveMyNotificationPrefsAction,
@@ -15,8 +19,9 @@ import styles from './settings.module.css';
 /**
  * The organizer's own alert preferences — same shape as the speaker portal's profile fields
  * (`app/portal/[eventSlug]/profile/ProfileForm.tsx`), because both write the same `user` row.
- * Phone and default channels stay global to the account. Volume and notification-type choices can
- * inherit those defaults or override them for the event currently open.
+ * Phone and default channels stay global to the account; the event and category choices inherit
+ * those defaults until one is overridden, and both surfaces render that through the same
+ * `AlertOverrideGrid` so a change to how inheritance reads only has to be made once.
  */
 export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
   const router = useRouter();
@@ -32,10 +37,11 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
   const [timezone, setTimezone] = useState(prefs.timezone ?? '');
   const [quietStart, setQuietStart] = useState(prefs.quietStart ?? '');
   const [quietEnd, setQuietEnd] = useState(prefs.quietEnd ?? '');
-  const [smsHourlyLimit, setSmsHourlyLimit] = useState(String(prefs.smsHourlyLimit));
-  const [eventNotifyEmail, setEventNotifyEmail] = useState<boolean | null>(prefs.eventNotifyEmail);
-  const [eventNotifySms, setEventNotifySms] = useState<boolean | null>(prefs.eventNotifySms);
-  const [categories, setCategories] = useState(prefs.categories);
+  const [event, setEvent] = useState<ChannelOverrides>({
+    notifyEmail: prefs.eventNotifyEmail,
+    notifySms: prefs.eventNotifySms,
+  });
+  const [categories, setCategories] = useState<CategoryOverrides>(prefs.categories);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const dirty =
@@ -45,9 +51,8 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
     timezone !== (prefs.timezone ?? '') ||
     quietStart !== (prefs.quietStart ?? '') ||
     quietEnd !== (prefs.quietEnd ?? '') ||
-    smsHourlyLimit !== String(prefs.smsHourlyLimit) ||
-    eventNotifyEmail !== prefs.eventNotifyEmail ||
-    eventNotifySms !== prefs.eventNotifySms ||
+    event.notifyEmail !== prefs.eventNotifyEmail ||
+    event.notifySms !== prefs.eventNotifySms ||
     JSON.stringify(categories) !== JSON.stringify(prefs.categories);
 
   const phoneVerified = Boolean(verifiedPhone && phone === verifiedPhone);
@@ -65,9 +70,10 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
         timezone: timezone.trim() || null,
         quietStart: quietStart || null,
         quietEnd: quietEnd || null,
-        smsHourlyLimit: Number(smsHourlyLimit),
-        eventNotifyEmail,
-        eventNotifySms,
+        // No `smsHourlyLimit`: the hourly cap is a guardrail the service defaults, not something
+        // worth a box on this panel. Omitting it leaves whatever the account already stores.
+        eventNotifyEmail: event.notifyEmail,
+        eventNotifySms: event.notifySms,
         categories,
       });
       if (!delivery.ok) {
@@ -134,61 +140,39 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
         />
       </div>
 
-      <h3>Delivery guardrails</h3>
-      <p className={styles.hint}>Quiet hours and hourly limits apply only to texts.</p>
-      <div className={styles.formGrid}>
-        <label className={styles.field}>
-          <span className={styles.label}>Your timezone</span>
-          <Input value={timezone} placeholder="America/New_York" onChange={(e) => setTimezone(e.target.value)} />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>Quiet hours start</span>
-          <Input type="time" value={quietStart} onChange={(e) => setQuietStart(e.target.value)} />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>Quiet hours end</span>
-          <Input type="time" value={quietEnd} onChange={(e) => setQuietEnd(e.target.value)} />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>Maximum texts per hour</span>
-          <Input
-            type="number"
-            min={1}
-            max={100}
-            value={smsHourlyLimit}
-            onChange={(e) => setSmsHourlyLimit(e.target.value)}
-          />
-        </label>
-      </div>
-
-      <h3>This event</h3>
-      <div className={styles.formGrid}>
-        <OverrideSelect label="Email" value={eventNotifyEmail} onChange={setEventNotifyEmail} />
-        <OverrideSelect label="Text message" value={eventNotifySms} onChange={setEventNotifySms} />
-      </div>
-
-      <h3>Notification types for this event</h3>
-      {NOTIFICATION_CATEGORY_ROWS.map(([key, label]) => (
-        <div className={styles.switchRow} key={key}>
-          <span className={styles.switchText}><span className={styles.switchLabel}>{label}</span></span>
-          <OverrideSelect
-            label="Email"
-            value={categories[key].notifyEmail}
-            onChange={(value) => setCategories((current) => ({
-              ...current,
-              [key]: { ...current[key], notifyEmail: value },
-            }))}
-          />
-          <OverrideSelect
-            label="Text"
-            value={categories[key].notifySms}
-            onChange={(value) => setCategories((current) => ({
-              ...current,
-              [key]: { ...current[key], notifySms: value },
-            }))}
-          />
+      <div className={styles.subPanel}>
+        <h3 className={styles.subTitle}>Quiet hours</h3>
+        <p className={styles.hint}>Texts pause between these times. Email is unaffected.</p>
+        <div className={styles.formGrid}>
+          <label className={styles.field}>
+            <span className={styles.label}>Your timezone</span>
+            <Input value={timezone} placeholder="America/New_York" onChange={(e) => setTimezone(e.target.value)} />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.label}>Quiet hours start</span>
+            <Input type="time" value={quietStart} onChange={(e) => setQuietStart(e.target.value)} />
+          </label>
+          <label className={styles.field}>
+            <span className={styles.label}>Quiet hours end</span>
+            <Input type="time" value={quietEnd} onChange={(e) => setQuietEnd(e.target.value)} />
+          </label>
         </div>
-      ))}
+      </div>
+
+      <div className={styles.subPanel}>
+        <h3 className={styles.subTitle}>This event</h3>
+        <AlertOverrideGrid
+          accountEmail={notifyEmail}
+          accountSms={notifySms}
+          smsLocked={!phoneVerified}
+          event={event}
+          onEventChange={setEvent}
+          categories={categories}
+          onCategoryChange={(key, patch) =>
+            setCategories((current) => ({ ...current, [key]: patch }))
+          }
+        />
+      </div>
 
       <div className={styles.formActions}>
         <Button variant="primary" loading={pending} disabled={!dirty} onClick={save}>
@@ -197,29 +181,5 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
         {dirty ? <span className={styles.hint}>Unsaved changes</span> : null}
       </div>
     </section>
-  );
-}
-
-function OverrideSelect({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: boolean | null;
-  onChange(value: boolean | null): void;
-}) {
-  return (
-    <label className={styles.field}>
-      <span className={styles.label}>{label}</span>
-      <select
-        value={value === null ? 'inherit' : value ? 'on' : 'off'}
-        onChange={(event) => onChange(event.target.value === 'inherit' ? null : event.target.value === 'on')}
-      >
-        <option value="inherit">Use global default</option>
-        <option value="on">On</option>
-        <option value="off">Off</option>
-      </select>
-    </label>
   );
 }

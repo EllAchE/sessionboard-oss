@@ -8,6 +8,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  Code2,
   Contact,
   FileText,
   FolderOpen,
@@ -33,7 +34,18 @@ import { InfoPanel } from './InfoPanel';
 import { ThemeToggle } from './ThemeToggle';
 import styles from './organizer.module.css';
 
-type NavEntry = { id: string; label: string; href: string; icon: React.ReactNode };
+type NavEntry = {
+  id: string;
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  /**
+   * Extra path prefixes this entry owns for highlighting. Needed where one nav entry fronts several
+   * routes — Messages is the sidebar's name for the whole `/organizer/comms` tab strip, and the
+   * Email and SMS tabs live at sibling paths rather than under it.
+   */
+  covers?: string[];
+};
 
 /**
  * Where each `g` sequence lands. The registry owns which letter reaches a binding; this owns where
@@ -65,6 +77,15 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
       { id: 'recordings', label: 'Recordings', href: '/organizer/recordings', icon: <Video size={15} /> },
       { id: 'speakers', label: 'Speakers', href: '/organizer/speakers', icon: <Users size={15} /> },
       { id: 'crm', label: 'Speaker CRM', href: '/crm', icon: <Contact size={15} /> },
+      /**
+       * Sponsors and the exhibitor map sat under Setup, which read them as configuration. They are
+       * neither: both publish to the attendee-facing event — `/[slug]/sponsors` and
+       * `/[slug]/exhibitor-map` — and an organizer curates them the way they curate Speakers, by
+       * adding the real thing rather than by setting an option. Program is where the event's content
+       * lives, so they belong beside Speakers and not beside Integrations.
+       */
+      { id: 'sponsors', label: 'Sponsors', href: '/organizer/sponsors', icon: <Building2 size={15} /> },
+      { id: 'exhibitor-map', label: 'Exhibitor map', href: '/organizer/exhibitor-map', icon: <MapIcon size={15} /> },
     ],
   },
   {
@@ -86,11 +107,20 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     id: 'reach',
     title: 'Reach',
     items: [
-      { id: 'comms', label: 'Comms', href: '/organizer/comms', icon: <Mail size={15} /> },
-      { id: 'mail', label: 'Mailbox', href: '/organizer/mail', icon: <Mail size={15} /> },
-      { id: 'sms', label: 'SMS', href: '/organizer/sms', icon: <MessageSquare size={15} /> },
-      { id: 'embeds', label: 'Embeds', href: '/organizer/embeds', icon: <Plug size={15} /> },
-      { id: 'share-links', label: 'Share links', href: '/organizer/share-links', icon: <Link2 size={15} /> },
+      /**
+       * One entry, not three. Compose, Templates and Sent are three tabs of one screen
+       * (`comms/CommsTabs`); listing channels here as separate destinations made the organizer pick
+       * one before knowing what they wanted to do, and left "Comms" and "Mailbox" sitting next to
+       * each other with the same icon and no way to tell which was which.
+       */
+      {
+        id: 'messages',
+        label: 'Messages',
+        href: '/organizer/comms',
+        icon: <MessageSquare size={15} />,
+        covers: ['/organizer/sent', '/organizer/mail', '/organizer/sms'],
+      },
+      { id: 'guest-links', label: 'Guest links', href: '/organizer/share-links', icon: <Link2 size={15} /> },
     ],
   },
   {
@@ -98,8 +128,8 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     title: 'Setup',
     items: [
       { id: 'settings', label: 'Settings', href: '/organizer/settings', icon: <Settings size={15} /> },
-      { id: 'sponsors', label: 'Sponsors', href: '/organizer/sponsors', icon: <Building2 size={15} /> },
-      { id: 'exhibitor-map', label: 'Exhibitor map', href: '/organizer/exhibitor-map', icon: <MapIcon size={15} /> },
+      /** Configuration and a snippet to paste, which is Setup's job, not outreach. */
+      { id: 'embeds', label: 'Embeds', href: '/organizer/embeds', icon: <Code2 size={15} /> },
       { id: 'integrations', label: 'Integrations', href: '/organizer/integrations', icon: <Plug size={15} /> },
     ],
   },
@@ -159,13 +189,12 @@ export function OrganizerShell({
   /** Longest matching href wins, so /organizer/forms/abc highlights Forms rather than Overview. */
   const activeId = useMemo(() => {
     const all = NAV.flatMap((section) => section.items);
+    const owns = (base: string) =>
+      pathname === base || (base !== '/organizer' && pathname.startsWith(`${base}/`));
     return all
-      .filter(
-        (item) =>
-          pathname === item.href ||
-          (item.href !== '/organizer' && pathname.startsWith(`${item.href}/`)),
-      )
-      .sort((a, b) => b.href.length - a.href.length)[0]?.id;
+      .flatMap((item) => [item.href, ...(item.covers ?? [])].map((base) => ({ id: item.id, base })))
+      .filter((candidate) => owns(candidate.base))
+      .sort((a, b) => b.base.length - a.base.length)[0]?.id;
   }, [pathname]);
 
   const commands = useMemo<CommandMenuItem[]>(
@@ -179,6 +208,25 @@ export function OrganizerShell({
           onSelect: () => router.push(item.href),
         })),
       ),
+      /**
+       * The sidebar collapsed these into Messages and the screen collapsed them into Sent, but they
+       * are still the words an organizer types. The palette is where a name that lost its row keeps
+       * its search term — each one lands on Sent with that channel already filtered.
+       */
+      {
+        id: 'messages-email',
+        label: 'Email log',
+        group: 'Reach',
+        icon: <Mail size={15} />,
+        onSelect: () => router.push('/organizer/sent?channel=email'),
+      },
+      {
+        id: 'messages-sms',
+        label: 'SMS log',
+        group: 'Reach',
+        icon: <MessageSquare size={15} />,
+        onSelect: () => router.push('/organizer/sent?channel=sms'),
+      },
       {
         id: 'new-event',
         label: 'Create an event',
