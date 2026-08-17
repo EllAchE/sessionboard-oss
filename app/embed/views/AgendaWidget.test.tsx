@@ -92,6 +92,17 @@ describe('AgendaWidget scaling affordances', () => {
     );
   });
 
+  it('offers a star on every block, named after its session and outside the block button', () => {
+    const html = renderToStaticMarkup(
+      <AgendaWidget bundle={bundle(1)} options={options} speakerBase="/speakers" />,
+    );
+
+    expect(html).toContain('aria-label="Add A readable session title 1 to my schedule"');
+    expect(html).toContain('aria-pressed="false"');
+    // The star is a sibling of the block, never nested inside that button.
+    expect(html).not.toMatch(/<button[^>]*>(?:(?!<\/button>)[\s\S])*<button/);
+  });
+
   it('opens the gutter an hour before the first session and leaves the header row clear', () => {
     const html = renderToStaticMarkup(
       <AgendaWidget bundle={bundle(1)} options={options} speakerBase="/speakers" />,

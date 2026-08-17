@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarPlus, Star } from 'lucide-react';
 import { buildScheduleCalendar, calendarFilename } from '../calendar';
 import {
@@ -10,20 +10,16 @@ import {
   type PublicBundle,
   type PublicSession,
 } from '../model';
+import { starActionLabel, useMySchedule } from '../my-schedule';
 import { RecordingLink, SessionFacts, ShowMore, SpeakerRoster } from './parts';
 import styles from '../embed.module.css';
 
 const MINE = 'mine';
 
 /**
- * `EMB-09`–`EMB-11`. The personal schedule is `localStorage`, not an account: an attendee reading an
- * embedded widget on somebody else's website has no reason to sign in, and a starred talk that
- * survives a reload is the whole of what the requirement asks for.
+ * `EMB-09`–`EMB-11`. The star, the day tabs and the calendar export over `useMySchedule`, which is
+ * the same store the agenda grid writes to.
  */
-function storageKey(slug: string): string {
-  return `cicero-my-schedule:${slug}`;
-}
-
 export function ItineraryWidget({
   bundle,
   options,
@@ -38,42 +34,17 @@ export function ItineraryWidget({
     [bundle.sessions, bundle.event.timezone],
   );
 
-  const [tab, setTab] = useState<string>(options.day ?? days[0]?.date ?? MINE);
-  const [starred, setStarred] = useState<string[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-
-  const key = storageKey(bundle.event.slug);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(key);
-      const parsed: unknown = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed))
-        setStarred(parsed.filter((id): id is string => typeof id === 'string'));
-    } catch {
-      /* A corrupt or blocked store just means an empty schedule, never a broken widget. */
-    }
-    setHydrated(true);
-  }, [key]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    try {
-      window.localStorage.setItem(key, JSON.stringify(starred));
-    } catch {
-      /* Private-mode storage refuses writes; the selection still works for this page view. */
-    }
-  }, [hydrated, key, starred]);
+  /*
+    The page is called "my schedule", so it opens on the schedule rather than on a list of every
+    talk the attendee has not picked. An explicit `?day=` from an embed still wins.
+  */
+  const [tab, setTab] = useState<string>(options.day ?? MINE);
+  const { starred, isStarred, toggle: toggleStar } = useMySchedule(bundle.event.slug);
 
   const chosen = useMemo(
     () => bundle.sessions.filter((session) => starred.includes(session.id)),
     [bundle.sessions, starred],
   );
-
-  const toggleStar = (id: string) =>
-    setStarred((current) =>
-      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
-    );
 
   const exportSelection = () => {
     const ics = buildScheduleCalendar(chosen, bundle.event);
@@ -94,6 +65,15 @@ export function ItineraryWidget({
   return (
     <div>
       <div className={styles.dayTabs} role="tablist" aria-label="Schedule days">
+        <button
+          type="button"
+          role="tab"
+          className={styles.dayTab}
+          aria-selected={tab === MINE}
+          onClick={() => setTab(MINE)}
+        >
+          ★ My schedule ({chosen.length})
+        </button>
         {days.map((day) => (
           <button
             key={day.date}
@@ -111,21 +91,12 @@ export function ItineraryWidget({
                 )}
           </button>
         ))}
-        <button
-          type="button"
-          role="tab"
-          className={styles.dayTab}
-          aria-selected={tab === MINE}
-          onClick={() => setTab(MINE)}
-        >
-          ★ My schedule ({chosen.length})
-        </button>
       </div>
 
       <div className={styles.exportBar}>
         <span>
           {chosen.length === 0
-            ? 'Star a session to start building your personal schedule.'
+            ? 'Star a session on a day tab, or on the agenda, to start building your schedule.'
             : `${chosen.length} session${chosen.length === 1 ? '' : 's'} in your schedule.`}
         </span>
         <button
@@ -142,13 +113,13 @@ export function ItineraryWidget({
       {visible.length === 0 ? (
         <p className={styles.empty}>
           {tab === MINE
-            ? 'Your schedule is empty. Star a session on any day tab to add it.'
+            ? 'Your schedule is empty. Star a session on any day tab, or on the agenda grid, to add it.'
             : 'Nothing is scheduled for this day yet.'}
         </p>
       ) : (
         <div className={styles.itineraryList}>
           {visible.map((session) => {
-            const isStarred = starred.includes(session.id);
+            const starredHere = isStarred(session.id);
             return (
               <article
                 key={session.id}
@@ -190,12 +161,13 @@ export function ItineraryWidget({
                 <button
                   type="button"
                   className={styles.starButton}
-                  data-starred={isStarred}
-                  aria-pressed={isStarred}
+                  data-starred={starredHere}
+                  aria-pressed={starredHere}
+                  aria-label={starActionLabel(session.title, starredHere)}
                   onClick={() => toggleStar(session.id)}
                 >
-                  <Star size={14} aria-hidden fill={isStarred ? 'currentColor' : 'none'} />
-                  {isStarred ? 'In my schedule' : 'Add to my schedule'}
+                  <Star size={14} aria-hidden fill={starredHere ? 'currentColor' : 'none'} />
+                  {starredHere ? 'In my schedule' : 'Add to my schedule'}
                 </button>
               </article>
             );
