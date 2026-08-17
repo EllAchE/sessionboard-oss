@@ -2,7 +2,11 @@ import { SignInForm } from '../signin/SignInForm';
 import { authRedirect } from '../signin/redirect';
 import styles from '../signin/signin.module.css';
 
-export const metadata = { title: 'Sign up · Cicero' };
+// Titled for the form this page renders, not for the "Start an event" button that leads here. The
+// heading below it already reads "Create your Cicero account", and since `SIGN_UP_FALLBACK` sends
+// the visitor to `/welcome` to say what they came for, "Sign up" was the last place left where the
+// product named the paperwork instead of the thing being asked for.
+export const metadata = { title: 'Create your account · Cicero' };
 
 /**
  * `/welcome` rather than `/events/new`. Pointing sign-up straight at the event form made "create an
