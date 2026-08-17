@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, CircleDot } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
+import { describeEventDeadlines } from '@/lib/event-deadlines';
 import {
   getBranding,
   listMySubmissions,
@@ -50,6 +51,7 @@ export default async function PortalHomePage({
   const pending = submissions.filter((entry) =>
     ['submitted', 'under_review', 'waitlisted'].includes(entry.status),
   );
+  const deadlines = describeEventDeadlines(event);
   const types = portalTypes(eventSlug, submissions, submissions.length);
   const base = `/portal/${eventSlug}`;
 
@@ -59,7 +61,7 @@ export default async function PortalHomePage({
         <h1 className={styles.pageTitle}>Hello, {speakerName(me, ctx).split(' ')[0]}</h1>
         {branding.welcomeHtml ? (
           <div
-            className={styles.prose}
+            className={`${styles.prose} ${styles.heroProse}`}
             /* Organizer-authored, deliberately trusted: `S-7`. */
             dangerouslySetInnerHTML={{ __html: branding.welcomeHtml }}
           />
@@ -84,6 +86,32 @@ export default async function PortalHomePage({
         <Stat label="Accepted sessions" value={String(accepted.length)} />
       </section>
 
+      {/*
+        `AR-50`. Below the stats and above "what you owe", because these are dates a speaker plans
+        around rather than work they owe. They are the organizers' own milestones, so nothing here
+        is addressed to the speaker as a task and none of it reaches the overdue count above.
+      */}
+      {deadlines.length > 0 ? (
+        <section>
+          <h2 className={styles.sectionTitle}>
+            <CalendarClock size={16} aria-hidden /> Key dates from the organizers
+          </h2>
+          <Card padding="none">
+            <CardBody>
+              {deadlines.map((deadline) => (
+                <div key={deadline.key} className={styles.checkRow}>
+                  <div className={styles.spacer}>
+                    <div>{deadline.publicLabel}</div>
+                    <div className={styles.faint}>{deadline.when}</div>
+                  </div>
+                  <span className={styles.muted}>{deadline.relative}</span>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+        </section>
+      ) : null}
+
       <section>
         <h2 className={styles.sectionTitle}>
           <CircleDot size={16} aria-hidden /> What you owe
@@ -94,7 +122,7 @@ export default async function PortalHomePage({
           </div>
         ) : (
           <Card padding="none">
-            <CardBody>
+            <CardBody className={styles.checkList}>
               {outstanding.slice(0, 6).map((entry) => (
                 <div key={entry.assignmentId} className={styles.checkRow}>
                   {entry.overdue ? (

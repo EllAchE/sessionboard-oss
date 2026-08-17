@@ -320,6 +320,41 @@ roadmap list.
 | First-class PowerPoint and Google Slides decks | Speaker deck support is only PDF and Keynote today; PowerPoint and Google Slides are accepted as opaque bytes rather than as understood deck formats | Organizer or speaker demand for PowerPoint and Google Slides as supported deck formats, which we do want to add |
 | Arbitrary event resource uploads | Every upload path is bound to a known slot — headshot, speaker deliverable, submission form file field, exhibitor-map PDF, recording — so type validation, size caps, and publication rules can be specific to each one. Speaker-facing reference material is organizer-written portal pages rather than attached files. A general "attach anything to the event" library would need its own permission, visibility, and retention model | Organizers wanting to publish documents that are not one of the known slots — a speaker handbook, an event history page, a media kit, a sponsor prospectus — at which point a generic resource library with per-file audience control is a better answer than another bespoke slot |
 
+### Agent mail as the first-run setup channel
+
+Agent mail ships as a bounded MCP slice: the server can list effective templates and redacted
+delivery metadata, preview one recipient-resolved email, and send it through the same audited
+transport the UI uses. Every one of those tools authenticates with an event-scoped API key.
+
+The obvious next idea is to point that channel at setup itself — give the setup agent its own
+mailbox, let it create the account and the event, have Cicero deliver the freshly minted API key to
+that address, and let the agent wire up its own MCP client and keep going. Setup would become one
+agent-run sequence instead of a human pausing at **Organizer → Integrations** to copy a key that is
+shown exactly once. We did not build it, and the reason is ordering rather than ambition:
+
+- **It is circular.** Agent mail is authenticated by the credential the flow is trying to obtain.
+  Nothing in the send path can run before a key exists, so first-run delivery would have to be a
+  separate, unauthenticated path with its own rules — not a reuse of this one.
+- **Every guardrail assumes an existing event.** The recipient must already be a participant on the
+  key's event, the write must echo a target-specific confirmation literal plus a content-bound
+  digest, and email preference is rechecked at dispatch. None of those checks are evaluable before
+  the event and its participants exist.
+- **Mailing a key widens what the once-only reveal exists to contain.** Keys are stored as hashes
+  and shown a single time on purpose. Emailing a live write credential to an address chosen by the
+  same unauthenticated caller who is creating the account issues that credential to whoever asked,
+  and leaves it sitting in an inbox and a delivery log.
+
+`onboard-cicero` covers the same ground the safe way today: it records non-secret local state —
+host, event slug, account and API-key readiness, completed milestones — resumes at the first
+unfinished step, and narrates key minting instead of performing it, so the credential never leaves
+the human's hands or lands in this repository's state file.
+
+What would justify revisiting it: a verified agent identity bound to an organizer account rather
+than a self-asserted address, a short-lived single-use enrollment token that exchanges for a key
+instead of the key itself, and an explicit human approval on the account side before enrollment
+completes. With those three, first-run delivery becomes an enrollment protocol worth building;
+without them it is credential issuance on request.
+
 ### Known gaps, not strategic exclusions
 
 - Mobile responsiveness received less design and verification time on the dense organizer
@@ -327,6 +362,18 @@ roadmap list.
   desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
   especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
   host-site compatibility pass.
+- The landing experience for a reviewer or speaker who arrives without an invitation link was not
+  thought through deeply. The design assumed invited arrival: an organizer sends a magic link and it
+  lands the person on the one surface they need. Someone who instead types the domain, follows a
+  colleague's link, or returns months later gets a page written mostly for organizers and evaluators
+  — the role cards name organizer, speaker, and attendee but not reviewer, and none of them is an
+  entry point. Sign-in with no `next` defaults to `/organizer`, and the routing that corrects it is a
+  chain of redirects rather than a deliberate destination: the organizer layout bounces a reviewer to
+  `/review` and a speaker to `/portal`, but sends anyone with no event membership to `/events/new`,
+  which asks a speaker or reviewer waiting to be added to create a conference instead. The right
+  answer is probably an explicit post-authentication router that resolves a person's roles before
+  choosing a destination, plus a signed-out landing path that lets a speaker or reviewer say which
+  event they belong to, rather than more redirect rules layered on the organizer shell.
 - The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
   not been proven there even though message generation and `.ics` behavior are tested.
 - R2 and Twilio adapters are implemented and tested but have not been exercised against paid

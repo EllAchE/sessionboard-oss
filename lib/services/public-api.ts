@@ -55,6 +55,8 @@ export function toEventPayload(row: EventRow): EventPayload {
     endsOn: row.endsOn,
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt.toISOString(),
+    speakerDeadlineAt: row.speakerDeadlineAt?.toISOString() ?? null,
+    agendaDeadlineAt: row.agendaDeadlineAt?.toISOString() ?? null,
     websiteUrl: row.websiteUrl,
     venueName: row.venueName,
     venueAddress: row.venueAddress,

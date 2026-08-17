@@ -309,7 +309,7 @@ export function TasksIndex({
       {view === 'assignments' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Who owes what</CardTitle>
+            <CardTitle>Outstanding tasks</CardTitle>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={assignments} />

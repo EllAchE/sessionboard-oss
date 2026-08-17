@@ -52,9 +52,9 @@
 
 .nav {
   min-height: 72px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-6);
   margin-top: var(--space-4);
   padding-inline: var(--space-5);
@@ -76,17 +76,23 @@
 .navLinks {
   display: flex;
   align-items: center;
+  justify-self: center;
   gap: var(--space-6);
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
+}
+
+.navAuth {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: var(--space-3);
 }
 
 .productsLink,
 .aboutLink,
 .demoLink,
-.agentLink,
 .apiDocsLink,
-.githubLink,
-.signInLink {
+.githubLink {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -97,10 +103,8 @@
 .productsLink:hover,
 .aboutLink:hover,
 .demoLink:hover,
-.agentLink:hover,
 .apiDocsLink:hover,
-.githubLink:hover,
-.signInLink:hover {
+.githubLink:hover {
   color: var(--text-accent);
 }
 
@@ -944,12 +948,8 @@
 
   .productsLink,
   .aboutLink,
-  .apiDocsLink {
-    display: none;
-  }
-
-  .demoLink,
-  .agentLink {
+  .apiDocsLink,
+  .demoLink {
     display: none;
   }
 

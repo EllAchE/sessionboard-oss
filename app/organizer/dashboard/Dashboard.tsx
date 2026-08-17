@@ -10,6 +10,7 @@ import {
   IconButton,
   Input
 } from '@/components/ui';
+import type { EventDeadline } from '@/lib/event-deadlines';
 import type {
   Breakdown,
   Counters,
@@ -41,6 +42,11 @@ import {
 
 export type DashboardData = {
   eventName: string;
+  /**
+   * `AR-50`. Described on the server so the strip reads one clock. Empty when the edition tracks
+   * neither milestone, and the strip then renders nothing rather than an absence.
+   */
+  deadlines: EventDeadline[];
   outstanding: OutstandingTaskRow[];
   taskSummary: TaskCompletionSummary;
   counters: Counters;
@@ -88,7 +94,7 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
       return (
         <Card className={styles.wide}>
           <CardHeader>
-            <CardTitle>Who owes what</CardTitle>
+            <CardTitle>Outstanding tasks</CardTitle>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={data.outstanding} />
@@ -191,6 +197,23 @@ export function Dashboard({ data }: { data: DashboardData }) {
               : `${data.taskSummary.outstanding} tasks outstanding, none overdue.`}
           </p>
         </div>
+        {/*
+          `AR-50`. Outside the widget grid on purpose: the milestones apply to the edition rather
+          than to any one dashboard, and a date the organizer set for themselves should not be
+          something a saved layout can hide. Nothing here is a warning — a passed milestone is
+          stated, not scolded about.
+        */}
+        {data.deadlines.length > 0 ? (
+          <ul className={styles.milestones}>
+            {data.deadlines.map((deadline) => (
+              <li key={deadline.key} className={styles.milestone} data-passed={deadline.passed}>
+                <span className={styles.milestoneLabel}>{deadline.label}</span>
+                <span className={styles.milestoneWhen}>{deadline.when}</span>
+                <span className={styles.milestoneRelative}>{deadline.relative}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <div className={styles.tabRow}>
