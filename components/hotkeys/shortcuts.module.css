@@ -52,17 +52,9 @@
   font: var(--type-body);
 }
 
+/* The caps lay themselves out in `KeyCaps`; this only unsets the `dd` margin around them. */
 .keys {
   margin: 0;
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-1);
-  white-space: nowrap;
-}
-
-.connector {
-  color: var(--text-muted);
-  font: var(--type-label);
 }
 
 .empty,
