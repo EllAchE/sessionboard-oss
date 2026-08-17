@@ -112,11 +112,16 @@
   box-shadow: var(--shadow-sm);
 }
 
+/*
+ * Centred rather than top-aligned: the hero copy lost the role-demo list to the products section,
+ * and against the full-viewport minimum the shorter column left a screen-height gap under "Create
+ * an event" while the dashboard preview sat alone at the top of the right column.
+ */
 .hero {
   min-height: calc(100vh - 88px);
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  align-items: start;
+  align-items: center;
   gap: clamp(var(--space-10), 6vw, var(--space-20));
   padding-block: var(--space-20) var(--space-24);
 }
@@ -186,6 +191,11 @@
     inset 0 0 0 3px rgba(255, 255, 255, 0.58);
 }
 
+.agentStarterCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .agentStarterLabel {
   display: inline-flex;
   align-items: center;
@@ -201,6 +211,12 @@
   flex: 0 0 auto;
 }
 
+.agentStarterHint {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
+}
+
 .manualStart {
   display: flex;
   flex-wrap: wrap;
@@ -212,18 +228,6 @@
 .manualStart > span {
   color: var(--text-faint);
   font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
-}
-
-.personas {
-  width: 100%;
-  max-width: 540px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  padding-top: var(--space-5);
-  border-top: var(--border-width) solid
-    color-mix(in srgb, var(--border-default) 70%, transparent);
 }
 
 .freshStart {
@@ -244,96 +248,12 @@
   font: var(--type-body);
 }
 
-.personasTitle {
+.freshStartTitle {
   margin: 0;
   color: var(--text-faint);
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
-}
-
-.personaList {
-  display: grid;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.persona {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.92)),
-    url('/assets/roman/materials/carrara-marble.webp') center / 280px 280px;
-  box-shadow:
-    0 10px 24px rgba(52, 47, 39, 0.06),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.6);
-  text-decoration: none;
-  transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease;
-}
-
-.persona:hover {
-  border-color: var(--border-accent);
-  transform: translateY(-1px);
-  box-shadow:
-    0 14px 30px rgba(52, 47, 39, 0.1),
-    inset 0 0 0 3px rgba(255, 255, 255, 0.72);
-}
-
-.persona:focus-visible {
-  outline: none;
-  border-color: var(--border-accent);
-  box-shadow: var(--ring-focus);
-}
-
-.personaIcon {
-  grid-row: span 2;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border: var(--border-width) solid
-    color-mix(in srgb, var(--border-accent) 55%, var(--border-default));
-  border-radius: var(--radius-xs);
-  background: rgba(253, 244, 241, 0.84);
-  color: var(--text-accent);
-}
-
-.personaLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-strong);
-  font: var(--weight-semibold) var(--text-md) / 1.2 var(--font-ui);
-}
-
-.persona:hover .personaLabel,
-.persona:focus-visible .personaLabel {
-  color: var(--text-accent);
-}
-
-.personaBlurb {
-  color: var(--text-muted);
-  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .persona {
-    transition: none;
-  }
-
-  .persona:hover {
-    transform: none;
-  }
 }
 
 .heroVisual {
@@ -533,13 +453,48 @@
  * Four role cards share the row that used to hold three, so the icon sits above the copy instead of
  * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
  * break short headings like "Score proposals, not spreadsheets." across three lines.
+ *
+ * A flex column rather than the base card's grid: each card now ends with the demo link for its
+ * role, and `margin-top: auto` on that link keeps all four sitting on the same baseline however
+ * many lines the title and body above them take.
  */
 .feature.roleProduct {
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
 }
 
-.feature.roleProduct .featureIcon {
-  grid-row: auto;
+.roleProductDemo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  color: var(--text-accent);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-ui);
+  text-decoration: none;
+  transition: gap 120ms ease;
+}
+
+.roleProductDemo:hover {
+  gap: var(--space-3);
+}
+
+.roleProductDemo:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--ring-focus);
+}
+
+.roleProductDemo svg {
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roleProductDemo {
+    transition: none;
+  }
 }
 
 .feature .roleProductRole {

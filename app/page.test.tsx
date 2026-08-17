@@ -37,6 +37,7 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('AI-guided setup');
     expect(html).toContain('Copy prompt');
     expect(html).not.toContain('Copy AI setup prompt');
+    expect(html).toContain('one safe step at a time');
     expect(html).not.toContain('Let Claude or ChatGPT walk through setup with you');
     expect(html).toContain('Paste into your agent');
     expect(html).toContain('alt="OpenAI"');
@@ -116,6 +117,24 @@ describe('fresh-instance home page', () => {
     );
     expect(html).toContain('Try the reviewer queue');
     expect(html).toContain('Rate proposals as a reviewer');
+  });
+
+  it('hangs each role demo off the card that describes the role', () => {
+    const html = renderHome(true);
+
+    expect(html).not.toContain('Or explore a conference already in progress');
+    for (const [label, href] of [
+      ['Run the conference', DEMO_ENTRY_LINKS.organizer],
+      ['Score the proposals', DEMO_ENTRY_LINKS.reviewer],
+      ['Give a talk', DEMO_ENTRY_LINKS.speaker],
+      ['Browse the programme', DEMO_PUBLIC_SITE_LINK],
+    ] as const) {
+      expect(html).toContain(label);
+      expect(html.indexOf('One conference, four purpose-built experiences.')).toBeLessThan(
+        html.indexOf(label),
+      );
+      expect(html).toContain(href.replaceAll('&', '&amp;'));
+    }
   });
 
   it('makes products and docs discoverable from the primary navigation', () => {
@@ -201,14 +220,14 @@ describe('fresh-instance home page', () => {
 
   /**
    * The published site is what the three role tours produce, so it is offered the same way they
-   * are: a card in the hero tour list and a button in the closing one, both after the roles.
+   * are: a role card in the products section and a button in the closing tour, both after the roles.
    */
   it('shows the sample published event alongside the role tours', () => {
     const html = renderHome(true);
 
     expect(html).toContain(`href="${DEMO_PUBLIC_SITE_LINK}"`);
     expect(html).toContain('Browse the programme');
-    expect(html).toContain('the published event site. No account needed.');
+    expect(html).toContain('no account needed.');
     expect(html).toContain('Tour the published event');
     expect(html.indexOf('Give a talk')).toBeLessThan(html.indexOf('Browse the programme'));
     expect(html.indexOf('Prepare a talk as a speaker')).toBeLessThan(
