@@ -13,9 +13,11 @@ import {
   FileCheck,
   Github,
   Globe2,
+  KeyRound,
   LayoutDashboard,
   ListChecks,
   Megaphone,
+  Plug,
   ShieldCheck,
   Sparkles,
   UserPlus,
@@ -25,14 +27,16 @@ import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
 import styles from './home.module.css';
 
-const AGENT_STARTER_PROMPT = `$onboard-cicero
+/**
+ * Deliberately one instruction and one URL. The guide at that URL already owns resuming from saved
+ * state, asking only for unknown facts, one milestone at a time, and confirmation before any live
+ * change -- restating those rules here only gave the page a wall of text to render and a second
+ * copy to keep in sync. Anything this prompt should do belongs in `onboard-cicero/SKILL.md`.
+ */
+const AGENT_STARTER_PROMPT = `Set up Cicero for my conference, then connect its MCP server so you can run the event for me. Follow the guide at https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md`;
 
-Help me set up Cicero from this Claude or ChatGPT session.
-
-Read and follow the bundled onboarding guide first:
-https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md
-
-Resume from this working directory if Cicero is already cloned; otherwise help me clone it. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. If you cannot run a step yourself, give me the exact action and wait for its result. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
+/** Event-scoped by construction, so the slug stays a placeholder until the organizer has an event. */
+const MCP_ENDPOINT = '/api/v1/events/{event-slug}/mcp';
 
 const ORGANIZER_FEATURES = [
   {
@@ -195,9 +199,12 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             <div className={styles.agentStarterCopy}>
               <p className={styles.agentStarterLabel}>
                 <Sparkles size={17} aria-hidden="true" />
-                AI-guided setup
+                Agent-first
               </p>
-              <p>Let Claude or ChatGPT walk through setup with you, one safe step at a time.</p>
+              <p>
+                Let Claude or ChatGPT set Cicero up and run it for you over MCP, one safe step at a
+                time.
+              </p>
             </div>
             <CopyAgentPromptButton
               prompt={AGENT_STARTER_PROMPT}
@@ -422,41 +429,48 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.agentQuickIntro}>
           <p className={styles.eyebrow}>
             <Sparkles size={17} aria-hidden="true" />
-            For organizers · AI-guided setup
+            For organizers · Agent-first
           </p>
           <h2 id="agent-quick-start-title">
-            Let your AI assistant handle the setup checklist.
+            Let your AI assistant handle the hard work.
           </h2>
           <p>
-            Paste one prompt into Claude or ChatGPT. Cicero’s onboarding guide finds what is
-            already done, walks through what is missing, and keeps you in control of every change.
+            Cicero is built to be driven by an agent. Connect its MCP server and Claude or ChatGPT
+            works the event itself — reading submissions, reconciling the program, drafting speaker
+            email — instead of narrating what you should click.
           </p>
 
           <ol className={styles.agentSteps}>
             <li>
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
-                <h3>Copy one prompt</h3>
-                <p>Paste it into a Claude or ChatGPT session with coding tools.</p>
+                <h3>Copy one line</h3>
+                <p>Paste it into Claude or ChatGPT. The guide sets up hosting and your event.</p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>2</span>
               <div className={styles.agentStepCopy}>
-                <h3>Pick up wherever you left off</h3>
-                <p>The guide remembers completed milestones and returns to the next open step.</p>
+                <h3>Create a key</h3>
+                <p>
+                  Organizer → <strong>Integrations</strong> → Create key. Read-only or read and
+                  write; shown once, hashed at rest.
+                </p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>3</span>
               <div className={styles.agentStepCopy}>
-                <h3>Review before anything changes</h3>
-                <p>Event updates are previewed first, and destructive actions need confirmation.</p>
+                <h3>Connect the MCP</h3>
+                <p>Point your client at your event’s URL. Ten tools, scoped by that key.</p>
               </div>
             </li>
           </ol>
 
           <div className={styles.agentLinks}>
+            <a className={styles.textLink} href="/api/v1/mcp-tools.json">
+              Browse the MCP tools <ArrowRight size={16} aria-hidden="true" />
+            </a>
             <a
               className={styles.textLink}
               href="https://github.com/EllAchE/sessionboard-oss/tree/main/.agents/skills/onboard-cicero"
@@ -479,8 +493,26 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.agentPrompt}>
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
+              <Plug size={17} aria-hidden="true" />
+              MCP server
+            </span>
+            <a className={styles.textLink} href="/api/v1/mcp-tools.json">
+              Tool manifest
+            </a>
+          </div>
+          <pre>
+            <code>{MCP_ENDPOINT}</code>
+          </pre>
+          <p className={styles.agentPromptNote}>
+            <KeyRound size={17} aria-hidden="true" />
+            Streamable HTTP, authenticated with an event API key as a Bearer token. Keys are
+            event-scoped, so you need your own event first — the prompt below gets you there.
+          </p>
+
+          <div className={styles.agentPromptHeader}>
+            <span className={styles.agentPromptLabel}>
               <Sparkles size={17} aria-hidden="true" />
-              Claude &amp; ChatGPT setup prompt
+              Setup prompt
             </span>
             <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
           </div>

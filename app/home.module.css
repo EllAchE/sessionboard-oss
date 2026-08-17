@@ -836,6 +836,27 @@
   font: var(--weight-regular) var(--text-xs) / var(--leading-snug) var(--font-ui);
 }
 
+/*
+ * The API-key prerequisite, sitting directly under the endpoint it qualifies. Deliberately without
+ * the warning tint `.agentPromptSafety` carries: needing your own event before an event-scoped key
+ * can exist is a prerequisite, not a hazard, and the MCP server itself is deployed and working.
+ */
+.agentPromptNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-width) solid rgba(255, 255, 255, 0.13);
+  color: var(--stone-300);
+  font: var(--weight-regular) var(--text-xs) / var(--leading-snug) var(--font-ui);
+}
+
+.agentPromptNote svg {
+  flex: 0 0 auto;
+  color: var(--stone-400);
+}
+
 .finalCta {
   align-items: center;
   margin-bottom: var(--space-20);
