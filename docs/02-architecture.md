@@ -34,7 +34,7 @@ supported secondary target, not the thing the architecture bends around.
 | Database | Neon Postgres via **Hyperdrive** | Neon Postgres via `DATABASE_URL` | Postgres 16 in `docker-compose` |
 | DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** | **the same two packages** |
 | File storage | Postgres by default, R2 binding when bound | Postgres `file_blob` | MinIO, or any S3 endpoint |
-| Email | Resend HTTP API | Resend HTTP API | SMTP via nodemailer |
+| Email | Resend HTTP; Resend SMTP for calendar MIME | Resend HTTP; Resend SMTP for calendar MIME | SMTP via nodemailer |
 | Scheduled sends | Hourly Cron Trigger → custom Worker → `/api/cron` in-process | Vercel Cron → `GET /api/cron` | any cron hitting `/api/cron` |
 
 `wrangler.jsonc` points at `custom-worker.ts`, which preserves OpenNext's generated `fetch` handler
@@ -91,7 +91,7 @@ Two details of that sentence are load-bearing, and the spike caught both the har
   pool. Self-hosted, the cached pool is kept, because there it is correct.
 
 That is what makes the hosting choice **reversible**, and reversibility is the point. Postgres,
-S3-compatible storage and HTTP email are all host-agnostic. If Workers turns hostile at hour six we
+S3-compatible storage and Resend's submission endpoints are all host-agnostic. If Workers turns hostile at hour six we
 redeploy to Vercel or Fly and lose exactly one thing — the `Z-1` bonus, which the brief itself calls
 "mild." Nothing else in the codebase changes.
 
@@ -204,7 +204,7 @@ badly.
 | Icons | `lucide-react` | Already the design system's icon set |
 | Drag & drop | `@dnd-kit/core` + `/sortable` | Headless, no stylesheet to override. Powers `A-1` and the form builder |
 | Rich text | Markdown textarea + live preview | Tiptap is ~100KB and half a day. Markdown is what power users want, has no XSS surface, and renders identically in email and embeds |
-| Email | Resend HTTP behind a `MailTransport` interface | Three impls: `resend`, `smtp`, `log`. Workers cannot open SMTP sockets; self-host should not need an API key |
+| Email | Resend behind a `MailTransport` interface | Three impls: `resend`, `smtp`, `log`. Resend uses HTTP for ordinary mail and its SMTP submission endpoint for Outlook-compatible calendar MIME; self-host should not need an API key |
 | Calendar | Hand-written VCALENDAR, ~80 lines | No npm package does `METHOD:REQUEST` with `SEQUENCE` bumping correctly, which is the hard half of `C-3` |
 | Fonts | `next/font/local` over the extracted woff2 | Self-hosted, no runtime Google request, no layout shift |
 | AI features | Anthropic SDK, `claude-sonnet-5` | Powers `V-9` and `A-8`; degrades to disabled when no key is set |

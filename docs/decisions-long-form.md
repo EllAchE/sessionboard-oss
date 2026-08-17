@@ -680,7 +680,8 @@ sitting, but scale theater would have made this build less reliable rather than 
 There are current limitations I would keep visible:
 
 - The interface is English-only, and character counting is not grapheme-aware.
-- Some pointer-heavy agenda actions still need a complete keyboard placement path.
+- Keyboard shortcuts reach the organizer workspace, agenda placement included. The reviewer
+  surfaces, the speaker portal, and the CRM are still mouse-first.
 - The embed studio saves configurations in the current browser rather than sharing them across an
   organization.
 - The log and Postgres-storage fallbacks are excellent for a first run, not substitutes for a real

@@ -124,9 +124,15 @@ To actually send, pick a transport:
 
 | | Set | Notes |
 |---|---|---|
-| **Resend** | `MAIL_TRANSPORT=resend`, `RESEND_API_KEY` | HTTP, so it works on Workers and self-hosted alike. The only option on Cloudflare. |
-| **SMTP** | `MAIL_TRANSPORT=smtp`, and either `SMTP_URL` or `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`) | Self-host only — Workers has no raw TCP. `SMTP_ALLOW_INSECURE=true` accepts a self-signed certificate, for MailHog and other local catchers. |
+| **Resend** | `MAIL_TRANSPORT=resend`, `RESEND_API_KEY` | Ordinary mail uses HTTP. Calendar mail uses Resend's SMTP submission endpoint with the same key so Outlook receives a real calendar MIME part. This remains the recommended option on Cloudflare. |
+| **SMTP** | `MAIL_TRANSPORT=smtp`, and either `SMTP_URL` or `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`) | Intended for Node/self-hosted deployments and local MailHog. `SMTP_ALLOW_INSECURE=true` accepts a self-signed certificate. Cloudflare deployments should use the Resend transport, whose calendar path uses port 465 rather than Workers' blocked port 25. |
 | **Auto** | `MAIL_TRANSPORT=auto` | Takes whichever of the two has credentials, and the dev mailbox when neither does. Lets an instance be switched on by adding a key rather than by editing its configuration; it is what the deployed demo runs. |
+
+The split inside the Resend transport is deliberate. Resend's HTTP attachment API can attach an
+`.ics` file, but it cannot express the `multipart/alternative` calendar part Outlook uses to
+recognize a meeting request. Calendar messages therefore go through `smtp.resend.com:465` and
+Nodemailer's `icalEvent` path, which emits both `text/calendar; method=…` and a downloadable `.ics`
+fallback. Everything without a calendar stays on the HTTP API.
 
 Both paths need **`MAIL_FROM` set to an address at a domain the provider has verified** (Resend:
 Domains → add and complete the DNS records; SMTP: whatever your relay's envelope rules allow).

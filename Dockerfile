@@ -3,19 +3,19 @@
 # Bun installs and builds because bun.lock is the lockfile; Node 22 runs the server because
 # `next start` is the supported production entrypoint and drags in no Bun-specific behaviour.
 
-FROM oven/bun:1.3.10-slim AS deps
+FROM oven/bun:1.3.14-slim AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-FROM oven/bun:1.3.10-slim AS build
+FROM oven/bun:1.3.14-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 
-FROM node:22.22.0-slim AS runtime
+FROM node:26.7.0-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

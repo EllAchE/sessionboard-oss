@@ -1,0 +1,700 @@
+{
+  "$comment": "Feature catalog for the alternative-designs survey. `areas` are the brief's baseline everyone was measured on; `extras` are capabilities other entrants shipped that Cicero did not, each attributed to the project slugs in projects.json; `ciceroDifferentiators` are Cicero capabilities counted absent across the analyzed field. Hand-maintained — `bun run alternatives:build` validates every attribution against projects.json.",
+  "areas": [
+    {
+      "id": "cfp-intake",
+      "label": "CFP intake",
+      "description": "Public proposal submission: form definition, open/close windows, drafts, edits, withdrawal, confirmation."
+    },
+    {
+      "id": "review-scoring",
+      "label": "Review rounds & scoring",
+      "description": "Reviewer assignment, rubrics and weighted criteria, rounds, score capture, round outcomes."
+    },
+    {
+      "id": "anonymized-review",
+      "label": "Anonymized review",
+      "description": "Speaker identity withheld from reviewers where the round is configured anonymous, enforced server-side."
+    },
+    {
+      "id": "decisions-notifications",
+      "label": "Decisions & notifications",
+      "description": "Accept/reject/waitlist transitions and the notices they generate."
+    },
+    {
+      "id": "agenda-scheduling",
+      "label": "Agenda / scheduling",
+      "description": "Rooms, tracks, timeslots, placement of accepted sessions, publication of the program."
+    },
+    {
+      "id": "conflict-detection",
+      "label": "Conflict detection",
+      "description": "Room and speaker double-booking surfaced before or at publication."
+    },
+    {
+      "id": "speaker-portal",
+      "label": "Speaker portal & tasks",
+      "description": "Authenticated speaker surface for profile, assignments, and assigned tasks."
+    },
+    {
+      "id": "content-deliverables",
+      "label": "Content deliverables",
+      "description": "Requested files (slides, headshots, bios) with upload, approval, and revision handling."
+    },
+    {
+      "id": "comms-templates",
+      "label": "Comms / templates",
+      "description": "Reusable message templates, merge fields, audience resolution, delivery and retry."
+    },
+    {
+      "id": "public-pages",
+      "label": "Public event pages",
+      "description": "Published agenda, session, and speaker pages for attendees."
+    },
+    {
+      "id": "embeds",
+      "label": "Embeddable widgets",
+      "description": "Agenda/speaker views embeddable in an external site."
+    },
+    {
+      "id": "rest-api",
+      "label": "Public REST API",
+      "description": "Versioned HTTP API over program data for external consumers."
+    },
+    {
+      "id": "ai-features",
+      "label": "AI features",
+      "description": "Any model-backed capability reachable by a user."
+    },
+    {
+      "id": "speaker-crm",
+      "label": "Speaker CRM",
+      "description": "Cross-event speaker/contact directory beyond a single event's submissions."
+    },
+    {
+      "id": "sponsors",
+      "label": "Sponsors",
+      "description": "Sponsor or exhibitor entities, intake, and public partner surfaces."
+    }
+  ],
+  "extras": [
+    {
+      "id": "AD-1",
+      "n": 1,
+      "title": "Whole-event cloning / reusable event templates",
+      "description": "Copy forms, tracks, rooms, scorecards, task and message templates, and optionally the team, into a new event. Several implementations preview the copy before applying, and deliberately exclude operational history.",
+      "convergence": 5,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "agrimsingh-conference-engine",
+        "jpoehnelt-session-party",
+        "maddiedreese-ProgramLoom",
+        "TheThingInTheThing-namos-sessions-webapp",
+        "adityak6798-ManageMyConference"
+      ]
+    },
+    {
+      "id": "AD-2",
+      "n": 2,
+      "title": "Speaker availability / blackout windows as a scheduling constraint",
+      "description": "Collected during CFP or in the portal as dates, times, or dayparts, then surfaced as explicit conflicts against the agenda. Cicero detects room and speaker double-booking but has no concept of a speaker being unavailable at a time they were never scheduled.",
+      "convergence": 4,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "nayamoss-namos-sessions-public",
+        "TheThingInTheThing-namos-sessions-webapp",
+        "0xOsprey-saas-killa",
+        "yisding-openboard.events"
+      ]
+    },
+    {
+      "id": "AD-3",
+      "n": 3,
+      "title": "Richer embed output formats",
+      "description": "JSON, XML, subscribable iCalendar, and script-loader snippets emitted from the same widget configuration, alongside the iframe. This confirms a gap we had already recorded against ourselves.",
+      "convergence": 5,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "mrmichael73-greenroom-kms",
+        "d4mr-opensesh",
+        "iankar8-event-manager-os",
+        "westoque-session-hero",
+        "akakabrian-sessionslate"
+      ]
+    },
+    {
+      "id": "AD-4",
+      "n": 4,
+      "title": "Revision history with organizer restore",
+      "description": "Attributed, numbered snapshots of proposal and session titles/abstracts that an organizer can roll back.",
+      "convergence": 4,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "conorbronsdon-callboard-app",
+        "westoque-session-hero",
+        "SteveMLC-lectern",
+        "realgenekim-curtain-call-cfp"
+      ]
+    },
+    {
+      "id": "AD-5",
+      "n": 5,
+      "title": "Bidirectional Airtable sync",
+      "description": "Cicero's Airtable integration is one-way. Others reconcile in both directions with field ownership, conflict handling, retries, and dead letters.",
+      "convergence": 5,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "openrostrum-openrostrum",
+        "jpoehnelt-session-party",
+        "guangyusong-opencallboard",
+        "SteveMLC-lectern",
+        "red-omotenashi"
+      ]
+    },
+    {
+      "id": "AD-6",
+      "n": 6,
+      "title": "Authentication beyond magic links",
+      "description": "Cicero is magic-link-only by design (`T-4a`); five teams read the brief as permitting more.",
+      "convergence": 5,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "akakabrian-sessionslate",
+        "twilwa-session-bored",
+        "M31-Labs-rostrum",
+        "adityak6798-ManageMyConference",
+        "mkly-gatherpulse"
+      ]
+    },
+    {
+      "id": "AD-7",
+      "n": 7,
+      "title": "Real-time collaborative agenda over Durable Objects + WebSockets",
+      "description": "A per-event Cloudflare Durable Object serializes schedule writes and broadcasts invalidations, so several operators can drag the grid at once.",
+      "convergence": 4,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "agrimsingh-conference-engine",
+        "caseymanos-opensession",
+        "jpoehnelt-session-party",
+        "thedatadavis-seshmesh"
+      ]
+    },
+    {
+      "id": "AD-8",
+      "n": 8,
+      "title": "In-product streaming AI assistant with tool use",
+      "description": "A chat surface inside the organizer app that drives the same tool registry the MCP server exposes, with persisted threads and an approval step before mutations. Cicero's AI is advisory-only and out-of-band.",
+      "convergence": 4,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "CampbellVentures-smolboard",
+        "getzenai-untitledconference",
+        "nayamoss-namos-sessions-public",
+        "Phantastic-AI-fireside"
+      ]
+    },
+    {
+      "id": "AD-9",
+      "n": 9,
+      "title": "Tokenized no-login share links",
+      "description": "Expiring, revocable links that expose a proposal, deliverable, or report to someone without an account.",
+      "convergence": 4,
+      "tier": "Shipped by many teams",
+      "projects": [
+        "iankar8-event-manager-os",
+        "Phantastic-AI-fireside",
+        "mkly-gatherpulse",
+        "adityak6798-ManageMyConference"
+      ]
+    },
+    {
+      "id": "AD-10",
+      "n": 10,
+      "title": "OAuth 2.1 authorization server for MCP",
+      "description": "dynamic registration, PKCE, consent, discovery, refresh rotation. Cicero's MCP is token-scoped without an authorization-code flow.",
+      "convergence": 2,
+      "tier": "Shipped by two teams",
+      "projects": [
+        "d4mr-opensesh",
+        "maddiedreese-ProgramLoom"
+      ]
+    },
+    {
+      "id": "AD-11",
+      "n": 11,
+      "title": "Per-event `llms.txt`",
+      "description": "generated from current public state, for AI agents reading the event.",
+      "convergence": 2,
+      "tier": "Shipped by two teams",
+      "projects": [
+        "conorbronsdon-callboard-app",
+        "red-omotenashi"
+      ]
+    },
+    {
+      "id": "AD-12",
+      "n": 12,
+      "title": "Accelevents integration",
+      "description": "with preview/apply diffs against a real external event platform.",
+      "convergence": 2,
+      "tier": "Shipped by two teams",
+      "projects": [
+        "iankar8-event-manager-os",
+        "jpoehnelt-session-party"
+      ]
+    },
+    {
+      "id": "AD-13",
+      "n": 13,
+      "title": "Privacy export and erasure",
+      "description": "self-service data export and transactional deletion.",
+      "convergence": 2,
+      "tier": "Shipped by two teams",
+      "projects": [
+        "caseymanos-opensession",
+        "yisding-openboard.events"
+      ]
+    },
+    {
+      "id": "AD-14",
+      "n": 14,
+      "title": "Organization-level team administration",
+      "description": "above the event — roles, invitations, per-event access grants, audit trail. Cicero scopes membership to the event.",
+      "convergence": 3,
+      "tier": "Shipped by two teams",
+      "projects": [
+        "yisding-openboard.events",
+        "CampbellVentures-smolboard",
+        "adityak6798-ManageMyConference"
+      ]
+    },
+    {
+      "id": "AD-15",
+      "n": 15,
+      "title": "Awards",
+      "description": "nominations, committee rubric ballots, attendee voting, published tallies and winner notifications.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "0xOsprey-saas-killa"
+      ]
+    },
+    {
+      "id": "AD-16",
+      "n": 16,
+      "title": "Embargo-aware poster hall",
+      "description": "with board assignments and visitor bookmarks.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "0xOsprey-saas-killa"
+      ]
+    },
+    {
+      "id": "AD-17",
+      "n": 17,
+      "title": "Versioned external policy language",
+      "description": "for CFP routing, form visibility, review governance, and schedule conflicts, with persisted rule traces.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "M31-Labs-rostrum"
+      ]
+    },
+    {
+      "id": "AD-18",
+      "n": 18,
+      "title": "Automatic reviewer-company conflict recusal",
+      "description": "enforced at assignment, queue, and scoring.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "M31-Labs-rostrum"
+      ]
+    },
+    {
+      "id": "AD-19",
+      "n": 19,
+      "title": "Hash-chained audit ledger",
+      "description": "plus checksummed whole-workspace export/import with uploads.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "M31-Labs-rostrum"
+      ]
+    },
+    {
+      "id": "AD-20",
+      "n": 20,
+      "title": "Attendee social layer",
+      "description": "mutual connections, shared starred-session overlap, speaker follows.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "Phantastic-AI-fireside"
+      ]
+    },
+    {
+      "id": "AD-21",
+      "n": 21,
+      "title": "Attendee-facing Q&A concierge",
+      "description": "with per-event usage budgets.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "Phantastic-AI-fireside"
+      ]
+    },
+    {
+      "id": "AD-22",
+      "n": 22,
+      "title": "Named acceptance waves",
+      "description": "that stage decisions and release them as a batch, separately from waitlist and rejection.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "ChaiWithJai-open-speaker-operations"
+      ]
+    },
+    {
+      "id": "AD-23",
+      "n": 23,
+      "title": "Cross-conference historical program corpus",
+      "description": "with field provenance and auditable link/split/relink into CRM.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "ChaiWithJai-open-speaker-operations"
+      ]
+    },
+    {
+      "id": "AD-24",
+      "n": 24,
+      "title": "Primary-manager delegation",
+      "description": "for a session, including non-speaking managers, with an organizer-mediated handoff that preserves the incumbent until acceptance.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "EquipeAI-stagestack"
+      ]
+    },
+    {
+      "id": "AD-25",
+      "n": 25,
+      "title": "Approval-gated AI import planning",
+      "description": "across CSV/XLS/XLSX/ODS, then deterministic idempotent application of the selected operations.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "EquipeAI-stagestack"
+      ]
+    },
+    {
+      "id": "AD-26",
+      "n": 26,
+      "title": "Resubmit-with-guidance as a first-class decision",
+      "description": ", with required organizer guidance and its own portal state.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "getzenai-untitledconference"
+      ]
+    },
+    {
+      "id": "AD-27",
+      "n": 27,
+      "title": "Predecessor-linked carry-forward lane",
+      "description": "for inviting or discarding prior-edition proposals.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "getzenai-untitledconference"
+      ]
+    },
+    {
+      "id": "AD-28",
+      "n": 28,
+      "title": "Printable organizer run-of-show",
+      "description": "with authorized deliverable links.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "getzenai-untitledconference"
+      ]
+    },
+    {
+      "id": "AD-29",
+      "n": 29,
+      "title": "Named agenda draft variants",
+      "description": "duplicate, discard, diff against live, selectively accept.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "d4mr-opensesh"
+      ]
+    },
+    {
+      "id": "AD-30",
+      "n": 30,
+      "title": "Organizer-defined roles with per-field hide/edit policies",
+      "description": "and preview-as-role.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "adityak6798-ManageMyConference"
+      ]
+    },
+    {
+      "id": "AD-31",
+      "n": 31,
+      "title": "Organization-level branded multi-program sites",
+      "description": "with custom pages and versioned privacy consent.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "adityak6798-ManageMyConference"
+      ]
+    },
+    {
+      "id": "AD-32",
+      "n": 32,
+      "title": "First-party TypeScript SDK and CLI",
+      "description": "over the same OpenAPI contract, with stable exit codes.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "blockbrain-ai-speakerops"
+      ]
+    },
+    {
+      "id": "AD-33",
+      "n": 33,
+      "title": "Deployable AWS SES infrastructure stacks",
+      "description": "with DKIM, suppression, encrypted bounce/complaint feedback, and delivery metrics.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "guangyusong-opencallboard"
+      ]
+    },
+    {
+      "id": "AD-34",
+      "n": 34,
+      "title": "Public incremental changes feed",
+      "description": "with monotonic sequence numbers, a `since` cursor, and ETags.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "realgenekim-curtain-call-cfp"
+      ]
+    },
+    {
+      "id": "AD-35",
+      "n": 35,
+      "title": "Direct Sessionize speaker-profile import",
+      "description": "from the public CFP flow.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "realgenekim-curtain-call-cfp"
+      ]
+    },
+    {
+      "id": "AD-36",
+      "n": 36,
+      "title": "Fail-closed audit persistence",
+      "description": "on private token-scoped REST reads — the read fails if the audit write fails.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "red-omotenashi"
+      ]
+    },
+    {
+      "id": "AD-37",
+      "n": 37,
+      "title": "Mixed-type rubric criteria",
+      "description": "(numeric, single-select, and free text in one scorecard).",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "akakabrian-sessionslate"
+      ]
+    },
+    {
+      "id": "AD-38",
+      "n": 38,
+      "title": "AI-seeded scorecards that the server refuses",
+      "description": "until every unchanged suggestion is confirmed or edited.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "twilwa-session-bored"
+      ]
+    },
+    {
+      "id": "AD-39",
+      "n": 39,
+      "title": "Cancellable queued decision notices",
+      "description": "with an audit reason and recipient correction before a reviewed replacement is sent.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "twilwa-session-bored"
+      ]
+    },
+    {
+      "id": "AD-40",
+      "n": 40,
+      "title": "Persistent cross-device attendee schedules",
+      "description": "for signed-in attendees, with anonymous fallback to local storage.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "twilwa-session-bored"
+      ]
+    },
+    {
+      "id": "AD-41",
+      "n": 41,
+      "title": "Self-expiring per-visitor demo sandbox",
+      "description": "with rate limits, a global cap, and recurring purge.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "westoque-session-hero"
+      ]
+    },
+    {
+      "id": "AD-42",
+      "n": 42,
+      "title": "Sponsor tiers with contacts, onboarding tasks, and form routing",
+      "description": "the only sponsor implementation deeper than Cicero's in any dimension.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "TheThingInTheThing-namos-sessions-webapp"
+      ]
+    },
+    {
+      "id": "AD-43",
+      "n": 43,
+      "title": "Public sponsor/exhibitor intake forms",
+      "description": "reviewed into tiered partner groups.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "mkly-gatherpulse"
+      ]
+    },
+    {
+      "id": "AD-44",
+      "n": 44,
+      "title": "Immutable numbered program publication snapshots",
+      "description": "with publish/republish/unpublish history.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "mkly-gatherpulse"
+      ]
+    },
+    {
+      "id": "AD-45",
+      "n": 45,
+      "title": "Headshot publication consent bound to the current file",
+      "description": ", unable to carry through replacement.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "conorbronsdon-callboard-app"
+      ]
+    },
+    {
+      "id": "AD-46",
+      "n": 46,
+      "title": "Two-step content publication gate",
+      "description": "pinning an approved revision while later speaker edits stay draft.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "CampbellVentures-smolboard"
+      ]
+    },
+    {
+      "id": "AD-47",
+      "n": 47,
+      "title": "In-app problem reporting",
+      "description": "with anti-bot checks, privacy redaction, and delivery to an incident policy.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "mauricedesaxe-openboard"
+      ]
+    },
+    {
+      "id": "AD-48",
+      "n": 48,
+      "title": "AI-drafted decision emails and schedule notices",
+      "description": "that preserve required portal/checklist facts and require human send approval.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "SteveMLC-lectern"
+      ]
+    }
+  ],
+  "ciceroDifferentiators": [
+    {
+      "id": "CD-1",
+      "title": "Sponsors / exhibitors with a publication-gated public wall",
+      "absentIn": 30,
+      "of": 32,
+      "derivedFromArea": "sponsors"
+    },
+    {
+      "id": "CD-2",
+      "title": "Consent-aware SMS (E.164 normalization, OTP verification, quiet hours)",
+      "absentIn": 26,
+      "of": 32
+    },
+    {
+      "id": "CD-3",
+      "title": "Streamable-HTTP MCP server with role-scoped agent skills",
+      "absentIn": 18,
+      "of": 32
+    },
+    {
+      "id": "CD-4",
+      "title": "Post-conference recording ingestion with publication gates",
+      "absentIn": 17,
+      "of": 32
+    },
+    {
+      "id": "CD-5",
+      "title": "Signed outbound webhooks",
+      "absentIn": 16,
+      "of": 32
+    },
+    {
+      "id": "CD-6",
+      "title": "Cross-event speaker CRM (segments, sourcing)",
+      "absentIn": 15,
+      "of": 32,
+      "derivedFromArea": "speaker-crm"
+    },
+    {
+      "id": "CD-7",
+      "title": "Versioned public REST API with a generated OpenAPI contract",
+      "absentIn": 12,
+      "of": 32,
+      "derivedFromArea": "rest-api"
+    },
+    {
+      "id": "CD-8",
+      "title": "Reversible CRM merges",
+      "absentIn": 9,
+      "of": 32
+    }
+  ]
+}

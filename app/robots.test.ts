@@ -86,6 +86,13 @@ describe('robots.txt', () => {
     }
   });
 
+  it('leaves both the site-wide and the per-event llms.txt fetchable', () => {
+    expect(blocked('/llms.txt')).toBe(false);
+    expect(blocked('/demo/llms.txt')).toBe(false);
+    /** A slug that collides with a private route stays closed, its llms.txt included. */
+    expect(blocked('/review/llms.txt')).toBe(true);
+  });
+
   it('closes the mid-flow steps of a submission, which are dead ends in a search result', () => {
     expect(blocked('/submit/demo/speak/upload')).toBe(true);
     expect(blocked('/submit/demo/speak/done')).toBe(true);
