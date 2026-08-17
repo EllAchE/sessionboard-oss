@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpen, ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
+import { BookOpen, ChevronLeft, ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { curlFor, exampleFor, type WorkedExample } from './examples';
 import { SchemaBlock } from './SchemaFields';
@@ -193,6 +193,14 @@ export default function ApiDocsPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
+        {/*
+          Nothing else on this page walks back out of it: the reference has no site header, and the
+          only route home was the closing footnote, at the bottom of a page as long as the API is.
+        */}
+        <Link className={styles.backLink} href="/">
+          <ChevronLeft size={14} aria-hidden="true" />
+          Cicero home
+        </Link>
         <p className={styles.eyebrow}>API reference</p>
         <h1 className={styles.title}>{doc.info.title}</h1>
         <p className={styles.lede}>{doc.info.description}</p>
