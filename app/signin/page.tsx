@@ -1,4 +1,4 @@
-import { demoSignInEmail } from '@/lib/demo-access';
+import { demoSignInEmailFor } from '@/lib/demo-access';
 import { SignInForm } from './SignInForm';
 import { authRedirect } from './redirect';
 import styles from './signin.module.css';
@@ -20,7 +20,7 @@ export default async function SignInPage({
         next={safeNext}
         defaultEmail={email ?? ''}
         event={event ?? ''}
-        demoEmail={demoSignInEmail()}
+        demoEmail={demoSignInEmailFor(email)}
       />
     </main>
   );
