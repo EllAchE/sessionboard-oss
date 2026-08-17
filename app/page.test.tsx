@@ -254,6 +254,33 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('Set up with an AI guide');
   });
 
+  /*
+   * What About is for, now that its three-fact list is gone. The section reads as trimmable — it is
+   * short, it makes no demo-gated claim, and the nearby sections cover its subject matter — so these
+   * are the parts that are load-bearing rather than decorative: the navigation anchors to it, and it
+   * holds the page's only link to the repository. The footer's GitHub entry points at the profile,
+   * not the source.
+   */
+  it('keeps the about section anchored and the only source link on the page', () => {
+    const html = renderHome(false);
+
+    expect(html).toContain('href="#about"');
+    expect(html).toContain('id="about"');
+    expect(html).toContain('href="https://github.com/EllAchE/sessionboard-oss"');
+  });
+
+  it('states the claims the trimmed fact list used to repeat, once each', () => {
+    const html = renderHome(true);
+
+    // Each fact keeps exactly one home, within a screen of where About restated it.
+    expect(html).toContain('href="/docs/api"');
+    expect(html).toContain('href="/embeds"');
+    expect(html).toContain('id="agent-quick-start"');
+    for (const dropped of ['REST API and webhooks', 'Live embeddable views', 'Role-scoped agents']) {
+      expect(html).not.toContain(dropped);
+    }
+  });
+
   it('offers only working cold-start paths before the demo fixture is loaded', () => {
     const html = renderHome(false);
 

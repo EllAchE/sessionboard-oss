@@ -397,33 +397,6 @@
   font-size: var(--text-xl);
 }
 
-.aboutFacts {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-5);
-  margin-top: var(--space-3);
-}
-
-.aboutFacts > div {
-  display: grid;
-  gap: var(--space-2);
-  padding-top: var(--space-3);
-  border-top: var(--border-width) solid var(--border-default);
-}
-
-.aboutFacts dt {
-  color: var(--text-faint);
-  font: var(--type-label);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-}
-
-.aboutFacts dd {
-  color: var(--text-strong);
-  font: var(--weight-medium) var(--text-md) / var(--leading-snug) var(--font-ui);
-}
-
 .aboutLinks {
   display: flex;
   flex-wrap: wrap;
@@ -672,17 +645,6 @@
 .attendeeLinkBlurb {
   color: var(--text-muted);
   font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
-}
-
-.aboutFactLink {
-  color: inherit;
-  text-decoration-color: var(--border-default);
-  text-underline-offset: 3px;
-}
-
-.aboutFactLink:hover {
-  color: var(--text-accent);
-  text-decoration-color: currentColor;
 }
 
 .agentQuickStart {
@@ -1038,10 +1000,6 @@
 
   .about {
     padding-inline: 0;
-  }
-
-  .aboutFacts {
-    grid-template-columns: 1fr;
   }
 
   .agentQuickStart {
