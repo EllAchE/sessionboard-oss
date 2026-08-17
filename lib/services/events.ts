@@ -1,5 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 import { z } from 'zod';
 import { getDb } from '@/db/client';
 import { event, membership } from '@/db/schema';
@@ -95,20 +96,40 @@ export function pickDefaultEvent<T extends { startsOn: string | null }>(
 }
 
 /**
- * The cookie is a hint, never an authorisation. `requireEventContext` still checks membership, so a
- * stale or hand-edited cookie resolves to `not_found` rather than to someone else's event.
+ * The cookie is a hint, never an authorisation, and it outlives what it points at: the event is
+ * deleted, the membership is revoked, the local database is reseeded, the browser signs in as
+ * somebody else — and the value stays put. Reading it back unchecked handed that stale id to
+ * `requireEventContext`, which correctly refused it, so every organizer page died on
+ * `That event could not be found` while the shell around them rendered the fallback event happily.
+ *
+ * So the cookie is matched against the caller's own memberships before it is believed, on
+ * `requireEventContext`'s own rule — a membership row, any role — and a value that fails to match
+ * is treated as nothing was set at all. `app/review/context.ts` and `resolveOrganizerEvent` already
+ * matched the cookie this way; this is the same check for everything that resolves the event here.
  */
-export async function currentEventId(): Promise<string> {
-  const store = await cookies();
-  const fromCookie = store.get(EVENT_COOKIE)?.value;
-  if (fromCookie) return fromCookie;
-
-  const actor = await requireCurrentActor();
-  const mine = await listEventsForUser(actor.userId);
-  const fallback = pickDefaultEvent(mine.filter((row) => row.roles.includes('organizer')));
-  if (!fallback) throw notFound('An event you can manage');
-  return fallback.id;
+export function resolveCurrentEvent<
+  T extends { id: string; roles: MembershipRole[]; startsOn: string | null },
+>(cookieEventId: string | null | undefined, mine: T[], today?: Date): T | undefined {
+  const named = cookieEventId ? mine.find((row) => row.id === cookieEventId) : undefined;
+  if (named) return named;
+  return pickDefaultEvent(
+    mine.filter((row) => row.roles.includes('organizer')),
+    today,
+  );
 }
+
+/**
+ * Cached for the request because a single organizer render resolves the event twice — once in
+ * `app/organizer/layout.tsx` for the switcher, once in the page's own `context.ts` — and the answer
+ * cannot change between the two.
+ */
+export const currentEventId = cache(async (): Promise<string> => {
+  const store = await cookies();
+  const actor = await requireCurrentActor();
+  const chosen = resolveCurrentEvent(store.get(EVENT_COOKIE)?.value, await listEventsForUser(actor.userId));
+  if (!chosen) throw notFound('An event you can manage');
+  return chosen.id;
+});
 
 export async function currentEventContext(): Promise<EventContext> {
   return requireEventContext(await currentEventId());

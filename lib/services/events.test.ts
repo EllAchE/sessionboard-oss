@@ -4,6 +4,7 @@ import {
   deadlinePatch,
   eventWriteSchemas,
   pickDefaultEvent,
+  resolveCurrentEvent,
 } from './events';
 
 const TODAY = new Date('2026-08-12T00:00:00Z');
@@ -244,5 +245,47 @@ describe('pickDefaultEvent', () => {
 
   it('has nothing to open for someone with no events', () => {
     expect(pickDefaultEvent([], TODAY)).toBeUndefined();
+  });
+});
+
+/**
+ * The stale cookie. `currentEventId` used to hand back whatever the browser held without checking
+ * it, so a value left behind by a deleted event, a revoked membership, a reseeded local database or
+ * a different sign-in reached `requireEventContext` and came back `That event could not be found` —
+ * on every organizer page at once, while the shell around them fell back and looked fine.
+ */
+describe('resolveCurrentEvent', () => {
+  const ORGANIZED = { id: 'e-mine', roles: ['organizer' as const], startsOn: '2026-09-23' };
+  const REVIEWED = { id: 'e-reviewed', roles: ['reviewer' as const], startsOn: '2026-10-01' };
+
+  it('opens the event the cookie names when the caller is a member of it', () => {
+    expect(resolveCurrentEvent('e-mine', [ORGANIZED, REVIEWED], TODAY)?.id).toBe('e-mine');
+  });
+
+  it('honours a cookie for an event the caller only reviews, as requireEventContext would', () => {
+    expect(resolveCurrentEvent('e-reviewed', [ORGANIZED, REVIEWED], TODAY)?.id).toBe('e-reviewed');
+  });
+
+  it('ignores a cookie naming an event the caller has no membership on', () => {
+    expect(resolveCurrentEvent('e-deleted', [ORGANIZED], TODAY)?.id).toBe('e-mine');
+  });
+
+  it('falls back the same way whether the cookie is stale or absent', () => {
+    const mine = [
+      { id: 'e-far', roles: ['organizer' as const], startsOn: '2027-05-12' },
+      { id: 'e-soon', roles: ['organizer' as const], startsOn: '2026-09-23' },
+    ];
+    expect(resolveCurrentEvent('e-gone', mine, TODAY)?.id).toBe('e-soon');
+    expect(resolveCurrentEvent(null, mine, TODAY)?.id).toBe('e-soon');
+    expect(resolveCurrentEvent(undefined, mine, TODAY)?.id).toBe('e-soon');
+  });
+
+  it('does not fall back onto an event the caller cannot organise', () => {
+    expect(resolveCurrentEvent('e-gone', [REVIEWED], TODAY)).toBeUndefined();
+    expect(resolveCurrentEvent(null, [REVIEWED], TODAY)).toBeUndefined();
+  });
+
+  it('has nothing to open for someone with no events', () => {
+    expect(resolveCurrentEvent('e-gone', [], TODAY)).toBeUndefined();
   });
 });
