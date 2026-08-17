@@ -10,7 +10,9 @@ import {
   CalendarDays,
   ClipboardCheck,
   ExternalLink,
+  EyeOff,
   FileCheck,
+  Gauge,
   Github,
   Globe2,
   LayoutDashboard,
@@ -18,6 +20,7 @@ import {
   Megaphone,
   ShieldCheck,
   Sparkles,
+  UserMinus,
   UserPlus,
   UserRound,
 } from 'lucide-react';
@@ -57,6 +60,29 @@ const ORGANIZER_FEATURES = [
   },
 ];
 
+const REVIEWER_FEATURES = [
+  {
+    icon: <ClipboardCheck size={20} aria-hidden="true" />,
+    title: 'Open one queue, not an inbox',
+    body: 'See the proposals assigned to you in the open round, what you have already scored, and what is still waiting.',
+  },
+  {
+    icon: <Gauge size={20} aria-hidden="true" />,
+    title: 'Score the criteria the organizer set',
+    body: 'Rate each weighted criterion, answer the written prompts, and watch your average update before you submit.',
+  },
+  {
+    icon: <EyeOff size={20} aria-hidden="true" />,
+    title: 'Judge without the anchoring',
+    body: 'Peer scores stay hidden until the round closes, and anonymized rounds keep author names off the proposal.',
+  },
+  {
+    icon: <UserMinus size={20} aria-hidden="true" />,
+    title: 'Declare a conflict in one step',
+    body: 'Recuse yourself with a reason and the assignment leaves your queue and returns to the organizer.',
+  },
+];
+
 const SPEAKER_FEATURES = [
   {
     icon: <FileCheck size={20} aria-hidden="true" />,
@@ -88,6 +114,12 @@ const ROLE_PRODUCTS = [
     body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up.',
   },
   {
+    icon: ClipboardCheck,
+    role: 'Reviewer',
+    title: 'Score proposals, not spreadsheets.',
+    body: 'Work an assigned queue, rate the round’s criteria, and stay blind to peer scores until it closes.',
+  },
+  {
     icon: Megaphone,
     role: 'Speaker',
     title: 'Stay ready from proposal to stage.',
@@ -115,6 +147,9 @@ const ROLE_PRODUCTS = [
  * first word. Only the start of the link text disambiguates, so naming the role inside `blurb`
  * stays clear for a reader without reintroducing the clash. Re-check the whole page before
  * rewording any of these.
+ *
+ * The reviewer section and the closing call to action add two more links to the same demo identity,
+ * so they open on `Try` and `Rate`, which no other label on the page or in the footer starts with.
  */
 const PERSONAS = [
   {
@@ -279,7 +314,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
       >
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>Products by role</p>
-          <h2 id="products-title">One conference, three purpose-built experiences.</h2>
+          <h2 id="products-title">One conference, four purpose-built experiences.</h2>
           <p>
             Everyone works from the same event, while each person sees the tools and context that
             belong to their role.
@@ -320,6 +355,35 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className={styles.product} id="reviewers">
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>
+            <ClipboardCheck size={17} aria-hidden="true" />
+            For reviewers
+          </p>
+          <h2>Give reviewers a queue they can finish.</h2>
+          <p>
+            Review is where a programme is decided, so Cicero gives reviewers their own workspace:
+            the proposals assigned to them, the criteria the organizer set, and nothing that would
+            bias the score.
+          </p>
+        </div>
+        <div className={styles.features}>
+          {REVIEWER_FEATURES.map((feature) => (
+            <article className={styles.feature} key={feature.title}>
+              <span className={styles.featureIcon}>{feature.icon}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
+        {demoAvailable ? (
+          <a className={styles.textLink} href={DEMO_ENTRY_LINKS.reviewer}>
+            Try the reviewer queue <ArrowRight size={16} aria-hidden="true" />
+          </a>
+        ) : null}
       </section>
 
       <section className={styles.programme}>
@@ -492,9 +556,12 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
 
       {demoAvailable ? (
         <section className={styles.finalCta}>
-          <p className={styles.eyebrow}>See both sides</p>
+          <p className={styles.eyebrow}>See every side</p>
           <h2>Explore a conference already in motion.</h2>
-          <p>See how organizers move the event forward and how speakers get ready.</p>
+          <p>
+            See how organizers move the event forward, how reviewers decide the programme, and how
+            speakers get ready.
+          </p>
           <div className={styles.finalCtaActions}>
             <Button
               href={DEMO_ENTRY_LINKS.organizer}
@@ -503,6 +570,13 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
               Open the organizer dashboard
+            </Button>
+            <Button
+              href={DEMO_ENTRY_LINKS.reviewer}
+              size="lg"
+              iconRight={<ArrowRight size={17} aria-hidden="true" />}
+            >
+              Rate proposals as a reviewer
             </Button>
             <Button
               href={DEMO_ENTRY_LINKS.speaker}

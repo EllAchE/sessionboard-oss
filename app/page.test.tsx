@@ -33,18 +33,22 @@ describe('fresh-instance home page', () => {
     );
   });
 
-  it('describes the product through organizer, speaker, and attendee outcomes', () => {
+  it('describes the product through organizer, reviewer, speaker, and attendee outcomes', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable />);
 
     expect(html).toContain('From call for speakers to public program');
-    expect(html).toContain('One conference, three purpose-built experiences.');
+    expect(html).toContain('One conference, four purpose-built experiences.');
     expect(html).toContain('Organizer');
+    expect(html).toContain('Reviewer');
     expect(html).toContain('Speaker');
     expect(html).toContain('Attendee');
     expect(html).toContain('Plan the day from the live programme.');
     expect(html).toContain('For organizers');
     expect(html).toContain('Know what needs attention');
     expect(html).toContain('Build a schedule that catches collisions');
+    expect(html).toContain('For reviewers');
+    expect(html).toContain('Open one queue, not an inbox');
+    expect(html).toContain('Judge without the anchoring');
     expect(html).toContain('For speakers');
     expect(html).toContain('Find everything in one portal');
     expect(html).toContain('Send the right files every time');
@@ -54,6 +58,17 @@ describe('fresh-instance home page', () => {
     expect(html).not.toMatch(
       /\b(?:forum|empire|imperial|petition|orator|fasti|magistrate|province|decree)\b/i,
     );
+  });
+
+  it('ranks the reviewer above the attendee and keeps them in the closing tour', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable />);
+
+    expect(html).toContain('Score proposals, not spreadsheets.');
+    expect(html.indexOf('Score proposals, not spreadsheets.')).toBeLessThan(
+      html.indexOf('Plan the day from the live programme.'),
+    );
+    expect(html).toContain('Try the reviewer queue');
+    expect(html).toContain('Rate proposals as a reviewer');
   });
 
   it('makes products, agent setup, and API docs discoverable from the primary navigation', () => {

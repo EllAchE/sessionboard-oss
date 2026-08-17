@@ -532,13 +532,22 @@
 
 .roleProducts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-6);
   margin-top: var(--space-16);
 }
 
+/*
+ * Four role cards share the row that used to hold three, so the icon sits above the copy instead of
+ * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
+ * break short headings like "Score proposals, not spreadsheets." across three lines.
+ */
+.roleProduct {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .roleProduct .featureIcon {
-  grid-row: span 3;
+  grid-row: auto;
 }
 
 .feature .roleProductRole {
@@ -866,6 +875,10 @@
     min-height: auto;
     grid-template-columns: 1fr;
     padding-top: var(--space-16);
+  }
+
+  .roleProducts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .heroCopy {
