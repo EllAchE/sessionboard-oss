@@ -34,7 +34,11 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('Copy prompt');
     expect(html).not.toContain('Copy AI setup prompt');
     expect(html).not.toContain('Let Claude or ChatGPT walk through setup with you');
-    expect(html).toContain('Claude &amp; ChatGPT setup prompt');
+    expect(html).toContain('Paste into your agent');
+    expect(html).toContain('alt="OpenAI"');
+    expect(html).toContain('alt="Anthropic Claude"');
+    expect(html).toContain('alt="Google Antigravity"');
+    expect(html).toContain('+ more');
     expect(html.indexOf('Copy prompt')).toBeLessThan(html.indexOf('Create an event'));
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
