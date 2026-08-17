@@ -506,8 +506,10 @@ export async function resolveRecipients(
     const preferred =
       submissions.find((s) => s.status === 'accepted') ?? submissions[0] ?? null;
     const selectedTask =
-      spec.kind === 'outstanding_tasks' && spec.taskId
-        ? (openTasks.find((entry) => entry.taskId === spec.taskId) ?? null)
+      spec.kind === 'outstanding_tasks'
+        ? spec.taskId
+          ? (openTasks.find((entry) => entry.taskId === spec.taskId) ?? null)
+          : (sortRecipientTasks(openTasks)[0] ?? null)
         : null;
 
     recipients.push({
@@ -640,11 +642,7 @@ function buildVars(input: {
   } = input;
   const zone = event.timezone;
 
-  const sortedTasks = [...openTasks].sort((a, b) => {
-    if (!a.dueAt) return 1;
-    if (!b.dueAt) return -1;
-    return a.dueAt.getTime() - b.dueAt.getTime();
-  });
+  const sortedTasks = sortRecipientTasks(openTasks);
 
   return {
     'event.name': event.name,
@@ -703,6 +701,21 @@ function buildVars(input: {
 
     'portal.url': `${appUrl()}/portal`,
   };
+}
+
+function sortRecipientTasks(openTasks: readonly RecipientTask[]): RecipientTask[] {
+  return [...openTasks].sort((a, b) => {
+    if (!a.dueAt && !b.dueAt) {
+      return a.name.localeCompare(b.name) || a.taskId.localeCompare(b.taskId);
+    }
+    if (!a.dueAt) return 1;
+    if (!b.dueAt) return -1;
+    return (
+      a.dueAt.getTime() - b.dueAt.getTime() ||
+      a.name.localeCompare(b.name) ||
+      a.taskId.localeCompare(b.taskId)
+    );
+  });
 }
 
 /**

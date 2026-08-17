@@ -453,11 +453,11 @@ export function AgendaBoard({
   const handleSave = async (payload: SavePayload) => {
     const result = await saveManualSessionAction(payload);
     if (!result.ok) {
-      toast({ title: 'Could not save that session', description: result.error, tone: 'danger' });
-      return;
+      return result.error;
     }
     setDialog(null);
     router.refresh();
+    return null;
   };
 
   const handleDelete = async (sessionId: string) => {
