@@ -116,7 +116,7 @@
   min-height: calc(100vh - 88px);
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  align-items: center;
+  align-items: start;
   gap: clamp(var(--space-10), 6vw, var(--space-20));
   padding-block: var(--space-20) var(--space-24);
 }
@@ -186,12 +186,6 @@
     inset 0 0 0 3px rgba(255, 255, 255, 0.58);
 }
 
-.agentStarterCopy {
-  min-width: 0;
-  display: grid;
-  gap: var(--space-2);
-}
-
 .agentStarterLabel {
   display: inline-flex;
   align-items: center;
@@ -205,12 +199,6 @@
 
 .agentStarterLabel svg {
   flex: 0 0 auto;
-}
-
-.agentStarterCopy > p:last-child {
-  margin: 0;
-  color: var(--text-muted);
-  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
 }
 
 .manualStart {
@@ -536,13 +524,22 @@
 
 .roleProducts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-6);
   margin-top: var(--space-16);
 }
 
-.roleProduct .featureIcon {
-  grid-row: span 3;
+/*
+ * Four role cards share the row that used to hold three, so the icon sits above the copy instead of
+ * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
+ * break short headings like "Score proposals, not spreadsheets." across three lines.
+ */
+.feature.roleProduct {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.feature.roleProduct .featureIcon {
+  grid-row: auto;
 }
 
 .feature .roleProductRole {
@@ -891,6 +888,10 @@
     min-height: auto;
     grid-template-columns: 1fr;
     padding-top: var(--space-16);
+  }
+
+  .roleProducts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .heroCopy {

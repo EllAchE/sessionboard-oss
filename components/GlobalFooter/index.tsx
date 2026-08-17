@@ -1,19 +1,18 @@
-import Link from 'next/link';
+import { CiceroMark } from '@/components/CiceroBrand';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import {
   Bot,
   FileCheck,
   Gift,
   Github,
-  Globe2,
   Landmark,
   Linkedin,
   Megaphone,
   Scale,
-  Twitter,
+  Twitter
 } from 'lucide-react';
-import { CiceroMark } from '@/components/CiceroBrand';
-import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import Link from 'next/link';
 import styles from './GlobalFooter.module.css';
 
 const DEMO_LINKS = [
@@ -37,22 +36,22 @@ const DEMO_LINKS = [
 const RESOURCE_LINKS = [
   {
     href: '/#agent-quick-start',
-    label: 'Agent setup',
+    label: 'Agents',
     icon: Bot,
   },
+  /**
+   * The rendered reference at `/docs/api`, not the raw `openapi.json` this used to point at — a
+   * spec file is a download prompt in most browsers, and "API docs" has to open something a person
+   * can read. The spec is still one click away from that page.
+   */
   {
-    href: '/api/v1/openapi.json',
-    label: 'API docs',
+    href: '/docs/api',
+    label: 'API',
     icon: FileCheck,
   },
 ] as const;
 
 const SOCIAL_LINKS = [
-  {
-    href: 'https://www.elehche.com/',
-    label: 'Website',
-    icon: Globe2,
-  },
   {
     href: 'https://github.com/EllAchE',
     label: 'GitHub',
@@ -124,7 +123,12 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
               <span>{label}</span>
             </a>
           ))}
-          <span className={styles.divider} aria-hidden="true" />
+          {/*
+            No divider ahead of it: merch is the tail of the social row, not a group of its own. The
+            rule it used to carry, plus its own left margin, gave the flex line two more things to
+            fit and pushed the button onto a row by itself at ordinary desktop widths. It wraps now
+            only when the line genuinely runs out of room.
+          */}
           <a className={styles.merch} href={MERCH_URL} target="_blank" rel="noreferrer">
             <Gift size={15} aria-hidden="true" />
             <span>Free merch</span>

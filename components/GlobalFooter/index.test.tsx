@@ -27,8 +27,28 @@ describe('GlobalFooter links', () => {
 
     expect(html).toContain('href="/#agent-quick-start"');
     expect(html).toContain('Agent setup');
-    expect(html).toContain('href="/api/v1/openapi.json"');
+    expect(html).toContain('href="/docs/api"');
     expect(html).toContain('API docs');
+  });
+
+  it('sends API docs to the rendered reference rather than the raw spec', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
+
+    expect(html).not.toContain('href="/api/v1/openapi.json"');
+  });
+
+  /**
+   * The button had a divider and a margin of its own, which cost the flex line enough room to drop
+   * it onto a row by itself. Nothing but whitespace should sit between the last social link and it.
+   */
+  it('keeps free merch on the same row as the social links', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable />);
+
+    const [, betweenSocialsAndMerch] = html.split('myhandleisbest');
+    expect(betweenSocialsAndMerch).toBeDefined();
+    expect(betweenSocialsAndMerch.slice(0, betweenSocialsAndMerch.indexOf('Free merch'))).not.toContain(
+      'divider',
+    );
   });
 
   it('keeps all seeded role tours available', () => {

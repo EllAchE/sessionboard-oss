@@ -65,6 +65,9 @@
   color: var(--text-muted);
   font: var(--type-label);
   text-decoration: none;
+  /* A label that breaks mid-word turns one long row into two ragged ones before the flex line is
+     even full, so links wrap as whole links or not at all. */
+  white-space: nowrap;
   transition:
     color var(--duration-fast) var(--ease-standard),
     background var(--duration-fast) var(--ease-standard),
@@ -84,7 +87,6 @@
 }
 
 .merch {
-  margin-left: var(--space-1);
   padding-inline: var(--space-3);
   border: var(--border-width) solid var(--border-accent);
   color: var(--text-accent);
@@ -136,7 +138,6 @@
   .link,
   .merch {
     min-height: var(--control-md);
-    margin-left: 0;
   }
 
   .divider {
