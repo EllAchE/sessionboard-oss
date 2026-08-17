@@ -67,20 +67,25 @@ describe('filenameFromContentDisposition', () => {
 
 describe('downloadReviewResults', () => {
   it('reports the filename the server chose, and hands that file to the browser', async () => {
-    const save = vi.fn();
-    const fetchImpl = vi.fn(async () =>
-      response({ disposition: 'attachment; filename="cicero-forum-round-1-reviews-2026-08-17.csv"' }),
-    );
+    const saved: Array<{ blob: Blob; filename: string }> = [];
+    const requested: string[] = [];
+    const fetchImpl = (async (url: string) => {
+      requested.push(url);
+      return response({
+        disposition: 'attachment; filename="cicero-forum-round-1-reviews-2026-08-17.csv"',
+      });
+    }) as unknown as typeof fetch;
 
     const outcome = await downloadReviewResults('round-1', {
-      fetchImpl: fetchImpl as unknown as typeof fetch,
-      save,
+      fetchImpl,
+      save: (blob, filename) => saved.push({ blob, filename }),
     });
 
     expect(outcome).toEqual({ ok: true, filename: 'cicero-forum-round-1-reviews-2026-08-17.csv' });
-    expect(save).toHaveBeenCalledTimes(1);
-    expect(save.mock.calls[0][1]).toBe('cicero-forum-round-1-reviews-2026-08-17.csv');
-    expect(fetchImpl.mock.calls[0][0]).toBe(reviewExportUrl('round-1'));
+    expect(saved).toHaveLength(1);
+    expect(saved[0].filename).toBe('cicero-forum-round-1-reviews-2026-08-17.csv');
+    expect(await saved[0].blob.text()).toBe('a,b\n1,2\n');
+    expect(requested).toEqual([reviewExportUrl('round-1')]);
   });
 
   it('escapes the round id it puts in the query string', () => {
