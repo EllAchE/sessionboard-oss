@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -64,5 +65,42 @@ describe('SiteNav', () => {
     const html = renderToStaticMarkup(<SiteNav links={LINKS} demoAvailable />);
 
     expect(html.match(/<nav/g)).toHaveLength(1);
+  });
+
+  /**
+   * The demo menu introduces itself once per browser, which it can only know from `localStorage`.
+   * The server has none, so the panel has to render closed and noteless there and open after mount
+   * instead: a first paint that disagrees with the markup is a hydration error on every page this
+   * navigation appears on.
+   */
+  it('renders the demo menu closed and without its first-visit note on the server', () => {
+    const html = renderToStaticMarkup(<SiteNav links={LINKS} demoAvailable />);
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('Smol team');
+    expect(html).not.toContain('Each link opens the same seeded conference');
+    // The five destinations themselves still ship server-rendered, hidden until the panel opens.
+    expect(html).toContain('Organizer demo');
+    expect(html).toContain('Embed showcase');
+  });
+});
+
+/**
+ * Vitest resolves a CSS module to a proxy that returns the key as the class name, so a class the
+ * stylesheet never defines renders identically to one it does and only the stylesheet knows the
+ * difference. `app/page.test.tsx` guards the home page's module this way; this guards the menu's.
+ */
+describe('DemoMenu stylesheet', () => {
+  it('defines every class the component asks it for', () => {
+    const source = readFileSync(new URL('./DemoMenu.tsx', import.meta.url), 'utf8');
+    const stylesheet = readFileSync(new URL('./DemoMenu.module.css', import.meta.url), 'utf8');
+
+    const used = new Set([...source.matchAll(/\bstyles\.([A-Za-z][\w-]*)/g)].map(([, name]) => name));
+    expect(used.size).toBeGreaterThan(5);
+
+    const defined = new Set(
+      [...stylesheet.matchAll(/\.([A-Za-z][\w-]*)/g)].map(([, name]) => name),
+    );
+    expect([...used].filter((name) => !defined.has(name))).toEqual([]);
   });
 });
