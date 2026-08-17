@@ -59,7 +59,7 @@ export default async function PortalHomePage({
         <h1 className={styles.pageTitle}>Hello, {speakerName(me, ctx).split(' ')[0]}</h1>
         {branding.welcomeHtml ? (
           <div
-            className={styles.prose}
+            className={`${styles.prose} ${styles.heroProse}`}
             /* Organizer-authored, deliberately trusted: `S-7`. */
             dangerouslySetInnerHTML={{ __html: branding.welcomeHtml }}
           />
@@ -94,7 +94,7 @@ export default async function PortalHomePage({
           </div>
         ) : (
           <Card padding="none">
-            <CardBody>
+            <CardBody className={styles.checkList}>
               {outstanding.slice(0, 6).map((entry) => (
                 <div key={entry.assignmentId} className={styles.checkRow}>
                   {entry.overdue ? (
