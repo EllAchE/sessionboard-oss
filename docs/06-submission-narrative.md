@@ -24,8 +24,7 @@ Anyone here has context for what was built, and why. What I want to share with y
 
 ### Agent-first, portal-second
 
-The way I want someone to use this product is by talking to an agent, not by opening a tab.
-I do not just want that for this product. I think that is the future of all SAAS.
+The future of all "SaaS" is agent-first. The way I want someone to use this product is by talking to an agent, not by opening a tab.
 That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
 is a first-class surface rather than an integration afterthought, and why the REST API is essential.
 
@@ -49,23 +48,32 @@ The person to design for is the one who performs an operation five hundred times
 performs it once. So each design decision gets measured the same way: what is this person spending
 the most operations on, and can it be automated away so completely that they never touch it again?
 
-The sharpest test of that is also something that did not ship: automatic insertion recalculation.
-An organizer moves one session and the rest of the day settles around it — placements that still
-work stay put, the ones that break get recomputed, and the organizer approves a result instead of
-dragging fifteen cards behind the one they actually meant to move. There is a draft PR for it.
+Unfortunately I did not have a chance to actually speak with any users here so I had to make some
+speculation about who that would be. But I will walk through 1 example that gives you an idea of
+my thought process for this. That example is actually something that did not ship: automatic agenda recalculation (There is a draft PR for it).
 
-Here is the honest part, because wanting to build that is the same instinct that bloats products: I
-do not know that it is worth building. It is my guess about where an organizer's hours go. The first
+The idea is this, as new events are added or moved we automatically recalculate the agenda. An organizer moves one session or a session is
+added and the rest of the day settles around it — placements that still
+work stay put, the ones that break get recomputed, and the organizer approves a result instead of
+dragging fifteen cards behind the one they actually meant to move. To make this work you would have to add
+projections in this case, topic metadata to optimize for allowing people with interest in a specific topic to see all speakers
+covering that topic rather than booking them concurrently and other custom rules, Attendee, count projections, etcetera. 
+
+Without speaking to users I do not know that it is worth building. It is my guess about where an organizer's hours go. The first
 thing I would do with real users is find out whether recalculation saves the afternoon I think it
 saves, or whether it solves a problem they have already routed around — or whether the manual drag
 is where the judgment actually lives, in which case automating it away makes the product worse. I
 owe reviewers and speakers the same conversation. I designed hardest for organizer repetition
 because that is the loop I can see from here, not because I have evidence it is the expensive one.
 
-The shipped version of this tenet is the keyboard layer, and it stops at the organizer workspace on
-purpose: a speaker visits twice a year and needs an obvious, forgiving flow rather than a shortcut
-sheet. If reviewers working a large committee round, or speakers at an event that keeps them busy,
-turn out to live in the tool the way an organizer does, the keyboard layer should follow them there.
+The shipped version of this tenet is the keyboard/hotkey layer - I am a huge fan of the product at Linear
+and how quickly I am able to navigate that space using their hotkeys. I believe more SaaS should incorporate
+this for their power users. To me, the power users of Sessionboard are the reviewers and they should also
+have keyboard first enablement to let them move more quickly when making changes in the app. The keyboard
+enablement stops at the organizer workspace on purpose: a speaker visits twice a year and needs an obvious,
+forgiving flow rather than a shortcut sheet. If reviewers working a large committee round, or speakers at
+an event that keeps them busy, turn out to live in the tool the way an organizer does, the keyboard layer
+should follow them there.
 
 ### Opinionated over flexible, and subtract before adding
 
@@ -85,14 +93,15 @@ person lands and deserves a hot path straight to it. The work I am describing sh
 
 ### The line all three sit behind
 
-> Keep the human in control, but remove the clerical work that makes conference operations
-> miserable.
+> Keep the human in control, but remove the clerical work that makes conference operations miserable.
 
 Agent-first is not agent-autonomous. AI proposes review notes and agenda placements but does not
 accept a talk or publish a schedule. Cicero drafts a targeted task reminder but does not silently
 send it. External programme updates can be previewed and replayed idempotently before they are
 applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.
+
+Thanks for coming to my Ted Talk :). The above was mostly me writing, but with a bit of AI assistance/drafting. The below is purely generated so read at your own expense. If you just want the facts of the features head, I would recommend looking at the field survey that I also created and linked here. 
 
 ## The Submission
 
@@ -106,8 +115,6 @@ The submission is best understood in three buckets:
 That distinction matters. A long feature list is not evidence of a finished product, and a roadmap
 is not a shipped capability. Cicero's central claim is narrower and stronger: the complete working
 spine exists, the additional work has a reason, and the omissions are named rather than hidden.
-
-
 
 ## 2. The requested feature set is covered end to end
 
