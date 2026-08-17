@@ -13,23 +13,30 @@ count, and the project slugs it is attributed to.
 
 This document is the next step: a priority order over those items, with the reasoning shown.
 
-**Five have been taken off the ranking below** — they are not "skipped", they are shipped or are
-someone's current work:
+**Seven of the 48 have shipped.** They are not "skipped":
 
 | | | |
 |---|---|---|
+| `AD-1` | Whole-event cloning / reusable event templates | shipped — [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) |
 | `AD-2` | Speaker availability / blackout windows | shipped — [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) |
+| `AD-3` | Richer embed output formats | shipped — [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) |
+| `AD-4` | Revision history with organizer restore | shipped — [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) |
+| `AD-9` | Tokenized no-login share links | shipped — [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) |
 | `AD-11` | Per-event `llms.txt` | shipped — [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) |
-| `AD-4` | Revision history with organizer restore | in review — [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) |
-| `AD-9` | Tokenized no-login share links | in review — [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) |
-| `AD-1` | Whole-event cloning / reusable event templates | in flight — [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) |
+| `AD-37` | Mixed-type rubric criteria | shipped — [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) |
+
+Five of those — `AD-1`, `AD-2`, `AD-4`, `AD-9`, `AD-11` — were done or in flight when this document
+was first written and were never ranked below. The other two were ranked and have been built since:
+`AD-3` at the top of Tier 1 and `AD-37` in Tier 2. Both keep their position and their reasoning,
+marked in place, so the ranking stays readable as the argument it was rather than becoming a list
+with holes in it.
 
 `AD-4` was the one item the survey mis-scored against Cicero. Most of it already existed —
 `recordRevision`, `listContentRevisions` and `restoreContentRevision` in `lib/services/content.ts`
 were a complete record → list → diff → restore loop before any of this work started. What #200 adds
 is a monotonic revision number and coverage for the agenda and sponsors, not the feature.
 
-That leaves 43 items, all of which appear below exactly once.
+That leaves **41 open items**, and 43 entries below — each appearing exactly once.
 
 ### Convergence is evidence about the brief, not a grade
 
@@ -86,14 +93,14 @@ those items are sized where they are.
 
 ## Tier 1 — Pick up next
 
-Four items. Each either completes an investment Cicero has already made, or closes a gap where the
-current behaviour is not merely thin but arguably wrong.
+Four items, of which the first has since shipped. Each either completes an investment Cicero has
+already made, or closes a gap where the current behaviour is not merely thin but arguably wrong.
 
 `AD-8`, the in-product AI assistant, would otherwise sit in this tier on leverage alone. It is not
 here: it has been declined outright on inference cost, and the reasoning is under
 [Deliberately declining](#deliberately-declining) rather than in a ranking of things to pick up.
 
-### 1. `AD-3` — Richer embed output formats · convergence 5 · **S**
+### 1. `AD-3` — Richer embed output formats · convergence 5 · **S** · **shipped**
 
 The joint-highest convergence in the whole catalogue, and the cheapest item in this tier. Cicero
 already has every piece except the plumbing: seven HTML widget views (`EMBED_VIEWS` in
@@ -109,7 +116,8 @@ Cicero had already recorded against itself.
 *Touches:* `app/embed/**`, `lib/ics.ts`, `public/embed.js` (W6, borrowing W5's calendar primitives).
 No schema change.
 
-**Shipped.** `app/embed/[slug]/[view]/[format]/route.ts` serves `feed.json`, `feed.xml` and a
+**Shipped** in [#210](https://github.com/EllAchE/sessionboard-oss/pull/210).
+`app/embed/[slug]/[view]/[format]/route.ts` serves `feed.json`, `feed.xml` and a
 subscribable `feed.ics` off the same query string the script and iframe snippets carry, so the
 organizer's filters, field selection and limit are one configuration rendered six ways. The studio
 also gained the two controls this item implied but did not name: a custom-CSS field and an explicit
@@ -180,9 +188,9 @@ records against the existing integration.
 
 ## Tier 2 — Worth doing
 
-Twenty-two items, ordered. Everything here is a real gap with a real answer; nothing here is urgent
-enough to displace Tier 1, and several are cheap enough that they would sensibly be folded into
-whatever adjacent work is already open.
+Twenty-two items, ordered, of which `AD-37` has since shipped. Everything here is a real gap with a
+real answer; nothing here is urgent enough to displace Tier 1, and several are cheap enough that
+they would sensibly be folded into whatever adjacent work is already open.
 
 ### 5. `AD-46` — Two-step content publication gate · convergence 1 · **S/M**
 
@@ -193,7 +201,9 @@ attaches to the *live row* rather than to a *revision*: `updateSessionContent` a
 `updateSpeakerContent` (`lib/services/content.ts`) never touch `contentStatus`, so an organizer
 editing an already-approved abstract changes what the public sees with no return to `in_review`.
 Pinning the approved revision is small precisely because `contentRevision` snapshots already exist
-to pin. Sequence this after `AD-4` lands, since it consumes the same table.
+to pin. This was sequenced behind `AD-4`, which consumes the same table; `AD-4` has since landed
+([#200](https://github.com/EllAchE/sessionboard-oss/pull/200)), so the dependency is discharged and
+`contentRevision` now carries the monotonic revision number this gate would pin against.
 
 *Touches:* `content_revision` / approval columns (W0), `lib/services/content.ts` (W2), public page
 read path (W6).
@@ -303,7 +313,7 @@ explicitly declining an assignment — proposing is the reading that fits.
 
 *Touches:* reviewer affiliation column (W0), `lib/services/review.ts` auto-assign and queue (W3).
 
-### 14. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M** · **built**
+### 14. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M** · **shipped**
 
 `scorecard_criterion` (`db/schema.ts:853`) carried `weight` and `max_score` and nothing else, and
 `score.value` was `integer` (`db/schema.ts:947`) — the rubric was numeric by construction. Adding
@@ -318,7 +328,8 @@ The answer taken was to make it mean *out of scope for the number*: `aggregateSc
 the numeric criteria, non-numeric ones are stored with `weight: 0` so no later reader has to exclude
 them twice, and submission gating moved to a separate `scorecardComplete()` — ratings and dropdowns
 are required, a written criterion is an invitation. The bar therefore means exactly what it always
-did. Landed against eval finding `ABS-03`.
+did. Landed against eval finding `ABS-03` in
+[#212](https://github.com/EllAchE/sessionboard-oss/pull/212).
 
 *Touches:* `scorecard_criterion` + `score` (W0), `lib/review-scoring.ts`, `lib/services/review.ts`,
 reviewer scorecard (W3).
@@ -485,11 +496,14 @@ specifically. Ordered by how small a nudge it would take to move them up.
 
 ### 27. `AD-27` — Predecessor-linked carry-forward lane · convergence 1 · **M**
 
-Blocked on `AD-1`, which is in flight. Nothing links one event to another today —
-`lib/services/events.ts` `createEvent()` is a from-scratch insert with no source-event parameter —
-and cloning will have to establish that link anyway. Once it exists, "invite or discard last year's
-proposals" is a query and a lane in the submissions queue. Worth revisiting the moment cloning
-lands; premature before then.
+Was ranked as blocked on `AD-1`, which has since shipped
+([#199](https://github.com/EllAchE/sessionboard-oss/pull/199)) — but it shipped *without* the link
+this item needs. `lib/services/event-clone.ts` considered a `clonedFromEventId` column and rejected
+it on the grounds that nothing would read it, so cloning still leaves no record that one event
+descends from another. The dependency is therefore unchanged in substance and cheaper in practice:
+the carry-forward lane is now the reader that would justify the column, and it would add provenance
+to an existing clone path rather than inventing one. Still a query and a lane in the submissions
+queue once that column exists.
 
 ### 28. `AD-25` — Approval-gated AI import planning across CSV/XLS/XLSX/ODS · convergence 1 · **L**
 
@@ -690,7 +704,8 @@ they should not. The gradation is the rubric working as intended rather than a f
 are all cases where Cicero has the schema, the primitive, or the machinery and is missing the last
 connection — a subscribable URL, a name on a queue, a bridge between two tables that were
 deliberately kept apart. That is what "leverage on existing investment" means concretely, and it is
-why the ranking is not simply the convergence column sorted.
+why the ranking is not simply the convergence column sorted. `AD-3` is the worked example: the last
+connection turned out to be one route, and it is the first ranked item to ship.
 
 **The single largest structural gap has a convergence of 1.** No append-only activity ledger
 (`AD-19`) is the root cause of a requirement Cicero has already marked PARTIAL (`AR-38`), and it

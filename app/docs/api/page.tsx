@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft, ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
+import { BookOpen, ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
+import { SiteNav } from '@/components/SiteNav';
 import { Badge } from '@/components/ui';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { curlFor, exampleFor, type WorkedExample } from './examples';
 import { SchemaBlock } from './SchemaFields';
 import {
@@ -185,172 +187,187 @@ function EndpointArticle({ endpoint }: { endpoint: Endpoint }) {
   );
 }
 
-export default function ApiDocsPage() {
+export default async function ApiDocsPage() {
+  return <ApiDocsContent demoAvailable={await demoEntryPointsAreAvailable()} />;
+}
+
+/** Split out so the projection renders synchronously in a test, as `HomeContent` does. */
+export function ApiDocsContent({ demoAvailable }: { demoAvailable: boolean }) {
   const groups = endpointsByTag();
   const count = groups.reduce((total, group) => total + group.endpoints.length, 0);
   const schemes = doc.components?.securitySchemes ?? {};
 
   return (
-    <main className={styles.page}>
-      <header className={styles.header}>
-        {/*
-          Nothing else on this page walks back out of it: the reference has no site header, and the
-          only route home was the closing footnote, at the bottom of a page as long as the API is.
-        */}
-        <Link className={styles.backLink} href="/">
-          <ChevronLeft size={14} aria-hidden="true" />
-          Cicero home
-        </Link>
-        <p className={styles.eyebrow}>API reference</p>
-        <h1 className={styles.title}>{doc.info.title}</h1>
-        <p className={styles.lede}>{doc.info.description}</p>
-        <div className={styles.meta}>
-          <Badge tone="accent">v{doc.info.version}</Badge>
-          <span>{count} endpoints</span>
-          {baseUrl ? (
-            <span>
-              Base URL <code className={styles.code}>{baseUrl}</code>
-            </span>
-          ) : null}
-        </div>
-        <div className={styles.actions}>
-          <a className={styles.action} href="/api/v1/openapi.json">
-            <FileJson size={15} aria-hidden="true" />
-            <span>OpenAPI 3.1 spec</span>
-          </a>
-          <a
-            className={styles.action}
-            href="https://github.com/EllAchE/sessionboard-oss/tree/main/docs"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <ExternalLink size={15} aria-hidden="true" />
-            <span>Architecture and setup docs</span>
-          </a>
-          {/*
-            Both routes read the same spec. The link exists so the two renderings can be compared
-            side by side rather than from memory, while we decide which one Cicero keeps.
-            `/docs/api/scalar` is a route handler now, not a page — Next falls back to a full
-            navigation when the soft-navigation fetch doesn't get a valid RSC payload back.
-          */}
-          <Link className={styles.action} href="/docs/api/scalar">
-            <BookOpen size={15} aria-hidden="true" />
-            <span>Open in Scalar</span>
-          </Link>
-        </div>
-      </header>
+    <>
+      {/*
+        This page carried a lone "Cicero home" chevron above the title, because nothing else on it
+        walked back out: the reference had no site header, and the only other route home was the
+        closing footnote at the bottom of a page as long as the API is. It has the real bar now.
 
-      <div className={styles.body}>
-        <nav className={styles.sidebar} aria-label="API endpoints">
-          <p className={styles.sidebarTitle}>On this page</p>
-          <ul className={styles.sidebarList}>
-            <li>
-              <a className={styles.sidebarSection} href="#authentication">
-                Authentication
-              </a>
-            </li>
-            <li>
-              <a className={styles.sidebarSection} href="#errors">
-                Errors
-              </a>
-            </li>
-          </ul>
-          {groups.map((group) => (
-            <div className={styles.sidebarGroup} key={group.anchor}>
-              <a className={styles.sidebarSection} href={`#${group.anchor}`}>
-                {group.name}
-              </a>
-              <ul className={styles.sidebarList}>
-                {group.endpoints.map((endpoint) => (
-                  <li key={endpoint.anchor}>
-                    <a className={styles.sidebarLink} href={`#${endpoint.anchor}`}>
-                      <span className={styles.sidebarMethod} data-method={endpoint.method}>
-                        {endpoint.method}
-                      </span>
-                      <span className={styles.sidebarLabel}>
-                        <span className={styles.sidebarSummary}>{endpoint.summary}</span>
-                        <span className={styles.sidebarPath}>{endpoint.path}</span>
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
-
-        <div className={styles.content}>
-          <section className={styles.section} id="authentication" aria-labelledby="authentication-title">
-            <h2 className={styles.sectionTitle} id="authentication-title">
-              Authentication
-            </h2>
-            <dl className={styles.authList}>
-              <div className={styles.authRow}>
-                <dt>
-                  <Lock size={15} aria-hidden="true" /> Public
-                </dt>
-                <dd>
-                  Published program reads need no credential. Unpublished sessions and unlisted
-                  speakers are never served here.
-                </dd>
-              </div>
-              <div className={styles.authRow}>
-                <dt>
-                  <KeyRound size={15} aria-hidden="true" /> Event API key
-                </dt>
-                <dd>
-                  <code className={styles.code}>Authorization: Bearer &lt;key&gt;</code>{' '}
-                  {schemes.bearerAuth?.description}
-                </dd>
-              </div>
-              <div className={styles.authRow}>
-                <dt>
-                  <KeyRound size={15} aria-hidden="true" /> Speaker session
-                </dt>
-                <dd>
-                  <code className={styles.code}>Authorization: Bearer &lt;token&gt;</code> or the{' '}
-                  <code className={styles.code}>{schemes.speakerCookieAuth?.name}</code> cookie.{' '}
-                  {schemes.speakerBearerAuth?.description}
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <section className={styles.section} id="errors" aria-labelledby="errors-title">
-            <h2 className={styles.sectionTitle} id="errors-title">
-              Errors
-            </h2>
-            <p className={styles.groupNote}>
-              Each endpoint below lists the statuses it can return; the body is the same either way.
-            </p>
-            <SchemaBlock schema={{ $ref: '#/components/schemas/Error' }} />
-          </section>
-
-          {groups.map((group) => (
-            <section
-              className={styles.section}
-              id={group.anchor}
-              key={group.anchor}
-              aria-labelledby={`${group.anchor}-title`}
+        The bar sits outside `main` rather than inside it, unlike on `/` and `/embeds`: `.page`
+        already applies the same width constraint the bar carries for itself, and navigation is not
+        part of the document's main content.
+      */}
+      <SiteNav
+        demoAvailable={demoAvailable}
+        links={[
+          { href: '/#products', label: 'Product' },
+          { href: '/embeds', label: 'Embeds' },
+        ]}
+      />
+      <main className={styles.page}>
+        <header className={styles.header}>
+          <p className={styles.eyebrow}>API reference</p>
+          <h1 className={styles.title}>{doc.info.title}</h1>
+          <p className={styles.lede}>{doc.info.description}</p>
+          <div className={styles.meta}>
+            <Badge tone="accent">v{doc.info.version}</Badge>
+            <span>{count} endpoints</span>
+            {baseUrl ? (
+              <span>
+                Base URL <code className={styles.code}>{baseUrl}</code>
+              </span>
+            ) : null}
+          </div>
+          <div className={styles.actions}>
+            <a className={styles.action} href="/api/v1/openapi.json">
+              <FileJson size={15} aria-hidden="true" />
+              <span>OpenAPI 3.1 spec</span>
+            </a>
+            <a
+              className={styles.action}
+              href="https://github.com/EllAchE/sessionboard-oss/tree/main/docs"
+              target="_blank"
+              rel="noreferrer"
             >
-              <h2 className={styles.sectionTitle} id={`${group.anchor}-title`}>
-                {group.name}
-              </h2>
-              {group.description ? <p className={styles.groupNote}>{group.description}</p> : null}
-              {group.endpoints.map((endpoint) => (
-                <EndpointArticle endpoint={endpoint} key={endpoint.anchor} />
-              ))}
-            </section>
-          ))}
+              <ExternalLink size={15} aria-hidden="true" />
+              <span>Architecture and setup docs</span>
+            </a>
+            {/*
+              Both routes read the same spec. The link exists so the two renderings can be compared
+              side by side rather than from memory, while we decide which one Cicero keeps.
+              `/docs/api/scalar` is a route handler now, not a page — Next falls back to a full
+              navigation when the soft-navigation fetch doesn't get a valid RSC payload back.
+            */}
+            <Link className={styles.action} href="/docs/api/scalar">
+              <BookOpen size={15} aria-hidden="true" />
+              <span>Open in Scalar</span>
+            </Link>
+          </div>
+        </header>
 
-          <p className={styles.footnote}>
-            Every path is relative to the base URL above, and every field on this page is read from
-            the <a href="/api/v1/openapi.json">OpenAPI document</a> the API generates from its own
-            validators. Questions or a gap worth closing?{' '}
-            <Link href="/">Start from the overview</Link>.
-          </p>
+        <div className={styles.body}>
+          <nav className={styles.sidebar} aria-label="API endpoints">
+            <p className={styles.sidebarTitle}>On this page</p>
+            <ul className={styles.sidebarList}>
+              <li>
+                <a className={styles.sidebarSection} href="#authentication">
+                  Authentication
+                </a>
+              </li>
+              <li>
+                <a className={styles.sidebarSection} href="#errors">
+                  Errors
+                </a>
+              </li>
+            </ul>
+            {groups.map((group) => (
+              <div className={styles.sidebarGroup} key={group.anchor}>
+                <a className={styles.sidebarSection} href={`#${group.anchor}`}>
+                  {group.name}
+                </a>
+                <ul className={styles.sidebarList}>
+                  {group.endpoints.map((endpoint) => (
+                    <li key={endpoint.anchor}>
+                      <a className={styles.sidebarLink} href={`#${endpoint.anchor}`}>
+                        <span className={styles.sidebarMethod} data-method={endpoint.method}>
+                          {endpoint.method}
+                        </span>
+                        <span className={styles.sidebarLabel}>
+                          <span className={styles.sidebarSummary}>{endpoint.summary}</span>
+                          <span className={styles.sidebarPath}>{endpoint.path}</span>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
+
+          <div className={styles.content}>
+            <section className={styles.section} id="authentication" aria-labelledby="authentication-title">
+              <h2 className={styles.sectionTitle} id="authentication-title">
+                Authentication
+              </h2>
+              <dl className={styles.authList}>
+                <div className={styles.authRow}>
+                  <dt>
+                    <Lock size={15} aria-hidden="true" /> Public
+                  </dt>
+                  <dd>
+                    Published program reads need no credential. Unpublished sessions and unlisted
+                    speakers are never served here.
+                  </dd>
+                </div>
+                <div className={styles.authRow}>
+                  <dt>
+                    <KeyRound size={15} aria-hidden="true" /> Event API key
+                  </dt>
+                  <dd>
+                    <code className={styles.code}>Authorization: Bearer &lt;key&gt;</code>{' '}
+                    {schemes.bearerAuth?.description}
+                  </dd>
+                </div>
+                <div className={styles.authRow}>
+                  <dt>
+                    <KeyRound size={15} aria-hidden="true" /> Speaker session
+                  </dt>
+                  <dd>
+                    <code className={styles.code}>Authorization: Bearer &lt;token&gt;</code> or the{' '}
+                    <code className={styles.code}>{schemes.speakerCookieAuth?.name}</code> cookie.{' '}
+                    {schemes.speakerBearerAuth?.description}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            <section className={styles.section} id="errors" aria-labelledby="errors-title">
+              <h2 className={styles.sectionTitle} id="errors-title">
+                Errors
+              </h2>
+              <p className={styles.groupNote}>
+                Each endpoint below lists the statuses it can return; the body is the same either way.
+              </p>
+              <SchemaBlock schema={{ $ref: '#/components/schemas/Error' }} />
+            </section>
+
+            {groups.map((group) => (
+              <section
+                className={styles.section}
+                id={group.anchor}
+                key={group.anchor}
+                aria-labelledby={`${group.anchor}-title`}
+              >
+                <h2 className={styles.sectionTitle} id={`${group.anchor}-title`}>
+                  {group.name}
+                </h2>
+                {group.description ? <p className={styles.groupNote}>{group.description}</p> : null}
+                {group.endpoints.map((endpoint) => (
+                  <EndpointArticle endpoint={endpoint} key={endpoint.anchor} />
+                ))}
+              </section>
+            ))}
+
+            <p className={styles.footnote}>
+              Every path is relative to the base URL above, and every field on this page is read from
+              the <a href="/api/v1/openapi.json">OpenAPI document</a> the API generates from its own
+              validators. Questions or a gap worth closing?{' '}
+              <Link href="/">Start from the overview</Link>.
+            </p>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

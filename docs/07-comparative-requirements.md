@@ -14,10 +14,30 @@ evidence that the brief implies it than one team's clever idea.
 
 ## How to read it
 
-- **AD-n** — a capability shipped by at least one analyzed project and absent from Cicero.
+- **AD-n** — a capability shipped by at least one analyzed project and absent from Cicero when the
+  field was read.
 - **Independent arrivals** — how many of the analyzed projects built it. This is the tiering key.
 - Attribution is positive-only. An absent attribution means the capability was not recorded for
   that project, not that it was verified missing there.
+- An item Cicero has built since is marked in place with the pull request that closed it, and is
+  never removed. The observation was true when it was made; deleting it would erase both the
+  attribution and the fact that the field arrived at the gap first.
+
+## Closed since the survey
+
+Items below that Cicero has since built. Everything else in this file is still open.
+
+<!-- generated:closed -->
+| ID | Capability | Independent arrivals | Closed by |
+|---|---|--:|---|
+| AD-1 | Whole-event cloning / reusable event templates | 5/32 | [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) on 2026-08-17 |
+| AD-2 | Speaker availability / blackout windows as a scheduling constraint | 4/32 | [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) on 2026-08-17 |
+| AD-3 | Richer embed output formats | 5/32 | [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) on 2026-08-17 |
+| AD-4 | Revision history with organizer restore | 4/32 | [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) on 2026-08-17 |
+| AD-9 | Tokenized no-login share links | 4/32 | [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) on 2026-08-17 |
+| AD-11 | Per-event `llms.txt` | 2/32 | [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) on 2026-08-17 |
+| AD-37 | Mixed-type rubric criteria | 1/32 | [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) on 2026-08-17 |
+<!-- /generated:closed -->
 
 ## Baseline coverage across the field
 
@@ -91,11 +111,15 @@ Copy forms, tracks, rooms, scorecards, task and message templates, and optionall
 
 **Independent arrivals:** 5 of 32 · **Built by:** agrimsingh/conference-engine, jpoehnelt/session-party, maddiedreese/ProgramLoom, TheThingInTheThing/namos-sessions-webapp, adityak6798/ManageMyConference
 
+**Cicero shipped this on 2026-08-17** in [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) — `lib/services/event-clone.ts` plans a structure-only clone and `app/organizer/duplicate/` previews it before applying; people and operational history are deliberately excluded.
+
 #### AD-3 — Richer embed output formats
 
 JSON, XML, subscribable iCalendar, and script-loader snippets emitted from the same widget configuration, alongside the iframe. This confirms a gap we had already recorded against ourselves.
 
 **Independent arrivals:** 5 of 32 · **Built by:** mrmichael73/greenroom-kms, d4mr/opensesh, iankar8/event-manager-os, westoque/session-hero, akakabrian/sessionslate
+
+**Cicero shipped this on 2026-08-17** in [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) — `app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as `feed.json`, `feed.xml` and a subscribable `feed.ics` off the same query string the iframe and script snippets carry.
 
 #### AD-5 — Bidirectional Airtable sync
 
@@ -115,11 +139,15 @@ Collected during CFP or in the portal as dates, times, or dayparts, then surface
 
 **Independent arrivals:** 4 of 32 · **Built by:** nayamoss/namos-sessions-public, TheThingInTheThing/namos-sessions-webapp, 0xOsprey/saas-killa, yisding/openboard.events
 
+**Cicero shipped this on 2026-08-17** in [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) — A `speaker_unavailability` window declared in the portal is read by `lib/services/speaker-availability.ts` and enforced through the same agenda guard as double-booking.
+
 #### AD-4 — Revision history with organizer restore
 
 Attributed, numbered snapshots of proposal and session titles/abstracts that an organizer can roll back.
 
 **Independent arrivals:** 4 of 32 · **Built by:** conorbronsdon/callboard-app, westoque/session-hero, SteveMLC/lectern, realgenekim/curtain-call-cfp
+
+**Cicero shipped this on 2026-08-17** in [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) — Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage.
 
 #### AD-7 — Real-time collaborative agenda over Durable Objects + WebSockets
 
@@ -138,6 +166,8 @@ A chat surface inside the organizer app that drives the same tool registry the M
 Expiring, revocable links that expose a proposal, deliverable, or report to someone without an account.
 
 **Independent arrivals:** 4 of 32 · **Built by:** iankar8/event-manager-os, Phantastic-AI/fireside, mkly/gatherpulse, adityak6798/ManageMyConference
+
+**Cicero shipped this on 2026-08-17** in [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) — `lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account.
 
 ### Shipped by two teams
 
@@ -158,6 +188,8 @@ dynamic registration, PKCE, consent, discovery, refresh rotation. Cicero's MCP i
 generated from current public state, for AI agents reading the event.
 
 **Independent arrivals:** 2 of 32 · **Built by:** conorbronsdon/callboard-app, red/omotenashi
+
+**Cicero shipped this on 2026-08-17** in [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) — `app/(public)/[slug]/llms.txt/route.ts` generates a per-event file from current published state, alongside the site-level `app/llms.txt`.
 
 #### AD-12 — Accelevents integration
 
@@ -310,6 +342,8 @@ on private token-scoped REST reads — the read fails if the audit write fails.
 (numeric, single-select, and free text in one scorecard).
 
 **Independent arrivals:** 1 of 32 · **Built by:** akakabrian/sessionslate
+
+**Cicero shipped this on 2026-08-17** in [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) — `scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning.
 
 #### AD-38 — AI-seeded scorecards that the server refuses
 

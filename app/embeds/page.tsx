@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight, Code2, ExternalLink, RefreshCw, ShieldCheck } from 'lucide-react';
-import { CiceroBrand } from '@/components/CiceroBrand';
+import { SiteNav } from '@/components/SiteNav';
 import { Button } from '@/components/ui';
 import { appUrl } from '@/lib/env';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { DEMO_EVENT_SLUG } from '@/lib/demo-entry-links';
 import { getPublicExhibitorMap } from '@/lib/services/exhibitor-map';
 import { createSocialMetadata } from '@/lib/site-metadata';
@@ -39,9 +40,10 @@ export function generateMetadata(): Metadata {
 }
 
 export default async function EmbedsPage() {
-  const [bundle, exhibitorMap] = await Promise.all([
+  const [bundle, exhibitorMap, demoAvailable] = await Promise.all([
     loadPublicBundle(DEMO_EVENT_SLUG),
     getPublicExhibitorMap(DEMO_EVENT_SLUG),
+    demoEntryPointsAreAvailable(),
   ]);
 
   const samples = bundle
@@ -53,39 +55,41 @@ export default async function EmbedsPage() {
       })
     : [];
 
-  return <EmbedsShowcase samples={samples} eventName={bundle?.event.name ?? null} />;
+  return (
+    <EmbedsShowcase
+      samples={samples}
+      eventName={bundle?.event.name ?? null}
+      demoAvailable={demoAvailable}
+    />
+  );
 }
 
 /** Split out so the markup renders in a test without a database, as `HomeContent` does. */
 export function EmbedsShowcase({
   samples,
   eventName,
+  demoAvailable,
 }: {
   samples: EmbedSample[];
   eventName: string | null;
+  demoAvailable: boolean;
 }) {
   const conference = eventName ?? 'the demo conference';
 
   return (
     <main className={styles.root}>
-      <nav className={styles.nav} aria-label="Primary navigation">
-        <Link className={styles.brand} href="/" aria-label="Cicero home">
-          <CiceroBrand markSize={34} />
-        </Link>
-        <div className={styles.navLinks}>
-          <Link className={styles.navLink} href="/#products">
-            Products
-          </Link>
-          {samples.length > 0 ? (
-            <Link className={styles.navLink} href={`/${DEMO_EVENT_SLUG}`}>
-              Demo
-            </Link>
-          ) : null}
-          <Button className={styles.navCta} href="/signup" variant="primary" size="sm">
-            Sign up
-          </Button>
-        </div>
-      </nav>
+      {/*
+        The bespoke Demo link this replaces was gated on `samples.length`, a proxy for "the demo
+        event is published". `demoAvailable` is the real signal, and the menu it opens already
+        carries that destination among the others.
+      */}
+      <SiteNav
+        demoAvailable={demoAvailable}
+        links={[
+          { href: '/#products', label: 'Products' },
+          { href: '/docs/api', label: 'API' },
+        ]}
+      />
 
       <header className={styles.hero}>
         <p className={styles.eyebrow}>Sample embeds</p>

@@ -16,11 +16,12 @@ const SEEDED: SampleContent = {
 
 const samples = buildEmbedSamples('demo', 'https://cicero.test', SEEDED);
 
-function render(props: Parameters<typeof EmbedsShowcase>[0]) {
+function render(props: Omit<Parameters<typeof EmbedsShowcase>[0], 'demoAvailable'>) {
   // The copy buttons toast on click, so they need the provider the app layout wraps them in.
+  // The demo menu has its own coverage in the SiteNav test, so leave it out of every case here.
   return renderToStaticMarkup(
     <ToastProvider>
-      <EmbedsShowcase {...props} />
+      <EmbedsShowcase {...props} demoAvailable={false} />
     </ToastProvider>,
   );
 }
@@ -77,6 +78,18 @@ describe('EmbedsShowcase', () => {
     expect(html).toContain('href="/demo/speakers"');
     expect(html).toContain('href="/demo/agenda"');
     expect(html).toContain('href="/demo"');
+  });
+
+  /**
+   * This page showed Sign up without Sign in for as long as it had a bar of its own, because that
+   * bar was a copy of the home one that never got the auth cluster. Both links are asserted here,
+   * on the page that lost one, as well as in the SiteNav test that owns them.
+   */
+  it('lets a visitor who already has an account sign in', () => {
+    const html = render({ samples, eventName: 'Urbs Aeterna 2026' });
+
+    expect(html).toContain('href="/signin"');
+    expect(html).toContain('href="/signup"');
   });
 
   it('explains itself instead of showing empty frames on a fresh instance', () => {

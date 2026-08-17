@@ -254,14 +254,18 @@ export function renderVisual(survey: Survey): string {
       label: extra.title,
       description: extra.description,
       band: 'extra',
-      cicero: 'absent',
+      cicero: extra.ciceroShipped ? 'full' : 'absent',
       cells: projects.map((p) => ({
         value: shipped.has(p.slug) ? 'full' : 'unknown',
         title: shipped.has(p.slug)
           ? `${p.project} shipped this`
           : `${p.project} — not attributed (not the same as verified absent)`,
       })),
-      detail: `Shipped by ${extra.convergence} of ${projects.length} analyzed projects. Cicero does not have it.`,
+      detail:
+        `Shipped by ${extra.convergence} of ${projects.length} analyzed projects. ` +
+        (extra.ciceroShipped
+          ? `Absent from Cicero when the field was read; shipped in #${extra.ciceroShipped.pr} on ${extra.ciceroShipped.on}. ${extra.ciceroShipped.note}`
+          : 'Cicero does not have it.'),
     });
   }
 
@@ -293,8 +297,10 @@ export function renderVisual(survey: Survey): string {
     },
     {
       key: 'extra',
-      title: `Beyond the brief — shipped by others, absent in Cicero (${survey.features.extras.length})`,
-      note: 'A blank cell means unattributed, not verified absent.',
+      title: `Beyond the brief — shipped by others, absent in Cicero when the field was read (${survey.features.extras.length})`,
+      note:
+        'A blank cell means unattributed, not verified absent. ' +
+        `${stats.counts.extrasClosedSince} rows now read ✓ for Cicero: it built them after the survey.`,
     },
     {
       key: 'cicero',

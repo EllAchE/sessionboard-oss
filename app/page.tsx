@@ -1,4 +1,4 @@
-import { CiceroBrand } from '@/components/CiceroBrand';
+import { SiteNav } from '@/components/SiteNav';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
-import { DemoMenu } from './DemoMenu';
 import styles from './home.module.css';
 
 /**
@@ -142,42 +141,15 @@ export default async function Home() {
 export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
   return (
     <main className={styles.root}>
-      <nav className={styles.nav} aria-label="Primary navigation">
-        <a className={styles.brand} href="/" aria-label="Cicero home">
-          <CiceroBrand markSize={34} />
-        </a>
-        {/*
-          Demo sits last because it is the only entry that leaves the marketing page for a live
-          product surface, and because it opens a menu rather than jumping to a section -- a
-          trigger that expands in place reads as the end of the row, not a step in it.
-        */}
-        <div className={styles.navLinks}>
-          <a className={styles.aboutLink} href="#about">
-            About
-          </a>
-          <a className={styles.productsLink} href="#products">
-            Product
-          </a>
-          <a className={styles.apiDocsLink} href="/docs/api">
-            API
-          </a>
-          {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
-        </div>
-        <div className={styles.navAuth}>
-          {/* No class of its own: the one this asked for was never defined, and `variant` styles it. */}
-          <Button href="/signin" variant="secondary" size="sm">
-            Sign in
-          </Button>
-          <Button
-            className={styles.navCta}
-            href="/signup"
-            variant="primary"
-            size="sm"
-          >
-            Sign up
-          </Button>
-        </div>
-      </nav>
+      {/* Bare hashes rather than `/#about`: this is the page those sections are on. */}
+      <SiteNav
+        demoAvailable={demoAvailable}
+        links={[
+          { href: '#about', label: 'About' },
+          { href: '#products', label: 'Product' },
+          { href: '/docs/api', label: 'API' },
+        ]}
+      />
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
