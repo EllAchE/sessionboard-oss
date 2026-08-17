@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import { DemoMenu } from './DemoMenu';
@@ -36,9 +37,9 @@ export function SiteNav({
 }) {
   return (
     <nav className={styles.nav} aria-label="Primary navigation">
-      <a className={styles.brand} href="/" aria-label="Cicero home">
+      <Link className={styles.brand} href="/" aria-label="Cicero home">
         <CiceroBrand markSize={34} />
-      </a>
+      </Link>
       {/*
         Demo sits last because it is the only entry that leaves the marketing page for a live
         product surface, and because it opens a menu rather than jumping to a section -- a
@@ -46,9 +47,9 @@ export function SiteNav({
       */}
       <div className={styles.navLinks}>
         {links.map((link) => (
-          <a className={styles.navLink} href={link.href} key={link.href}>
+          <Link className={styles.navLink} href={link.href} key={link.href}>
             {link.label}
-          </a>
+          </Link>
         ))}
         {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
       </div>
