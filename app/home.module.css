@@ -41,7 +41,6 @@
 .hero,
 .mosaicRule,
 .about,
-.productsOverview,
 .product,
 .programme,
 .agentQuickStart,
@@ -518,37 +517,6 @@
   padding-block: var(--space-24) var(--space-32);
 }
 
-.productsOverview {
-  padding-block: var(--space-24) var(--space-8);
-}
-
-.roleProducts {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-6);
-  margin-top: var(--space-16);
-}
-
-/*
- * Four role cards share the row that used to hold three, so the icon sits above the copy instead of
- * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
- * break short headings like "Score proposals, not spreadsheets." across three lines.
- */
-.feature.roleProduct {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.feature.roleProduct .featureIcon {
-  grid-row: auto;
-}
-
-.feature .roleProductRole {
-  color: var(--text-accent);
-  font: var(--type-label);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-}
-
 .speakerProduct {
   margin-top: var(--space-24);
   padding-inline: var(--space-12);
@@ -869,10 +837,6 @@
     padding-top: var(--space-16);
   }
 
-  .roleProducts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .heroCopy {
     max-width: 760px;
   }
@@ -906,7 +870,6 @@
 
   .about,
   .features,
-  .roleProducts,
   .programme,
   .agentQuickStart {
     grid-template-columns: 1fr;
@@ -929,7 +892,6 @@
   .nav,
   .hero,
   .about,
-  .productsOverview,
   .product,
   .programme,
   .agentQuickStart,
@@ -1019,7 +981,6 @@
   }
 
   .product,
-  .productsOverview,
   .about,
   .programme,
   .agentQuickStart {
@@ -1052,10 +1013,6 @@
   }
 
   .features {
-    margin-top: var(--space-12);
-  }
-
-  .roleProducts {
     margin-top: var(--space-12);
   }
 
