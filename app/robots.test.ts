@@ -50,6 +50,7 @@ describe('robots.txt', () => {
       '/review',
       '/signin',
       '/signup',
+      '/welcome',
     ]) {
       expect(blocked(root), root).toBe(true);
       expect(blocked(`${root}/example`), `${root}/example`).toBe(true);

@@ -57,8 +57,17 @@ export function SiteNav({
         <Button href="/signin" variant="secondary" size="sm">
           Sign in
         </Button>
+        {/*
+          "Start an event" rather than "Sign up", because this bar was the entry point that said the
+          least about where it leads. The body calls to action on `/` and `/embeds` already say
+          "Create an event"; this one said "Sign up" and then landed the visitor on an event form,
+          which reads as the product assuming everybody who arrives means to run a conference.
+          Deliberately not the same words as those two: `SiteNav` renders on `/` above the hero
+          button, and the walkthrough rule documented in `app/page.tsx` treats two links whose labels
+          share a leading word as an ambiguous target.
+        */}
         <Button className={styles.navCta} href="/signup" variant="primary" size="sm">
-          Sign up
+          Start an event
         </Button>
       </div>
     </nav>

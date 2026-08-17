@@ -36,6 +36,7 @@ const PRIVATE_ROUTES = [
   '/review',
   '/signin',
   '/signup',
+  '/welcome',
 ];
 
 /** The `(dev)` group ships in every build. It is scaffolding for us, not product for anyone else. */
