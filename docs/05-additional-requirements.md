@@ -536,7 +536,32 @@ as a gap nobody noticed.
 
 ---
 
+## 19. Common-action FAQ for people and agents
+
+Several ordinary workflows are implemented but not discoverable from one place. Registering a
+speaker does not create a talk; a signed-in speaker starts a new one from the event's public CFP,
+while **My sessions** only lists existing submissions and drafts. An organizer can create another
+submission for the same speaker by entering the same email, which reuses the account. Adding that
+person to an existing panel is a different operation: the session group gains them as a panellist,
+moderator, co-speaker or speaker. The organizer can perform that operation through **View portal
+as** the primary speaker, but there is no equivalent control on the organizer submission detail.
+
+Those distinctions are reasonable once known and unnecessarily hard for a person or agent to
+reconstruct. They should be recorded as product guidance rather than duplicated as prose in every
+agent prompt.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-54 | **[OPTIONAL]** | OUTSTANDING | **Create one maintained FAQ for common role-scoped actions and make bot/agent guidance reference it.** Start with the speaker-to-programme path: how a registered speaker submits another talk, how an organizer creates another submission for an existing speaker, and how that speaker is added to an existing panel. Each answer should distinguish the current capability, its actual UI entry point, and any current workaround, so an agent does not mistake **My sessions** for a creation surface or invent a direct organizer panel-membership control. The role-scoped speaker and organizer guides should reference the FAQ rather than carry independent copies. This follow-up does not authorize an in-product chatbot, new mutation endpoints, or either underlying UX change; none of it is implemented by recording this requirement |
+
+---
+
 ## Decisions
+
+**2026-08-17 — the common-action FAQ remains follow-up work.** The speaker, submission and panel
+membership capabilities already exist; the gap is a maintained explanation that both people and
+agents can find. AR-54 records that discovery work without treating this document as the FAQ or
+changing any bot, agent, portal or organizer behaviour.
 
 **2026-08-16 — the milestone deadlines inform, they do not enforce.** Section 17's two dates were
 the owner's, and the owner's second decision about them was that nothing may be refused, warned on,
