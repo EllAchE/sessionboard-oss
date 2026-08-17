@@ -33,7 +33,7 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('AI-guided setup');
     expect(html).toContain('Copy prompt');
     expect(html).not.toContain('Copy AI setup prompt');
-    expect(html).not.toContain('Let Claude or ChatGPT walk through setup with you');
+    expect(html).toContain('one safe step at a time');
     expect(html).toContain('Claude &amp; ChatGPT setup prompt');
     expect(html.indexOf('Copy prompt')).toBeLessThan(html.indexOf('Create an event'));
     expect(html).toContain(
@@ -77,6 +77,24 @@ describe('fresh-instance home page', () => {
     );
     expect(html).toContain('Try the reviewer queue');
     expect(html).toContain('Rate proposals as a reviewer');
+  });
+
+  it('hangs each role demo off the card that describes the role', () => {
+    const html = renderHome(true);
+
+    expect(html).not.toContain('Or explore a conference already in progress');
+    for (const [label, href] of [
+      ['Run the conference', DEMO_ENTRY_LINKS.organizer],
+      ['Score the proposals', DEMO_ENTRY_LINKS.reviewer],
+      ['Give a talk', DEMO_ENTRY_LINKS.speaker],
+      ['Browse the programme', '/demo/agenda'],
+    ] as const) {
+      expect(html).toContain(label);
+      expect(html.indexOf('One conference, four purpose-built experiences.')).toBeLessThan(
+        html.indexOf(label),
+      );
+      expect(html).toContain(href.replaceAll('&', '&amp;'));
+    }
   });
 
   it('makes products and docs discoverable from the primary navigation', () => {

@@ -106,69 +106,56 @@ const SPEAKER_FEATURES = [
   },
 ];
 
+/**
+ * Each card carries the seeded demo for its own role (`lib/demo-entry-links.ts`), so a visitor
+ * picks a tour from the description of what that role does rather than from a separate list of
+ * three names above the fold. The attendee tour is the public agenda, which needs no sign-in.
+ *
+ * `demoLabel` leads with a verb rather than the role noun on purpose. Automated walkthroughs pick a
+ * click target by matching label text from the start and treat two matches as an error rather than
+ * choosing between them, and the footer already ships `Organizer demo`, `Reviewer demo`, and
+ * `Speaker demo` on this same page. That rules out the role nouns and their stems here --
+ * `Organize`, `Review` and `Speak` are each still a prefix of the matching footer label -- so `Run`,
+ * `Score`, `Give`, and `Browse` keep all seven entry points separable at their first word. Only the
+ * start of the link text disambiguates, so the role stays legible from `role` and `body` without
+ * reintroducing the clash.
+ *
+ * The reviewer section and the closing call to action add two more links to the same demo
+ * identities, so they open on `Try` and `Rate`, which no other label on the page or in the footer
+ * starts with. Re-check the whole page and the footer before rewording any of these.
+ */
 const ROLE_PRODUCTS = [
   {
     icon: LayoutDashboard,
     role: 'Organizer',
     title: 'Keep the whole conference moving.',
     body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up.',
+    demoHref: DEMO_ENTRY_LINKS.organizer,
+    demoLabel: 'Run the conference',
   },
   {
     icon: ClipboardCheck,
     role: 'Reviewer',
     title: 'Score proposals, not spreadsheets.',
     body: 'Work an assigned queue, rate the round’s criteria, and stay blind to peer scores until it closes.',
+    demoHref: DEMO_ENTRY_LINKS.reviewer,
+    demoLabel: 'Score the proposals',
   },
   {
     icon: Megaphone,
     role: 'Speaker',
     title: 'Stay ready from proposal to stage.',
     body: 'Submit a talk, maintain your profile, send deliverables, and upload your slides.',
+    demoHref: DEMO_ENTRY_LINKS.speaker,
+    demoLabel: 'Give a talk',
   },
   {
     icon: CalendarDays,
     role: 'Attendee',
     title: 'Plan the day from the live programme.',
     body: 'Browse the agenda, discover speakers, and build a personal itinerary, no account needed.',
-  },
-] as const;
-
-/**
- * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
- * visitor reaches a populated view of the role they care about without reading the page first. The
- * same three entry points also close the page and sit in the global footer.
- *
- * `label` leads with a verb rather than the role noun on purpose, and the role noun opens `blurb`
- * instead. Automated walkthroughs pick a click target by matching label text from the start and
- * treat two matches as an error rather than choosing between them, and the footer already ships
- * `Organizer demo`, `Reviewer demo`, and `Speaker demo` on this same page. That rules out the role
- * nouns and their stems here -- `Organize`, `Review` and `Speak` are each still a prefix of the
- * matching footer label -- so `Run`, `Score` and `Give` keep all six entry points separable at their
- * first word. Only the start of the link text disambiguates, so naming the role inside `blurb`
- * stays clear for a reader without reintroducing the clash. Re-check the whole page before
- * rewording any of these.
- *
- * The reviewer section and the closing call to action add two more links to the same demo identity,
- * so they open on `Try` and `Rate`, which no other label on the page or in the footer starts with.
- */
-const PERSONAS = [
-  {
-    href: DEMO_ENTRY_LINKS.organizer,
-    icon: LayoutDashboard,
-    label: 'Run the conference',
-    blurb: 'Organizer — programme, schedule, and outstanding tasks.',
-  },
-  {
-    href: DEMO_ENTRY_LINKS.reviewer,
-    icon: ClipboardCheck,
-    label: 'Score the proposals',
-    blurb: 'Reviewer — assigned proposals and scoring.',
-  },
-  {
-    href: DEMO_ENTRY_LINKS.speaker,
-    icon: Megaphone,
-    label: 'Give a talk',
-    blurb: 'Speaker — your sessions, profile, and tasks.',
+    demoHref: '/demo/agenda',
+    demoLabel: 'Browse the programme',
   },
 ] as const;
 
@@ -227,10 +214,15 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             Manage submissions, review, sourcing, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.agentStarter}>
-            <p className={styles.agentStarterLabel}>
-              <Sparkles size={17} aria-hidden="true" />
-              AI-guided setup
-            </p>
+            <div className={styles.agentStarterCopy}>
+              <p className={styles.agentStarterLabel}>
+                <Sparkles size={17} aria-hidden="true" />
+                AI-guided setup
+              </p>
+              <p className={styles.agentStarterHint}>
+                Claude or ChatGPT walks you through it, one safe step at a time.
+              </p>
+            </div>
             <CopyAgentPromptButton
               prompt={AGENT_STARTER_PROMPT}
               size="lg"
@@ -248,31 +240,15 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </Button>
           </div>
 
-          {demoAvailable ? (
-            <div className={styles.personas}>
-              <p className={styles.personasTitle} id="personas-title">
-                Or explore a conference already in progress
-              </p>
-              <ul className={styles.personaList} aria-labelledby="personas-title">
-                {PERSONAS.map((persona) => (
-                  <li key={persona.label}>
-                    <a className={styles.persona} href={persona.href}>
-                      <span className={styles.personaIcon}>
-                        <persona.icon size={18} aria-hidden="true" />
-                      </span>
-                      <span className={styles.personaLabel}>
-                        {persona.label}
-                        <ArrowRight size={15} aria-hidden="true" />
-                      </span>
-                      <span className={styles.personaBlurb}>{persona.blurb}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
+          {/*
+            The role demos used to sit here as a fourth stack of links under the two setup calls to
+            action, which pushed the hero long and asked a first-time visitor to pick a role before
+            the page had said what each one does. They now hang off the matching card in the
+            products section, where the role is already described.
+          */}
+          {demoAvailable ? null : (
             <div className={styles.freshStart}>
-              <p className={styles.personasTitle}>Fresh instance</p>
+              <p className={styles.freshStartTitle}>Fresh instance</p>
               <p>No demo event yet. Create an event or load demo data from the README.</p>
             </div>
           )}
@@ -320,7 +296,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </p>
         </div>
         <div className={styles.roleProducts}>
-          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body }) => (
+          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body, demoHref, demoLabel }) => (
             <article className={`${styles.feature} ${styles.roleProduct}`} key={role}>
               <span className={styles.featureIcon}>
                 <Icon size={20} aria-hidden="true" />
@@ -328,6 +304,11 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               <p className={styles.roleProductRole}>{role}</p>
               <h3>{title}</h3>
               <p>{body}</p>
+              {demoAvailable ? (
+                <a className={styles.roleProductDemo} href={demoHref}>
+                  {demoLabel} <ArrowRight size={15} aria-hidden="true" />
+                </a>
+              ) : null}
             </article>
           ))}
         </div>
