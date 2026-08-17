@@ -28,6 +28,17 @@
   line-height: var(--leading-snug);
 }
 
+/*
+ * Each line truncates itself. The cell's own ellipsis only reaches text the cell owns directly, so
+ * without this a long name is cut mid-word at the column edge with nothing to say it was cut.
+ */
+.owner > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .owner > :last-child {
   font: var(--type-label);
   color: var(--text-faint);

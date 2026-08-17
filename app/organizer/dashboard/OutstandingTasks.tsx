@@ -224,6 +224,7 @@ export function OutstandingTasks({
       header: heading('Status', 'status'),
       width: '10%',
       space: 'compact',
+      truncate: false,
       render: (row) => <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>,
     },
     {
@@ -264,6 +265,7 @@ export function OutstandingTasks({
       header: 'Chase',
       width: '13%',
       space: 'wide',
+      truncate: false,
       render: (row) =>
         row.urgency === 'done' ? (
           <span className={styles.personMeta}>—</span>

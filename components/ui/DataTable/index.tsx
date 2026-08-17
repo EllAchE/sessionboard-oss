@@ -23,6 +23,12 @@ export interface DataTableColumn<T> {
   mono?: boolean;
   /** Emphasises the cell as the row's primary label. */
   strong?: boolean;
+  /**
+   * Cells truncate their own text with an ellipsis by default. Set `false` on columns that render
+   * a control or a badge rather than a run of text: the ellipsis cannot truncate those, so it only
+   * paints beside them and reads as text that was cut off.
+   */
+  truncate?: boolean;
   render: (row: T, rowIndex: number) => ReactNode;
 }
 
@@ -295,6 +301,7 @@ export function DataTable<T>({
                         styles[column.align ?? 'left'],
                         column.mono && styles.mono,
                         column.strong && styles.strong,
+                        column.truncate === false && styles.noTruncate,
                       )}
                     >
                       {column.render(row, index)}

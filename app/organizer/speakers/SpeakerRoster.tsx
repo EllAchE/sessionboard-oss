@@ -129,9 +129,12 @@ function columns(
           {
             id: 'viewAs',
             header: <span className={styles.visuallyHidden}>View as</span>,
-            width: 'var(--control-md)',
+            // The cell keeps the shared prose padding, so the column has to carry it too or the
+            // button is wider than the box it sits in and loses its right edge to the clip.
+            width: 'calc(var(--control-xs) + var(--space-3) * 2)',
             space: 'compact' as const,
             align: 'right' as const,
+            truncate: false,
             render: (row: SpeakerProfile) => (
               <ViewPortalAsRowButton participantId={row.id} name={row.name} />
             ),
