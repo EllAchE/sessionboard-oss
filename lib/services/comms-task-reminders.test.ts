@@ -27,6 +27,7 @@ type PersonFixture = {
 const state = vi.hoisted(() => ({
   eventId: 'event-one',
   taskRows: [] as TaskFixture[],
+  assignmentsOverride: null as Array<{ participantId: string; taskId: string }> | null,
   taskScopeChecks: [] as string[],
   peopleOverride: null as PersonFixture[] | null,
   mintedLinks: [] as Array<Record<string, unknown>>,
@@ -222,7 +223,7 @@ function queryForSource(rowsBySource: Map<unknown, unknown[]>) {
 function createDb() {
   const eventId = state.eventId as keyof typeof EVENTS;
   const taskById = new Map(state.taskRows.map((entry) => [entry.id, entry]));
-  const taskRows = ASSIGNMENTS[eventId]
+  const taskRows = (state.assignmentsOverride ?? ASSIGNMENTS[eventId])
     .map((assignment) => {
       const selectedTask = taskById.get(assignment.taskId);
       return selectedTask
@@ -261,6 +262,7 @@ describe('bulk task reminder merge data', () => {
   beforeEach(() => {
     state.eventId = 'event-one';
     state.taskScopeChecks = [];
+    state.assignmentsOverride = null;
     state.sentMail = [];
     state.taskRows = [
       {
@@ -299,6 +301,39 @@ describe('bulk task reminder merge data', () => {
         subject: 'Reminder: Upload headshot and due 12 September 2026',
         text: expect.stringContaining('Hi Two, complete Upload headshot and due 12 September 2026.'),
         eventId: 'event-one',
+      }),
+    ]);
+  });
+
+  it('uses each recipient’s nearest-due task when any outstanding task is selected', async () => {
+    state.taskRows.push({
+      id: 'task-later',
+      eventId: 'event-one',
+      name: 'Sign release form',
+      dueAt: new Date('2026-09-20T23:59:00Z'),
+    });
+    state.assignmentsOverride = [
+      { participantId: 'participant-one', taskId: 'task-later' },
+      { participantId: 'participant-one', taskId: 'task-selected' },
+      { participantId: 'participant-two', taskId: 'task-later' },
+    ];
+
+    const outcome = await sendCampaign({
+      eventId: 'event-one',
+      subject: 'Reminder: {{task.name}}{{task.dueAt}}',
+      bodyMarkdown: 'Complete {{task.name}}{{task.dueAt}}.',
+      audience: { kind: 'outstanding_tasks' },
+    });
+
+    expect(outcome).toMatchObject({ recipients: 2, sent: 2, failed: 0 });
+    expect(state.sentMail).toEqual([
+      expect.objectContaining({
+        to: 'one@example.test',
+        subject: 'Reminder: Upload headshot and due 12 September 2026',
+      }),
+      expect.objectContaining({
+        to: 'two@example.test',
+        subject: 'Reminder: Sign release form and due 20 September 2026',
       }),
     ]);
   });
@@ -356,6 +391,7 @@ describe('SMS dual-dispatch and channel override', () => {
   beforeEach(() => {
     state.eventId = 'event-one';
     state.taskScopeChecks = [];
+    state.assignmentsOverride = null;
     state.sentMail = [];
     state.sentSms = [];
     state.mintedLinks = [];
