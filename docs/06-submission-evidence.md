@@ -37,9 +37,12 @@ current production evidence, while the submission mirror is current-branch evide
 routes must be repeated against the hosted origin as part of the final pre-submission deploy check.
 
 The production origin was rechecked after the PR branch was pushed. `/demo/agenda` remained healthy
-and rendered 11 published sessions across five rooms. `/submission` returned the expected 404
-because the branch was still unmerged. No preview-deployment check appeared on the PR, so there is
-no separate hosted branch environment to cite in place of that final production deploy.
+and its browser view reported 11 published sessions across five rooms. A subsequent API read
+returned HTTP 200 with 12 sessions across five rooms and zero unscheduled sessions; the hosted seed
+is mutable, so those counts are point-in-time evidence rather than a fixture guarantee.
+`/submission` returned the expected 404 because the branch was still unmerged. No preview-deployment
+check appeared on the PR, so there is no separate hosted branch environment to cite in place of
+that final production deploy.
 
 ## Current source: local production build and seeded walkthrough
 
