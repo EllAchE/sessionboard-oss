@@ -398,14 +398,15 @@ export function Composer(props: ComposerProps) {
                 <p className={`${styles.notice} ${styles.success}`}>
                   Sent to {outcome.sent} of {outcome.recipients} recipients ({outcome.sentEmail}{' '}
                   email, {outcome.sentSms} SMS)
-                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Messages are archived in
-                  Mailbox.
+                  {outcome.failed > 0 ? `, ${outcome.failed} failed` : ''}. Messages are archived
+                  under Email and SMS.
                 </p>
               )}
 
               {props.transport === 'log' && (
                 <p className={styles.notice}>
-                  <CalendarCheck size={16} /> Development mode: messages go to Mailbox only.
+                  <CalendarCheck size={16} /> Development mode: messages are logged only, not
+                  delivered.
                 </p>
               )}
 

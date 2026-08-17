@@ -10,7 +10,8 @@ export type CommsTab = 'compose' | 'templates' | 'mail' | 'sms';
 const TABS: Array<{ id: CommsTab; label: string; href: string }> = [
   { id: 'compose', label: 'Compose', href: '/organizer/comms' },
   { id: 'templates', label: 'Templates', href: '/organizer/comms/templates' },
-  { id: 'mail', label: 'Mailbox', href: '/organizer/mail' },
+  /** "Email", not "Mailbox": this tab and the next are logs of what went out, not inboxes. */
+  { id: 'mail', label: 'Email', href: '/organizer/mail' },
   { id: 'sms', label: 'SMS', href: '/organizer/sms' },
 ];
 

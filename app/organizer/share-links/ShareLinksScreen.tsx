@@ -155,7 +155,7 @@ export function ShareLinksScreen({ links }: { links: ShareLinkRow[] }) {
   return (
     <div className={styles.section}>
       <div className={styles.headings}>
-        <h1 className={styles.title}>Share links</h1>
+        <h1 className={styles.title}>Guest links</h1>
         <p className={styles.note}>
           A link that opens one view of this event for someone with no Cicero account — a keynote
           speaker, a sponsor, a venue contact. Unlike the public programme it <strong>includes
@@ -241,8 +241,8 @@ export function ShareLinksScreen({ links }: { links: ShareLinkRow[] }) {
         columns={columns}
         rows={links}
         getRowId={(row) => row.id}
-        label="Share links"
-        emptyState={<div className={styles.empty}>No share links yet.</div>}
+        label="Guest links"
+        emptyState={<div className={styles.empty}>No guest links yet.</div>}
       />
     </div>
   );

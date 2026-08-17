@@ -5,7 +5,11 @@ import type { ShareLinkRow } from './types';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = { title: 'Share links · Cicero' };
+/**
+ * The route stays `/organizer/share-links` while the label reads "Guest links": issued URLs and
+ * bookmarks point at this path, and the rename was only ever about what an organizer calls it.
+ */
+export const metadata = { title: 'Guest links · Cicero' };
 
 export default async function ShareLinksPage() {
   const ctx = await shareLinkContext();

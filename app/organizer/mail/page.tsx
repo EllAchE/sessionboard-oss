@@ -88,7 +88,7 @@ export default async function MailboxPage({
       <div className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Communications</p>
-          <h1 className={styles.title}>Mailbox</h1>
+          <h1 className={styles.title}>Email</h1>
           <p className={styles.lede}>Sent and attempted email for this event.</p>
         </div>
         <div className={styles.headerActions}>
