@@ -74,6 +74,7 @@ export function SignInForm({
               </Button>
             </form>
           )}
+          {!state.sent && copy.note ? <p className={styles.note}>{copy.note}</p> : null}
           {!state.sent && demoEmail ? (
             <div className={styles.demo}>
               <p className={styles.hint}>

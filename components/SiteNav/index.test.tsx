@@ -17,7 +17,7 @@ describe('SiteNav', () => {
    * account. The auth pair is the component's own, not a caller's, and no combination of props may
    * produce one without the other.
    */
-  it('offers both sign in and event creation whatever the caller passes', () => {
+  it('offers both sign in and sign up whatever the caller passes', () => {
     for (const props of [
       { links: LINKS, demoAvailable: true },
       { links: LINKS, demoAvailable: false },
@@ -29,8 +29,19 @@ describe('SiteNav', () => {
       expect(html).toContain('href="/signin"');
       expect(html).toContain('Sign in');
       expect(html).toContain('href="/signup"');
-      expect(html).toContain('Create event');
+      expect(html).toContain('Start an event');
     }
+  });
+
+  /**
+   * The label is load-bearing, not decoration. `/signup` lands on a screen about running a
+   * conference, and "Sign up" promised nothing of the sort, so a visitor who came to speak or
+   * review found themselves in the organizer's setup flow with no warning.
+   */
+  it('says where the primary call to action leads rather than only that it signs you up', () => {
+    const html = renderToStaticMarkup(<SiteNav links={LINKS} demoAvailable={false} />);
+
+    expect(html).not.toContain('>Sign up<');
   });
 
   it('names itself for assistive technology and sends the brand home', () => {

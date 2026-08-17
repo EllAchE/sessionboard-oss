@@ -8,8 +8,15 @@ export default async function OrganizerLayout({ children }: { children: React.Re
   const actor = await currentActor();
   if (!actor) redirect('/signin?next=/organizer');
 
+  /**
+   * `/welcome`, not `/events/new`. This is the other half of the sign-up fix: `consumeMagicLink`
+   * falls back to `/organizer` when a token carries no redirect, so a membershipless account
+   * arriving on an emailed link used to be forwarded into the event form from here even though
+   * sign-up itself no longer does that. `/welcome` forwards anyone who does hold a membership, so
+   * this stays a redirect to a decision rather than a redirect to a job.
+   */
   const events = await listEventsForUser(actor.userId);
-  if (events.length === 0) redirect('/events/new');
+  if (events.length === 0) redirect('/welcome');
 
   /**
    * `CFP-10`. The organizer shell is organizer navigation end to end, so a reviewer never enters it —
