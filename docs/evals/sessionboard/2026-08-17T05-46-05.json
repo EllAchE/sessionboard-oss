@@ -1,0 +1,493 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "kind": "scored-report",
+    "runId": "2026-08-17T05-46-05",
+    "evaluatorRef": "d8fafa4",
+    "productRef": null,
+    "reportSha256": "bdb0a02f738be1c246bfabb15bea48f352656a26882fd5138e690a610409490b",
+    "sourceSessions": [],
+    "limitations": []
+  },
+  "targetUrl": "https://cicero-three.vercel.app",
+  "startedAt": "2026-08-17T07:00:25.474Z",
+  "finishedAt": "2026-08-17T20:37:59.080Z",
+  "kitVersion": "0.1.0",
+  "models": {
+    "agent": "harness (in-session agent)",
+    "judge": "harness (in-session judge)"
+  },
+  "score": {
+    "overallPct": 91.7,
+    "coveragePct": 98.3,
+    "withheld": false,
+    "manualPending": 17
+  },
+  "areas": [
+    {
+      "area": "call-for-papers",
+      "title": "Call for Papers",
+      "optional": false,
+      "pct": 89.2,
+      "coveragePct": 97.4,
+      "pendingManual": [
+        "CFP-08",
+        "CFP-14"
+      ]
+    },
+    {
+      "area": "abstract-management",
+      "title": "Abstract Management (Review Depth & Disposition)",
+      "optional": false,
+      "pct": 92.6,
+      "coveragePct": 96.4,
+      "pendingManual": [
+        "ABS-07",
+        "ABS-09",
+        "ABS-13",
+        "ABS-14"
+      ]
+    },
+    {
+      "area": "speaker-management",
+      "title": "Speaker Management",
+      "optional": false,
+      "pct": 95.3,
+      "coveragePct": 97,
+      "pendingManual": [
+        "SPK-06",
+        "SPK-07",
+        "SPK-10",
+        "SPK-13",
+        "SPK-16"
+      ]
+    },
+    {
+      "area": "content-management",
+      "title": "Content Management & Speaker Deliverables",
+      "optional": false,
+      "pct": 87.1,
+      "coveragePct": 100,
+      "pendingManual": [
+        "CNT-08",
+        "CNT-14"
+      ]
+    },
+    {
+      "area": "ai-agenda",
+      "title": "AI Agenda & Schedule Builder",
+      "optional": false,
+      "pct": 94.4,
+      "coveragePct": 100,
+      "pendingManual": []
+    },
+    {
+      "area": "public-widgets",
+      "title": "Public & Embeddable Widgets",
+      "optional": false,
+      "pct": 92.6,
+      "coveragePct": 100,
+      "pendingManual": [
+        "EMB-11",
+        "EMB-15",
+        "EMB-16"
+      ]
+    },
+    {
+      "area": "speaker-crm",
+      "title": "Speaker CRM (Cross-Event Speaker Database)",
+      "optional": true,
+      "pct": 100,
+      "coveragePct": 100,
+      "pendingManual": [
+        "CRM-11"
+      ]
+    }
+  ],
+  "defects": [
+    {
+      "area": "call-for-papers",
+      "severity": "critical",
+      "description": "The default published call for papers is unsubmittable by anyone. The built-in 'Tags' question is Required by default and is bound to the event's internal tag list, which is seeded empty on a new event, so on the public form it renders as 'Tags *' followed by the static text 'No choices configured.' with no input control of any kind - and validation then reports 'Tags is required', an error no submitter can ever clear. Publishing succeeded and reported 'The form is published and accepting submissions.' with no warning that a required choice question has zero choices. Reproduced twice: on the logged-out public form in CFP-S1 (screenshot 033) and live as the speaker in CFP-S2 (screenshot 007), where it blocked the scenario until the evaluator added tags in event settings. Fix is either that the built-in Tags question should not default to Required, or publish should refuse/warn when a required choice field has no configured choices.",
+      "where": "Public CFP form, talk step (/submit/devflow-conf-2027/devflow-conf-2027-call-for-speakers); origin in the form builder's built-in Tags question bound to Settings > Tags"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "major",
+      "description": "Audience-segmented Compose sends resolve {{submission.title}} to the wrong submission, producing factually incorrect decision emails. A speaker on both an accepted and a declined proposal legitimately falls into the 'Declined speakers' audience; sending the 'Submission declined' template to that audience produced a message naming his ACCEPTED talk ('thank you for submitting Taming 40-Minute CI: Incremental Builds at Monorepo Scale ... we are not able to include this one in the programme'). The merge field appears to pick an arbitrary submission belonging to the recipient rather than the one that qualified them for the segment. Verified by contrast: the automatic per-decision notification for the same decision, recipient and template names the correct talk. Any organizer using the documented 'Declined speakers' + 'Submission declined' flow will send wrong rejections to any speaker with more than one submission.",
+      "where": "/organizer/comms - Compose, audience segment path (evidence in the Sent log: CFP-S4/023 wrong title vs CFP-S4/025 correct title)"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "major",
+      "description": "Conditional-visibility rules are ignored by every read-only rendering of a submission. 'Workshop prerequisites' is configured to show only when Session format is Workshop, and the public submission form honours that correctly in both directions - but the post-submission speaker edit view and the reviewer's Questionnaire panel both render the question on ABS-1, which is a Talk. For a reviewer this is worse than cosmetic: it presents a question that was never asked as one the speaker skipped ('Workshop prerequisites -').",
+      "where": "Speaker post-submission edit view (/portal/.../submissions/<id>) and reviewer scoring view (/review/<id>?round=<id>)"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "major",
+      "description": "The 'Rounds' button on the organizer submissions page is inert - clicking it re-renders the same page at the same URL. The rounds screen actually lives at /organizer/submissions/rounds and had to be reached by guessing the URL (the plausible /organizer/rounds returns a 404 page). The submissions header advertises the feature ('2 shown - no review round yet') and numeric scoring is entirely gated behind creating a round, so the one control that should lead there being dead blocks any organizer who does not guess URLs.",
+      "where": "/organizer/submissions - 'Rounds' header button"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "major",
+      "description": "No submission confirmation of any kind. Clicking 'Submit talk' redirects straight to the speaker portal with no confirmation screen, no persistent message, no 'we received ABS-1', no next step and no decision date; by the time the redirect settled the notification region was empty, so any toast did not survive. The only evidence a speaker gets that their proposal was received is finding it listed in the portal.",
+      "where": "Public CFP form, final 'Review and submit' step -> /portal/devflow-conf-2027"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "major",
+      "description": "The post-submission edit view degrades and narrows the form. 'Audience level' drops from a Beginner/Intermediate/Advanced dropdown to a free-text input, so a speaker can save an arbitrary string into a constrained field; and Session format, Track and Tags are not editable at all (Track is read-only header text), leaving no self-service correction route for the fields organizers filter and route on.",
+      "where": "Speaker post-submission edit view (/portal/devflow-conf-2027/submissions/<id>)"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "Decision notifications are duplicated by design. Accept/Decline already notifies automatically ('Decision recorded and the speaker was notified.'), so following the Messages flow to send decision emails delivers a second copy to every speaker - an acceptance at 07:53 and again at 07:59, a decline at 07:56 and again at 08:00. Nothing in Compose indicates the selected audience has already been notified and there is no 'not yet notified' segment, so the double send is the default outcome of doing what the flow invites.",
+      "where": "/organizer/comms Compose vs the automatic per-decision send"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "The Decision card gives no indication of which decision is currently recorded. On an accepted submission and on a declined one the Accept button renders identically as a filled primary and Decline as a red-outlined destructive - the styling encodes button role, not selection state. The only in-card signal is the neutral 'Decided Aug 17, 2026'; the actual state is legible only from the status pill next to the title, at the other end of a long scroll.",
+      "where": "Organizer submission detail, Decision panel (compare CFP-S4/006 accepted with CFP-S4/010 declined)"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "The conditional-rule 'Value' box stays free text even when the source question is a dropdown whose choices the app already knows, so the organizer must guess the exact option string and a rule that matches nothing fails silently with no warning. This actually misfired during the run - the first rule matched no format and the dependent field never appeared - and it is compounded by format labels rendering without the durations the organizer typed.",
+      "where": "Form builder, conditional-logic editor ('Show this question when')"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "The form Settings field labelled 'Page heading *' is silently capped at 15 characters. Typing 'Speak at DevFlow Conf 2027' left 'Speak at DevFlo' in the box with only the counter reading '15 of 15 characters' as the tell, and no warning that the rest was dropped. The help text describes a short kicker line, so the label oversells the field and the truncation is easy to ship unnoticed.",
+      "where": "Form builder > Settings > Welcome screen > Page heading"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "The reviewer invite form silently discards the typed display name when the email matches an existing account: 'Sam Whitfield' was entered but the reviewer appears everywhere as the seeded 'Marcus Tullius Cicero', with no notice that the typed name was ignored.",
+      "where": "Review round > Assign reviewers > Invite reviewer"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "A declined submission still offers mutation controls in the speaker portal: 'Withdraw this session' and co-speaker add/remove remain available on a proposal that was already rejected and whose content is otherwise locked read-only. Related clarity gap on the same page: the read-only notice never says why editing stopped (the call closed and the submissions were decided; the portal attributes the lock to neither), and 'Email the organizers to request changes' is the only route offered with no address or mailto link.",
+      "where": "Speaker portal submission page for a declined submission (CFP-S4/043) and for an accepted one (CFP-S4/041)"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "Dead-end and omitted data in the submission wizard: the disabled Email field on the Participants step says 'Change this on the Account step.' but that step disappears once the speaker is identified (the wizard collapses from 5 steps to 4), pointing at somewhere unreachable; the review summary and the submitted record omit the participant-level Biography, showing only the custom 'Speaker bio' answer, so a bio typed on the Participants step never appears where the submitter checks their work; and participant prefill on a second submission is partial - name and email carry over, mobile phone and biography do not.",
+      "where": "Public CFP form, Participants and Review-and-submit steps"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "Horizontal overflow clips content in several places at a 1280px viewport rather than wrapping or scrolling: the reviewer queue table clips its last column header to 'YOUR SCOR' and the row's primary action to 'iew again'; the organizer submissions table clips the 'Score' header to 'SCO' and its values; and the rendered email body in the per-recipient preview and Sent detail pane is cut off mid-word ('We had far mo', 'include this one i').",
+      "where": "/review queue table, /organizer/submissions table, /organizer/comms preview and Sent detail"
+    },
+    {
+      "area": "call-for-papers",
+      "severity": "minor",
+      "description": "Navigation and copy papercuts: /organizer/submissions lands on the 'Pending' tab by default, so once every submission is decided the default landing view is an empty table reading 'No submissions match these filters.' with '0 shown' while the tab bar above it says All 2; the send confirmation reads 'Sent to 1 of 1 recipients' and the speaker portal reads '1 ACCEPTED SESSIONS' without singularizing; the speaker submission page's browser tab title is the generic 'Cicero - Conference operations for organizers and speakers' rather than the session name; and the Current event selector reset to an unrelated event on a fresh browser session rather than remembering the event last worked in.",
+      "where": "/organizer/submissions, /organizer/comms, /portal/devflow-conf-2027, global event switcher"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "major",
+      "description": "Reviewer selections made in the round's 'Assign reviewers' checkbox list are silently discarded by any other save on the same page. ABS-S2/019 shows a reviewer checked into the Initial Review pool; ABS-S2/036, the same round after an unrelated save, shows both checkboxes cleared and the Auto-assign button disabled again, with no warning, no error and no indication the earlier selection was lost. An organizer who checked reviewers, then adjusted a cap or routing rule, would believe a pool exists that does not.",
+      "where": "Organizer > Submissions > Rounds > round detail > Assign reviewers panel (/organizer/submissions/rounds/round-<id>)"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "major",
+      "description": "Saving a scorecard draft from the organizer's submission detail silently self-assigns the organizer as a reviewer on that round, changing the round's completion denominators. ABS-S3/038 shows the organizer not among the round's reviewers; after using the scorecard on that page, ABS-S3/042 and the workload panel at ABS-S3/048 show an additional reviewer with an outstanding item (0/1), which is what drops the round off 100%. An organizer inspecting or overriding a score should not be enrolled as a reviewer and should not distort review-progress reporting.",
+      "where": "Organizer > Submissions > submission detail > scorecard card; effect visible on the round's reviewer workload panel"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "major",
+      "description": "The SCORE column - the aggregate this area's results workflow exists to surface - is clipped off the right edge of the organizer submissions table at a 1280px viewport with the default 8 of 8 columns visible, and no horizontal scrollbar is offered, so the value is unreachable without changing column settings or zooming out. ABS-S3/033 shows the table sorted by score with the score itself cut off.",
+      "where": "Organizer > Submissions list (/organizer/submissions), default column set at 1280px"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "Column headers and cell contents are truncated in the reviewer queue at a standard viewport: the score header renders as 'YOUR SCOR', an action reads 'iew again' instead of 'Review again', and submission titles are cut mid-word. The text is clipped rather than ellipsised, so it reads as a rendering fault rather than intentional truncation.",
+      "where": "Reviewer portal queue (/review)"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "Subject/verb disagreement in the reviewer-progress copy: '1 reviewer still owe scores.' The string is not pluralisation-aware and appears on more than one round (ABS-S2/037 and ABS-S3/048).",
+      "where": "Organizer > Submissions > Rounds > round detail, reviewer progress/workload panel"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "The 'Queue >=' numeric input on the round configuration is too narrow to display its own value; the contents render as a stray ';' fragment, so the organizer cannot read back the threshold they set.",
+      "where": "Organizer > Submissions > Rounds, round settings row"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "On the rounds page the 'Anonymized' switch label is overlapped by the '+ Add round' button, partially obscuring the label of a control that governs reviewer-visible identity. Present in both ABS-S2/018 and the later ABS-S3/049, so it is not a transient repaint.",
+      "where": "Organizer > Submissions > Rounds (/organizer/submissions/rounds)"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "The AI suggestion panel renders its missing-key notice twice, stacking two copies of the same explanatory text in one card.",
+      "where": "Organizer > Submissions > submission detail > AI suggestion card"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "The submission wizard's Participants step instructs 'Change this on the Account step.' but the wizard has no Account step, so the instruction points nowhere.",
+      "where": "Speaker submission wizard, Participants step (/submit/devflow-conf-2027/...)"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "minor",
+      "description": "A submission already marked Accepted remains fully editable by the speaker while the call is open, with no warning that the content under review is changing and no organizer re-approval step. ABS-S1/013 shows the accepted status and ABS-S1/008 and /014 show the same submission's fields open for edit and saved.",
+      "where": "Speaker portal > submission detail (/portal/devflow-conf-2027/submissions/<id>)"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "major",
+      "description": "Renaming a speaker through the organizer's 'Full name' field updates the display name but leaves the underlying first/last name pair at its previous value, so every surface built from firstName/lastName keeps showing the old identity. The speaker displayed everywhere as 'Priya Raman' is greeted in the actually-sent email as 'Hi Marcus Vitruvius,' (the {{speaker.firstName}} merge field resolving to stale data), the Sent-archive detail shows the same, the organizer-side file listing attributes her upload to 'Uploaded by Marcus Vitruvius Pollio', and her own portal profile shows First name 'Marcus Vitruvius' / Last name 'Pollio' next to 'Name as it should appear: Priya Raman'. This makes personalized email address recipients by the wrong name and misattributes uploaded files.",
+      "where": "Organizer speaker edit (name handling), Messages merge fields / Sent archive (/organizer/sent), organizer speaker record Files list, portal profile name fields"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "major",
+      "description": "A speaker's portal profile save silently destroys organizer-entered profile data and does not deliver its own. Priya's Website field was populated with her LinkedIn URL by the organizer at creation and was still populated later in SPK-S1; after she saved her portal profile (which has its own Links section with LinkedIn and Twitter URLs) the organizer-side Website field is empty and shows only its placeholder. The LinkedIn and Twitter URLs she entered in the portal never appear anywhere on the organizer record, so the round trip both loses organizer input and drops speaker input.",
+      "where": "Portal profile save vs organizer speaker record (Website / Links fields)"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "minor",
+      "description": "Content is clipped off the right edge of the viewport at 1280px width with no horizontal scrollbar, so information is unreachable rather than merely cramped. Three instances: the speakers roster's rightmost column is cut mid-cell, the organizer tasks table's rightmost (chase/follow-up) column is truncated, and the rendered email preview card in Messages clips its body text at the card edge.",
+      "where": "/organizer/speakers roster table, /organizer/tasks table, Messages compose rendered-preview card"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "minor",
+      "description": "Bulk email cannot reach the whole roster. Recipient selection offers only predefined audience filters - there is no 'all speakers' audience and no per-speaker multi-select - so with 5 speakers on the roster the compose flow reported 'Sent to 2 of 2 recipients', leaving 3 speakers unaddressable by the documented welcome/announcement flow.",
+      "where": "/organizer/comms compose, recipient/audience selection"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "minor",
+      "description": "Summary copy misstates task state. The organizer tasks view describes the fixture tasks as spanning all roster participants when only the 2 assigned speakers actually hold assignments, and a speaker record with zero assigned tasks renders the affirmative 'All assigned tasks are complete.' message instead of an empty state, which reads as a false completion signal.",
+      "where": "/organizer/tasks summary line; speaker record task panel empty state"
+    },
+    {
+      "area": "speaker-management",
+      "severity": "minor",
+      "description": "Downloading a speaker-uploaded file saves it under an opaque UUID rather than the filename shown in the UI ('headshot.webp'), so a downloaded batch of deliverables is not identifiable on disk.",
+      "where": "Organizer speaker record Files list, Download control"
+    },
+    {
+      "area": "content-management",
+      "severity": "major",
+      "description": "Speaker attribution is wrong throughout the content surfaces. A file uploaded and a comment posted while authenticated as Priya Raman (vitruvius@example.com) render under the name 'Marcus Vitruvius Pollio' on the file detail thread, in the version list, and in the organizer files library speaker column. The same misattribution appears on three submission rows in the final submissions grid. An organizer reading a comment thread or a file library cannot tell which speaker produced which artefact, which defeats the purpose of per-speaker deliverable tracking.",
+      "where": "Speaker portal file detail and comments; organizer submissions files library and file detail; organizer submissions grid. Evidence: CNT-S2/008, CNT-S3/009, CNT-S3/036, CNT-S3/040, CNT-S3/046."
+    },
+    {
+      "area": "content-management",
+      "severity": "major",
+      "description": "The 'Approval and content' view renders no session title on any row. All four rows show only a status chip and controls; the session identity exists solely in the accessible name and is not visible text. This is the only surface that exposes the content approval control, so an organizer must approve or reject sessions without being able to see which session each row refers to. Confirmed across four separate captures, so it is not a rendering artefact of one screenshot.",
+      "where": "Organizer 'Approval and content' view. Evidence: CNT-S3/024, CNT-S3/029."
+    },
+    {
+      "area": "content-management",
+      "severity": "major",
+      "description": "Wide data tables clip their right-hand columns at a 1280px viewport with no horizontal scrollbar and no responsive collapse, so the truncated columns are unreachable rather than merely off-screen. Columns lost this way include DUE and CHASED on deliverables tracking, the upload date on the files library, and SCORE on the submissions grid. These are the columns an organizer uses to decide who to chase and when, so the loss is functional rather than cosmetic.",
+      "where": "Organizer deliverables tracking, files library, and submissions grid at 1280px. Evidence: CNT-S3/004, CNT-S3/009, CNT-S1/021."
+    },
+    {
+      "area": "content-management",
+      "severity": "minor",
+      "description": "Replacing a headshot does not version it the way documents are versioned. Re-uploading a document produced version 2 with the prior version retained and marked superseded, but replacing the image left the previous file orphaned in an 'Unattached' state rather than as a superseded version of the same task answer, producing two inconsistent replacement behaviours for the same user action.",
+      "where": "Speaker portal file upload / organizer files library. Evidence: CNT-S2/009, CNT-S3/009."
+    },
+    {
+      "area": "content-management",
+      "severity": "minor",
+      "description": "The public event overview contradicts itself, showing a '1 SPEAKERS' count and the empty-state sentence 'No speakers have been announced yet.' on the same page at the same time. The count and the list are evidently computed from different predicates.",
+      "where": "Public event overview page. Evidence: CNT-S3/035."
+    },
+    {
+      "area": "content-management",
+      "severity": "minor",
+      "description": "Bulk ZIP export gives only a transient 'building' toast with no terminal state. There is no ready-to-download indicator, no failure state, and no persistent record of the export, so a user whose archive fails or who misses the toast has no way to learn the outcome.",
+      "where": "Organizer files library bulk export. Evidence: CNT-S3/038, CNT-S3/039."
+    },
+    {
+      "area": "content-management",
+      "severity": "minor",
+      "description": "The restore audit entry is off by one. Restoring an earlier revision appends a history line reading 'to revision 3' when the revision restored was not revision 3, so the audit trail misidentifies which version was reinstated.",
+      "where": "Session content revision history. Evidence: CNT-S3/023."
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "major",
+      "description": "A published session is silently withheld from the attendee-facing site, and the organizer's own counters contradict the public ones. After publishing both days the organizer agenda reads '0 draft / 4 published' and both 'Publish day' buttons are spent, but /devflow-conf-2027/agenda reads '3 published sessions' and /devflow-conf-2027/sessions reads '3 published · 3 of 3 sessions', with public day counts Wed 2 / Thu 1 and no Main Stage column or facet at all. The withheld record is 'Lightning: Agents in Production Q&A'; its organizer Edit dialog offers 'Return to draft', proving the record is published. Nothing on the organizer side — no card badge, no publish-flow warning, no footnote on the counter — indicates that a published session is not reaching attendees or why. The agent refuted a time-window cause (moving it to 09:30–09:40 changed nothing) and a submission-status cause (all four submissions are Accepted); the correlated cause is that its sole speaker, Marcus Okafor, is still 'Invited' rather than 'Confirmed' on the roster, and the public speakers page shows '1 announced' listing only Priya Raman. The gate itself may be defensible; dropping a whole published session with no organizer-visible signal is not. The confirming causal test was not executed, so the cause is inferred while the 4-vs-3 discrepancy itself is directly evidenced.",
+      "where": "/organizer/agenda (publish flow and counters) vs /devflow-conf-2027/agenda and /devflow-conf-2027/sessions"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "In the Conference view, the inline chip on a grid card that participates in BOTH a room and a speaker double-booking reads only 'Speaker clash'. The room collision — arguably the more serious one, and the one the grid itself depicts by drawing two cards in the same column at the same time — is never named on the card. An organizer working only in the Conference view has to open the Conflicts tab or read the banner tally to discover it.",
+      "where": "/organizer/agenda, Conference view grid cards"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "'Ends at' is unreliable in the session dialogs. On create it neither auto-populates nor tracks the start time, and its placeholder is a static '09:45' — a 45-minute span that contradicts the selected 'Talk (30 min)' format, so the hint actively misleads (the saved end time was nonetheless derived correctly as 10:00–10:30). On edit, changing the start time does not move the end, so a session moved to a new slot silently keeps its old end time unless the organizer notices and retypes it.",
+      "where": "/organizer/agenda, 'Add a session' and 'Edit session' dialogs"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "The 'Draft an agenda' dialog offers a free-text guidance textarea ('Anything it should know? (optional)', placeholder 'Keep workshops in the afternoon; the keynote room is the largest.') even when the deterministic built-in planner is the one running and cannot honour free text. Guidance entered ('prefer Workshop Lab for small sessions') was silently discarded — the planner proposed Main Stage — and the textarea simply disappears from the dialog after generation with no note that the input was ignored. An organizer can state a constraint, watch it be violated, and have no way to tell whether it was considered and rejected or never read.",
+      "where": "/organizer/agenda, 'Draft with AI' dialog"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "The agenda builder renders no scheduling surface at all until at least one room exists — no time axis, no columns, no empty slots, only the plain-text line 'Add a room in Settings before scheduling.' The message names the destination but is not a link, so an organizer arriving at a new event's agenda must find /organizer/settings unaided. The dashboard reports the same state as '0 Sessions · 0 published / 2 accepted talks not on the agenda' without pointing at the actual blocker.",
+      "where": "/organizer/agenda for an event with no rooms"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "Publishing produces no lasting confirmation and no handoff link. The only feedback is state change (counters, the button relabelling to 'Publish day (0)' and disabling, and a card accent change); no persistent banner, no share URL, and no link to the public page just affected. The organizer must discover /devflow-conf-2027 independently. No confirmation step precedes publishing and no batch undo follows it, though individual sessions can be returned to draft.",
+      "where": "/organizer/agenda, 'Publish day (N)' action"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "The day-scoped 'Publish day (N)' button remains displayed while the List view is showing all days at once. In the post-reload List view the button reads 'Publish day (1)' while three sessions spanning two days are listed, which could lead an organizer to believe the button publishes everything on screen.",
+      "where": "/organizer/agenda, List view toolbar"
+    },
+    {
+      "area": "ai-agenda",
+      "severity": "minor",
+      "description": "Cross-area display-name inconsistency observed incidentally in this area's evidence: the submissions list Speaker column and the submission detail 'Submitted by' line render the account vitruvius@example.com as 'Marcus Vitruvius Pollio' for ABS-1, ABS-2 and ABS-3, while the same account's profile, the Speakers block on those same detail pages, the organizer roster, the agenda cards, the Conflicts view and the public site all render it as 'Priya Raman'. Agenda-side surfaces are correct; the composed-name surfaces in the review area are not. Flagged for the owning area's judge rather than scored here.",
+      "where": "/organizer/submissions list and submission detail header (contrast with /organizer/agenda and /organizer/speakers)"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "major",
+      "description": "Public widgets and every generated embed silently drop content that the organizer is told is published. The organizer agenda for DevFlow Conf 2027 shows '0 draft / 4 published' and holds 'Lightning: Agents in Production Q&A' 09:30–09:40 on Main Stage; the public sessions page, the public agenda and the embed builder all report 3 and never list it. The suppression is also per-speaker: the workshop card credits 'Priya Raman, Marcus Okafor' on the organizer grid but only 'Priya Raman' publicly. The rule (unconfirmed speakers are not embeddable) is stated in the builder's helper text, but nothing warns at the point of consequence - no marker on the affected session, no explanation of the 4-vs-3 gap, and the blocking speaker is never named - so an organizer would paste a snippet that ships an incomplete agenda and a missing co-speaker without being told.",
+      "where": "Organizer /organizer/agenda and /organizer/embeds vs public /devflow-conf-2027/sessions, /devflow-conf-2027/agenda and /embed/devflow-conf-2027/sessions"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "Facet counts in the sessions Filters panel do not recompute against an active search. With 'aqueduct' entered and the live count reading '8 of 43 sessions', the Day facet still advertises 'Mon, Sep 28 32 / Tue, Sep 29 11' and Track still '10 / 10 / 12 / 11'. The numbers describe the whole event, which is misleading sitting beside a live filtered count and would lead an attendee to expect results a facet click cannot produce.",
+      "where": "Public sessions list widget, Filters panel (/demo/sessions)"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "'Add to calendar (.ics)' produces no on-screen acknowledgement of any kind when clicked - no toast, no dialog, no error, no state change. A download-only action with zero feedback leaves an attendee unable to tell whether the export worked. There is also no webcal/subscribe or add-to-Google-Calendar alternative on the public itinerary.",
+      "where": "Public itinerary widget ('My schedule'), export control"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "Agenda day selection, agenda session detail and itinerary day tabs are all client-side with no URL change, so a specific day or an individual agenda session cannot be linked, bookmarked or restored on reload. The speakers List/Gallery toggle does this correctly with real links, which makes the inconsistency more noticeable.",
+      "where": "Public agenda widget (/demo/agenda, /devflow-conf-2027/agenda) and itinerary day tabs"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "The speaker gallery is not at parity with the speakers list: gallery cards omit the session count that list rows show ('1 session' / '2 sessions' / '0 sessions'), and the gallery detail modal has no equivalent of the list panel's 'Open this profile on its own page' permalink, so there is no visible route from the gallery to a speaker's standalone page.",
+      "where": "Public speaker gallery (/demo/speakers?view=gallery) and its detail modal"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "Deleting a saved embed takes a single click on a trash icon with no confirmation dialog, no undo and no toast. A 'Live' embed is by definition already pasted into a public website, so one accidental click silently breaks that page with no way to reverse it from the UI.",
+      "where": "Organizer embed builder (/organizer/embeds), Embeds list"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "'Copy snippet' gives no visible confirmation - the button label does not change and no toast appears in the snapshot taken immediately after the click or in the following screenshot. (Whether the clipboard was actually written is not verifiable from the harness; the missing feedback is what is being reported.)",
+      "where": "Organizer embed builder (/organizer/embeds), 'Paste this into your site' panel"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "Room labels are printed twice on an embedded session card - once in the meta line beside the date/time and again as a chip - because the Room-labels field switch drives the chip independently of the always-present meta line.",
+      "where": "Sessions-list embed / public session cards (e.g. 'Room 2A' on 'Taming 40-Minute CI')"
+    },
+    {
+      "area": "public-widgets",
+      "severity": "minor",
+      "description": "The itinerary widget offers no keyword search and no filters; both exist only on the sibling Sessions widget, so an attendee on a large programme must leave the schedule view to find anything. Related smaller issues on the same widget: the personal view is a flat list with no day headers (a multi-day selection would show no day boundary), and day tabs are derived from days that have published sessions rather than the event's declared range, so DevFlow Conf 2027 (2027-05-12 to 2027-05-14) renders only two tabs with no Fri May 14 at all.",
+      "where": "Public itinerary widget (/devflow-conf-2027/itinerary, /demo/itinerary)"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "major",
+      "description": "The org-level speaker directory and the per-event speaker roster are two separate stores with only a manual, one-directional bridge, while the directory's own subtitle claims otherwise. /crm reads 'Every speaker and contact your organization has worked with, across all events', yet it opened at 'Showing 0 of 0 contacts / Your speaker database is empty' even though the same speakers.csv had already been imported into an event roster earlier in the run - the CRM never learns about people who exist as event speakers. The only link is the contact record's 'Add to an event' button, which pushes org -> event; there is no reverse sync, so edits made on the event speaker record do not flow back and the same person can exist as two unlinked records. An organizer arriving with existing event rosters finds an empty CRM and must re-import.",
+      "where": "/crm (Speaker directory) vs /organizer/speakers; contact record Events panel"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "Dead-end single-recipient email link. The contact record's 'Email' action points at /crm/campaigns?ids=<single uuid>, but the bulk composer enforces a two-recipient minimum ('2 selected, and at least two are needed') and keeps the send button disabled with one recipient, so that link can never complete a send. Either the per-contact link should not exist or the composer should accept one recipient.",
+      "where": "/crm/<contact id> 'Email' button -> /crm/campaigns"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "Two panels on the same page disagree about whether a prospect has an event. After the contact was pushed to DevFlow Conf 2027 (Events panel and Activity both confirm it), the pipeline card and the contact's Sourcing panel still display 'No event yet', because pushing to an event does not backfill the card's optional target-event field. The prospect detail page offers no affordance to set the target event after enrolment, so the stale value cannot be corrected.",
+      "where": "/crm/pipeline board card, /crm/pipeline/<id> subtitle, and the Sourcing panel on /crm/<contact id>"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "The segment name on the segments index is rendered as a link but does not navigate; clicking 'AI Experts' left the page on /crm/segments and the segment could only be opened by going to its href directly. That is the only visible entry point to a saved segment from the index.",
+      "where": "/crm/segments"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "Inconsistent audit trail on the contact record: saving an internal note writes no Activity entry, while custom-field edits ('Updated custom fields'), imports and merges all do. A teammate reading the Activity feed cannot tell that a note was added or when.",
+      "where": "/crm/<contact id> Internal notes vs Activity"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "Merge chooser per-field defaults are non-uniform: NAME, JOB TITLE and COMPANY pre-select the newer (non-primary) record while EMAIL, BIO and SOURCE pre-select the primary. Since the merge is explicitly irreversible ('This cannot be undone'), an organizer who trusts 'the primary record wins' would silently carry over values from the record being destroyed. Harmless in this test only because the two records' values were identical.",
+      "where": "/crm/duplicates field-level merge chooser"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "The sourcing board does not fit its own stage count at a 1280px viewport: only four of the six columns render (Researching, Identified, Contacted, Interested), so the two terminal outcomes Confirmed and Declined are off-screen behind horizontal scroll with no visible affordance pointing at them, even though the subtitle advertises '6 stages'.",
+      "where": "/crm/pipeline"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "Inconsistent drill-through depth on the CRM dashboard: the 'Top companies' and 'Where they came from' widgets link to a filtered directory (/crm?company=..., /crm?source=...), but all six 'Prospects by stage' links point at the bare /crm/pipeline with no stage scoping, so clicking 'Interested 1' does not scope the board.",
+      "where": "/crm/dashboard Sourcing pipeline widget"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "minor",
+      "description": "Unpluralized counts throughout the CRM: '1 contacts' in the segment save dialog and on the segments index card, and '1 filters' on the directory toolbar including after a dashboard drill-through.",
+      "where": "/crm directory toolbar, save-segment dialog, /crm/segments"
+    }
+  ]
+}
