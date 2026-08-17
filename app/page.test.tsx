@@ -84,7 +84,7 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('href="/api/v1/mcp-tools.json"');
     expect(html).toContain('event API key as a Bearer token');
     expect(html).toContain('Integrations');
-    expect(html).toContain('Let your AI assistant handle the hard work.');
+    expect(html).toContain('Let your agent handle the boring work.');
     expect(html.indexOf('MCP server')).toBeLessThan(html.indexOf('Paste into your agent'));
     expect(html).not.toContain('setup checklist');
   });

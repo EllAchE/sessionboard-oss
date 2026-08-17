@@ -246,7 +246,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             For organizers · Agent-first
           </p>
           <h2 id="agent-quick-start-title">
-            Let your AI assistant handle the hard work.
+            Let your agent handle the boring work.
           </h2>
           <p>
             Cicero is built to be driven by an agent. Connect its MCP server and Claude or ChatGPT
