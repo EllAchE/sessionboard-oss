@@ -320,6 +320,11 @@ roadmap list.
 
 ### Known gaps, not strategic exclusions
 
+- Mobile responsiveness received less design and verification time on the dense organizer
+  workflows, where frequent review, triage, and scheduling work is most likely to happen on a
+  desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
+  especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
+  host-site compatibility pass.
 - The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
   not been proven there even though message generation and `.ics` behavior are tested.
 - R2 and Twilio adapters are implemented and tested but have not been exercised against paid

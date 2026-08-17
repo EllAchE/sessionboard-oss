@@ -22,6 +22,13 @@
       "when": 1786928042093,
       "tag": "0002_share_link",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786932898161,
+      "tag": "0003_bumpy_post",
+      "breakpoints": true
     }
   ]
 }

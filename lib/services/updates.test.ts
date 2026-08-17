@@ -26,6 +26,7 @@ function revision(overrides: Partial<ContentRevisionEntry> = {}): ContentRevisio
     entityKind: 'participant',
     entityId: 'participant-1',
     entityLabel: 'Ada Lovelace',
+    revisionNumber: 1,
     summary: 'Edited their speaker profile',
     editorUserId: 'ada-user',
     editorName: 'Ada Lovelace',
