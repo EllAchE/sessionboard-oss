@@ -37,6 +37,7 @@ import {
 import { activeSmsTransportName } from '../sms';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
+import { DEFAULT_LEVELS } from './submissions';
 import { phoneVerificationIsCurrent } from './notification-preferences';
 
 /**
@@ -577,11 +578,49 @@ export async function submissionFields(formId: string): Promise<FormFieldSpec[]>
     }));
 }
 
+/**
+ * What the form offers for Audience level, or `null` if it does not ask.
+ *
+ * `buildFieldSpecs` resolves this for the public form and the portal never called it, so the same
+ * question a speaker answered from a Beginner/Intermediate/Advanced dropdown came back as an empty
+ * text box on the edit view — free to hold anything, including a string no filter or report in the
+ * product will ever match. The options are read here rather than hardcoded because an organizer can
+ * replace them, and a form with the field removed should offer nothing at all.
+ */
+export async function submissionLevelOptions(formId: string): Promise<string[] | null> {
+  const row = await getDb().query.formField.findFirst({
+    where: and(eq(formField.formId, formId), eq(formField.builtinKey, 'level')),
+  });
+  if (!row) return null;
+  return row.options?.length ? row.options : [...DEFAULT_LEVELS];
+}
+
 export const submissionEditSchema = z.object({
   title: z.string().trim().min(3, 'Give the session a title').max(255),
   descriptionMarkdown: z.string().max(5000, 'Description is limited to 5,000 characters').optional(),
   level: z.string().trim().max(60).optional(),
 });
+
+/**
+ * The value has to be one the form offers. A `<select>` already limits what a browser sends, and
+ * this is the same check on the other side of it: the edit view posts to a server action, which
+ * anyone can post to directly, and `level` is a column the review queue filters and the exports
+ * group by.
+ *
+ * A blank clears the field, which is what an optional question means, and whatever the record
+ * already says passes unchanged — the old text box let anything through, and a speaker who came
+ * back to fix a typo in their title should not be stopped by a value they cannot now re-enter.
+ */
+export function levelError(
+  value: string | undefined,
+  options: string[] | null,
+  current: string | null,
+): string | null {
+  if (!value || value === current) return null;
+  if (!options) return 'This form does not ask for an audience level';
+  if (!options.includes(value)) return `Choose one of ${options.join(', ')}`;
+  return null;
+}
 
 export type SubmissionEditInput = z.infer<typeof submissionEditSchema> & { answers?: AnswerMap };
 
@@ -618,6 +657,13 @@ export async function updateMySubmission(
     for (const issue of parsed.error.issues) details[issue.path.join('.') || 'form'] = issue.message;
     throw invalid('Some details need attention', details);
   }
+
+  const levelProblem = levelError(
+    parsed.data.level,
+    await submissionLevelOptions(current.formId),
+    current.level,
+  );
+  if (levelProblem) throw invalid('Some details need attention', { level: levelProblem });
 
   const fields = await submissionFields(current.formId);
   const answers = input.answers ? clearHiddenAnswers(fields, input.answers) : current.answers;

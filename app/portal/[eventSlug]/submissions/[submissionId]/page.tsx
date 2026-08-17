@@ -7,6 +7,7 @@ import {
   getMySubmission,
   listGroupMembers,
   submissionFields,
+  submissionLevelOptions,
   type PortalSubmission,
 } from '@/lib/services/portal';
 import {
@@ -38,8 +39,9 @@ export default async function SubmissionDetailPage({
     throw error;
   }
 
-  const [fields, members] = await Promise.all([
+  const [fields, levelOptions, members] = await Promise.all([
     submissionFields(submission.formId),
+    submissionLevelOptions(submission.formId),
     listGroupMembers(submission.id, me.id),
   ]);
 
@@ -135,7 +137,12 @@ export default async function SubmissionDetailPage({
           </CardBody>
         </Card>
       ) : submission.editable ? (
-        <SubmissionEditor eventSlug={eventSlug} submission={submission} fields={fields} />
+        <SubmissionEditor
+          eventSlug={eventSlug}
+          submission={submission}
+          fields={fields}
+          levelOptions={levelOptions}
+        />
       ) : (
         <Card>
           <CardHeader>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Card, CardBody, CardHeader, CardTitle, Input, Textarea } from '@/components/ui';
+import { Card, CardBody, CardHeader, CardTitle, Input, Select, Textarea } from '@/components/ui';
 import type { FormFieldSpec } from '@/lib/forms/contract';
 import { renderMarkdown } from '@/lib/markdown';
 import type { PortalSubmission } from '@/lib/services/portal';
@@ -18,10 +18,13 @@ export function SubmissionEditor({
   eventSlug,
   submission,
   fields,
+  levelOptions,
 }: {
   eventSlug: string;
   submission: PortalSubmission;
   fields: FormFieldSpec[];
+  /** What the form offers for Audience level, or `null` if it does not ask. */
+  levelOptions: string[] | null;
 }) {
   const [state, action] = useActionState(saveSubmissionAction, IDLE_STATE);
   const [description, setDescription] = useState(submission.descriptionMarkdown ?? '');
@@ -79,13 +82,42 @@ export function SubmissionEditor({
               </div>
             </div>
 
-            <div className={styles.field}>
-              <label className={styles.label} htmlFor="level">
-                Audience level
-              </label>
-              <Input id="level" name="level" defaultValue={submission.level ?? ''} />
-              <FieldError state={state} field="level" />
-            </div>
+            {/*
+              The same dropdown the form asked the question with. This was an open text box, so a
+              question a speaker answered by picking "Intermediate" came back editable to anything at
+              all — and `level` is what the review queue filters on and the exports group by. A form
+              whose organizer removed the field now offers nothing rather than an empty box.
+            */}
+            {levelOptions && (
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="level">
+                  Audience level
+                </label>
+                <Select
+                  id="level"
+                  name="level"
+                  defaultValue={submission.level ?? ''}
+                  invalid={Boolean(state.details?.level)}
+                >
+                  {/* Optional, so "no answer" has to stay reachable after one has been given. */}
+                  <option value="">Not specified</option>
+                  {/*
+                    Anything the old text box let through is still on the record. Offering it keeps
+                    the select showing what the submission actually says instead of silently
+                    presenting the first option and saving that on the next edit.
+                  */}
+                  {submission.level && !levelOptions.includes(submission.level) && (
+                    <option value={submission.level}>{submission.level}</option>
+                  )}
+                  {levelOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError state={state} field="level" />
+              </div>
+            )}
           </div>
         </CardBody>
       </Card>
