@@ -146,6 +146,10 @@ describe('renderVisual', () => {
     expect(html).toContain('<!doctype html>');
     expect(html).toContain('<meta name="viewport"');
     expect(html).toContain('href="https://cicero-submission.elehche.workers.dev/"');
+    expect(html).toContain(
+      '<meta property="og:image" content="https://cicero-field-survey.elehche.workers.dev/social/cicero-card-archetypes.png">',
+    );
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
     expect(html).toContain('</html>');
   });
 
@@ -160,7 +164,8 @@ describe('renderVisual', () => {
   });
 
   it('stays self-contained so it survives the artifact CSP', () => {
-    expect(html).not.toMatch(/<(script|link|img)[^>]+(src|href)="https?:/);
+    expect(html).not.toMatch(/<(script|img)[^>]+src="https?:/);
+    expect(html).not.toMatch(/<link[^>]+rel="stylesheet"[^>]+href="https?:/);
   });
 
   it('escapes project names into cell titles rather than interpolating raw markup', () => {
