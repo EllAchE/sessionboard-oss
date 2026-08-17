@@ -10,6 +10,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './DemoMenu.module.css';
 
 /**
@@ -19,7 +20,7 @@ import styles from './DemoMenu.module.css';
  * The version belongs in the key, an idea taken from the role-onboarding branch (#150) that this
  * replaced: a later rewrite of the note can deliberately show itself once more by incrementing it,
  * without the flag ever becoming durable account data. Bump it only for a note worth interrupting a
- * returning visitor with -- rewording the line below is not that.
+ * returning visitor with -- rewording the note itself is not that.
  *
  * TODO: show this by referrer rather than to everyone. Every first-time visitor currently gets a
  * note addressed to the Smol team, which is the deliberate simple version: the judges reach the
@@ -69,13 +70,22 @@ const DEMO_DESTINATIONS = DEMO_TOURS.map(({ key, href, label }) => ({
   blurb: DEMO_BLURBS[key],
 }));
 
+/** Breathing room between the trigger and panel and the edge of the lit area, in pixels. */
+const SPOTLIGHT_PADDING = 10;
+
+/** The lit rectangle, in viewport coordinates, as the portalled cutout consumes it. */
+type SpotlightRect = { top: number; left: number; width: number; height: number };
+
 export function DemoMenu({ className }: { className?: string }) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
   /** True only while the panel is showing itself uninvited, which is what the note explains. */
   const [introducing, setIntroducing] = useState(false);
+  /** Null until the introduction has something worth lighting, which is what gates the cutout. */
+  const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLUListElement>(null);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -121,8 +131,75 @@ export function DemoMenu({ className }: { className?: string }) {
     };
   }, [close, open]);
 
+  /*
+   * Measures what the cutout has to leave lit: the trigger and the panel together, which no single
+   * element's box covers -- the panel is absolutely positioned, so it is outside the container's own
+   * border box. Recomputed on scroll and resize because the rectangle is in viewport coordinates and
+   * the bar it sits in is part of the page flow.
+   *
+   * A zero-width trigger means the menu is display:none at this breakpoint, where the introduction
+   * has nothing to point at. Darkening the page around an invisible target is the one outcome worse
+   * than not introducing at all, so the cutout stays unrendered and the menu behaves as it always
+   * did there.
+   */
+  useEffect(() => {
+    if (!introducing) {
+      setSpotlight(null);
+      return;
+    }
+
+    const measure = () => {
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      const panel = panelRef.current?.getBoundingClientRect();
+      if (!trigger || !panel || trigger.width === 0) {
+        setSpotlight(null);
+        return;
+      }
+
+      /*
+       * The top comes from the bar rather than from the trigger when there is a bar, because a
+       * rectangle that starts at the text cuts the bar in half lengthwise and the seam reads as a
+       * rendering fault. Starting at the bar's own top edge makes the lit area a column through it.
+       */
+      const bar = triggerRef.current?.closest('nav')?.getBoundingClientRect();
+      const top = Math.min(bar?.top ?? trigger.top, trigger.top, panel.top) - SPOTLIGHT_PADDING;
+      const left = Math.min(trigger.left, panel.left) - SPOTLIGHT_PADDING;
+      const right = Math.max(trigger.right, panel.right) + SPOTLIGHT_PADDING;
+      const bottom = Math.max(trigger.bottom, panel.bottom) + SPOTLIGHT_PADDING;
+      setSpotlight({ top, left, width: right - left, height: bottom - top });
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    // Capture, so a scroll inside any container that moves the bar is caught as well as the page's.
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  }, [introducing]);
+
+  const dismissIntroduction = () => {
+    close();
+    triggerRef.current?.focus();
+  };
+
   return (
     <div className={className ? `${styles.menu} ${className}` : styles.menu} ref={containerRef}>
+      {/*
+        The dimming is one element with a hole in it: a transparent box over the menu carrying a
+        shadow wide enough to cover any viewport, so everything outside the box darkens and the menu
+        keeps its own colours. It is portalled to the body because the bar's `backdrop-filter` makes
+        it the containing block for fixed descendants, which would have pinned this to the bar
+        instead of the viewport, and it is `pointer-events: none` so the menu underneath stays
+        clickable and a click anywhere else still reaches the dismissal handler above.
+      */}
+      {spotlight
+        ? createPortal(
+            <div className={styles.spotlight} style={spotlight} aria-hidden="true" />,
+            document.body,
+          )
+        : null}
       <button
         className={styles.trigger}
         type="button"
@@ -143,17 +220,33 @@ export function DemoMenu({ className }: { className?: string }) {
         The panel stays in the markup while closed so its links ship in the server-rendered HTML,
         and `hidden` keeps them out of the tab order and the accessibility tree until it opens.
       */}
-      <ul className={styles.panel} hidden={!open} id={panelId}>
+      <ul
+        className={introducing ? `${styles.panel} ${styles.panelLit}` : styles.panel}
+        hidden={!open}
+        id={panelId}
+        ref={panelRef}
+      >
         {/*
-          Only while the panel opened itself: it says who opened it and what the five links below
-          have in common. Once dismissed it never returns, so nothing here may carry a destination
-          the rest of the menu does not.
+          Only while the panel opened itself: it says who opened it, what the five links below have
+          in common, and that this is the one time it will do so -- a panel that opens on its own and
+          dims the page has to account for itself or it reads as something gone wrong. Once dismissed
+          it never returns, so nothing here may carry a destination the rest of the menu does not.
         */}
         {introducing ? (
           <li className={styles.intro}>
             <p className={styles.introTitle}>Smol team: start here</p>
             <p className={styles.introBody}>
               Each link opens the same seeded conference as a different kind of user.
+            </p>
+            <p className={styles.introFoot}>
+              <span className={styles.introNote}>Shown once, on your first visit.</span>
+              {/*
+                The only way out that names itself. Escape and a click anywhere else close this too,
+                but neither is visible, and the dimming asks for a way out that is.
+              */}
+              <button className={styles.introDismiss} type="button" onClick={dismissIntroduction}>
+                Got it
+              </button>
             </p>
           </li>
         ) : null}
