@@ -18,53 +18,30 @@
 
 **Copy-ready form answers:** [`06-submission-form-answers.md`](06-submission-form-answers.md)
 
-## The submission in one sentence
+## Philosophy First
 
-Cicero is a self-hostable, open-source replacement for the part of Sessionboard an event team
-actually uses: it carries a conference from call for speakers, through review and scheduling, to
-speaker onboarding, communications, a published programme, and an attendee's personal
-schedule—then adds the operational visibility, safe automation, and keyboard ergonomics that
-frequent organizers need.
-
-The submission is best understood in three buckets:
-
-1. **The requested feature set:** the end-to-end replacement spine in the competition brief.
-2. **Additional features we shipped:** deliberate product improvements beyond that baseline.
-3. **Future features we chose not to ship:** useful next steps whose complexity, risk, or evidence did
-   not justify putting them in the first release.
-
-That distinction matters. A long feature list is not evidence of a finished product, and a roadmap
-is not a shipped capability. Cicero's central claim is narrower and stronger: the complete working
-spine exists, the additional work has a reason, and the omissions are named rather than hidden.
-
-## 1. How I build
-
-The feature list is the visible part of this submission. What decided it — and what would decide the
-next hundred choices after it — is three tenets, in this order.
+Anyone here has context for what was built, and why. What I want to share with you is th philosophy behind my product decisions, and how that ultimately manifested in Cicero.
 
 ### Agent-first, portal-second
 
-The way I want someone to use this product is by talking to an agent, not by opening a tab. That is
-why the landing page leads with an agent quick start instead of a product tour, why the MCP server
-is a first-class surface rather than an integration afterthought, and why the REST API is
-load-bearing rather than a checkbox: an agent that can only read is a worse organizer than a person
-with a mouse.
+The way I want someone to use this product is by talking to an agent, not by opening a tab.
+I do not just want that for this product. I think that is the future of all SAAS.
+That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
+is a first-class surface rather than an integration afterthought, and why the REST API is essential.
 
-The feature that would make this literal did not land. Call it agent mail — an outbound channel
-whose recipient is a coding agent rather than a person, so the Claude or Codex session already open
-on the organizer's machine is told when there is something to decide. Three accepted speakers have
-not uploaded slides. A room is double-booked at 14:00. A reviewer's queue has gone stale. The agent
-raises it and offers to handle it; the organizer answers in the session they were already in. They
-do not go looking, and they do not find out by opening the portal on a Tuesday.
-
-The portal still has a job under that model, and it is a narrow one: visual review. Looking at an
-agenda, reading a proposal, checking what the public page actually renders. Those are judgments a
-person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
+The portal still has role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
 — the reading, the reconciling, the drafting, the chasing — is work an agent should be doing on
 someone's behalf, and the portal is where they go to confirm it looks right.
 
-A related but separate question — whether the setup agent can be mailed its own API key on first run
-— is answered in section 6, and the answer there is no.
+The portal complements what you can do with an agent and natural language queries of what you want.
+The final form of this is an in-app agent, with that you basically have a full feature set all living within 1 space.
+I did not implement the in app agent because:
+
+1. I did not wanna link tokens,
+2. Was short on time
+3. You expose new attack vectors with a full-access agent
+
+Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you're an organizer. So if your day Includes working with other tools as well, you're not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case a MCP server and/or API is essential; you need them to make the best version possible of the product.
 
 ### Power users first
 
@@ -116,6 +93,21 @@ accept a talk or publish a schedule. Cicero drafts a targeted task reminder but 
 send it. External programme updates can be previewed and replayed idempotently before they are
 applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.
+
+## The Submission
+
+The submission is best understood in three buckets:
+
+1. **The requested feature set:** the end-to-end replacement spine in the competition brief.
+2. **Additional features we shipped:** deliberate product improvements beyond that baseline.
+3. **Future features we chose not to ship:** useful next steps whose complexity, risk, or evidence did
+   not justify putting them in the first release.
+
+That distinction matters. A long feature list is not evidence of a finished product, and a roadmap
+is not a shipped capability. Cicero's central claim is narrower and stronger: the complete working
+spine exists, the additional work has a reason, and the omissions are named rather than hidden.
+
+
 
 ## 2. The requested feature set is covered end to end
 
