@@ -1,5 +1,5 @@
 /**
- * `AR-49`. The reading side of the two milestone deadlines on `event`.
+ * `AR-50`. The reading side of the two milestone deadlines on `event`.
  *
  * The writing side lives in `lib/services/events.ts`; this is the shape every reader wants and
  * nobody should build twice. The organizer dashboard, the speaker portal, the public event page and

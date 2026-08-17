@@ -15,7 +15,7 @@ export type PublicEvent = {
   /** Exact event end, used to gate historical recordings when a session has no end time. */
   endsAt?: string;
   /**
-   * `AR-49`. ISO instants for the two advisory milestones. Optional for the same reason the branding
+   * `AR-50`. ISO instants for the two advisory milestones. Optional for the same reason the branding
    * below is: a fixture that renders an agenda has no business knowing about them.
    */
   speakerDeadlineAt?: string | null;

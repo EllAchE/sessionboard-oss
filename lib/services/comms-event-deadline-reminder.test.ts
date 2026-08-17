@@ -3,7 +3,7 @@ import type { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
 /**
- * `AR-50`. The milestone reminder has no state of its own — it does not stamp a row the way
+ * `AR-51`. The milestone reminder has no state of its own — it does not stamp a row the way
  * `runTaskReminders` stamps `task_assignment.last_reminded_at`. Its entire re-entrancy guard is a
  * lookup in `email_log`, so what that lookup is keyed on *is* the behaviour, and nothing above this
  * level would notice it being keyed on too little: the run would simply go quiet for an event, once,

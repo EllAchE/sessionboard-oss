@@ -225,8 +225,8 @@ describe('what must never be copied', () => {
       'magic_token',
       'unsubscribe_token',
       'api_key',
-      'share_link',
       'webhook_endpoint',
+      'share_link',
     ]) {
       expect(CLONE_PLAN[name]?.action, `${name} must be skipped`).toBe('skip');
       expect((CLONE_PLAN[name] as { category: string }).category).toBe('credential');

@@ -56,21 +56,27 @@ rather than breaking the route.
 
 Cost is negligible. `AI_REVIEW_MODEL` is `claude-sonnet-5` at $3.00/MTok input and $15.00/MTok
 output, currently discounted to $2.00/$10.00 through 2026-08-31. Each review sends an
-abstract-sized prompt under a `max_tokens: 1500` cap, so a full evaluation cycle's worth of reviews
-costs well under a dollar.
+abstract-sized prompt and bills only the tokens actually generated, so a full evaluation cycle's
+worth of reviews costs well under a dollar.
 
-### Read this before concluding the feature is broken
+### The token budget, and what it now does when it runs out
 
-`claude-sonnet-5` runs adaptive thinking by default when the request omits `thinking`, and
-`max_tokens` caps thinking and response text together. The call in `lib/ai/review.ts` passes
-`max_tokens: 1500` with no `thinking` field, so a long thinking pass can consume the budget and
-truncate the JSON body. The failure is graceful — the parse fails and the action surfaces "The AI
-reviewer returned an unusable response. Try again." — but it looks like a broken feature to whoever
-sets the key first.
+`claude-sonnet-5` reasons by default when the request omits `thinking`, and `max_tokens` caps that
+reasoning and the response text together. The call in `lib/ai/review.ts` used to pass
+`max_tokens: 1500` — a figure sized for the JSON body alone — so a long thinking pass could spend
+the budget and leave the body cut off. That was fixed: the ceiling is now `MAX_OUTPUT_TOKENS`
+(16,000), wide enough for both halves and still under the size where a non-streaming request risks
+an HTTP timeout, and an unused ceiling costs nothing.
 
-If that happens on the first run after enabling the key, it is a real defect to fix in product code:
-raise `max_tokens`, or pass `thinking: { type: 'disabled' }`. Do not conclude ABS-14 is a product
-gap without checking which of the two failures you are looking at.
+The two alternatives were rejected deliberately, and should stay rejected. `budget_tokens` is
+rejected outright by this model. Disabling thinking is documented to let reasoning prose leak into
+the text block, which is the exact string `parseModelJson` hands to `JSON.parse`.
+
+The remaining guard is `responseText`, which reads `stop_reason` and reports a truncated answer as
+its own failure. Before it existed, running out of room presented as "The AI reviewer returned an
+unusable response" — pointing whoever investigated at the model's judgement rather than at the
+budget. If you see "ran out of room before finishing its answer" after enabling the key, that is the
+ceiling, not a product gap.
 
 ### Judging ABS-14 next cycle
 

@@ -28,7 +28,7 @@ import {
  * `getDb` into the browser bundle. Re-exported here so the many server-side callers that already
  * reach for them through this module keep working.
  *
- * `deadline` is `AR-50`'s, and needed no migration to add: `notification_preference.template_key` is
+ * `deadline` is `AR-51`'s, and needed no migration to add: `notification_preference.template_key` is
  * free text with no enum or check behind it, and the category is derived from the key prefix.
  */
 export {

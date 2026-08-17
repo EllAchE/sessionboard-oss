@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { isAppError } from '../../../../lib/errors';
+import { invalid, isAppError } from '../../../../lib/errors';
 import {
   chaseDeliverables,
   restoreContentRevision,
@@ -85,13 +85,22 @@ export async function saveContentAction(
         descriptionMarkdown: fields.descriptionMarkdown ?? '',
         level: fields.level ?? '',
       });
-    } else {
+    } else if (kind === 'participant') {
       await updateSpeakerContent(ctx, entityId, {
         displayName: fields.displayName ?? '',
         jobTitle: fields.jobTitle ?? '',
         company: fields.company ?? '',
         bioMarkdown: fields.bioMarkdown ?? '',
       });
+    } else {
+      // This screen lists scheduled sessions and sponsors so their history can be read and
+      // restored; both are written on their own boards, where the scheduling and uniqueness rules
+      // live. Falling through to the speaker branch would have edited a participant by their id.
+      throw invalid(
+        kind === 'sponsor'
+          ? 'Sponsors are edited on the sponsors board'
+          : 'Scheduled sessions are edited on the agenda',
+      );
     }
     return null;
   }, '/organizer/submissions/files/history');

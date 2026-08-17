@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { Copy, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Copy, Plus, Trash2 } from 'lucide-react';
+import { useState, useTransition } from 'react';
 import {
   Badge,
   Button,
@@ -15,8 +15,8 @@ import {
   type DataTableColumn,
 } from '../../../components/ui';
 import { createFormAction, deleteFormAction, duplicateFormAction } from './actions';
-import type { FormKind, FormStatus } from './types';
 import styles from './forms.module.css';
+import type { FormKind, FormStatus } from './types';
 
 export type FormRow = {
   id: string;
@@ -189,7 +189,7 @@ export function FormsIndex({ forms }: { forms: FormRow[] }) {
           <div className={styles.empty}>
             <p>No forms yet.</p>
             <Button variant="primary" onClick={() => setCreating(true)}>
-              Create the first one
+              Create your first form
             </Button>
           </div>
         </Card>

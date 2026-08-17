@@ -84,6 +84,17 @@ export const reviewAssignmentStatus = pgEnum('review_assignment_status', [
   'declined',
 ]);
 /**
+ * `ABS-03`. What a reviewer is asked *for* on one line of the scorecard. `numeric` is the only kind
+ * that carries weight and feeds an average; `select` and `text` record a judgment that a number
+ * would misrepresent — a Recommendation of "Maybe" is not 3 out of 5, and no arithmetic should ever
+ * treat it as one.
+ */
+export const scorecardCriterionType = pgEnum('scorecard_criterion_type', [
+  'numeric',
+  'select',
+  'text',
+]);
+/**
  * `V-1`. What an organizer said about a submission's *staging*, which is not a decision and never
  * writes a status. `hold` is the third value on purpose: without it there is no way to take a
  * proposal the panel's average put in a queue back out of it, and "remove from the queue" would
@@ -126,7 +137,17 @@ export const taskStatus = pgEnum('task_status', [
   'completed',
   'waived',
 ]);
-export const contentRevisionKind = pgEnum('content_revision_kind', ['session', 'participant']);
+/**
+ * `session` predates the scheduled agenda and means a *submission* — a proposal — which is why
+ * `scheduled_session` had to be spelled out rather than folded into it. Renaming the older value
+ * would rewrite every stored revision for no reader's benefit, so the two live side by side.
+ */
+export const contentRevisionKind = pgEnum('content_revision_kind', [
+  'session',
+  'participant',
+  'scheduled_session',
+  'sponsor',
+]);
 export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
 export const smsStatus = pgEnum('sms_status', [
   'queued',
@@ -268,7 +289,7 @@ export const event = pgTable(
     startsOn: text('starts_on').notNull(),
     endsOn: text('ends_on').notNull(),
     /**
-     * `AR-49`. The two internal milestones that pace an edition between the call closing and the
+     * `AR-50`. The two internal milestones that pace an edition between the call closing and the
      * doors opening: when the speaker roster is meant to be settled, and when the agenda is.
      *
      * Nothing enforces them. No write is refused, warned on or scored for being past one, because
@@ -931,6 +952,9 @@ export const scorecardCriterion = pgTable(
       .references(() => reviewRound.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     description: text('description'),
+    type: scorecardCriterionType('type').notNull().default('numeric'),
+    /** The choices a `select` criterion offers, in the order the reviewer sees them. Empty otherwise. */
+    options: jsonb('options').$type<string[]>().notNull().default([]),
     weight: integer('weight').notNull().default(1),
     maxScore: integer('max_score').notNull().default(5),
     position: integer('position').notNull().default(0),
@@ -1016,7 +1040,13 @@ export const score = pgTable(
     criterionId: uuid('criterion_id')
       .notNull()
       .references(() => scorecardCriterion.id, { onDelete: 'cascade' }),
-    value: integer('value').notNull(),
+    /**
+     * `ABS-03`. Set for a `numeric` criterion and null for every other kind, so the weighted average
+     * reads one column and can never pick up a dropdown choice or an essay by accident.
+     */
+    value: integer('value'),
+    /** The reviewer's answer to a `select` or `text` criterion; null for a numeric one. */
+    textValue: text('text_value'),
     createdAt: createdAt(),
   },
   (t) => ({ uniquePair: unique('score_assignment_criterion').on(t.reviewAssignmentId, t.criterionId) }),
@@ -1209,13 +1239,35 @@ export const contentRevision = pgTable(
       .references(() => event.id, { onDelete: 'cascade' }),
     entityKind: contentRevisionKind('entity_kind').notNull(),
     entityId: uuid('entity_id').notNull(),
+    /**
+     * 1-based and dense per entity, so a person can say "put it back to revision 4" and every
+     * reader agrees which row that is. `created_at` cannot do that job: two edits inside the same
+     * millisecond sort arbitrarily, and the history screen derives what each revision *changed* by
+     * walking the ordered list — under a tie it would attribute the wrong diff to both rows.
+     */
+    revisionNumber: integer('revision_number').notNull(),
     snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
     summary: text('summary').notNull(),
     editorUserId: uuid('editor_user_id').references(() => user.id, { onDelete: 'set null' }),
     editorName: text('editor_name').notNull(),
     createdAt: createdAt(),
   },
-  (t) => ({ byEntity: index('content_revision_entity_idx').on(t.entityKind, t.entityId) }),
+  (t) => ({
+    byEntity: index('content_revision_entity_idx').on(t.entityKind, t.entityId),
+    /**
+     * The arbiter for concurrent writers. Two requests snapshotting the same entity at once both
+     * read the same `max(revision_number)` under READ COMMITTED and both try to claim `n + 1`;
+     * Postgres has no gap lock that would stop them. This index makes the second one fail loudly
+     * so the service can retry against the number the winner actually took, which is what keeps
+     * the sequence dense instead of merely unique.
+     */
+    uniqueNumber: unique('content_revision_entity_number').on(
+      t.eventId,
+      t.entityKind,
+      t.entityId,
+      t.revisionNumber,
+    ),
+  }),
 );
 
 const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({

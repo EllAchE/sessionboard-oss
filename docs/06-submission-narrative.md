@@ -317,9 +317,16 @@ roadmap list.
 | Automatic post-conference messages | Ending an event is not consent to send a message; the right follow-up varies between thank-you, feedback, recording, and next-event invitation | Opt-in event policy, editable content/timing, existing preference enforcement, and delivery-log integration |
 | Presigned direct uploads | The current storage abstraction keeps validation and authorization in the application and is adequate for conference-sized files | Proven large-file or throughput pressure that warrants the additional upload-state and cleanup model |
 | Interactive exhibitor map | Static PDF upload and embed satisfies the current operational need | Demand for booths, hotspots, wayfinding, search, or region links as a first-class product |
+| First-class PowerPoint and Google Slides decks | Speaker deck support is only PDF and Keynote today; PowerPoint and Google Slides are accepted as opaque bytes rather than as understood deck formats | Organizer or speaker demand for PowerPoint and Google Slides as supported deck formats, which we do want to add |
+| Arbitrary event resource uploads | Every upload path is bound to a known slot — headshot, speaker deliverable, submission form file field, exhibitor-map PDF, recording — so type validation, size caps, and publication rules can be specific to each one. Speaker-facing reference material is organizer-written portal pages rather than attached files. A general "attach anything to the event" library would need its own permission, visibility, and retention model | Organizers wanting to publish documents that are not one of the known slots — a speaker handbook, an event history page, a media kit, a sponsor prospectus — at which point a generic resource library with per-file audience control is a better answer than another bespoke slot |
 
 ### Known gaps, not strategic exclusions
 
+- Mobile responsiveness received less design and verification time on the dense organizer
+  workflows, where frequent review, triage, and scheduling work is most likely to happen on a
+  desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
+  especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
+  host-site compatibility pass.
 - The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
   not been proven there even though message generation and `.ics` behavior are tested.
 - R2 and Twilio adapters are implemented and tested but have not been exercised against paid

@@ -1,21 +1,24 @@
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
-import dashboardImage from '@/docs/images/dashboard.jpg';
+import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import publicAgendaImage from '@/docs/images/public-agenda.jpg';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import {
   ArrowRight,
-  Bot,
   CalendarCheck,
+  CalendarDays,
   ClipboardCheck,
   ExternalLink,
   FileCheck,
   Github,
+  Globe2,
   LayoutDashboard,
   ListChecks,
   Megaphone,
   ShieldCheck,
+  Sparkles,
+  UserRound,
   UserPlus,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -31,23 +34,72 @@ https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cic
 
 Resume from this working directory if Cicero is already cloned; otherwise help me clone it. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. If you cannot run a step yourself, give me the exact action and wait for its result. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
 
-const FEATURES = [
+const ORGANIZER_FEATURES = [
   {
-    icon: <FileCheck size={20} aria-hidden="true" />,
-    title: 'Collect and review proposals',
-    body: 'Publish a call for speakers, route proposals to reviewers, and record decisions.',
+    icon: <LayoutDashboard size={20} aria-hidden="true" />,
+    title: 'Know what needs attention',
+    body: 'See live counts, blocked speakers, overdue work, and the next action—not a wall of decorative metrics.',
+  },
+  {
+    icon: <ClipboardCheck size={20} aria-hidden="true" />,
+    title: 'Review with the right structure',
+    body: 'Route proposals into scored rounds, assign reviewers, preserve blind review, and make decisions in bulk or one at a time.',
   },
   {
     icon: <CalendarCheck size={20} aria-hidden="true" />,
-    title: 'Build a conflict-aware schedule',
-    body: 'Schedule sessions across rooms and tracks, with conflicts flagged as you work.',
+    title: 'Build a schedule that catches collisions',
+    body: 'Drag sessions onto rooms and times while Cicero flags room, track, and speaker conflicts before they reach the public agenda.',
+  },
+  {
+    icon: <Globe2 size={20} aria-hidden="true" />,
+    title: 'Publish without copying data',
+    body: 'Turn the working schedule into public session, speaker, agenda, and embed views that stay in sync.',
+  },
+];
+
+const SPEAKER_FEATURES = [
+  {
+    icon: <FileCheck size={20} aria-hidden="true" />,
+    title: 'Submit without a setup detour',
+    body: 'Start from the public call, save a draft, create an account in the flow, and return without starting over.',
+  },
+  {
+    icon: <UserRound size={20} aria-hidden="true" />,
+    title: 'Find everything in one portal',
+    body: 'Keep your bio, headshot, sessions, resources, and organizer requests together instead of searching old email threads.',
   },
   {
     icon: <ListChecks size={20} aria-hidden="true" />,
-    title: 'Keep every speaker on track',
-    body: 'See missing bios, headshots, files, and approvals, then follow up from the same workspace.',
+    title: 'Send the right files every time',
+    body: 'Upload slides and documents with version history, organizer comments, and a clear completion state.',
+  },
+  {
+    icon: <CalendarDays size={20} aria-hidden="true" />,
+    title: 'Stay ready for the day',
+    body: 'See outstanding tasks, download calendar invitations, and receive schedule updates without duplicate calendar events.',
   },
 ];
+
+const ROLE_PRODUCTS = [
+  {
+    icon: LayoutDashboard,
+    role: 'Organizer',
+    title: 'Keep the whole conference moving.',
+    body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up from one workspace.',
+  },
+  {
+    icon: Megaphone,
+    role: 'Speaker',
+    title: 'Stay ready from proposal to stage.',
+    body: 'Submit a talk, maintain your profile, send deliverables, and keep every event task in view.',
+  },
+  {
+    icon: CalendarDays,
+    role: 'Attendee',
+    title: 'Plan the day from the live programme.',
+    body: 'Browse the agenda, discover speakers, and build a personal itinerary without an account.',
+  },
+] as const;
 
 /**
  * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
@@ -97,6 +149,9 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <CiceroBrand markSize={34} />
         </a>
         <div className={styles.navLinks}>
+          <a className={styles.productsLink} href="#products">
+            Products
+          </a>
           <a className={styles.aboutLink} href="#about">
             About
           </a>
@@ -106,7 +161,10 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </a>
           ) : null}
           <a className={styles.agentLink} href="#agent-quick-start">
-            Agent quick start
+            Agent setup
+          </a>
+          <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
+            API docs
           </a>
           <a className={styles.signInLink} href="/signin">
             Sign in
@@ -125,18 +183,28 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Conference operations, end to end</p>
-          <h1>From call for speakers to a published programme.</h1>
+          <h1>From call for speakers to public program</h1>
           <p className={styles.heroLead}>
             Run submissions, review, scheduling, speaker tasks, and publishing in one place.
           </p>
-          <div className={styles.actions}>
+          <div className={styles.agentStarter}>
+            <div className={styles.agentStarterCopy}>
+              <p className={styles.agentStarterLabel}>
+                <Sparkles size={17} aria-hidden="true" />
+                AI-guided setup
+              </p>
+              <p>Let Claude or ChatGPT walk through setup with you, one safe step at a time.</p>
+            </div>
             <CopyAgentPromptButton
               prompt={AGENT_STARTER_PROMPT}
-              label="Copy setup prompt"
-              copiedLabel="Setup prompt copied"
+              label="Copy AI setup prompt"
+              copiedLabel="AI setup prompt copied"
               size="lg"
               variant="primary"
             />
+          </div>
+          <div className={styles.manualStart}>
+            <span>Prefer to start in the app?</span>
             <Button
               href="/signup"
               size="lg"
@@ -145,9 +213,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               Create an event
             </Button>
           </div>
-          <p className={styles.agentActionHint}>
-            Paste it into Claude or ChatGPT. Your agent will guide setup one safe step at a time.
-          </p>
 
           {demoAvailable ? (
             <div className={styles.personas}>
@@ -185,71 +250,69 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             <span />
             <span />
           </div>
-          <Image
-            className={styles.heroImage}
-            src={dashboardImage}
-            alt="Cicero organizer dashboard showing event progress and outstanding tasks"
-            priority
-            sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1080px"
-          />
+          <div className={styles.heroImageFrame}>
+            <Image
+              className={styles.heroImage}
+              src={dashboardImage}
+              alt="Cicero organizer dashboard showing event progress and outstanding tasks"
+              priority
+              sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1080px"
+            />
+          </div>
           <div className={`${styles.callout} ${styles.calloutTasks}`}>
             <ListChecks size={17} aria-hidden="true" />
-            <span>Outstanding tasks in one view</span>
+            <span>See the next action immediately</span>
           </div>
           <div className={`${styles.callout} ${styles.calloutSchedule}`}>
-            <CalendarCheck size={17} aria-hidden="true" />
-            <span>Conflicts flagged before publishing</span>
+            <LayoutDashboard size={17} aria-hidden="true" />
+            <span>Review, speakers, and schedule in one view</span>
           </div>
         </div>
       </section>
 
       <div className={styles.mosaicRule} aria-hidden="true" />
 
-      <section className={styles.about} id="about" aria-labelledby="about-title">
-        <div className={styles.aboutHeading}>
-          <p className={styles.eyebrow}>Open-source conference operations</p>
-          <h2 id="about-title">One workspace for the people who run conferences.</h2>
-        </div>
-        <div className={styles.aboutBody}>
+      <section
+        className={styles.productsOverview}
+        id="products"
+        aria-labelledby="products-title"
+      >
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>Products by role</p>
+          <h2 id="products-title">One conference, three purpose-built experiences.</h2>
           <p>
-            Cicero is an open-source system for submissions, review, scheduling, speaker tasks,
-            communications, and the public programme. Self-host it and adapt it to your event.
+            Everyone works from the same event, while each person sees the tools and context that
+            belong to their role.
           </p>
-          <dl className={styles.aboutFacts}>
-            <div>
-              <dt>License</dt>
-              <dd>MIT, open source</dd>
-            </div>
-            <div>
-              <dt>Hosting</dt>
-              <dd>Self-hosted</dd>
-            </div>
-            <div>
-              <dt>Public pages</dt>
-              <dd>No account required</dd>
-            </div>
-          </dl>
-          <div className={styles.aboutLinks}>
-            <a className={styles.textLink} href="#product">
-              See how it works <ArrowRight size={16} aria-hidden="true" />
-            </a>
-            <a
-              className={styles.textLink}
-              href="https://github.com/EllAchE/sessionboard-oss"
-            >
-              View source on GitHub <Github size={16} aria-hidden="true" />
-            </a>
-          </div>
+        </div>
+        <div className={styles.roleProducts}>
+          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body }) => (
+            <article className={`${styles.feature} ${styles.roleProduct}`} key={role}>
+              <span className={styles.featureIcon}>
+                <Icon size={20} aria-hidden="true" />
+              </span>
+              <p className={styles.roleProductRole}>{role}</p>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className={styles.product} id="product">
+      <section className={styles.product} id="organizers">
         <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>One connected workflow</p>
-          <h2>Move each proposal from submission to the stage.</h2>
+          <p className={styles.eyebrow}>
+            <LayoutDashboard size={17} aria-hidden="true" />
+            For organizers
+          </p>
+          <h2>Keep the entire conference moving from one workspace.</h2>
+          <p>
+            Cicero connects the operational work that usually breaks across forms, spreadsheets,
+            inboxes, and scheduling tools—so every handoff carries the right context forward.
+          </p>
         </div>
         <div className={styles.features}>
-          {FEATURES.map((feature) => (
+          {ORGANIZER_FEATURES.map((feature) => (
             <article className={styles.feature} key={feature.title}>
               <span className={styles.featureIcon}>{feature.icon}</span>
               <h3>{feature.title}</h3>
@@ -268,13 +331,82 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           />
         </div>
         <div className={styles.programmeCopy}>
-          <p className={styles.eyebrow}>Publish from the same workspace</p>
-          <h2>Keep the public programme in sync.</h2>
-          <p>Publish the agenda, sessions, and speaker directory from the same data.</p>
+          <p className={styles.eyebrow}>For organizers</p>
+          <h2>Publish once. Keep every public view in sync.</h2>
+          <p>
+            The agenda, session pages, speaker directory, and website embeds all read from the
+            programme your team already manages in Cicero.
+          </p>
           <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
             {demoAvailable ? 'Explore the demo programme' : 'Publish your first programme'}{' '}
             <ArrowRight size={16} aria-hidden="true" />
           </a>
+        </div>
+      </section>
+
+      <section className={`${styles.product} ${styles.speakerProduct}`} id="speakers">
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>
+            <Megaphone size={17} aria-hidden="true" />
+            For speakers
+          </p>
+          <h2>Give speakers one clear place to get ready.</h2>
+          <p>
+            Speakers can submit, update their profile, deliver files, and track what is left
+            without asking an organizer to relay every step by email.
+          </p>
+        </div>
+        <div className={styles.features}>
+          {SPEAKER_FEATURES.map((feature) => (
+            <article className={styles.feature} key={feature.title}>
+              <span className={styles.featureIcon}>{feature.icon}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
+        {demoAvailable ? (
+          <a className={styles.textLink} href={DEMO_ENTRY_LINKS.speaker}>
+            Explore the speaker portal <ArrowRight size={16} aria-hidden="true" />
+          </a>
+        ) : null}
+      </section>
+
+      <section className={styles.about} id="about" aria-labelledby="about-title">
+        <div className={styles.aboutHeading}>
+          <p className={styles.eyebrow}>Open source and self-hostable</p>
+          <h2 id="about-title">Build on the workflow, not around it.</h2>
+        </div>
+        <div className={styles.aboutBody}>
+          <p>
+            Connect Cicero to the tools your event already uses, publish live views anywhere, and
+            extend the workflow without waiting on a vendor roadmap.
+          </p>
+          <dl className={styles.aboutFacts}>
+            <div>
+              <dt>Automate</dt>
+              <dd>REST API and webhooks</dd>
+            </div>
+            <div>
+              <dt>Publish</dt>
+              <dd>Live embeddable views</dd>
+            </div>
+            <div>
+              <dt>Adapt</dt>
+              <dd>Role-scoped agents</dd>
+            </div>
+          </dl>
+          <div className={styles.aboutLinks}>
+            <a className={styles.textLink} href="#agent-quick-start">
+              Set up with an AI guide <ArrowRight size={16} aria-hidden="true" />
+            </a>
+            <a
+              className={styles.textLink}
+              href="https://github.com/EllAchE/sessionboard-oss"
+            >
+              View source on GitHub <Github size={16} aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </section>
 
@@ -284,41 +416,38 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         aria-labelledby="agent-quick-start-title"
       >
         <div className={styles.agentQuickIntro}>
-          <p className={styles.eyebrow}>Agent quick start</p>
+          <p className={styles.eyebrow}>
+            <Sparkles size={17} aria-hidden="true" />
+            For organizers · AI-guided setup
+          </p>
           <h2 id="agent-quick-start-title">
-            Give your agent a brief. Review every change before it applies.
+            Let your AI assistant handle the setup checklist.
           </h2>
           <p>
-            The bundled onboarding skill tracks setup progress and hands event changes to a
-            preview-first agent.
+            Paste one prompt into Claude or ChatGPT. Cicero’s onboarding guide finds what is
+            already done, walks through what is missing, and keeps you in control of every change.
           </p>
 
           <ol className={styles.agentSteps}>
             <li>
               <span className={styles.agentStepNumber}>1</span>
               <div className={styles.agentStepCopy}>
-                <h3>Copy the setup prompt</h3>
+                <h3>Copy one prompt</h3>
                 <p>Paste it into a Claude or ChatGPT session with coding tools.</p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>2</span>
               <div className={styles.agentStepCopy}>
-                <h3>Let your agent find your place</h3>
-                <p>
-                  <code>$onboard-cicero</code> records progress in{' '}
-                  <code>.cicero/onboarding.json</code> and resumes where it stopped.
-                </p>
+                <h3>Pick up wherever you left off</h3>
+                <p>The guide remembers completed milestones and returns to the next open step.</p>
               </div>
             </li>
             <li>
               <span className={styles.agentStepNumber}>3</span>
               <div className={styles.agentStepCopy}>
-                <h3>Hand off when ready</h3>
-                <p>
-                  Add <code>CICERO_API_KEY</code> when prompted. Event changes are previewed before
-                  they are applied.
-                </p>
+                <h3>Review before anything changes</h3>
+                <p>Event updates are previewed first, and destructive actions need confirmation.</p>
               </div>
             </li>
           </ol>
@@ -346,7 +475,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.agentPrompt}>
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
-              <Bot size={17} aria-hidden="true" />
+              <Sparkles size={17} aria-hidden="true" />
               Claude &amp; ChatGPT setup prompt
             </span>
             <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
@@ -363,9 +492,9 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
 
       {demoAvailable ? (
         <section className={styles.finalCta}>
-          <p className={styles.eyebrow}>Explore the demo</p>
-          <h2>Enter a conference already in motion.</h2>
-          <p>Explore the seeded event as an organizer, reviewer, or speaker.</p>
+          <p className={styles.eyebrow}>See both sides</p>
+          <h2>Explore a conference already in motion.</h2>
+          <p>See how organizers move the event forward and how speakers get ready.</p>
           <div className={styles.finalCtaActions}>
             <Button
               href={DEMO_ENTRY_LINKS.organizer}
@@ -374,13 +503,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
               Open the organizer dashboard
-            </Button>
-            <Button
-              href={DEMO_ENTRY_LINKS.reviewer}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Score proposals as a reviewer
             </Button>
             <Button
               href={DEMO_ENTRY_LINKS.speaker}
@@ -406,7 +528,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               size="lg"
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
-              Create the first event
+              Create your first event
             </Button>
             <Button href="/signin" size="lg">
               Sign in

@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import {
+  Bot,
+  FileCheck,
   Gift,
   Github,
   Globe2,
@@ -29,6 +31,19 @@ const DEMO_LINKS = [
     href: DEMO_ENTRY_LINKS.speaker,
     label: 'Speaker demo',
     icon: Megaphone,
+  },
+] as const;
+
+const RESOURCE_LINKS = [
+  {
+    href: '/#agent-quick-start',
+    label: 'Agent setup',
+    icon: Bot,
+  },
+  {
+    href: '/api/v1/openapi.json',
+    label: 'API docs',
+    icon: FileCheck,
   },
 ] as const;
 
@@ -71,15 +86,18 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
             <CiceroMark size={28} />
             <span>Cicero</span>
           </Link>
-          <p>Open-source conference operations, from call for speakers to show day.</p>
+          <p>
+            Open source and self-hostable conference operations, from call for speakers to show
+            day.
+          </p>
         </div>
 
         <nav
           className={styles.links}
           aria-label={
             demoAvailable
-              ? 'Cicero demo and creator links'
-              : 'Cicero creator links'
+              ? 'Cicero demo, resource, and creator links'
+              : 'Cicero resource and creator links'
           }
         >
           {demoAvailable ? (
@@ -93,6 +111,13 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
               <span className={styles.divider} aria-hidden="true" />
             </>
           ) : null}
+          {RESOURCE_LINKS.map(({ href, icon: Icon, label }) => (
+            <Link key={label} className={styles.link} href={href}>
+              <Icon size={15} aria-hidden="true" />
+              <span>{label}</span>
+            </Link>
+          ))}
+          <span className={styles.divider} aria-hidden="true" />
           {SOCIAL_LINKS.map(({ href, icon: Icon, label }) => (
             <a key={label} className={styles.link} href={href} target="_blank" rel="noreferrer">
               <Icon size={15} aria-hidden="true" />
@@ -106,7 +131,7 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
           </a>
         </nav>
       </div>
-      <div className={styles.legal}>© 2026 Cicero · MIT licensed</div>
+      <div className={styles.legal}>© 2026 Cicero</div>
     </footer>
   );
 }

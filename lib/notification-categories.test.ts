@@ -9,7 +9,7 @@ import {
 /**
  * This module exists because the list used to be written out three times — once in the service, and
  * once inline in each of the two client components that render a toggle per category. Adding
- * `deadline` for the milestone reminders (`AR-50`) updated the service and neither UI, so the mails
+ * `deadline` for the milestone reminders (`AR-51`) updated the service and neither UI, so the mails
  * were sendable and had no switch. These cover the properties that made the drift invisible.
  */
 describe('notification categories', () => {

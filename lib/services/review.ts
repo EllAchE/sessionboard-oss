@@ -63,16 +63,52 @@ export type SubmissionStatus =
 
 export type AssignmentStatus = 'pending' | 'completed' | 'declined';
 
+/**
+ * `ABS-03`. The three shapes a scorecard line can take. `numeric` is the historical one and the only
+ * one that carries weight into an average; `select` offers organizer-defined choices, such as a
+ * Recommendation of Accept/Maybe/Reject; `text` is a long-form answer that is a criterion in its own
+ * right rather than the single generic comment box every reviewer used to share.
+ */
+export type CriterionType = 'numeric' | 'select' | 'text';
+
+export const CRITERION_TYPES: CriterionType[] = ['numeric', 'select', 'text'];
+
 export type CriterionSpec = {
   id: string;
   label: string;
   description: string | null;
+  type: CriterionType;
+  /** Non-empty only for `select`. */
+  options: string[];
   weight: number;
   maxScore: number;
   position: number;
 };
 
-export type ScoreValue = { criterionId: string; value: number };
+/**
+ * One reviewer's answer to one criterion. At most one side is populated: `value` for a numeric
+ * criterion, `text` for a dropdown choice or a written answer. Keeping them in separate fields is
+ * what stops "Maybe" from ever being averaged as a number.
+ */
+export type ScoreValue = { criterionId: string; value: number | null; text?: string | null };
+
+/** The criteria a weighted average is allowed to read. */
+export function numericCriteria(criteria: CriterionSpec[]): CriterionSpec[] {
+  return criteria.filter((criterion) => criterion.type === 'numeric');
+}
+
+/** Whether a criterion of this type has been answered at all. */
+export function isAnswered(criterion: CriterionSpec, entry: ScoreValue | undefined): boolean {
+  if (!entry) return false;
+  if (criterion.type === 'numeric') return typeof entry.value === 'number';
+  return typeof entry.text === 'string' && entry.text.trim().length > 0;
+}
+
+/** How one stored answer reads on screen or in an export, whatever its criterion's type. */
+export function answerText(criterion: CriterionSpec, entry: ScoreValue | undefined): string {
+  if (!isAnswered(criterion, entry)) return '';
+  return criterion.type === 'numeric' ? String(entry?.value ?? '') : (entry?.text ?? '');
+}
 
 export type ScoreAggregate = {
   /** Weighted mean rescaled to 1–5, or null when nothing on this scorecard has been scored. */
@@ -101,19 +137,38 @@ export function aggregateScorecard(
   criteria: CriterionSpec[],
   scores: ScoreValue[],
 ): ScoreAggregate {
-  const result = weightedScore(criteria, scores);
+  // Only numeric criteria take part. A dropdown choice or a written answer is a judgment, not a
+  // quantity, so it neither moves the average nor makes a finished scorecard look incomplete here.
+  const scorable = numericCriteria(criteria);
+  const result = weightedScore(scorable, scores);
   const answered = new Set(result.answeredIds);
-  const weightTotal = criteria.reduce((sum, criterion) => sum + Math.max(0, criterion.weight), 0);
+  const weightTotal = scorable.reduce((sum, criterion) => sum + Math.max(0, criterion.weight), 0);
 
   return {
     average: result.average,
     fraction: result.fraction,
     scoredCount: answered.size,
-    criterionCount: criteria.length,
-    complete: criteria.length > 0 && criteria.every((criterion) => answered.has(criterion.id)),
+    criterionCount: scorable.length,
+    complete: scorable.length > 0 && scorable.every((criterion) => answered.has(criterion.id)),
     weightScored: result.weightScored,
     weightTotal,
   };
+}
+
+/**
+ * Whether a reviewer has answered everything that has to be answered. This is the "may they submit"
+ * question, deliberately apart from `aggregateScorecard.complete`, which only ever speaks about the
+ * numbers that make up the average.
+ *
+ * A rating and a dropdown are questions with a required answer. A written criterion is an
+ * invitation: a reviewer who has nothing to add should not be barred from submitting over it.
+ */
+export function scorecardComplete(criteria: CriterionSpec[], scores: ScoreValue[]): boolean {
+  if (criteria.length === 0) return false;
+  const byId = new Map(scores.map((entry) => [entry.criterionId, entry]));
+  return criteria.every(
+    (criterion) => criterion.type === 'text' || isAnswered(criterion, byId.get(criterion.id)),
+  );
 }
 
 export type ReviewerScorecard = {
@@ -406,10 +461,18 @@ export type RoundDetail = ReviewRoundRecord & {
 };
 
 /** What a fresh event gets so the scorecard is never an empty screen on the first submission. */
-export const DEFAULT_CRITERIA: Array<Omit<CriterionSpec, 'id'>> = [
+/** A criterion as a caller describes it before it has a row: everything but the id, loosely typed. */
+export type CriterionSeed = Omit<CriterionSpec, 'id' | 'type' | 'options' | 'position'> & {
+  type?: CriterionType;
+  options?: string[];
+  position?: number;
+};
+
+export const DEFAULT_CRITERIA: CriterionSeed[] = [
   {
     label: 'Relevance',
     description: 'Fit with the track and the audience this event is for.',
+    type: 'numeric',
     weight: 2,
     maxScore: 5,
     position: 0,
@@ -417,6 +480,7 @@ export const DEFAULT_CRITERIA: Array<Omit<CriterionSpec, 'id'>> = [
   {
     label: 'Originality',
     description: 'Says something the audience has not already heard three times.',
+    type: 'numeric',
     weight: 1,
     maxScore: 5,
     position: 1,
@@ -424,9 +488,19 @@ export const DEFAULT_CRITERIA: Array<Omit<CriterionSpec, 'id'>> = [
   {
     label: 'Speaker readiness',
     description: 'Evidence this speaker can deliver the talk they described.',
+    type: 'numeric',
     weight: 1,
     maxScore: 5,
     position: 2,
+  },
+  {
+    label: 'Recommendation',
+    description: 'Your call on this proposal, independent of the numbers above.',
+    type: 'select',
+    options: ['Accept', 'Maybe', 'Reject'],
+    weight: 0,
+    maxScore: 5,
+    position: 3,
   },
 ];
 
@@ -449,6 +523,8 @@ function toCriterionSpec(row: typeof scorecardCriterion.$inferSelect): Criterion
     id: row.id,
     label: row.label,
     description: row.description,
+    type: row.type,
+    options: Array.isArray(row.options) ? row.options : [],
     weight: row.weight,
     maxScore: row.maxScore,
     position: row.position,
@@ -506,7 +582,7 @@ export type CreateRoundInput = {
   opensAt?: Date | null;
   closesAt?: Date | null;
   /** Omitted means the default scorecard; an explicit empty array means no criteria. */
-  criteria?: Array<Omit<CriterionSpec, 'id'>>;
+  criteria?: CriterionSeed[];
 };
 
 export async function createRound(
@@ -540,14 +616,19 @@ export async function createRound(
   const criteria = input.criteria ?? DEFAULT_CRITERIA;
   if (criteria.length > 0) {
     await db.insert(scorecardCriterion).values(
-      criteria.map((criterion, index) => ({
-        reviewRoundId: created.id,
-        label: criterion.label,
-        description: criterion.description ?? null,
-        weight: criterion.weight,
-        maxScore: criterion.maxScore,
-        position: criterion.position ?? index,
-      })),
+      criteria.map((criterion, index) => {
+        const type = criterion.type ?? 'numeric';
+        return {
+          reviewRoundId: created.id,
+          label: criterion.label,
+          description: criterion.description ?? null,
+          type,
+          options: type === 'select' ? normalizeOptions(criterion.options ?? []) : [],
+          weight: type === 'numeric' ? criterion.weight : 0,
+          maxScore: criterion.maxScore,
+          position: criterion.position ?? index,
+        };
+      }),
     );
   }
 
@@ -618,9 +699,34 @@ async function requireRound(ctx: EventContext, roundId: string): Promise<ReviewR
 export type CriterionInput = {
   label: string;
   description?: string | null;
+  type?: CriterionType;
+  options?: string[];
   weight?: number;
   maxScore?: number;
 };
+
+/** Trimmed, de-duplicated and blank-free — the choice list the organizer meant to type. */
+export function normalizeOptions(options: string[]): string[] {
+  const seen = new Set<string>();
+  const clean: string[] = [];
+  for (const raw of options) {
+    const option = String(raw ?? '').trim();
+    if (!option || seen.has(option)) continue;
+    seen.add(option);
+    clean.push(option);
+  }
+  return clean;
+}
+
+/** A dropdown with nothing to pick between is a dead control, so it is refused at the door. */
+function assertSelectable(type: CriterionType, options: string[]): void {
+  if (type !== 'select') return;
+  if (options.length < 2) {
+    throw invalid('A dropdown criterion needs at least two options', {
+      options: 'Give at least two choices, for example Accept, Maybe, Reject',
+    });
+  }
+}
 
 export async function addCriterion(
   ctx: EventContext,
@@ -632,6 +738,10 @@ export async function addCriterion(
   const label = input.label.trim();
   if (!label) throw invalid('A criterion needs a label', { label: 'Label is required' });
 
+  const type = input.type ?? 'numeric';
+  const options = type === 'select' ? normalizeOptions(input.options ?? []) : [];
+  assertSelectable(type, options);
+
   const existing = await listCriteria(roundId);
   const [created] = await getDb()
     .insert(scorecardCriterion)
@@ -639,7 +749,11 @@ export async function addCriterion(
       reviewRoundId: roundId,
       label,
       description: input.description?.trim() || null,
-      weight: clampWeight(input.weight ?? 1),
+      type,
+      options,
+      // Only a numeric criterion carries weight into the average; the others store zero so no later
+      // reader has to remember to exclude them a second time.
+      weight: type === 'numeric' ? clampWeight(input.weight ?? 1) : 0,
       maxScore: clampMax(input.maxScore ?? SCORE_SCALE),
       position: existing.length,
     })
@@ -653,7 +767,7 @@ export async function updateCriterion(
   patch: Partial<CriterionInput> & { position?: number },
 ): Promise<CriterionSpec> {
   requireCapability(ctx, 'submission:decide');
-  await requireCriterion(ctx, criterionId);
+  const before = await requireCriterion(ctx, criterionId);
 
   const values: Record<string, unknown> = {};
   if (patch.label !== undefined) {
@@ -662,7 +776,18 @@ export async function updateCriterion(
     values.label = label;
   }
   if (patch.description !== undefined) values.description = patch.description?.trim() || null;
-  if (patch.weight !== undefined) values.weight = clampWeight(patch.weight);
+
+  const type = patch.type ?? before.type;
+  if (patch.type !== undefined) values.type = type;
+  if (patch.type !== undefined || patch.options !== undefined) {
+    const options = type === 'select' ? normalizeOptions(patch.options ?? before.options) : [];
+    assertSelectable(type, options);
+    values.options = options;
+  }
+  // Turning a criterion non-numeric drops its weight rather than leaving a hidden multiplier that
+  // would reappear if the type were ever switched back.
+  if (patch.weight !== undefined) values.weight = type === 'numeric' ? clampWeight(patch.weight) : 0;
+  else if (type !== 'numeric') values.weight = 0;
   if (patch.maxScore !== undefined) values.maxScore = clampMax(patch.maxScore);
   if (patch.position !== undefined) values.position = patch.position;
 
@@ -671,6 +796,15 @@ export async function updateCriterion(
     .set(values)
     .where(eq(scorecardCriterion.id, criterionId))
     .returning();
+
+  /**
+   * Answers already recorded were given against the old question. A 4 does not survive becoming a
+   * dropdown and "Accept" does not survive becoming a number, so a type change clears them instead
+   * of leaving a stored value that would render as the wrong thing.
+   */
+  if (patch.type !== undefined && patch.type !== before.type) {
+    await getDb().delete(scoreTable).where(eq(scoreTable.criterionId, criterionId));
+  }
   return toCriterionSpec(updated);
 }
 
@@ -1344,16 +1478,47 @@ export async function saveScorecard(
   const criteria = await listCriteria(input.roundId);
   const byId = new Map(criteria.map((criterion) => [criterion.id, criterion]));
 
-  const clean = input.scores.filter((entry) => byId.has(entry.criterionId));
+  /**
+   * Every answer is coerced by its criterion's own type rather than by what the client sent: a
+   * numeric criterion keeps a clamped integer, a dropdown keeps one of its own options, a text
+   * criterion keeps trimmed prose. Anything that answers nothing drops out here and is deleted
+   * below, which is how a reviewer clears a field.
+   */
+  const clean = input.scores
+    .map((entry): ScoreValue | null => {
+      const criterion = byId.get(entry.criterionId);
+      if (!criterion) return null;
+      if (criterion.type === 'numeric') {
+        if (typeof entry.value !== 'number' || Number.isNaN(entry.value)) return null;
+        return {
+          criterionId: criterion.id,
+          value: Math.max(0, Math.min(criterion.maxScore, Math.round(entry.value))),
+          text: null,
+        };
+      }
+      const text = (entry.text ?? '').trim();
+      if (!text) return null;
+      if (criterion.type === 'select' && !criterion.options.includes(text)) {
+        throw invalid(`"${text}" is not an option for ${criterion.label}`);
+      }
+      return { criterionId: criterion.id, value: null, text };
+    })
+    .filter((entry): entry is ScoreValue => entry !== null);
+
   for (const entry of clean) {
-    const criterion = byId.get(entry.criterionId) as CriterionSpec;
-    const value = Math.max(0, Math.min(criterion.maxScore, Math.round(entry.value)));
+    const value = entry.value;
+    const textValue = entry.text ?? null;
     await db
       .insert(scoreTable)
-      .values({ reviewAssignmentId: assignment.id, criterionId: entry.criterionId, value })
+      .values({
+        reviewAssignmentId: assignment.id,
+        criterionId: entry.criterionId,
+        value,
+        textValue,
+      })
       .onConflictDoUpdate({
         target: [scoreTable.reviewAssignmentId, scoreTable.criterionId],
-        set: { value },
+        set: { value, textValue },
       });
   }
 
@@ -1378,8 +1543,8 @@ export async function saveScorecard(
    * reviewer-progress count that says an opinion exists where none does. A partial scorecard still
    * completes on request: skipping one criterion is a judgment, skipping all of them is a misclick.
    */
-  if (input.complete === true && criteria.length > 0 && aggregate.scoredCount === 0) {
-    throw invalid('Score at least one criterion before submitting the review');
+  if (input.complete === true && criteria.length > 0 && clean.length === 0) {
+    throw invalid('Answer at least one criterion before submitting the review');
   }
 
   const completing = input.complete ?? aggregate.complete;
@@ -1885,9 +2050,12 @@ export function reviewResultsCsv(
     'Reviewer email',
     'Review status',
     'Reviewer score (1-5)',
-    ...orderedCriteria.map(
-      (criterion) =>
-        `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
+    // A dropdown or free-text criterion has no scale and no weight, so its column says what it is
+    // rather than advertising a maximum that never applied to it.
+    ...orderedCriteria.map((criterion) =>
+      criterion.type === 'numeric'
+        ? `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`
+        : `${criterion.label} (${criterion.type === 'select' ? 'choice' : 'text'})`,
     ),
     'Reviewer comment',
     'Review completed at',
@@ -1919,7 +2087,7 @@ export function reviewResultsCsv(
           ? aggregateScorecard(criteria, reviewer.scores)
           : null;
         const scoreByCriterion = new Map(
-          reviewer?.scores.map((entry) => [entry.criterionId, entry.value]) ?? [],
+          reviewer?.scores.map((entry) => [entry.criterionId, entry]) ?? [],
         );
         return [
           formatRef('submission', submission.ref),
@@ -1936,7 +2104,9 @@ export function reviewResultsCsv(
           reviewer?.reviewerEmail ?? '',
           reviewer?.status ?? '',
           exportScore(reviewerAggregate?.average ?? null),
-          ...orderedCriteria.map((criterion) => scoreByCriterion.get(criterion.id) ?? ''),
+          ...orderedCriteria.map((criterion) =>
+            answerText(criterion, scoreByCriterion.get(criterion.id)),
+          ),
           reviewer?.comment ?? '',
           reviewer?.completedAt?.toISOString() ?? '',
         ];
@@ -2051,6 +2221,7 @@ export async function buildReviewResultsExport(
           assignmentId: scoreTable.reviewAssignmentId,
           criterionId: scoreTable.criterionId,
           value: scoreTable.value,
+          textValue: scoreTable.textValue,
         })
         .from(scoreTable)
         .where(
@@ -2064,7 +2235,11 @@ export async function buildReviewResultsExport(
   const scoresByAssignment = groupBy(
     scores,
     (row) => row.assignmentId,
-    (row) => ({ criterionId: row.criterionId, value: row.value }),
+    (row): ScoreValue => ({
+      criterionId: row.criterionId,
+      value: row.value,
+      text: row.textValue,
+    }),
   );
   const assignmentsBySubmission = groupBy(
     assignments,
@@ -2497,6 +2672,7 @@ export async function loadSubmissionReview(
           assignmentId: scoreTable.reviewAssignmentId,
           criterionId: scoreTable.criterionId,
           value: scoreTable.value,
+          textValue: scoreTable.textValue,
         })
         .from(scoreTable)
         .where(inArray(scoreTable.reviewAssignmentId, assignmentIds))
@@ -2505,7 +2681,7 @@ export async function loadSubmissionReview(
   const scoresByAssignment = new Map<string, ScoreValue[]>();
   for (const entry of scoreRows) {
     const list = scoresByAssignment.get(entry.assignmentId) ?? [];
-    list.push({ criterionId: entry.criterionId, value: entry.value });
+    list.push({ criterionId: entry.criterionId, value: entry.value, text: entry.textValue });
     scoresByAssignment.set(entry.assignmentId, list);
   }
 
@@ -3421,7 +3597,9 @@ export async function loadAiReviewSubject(
     speakerBios: detail.speakers
       .map((speaker) => speaker.bioMarkdown)
       .filter((bio): bio is string => Boolean(bio)),
-    criteria: detail.criteria,
+    // The model is asked for numbers only. A recommendation or a written note is the reviewer's to
+    // give, and an advisory suggestion has no business pre-filling either.
+    criteria: numericCriteria(detail.criteria),
     roundId: detail.round?.id ?? null,
   };
 }

@@ -653,7 +653,7 @@ function buildVars(input: {
     'event.url': branding.eventUrl,
     'event.supportEmail': branding.supportEmail ?? '',
     /**
-     * `AR-50`. Available to every template rather than only to the milestone reminders below, because
+     * `AR-51`. Available to every template rather than only to the milestone reminders below, because
      * the one email a speaker is most likely to read — their acceptance — is also the best place to
      * tell them when the programme firms up. Empty when the edition does not track it, which
      * `{{event.agendaDeadline|soon}}` turns into whatever the organizer would rather say.
@@ -937,7 +937,7 @@ export const DEFAULT_TEMPLATES: Array<{
     ].join('\n'),
   },
   /*
-   * `AR-50`. These two go to organizers, not speakers, which is why they say "your" about the work
+   * `AR-51`. These two go to organizers, not speakers, which is why they say "your" about the work
    * rather than about a submission and point at the organizer surfaces. Both are built from the
    * narrow `vars` map in `runEventDeadlineReminders`, so like `form.deadline` above they may only
    * use the event fields — there is no speaker or submission in scope.
@@ -1956,7 +1956,7 @@ export const notifySessionCancelled = (sessionId: string) =>
 export type ReminderRun = {
   taskRemindersSent: number;
   deadlineRemindersSent: number;
-  /** `AR-50`. The event's own milestones, counted apart from the form deadlines above. */
+  /** `AR-51`. The event's own milestones, counted apart from the form deadlines above. */
   eventDeadlineRemindersSent: number;
   checkedAt: string;
 };
@@ -2263,7 +2263,7 @@ export async function runDraftDeadlineReminders(
 }
 
 /**
- * `AR-50`. The two advisory milestones on the event, in the order an edition reaches them.
+ * `AR-51`. The two advisory milestones on the event, in the order an edition reaches them.
  *
  * `field` names the column, `templateKey` the mail, and `variable` the merge field that carries the
  * date — kept together so a third milestone is one entry rather than three edits.
@@ -2278,7 +2278,7 @@ const EVENT_MILESTONES = [
 ] as const;
 
 /**
- * `AR-50`'s milestone reminder. Each of the two advisory deadlines fires once inside the three days
+ * `AR-51`'s milestone reminder. Each of the two advisory deadlines fires once inside the three days
  * before it falls, guarded — like the draft reminder above — by a lookup in `email_log`, the only
  * durable record of a send.
  *

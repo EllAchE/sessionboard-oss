@@ -96,7 +96,7 @@ describe('the event write schema', () => {
 });
 
 /**
- * `AR-49`. The milestones are informative, so almost the only thing that can go wrong with them is
+ * `AR-50`. The milestones are informative, so almost the only thing that can go wrong with them is
  * getting written in the wrong timezone or being impossible to take back off once set.
  */
 describe('the event deadlines', () => {

@@ -80,10 +80,16 @@ export default async function ReviewerSubmissionPage({
         id: criterion.id,
         label: criterion.label,
         description: criterion.description,
+        type: criterion.type,
+        options: criterion.options,
         weight: criterion.weight,
         maxScore: criterion.maxScore,
       }))}
-      myScores={detail.myScores}
+      myScores={detail.myScores.map((entry) => ({
+        criterionId: entry.criterionId,
+        value: entry.value,
+        text: entry.text ?? null,
+      }))}
       myComment={detail.myComment}
       myAssignmentId={detail.myAssignmentId}
       mySubmitted={detail.myAssignmentStatus === 'completed'}

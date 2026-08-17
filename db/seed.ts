@@ -185,7 +185,7 @@ const reviewers = [
 const demoWindow = requireEventWindow(TIMEZONE, `${isoDate(day1)}T09:00`, `${isoDate(day2)}T17:00`);
 
 /**
- * `AR-49`: the two advisory milestones, a fortnight and a week before the doors. Both are still
+ * `AR-50`: the two advisory milestones, a fortnight and a week before the doors. Both are still
  * ahead of a freshly seeded demo — a milestone that had already passed would show the surfaces in
  * their dimmed state and read as something the demo had failed to do.
  */

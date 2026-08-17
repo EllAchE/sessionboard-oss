@@ -291,7 +291,7 @@ describe('shipped SMS bodies', () => {
       'form.closesAt',
       'form.url',
     ],
-    // `AR-50`. Narrower still, and organizer-facing: `runEventDeadlineReminders` resolves its
+    // `AR-51`. Narrower still, and organizer-facing: `runEventDeadlineReminders` resolves its
     // recipients through `membership`, so there is no speaker or submission in scope to name.
     'deadline.speakers': [
       'event.name',

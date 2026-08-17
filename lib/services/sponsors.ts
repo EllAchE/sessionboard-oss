@@ -5,6 +5,7 @@ import { sponsor } from '../../db/schema';
 import type { EventContext } from '../context';
 import { requireCapability } from '../context';
 import { conflict, invalid, notFound } from '../errors';
+import { recordRevision } from './content';
 import { positionDrift, positionsForReorder, type Positioned } from './settings';
 
 /**
@@ -358,6 +359,10 @@ export async function updateSponsor(
     await assertNameFree(ctx, nextKind, nextName, sponsorId);
   }
 
+  // After `assertNameFree`, so a rejected rename cannot leave behind a revision claiming an edit
+  // happened when the write never ran — the same ordering `updateSpeakerContent` uses.
+  await recordRevision(ctx, 'sponsor', sponsorId, `Edited ${existing.name}`);
+
   const moved = values.kind !== undefined && values.kind !== existing.kind;
   const [updated] = await getDb()
     .update(sponsor)
@@ -379,6 +384,14 @@ export async function setSponsorStatus(
   const existing = await requireSponsor(ctx, sponsorId);
   const next = parse(sponsorStatusInput, status);
   if (existing.status === next) return toRecord(existing);
+
+  /** "Who unpublished this sponsor, and when" is the question asked once a logo vanishes. */
+  await recordRevision(
+    ctx,
+    'sponsor',
+    sponsorId,
+    `${next === 'published' ? 'Published' : 'Unpublished'} ${existing.name}`,
+  );
 
   const [updated] = await getDb()
     .update(sponsor)

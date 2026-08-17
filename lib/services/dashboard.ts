@@ -822,7 +822,10 @@ async function buildReviewScoreReport(ctx: EventContext): Promise<string> {
       let totalWeight = 0;
       for (const entry of mine) {
         const criterion = criterionById.get(entry.criterionId);
-        if (!criterion || criterion.maxScore <= 0) continue;
+        // Dropdown and free-text criteria carry no number, so they sit out the weighted average
+        // rather than being coerced into one.
+        if (!criterion || criterion.type !== 'numeric') continue;
+        if (criterion.maxScore <= 0 || entry.value === null) continue;
         weighted += criterion.weight * (entry.value / criterion.maxScore);
         totalWeight += criterion.weight;
       }

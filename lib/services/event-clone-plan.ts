@@ -449,6 +449,10 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
       reviewRoundId: remap('review_round'),
       label: copy(),
       description: copy(),
+      // `ABS-03`: which question the criterion asks, and a dropdown's choices. Both are rubric, so
+      // the next edition inherits the same scorecard rather than a numeric shadow of it.
+      type: copy(),
+      options: copy(),
       weight: copy(),
       maxScore: copy(),
       position: copy(),
@@ -615,19 +619,24 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
       'A hashed API credential scoped to one event. A copy silently widens what an issued key ' +
       'can reach.',
   },
-  share_link: {
-    action: 'skip',
-    category: 'credential',
-    reason:
-      'A hashed bearer credential for unpublished programme material. Copying it would make the ' +
-      'source event\'s private link resolve against a different edition.',
-  },
   webhook_endpoint: {
     action: 'skip',
     category: 'credential',
     reason:
       'Holds `signingSecret`. Copying it shares one secret across two events, and points a fresh ' +
       "event's traffic at last year's integration without anyone re-confirming the URL.",
+  },
+  share_link: {
+    action: 'skip',
+    category: 'credential',
+    reason:
+      'Holds `tokenHash`, a bearer credential that shows a draft programme to anyone holding the ' +
+      "URL and never asks them to sign in. A copy would hand every recipient of last year's link " +
+      "an unannounced window onto next year's unpublished draft. Its lifecycle is stale on arrival " +
+      'too: `expiresAt` and `revokedAt` were both decided against an event that has already ' +
+      'happened, so a copied link is either dead on creation or live on a schedule nobody chose. ' +
+      'And `tokenHash` is unique, so one link could only ever be shared across the two events, ' +
+      'never reissued for the new one.',
   },
 
   // -------------------------------------------------------------------------

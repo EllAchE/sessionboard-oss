@@ -74,7 +74,7 @@ export type EventWire = {
   startsAt: string;
   endsAt: string;
   /**
-   * `AR-49`. The same wall clock, except empty is a real state: a milestone nobody has set reads as
+   * `AR-50`. The same wall clock, except empty is a real state: a milestone nobody has set reads as
    * `''` so the input renders blank, and saving it blank is how an organizer takes one back off.
    */
   speakerDeadlineAt: string;
@@ -117,7 +117,7 @@ export type NotificationsWire = {
   /**
    * Keyed off `NotificationCategory` rather than a literal union repeated here: this record and the
    * panel that renders it are the two halves of the same list, and spelling it out twice is how
-   * `deadline` (`AR-50`) reached the service without ever reaching a toggle.
+   * `deadline` (`AR-51`) reached the service without ever reaching a toggle.
    */
   categories: Record<
     NotificationCategory,

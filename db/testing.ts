@@ -10,8 +10,13 @@ import {
   participantRole,
   reviewAssignment,
   reviewRound,
+  room,
+  scheduledSession,
   scorecardCriterion,
+  sessionFormat,
+  sponsor,
   submission,
+  track,
   user,
 } from './schema';
 
@@ -197,6 +202,121 @@ export async function seedReviewFixture(
     })),
     ctx: (actor, ...roles) => ({ actor, eventId: eventRow.id, roles }),
   };
+}
+
+export type ContentFixture = {
+  eventId: string;
+  organizer: Actor;
+  /** Two rooms and two of everything else, so a move has somewhere to move *to*. */
+  rooms: Array<{ id: string; name: string }>;
+  tracks: Array<{ id: string; name: string }>;
+  formats: Array<{ id: string; name: string }>;
+  sessionId: string;
+  sponsorId: string;
+  ctx: (actor?: Actor, ...roles: MembershipRole[]) => EventContext;
+};
+
+/**
+ * `AD-4`. One event holding the two entity kinds that gained a history — a scheduled session on the
+ * grid and a sponsor on the board — plus the taxonomy rows the session points at, because the
+ * revision diff resolves those uuids to names and a fixture without them would only ever exercise
+ * the fallback.
+ */
+export async function seedContentFixture(): Promise<ContentFixture> {
+  const db = getDb();
+  const organizer = await makeUser('organizer', 'Cato the Elder');
+
+  const [eventRow] = await db
+    .insert(event)
+    .values({
+      slug: `curia-${randomUUID()}`,
+      name: 'The Curia',
+      timezone: 'UTC',
+      startsAt: new Date('2026-09-10T09:00:00.000Z'),
+      endsAt: new Date('2026-09-12T17:00:00.000Z'),
+      startsOn: '2026-09-10',
+      endsOn: '2026-09-12',
+      ownerUserId: organizer.userId,
+    })
+    .returning();
+
+  await db
+    .insert(membership)
+    .values({ userId: organizer.userId, eventId: eventRow.id, role: 'organizer' });
+
+  const [rooms, tracks, formats] = await Promise.all([
+    db
+      .insert(room)
+      .values([
+        { eventId: eventRow.id, name: 'Basilica Julia', position: 0 },
+        { eventId: eventRow.id, name: 'Rostra', position: 1 },
+      ])
+      .returning({ id: room.id, name: room.name }),
+    db
+      .insert(track)
+      .values([
+        { eventId: eventRow.id, name: 'Rhetoric', position: 0 },
+        { eventId: eventRow.id, name: 'Law', position: 1 },
+      ])
+      .returning({ id: track.id, name: track.name }),
+    db
+      .insert(sessionFormat)
+      .values([
+        { eventId: eventRow.id, name: 'Oration', durationMinutes: 45, position: 0 },
+        { eventId: eventRow.id, name: 'Debate', durationMinutes: 90, position: 1 },
+      ])
+      .returning({ id: sessionFormat.id, name: sessionFormat.name }),
+  ]);
+
+  const [sessionRow] = await db
+    .insert(scheduledSession)
+    .values({
+      eventId: eventRow.id,
+      ref: 1,
+      title: 'On duties',
+      descriptionMarkdown: 'What is owed, and to whom.',
+      roomId: rooms[0].id,
+      trackId: tracks[0].id,
+      formatId: formats[0].id,
+      startsAt: new Date('2026-09-10T10:00:00.000Z'),
+      endsAt: new Date('2026-09-10T10:45:00.000Z'),
+      status: 'draft',
+      icsUid: `${randomUUID()}@cicero.test`,
+    })
+    .returning();
+
+  const [sponsorRow] = await db
+    .insert(sponsor)
+    .values({
+      eventId: eventRow.id,
+      name: 'Atticus & Co',
+      kind: 'sponsor',
+      status: 'draft',
+      tier: 'Gold',
+      websiteUrl: 'https://atticus.test',
+    })
+    .returning();
+
+  return {
+    eventId: eventRow.id,
+    organizer,
+    rooms,
+    tracks,
+    formats,
+    sessionId: sessionRow.id,
+    sponsorId: sponsorRow.id,
+    ctx: (actor = organizer, ...roles) => ({
+      actor,
+      eventId: eventRow.id,
+      roles: roles.length > 0 ? roles : ['organizer'],
+    }),
+  };
+}
+
+export async function dropContentFixture(fixture: ContentFixture): Promise<void> {
+  const db = getDb();
+  await db.delete(event).where(eq(event.id, fixture.eventId));
+  await db.delete(user).where(eq(user.id, fixture.organizer.userId));
 }
 
 /** Removes one fixture's event; the cascades take everything hanging off it. */

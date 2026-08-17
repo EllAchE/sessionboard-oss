@@ -6,13 +6,29 @@ import { GlobalFooterContent } from './index';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
-describe('GlobalFooter demo links', () => {
+describe('GlobalFooter links', () => {
+  it('describes the product without leading with its license', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
+
+    expect(html).toContain('Open source and self-hostable conference operations');
+    expect(html).not.toContain('MIT licensed');
+  });
+
   it('does not advertise role tours on an unseeded instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
-    expect(html).toContain('aria-label="Cicero creator links"');
+    expect(html).toContain('aria-label="Cicero resource and creator links"');
     expect(html).not.toContain('Organizer demo');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
+  });
+
+  it('keeps agent setup and API docs available on every instance', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
+
+    expect(html).toContain('href="/#agent-quick-start"');
+    expect(html).toContain('Agent setup');
+    expect(html).toContain('href="/api/v1/openapi.json"');
+    expect(html).toContain('API docs');
   });
 
   it('keeps all seeded role tours available', () => {

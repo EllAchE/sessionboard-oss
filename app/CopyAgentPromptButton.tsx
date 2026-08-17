@@ -1,14 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Copy, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { Check, Sparkles, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { ButtonProps } from '@/components/ui';
 
 type CopyState = 'idle' | 'copied' | 'failed';
 
 const COPY_FEEDBACK: Record<CopyState, { label: string; Icon: LucideIcon }> = {
-  idle: { label: 'Copy prompt', Icon: Copy },
+  idle: { label: 'Copy prompt', Icon: Sparkles },
   copied: { label: 'Prompt copied', Icon: Check },
   failed: { label: 'Copy failed', Icon: TriangleAlert },
 };

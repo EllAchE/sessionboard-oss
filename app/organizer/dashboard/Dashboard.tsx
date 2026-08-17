@@ -44,7 +44,7 @@ import styles from './dashboard.module.css';
 export type DashboardData = {
   eventName: string;
   /**
-   * `AR-49`. Described on the server so the strip reads one clock. Empty when the edition tracks
+   * `AR-50`. Described on the server so the strip reads one clock. Empty when the edition tracks
    * neither milestone, and the strip then renders nothing rather than an absence.
    */
   deadlines: EventDeadline[];
@@ -200,7 +200,7 @@ export function Dashboard({ data }: { data: DashboardData }) {
           </p>
         </div>
         {/*
-          `AR-49`. Outside the widget grid on purpose: the milestones apply to the edition rather
+          `AR-50`. Outside the widget grid on purpose: the milestones apply to the edition rather
           than to any one dashboard, and a date the organizer set for themselves should not be
           something a saved layout can hide. Nothing here is a warning — a passed milestone is
           stated, not scolded about.

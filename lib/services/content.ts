@@ -1,24 +1,30 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
-import { getDb } from '../../db/client';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { getDb, type Database } from '../../db/client';
 import {
   contentRevision,
   event,
   file,
   fileRequest,
   participant,
+  room,
+  scheduledSession,
+  sessionFormat,
+  sponsor,
   submission,
   task,
   taskAssignment,
+  track,
   user,
 } from '../../db/schema';
 import type { EventContext } from '../context';
 import { can, requireCapability } from '../context';
 import { appUrl } from '../env';
-import { forbidden, invalid, notFound } from '../errors';
+import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
 import { parseSpeakerName } from '../speaker-name';
+import type { AgendaTransaction } from './agenda-guard';
 import {
   countCommentsByLineage,
   getFileRecord,
@@ -443,7 +449,12 @@ async function repoint(eventId: string, previousId: string, nextId: string): Pro
 // `CNT-11` attributed change history
 // ---------------------------------------------------------------------------
 
-export type ContentEntityKind = 'session' | 'participant';
+/**
+ * `session` is the *submission* — a proposal — and predates the agenda by enough that renaming it
+ * would rewrite every stored revision to no reader's benefit. `scheduled_session` is the row on the
+ * grid, which is a different thing an organizer edits through a different screen.
+ */
+export type ContentEntityKind = 'session' | 'participant' | 'scheduled_session' | 'sponsor';
 
 const SESSION_FIELDS: Record<string, string> = {
   title: 'Title',
@@ -467,39 +478,200 @@ const PARTICIPANT_FIELDS: Record<string, string> = {
   accessibilityNotes: 'Accessibility notes',
 };
 
+/**
+ * Deliberately not `ref`, `icsUid`, `icsSequence` or `submissionId`: an organizer never edits any of
+ * them, and `ics_sequence` in particular is `comms.ts`'s bookkeeping — putting it in the history
+ * would file every calendar resend as a content change.
+ */
+const SCHEDULED_SESSION_FIELDS: Record<string, string> = {
+  title: 'Title',
+  descriptionMarkdown: 'Description',
+  roomId: 'Room',
+  trackId: 'Track',
+  formatId: 'Format',
+  startsAt: 'Starts',
+  endsAt: 'Ends',
+  status: 'Status',
+  ceuCredits: 'CEU credits',
+  clientId: 'Client reference',
+};
+
+/**
+ * `position` is missing on purpose. It is the drag-order of the sponsor board rather than anything
+ * about the sponsor, and one reorder rewrites every row it moved past — tracking it would bury the
+ * edits that matter under a wall of "Order: 3 → 4".
+ */
+const SPONSOR_FIELDS: Record<string, string> = {
+  name: 'Name',
+  kind: 'Kind',
+  status: 'Status',
+  tier: 'Tier',
+  websiteUrl: 'Website',
+  description: 'Description',
+  boothLocation: 'Booth',
+  logoFileId: 'Logo',
+};
+
+const TRACKED_FIELDS: Record<ContentEntityKind, Record<string, string>> = {
+  session: SESSION_FIELDS,
+  participant: PARTICIPANT_FIELDS,
+  scheduled_session: SCHEDULED_SESSION_FIELDS,
+  sponsor: SPONSOR_FIELDS,
+};
+
 export function trackedFields(kind: ContentEntityKind): Record<string, string> {
-  return kind === 'session' ? SESSION_FIELDS : PARTICIPANT_FIELDS;
+  return TRACKED_FIELDS[kind];
 }
 
 export type ContentSnapshot = Record<string, unknown>;
 
+/**
+ * A snapshot is stored as jsonb and compared against a live row, so anything that survives the
+ * round trip as a different type would read as a change on every save. `Date` is the one that
+ * bites — `scheduled_session.starts_at` comes back from Postgres as a `Date` and out of jsonb as a
+ * string — so it is normalised on the way in and both sides are strings from then on.
+ */
 function pick(row: Record<string, unknown>, kind: ContentEntityKind): ContentSnapshot {
   const snapshot: ContentSnapshot = {};
-  for (const key of Object.keys(trackedFields(kind))) snapshot[key] = row[key] ?? null;
+  for (const key of Object.keys(trackedFields(kind))) {
+    const value = row[key] ?? null;
+    snapshot[key] = value instanceof Date ? value.toISOString() : value;
+  }
   return snapshot;
 }
 
 type EntityState = { snapshot: ContentSnapshot; label: string };
 
+/**
+ * Every read and write in this section goes through a handle rather than `getDb()` directly, so an
+ * agenda mutation can hand in its own transaction. Without that the snapshot would be written on a
+ * second connection and would survive a rollback — a drag the conflict policy refused would leave a
+ * revision behind claiming it happened. `reconcileProgram` already takes a `database` the same way.
+ */
+export type RevisionWriter = Database | AgendaTransaction;
+
 async function readEntity(
   eventId: string,
   kind: ContentEntityKind,
   entityId: string,
+  writer: RevisionWriter = getDb(),
 ): Promise<EntityState> {
-  const db = getDb();
   if (kind === 'session') {
-    const row = await db.query.submission.findFirst({
+    const row = await writer.query.submission.findFirst({
       where: and(eq(submission.id, entityId), eq(submission.eventId, eventId)),
     });
     if (!row) throw notFound('That session');
     return { snapshot: pick(row, kind), label: `${formatRef('submission', row.ref)} ${row.title}` };
   }
 
-  const row = await db.query.participant.findFirst({
+  if (kind === 'scheduled_session') {
+    const row = await writer.query.scheduledSession.findFirst({
+      where: and(eq(scheduledSession.id, entityId), eq(scheduledSession.eventId, eventId)),
+    });
+    if (!row) throw notFound('That scheduled session');
+    return { snapshot: pick(row, kind), label: `${formatRef('session', row.ref)} ${row.title}` };
+  }
+
+  if (kind === 'sponsor') {
+    const row = await writer.query.sponsor.findFirst({
+      where: and(eq(sponsor.id, entityId), eq(sponsor.eventId, eventId)),
+    });
+    if (!row) throw notFound('That sponsor');
+    return { snapshot: pick(row, kind), label: row.name };
+  }
+
+  const row = await writer.query.participant.findFirst({
     where: and(eq(participant.id, entityId), eq(participant.eventId, eventId)),
   });
   if (!row) throw notFound('That speaker');
   return { snapshot: pick(row, kind), label: row.displayName ?? 'Speaker profile' };
+}
+
+/** Postgres' unique-violation SQLSTATE, which is how a lost numbering race announces itself. */
+const UNIQUE_VIOLATION = '23505';
+
+/**
+ * Walks `cause`, because drizzle rethrows the driver's error wrapped in a `DrizzleQueryError` that
+ * carries the SQL and the params but not the SQLSTATE. Checking only the thrown object read every
+ * lost race as an unrelated failure, which turned the retry below into dead code.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  for (let current = error; current && typeof current === 'object'; ) {
+    if ((current as { code?: unknown }).code === UNIQUE_VIOLATION) return true;
+    const next = (current as { cause?: unknown }).cause;
+    if (next === current) return false;
+    current = next;
+  }
+  return false;
+}
+
+/**
+ * Each round of the race is won by someone, so one writer among `k` simultaneous ones can lose at
+ * most `k - 1` times. Eight is comfortably past any realistic pile-up on a single session or
+ * sponsor, and small enough that a genuine constraint bug surfaces as an error rather than a hang.
+ */
+const NUMBERING_ATTEMPTS = 8;
+
+/**
+ * Claims the next revision number for one entity.
+ *
+ * The number comes from a subquery *inside* the INSERT rather than a preceding `SELECT max()`, so
+ * the read and the write are one statement and no other transaction can commit between them. That
+ * is still not enough on its own: under READ COMMITTED two concurrent inserts each see a snapshot
+ * without the other's uncommitted row, both compute the same `n + 1`, and Postgres has no gap lock
+ * that would make either wait. The unique constraint on
+ * `(event_id, entity_kind, entity_id, revision_number)` is what actually settles the race — the
+ * loser fails with `23505` and retries, by which point the winner has committed and the subquery
+ * returns the number it took. Retrying is also what keeps the sequence *dense*: a lost race that
+ * simply gave up would have to leave a hole to make progress.
+ */
+async function insertNumberedRevision(
+  eventId: string,
+  kind: ContentEntityKind,
+  entityId: string,
+  values: { snapshot: ContentSnapshot; summary: string; editorUserId: string; editorName: string },
+  writer?: RevisionWriter,
+): Promise<number> {
+  const nextNumber = sql<number>`(
+    select coalesce(max(${contentRevision.revisionNumber}), 0) + 1
+    from ${contentRevision}
+    where ${contentRevision.eventId} = ${eventId}
+      and ${contentRevision.entityKind} = ${kind}::content_revision_kind
+      and ${contentRevision.entityId} = ${entityId}
+  )`;
+
+  /**
+   * Retrying is only ever correct on a connection we own. Inside a caller's transaction a failed
+   * statement aborts the whole transaction, so a second attempt would just raise `25P02` — and it
+   * is unnecessary there anyway, because `mutateAgendaAtomically` holds a per-event advisory lock
+   * that already serialises the writers. The constraint still protects that path; it simply fails
+   * the transaction rather than retrying inside it.
+   */
+  const attempts = writer ? 1 : NUMBERING_ATTEMPTS;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const [row] = await (writer ?? getDb())
+        .insert(contentRevision)
+        .values({
+          eventId,
+          entityKind: kind,
+          entityId,
+          revisionNumber: nextNumber,
+          snapshot: values.snapshot,
+          summary: values.summary,
+          editorUserId: values.editorUserId,
+          editorName: values.editorName,
+        })
+        .returning({ revisionNumber: contentRevision.revisionNumber });
+      return row.revisionNumber;
+    } catch (error) {
+      if (!isUniqueViolation(error) || attempt === attempts) throw error;
+    }
+  }
+
+  /* Unreachable: the loop either returns or rethrows on its last attempt. */
+  throw conflict('That revision could not be numbered. Try again.');
 }
 
 /**
@@ -511,11 +683,12 @@ export async function recordRevision(
   kind: ContentEntityKind,
   entityId: string,
   summary: string,
+  writer?: RevisionWriter,
 ): Promise<void> {
-  const { snapshot } = await readEntity(ctx.eventId, kind, entityId);
+  const { snapshot } = await readEntity(ctx.eventId, kind, entityId, writer);
 
   /** A save that changed nothing is not history. Without this every "Save" click grows the list. */
-  const [latest] = await getDb()
+  const [latest] = await (writer ?? getDb())
     .select({ snapshot: contentRevision.snapshot })
     .from(contentRevision)
     .where(
@@ -525,19 +698,22 @@ export async function recordRevision(
         eq(contentRevision.entityId, entityId),
       ),
     )
-    .orderBy(desc(contentRevision.createdAt))
+    .orderBy(desc(contentRevision.revisionNumber))
     .limit(1);
   if (latest && diff(kind, latest.snapshot, snapshot).length === 0) return;
 
-  await getDb().insert(contentRevision).values({
-    eventId: ctx.eventId,
-    entityKind: kind,
+  await insertNumberedRevision(
+    ctx.eventId,
+    kind,
     entityId,
-    snapshot,
-    summary,
-    editorUserId: ctx.actor.impersonatedByUserId ?? ctx.actor.userId,
-    editorName: editorLabel(ctx),
-  });
+    {
+      snapshot,
+      summary,
+      editorUserId: ctx.actor.impersonatedByUserId ?? ctx.actor.userId,
+      editorName: editorLabel(ctx),
+    },
+    writer,
+  );
 }
 
 function editorLabel(ctx: EventContext): string {
@@ -552,6 +728,8 @@ export type ContentRevisionEntry = {
   entityKind: ContentEntityKind;
   entityId: string;
   entityLabel: string;
+  /** 1-based within the entity, so "revision 4" names the same row for everyone who says it. */
+  revisionNumber: number;
   summary: string;
   editorUserId: string | null;
   editorName: string;
@@ -585,6 +763,25 @@ function asText(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+/** Snapshots hold instants as ISO strings; the columns want `Date`. Anything unparseable is absent. */
+function asDate(value: unknown): Date | null {
+  if (typeof value !== 'string') return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function asOneOf<T extends string>(values: readonly T[], fallback: T) {
+  return (value: unknown): T => (values.includes(value as T) ? (value as T) : fallback);
+}
+
+/**
+ * Restoring a status is restoring a *stored* value, so the fallbacks only ever fire for a snapshot
+ * written before the column existed. Each matches its column default.
+ */
+const asScheduledStatus = asOneOf(['draft', 'published', 'cancelled'] as const, 'draft');
+const asSponsorKind = asOneOf(['sponsor', 'exhibitor'] as const, 'sponsor');
+const asSponsorStatus = asOneOf(['draft', 'published'] as const, 'draft');
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -608,10 +805,27 @@ function display(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/**
+ * Resolves a stored uuid to the name a person would recognise. "Room: 6f2a… → 9b1c…" answers none
+ * of the question an organizer chasing a mis-moved talk actually has.
+ */
+type NameResolver = (value: unknown) => string | undefined;
+
+const NO_NAMES: NameResolver = () => undefined;
+
+function present(value: unknown, names: NameResolver): string {
+  return names(value) ?? display(value);
+}
+
+/**
+ * Equality is always decided on the raw stored value and never on the resolved name — two rooms are
+ * allowed to share a name, and a rename must not make a real move look like no change at all.
+ */
 function diff(
   kind: ContentEntityKind,
   before: ContentSnapshot,
   after: ContentSnapshot,
+  names: NameResolver = NO_NAMES,
 ): ContentFieldChange[] {
   const labels = trackedFields(kind);
   return Object.entries(labels)
@@ -619,9 +833,29 @@ function diff(
     .map(([field, label]) => ({
       field,
       label,
-      before: display(before[field]),
-      after: display(after[field]),
+      before: present(before[field], names),
+      after: present(after[field], names),
     }));
+}
+
+/**
+ * One lookup covering rooms, tracks and formats. They share a uuid namespace in practice, and the
+ * alternative — a per-field map — would make the resolver care which entity kind it was called for.
+ */
+async function nameResolver(eventId: string): Promise<NameResolver> {
+  const db = getDb();
+  const [rooms, tracks, formats] = await Promise.all([
+    db.select({ id: room.id, name: room.name }).from(room).where(eq(room.eventId, eventId)),
+    db.select({ id: track.id, name: track.name }).from(track).where(eq(track.eventId, eventId)),
+    db
+      .select({ id: sessionFormat.id, name: sessionFormat.name })
+      .from(sessionFormat)
+      .where(eq(sessionFormat.eventId, eventId)),
+  ]);
+
+  const byId = new Map<string, string>();
+  for (const row of [...rooms, ...tracks, ...formats]) byId.set(row.id, row.name);
+  return (value) => (typeof value === 'string' ? byId.get(value) : undefined);
 }
 
 async function decorate(
@@ -634,10 +868,18 @@ async function decorate(
     byEntity.set(key, [...(byEntity.get(key) ?? []), row]);
   }
 
+  /** One query for the whole page rather than one per revision, and skipped when nothing needs it. */
+  const names = rows.length > 0 ? await nameResolver(eventId) : NO_NAMES;
+
   const entries: ContentRevisionEntry[] = [];
   for (const [key, group] of byEntity) {
     const [kind, entityId] = key.split(':') as [ContentEntityKind, string];
-    const ordered = [...group].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    /**
+     * By number, never by `createdAt`. The loop below reads "what this revision changed" off the
+     * *next* entry, so two edits sharing a millisecond used to swap places at random and hand both
+     * rows the other's diff. The number is the only total order this list has.
+     */
+    const ordered = [...group].sort((a, b) => b.revisionNumber - a.revisionNumber);
 
     let live: EntityState;
     try {
@@ -654,19 +896,30 @@ async function decorate(
         entityKind: kind,
         entityId,
         entityLabel: live.label,
+        revisionNumber: row.revisionNumber,
         summary: row.summary,
         editorUserId: row.editorUserId,
         editorName: row.editorName,
         createdAt: row.createdAt,
         snapshot: row.snapshot,
-        changed: diff(kind, row.snapshot, after),
+        changed: diff(kind, row.snapshot, after, names),
         isCurrent: index === 0 && diff(kind, row.snapshot, live.snapshot).length === 0,
       });
       after = row.snapshot;
     }
   }
 
-  return entries.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  /**
+   * Across entities `createdAt` is the only shared clock, so it still leads here; the number
+   * breaks ties within an entity, and the id makes the remaining cross-entity ties stable rather
+   * than merely arbitrary.
+   */
+  return entries.sort(
+    (a, b) =>
+      b.createdAt.getTime() - a.createdAt.getTime() ||
+      b.revisionNumber - a.revisionNumber ||
+      a.id.localeCompare(b.id),
+  );
 }
 
 export async function listContentRevisions(
@@ -682,7 +935,12 @@ export async function listContentRevisions(
     .select()
     .from(contentRevision)
     .where(and(...clauses))
-    .orderBy(desc(contentRevision.createdAt))
+    /**
+     * A cross-entity feed has no single sequence to sort by, so the clock leads and the number
+     * decides which of two same-instant revisions of one entity is newer. Both are needed for the
+     * `limit` to cut the list at a deterministic place.
+     */
+    .orderBy(desc(contentRevision.createdAt), desc(contentRevision.revisionNumber))
     .limit(filter.limit ?? 200);
 
   return decorate(ctx.eventId, rows);
@@ -707,7 +965,8 @@ export async function listRevisionsForEntity(
         eq(contentRevision.entityId, entityId),
       ),
     )
-    .orderBy(desc(contentRevision.createdAt));
+    /** One entity, so the number is a total order and the clock is only ever a display value. */
+    .orderBy(desc(contentRevision.revisionNumber));
   return decorate(eventId, rows);
 }
 
@@ -735,14 +994,56 @@ export async function restoreContentRevision(
     kind === 'participant' ? parseSpeakerName(asText(restored.displayName)) : null;
 
   const { label } = await readEntity(ctx.eventId, kind, row.entityId);
-  await recordRevision(
-    ctx,
-    kind,
-    row.entityId,
-    `Restored ${label} to the version from ${row.createdAt.toISOString().slice(0, 16).replace('T', ' ')}`,
-  );
+  await recordRevision(ctx, kind, row.entityId, `Restored ${label} to revision ${row.revisionNumber}`);
 
-  if (kind === 'session') {
+  if (kind === 'scheduled_session') {
+    /**
+     * A room, track or format can be deleted between the snapshot and the restore, and putting its
+     * uuid back would fail the foreign key and take the whole restore with it. Dropping the stale
+     * pointer restores everything that still exists instead of refusing to restore anything.
+     */
+    const names = await nameResolver(ctx.eventId);
+    const stillThere = (value: unknown) => (names(value) === undefined ? null : asText(value));
+
+    await db
+      .update(scheduledSession)
+      .set({
+        title: asText(restored.title) ?? 'Untitled',
+        descriptionMarkdown: asText(restored.descriptionMarkdown),
+        roomId: stillThere(restored.roomId),
+        trackId: stillThere(restored.trackId),
+        formatId: stillThere(restored.formatId),
+        startsAt: asDate(restored.startsAt),
+        endsAt: asDate(restored.endsAt),
+        status: asScheduledStatus(restored.status),
+        ceuCredits: asText(restored.ceuCredits),
+        clientId: asText(restored.clientId),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(scheduledSession.id, row.entityId), eq(scheduledSession.eventId, ctx.eventId)),
+      );
+  } else if (kind === 'sponsor') {
+    try {
+      await db
+        .update(sponsor)
+        .set({
+          name: asText(restored.name) ?? 'Untitled',
+          kind: asSponsorKind(restored.kind),
+          status: asSponsorStatus(restored.status),
+          tier: asText(restored.tier),
+          websiteUrl: asText(restored.websiteUrl),
+          description: asText(restored.description),
+          boothLocation: asText(restored.boothLocation),
+          logoFileId: asText(restored.logoFileId),
+        })
+        .where(and(eq(sponsor.id, row.entityId), eq(sponsor.eventId, ctx.eventId)));
+    } catch (error) {
+      /** `sponsor_event_kind_name` — another row took the name in the meantime. */
+      if (!isUniqueViolation(error)) throw error;
+      throw conflict(`Another sponsor is already called ${asText(restored.name) ?? 'that'}`);
+    }
+  } else if (kind === 'session') {
     await db
       .update(submission)
       .set({
@@ -874,14 +1175,45 @@ export type EditableEntity = {
   id: string;
   label: string;
   secondary: string | null;
+  /**
+   * Empty for the kinds this screen only *shows*. A scheduled session is edited on the agenda board
+   * and a sponsor on the sponsor board, and giving each a second editor here would be two screens
+   * writing the same row through different validation. They are listed so their history is
+   * selectable and restorable, which is the whole reason to have them on this page.
+   */
   fields: Record<string, string>;
   contentStatus: ContentApprovalStatus | null;
 };
 
-/** Everything the history screen can edit, so the loop edit → history → restore never leaves it. */
+/**
+ * Everything the history screen can select, so the loop edit → history → restore never leaves it.
+ */
 export async function listEditableContent(ctx: EventContext): Promise<EditableEntity[]> {
   requireCapability(ctx, 'submission:read_all');
   const db = getDb();
+
+  const [scheduled, sponsors] = await Promise.all([
+    db
+      .select({
+        id: scheduledSession.id,
+        ref: scheduledSession.ref,
+        title: scheduledSession.title,
+        status: scheduledSession.status,
+      })
+      .from(scheduledSession)
+      .where(eq(scheduledSession.eventId, ctx.eventId))
+      .orderBy(asc(scheduledSession.ref)),
+    db
+      .select({
+        id: sponsor.id,
+        name: sponsor.name,
+        kind: sponsor.kind,
+        status: sponsor.status,
+      })
+      .from(sponsor)
+      .where(eq(sponsor.eventId, ctx.eventId))
+      .orderBy(asc(sponsor.position), asc(sponsor.name)),
+  ]);
 
   const [sessions, speakers] = await Promise.all([
     db
@@ -939,6 +1271,26 @@ export async function listEditableContent(ctx: EventContext): Promise<EditableEn
           company: row.company ?? '',
           bioMarkdown: row.bioMarkdown ?? '',
         },
+        contentStatus: null,
+      }),
+    ),
+    ...scheduled.map(
+      (row): EditableEntity => ({
+        kind: 'scheduled_session',
+        id: row.id,
+        label: `${formatRef('session', row.ref)} ${row.title}`,
+        secondary: `Agenda · ${row.status}`,
+        fields: {},
+        contentStatus: null,
+      }),
+    ),
+    ...sponsors.map(
+      (row): EditableEntity => ({
+        kind: 'sponsor',
+        id: row.id,
+        label: row.name,
+        secondary: `${row.kind} · ${row.status}`,
+        fields: {},
         contentStatus: null,
       }),
     ),
