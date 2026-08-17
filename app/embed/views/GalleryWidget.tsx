@@ -20,10 +20,13 @@ export function GalleryWidget({
   bundle,
   options,
   sessionBase,
+  showSearch = true,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
   sessionBase: string;
+  /** Off where the caller shows a short excerpt, so the box cannot search the speakers it left out. */
+  showSearch?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -38,17 +41,19 @@ export function GalleryWidget({
 
   return (
     <div>
-      <div className={styles.toolbar}>
-        <SearchField
-          value={query}
-          onChange={setQuery}
-          label="Search speakers, companies, or talks"
-          placeholder="Search speakers, companies, or talks…"
-        />
-        <span className={styles.resultCount} role="status">
-          {visible.length} of {ordered.length} speakers
-        </span>
-      </div>
+      {showSearch ? (
+        <div className={styles.toolbar}>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            label="Search speakers, companies, or talks"
+            placeholder="Search speakers, companies, or talks…"
+          />
+          <span className={styles.resultCount} role="status">
+            {visible.length} of {ordered.length} speakers
+          </span>
+        </div>
+      ) : null}
 
       {visible.length === 0 ? (
         <p className={styles.empty}>

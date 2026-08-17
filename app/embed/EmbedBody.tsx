@@ -37,6 +37,7 @@ export function EmbedBody({
   showHeader = false,
   speakerBase,
   sessionBase,
+  showSearch = true,
 }: {
   view: EmbedView;
   bundle: PublicBundle;
@@ -45,6 +46,8 @@ export function EmbedBody({
   /** Where a speaker permalink points, which differs between the iframe and the public site. */
   speakerBase?: string;
   sessionBase?: string;
+  /** Off where the caller passes a truncated bundle, so no filter promises rows it does not hold. */
+  showSearch?: boolean;
 }) {
   const filtered = applyFilters(bundle, options);
   const speakerHref = speakerBase ?? `/embed/${bundle.event.slug}/speaker`;
@@ -91,7 +94,12 @@ export function EmbedBody({
         />
       ) : null}
       {view === 'gallery' ? (
-        <GalleryWidget bundle={filtered} options={options} sessionBase={sessionHref} />
+        <GalleryWidget
+          bundle={filtered}
+          options={options}
+          sessionBase={sessionHref}
+          showSearch={showSearch}
+        />
       ) : null}
       {view === 'sponsors' ? (
         <SponsorsWidget sponsors={filtered.sponsors ?? []} options={options} />
