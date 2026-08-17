@@ -21,7 +21,7 @@ import { conflict, invalid, notFound } from '../errors';
 import { slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
-import { personNameColumns, splitPersonName } from '../person-name';
+import { eventPersonName, personNameColumns, splitPersonName } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 
 /**
@@ -211,6 +211,202 @@ function facetsOf(rows: ContactRow[]): DirectoryFacets {
   };
 }
 
+/* ------------------------------------------------ what the events already know */
+
+/**
+ * `CRM-S1`. One speaker on one event, as the roster holds them.
+ *
+ * The email is the key rather than the name, because `contact_owner_email` is what the directory is
+ * unique on and a person who spoke twice under two spellings is still one person.
+ */
+export type RosterPerson = {
+  participantId: string;
+  eventId: string;
+  email: string;
+  name: string;
+  jobTitle: string | null;
+  company: string | null;
+  bioMarkdown: string | null;
+};
+
+export type RosterAdoption = {
+  /** Speakers the directory has never heard of. One per email, however many events they are on. */
+  contacts: Array<Omit<RosterPerson, 'participantId' | 'eventId'>>;
+  /** Which event each was found on, including the people the directory already had. */
+  links: Array<{ email: string; eventId: string; participantId: string }>;
+};
+
+/**
+ * `CRM-S1`. What the directory is missing from the rosters of the events this organizer runs.
+ *
+ * The directory said it held "every speaker and contact your organization has worked with, across
+ * all events" and did not. The only bridge between the two stores pushed org → event, so an
+ * organizer who imported a roster and then opened the CRM found it empty and was asked to import the
+ * same CSV a second time.
+ *
+ * Adoption is by email and idempotent — a speaker already in the directory is linked to the event
+ * rather than duplicated, and one already linked is left alone — so this can run on every read
+ * without the directory growing a second copy of anybody.
+ *
+ * It only ever adds. A contact the organizer has since renamed, re-companied or written a bio for is
+ * theirs, and a roster row is not entitled to overwrite it.
+ */
+export function planRosterAdoption(
+  roster: readonly RosterPerson[],
+  known: {
+    contactEmails: ReadonlySet<string>;
+    linkedEventsByEmail: ReadonlyMap<string, ReadonlySet<string>>;
+  },
+): RosterAdoption {
+  const contacts: RosterAdoption['contacts'] = [];
+  const links: RosterAdoption['links'] = [];
+  const claimed = new Set<string>();
+
+  for (const person of roster) {
+    const email = person.email.trim().toLowerCase();
+    /* A participant with no account address cannot be keyed, and a guessed key is a bad merge. */
+    if (!email) continue;
+
+    if (!known.contactEmails.has(email) && !claimed.has(email)) {
+      claimed.add(email);
+      contacts.push({
+        email,
+        name: person.name,
+        jobTitle: person.jobTitle,
+        company: person.company,
+        bioMarkdown: person.bioMarkdown,
+      });
+    }
+
+    if (known.linkedEventsByEmail.get(email)?.has(person.eventId)) continue;
+    links.push({ email, eventId: person.eventId, participantId: person.participantId });
+  }
+
+  return { contacts, links };
+}
+
+/**
+ * Adopts every speaker on every event this organizer runs into their directory, and records which
+ * event each was found on. Idempotent; see `planRosterAdoption` for what it will and will not touch.
+ */
+export async function adoptEventSpeakers(actor: Actor): Promise<RosterAdoption> {
+  const db = getDb();
+  const empty: RosterAdoption = { contacts: [], links: [] };
+
+  const events = await db
+    .select({ id: membership.eventId })
+    .from(membership)
+    .where(and(eq(membership.userId, actor.userId), eq(membership.role, 'organizer')));
+  const eventIds = events.map((row) => row.id);
+  if (eventIds.length === 0) return empty;
+
+  const roster: RosterPerson[] = (
+    await db
+      .select({
+        participantId: participant.id,
+        eventId: participant.eventId,
+        email: user.email,
+        displayName: participant.displayName,
+        name: user.name,
+        jobTitle: participant.jobTitle,
+        company: participant.company,
+        bioMarkdown: participant.bioMarkdown,
+      })
+      .from(participant)
+      .innerJoin(user, eq(user.id, participant.userId))
+      .where(inArray(participant.eventId, eventIds))
+  ).map((row) => ({
+    participantId: row.participantId,
+    eventId: row.eventId,
+    email: row.email,
+    name: eventPersonName(row),
+    jobTitle: row.jobTitle,
+    company: row.company,
+    bioMarkdown: row.bioMarkdown,
+  }));
+  if (roster.length === 0) return empty;
+
+  /*
+    Tombstones included. `contact_owner_email` is unique across them, so a merged-away row still
+    holds its address and inserting over it would fail rather than adopt.
+  */
+  const owned = await db
+    .select({ id: contact.id, email: contact.email })
+    .from(contact)
+    .where(eq(contact.ownerUserId, actor.userId));
+  const contactIdByEmail = new Map(owned.map((row) => [row.email, row.id]));
+  const emailByContactId = new Map(owned.map((row) => [row.id, row.email]));
+
+  const existingLinks = owned.length
+    ? await db
+        .select({ contactId: contactEventLink.contactId, eventId: contactEventLink.eventId })
+        .from(contactEventLink)
+        .where(
+          inArray(
+            contactEventLink.contactId,
+            owned.map((row) => row.id),
+          ),
+        )
+    : [];
+  const linkedEventsByEmail = new Map<string, Set<string>>();
+  for (const link of existingLinks) {
+    const email = emailByContactId.get(link.contactId);
+    if (!email) continue;
+    const seen = linkedEventsByEmail.get(email) ?? new Set<string>();
+    seen.add(link.eventId);
+    linkedEventsByEmail.set(email, seen);
+  }
+
+  const plan = planRosterAdoption(roster, {
+    contactEmails: new Set(contactIdByEmail.keys()),
+    linkedEventsByEmail,
+  });
+  if (plan.contacts.length === 0 && plan.links.length === 0) return empty;
+
+  for (const person of plan.contacts) {
+    const [row] = await db
+      .insert(contact)
+      .values({
+        ownerUserId: actor.userId,
+        name: person.name,
+        email: person.email,
+        jobTitle: person.jobTitle,
+        company: person.company,
+        bioMarkdown: person.bioMarkdown,
+        /* Where the record came from, so the organizer can tell it from one they typed. */
+        source: 'event roster',
+      })
+      .onConflictDoNothing()
+      .returning({ id: contact.id });
+    if (row) contactIdByEmail.set(person.email, row.id);
+  }
+
+  for (const link of plan.links) {
+    const contactId = contactIdByEmail.get(link.email);
+    if (!contactId) continue;
+    await db
+      .insert(contactEventLink)
+      .values({ contactId, eventId: link.eventId, participantId: link.participantId })
+      .onConflictDoNothing();
+  }
+
+  const adopted = plan.contacts
+    .map((person) => ({ id: contactIdByEmail.get(person.email), name: person.name }))
+    .filter((entry): entry is { id: string; name: string } => Boolean(entry.id));
+  if (adopted.length > 0) {
+    await logActivity(
+      actor,
+      adopted.map((entry) => ({
+        contactId: entry.id,
+        kind: 'created' as const,
+        summary: `${entry.name} added from an event roster`,
+      })),
+    );
+  }
+
+  return plan;
+}
+
 export type Directory = {
   rows: ContactRow[];
   total: number;
@@ -222,6 +418,11 @@ export async function listDirectory(
   actor: Actor,
   filters: DirectoryFilters = {},
 ): Promise<Directory> {
+  /*
+    Before reading, not behind a button. An organizer who already has rosters should find the
+    directory holding them, not an empty state asking for the CSV they imported yesterday.
+  */
+  await adoptEventSpeakers(actor);
   const [rows, fields] = await Promise.all([ownedContacts(actor), listFields(actor)]);
   return {
     rows: rows.filter((row) => contactMatches(row, filters)),
@@ -1666,6 +1867,8 @@ function rank(values: Array<string | null>, limit = 6): Breakdown[] {
 
 export async function getCrmDashboard(actor: Actor): Promise<CrmDashboard> {
   const db = getDb();
+  /* The other way into the CRM. Landing here first should not show a directory of nobody either. */
+  await adoptEventSpeakers(actor);
   const [rows, cards, segments, links, campaigns] = await Promise.all([
     ownedContacts(actor),
     db.query.prospect.findMany({

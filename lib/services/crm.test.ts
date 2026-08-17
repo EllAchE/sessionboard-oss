@@ -8,11 +8,13 @@ import {
   normalizeHeadshotSource,
   normalizeName,
   parseTagList,
+  planRosterAdoption,
   previewCampaign,
   renderMergeTags,
   resolveSegmentMembers,
   suggestMapping,
   type ContactRow,
+  type RosterPerson,
 } from './crm';
 import { parseCsvTable } from '../csv';
 
@@ -172,6 +174,98 @@ describe('directory filters', () => {
   it('matches a custom field value exactly', () => {
     expect(contactMatches(AMARA_A, { custom: { 'speaker-type': 'External' } })).toBe(true);
     expect(contactMatches(AMARA_A, { custom: { 'speaker-type': 'Internal' } })).toBe(false);
+  });
+});
+
+/*
+  `CRM-S1`. The directory claimed to hold every speaker the organization had worked with and held
+  none of them: the only bridge between the two stores pushed org → event, so an organizer who had
+  already imported a roster opened the CRM to an empty state asking for the same CSV again.
+*/
+describe('adopting the speakers an event already has', () => {
+  const ROSTER: RosterPerson[] = [
+    {
+      participantId: 'participant-ada',
+      eventId: 'event-1',
+      email: 'ada@example.com',
+      name: 'Ada Lovelace',
+      jobTitle: 'Engineer',
+      company: 'Analytical Engines',
+      bioMarkdown: 'Wrote the first program.',
+    },
+  ];
+  const NOTHING_KNOWN = { contactEmails: new Set<string>(), linkedEventsByEmail: new Map() };
+
+  it('adopts a speaker the directory has never heard of, and records the event', () => {
+    const plan = planRosterAdoption(ROSTER, NOTHING_KNOWN);
+    expect(plan.contacts).toEqual([
+      {
+        email: 'ada@example.com',
+        name: 'Ada Lovelace',
+        jobTitle: 'Engineer',
+        company: 'Analytical Engines',
+        bioMarkdown: 'Wrote the first program.',
+      },
+    ]);
+    expect(plan.links).toEqual([
+      { email: 'ada@example.com', eventId: 'event-1', participantId: 'participant-ada' },
+    ]);
+  });
+
+  /* Running on every directory read is only safe if a second run is a no-op. */
+  it('does nothing at all the second time', () => {
+    const plan = planRosterAdoption(ROSTER, {
+      contactEmails: new Set(['ada@example.com']),
+      linkedEventsByEmail: new Map([['ada@example.com', new Set(['event-1'])]]),
+    });
+    expect(plan).toEqual({ contacts: [], links: [] });
+  });
+
+  /* Someone the organizer typed in themselves, who then spoke. One record, now linked. */
+  it('links a speaker the directory already had rather than duplicating them', () => {
+    const plan = planRosterAdoption(ROSTER, {
+      contactEmails: new Set(['ada@example.com']),
+      linkedEventsByEmail: new Map(),
+    });
+    expect(plan.contacts).toEqual([]);
+    expect(plan.links).toHaveLength(1);
+  });
+
+  it('makes one record for a speaker who is on two events, and links both', () => {
+    const plan = planRosterAdoption(
+      [ROSTER[0], { ...ROSTER[0], participantId: 'participant-ada-2', eventId: 'event-2' }],
+      NOTHING_KNOWN,
+    );
+    expect(plan.contacts).toHaveLength(1);
+    expect(plan.links.map((link) => link.eventId)).toEqual(['event-1', 'event-2']);
+  });
+
+  it('adds the missing event for a speaker already linked to another one', () => {
+    const plan = planRosterAdoption(
+      [ROSTER[0], { ...ROSTER[0], participantId: 'participant-ada-2', eventId: 'event-2' }],
+      {
+        contactEmails: new Set(['ada@example.com']),
+        linkedEventsByEmail: new Map([['ada@example.com', new Set(['event-1'])]]),
+      },
+    );
+    expect(plan.contacts).toEqual([]);
+    expect(plan.links).toEqual([
+      { email: 'ada@example.com', eventId: 'event-2', participantId: 'participant-ada-2' },
+    ]);
+  });
+
+  /* `contact_owner_email` is stored lowercased, so the key has to be too or it adopts twice. */
+  it('keys on the address case-insensitively', () => {
+    const plan = planRosterAdoption([{ ...ROSTER[0], email: '  Ada@Example.com ' }], {
+      contactEmails: new Set(['ada@example.com']),
+      linkedEventsByEmail: new Map([['ada@example.com', new Set(['event-1'])]]),
+    });
+    expect(plan).toEqual({ contacts: [], links: [] });
+  });
+
+  it('skips a participant with no address rather than guessing a key', () => {
+    const plan = planRosterAdoption([{ ...ROSTER[0], email: '   ' }], NOTHING_KNOWN);
+    expect(plan).toEqual({ contacts: [], links: [] });
   });
 });
 
