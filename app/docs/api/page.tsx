@@ -222,6 +222,8 @@ export default function ApiDocsPage() {
           {/*
             Both routes read the same spec. The link exists so the two renderings can be compared
             side by side rather than from memory, while we decide which one Cicero keeps.
+            `/docs/api/scalar` is a route handler now, not a page — Next falls back to a full
+            navigation when the soft-navigation fetch doesn't get a valid RSC payload back.
           */}
           <Link className={styles.action} href="/docs/api/scalar">
             <BookOpen size={15} aria-hidden="true" />
