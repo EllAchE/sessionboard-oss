@@ -155,14 +155,19 @@ export function aggregateScorecard(
 }
 
 /**
- * Whether a reviewer has answered every criterion, of every type. This is the "may they submit"
+ * Whether a reviewer has answered everything that has to be answered. This is the "may they submit"
  * question, deliberately apart from `aggregateScorecard.complete`, which only ever speaks about the
  * numbers that make up the average.
+ *
+ * A rating and a dropdown are questions with a required answer. A written criterion is an
+ * invitation: a reviewer who has nothing to add should not be barred from submitting over it.
  */
 export function scorecardComplete(criteria: CriterionSpec[], scores: ScoreValue[]): boolean {
   if (criteria.length === 0) return false;
   const byId = new Map(scores.map((entry) => [entry.criterionId, entry]));
-  return criteria.every((criterion) => isAnswered(criterion, byId.get(criterion.id)));
+  return criteria.every(
+    (criterion) => criterion.type === 'text' || isAnswered(criterion, byId.get(criterion.id)),
+  );
 }
 
 export type ReviewerScorecard = {

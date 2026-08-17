@@ -5,6 +5,7 @@ import {
   DECISION_QUEUE_BAR,
   STATUS_TABS,
   aggregateScorecard,
+  answerText,
   carriesIdentity,
   decisionStage,
   derivedDecisionStage,
@@ -13,12 +14,14 @@ import {
   hidesAuthorship,
   isAgendaEligible,
   nextStatusForDecision,
+  normalizeOptions,
   parseSubmissionImport,
   planAssignments,
   planRoutedAssignments,
   redactAuthorship,
   redactSubmitter,
   reminderBody,
+  scorecardComplete,
   sortQueue,
   stagedByHand,
   summarizeReviews,
@@ -144,6 +147,70 @@ describe('aggregateScorecard', () => {
       { criterionId: 'ignored', value: 1 },
     ]);
     expect(result.average).toBe(4);
+  });
+});
+
+/**
+ * `ABS-03`. A scorecard mixes ratings with a dropdown and a written answer. The words have to be
+ * readable afterwards without ever reaching the arithmetic, and a round of ratings alone must go on
+ * scoring exactly as it did before the other two types existed.
+ */
+describe('criteria that are not ratings', () => {
+  const MIXED: CriterionSpec[] = [
+    criterion({ id: 'relevance', weight: 2 }),
+    criterion({
+      id: 'recommendation',
+      type: 'select',
+      options: ['Accept', 'Maybe', 'Reject'],
+      weight: 0,
+    }),
+    criterion({ id: 'comments', type: 'text', weight: 0 }),
+  ];
+
+  it('averages the ratings alone, whatever the words say', () => {
+    const result = aggregateScorecard(MIXED, [
+      { criterionId: 'relevance', value: 4 },
+      { criterionId: 'recommendation', value: null, text: 'Reject' },
+      { criterionId: 'comments', value: null, text: 'Thin on evidence.' },
+    ]);
+
+    expect(result.average).toBe(4);
+    expect(result.criterionCount).toBe(1);
+  });
+
+  it('does not call a scorecard complete while a dropdown is unanswered', () => {
+    expect(scorecardComplete(MIXED, [{ criterionId: 'relevance', value: 4 }])).toBe(false);
+    expect(
+      scorecardComplete(MIXED, [
+        { criterionId: 'relevance', value: 4 },
+        { criterionId: 'recommendation', value: null, text: 'Accept' },
+      ]),
+    ).toBe(true);
+  });
+
+  it('reads every type back as the text a committee would want to see', () => {
+    const scores = [
+      { criterionId: 'relevance', value: 4 },
+      { criterionId: 'recommendation', value: null, text: 'Accept' },
+      { criterionId: 'comments', value: null, text: 'Strong fit.' },
+    ];
+    const read = (id: string) =>
+      answerText(
+        MIXED.find((entry) => entry.id === id)!,
+        scores.find((entry) => entry.criterionId === id),
+      );
+
+    expect(read('relevance')).toBe('4');
+    expect(read('recommendation')).toBe('Accept');
+    expect(read('comments')).toBe('Strong fit.');
+    expect(answerText(MIXED[1], undefined)).toBe('');
+  });
+
+  it('keeps blank and stray choices out of an option list', () => {
+    expect(normalizeOptions([' Accept ', 'Accept', '', '  ', 'Reject'])).toEqual([
+      'Accept',
+      'Reject',
+    ]);
   });
 });
 
