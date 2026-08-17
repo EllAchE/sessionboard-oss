@@ -71,7 +71,10 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
             <CiceroMark size={28} />
             <span>Cicero</span>
           </Link>
-          <p>Open-source conference operations, from call for speakers to show day.</p>
+          <p>
+            Open source and self-hostable conference operations, from call for speakers to show
+            day.
+          </p>
         </div>
 
         <nav
@@ -106,7 +109,7 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
           </a>
         </nav>
       </div>
-      <div className={styles.legal}>© 2026 Cicero · MIT licensed</div>
+      <div className={styles.legal}>© 2026 Cicero</div>
     </footer>
   );
 }

@@ -23,22 +23,29 @@ describe('fresh-instance home page', () => {
   it('leads with a copyable setup prompt for Claude and ChatGPT', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
 
-    expect(html).toContain('Copy setup prompt');
-    expect(html).toContain('Paste it into Claude or ChatGPT');
+    expect(html).toContain('AI-guided setup');
+    expect(html).toContain('Copy AI setup prompt');
+    expect(html).toContain('Let Claude or ChatGPT walk through setup with you');
     expect(html).toContain('Claude &amp; ChatGPT setup prompt');
-    expect(html.indexOf('Copy setup prompt')).toBeLessThan(html.indexOf('Create an event'));
+    expect(html.indexOf('Copy AI setup prompt')).toBeLessThan(html.indexOf('Create an event'));
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
     );
   });
 
-  it('describes the product in ordinary conference language', () => {
+  it('describes the product through organizer and speaker outcomes', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable />);
 
     expect(html).toContain('From call for speakers to public program');
-    expect(html).toContain('Collect and review proposals');
-    expect(html).toContain('Build a conflict-aware schedule');
-    expect(html).toContain('Keep every speaker on track');
+    expect(html).toContain('For organizers');
+    expect(html).toContain('Know what needs attention');
+    expect(html).toContain('Build a schedule that catches collisions');
+    expect(html).toContain('For speakers');
+    expect(html).toContain('Find everything in one portal');
+    expect(html).toContain('Send the right files every time');
+    expect(html).toContain('Open source and self-hostable');
+    expect(html).not.toContain('MIT');
+    expect(html).not.toContain('License');
     expect(html).not.toMatch(
       /\b(?:forum|empire|imperial|petition|orator|fasti|magistrate|province|decree)\b/i,
     );

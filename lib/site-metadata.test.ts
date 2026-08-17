@@ -33,7 +33,7 @@ describe('site metadata', () => {
       description: 'Meet the speakers at Demo Conf.',
       images: [
         {
-          url: 'https://cicero.example/social/cicero-card.png',
+          url: 'https://cicero.example/social/cicero-card-archetypes.png',
           width: 1200,
           height: 630,
           alt: SOCIAL_IMAGE_ALT,
@@ -47,7 +47,7 @@ describe('site metadata', () => {
       description: 'Meet the speakers at Demo Conf.',
       images: [
         {
-          url: 'https://cicero.example/social/cicero-card.png',
+          url: 'https://cicero.example/social/cicero-card-archetypes.png',
           width: 1200,
           height: 630,
           alt: SOCIAL_IMAGE_ALT,
