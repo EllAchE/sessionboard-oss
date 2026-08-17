@@ -368,24 +368,15 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             Connect Cicero to the tools your event already uses, publish live views anywhere, and
             extend the workflow without waiting on a vendor roadmap.
           </p>
-          <dl className={styles.aboutFacts}>
-            <div>
-              <dt>Automate</dt>
-              <dd>REST API and webhooks</dd>
-            </div>
-            <div>
-              <dt>Publish</dt>
-              <dd>
-                <a className={styles.aboutFactLink} href={EMBED_SHOWCASE_PATH}>
-                  Live embeddable views
-                </a>
-              </dd>
-            </div>
-            <div>
-              <dt>Adapt</dt>
-              <dd>Role-scoped agents</dd>
-            </div>
-          </dl>
+          {/*
+            The three-fact list that used to sit here said `Automate — REST API and webhooks`,
+            `Publish — Live embeddable views`, and `Adapt — Role-scoped agents`. Each one now has a
+            better home within a screen of this paragraph: the API is a navigation item, the embeds
+            are running live in the attendee section directly above, and the agent section directly
+            below is three concrete setup steps rather than a two-word claim. Restating them here
+            made the page longer without telling a reader anything the neighbouring sections do not
+            already show them.
+          */}
           <div className={styles.aboutLinks}>
             <a className={styles.textLink} href="#agent-quick-start">
               Set up with an AI guide <ArrowRight size={16} aria-hidden="true" />
