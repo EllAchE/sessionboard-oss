@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, like, or } from 'drizzle-orm';
 import { requireEventWindow } from '../lib/event-dates';
 import { newIcsUid } from '../lib/ics';
 import { ensureDefaultTemplates } from '../lib/services/comms';
@@ -9,9 +9,12 @@ import {
 import { splitPersonName } from '../lib/person-name';
 import type { RomanSpeakerHeadshotGender } from '../lib/roman-speaker-headshots';
 import { getDb } from './client';
+import { EVENT_SIZES, SIBLING_EVENT_SIZES, generatedEmailDomain } from './seeds/event-sizes';
 import { seedFirstSettlement } from './seeds/first-settlement';
 import { removeEventFiles, seedProfileArt } from './seeds/profile-art-store';
 import { ROMAN_PROFILE_ART } from './seeds/roman-profile-art';
+import { seedSizedDemo } from './seeds/sized-demo';
+import { seedSizedRoster } from './seeds/sized-roster';
 import {
   emailLog,
   event,
@@ -157,6 +160,25 @@ await db.delete(user).where(
   ),
 );
 
+/**
+ * The generated crowd is swept by domain rather than by a list, because the list is a function of
+ * the size profiles and those change. Shrinking `large` from 180 speakers to 120 with a name-by-name
+ * delete would leave sixty accounts behind that no event references and no later run ever collects —
+ * and the next run's insert would collide with them on `email`.
+ *
+ * Safe after the event sweep above and not before: these accounts own nothing, but their
+ * submissions and participant rows only disappear when the events they belong to do.
+ */
+await db
+  .delete(user)
+  .where(
+    or(
+      ...[EVENT_SIZES.medium, ...SIBLING_EVENT_SIZES].map((size) =>
+        like(user.email, `%@${generatedEmailDomain(size)}`),
+      ),
+    ),
+  );
+
 // ---------------------------------------------------------------------------
 // People and the event
 // ---------------------------------------------------------------------------
@@ -254,6 +276,10 @@ const rooms = await db
     { eventId: demo.id, name: 'Outer Peristyle', capacity: 600, floor: 'Ground', position: 0 },
     { eventId: demo.id, name: 'Basilica Gallery', capacity: 180, floor: 'Ground', position: 1 },
     { eventId: demo.id, name: 'Villa Workshop', capacity: 60, floor: 'Lower level', position: 2 },
+    // The two rooms the generated programme runs in. The hand-written placements below stay in the
+    // three above, which is what keeps the two halves of the agenda from ever colliding.
+    { eventId: demo.id, name: 'East Garden Room', capacity: 120, floor: 'Ground', position: 3 },
+    { eventId: demo.id, name: 'Atrium Studio', capacity: 90, floor: 'Lower level', position: 4 },
   ])
   .returning();
 
@@ -1503,13 +1529,60 @@ await db.insert(emailLog).values([
   },
 ]);
 
+// ---------------------------------------------------------------------------
+// Scale. Everything above is hand-written and is what a reader meets first; this brings the same
+// event up to the medium size profile, which is what makes the review queue, the agenda grid and
+// the speaker gallery worth looking at. `demo` stays the default sample event — the small and
+// large siblings below exist to be compared against it, not to replace it.
+// ---------------------------------------------------------------------------
+
+const filler = await seedSizedRoster(db, {
+  eventId: demo.id,
+  size: EVENT_SIZES.medium,
+  organizerUserId: organizer.id,
+  formId: cfp.id,
+  timezone: TIMEZONE,
+  tracks,
+  formats,
+  rooms,
+  personas,
+  days: [at(day1, 0), at(day2, 0)],
+  now,
+  existing: {
+    speakers: SPEAKER_EMAILS.length,
+    submissions: submissions.length,
+    sessions: scheduled.length,
+  },
+  // The three rooms the hand-written placements above use.
+  reservedRooms: 3,
+  review: {
+    roundId: rounds[0].id,
+    reviewerUserIds: reviewers.map((reviewer) => reviewer.id),
+    criteria: criteriaByRound.get(rounds[0].id)!,
+  },
+});
+
+const siblings = [];
+for (const size of SIBLING_EVENT_SIZES) {
+  siblings.push(await seedSizedDemo(db, { size, organizerUserId: organizer.id, now }));
+}
+
 const firstSettlement = await seedFirstSettlement(db, organizer.id, now);
 
 console.log(
-  `Seeded /${SLUG}: ${submissions.length} submissions, ${uniqueAccepted.length} speakers, ` +
-    `${scheduled.length} scheduled sessions, ${tasks.length + scopedTasks.length} tasks. ` +
+  `Seeded /${SLUG} (${EVENT_SIZES.medium.key}): ` +
+    `${submissions.length + filler.submissions} submissions, ` +
+    `${uniqueAccepted.length + filler.speakers} speakers, ` +
+    `${scheduled.length + filler.scheduledSessions} scheduled sessions, ` +
+    `${tasks.length + scopedTasks.length} tasks. ` +
     `Sign in as ${organizer.email} and read the link at /organizer/mail.`,
 );
+for (const sibling of siblings) {
+  console.log(
+    `Seeded /${sibling.slug} (${sibling.size}): ${sibling.submissions} submissions, ` +
+      `${sibling.speakers} speakers, ${sibling.scheduledSessions} scheduled sessions.`,
+  );
+}
 console.log(
   `Seeded /${firstSettlement.slug}: ${firstSettlement.submissions} submissions, ` +
     `${firstSettlement.speakers} speakers, ${firstSettlement.scheduledSessions} scheduled sessions, ` +
