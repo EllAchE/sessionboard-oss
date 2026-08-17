@@ -1,7 +1,11 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_PUBLIC_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
+} from '@/lib/demo-entry-links';
 import { GlobalFooterContent } from './index';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
@@ -20,6 +24,7 @@ describe('GlobalFooter links', () => {
     expect(html).toContain('aria-label="Cicero resource and creator links"');
     expect(html).not.toContain('Organizer demo');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
+    for (const href of Object.values(DEMO_PUBLIC_LINKS)) expect(html).not.toContain(`"${href}"`);
   });
 
   /**
@@ -27,11 +32,14 @@ describe('GlobalFooter links', () => {
    * reach agent setup and the API reference from a page that is not the landing page. Assert the
    * hrefs first so a future relabel cannot quietly drop either one.
    */
-  it('keeps agent setup and API docs available on every instance', () => {
+  it('keeps agent setup, the embed samples, and API docs available on every instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
     expect(html).toContain('href="/#agent-quick-start"');
     expect(html).toContain('<span>Agents</span>');
+    // The showcase explains itself on an unseeded instance, so it needs no demo gate of its own.
+    expect(html).toContain('href="/embeds"');
+    expect(html).toContain('<span>Embeds</span>');
     expect(html).toContain('href="/docs/api"');
     expect(html).toContain('<span>API</span>');
   });

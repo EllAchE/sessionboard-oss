@@ -640,6 +640,126 @@
   gap: var(--space-3);
 }
 
+.attendeeShowcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  align-items: start;
+  gap: var(--space-8);
+  margin-top: var(--space-16);
+}
+
+.attendeeFrame {
+  overflow: hidden;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background: var(--surface-card);
+  box-shadow:
+    0 18px 42px rgba(52, 47, 39, 0.09),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+/*
+ * A height rather than an aspect ratio: the widget scrolls its own content, so the frame is a
+ * viewport onto the gallery and its shape is this page's choice. A host site instead sizes itself
+ * from the height the embed posts back (`app/embed/layout.tsx`) and sets no height at all.
+ */
+.attendeeEmbed {
+  display: block;
+  width: 100%;
+  height: clamp(420px, 38vw, 560px);
+  border: 0;
+  background: var(--surface-card);
+}
+
+.attendeeLinks {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attendeeLink {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.attendeeLink:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+}
+
+.attendeeLink:focus-visible {
+  outline: none;
+  border-color: var(--border-accent);
+  box-shadow: var(--ring-focus);
+}
+
+.attendeeLink .featureIcon {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+}
+
+.attendeeLinkLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-strong);
+  font: var(--weight-semibold) var(--text-md) / 1.2 var(--font-ui);
+}
+
+.attendeeLink:hover .attendeeLinkLabel,
+.attendeeLink:focus-visible .attendeeLinkLabel {
+  color: var(--text-accent);
+}
+
+.attendeeLinkBlurb {
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-normal) var(--font-ui);
+}
+
+.aboutFactLink {
+  color: inherit;
+  text-decoration-color: var(--border-default);
+  text-underline-offset: 3px;
+}
+
+.aboutFactLink:hover {
+  color: var(--text-accent);
+  text-decoration-color: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attendeeLink {
+    transition: none;
+  }
+
+  .attendeeLink:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .attendeeShowcase {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .attendeeEmbed {
+    height: 520px;
+  }
+}
+
 .agentQuickStart {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
