@@ -4,6 +4,12 @@ import { shareLink } from '@/db/schema';
 import type { EventContext } from '@/lib/context';
 import { invalid, notFound } from '@/lib/errors';
 import { hashToken, randomToken, timingSafeEqual } from '@/lib/ids';
+import {
+  DEFAULT_SHARE_LINK_DAYS,
+  MAX_SHARE_LINK_DAYS,
+  isShareLinkView,
+  type ShareLinkView,
+} from '@/lib/share-link-views';
 
 /**
  * `AD-9` — the token half of no-login share links. What a resolved link is *allowed to read* lives
@@ -19,37 +25,12 @@ import { hashToken, randomToken, timingSafeEqual } from '@/lib/ids';
 
 const PREFIX_LENGTH = 8;
 
-export const SHARE_LINK_VIEWS = [
-  'agenda',
-  'itinerary',
-  'sessions',
-  'speakers',
-  'gallery',
-  'sponsors',
-] as const;
-
-export type ShareLinkView = (typeof SHARE_LINK_VIEWS)[number];
-
-export function isShareLinkView(value: string): value is ShareLinkView {
-  return (SHARE_LINK_VIEWS as readonly string[]).includes(value);
-}
-
-export const SHARE_LINK_VIEW_LABEL: Record<ShareLinkView, string> = {
-  agenda: 'Agenda grid',
-  itinerary: 'Itinerary',
-  sessions: 'Session list',
-  speakers: 'Speaker directory',
-  gallery: 'Speaker gallery',
-  sponsors: 'Sponsors and exhibitors',
-};
-
 /**
- * A fortnight covers the round trip an organizer is actually waiting on — send the draft, get notes
- * back — without leaving a live bearer URL in a stranger's inbox for a year. The ceiling is a
- * quarter: past that the link outlives the draft it was minted for, and a fresh one costs a click.
+ * The view vocabulary and the expiry bounds live in `@/lib/share-link-views`, not here. This module
+ * imports `@/db/client`, and the organizer's picker is a client component: re-exporting them would
+ * put `pg` in the browser bundle and fail the build on `net`/`tls`. Import them from there.
  */
-export const DEFAULT_SHARE_LINK_DAYS = 14;
-export const MAX_SHARE_LINK_DAYS = 90;
+export type { ShareLinkView };
 
 export type IssuedShareLink = {
   id: string;

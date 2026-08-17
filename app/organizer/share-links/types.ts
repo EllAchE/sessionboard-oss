@@ -1,4 +1,4 @@
-import type { ShareLinkView } from '@/lib/services/share-links';
+import type { ShareLinkView } from '@/lib/share-link-views';
 
 export type ActionResult<T = null> =
   | { ok: true; data: T }

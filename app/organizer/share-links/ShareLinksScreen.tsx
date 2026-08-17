@@ -18,7 +18,7 @@ import {
   SHARE_LINK_VIEWS,
   SHARE_LINK_VIEW_LABEL,
   type ShareLinkView,
-} from '@/lib/services/share-links';
+} from '@/lib/share-link-views';
 import { createShareLinkAction, revokeShareLinkAction } from './actions';
 import type { IssuedShareLinkRow, ShareLinkRow } from './types';
 import styles from './share-links.module.css';

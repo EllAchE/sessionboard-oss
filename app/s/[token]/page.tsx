@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { EmbedBody } from '@/app/embed/EmbedBody';
 import { parseEmbedOptions } from '@/app/embed/model';
-import { SHARE_LINK_VIEW_LABEL, recordShareLinkView } from '@/lib/services/share-links';
+import { recordShareLinkView } from '@/lib/services/share-links';
+import { SHARE_LINK_VIEW_LABEL } from '@/lib/share-link-views';
 import { shareContext } from './context';
 import { ShareFrame } from './ShareFrame';
 
