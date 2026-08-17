@@ -48,6 +48,12 @@ export type MySchedule = {
   isStarred: (id: string) => boolean;
   toggle: (id: string) => void;
   count: number;
+  /**
+   * False until the store has been read. The server has no `localStorage`, so every schedule starts
+   * empty there — a caller that wants to *act* on an empty schedule has to know whether it is empty
+   * or merely unread, or it will treat every crawl and no-JS visit as an attendee with no stars.
+   */
+  hydrated: boolean;
 };
 
 export function useMySchedule(slug: string): MySchedule {
@@ -111,8 +117,8 @@ export function useMySchedule(slug: string): MySchedule {
   const isStarred = useCallback((id: string) => starred.includes(id), [starred]);
 
   return useMemo(
-    () => ({ starred, isStarred, toggle, count: starred.length }),
-    [starred, isStarred, toggle],
+    () => ({ starred, isStarred, toggle, count: starred.length, hydrated }),
+    [starred, isStarred, toggle, hydrated],
   );
 }
 

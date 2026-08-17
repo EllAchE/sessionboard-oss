@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarPlus, Star } from 'lucide-react';
 import { buildScheduleCalendar, calendarFilename } from '../calendar';
 import {
@@ -34,12 +34,26 @@ export function ItineraryWidget({
     [bundle.sessions, bundle.event.timezone],
   );
 
+  const { starred, isStarred, toggle: toggleStar, hydrated } = useMySchedule(bundle.event.slug);
+
   /*
-    The page is called "my schedule", so it opens on the schedule rather than on a list of every
-    talk the attendee has not picked. An explicit `?day=` from an embed still wins.
+    An attendee who has already starred something opens on their own schedule rather than on a list
+    of every talk they have not picked, which is what made this page read as a duplicate of the
+    agenda. It cannot be the *server's* default: the store is `localStorage`, so the schedule is
+    always empty on the server, and defaulting to it would render every share link, crawl and
+    no-JS visit as an empty page. So the day is what ships in the HTML and the switch happens once,
+    when the store has been read and turns out not to be empty.
   */
-  const [tab, setTab] = useState<string>(options.day ?? MINE);
-  const { starred, isStarred, toggle: toggleStar } = useMySchedule(bundle.event.slug);
+  const [tab, setTab] = useState<string | null>(options.day ?? null);
+  const applied = useRef(false);
+
+  useEffect(() => {
+    if (!hydrated || applied.current) return;
+    applied.current = true;
+    if (!options.day && starred.length > 0) setTab(MINE);
+  }, [hydrated, options.day, starred.length]);
+
+  const activeTab = tab ?? days[0]?.date ?? MINE;
 
   const chosen = useMemo(
     () => bundle.sessions.filter((session) => starred.includes(session.id)),
@@ -60,7 +74,7 @@ export function ItineraryWidget({
   };
 
   const visible: PublicSession[] =
-    tab === MINE ? chosen : (days.find((day) => day.date === tab)?.sessions ?? []);
+    activeTab === MINE ? chosen : (days.find((day) => day.date === activeTab)?.sessions ?? []);
 
   return (
     <div>
@@ -69,7 +83,7 @@ export function ItineraryWidget({
           type="button"
           role="tab"
           className={styles.dayTab}
-          aria-selected={tab === MINE}
+          aria-selected={activeTab === MINE}
           onClick={() => setTab(MINE)}
         >
           ★ My schedule ({chosen.length})
@@ -80,7 +94,7 @@ export function ItineraryWidget({
             type="button"
             role="tab"
             className={styles.dayTab}
-            aria-selected={tab === day.date}
+            aria-selected={activeTab === day.date}
             onClick={() => setTab(day.date)}
           >
             {day.date === 'tbd'
@@ -112,7 +126,7 @@ export function ItineraryWidget({
 
       {visible.length === 0 ? (
         <p className={styles.empty}>
-          {tab === MINE
+          {activeTab === MINE
             ? 'Your schedule is empty. Star a session on any day tab, or on the agenda grid, to add it.'
             : 'Nothing is scheduled for this day yet.'}
         </p>
