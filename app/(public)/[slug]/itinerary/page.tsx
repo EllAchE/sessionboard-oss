@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   return createSocialMetadata({
     origin: appUrl(),
     path: `/${bundle.event.slug}/itinerary`,
-    title: `Schedule · ${bundle.event.name}`,
+    title: `My schedule · ${bundle.event.name}`,
     description: bundle.event.tagline ?? `Build a personal schedule for ${bundle.event.name}.`,
   });
 }
@@ -39,9 +39,9 @@ export default async function PublicItineraryPage({
     <PublicChrome event={bundle.event} active="itinerary">
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2 className={styles.sectionTitle}>Schedule</h2>
+          <h2 className={styles.sectionTitle}>My schedule</h2>
           <span className={styles.sectionLink}>
-            Star the talks you want and export them to your calendar.
+            Star talks here or on the agenda, then export them to your calendar.
           </span>
         </div>
         <EmbedBody

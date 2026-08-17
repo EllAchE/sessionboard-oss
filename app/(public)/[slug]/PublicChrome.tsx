@@ -24,7 +24,9 @@ type Tab = {
 const TABS: Tab[] = [
   { id: 'home', label: 'Overview', path: '' },
   { id: 'agenda', label: 'Agenda', path: '/agenda' },
-  { id: 'itinerary', label: 'Schedule', path: '/itinerary' },
+  /* "Schedule" beside "Agenda" and "Sessions" read as a third way to browse the programme. This tab
+     is the attendee's own picks, so it says so. */
+  { id: 'itinerary', label: 'My schedule', path: '/itinerary' },
   { id: 'sessions', label: 'Sessions', path: '/sessions' },
   { id: 'speakers', label: 'Speakers', path: '/speakers' },
   {

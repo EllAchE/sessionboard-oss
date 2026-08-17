@@ -756,6 +756,31 @@
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
 }
 
+.agentPromptActions,
+.agentProviders {
+  display: flex;
+  align-items: center;
+}
+
+.agentPromptActions {
+  gap: var(--space-4);
+}
+
+.agentProviders {
+  gap: var(--space-2);
+}
+
+.agentProviders img {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.agentProvidersMore {
+  color: var(--stone-300);
+  font: var(--weight-medium) var(--text-xs) / 1 var(--font-ui);
+  white-space: nowrap;
+}
+
 .agentPromptLabel svg,
 .agentPromptSafety svg {
   color: var(--vermilion-300);
@@ -786,6 +811,27 @@
   color: var(--stone-300);
   background: rgba(183, 57, 31, 0.1);
   font: var(--weight-regular) var(--text-xs) / var(--leading-snug) var(--font-ui);
+}
+
+/*
+ * The API-key prerequisite, sitting directly under the endpoint it qualifies. Deliberately without
+ * the warning tint `.agentPromptSafety` carries: needing your own event before an event-scoped key
+ * can exist is a prerequisite, not a hazard, and the MCP server itself is deployed and working.
+ */
+.agentPromptNote {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border-top: var(--border-width) solid rgba(255, 255, 255, 0.13);
+  color: var(--stone-300);
+  font: var(--weight-regular) var(--text-xs) / var(--leading-snug) var(--font-ui);
+}
+
+.agentPromptNote svg {
+  flex: 0 0 auto;
+  color: var(--stone-400);
 }
 
 .finalCta {
@@ -1004,6 +1050,16 @@
 
   .agentPrompt {
     box-shadow: var(--shadow-lg);
+  }
+
+  .agentPromptHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agentPromptActions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .features {
