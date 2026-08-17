@@ -85,6 +85,10 @@ export type CriterionWire = {
   id: string;
   label: string;
   description: string | null;
+  /** `ABS-03`: the control the reviewer gets — a rating, a dropdown, or a written answer. */
+  type: 'numeric' | 'select' | 'text';
+  /** The choices for a `select` criterion; empty for the others. */
+  options: string[];
   weight: number;
   maxScore: number;
 };
@@ -234,6 +238,9 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [reviewerInvite, setReviewerInvite] = useState<ReviewerInviteOutcome | null>(null);
 
   const [criterionLabel, setCriterionLabel] = useState('');
+  const [criterionType, setCriterionType] = useState<'numeric' | 'select' | 'text'>('numeric');
+  /** Dropdown choices are typed one per line, which is the shortest thing to explain and to edit. */
+  const [criterionOptions, setCriterionOptions] = useState('');
   const [criterionWeight, setCriterionWeight] = useState('1');
   const [criterionMax, setCriterionMax] = useState('5');
 
@@ -733,6 +740,10 @@ export function RoundsManager(props: RoundsManagerProps) {
             </CardHeader>
             <CardBody>
               <div className={styles.stack}>
+                {/*
+                  `ABS-03`: every criterion carries a type. Weight and maximum belong to a rating
+                  and are hidden for the other two, which have no scale to set.
+                 */}
                 {props.criteria.map((criterion) => (
                   <div key={criterion.id} className={styles.criterionEditor}>
                     <Input
@@ -747,38 +758,73 @@ export function RoundsManager(props: RoundsManagerProps) {
                         );
                       }}
                     />
-                    <Input
-                      inputSize="sm"
-                      type="number"
-                      min={0}
-                      max={10}
-                      defaultValue={criterion.weight}
-                      aria-label={`Weight for ${criterion.label}`}
-                      onBlur={(event) => {
-                        const weight = Number(event.target.value);
-                        if (weight === criterion.weight) return;
+                    <Select
+                      selectSize="sm"
+                      value={criterion.type}
+                      aria-label={`Field type for ${criterion.label}`}
+                      onChange={(event) => {
+                        const type = event.target.value as CriterionWire['type'];
+                        if (type === criterion.type) return;
                         run(
-                          () => updateCriterionAction(criterion.id, { weight }),
+                          () =>
+                            updateCriterionAction(criterion.id, {
+                              type,
+                              // A dropdown needs choices from the moment it becomes one; these are
+                              // a starting point the organizer can immediately edit.
+                              options:
+                                type === 'select' && criterion.options.length < 2
+                                  ? ['Accept', 'Maybe', 'Reject']
+                                  : criterion.options,
+                            }),
                           'Criterion updated.',
                         );
                       }}
-                    />
-                    <Input
-                      inputSize="sm"
-                      type="number"
-                      min={2}
-                      max={10}
-                      defaultValue={criterion.maxScore}
-                      aria-label={`Maximum score for ${criterion.label}`}
-                      onBlur={(event) => {
-                        const maxScore = Number(event.target.value);
-                        if (maxScore === criterion.maxScore) return;
-                        run(
-                          () => updateCriterionAction(criterion.id, { maxScore }),
-                          'Criterion updated.',
-                        );
-                      }}
-                    />
+                    >
+                      <option value="numeric">Rating</option>
+                      <option value="select">Dropdown</option>
+                      <option value="text">Long text</option>
+                    </Select>
+                    {criterion.type === 'numeric' ? (
+                      <>
+                        <Input
+                          inputSize="sm"
+                          type="number"
+                          min={0}
+                          max={10}
+                          defaultValue={criterion.weight}
+                          aria-label={`Weight for ${criterion.label}`}
+                          onBlur={(event) => {
+                            const weight = Number(event.target.value);
+                            if (weight === criterion.weight) return;
+                            run(
+                              () => updateCriterionAction(criterion.id, { weight }),
+                              'Criterion updated.',
+                            );
+                          }}
+                        />
+                        <Input
+                          inputSize="sm"
+                          type="number"
+                          min={2}
+                          max={10}
+                          defaultValue={criterion.maxScore}
+                          aria-label={`Maximum score for ${criterion.label}`}
+                          onBlur={(event) => {
+                            const maxScore = Number(event.target.value);
+                            if (maxScore === criterion.maxScore) return;
+                            run(
+                              () => updateCriterionAction(criterion.id, { maxScore }),
+                              'Criterion updated.',
+                            );
+                          }}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <span />
+                        <span />
+                      </>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -790,6 +836,23 @@ export function RoundsManager(props: RoundsManagerProps) {
                     >
                       Remove
                     </Button>
+                    {criterion.type === 'select' ? (
+                      <Input
+                        className={styles.criterionOptions}
+                        inputSize="sm"
+                        defaultValue={criterion.options.join(', ')}
+                        placeholder="Accept, Maybe, Reject"
+                        aria-label={`Options for ${criterion.label}`}
+                        onBlur={(event) => {
+                          const options = event.target.value.split(',');
+                          if (options.join(', ') === criterion.options.join(', ')) return;
+                          run(
+                            () => updateCriterionAction(criterion.id, { options }),
+                            'Criterion updated.',
+                          );
+                        }}
+                      />
+                    ) : null}
                   </div>
                 ))}
                 {props.criteria.length === 0 ? (
@@ -806,24 +869,45 @@ export function RoundsManager(props: RoundsManagerProps) {
                     value={criterionLabel}
                     onChange={(event) => setCriterionLabel(event.target.value)}
                   />
-                  <Input
-                    inputSize="sm"
-                    type="number"
-                    min={0}
-                    max={10}
-                    aria-label="New criterion weight"
-                    value={criterionWeight}
-                    onChange={(event) => setCriterionWeight(event.target.value)}
-                  />
-                  <Input
-                    inputSize="sm"
-                    type="number"
-                    min={2}
-                    max={10}
-                    aria-label="New criterion maximum score"
-                    value={criterionMax}
-                    onChange={(event) => setCriterionMax(event.target.value)}
-                  />
+                  <Select
+                    selectSize="sm"
+                    aria-label="New criterion field type"
+                    value={criterionType}
+                    onChange={(event) =>
+                      setCriterionType(event.target.value as CriterionWire['type'])
+                    }
+                  >
+                    <option value="numeric">Rating</option>
+                    <option value="select">Dropdown</option>
+                    <option value="text">Long text</option>
+                  </Select>
+                  {criterionType === 'numeric' ? (
+                    <>
+                      <Input
+                        inputSize="sm"
+                        type="number"
+                        min={0}
+                        max={10}
+                        aria-label="New criterion weight"
+                        value={criterionWeight}
+                        onChange={(event) => setCriterionWeight(event.target.value)}
+                      />
+                      <Input
+                        inputSize="sm"
+                        type="number"
+                        min={2}
+                        max={10}
+                        aria-label="New criterion maximum score"
+                        value={criterionMax}
+                        onChange={(event) => setCriterionMax(event.target.value)}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <span />
+                      <span />
+                    </>
+                  )}
                   <Button
                     size="sm"
                     iconLeft={<Plus size={14} />}
@@ -832,20 +916,36 @@ export function RoundsManager(props: RoundsManagerProps) {
                       run(async () => {
                         const result = await addCriterionAction(selectedRound.id, {
                           label: criterionLabel,
+                          type: criterionType,
+                          options:
+                            criterionType === 'select' ? criterionOptions.split(',') : undefined,
                           weight: Number(criterionWeight) || 1,
                           maxScore: Number(criterionMax) || 5,
                         });
-                        if (result.ok) setCriterionLabel('');
+                        if (result.ok) {
+                          setCriterionLabel('');
+                          setCriterionOptions('');
+                        }
                         return result;
                       }, 'Criterion added.')
                     }
                   >
                     Add
                   </Button>
+                  {criterionType === 'select' ? (
+                    <Input
+                      className={styles.criterionOptions}
+                      inputSize="sm"
+                      placeholder="Accept, Maybe, Reject"
+                      aria-label="New criterion options"
+                      value={criterionOptions}
+                      onChange={(event) => setCriterionOptions(event.target.value)}
+                    />
+                  ) : null}
                 </div>
                 <p className={styles.aiNote}>
-                  Weight sets relative importance; maximum sets the input scale. Results normalize
-                  to 1–5.
+                  Ratings carry weight and normalize to 1–5. Dropdowns take a comma-separated list
+                  of choices; long-text criteria collect written answers. Neither moves the score.
                 </p>
               </div>
             </CardBody>

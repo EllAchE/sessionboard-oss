@@ -32,6 +32,8 @@ import {
 const criterion = (over: Partial<CriterionSpec> & { id: string }): CriterionSpec => ({
   label: over.id,
   description: null,
+  type: 'numeric',
+  options: [],
   weight: 1,
   maxScore: 5,
   position: 0,

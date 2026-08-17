@@ -606,9 +606,14 @@
 
 .criterionEditor {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) 80px 80px auto;
+  grid-template-columns: minmax(0, 2fr) 120px 80px 80px auto;
   gap: var(--space-2);
   align-items: center;
+}
+
+/* A dropdown's choices need a whole line to themselves, under the row that owns them. */
+.criterionOptions {
+  grid-column: 1 / -1;
 }
 
 /* One track and the reviewers who cover it. The names wrap; the track keeps its own column. */

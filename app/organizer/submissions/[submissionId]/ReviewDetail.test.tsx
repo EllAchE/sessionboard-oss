@@ -42,6 +42,7 @@ const props: ReviewDetailProps = {
       completedAt: null,
       average: null,
       isMe: false,
+      answers: [],
     },
   ],
   availableReviewers: [
