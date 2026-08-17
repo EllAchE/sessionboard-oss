@@ -31,6 +31,7 @@ import {
   isBuiltinKey,
   isParticipantBuiltinKey,
   isParticipantRoleKind,
+  resolveFieldType,
   validateConditions,
   validateParticipantCounts,
   validateRoleConfiguration,
@@ -99,14 +100,23 @@ type FieldRow = typeof formField.$inferSelect;
 
 function toBuilderField(row: FieldRow): BuilderField {
   const entity: FieldEntity = row.entity;
+  const builtinKey = entity === 'abstract' && isBuiltinKey(row.builtinKey) ? row.builtinKey : null;
+  const participantKey =
+    entity === 'participant' && isParticipantBuiltinKey(row.builtinKey) ? row.builtinKey : null;
   return {
     id: row.id,
     key: row.key,
     entity,
-    builtinKey: entity === 'abstract' && isBuiltinKey(row.builtinKey) ? row.builtinKey : null,
-    participantKey:
-      entity === 'participant' && isParticipantBuiltinKey(row.builtinKey) ? row.builtinKey : null,
-    type: row.type,
+    builtinKey,
+    participantKey,
+    /**
+     * Resolved rather than read straight off the row, because a built-in's type is the contract's to
+     * decide and the builder is where the organizer is told what the field is. Reading the column
+     * here let the type picker say "Radio buttons" and the live preview draw radios for a field the
+     * public form served as a dropdown — the same question, two answers, and only the speaker saw
+     * the real one.
+     */
+    type: resolveFieldType({ entity, builtinKey, participantKey, type: row.type }),
     label: row.label,
     position: row.position,
     step: row.step,

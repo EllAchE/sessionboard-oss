@@ -3,8 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   BUILTIN_FIELDS,
+  BUILTIN_META,
   PAGE_HEADING_MAX_LENGTH,
   PARTICIPANT_BUILTIN_FIELDS,
+  isBuiltinKey,
 } from '../lib/forms/contract';
 import { seedBuiltinFields, seedRoles } from '../lib/services/forms';
 
@@ -42,6 +44,24 @@ describe.each(SEEDS)('%s', (path) => {
   it('takes the participant field set from the shared constant', () => {
     expect(text).toContain('PARTICIPANT_BUILTIN_FIELDS');
     expect(text).toContain('PARTICIPANT_BUILTIN_META');
+  });
+
+  /**
+   * A built-in's control is `BUILTIN_META`'s to decide — the builder will not let an organizer
+   * retype one — so a seed that writes a different `type` is writing a value nothing will honour.
+   * `db/seed.ts` wrote `radio` for `level` while the contract called it a dropdown, which is how the
+   * demo's "Audience level" came to be radio buttons in the builder and a `<select>` on the public
+   * form. `resolveFieldType` makes the surfaces agree; this keeps the stored row honest too.
+   */
+  it('gives every abstract built-in the type the contract fixes for it', () => {
+    const pattern = /type: '(\w+)' as const,\s*\n\s*key: '\w+',\s*\n\s*builtinKey: '(\w+)',/g;
+    const seen: string[] = [];
+    for (const [, type, key] of text.matchAll(pattern)) {
+      if (!isBuiltinKey(key)) continue;
+      seen.push(key);
+      expect({ key, type }).toEqual({ key, type: BUILTIN_META[key].type });
+    }
+    expect(seen.sort()).toEqual([...BUILTIN_FIELDS].sort());
   });
 
   it('configures participant roles rather than leaving the form without any', () => {

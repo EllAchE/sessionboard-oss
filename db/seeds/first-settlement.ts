@@ -403,7 +403,8 @@ export async function seedFirstSettlement(
     {
       formId: callForMotions.id,
       position: 4,
-      type: 'radio' as const,
+      // `BUILTIN_META.level.type` — see the same note in `db/seed.ts`.
+      type: 'select' as const,
       key: 'level',
       builtinKey: 'level',
       label: 'Scope of the motion',
