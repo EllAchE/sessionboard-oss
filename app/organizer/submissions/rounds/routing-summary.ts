@@ -28,7 +28,7 @@ export const UNROUTED_REASON_LABEL: Record<UnroutedReason, string> = {
   all_conflicted: 'Everyone covering this track wrote it or speaks on it',
   // The only reason on this list an organizer can undo, so it says so rather than making them
   // hunt through coverage for a problem that is one click away in Recusals.
-  all_recused: 'Everyone else covering this track has recused themselves. Clear one to reopen it',
+  all_recused: 'Everyone else covering this track has recused themselves, so clear one to reopen it',
 };
 
 export type UnroutedWire = {

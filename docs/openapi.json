@@ -261,14 +261,14 @@
               "string",
               "null"
             ],
-            "description": "ISO 8601 instant the speaker roster is meant to be settled. Advisory — no write is refused after it passes. Null when the organizers do not track it"
+            "description": "ISO 8601 instant the speaker roster is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
           },
           "agendaDeadlineAt": {
             "type": [
               "string",
               "null"
             ],
-            "description": "ISO 8601 instant the agenda is meant to be settled. Advisory — no write is refused after it passes. Null when the organizers do not track it"
+            "description": "ISO 8601 instant the agenda is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
           },
           "websiteUrl": {
             "type": [
@@ -2319,14 +2319,14 @@
                   "string",
                   "null"
                 ],
-                "description": "ISO 8601 instant the speaker roster is meant to be settled. Advisory — no write is refused after it passes. Null when the organizers do not track it"
+                "description": "ISO 8601 instant the speaker roster is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
               },
               "agendaDeadlineAt": {
                 "type": [
                   "string",
                   "null"
                 ],
-                "description": "ISO 8601 instant the agenda is meant to be settled. Advisory — no write is refused after it passes. Null when the organizers do not track it"
+                "description": "ISO 8601 instant the agenda is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
               },
               "websiteUrl": {
                 "type": [

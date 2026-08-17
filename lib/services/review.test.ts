@@ -1048,7 +1048,7 @@ describe('reminderBody', () => {
 
     expect(body).toContain('Hi Grace,');
     expect(body).toContain('2 submissions still waiting');
-    expect(body).toContain('ABS-12 — On Engines');
+    expect(body).toContain('ABS-12: On Engines');
     expect(body).toContain('https://cicero.test/review');
     expect(body).toContain('2026-09-01');
     expect(body).toContain('Please finish before the programme meeting.');
