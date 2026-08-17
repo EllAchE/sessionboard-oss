@@ -17,7 +17,7 @@ describe('SiteNav', () => {
    * account. The auth pair is the component's own, not a caller's, and no combination of props may
    * produce one without the other.
    */
-  it('offers both sign in and sign up whatever the caller passes', () => {
+  it('offers both sign in and event creation whatever the caller passes', () => {
     for (const props of [
       { links: LINKS, demoAvailable: true },
       { links: LINKS, demoAvailable: false },
@@ -29,7 +29,7 @@ describe('SiteNav', () => {
       expect(html).toContain('href="/signin"');
       expect(html).toContain('Sign in');
       expect(html).toContain('href="/signup"');
-      expect(html).toContain('Sign up');
+      expect(html).toContain('Create event');
     }
   });
 

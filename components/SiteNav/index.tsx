@@ -57,8 +57,13 @@ export function SiteNav({
         <Button href="/signin" variant="secondary" size="sm">
           Sign in
         </Button>
+        {/*
+          The primary call to action names what the visitor gets, not the paperwork in front of it.
+          "Sign up" described the form; `/signup` sends an organizer on to `/events/new` as soon as
+          the link is followed, and the hero and `/embeds` already asked for an event by name.
+        */}
         <Button className={styles.navCta} href="/signup" variant="primary" size="sm">
-          Sign up
+          Create event
         </Button>
       </div>
     </nav>

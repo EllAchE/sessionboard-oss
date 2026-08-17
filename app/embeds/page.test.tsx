@@ -81,9 +81,9 @@ describe('EmbedsShowcase', () => {
   });
 
   /**
-   * This page showed Sign up without Sign in for as long as it had a bar of its own, because that
-   * bar was a copy of the home one that never got the auth cluster. Both links are asserted here,
-   * on the page that lost one, as well as in the SiteNav test that owns them.
+   * This page offered the account link without Sign in for as long as it had a bar of its own,
+   * because that bar was a copy of the home one that never got the auth cluster. Both are asserted
+   * here, on the page that lost one, as well as in the SiteNav test that owns them.
    */
   it('lets a visitor who already has an account sign in', () => {
     const html = render({ samples, eventName: 'Urbs Aeterna 2026' });
