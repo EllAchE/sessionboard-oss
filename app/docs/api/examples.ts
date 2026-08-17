@@ -46,6 +46,8 @@ export const EXAMPLES: WorkedExample[] = [
       endsOn: '2026-09-15',
       startsAt: '2026-09-14T16:00:00.000Z',
       endsAt: '2026-09-16T01:00:00.000Z',
+      speakerDeadlineAt: '2026-07-15T07:00:00.000Z',
+      agendaDeadlineAt: '2026-08-14T07:00:00.000Z',
       websiteUrl: 'https://example.org/roman-forum-2026',
       venueName: 'Palazzo Conference Center',
       venueAddress: '1100 Market Street, San Francisco, CA 94102',
