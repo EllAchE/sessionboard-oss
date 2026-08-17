@@ -27,7 +27,7 @@ const COPY = {
     note: null,
   },
   'sign-up': {
-    title: 'Start an event on Cicero',
+    title: 'Create an event on Cicero',
     description: 'Enter your email and we’ll send a sign-in link.',
     submit: 'Create my account',
     switchPrompt: 'Already have an account?',
