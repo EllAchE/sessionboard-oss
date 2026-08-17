@@ -1,5 +1,5 @@
-import { getTableName } from 'drizzle-orm';
-import type { PgTable } from 'drizzle-orm/pg-core';
+import { getTableName, is } from 'drizzle-orm';
+import { PgTable } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as schema from '../../db/schema';
 import type { EventContext } from '../context';
@@ -646,11 +646,10 @@ describe('what the organizer is told', () => {
 describe('the executor stays in step with the schema', () => {
   /** Cheap insurance that the plan's table names still resolve against `db/schema.ts`. */
   it('resolves every copied table to a real drizzle table', () => {
-    const known = new Set(
-      Object.values(schema)
-        .filter((value): value is PgTable => typeof value === 'object' && value !== null && Symbol.for('drizzle:Name') in value)
-        .map((table) => getTableName(table)),
-    );
+    const known = new Set<string>();
+    for (const value of Object.values(schema)) {
+      if (is(value as never, PgTable)) known.add(getTableName(value as PgTable));
+    }
     for (const name of copiedTables()) expect(known.has(name)).toBe(true);
   });
 });
