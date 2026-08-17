@@ -4,6 +4,7 @@ import {
   DEMO_EVENT_SLUG,
   DEMO_PUBLIC_LINKS,
   DEMO_PUBLIC_SITE_LINK,
+  DEMO_TOURS,
   EMBED_SHOWCASE_PATH,
 } from '@/lib/demo-entry-links';
 import { readFileSync } from 'node:fs';
@@ -98,7 +99,8 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('Score proposals, not spreadsheets.');
     expect(html).toContain('Stay ready from proposal to stage.');
     expect(html).toContain('Plan the day from the live programme.');
-    expect(html).toContain('Open source and self-hostable');
+    // `Open source and self-hostable` led a section here, and now leads the global footer alone.
+    expect(html).not.toContain('Open source and self-hostable');
     expect(html).not.toContain('MIT');
     expect(html).not.toContain('License');
     expect(html).not.toMatch(
@@ -230,11 +232,11 @@ describe('fresh-instance home page', () => {
     expect([...used].filter((name) => !defined.has(name))).toEqual([]);
   });
 
-  it('keeps the attendee section between the role cards and about', () => {
+  it('keeps the attendee section between the role cards and agent setup', () => {
     const html = renderHome(true);
 
     expect(html.indexOf('id="products"')).toBeLessThan(html.indexOf('id="attendees"'));
-    expect(html.indexOf('id="attendees"')).toBeLessThan(html.indexOf('id="about"'));
+    expect(html.indexOf('id="attendees"')).toBeLessThan(html.indexOf('id="agent-quick-start"'));
   });
 
   it('keeps the attendee claim on a fresh instance and drops only the demo data', () => {
@@ -259,57 +261,68 @@ describe('fresh-instance home page', () => {
     expect(html).not.toContain('Agent quick start');
   });
 
-  it('orders the navigation about, products, docs, then demo', () => {
+  it('orders the navigation products, docs, then demo', () => {
     const html = renderHome(true);
 
-    const navOrder = ['href="#about"', 'href="#products"', 'href="/docs/api"'].map(
-      (marker) => html.indexOf(marker),
-    );
+    // `About` led this list and pointed at a section that is gone; nothing anchors to it now.
+    expect(html).not.toContain('href="#about"');
+    expect(html).not.toContain('id="about"');
+
+    const navOrder = ['href="#products"', 'href="/docs/api"'].map((marker) => html.indexOf(marker));
     expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));
     expect(navOrder.at(-1)).toBeLessThan(html.indexOf('>Demos'));
   });
 
-  it('collects every demo behind the navigation demo menu', () => {
+  /**
+   * The menu and the footer's first row offer the same five destinations under the same five names,
+   * from the one `DEMO_TOURS` list. They used to disagree on both: `Organizer dashboard` here where
+   * the footer said `Organizer demo`, and a fifth entry of `Public agenda` -- one page of the
+   * published event listed above it -- where the footer offered the embed showcase.
+   */
+  it('collects every demo behind the navigation demo menu, named as the footer names them', () => {
     const html = renderHome(true);
 
     expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain('Organizer dashboard');
-    expect(html).toContain('Reviewer queue');
-    expect(html).toContain('Speaker portal');
-    expect(html).toContain('Public event page');
-    expect(html).toContain('Public agenda');
+    for (const { href, label } of DEMO_TOURS) {
+      expect(html).toContain(label);
+      expect(html).toContain(`href="${href.replaceAll('&', '&amp;')}"`);
+    }
+    expect(html).not.toContain('Public agenda');
+    expect(html).not.toContain('Organizer dashboard');
   });
 
-  it('keeps agent setup reachable from the page body once it leaves the navigation', () => {
-    const html = renderHome(false);
-
-    expect(html).toContain('href="#agent-quick-start"');
-    expect(html).toContain('Set up with an AI guide');
-  });
-
-  /*
-   * What About is for, now that its three-fact list is gone. The section reads as trimmable — it is
-   * short, it makes no demo-gated claim, and the nearby sections cover its subject matter — so these
-   * are the parts that are load-bearing rather than decorative: the navigation anchors to it, and it
-   * holds the page's only link to the repository. The footer's GitHub entry points at the profile,
-   * not the source.
+  /**
+   * The agent section is still on the page, but the in-body anchor to it went with the `About`
+   * section that held it. The footer's `Agents` entry is the remaining link, and it is absolute
+   * (`/#agent-quick-start`) because the footer renders on every page.
    */
-  it('keeps the about section anchored and the only source link on the page', () => {
+  it('keeps the agent section on the page once the anchor to it is gone', () => {
     const html = renderHome(false);
 
-    expect(html).toContain('href="#about"');
-    expect(html).toContain('id="about"');
-    expect(html).toContain('href="https://github.com/EllAchE/sessionboard-oss"');
+    expect(html).toContain('id="agent-quick-start"');
+    expect(html).not.toContain('Set up with an AI guide');
   });
 
-  it('states the claims the trimmed fact list used to repeat, once each', () => {
+  /**
+   * What the removed `About` section claimed, and where each claim lives now that its paragraph is
+   * gone: it promised the API, the embeds, and agent extensibility, and each of those is a thing
+   * this page shows rather than asserts. Its `View source on GitHub` link moved to the footer,
+   * whose `GitHub` entry is the author's profile rather than the repository.
+   */
+  it('shows what the about paragraph used to promise, and asserts none of it', () => {
     const html = renderHome(true);
 
-    // Each fact keeps exactly one home, within a screen of where About restated it.
     expect(html).toContain('href="/docs/api"');
     expect(html).toContain('href="/embeds"');
     expect(html).toContain('id="agent-quick-start"');
-    for (const dropped of ['REST API and webhooks', 'Live embeddable views', 'Role-scoped agents']) {
+    for (const dropped of [
+      'REST API and webhooks',
+      'Live embeddable views',
+      'Role-scoped agents',
+      'Build on the workflow, not around it.',
+      'without waiting on a vendor roadmap',
+      'View source on GitHub',
+    ]) {
       expect(html).not.toContain(dropped);
     }
   });
@@ -347,8 +360,11 @@ describe('fresh-instance home page', () => {
 
   /**
    * Automated walkthroughs pick a click target by matching link text from the start and treat two
-   * matches as an error, so no tour label may be a prefix of another anywhere on the page or in
-   * the global footer, which ships `Organizer demo`, `Reviewer demo`, and `Speaker demo`.
+   * matches as an error. The demo menu and the footer's first row now name the same five
+   * destinations identically on purpose, so text alone no longer identifies a target across the
+   * whole page and a walkthrough has to scope its match to one surface first. What still has to
+   * hold is that within the menu, and against the role cards in the page body, no label is a prefix
+   * of another -- otherwise scoping does not rescue it either.
    */
   it('keeps every demo tour label separable from the start of its text', () => {
     const html = renderHome(true);
@@ -357,11 +373,7 @@ describe('fresh-instance home page', () => {
       'Score the proposals',
       'Give a talk',
       'Browse the programme',
-      'Organizer dashboard',
-      'Reviewer queue',
-      'Speaker portal',
-      'Public event page',
-      'Public agenda',
+      ...DEMO_TOURS.map((tour) => tour.label),
     ];
 
     for (const label of labels) {

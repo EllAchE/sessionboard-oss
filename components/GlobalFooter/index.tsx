@@ -1,16 +1,13 @@
 import { CiceroMark } from '@/components/CiceroBrand';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import {
-  DEMO_ENTRY_LINKS,
-  DEMO_PUBLIC_SITE_LINK,
-  EMBED_SHOWCASE_PATH,
-} from '@/lib/demo-entry-links';
+import { DEMO_TOURS } from '@/lib/demo-entry-links';
 import {
   Bot,
   CalendarDays,
   Code2,
   FileCheck,
   Gift,
+  GitBranch,
   Github,
   Landmark,
   Linkedin,
@@ -21,45 +18,42 @@ import {
 import Link from 'next/link';
 import styles from './GlobalFooter.module.css';
 
-const DEMO_LINKS = [
-  {
-    href: DEMO_ENTRY_LINKS.organizer,
-    label: 'Organizer demo',
-    icon: Landmark,
-  },
-  {
-    href: DEMO_ENTRY_LINKS.reviewer,
-    label: 'Reviewer demo',
-    icon: Scale,
-  },
-  {
-    href: DEMO_ENTRY_LINKS.speaker,
-    label: 'Speaker demo',
-    icon: Megaphone,
-  },
-  /**
-   * The published event itself, last because it is the output of the three roles above rather than
-   * a fourth workspace. `Sample event` rather than `Attendee demo`: the other three open a signed-in
-   * workspace, and this one opens the public site anyone can read without an account.
-   */
-  {
-    href: DEMO_PUBLIC_SITE_LINK,
-    label: 'Sample event',
-    icon: CalendarDays,
-  },
-] as const;
+const DEMO_ICONS = {
+  organizer: Landmark,
+  reviewer: Scale,
+  speaker: Megaphone,
+  event: CalendarDays,
+  embeds: Code2,
+} as const;
+
+/**
+ * The same five destinations the `Demos` menu in the navigation offers, under the same five names,
+ * because both read `DEMO_TOURS`. The published event comes after the three role tours because it
+ * is what they produce rather than a fourth workspace, and it opens the public site anyone can read
+ * without an account rather than a signed-in workspace.
+ *
+ * These four are the ones an unseeded instance has nothing behind, so they are the ones the render
+ * gates on `demoAvailable`.
+ */
+const DEMO_LINKS = DEMO_TOURS.filter((tour) => tour.key !== 'embeds').map((tour) => ({
+  href: tour.href,
+  label: tour.label,
+  icon: DEMO_ICONS[tour.key],
+}));
 
 /**
  * The showcase closes the demo row rather than opening the resource row: `/embeds` is the same
  * seeded conference the four tours above it open, rendered through the widgets, so it belongs with
  * the things a visitor can go and look at rather than with the things they can go and build on.
- * `Sample embeds` over `Embeds` for the reason `Sample event` beats `Attendee demo` beside it --
- * the row reads as one set of samples, and the bare noun looked like documentation for the feature.
+ * It stays out of `DEMO_LINKS` because it is not gated: the showcase page renders its own empty
+ * state, so it is reachable on an instance that was never seeded.
  */
+const SHOWCASE_TOUR = DEMO_TOURS.find((tour) => tour.key === 'embeds')!;
+
 const SHOWCASE_LINK = {
-  href: EMBED_SHOWCASE_PATH,
-  label: 'Sample embeds',
-  icon: Code2,
+  href: SHOWCASE_TOUR.href,
+  label: SHOWCASE_TOUR.label,
+  icon: DEMO_ICONS.embeds,
 } as const;
 
 const RESOURCE_LINKS = [
@@ -77,6 +71,17 @@ const RESOURCE_LINKS = [
     href: '/docs/api',
     label: 'API',
     icon: FileCheck,
+  },
+  /**
+   * The repository, which the landing page used to reach through a `View source on GitHub` link in
+   * its `Open source and self-hostable` section. That section is gone, and the `GitHub` entry in the
+   * social row below points at the author's profile alongside LinkedIn and X rather than at the
+   * source, so without this the claim in the blurb directly above has nothing behind it.
+   */
+  {
+    href: 'https://github.com/EllAchE/sessionboard-oss',
+    label: 'Source',
+    icon: GitBranch,
   },
 ] as const;
 
