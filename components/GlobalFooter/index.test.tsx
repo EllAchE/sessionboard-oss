@@ -7,6 +7,13 @@ import { GlobalFooterContent } from './index';
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
 describe('GlobalFooter demo links', () => {
+  it('describes the product without leading with its license', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
+
+    expect(html).toContain('Open source and self-hostable conference operations');
+    expect(html).not.toContain('MIT licensed');
+  });
+
   it('does not advertise role tours on an unseeded instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
