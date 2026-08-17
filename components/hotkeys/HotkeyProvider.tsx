@@ -10,8 +10,8 @@ import {
   useState,
 } from 'react';
 import type { ReactNode, RefObject } from 'react';
-import { isTypingTarget } from '@/lib/hotkeys/match';
-import { activePrefixes, findBinding } from '@/lib/hotkeys/registry';
+import { isHyperDown, isTypingTarget } from '@/lib/hotkeys/match';
+import { findBinding } from '@/lib/hotkeys/registry';
 import type { HotkeyHandlers, Platform, ResolvedBinding } from '@/lib/hotkeys/types';
 import { ShortcutsDialog } from './ShortcutsDialog';
 
@@ -25,8 +25,17 @@ import { ShortcutsDialog } from './ShortcutsDialog';
  * is installed once and reads through refs, and both questions are answered in one place.
  */
 
-/** How long an armed sequence prefix (`g`) waits for its second key before giving up. */
-const PREFIX_TIMEOUT_MS = 1500;
+/**
+ * How long the workspace modifier must be held alone before the key caps appear.
+ *
+ * Long enough that firing a shortcut you already know — press, key, release, all inside a moment —
+ * never flashes the workspace at you, short enough that holding the keys because you have forgotten
+ * which letter it was feels like an answer rather than a wait.
+ */
+const HINT_DELAY_MS = 400;
+
+/** Keys that are only ever a modifier, so pressing one does not count as "some other key is down". */
+const MODIFIER_KEYS = new Set(['Meta', 'Control', 'Alt', 'Shift', 'OS', 'AltGraph']);
 
 const EMPTY_HANDLERS: HotkeyHandlers = {};
 
@@ -41,6 +50,11 @@ interface HotkeyContextValue {
   platform: Platform;
   openShortcuts: () => void;
   register: (registration: Registration) => () => void;
+  /**
+   * The workspace modifier is being held with nothing else. Surfaces that own a binding read this
+   * to show the key that reaches them — see `components/hotkeys/HotkeyHint`.
+   */
+  hintsVisible: boolean;
 }
 
 /**
@@ -56,6 +70,7 @@ const NO_PROVIDER: HotkeyContextValue = {
   platform: 'other',
   openShortcuts: () => undefined,
   register: () => () => undefined,
+  hintsVisible: false,
 };
 
 const HotkeyContext = createContext<HotkeyContextValue>(NO_PROVIDER);
@@ -74,11 +89,14 @@ export function HotkeyProvider({ children }: { children: ReactNode }) {
    * versus Ctrl during SSR would hydrate a key cap that disagrees with the markup.
    */
   const [platform, setPlatform] = useState<Platform>('other');
+  const [hintsVisible, setHintsVisible] = useState(false);
 
   const registrations = useRef<Registration[]>([]);
   const stackRef = useRef<string[]>([]);
-  const pendingPrefix = useRef<string | null>(null);
-  const prefixTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Read from inside the listener, which is installed once and must not close over state. */
+  const hintsVisibleRef = useRef(false);
+  hintsVisibleRef.current = hintsVisible;
 
   useEffect(() => setPlatform(describePlatform()), []);
 
@@ -116,10 +134,10 @@ export function HotkeyProvider({ children }: { children: ReactNode }) {
     return undefined;
   }, []);
 
-  const disarm = useCallback(() => {
-    pendingPrefix.current = null;
-    if (prefixTimer.current) clearTimeout(prefixTimer.current);
-    prefixTimer.current = null;
+  const hideHints = useCallback(() => {
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    hintTimer.current = null;
+    setHintsVisible(false);
   }, []);
 
   const openShortcuts = useCallback(() => setShortcutsOpen(true), []);
@@ -129,48 +147,67 @@ export function HotkeyProvider({ children }: { children: ReactNode }) {
       // Mid-composition keystrokes belong to the IME, not to us.
       if (event.isComposing || event.keyCode === 229) return;
 
+      /**
+       * Hints answer "which key gets me there", so they appear while the modifier waits alone and
+       * leave the moment the sentence is finished — whether the key that finished it was a shortcut
+       * or not. Modifier keydowns repeat on some platforms, so an already-running countdown is left
+       * to run rather than restarted.
+       */
+      if (MODIFIER_KEYS.has(event.key)) {
+        if (isHyperDown(event)) {
+          if (!hintTimer.current && !hintsVisibleRef.current) {
+            hintTimer.current = setTimeout(() => {
+              hintTimer.current = null;
+              setHintsVisible(true);
+            }, HINT_DELAY_MS);
+          }
+        } else {
+          hideHints();
+        }
+      } else {
+        hideHints();
+      }
+
       const target = event.target as HTMLElement | null;
       const typing = isTypingTarget(
         target ? { tagName: target.tagName, isContentEditable: target.isContentEditable } : null,
       );
-
-      const armed = pendingPrefix.current;
-      if (armed) disarm();
 
       const accept = (candidate: ResolvedBinding) => {
         if (typing && !candidate.binding.allowInInput) return false;
         return handlerFor(candidate) !== undefined;
       };
 
-      const match = findBinding(stackRef.current, event, armed, accept);
+      const match = findBinding(stackRef.current, event, accept);
       if (match) {
         event.preventDefault();
         handlerFor(match)?.({ key: event.key.toLowerCase(), chord: match.chord });
-        return;
       }
+    };
 
-      // A sequence was armed and its second key meant nothing. Swallow it rather than letting it
-      // fall through: after `g`, an `a` that misses should not accept a submission.
-      if (armed) return;
-
-      const bare = !event.metaKey && !event.ctrlKey && !event.altKey;
-      if (!typing && bare && activePrefixes(stackRef.current).has(event.key.toLowerCase())) {
-        event.preventDefault();
-        pendingPrefix.current = event.key.toLowerCase();
-        prefixTimer.current = setTimeout(disarm, PREFIX_TIMEOUT_MS);
-      }
+    /**
+     * Releasing any part of the modifier ends the hint, and so does losing the window — which is
+     * the case that matters, because ⌘⌃ held while switching apps would otherwise leave the caps
+     * frozen on a workspace nobody is looking at, with no keyup ever arriving to clear them.
+     */
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (!isHyperDown(event)) hideHints();
     };
 
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', hideHints);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
-      disarm();
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', hideHints);
+      if (hintTimer.current) clearTimeout(hintTimer.current);
     };
-  }, [disarm, handlerFor]);
+  }, [handlerFor, hideHints]);
 
   const value = useMemo<HotkeyContextValue>(
-    () => ({ stack, platform, openShortcuts, register }),
-    [stack, platform, openShortcuts, register],
+    () => ({ stack, platform, openShortcuts, register, hintsVisible }),
+    [stack, platform, openShortcuts, register, hintsVisible],
   );
 
   return (

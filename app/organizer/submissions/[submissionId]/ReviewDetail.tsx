@@ -18,6 +18,7 @@ import {
   Textarea,
 } from '../../../../components/ui';
 import { useHotkeys } from '@/components/hotkeys/HotkeyProvider';
+import { KeyLegend } from '@/components/hotkeys/KeyLegend';
 import { AI_KEY_MISSING_NOTE } from '@/lib/ai/notice';
 import { SCOPES } from '@/lib/hotkeys/registry';
 import { CopyPermalinkButton } from '../CopyPermalinkButton';
@@ -844,43 +845,28 @@ export function ReviewDetail(props: ReviewDetailProps) {
               <CardTitle>Keyboard</CardTitle>
             </CardHeader>
             <CardBody>
-              <div className={styles.keyLegend}>
-                <span className={styles.keyRow}>
-                  <Kbd>j</Kbd> next submission
-                </span>
-                <span className={styles.keyRow}>
-                  <Kbd>k</Kbd> previous submission
-                </span>
-                <span className={styles.keyRow}>
-                  <Kbd>1</Kbd>–<Kbd>9</Kbd> score, then advance
-                </span>
-                <span className={styles.keyRow}>
-                  <Kbd>↑</Kbd>
-                  <Kbd>↓</Kbd> pick criterion
-                </span>
-                <span className={styles.keyRow}>
-                  <Kbd>s</Kbd> save draft
-                </span>
-                <span className={styles.keyRow}>
-                  <Kbd>c</Kbd> submit review
-                </span>
-                {props.canDecide ? (
-                  <>
-                    <span className={styles.keyRow}>
-                      <Kbd>a</Kbd> accept
-                    </span>
-                    <span className={styles.keyRow}>
-                      <Kbd>w</Kbd> waitlist
-                    </span>
-                    <span className={styles.keyRow}>
-                      <Kbd>d</Kbd> decline
-                    </span>
-                  </>
-                ) : null}
-                <span className={styles.keyRow}>
-                  <Kbd>u</Kbd> back to queue
-                </span>
-              </div>
+              <KeyLegend
+                scope={SCOPES.submissionDetail}
+                className={styles.keyLegend}
+                rowClassName={styles.keyRow}
+                rows={[
+                  { id: 'score', text: 'score, then advance' },
+                  { id: 'criterion-prev', text: 'previous criterion' },
+                  { id: 'criterion-next', text: 'next criterion' },
+                  { id: 'save-draft', text: 'save draft' },
+                  { id: 'submit', text: 'submit review' },
+                  ...(props.canDecide
+                    ? [
+                        { id: 'accept', text: 'accept' },
+                        { id: 'waitlist', text: 'waitlist' },
+                        { id: 'decline', text: 'decline' },
+                      ]
+                    : []),
+                  { id: 'prev', text: 'previous submission' },
+                  { id: 'next', text: 'next submission' },
+                  { id: 'back', text: 'back to queue' },
+                ]}
+              />
             </CardBody>
           </Card>
         </aside>

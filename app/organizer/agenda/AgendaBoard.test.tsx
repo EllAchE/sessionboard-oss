@@ -51,7 +51,9 @@ describe('AgendaBoard conference view', () => {
       </ToastProvider>,
     );
 
-    expect(html).toContain('aria-pressed="true">Conference</button>');
+    // The view buttons also announce their chord, so match the pressed state without assuming what
+    // sits between it and the label.
+    expect(html).toMatch(/aria-pressed="true"[^>]*>Conference<\/button>/);
     expect(html).not.toContain('>Day</button>');
     expect(html).not.toContain('>Week</button>');
 

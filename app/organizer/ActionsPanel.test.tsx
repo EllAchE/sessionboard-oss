@@ -1,6 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
 import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import { ActionsList, actionRows } from './ActionsPanel';
 
@@ -27,11 +28,12 @@ describe('organizer actions panel', () => {
       <ActionsList currentEventSlug="spring-summit" {...handlers} />,
     );
 
-    // `g` then `n` for the new event form, `g` then `v` for the portal, and so on.
+    // ⌘⌃N for the new event form, ⌘⌃V for the portal, and so on — announced in both keyboards'
+    // spelling, because the matcher answers to both and this markup renders before either is known.
     for (const row of actionRows('spring-summit')) {
       const binding = getBinding(SCOPES.organizerGlobal, row.bindingId);
       expect(html, `${row.label} does not advertise its shortcut`).toContain(
-        `aria-keyshortcuts="${binding?.prefix ? `${binding.prefix} ` : ''}${binding?.chords[0]}"`,
+        `aria-keyshortcuts="${ariaKeyshortcuts(binding?.chords[0] ?? '')}"`,
       );
     }
   });

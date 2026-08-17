@@ -8,6 +8,13 @@ import type { Binding, KeyDescriptor, ResolvedBinding, ScopeDef } from './types'
  * shortcuts overlay reads these same rows, so a shortcut cannot ship undocumented and a
  * documented shortcut cannot quietly stop existing — the failure the old hand-written help dialog
  * had, where it listed two keys while twenty were live.
+ *
+ * Every row is one chord on the workspace modifier — ⌘⌃ on an Apple keyboard, Ctrl+Alt on a PC
+ * one — with two deliberate exceptions: ⌘K for the palette, which is the convention everywhere,
+ * and the two keys that are activation rather than shortcut, Escape and Enter. Nothing is a bare
+ * letter and nothing is a two-key sequence. Bare letters meant a stray keystroke on the queue
+ * could decide a submission; the `g`-then-letter sequences meant learning a grammar before a
+ * destination. `hyper+s` is neither.
  */
 
 export const SCOPES = {
@@ -23,27 +30,29 @@ export const SCOPES = {
 
 export type ScopeId = (typeof SCOPES)[keyof typeof SCOPES];
 
-/** Two-key navigation: `g` then a letter. Mirrors the organizer sidebar in `OrganizerShell`. */
-const GOTO: Array<{ id: string; key: string; label: string }> = [
-  { id: 'goto-overview', key: 'o', label: 'Go to overview' },
-  { id: 'goto-submissions', key: 's', label: 'Go to submissions' },
-  { id: 'goto-agenda', key: 'a', label: 'Go to agenda' },
-  { id: 'goto-updates', key: 'u', label: 'Go to updates' },
-  { id: 'goto-tasks', key: 't', label: 'Go to tasks' },
-  { id: 'goto-forms', key: 'f', label: 'Go to forms' },
-  { id: 'goto-comms', key: 'c', label: 'Go to comms' },
-  { id: 'goto-speakers', key: 'p', label: 'Go to speakers' },
-  /**
-   * The three destinations the actions panel offers that the sidebar does not. They are here rather
-   * than in that panel so the panel can draw its rows from this table instead of captioning them by
-   * hand — a caption written beside a row is free to disagree with the key that actually fires.
-   *
-   * `v` for the portal because `p` is already speakers, and it is the "view it as a speaker does"
-   * key; `e` because the public programme is the event's own page.
-   */
-  { id: 'goto-new-event', key: 'n', label: 'Go to the new event form' },
-  { id: 'goto-portal', key: 'v', label: 'Go to the speaker portal' },
-  { id: 'goto-public', key: 'e', label: 'Go to the public programme' },
+/**
+ * The workspace's destinations, one chord each, mirroring the organizer sidebar in
+ * `OrganizerShell`.
+ *
+ * Letters say what they mean wherever the platform left them free. Forms is the one that could not:
+ * ⌘⌃F is "Enter Full Screen" on macOS, so it takes the shifted form rather than a letter that
+ * means nothing. The last three are destinations the actions panel offers that the sidebar does
+ * not, and they live here so that panel can draw its rows from this table instead of captioning
+ * them by hand — a caption written beside a row is free to disagree with the key that fires it.
+ */
+const GOTO: Array<{ id: string; chord: string; label: string }> = [
+  { id: 'goto-overview', chord: 'hyper+o', label: 'Go to overview' },
+  { id: 'goto-updates', chord: 'hyper+u', label: 'Go to updates' },
+  { id: 'goto-submissions', chord: 'hyper+s', label: 'Go to submissions' },
+  { id: 'goto-agenda', chord: 'hyper+a', label: 'Go to agenda' },
+  { id: 'goto-tasks', chord: 'hyper+t', label: 'Go to tasks' },
+  { id: 'goto-forms', chord: 'hyper+shift+f', label: 'Go to forms' },
+  { id: 'goto-comms', chord: 'hyper+c', label: 'Go to comms' },
+  { id: 'goto-speakers', chord: 'hyper+p', label: 'Go to speakers' },
+  { id: 'goto-new-event', chord: 'hyper+n', label: 'Go to the new event form' },
+  /** `v` for "view it as a speaker does", and `e` because the programme is the event's own page. */
+  { id: 'goto-portal', chord: 'hyper+v', label: 'Go to the speaker portal' },
+  { id: 'goto-public', chord: 'hyper+e', label: 'Go to the public programme' },
 ];
 
 const ORGANIZER_GLOBAL: ScopeDef = {
@@ -57,103 +66,154 @@ const ORGANIZER_GLOBAL: ScopeDef = {
       group: 'General',
       allowInInput: true,
     },
-    {
-      id: 'shortcuts-help',
-      chords: ['?'],
-      label: 'Show keyboard shortcuts',
-      group: 'General',
-    },
     /**
-     * `app/organizer/ActionsPanel.tsx`. A bare `.` for the same reason `?` is a bare `?`: it is a
-     * key nothing else in the workspace wants, it survives every keyboard layout that can type a
-     * full stop, and it sits next to the two keys it belongs with rather than behind a modifier
-     * the browser might already have spoken for.
+     * `app/organizer/ActionsPanel.tsx` and the shortcuts overlay. Both used to be bare punctuation
+     * — `.` and `?` — which is exactly the class of key this rebind exists to remove: `?` costs a
+     * Shift on most layouts and neither survives a text field. On the modifier they are the same
+     * two keys, one tier up.
      */
     {
       id: 'actions-panel',
-      chords: ['.'],
+      chords: ['hyper+.'],
       label: 'Open the actions panel',
+      group: 'General',
+    },
+    {
+      id: 'shortcuts-help',
+      chords: ['hyper+/'],
+      label: 'Show keyboard shortcuts',
       group: 'General',
     },
     ...GOTO.map(
       (entry): Binding => ({
         id: entry.id,
-        chords: [entry.key],
-        prefix: 'g',
+        chords: [entry.chord],
         label: entry.label,
         group: 'Navigate',
-        display: ['G', 'then', entry.key.toUpperCase()],
       }),
     ),
   ],
 };
 
 /**
- * `app/organizer/submissions/SubmissionQueue.tsx`. These are the chords that screen already
- * shipped, moved verbatim — the migration onto this engine is meant to be invisible to anyone who
- * had them in their fingers.
+ * `app/organizer/submissions/SubmissionQueue.tsx`.
+ *
+ * The verbs moved off bare letters: `a`/`d`/`w` decided submissions from any keystroke that was not
+ * in a text field. They could not simply gain the modifier, either — `hyper+a` is the agenda from
+ * anywhere and must stay that everywhere (see `noScreenShadowsAGlobal` in the tests), and ⌘⌃D is
+ * macOS dictionary lookup. So accept is "yes" and decline is "reject", which is what the labels
+ * already said. Shift keeps the meaning it had: propose it rather than do it.
  */
 const SUBMISSIONS_QUEUE: ScopeDef = {
   id: SCOPES.submissionsQueue,
   title: 'Submission queue',
   bindings: [
-    { id: 'next', chords: ['j'], label: 'Move to the next submission', group: 'Move' },
-    { id: 'prev', chords: ['k'], label: 'Move to the previous submission', group: 'Move' },
-    { id: 'toggle', chords: ['x'], label: 'Select or deselect this submission', group: 'Move' },
+    { id: 'next', chords: ['hyper+arrowdown'], label: 'Move to the next submission', group: 'Move' },
     {
-      id: 'open',
-      chords: ['o', 'enter'],
-      label: 'Open this submission',
+      id: 'prev',
+      chords: ['hyper+arrowup'],
+      label: 'Move to the previous submission',
       group: 'Move',
-      display: ['O', 'or', '↵'],
     },
+    {
+      id: 'toggle',
+      chords: ['hyper+x'],
+      label: 'Select or deselect this submission',
+      group: 'Move',
+    },
+    /**
+     * Enter and Escape stay bare, here and everywhere. They are what a focused row and an open
+     * panel already mean to a browser, they cannot be pressed by accident while typing, and putting
+     * them behind the modifier would make this workspace the one place where dismissing something
+     * takes two hands.
+     */
+    { id: 'open', chords: ['enter'], label: 'Open this submission', group: 'Move' },
     { id: 'clear', chords: ['escape'], label: 'Clear the selection', group: 'Move' },
 
-    { id: 'accept', chords: ['a'], label: 'Accept', group: 'Decide' },
-    { id: 'decline', chords: ['d'], label: 'Decline', group: 'Decide' },
-    { id: 'waitlist', chords: ['w'], label: 'Waitlist', group: 'Decide' },
+    { id: 'accept', chords: ['hyper+y'], label: 'Accept', group: 'Decide' },
+    { id: 'decline', chords: ['hyper+r'], label: 'Decline', group: 'Decide' },
+    { id: 'waitlist', chords: ['hyper+w'], label: 'Waitlist', group: 'Decide' },
 
-    { id: 'stage-accept', chords: ['shift+a'], label: 'Propose accepting', group: 'Propose' },
-    { id: 'stage-decline', chords: ['shift+d'], label: 'Propose declining', group: 'Propose' },
-    { id: 'stage-hold', chords: ['shift+h'], label: 'Propose holding', group: 'Propose' },
-    { id: 'stage-clear', chords: ['shift+c'], label: 'Clear the proposal', group: 'Propose' },
+    {
+      id: 'stage-accept',
+      chords: ['hyper+shift+y'],
+      label: 'Propose accepting',
+      group: 'Propose',
+    },
+    {
+      id: 'stage-decline',
+      chords: ['hyper+shift+r'],
+      label: 'Propose declining',
+      group: 'Propose',
+    },
+    { id: 'stage-hold', chords: ['hyper+shift+h'], label: 'Propose holding', group: 'Propose' },
+    {
+      id: 'stage-clear',
+      chords: ['hyper+shift+c'],
+      label: 'Clear the proposal',
+      group: 'Propose',
+    },
   ],
 };
 
-/** `app/organizer/submissions/[submissionId]/ReviewDetail.tsx`, likewise moved verbatim. */
+/**
+ * `app/organizer/submissions/[submissionId]/ReviewDetail.tsx`. The decision keys are the queue's,
+ * because they are the same three decisions and a reviewer moves between the two screens all day.
+ */
 const SUBMISSION_DETAIL: ScopeDef = {
   id: SCOPES.submissionDetail,
   title: 'Reviewing a submission',
   bindings: [
     {
       id: 'score',
-      chords: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      chords: [
+        'hyper+1',
+        'hyper+2',
+        'hyper+3',
+        'hyper+4',
+        'hyper+5',
+        'hyper+6',
+        'hyper+7',
+        'hyper+8',
+        'hyper+9',
+      ],
       label: 'Score the active criterion and move to the next',
       group: 'Score',
-      display: ['1', '–', '9'],
+      range: true,
     },
     {
       id: 'criterion-next',
-      chords: ['arrowdown'],
+      chords: ['hyper+arrowdown'],
       label: 'Move to the next criterion',
       group: 'Score',
     },
     {
       id: 'criterion-prev',
-      chords: ['arrowup'],
+      chords: ['hyper+arrowup'],
       label: 'Move to the previous criterion',
       group: 'Score',
     },
-    { id: 'save-draft', chords: ['s'], label: 'Save a draft', group: 'Score' },
-    { id: 'submit', chords: ['c'], label: 'Complete the review', group: 'Score' },
+    { id: 'save-draft', chords: ['hyper+shift+s'], label: 'Save a draft', group: 'Score' },
+    /**
+     * ⌘Enter, not the workspace modifier: it is what `submissions/new/NewSubmissionForm.tsx`
+     * already submits on, and a review is a form being submitted. `allowInInput` because the last
+     * thing a reviewer touches is the comment box they are typing in.
+     */
+    {
+      id: 'submit',
+      chords: ['mod+enter'],
+      label: 'Complete the review',
+      group: 'Score',
+      allowInInput: true,
+    },
 
-    { id: 'next', chords: ['j'], label: 'Next submission', group: 'Move' },
-    { id: 'prev', chords: ['k'], label: 'Previous submission', group: 'Move' },
-    { id: 'back', chords: ['u'], label: 'Back to the queue', group: 'Move' },
+    { id: 'next', chords: ['hyper+]'], label: 'Next submission', group: 'Move' },
+    { id: 'prev', chords: ['hyper+['], label: 'Previous submission', group: 'Move' },
+    { id: 'back', chords: ['hyper+backspace'], label: 'Back to the queue', group: 'Move' },
 
-    { id: 'accept', chords: ['a'], label: 'Accept', group: 'Decide' },
-    { id: 'waitlist', chords: ['w'], label: 'Waitlist', group: 'Decide' },
-    { id: 'decline', chords: ['d'], label: 'Decline', group: 'Decide' },
+    { id: 'accept', chords: ['hyper+y'], label: 'Accept', group: 'Decide' },
+    { id: 'waitlist', chords: ['hyper+w'], label: 'Waitlist', group: 'Decide' },
+    { id: 'decline', chords: ['hyper+r'], label: 'Decline', group: 'Decide' },
   ],
 };
 
@@ -177,16 +237,16 @@ const AGENDA: ScopeDef = {
       group: 'Schedule',
       display: ['Space'],
     },
-    { id: 'new-session', chords: ['n'], label: 'New session', group: 'Schedule' },
-    { id: 'publish-day', chords: ['p'], label: 'Publish this day', group: 'Schedule' },
-    { id: 'prev-day', chords: ['['], label: 'Previous day', group: 'Move' },
-    { id: 'next-day', chords: [']'], label: 'Next day', group: 'Move' },
+    { id: 'new-session', chords: ['hyper+shift+n'], label: 'New session', group: 'Schedule' },
+    { id: 'publish-day', chords: ['hyper+shift+p'], label: 'Publish this day', group: 'Schedule' },
+    { id: 'prev-day', chords: ['hyper+['], label: 'Previous day', group: 'Move' },
+    { id: 'next-day', chords: ['hyper+]'], label: 'Next day', group: 'Move' },
     {
       id: 'view',
-      chords: ['1', '2', '3', '4', '5', '6'],
+      chords: ['hyper+1', 'hyper+2', 'hyper+3', 'hyper+4', 'hyper+5', 'hyper+6'],
       label: 'Switch view: conference, list, room, track, conflicts, month',
       group: 'Move',
-      display: ['1', '–', '6'],
+      range: true,
     },
   ],
 };
@@ -195,9 +255,9 @@ const TASKS: ScopeDef = {
   id: SCOPES.tasks,
   title: 'Tasks',
   bindings: [
-    { id: 'new-task', chords: ['n'], label: 'New task', group: 'Build' },
-    { id: 'view-people', chords: ['1'], label: 'Group by person', group: 'Move' },
-    { id: 'view-tasks', chords: ['2'], label: 'Group by task', group: 'Move' },
+    { id: 'new-task', chords: ['hyper+shift+n'], label: 'New task', group: 'Build' },
+    { id: 'view-people', chords: ['hyper+1'], label: 'Group by person', group: 'Move' },
+    { id: 'view-tasks', chords: ['hyper+2'], label: 'Group by task', group: 'Move' },
   ],
 };
 
@@ -239,10 +299,20 @@ export function allScopes(): ScopeDef[] {
   return Object.values(SCOPE_DEFS);
 }
 
-/** Distinguishes `g` then `s` from a bare `s` when checking for collisions. */
-function signatureOf(binding: Binding, chord: string): string {
-  const base = chordSignature(parseChord(chord));
-  return binding.prefix ? `${binding.prefix}>${base}` : base;
+/**
+ * The keystrokes the shell claims everywhere, as canonical signatures.
+ *
+ * A screen may not take one. Shadowing works — an inner scope wins on a shared chord — but on a
+ * screen full of decisions it would mean the key a user presses out of habit to reach the agenda
+ * quietly accepts a submission instead. Navigation is the one family that has to mean the same
+ * thing on every screen, so the test suite holds every other scope off these.
+ */
+export function globalSignatures(): Set<string> {
+  return new Set(
+    ORGANIZER_GLOBAL.bindings.flatMap((binding) =>
+      binding.chords.map((chord) => chordSignature(parseChord(chord))),
+    ),
+  );
 }
 
 /**
@@ -267,7 +337,7 @@ export function resolveBindings(stack: readonly string[]): ResolvedBinding[] {
 
   for (const scope of visible) {
     for (const binding of scope.bindings) {
-      const signatures = binding.chords.map((chord) => signatureOf(binding, chord));
+      const signatures = binding.chords.map((chord) => chordSignature(parseChord(chord)));
       // A chordless binding documents a key some other machinery owns, so it is never shadowed and
       // never claims anything. Without the length check the `every` below would swallow it.
       if (signatures.length > 0 && signatures.every((signature) => claimed.has(signature))) continue;
@@ -287,11 +357,6 @@ export interface BindingMatch extends ResolvedBinding {
 /**
  * Which binding, if any, this keystroke fires.
  *
- * `pendingPrefix` is the armed leading key of a two-key sequence — `'g'` after the user pressed
- * `g`, `null` otherwise. A prefixed binding only fires while its prefix is armed, and an
- * unprefixed one only fires while none is, so `g` then `a` goes to the agenda without also
- * accepting the submission that `a` alone would.
- *
  * `accept` lets the caller veto a candidate and keep looking. The provider uses it for two things
  * a pure table cannot know: whether a live handler is actually registered for the binding, and
  * whether the user is mid-sentence in a text field. Vetoing rather than stopping matters during a
@@ -301,25 +366,13 @@ export interface BindingMatch extends ResolvedBinding {
 export function findBinding(
   stack: readonly string[],
   event: KeyDescriptor,
-  pendingPrefix: string | null,
   accept?: (candidate: ResolvedBinding) => boolean,
 ): BindingMatch | null {
   for (const entry of resolveBindings(stack)) {
-    const { binding } = entry;
-    if ((binding.prefix ?? null) !== pendingPrefix) continue;
     if (accept && !accept(entry)) continue;
-    for (const chord of binding.chords) {
+    for (const chord of entry.binding.chords) {
       if (matchesChord(parseChord(chord), event)) return { ...entry, chord };
     }
   }
   return null;
-}
-
-/** Leading keys that should arm a sequence rather than being ignored, for the current stack. */
-export function activePrefixes(stack: readonly string[]): Set<string> {
-  const prefixes = new Set<string>();
-  for (const { binding } of resolveBindings(stack)) {
-    if (binding.prefix) prefixes.add(binding.prefix);
-  }
-  return prefixes;
 }

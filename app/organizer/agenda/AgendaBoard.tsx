@@ -14,9 +14,11 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { AlertTriangle, CheckCircle2, Plus, Send, Sparkles } from 'lucide-react';
+import { HotkeyHint } from '@/components/hotkeys/HotkeyHint';
 import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import { Badge, Button, useToast } from '@/components/ui';
-import { SCOPES } from '@/lib/hotkeys/registry';
+import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
+import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import {
   DEFAULT_SESSION_MINUTES,
   agendaDayKeys,
@@ -101,6 +103,16 @@ const VIEWS: { id: ViewId; label: string }[] = [
   { id: 'conflicts', label: 'Conflicts' },
   { id: 'month', label: 'Month' },
 ];
+
+/**
+ * One of this screen's chords, in the spelling `aria-keyshortcuts` wants, read from the registry so
+ * a control cannot announce a key the engine does not fire. `index` picks a chord out of a range —
+ * the six view buttons share one `view` binding, one chord each, in the order they are drawn.
+ */
+function agendaShortcut(bindingId: string, index = 0): string | undefined {
+  const chord = getBinding(SCOPES.agenda, bindingId)?.chords[index];
+  return chord ? ariaKeyshortcuts(chord) : undefined;
+}
 
 type Hover = { placement: Placement; additions: ScheduleEntry[]; dayKey: string };
 
@@ -589,7 +601,13 @@ export function AgendaBoard({
         <div className={styles.headerActions}>
           <Badge tone="neutral">{counts.draft} draft</Badge>
           <Badge tone="success">{counts.published} published</Badge>
-          <Button iconLeft={<Plus size={14} />} onClick={openNew} disabled={!canManage}>
+          <Button
+            iconLeft={<Plus size={14} />}
+            iconRight={<HotkeyHint scope={SCOPES.agenda} binding="new-session" />}
+            aria-keyshortcuts={agendaShortcut('new-session')}
+            onClick={openNew}
+            disabled={!canManage}
+          >
             Add session
           </Button>
           <Button
@@ -602,6 +620,8 @@ export function AgendaBoard({
           <Button
             variant="primary"
             iconLeft={<Send size={14} />}
+            iconRight={<HotkeyHint scope={SCOPES.agenda} binding="publish-day" />}
+            aria-keyshortcuts={agendaShortcut('publish-day')}
             onClick={publishDay}
             loading={pending}
             disabled={!canManage || draftsOnDay.length === 0}
@@ -613,15 +633,18 @@ export function AgendaBoard({
 
       <div className={styles.toolbar}>
         <div className={styles.viewSwitch}>
-          {VIEWS.map((option) => (
+          {VIEWS.map((option, index) => (
             <button
               key={option.id}
               type="button"
               className={`${styles.viewButton} ${view === option.id ? styles.viewButtonActive : ''}`}
               aria-pressed={view === option.id}
+              aria-keyshortcuts={agendaShortcut('view', index)}
               onClick={() => setView(option.id)}
             >
               {option.label}
+              {/* The digit that reaches this view, from the same chord list the handler reads. */}
+              <HotkeyHint chord={getBinding(SCOPES.agenda, 'view')?.chords[index]} />
             </button>
           ))}
         </div>
