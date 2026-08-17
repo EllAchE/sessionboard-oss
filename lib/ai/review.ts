@@ -265,6 +265,17 @@ export async function generateAiReview(subject: AiReviewSubject): Promise<AiRevi
 
   let text: string;
   try {
+    // TODO(ai-review-token-budget): settle this before `ANTHROPIC_API_KEY` is set anywhere real.
+    // `max_tokens` caps the whole response, and on `claude-sonnet-5` adaptive thinking is on by
+    // default and draws from the same 1500 — so reasoning the caller never sees can truncate the
+    // JSON body. `parseModelJson` then gets half an object and `normalizeScores` falls back, which
+    // presents as a broken feature rather than an exhausted budget. Either raise the ceiling or set
+    // an explicit thinking budget alongside it.
+    //
+    // Nothing shipped depends on this today: the demo runs without a key and returns
+    // `heuristicReview` above, which labels itself `built-in heuristic` rather than posing as the
+    // model. Left as a to-do rather than fixed blind — the right ceiling depends on scorecard size,
+    // and choosing one with no key to measure against would only be a different guess.
     const response = await client.messages.create({
       model: AI_REVIEW_MODEL,
       max_tokens: 1500,
