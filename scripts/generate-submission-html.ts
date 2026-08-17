@@ -1,7 +1,7 @@
+import { Marked, type RendererObject, type Tokens } from 'marked';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Marked, type RendererObject, type Tokens } from 'marked';
 
 const REPOSITORY_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DOCS_DIRECTORY = path.join(REPOSITORY_ROOT, 'docs');
@@ -165,7 +165,6 @@ export function renderStandalonePage(document: SubmissionDocument, markdown: str
     <section class="hero" aria-labelledby="submission-label">
       <div class="hero-copy">
         <p class="eyebrow" id="submission-label">Competition submission · August 2026</p>
-        <p class="intro">One canonical write-up, rendered for reading. These standalone files are generated directly from the checked-in Markdown.</p>
       </div>
       <a class="source-link" href="../${document.sourceFile}">View Markdown source ↗</a>
     </section>
