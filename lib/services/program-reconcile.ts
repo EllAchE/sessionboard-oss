@@ -13,7 +13,9 @@ import {
   detectConflicts,
   parseConflictPolicy,
   type Conflict,
+  type ConflictKind,
   type ConflictPolicy,
+  type ConflictSeverity,
   type ScheduleEntry,
 } from '@/lib/services/schedule';
 import { emitSessionScheduled } from '@/lib/webhooks';
@@ -68,9 +70,15 @@ export type ProgramReconcileResult = {
   conflicts: ProgramConflict[];
 };
 
+/**
+ * Deliberately the detector's own union rather than a hand-copied list of literals, so a kind added
+ * to the board cannot quietly fail to appear in this payload. Which kinds an integrator actually
+ * sees depends on what this reconciler loads: it builds its entries with `speakers: []`, so today
+ * only `room` and `track` can arise here — that predates `AD-2` and is unchanged by it.
+ */
 export type ProgramConflict = {
-  kind: 'room' | 'track' | 'speaker';
-  severity: 'error' | 'warning';
+  kind: ConflictKind;
+  severity: ConflictSeverity;
   message: string;
 };
 

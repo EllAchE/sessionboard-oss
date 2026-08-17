@@ -195,7 +195,7 @@ const wallClock = (what: string) =>
     .regex(WALL_CLOCK, `Give a ${what} date and time`);
 
 /**
- * `AR-44`. A milestone is optional in a way the event window is not, so blank has to mean "clear it"
+ * `AR-49`. A milestone is optional in a way the event window is not, so blank has to mean "clear it"
  * rather than "invalid" — otherwise an organizer who set a deadline could never take it back off.
  * Non-blank is read as wall clock in the event's own timezone, exactly like `startsAt`.
  */
@@ -317,7 +317,7 @@ export type CreateEventInput = {
   venueAddress?: string | null;
   logoFileId?: string | null;
   bannerFileId?: string | null;
-  /** `AR-44`. Wall clock in `timezone` like `startsAt`; blank or null clears the milestone. */
+  /** `AR-49`. Wall clock in `timezone` like `startsAt`; blank or null clears the milestone. */
   speakerDeadlineAt?: string | null;
   agendaDeadlineAt?: string | null;
 };
@@ -354,7 +354,7 @@ const DEADLINE_FIELDS = [
 type DeadlineKey = (typeof DEADLINE_FIELDS)[number]['key'];
 
 /**
- * `AR-44`. Wall clock in the event's own timezone becomes an instant, and `null` clears the column.
+ * `AR-49`. Wall clock in the event's own timezone becomes an instant, and `null` clears the column.
  *
  * The one rule is that a milestone cannot fall after the doors open: a roster settled mid-conference
  * is a mistyped year, not a plan. The two are deliberately *not* ordered against each other —

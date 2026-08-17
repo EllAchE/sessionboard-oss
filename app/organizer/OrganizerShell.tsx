@@ -21,7 +21,9 @@ import {
   Users,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
+import { useHotkeyContext, useHotkeys } from '@/components/hotkeys/HotkeyProvider';
 import { Avatar, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
+import { SCOPES } from '@/lib/hotkeys/registry';
 import type { EventSummary } from '@/lib/services/events';
 import { EventSwitcher } from './EventSwitcher';
 import { InfoPanel } from './InfoPanel';
@@ -30,6 +32,21 @@ import { ThemeToggle } from './ThemeToggle';
 import styles from './organizer.module.css';
 
 type NavEntry = { id: string; label: string; href: string; icon: React.ReactNode };
+
+/**
+ * Where each `g` sequence lands. The registry owns which letter reaches a binding; this owns where
+ * that binding goes, so adding a destination never means editing the matcher.
+ */
+const GOTO_HREFS: Record<string, string> = {
+  'goto-overview': '/organizer',
+  'goto-submissions': '/organizer/submissions',
+  'goto-agenda': '/organizer/agenda',
+  'goto-updates': '/organizer/updates',
+  'goto-tasks': '/organizer/tasks',
+  'goto-forms': '/organizer/forms',
+  'goto-comms': '/organizer/comms',
+  'goto-speakers': '/organizer/speakers',
+};
 
 const NAV: { id: string; title: string; items: NavEntry[] }[] = [
   {
@@ -89,7 +106,20 @@ export function OrganizerShell({
   const pathname = usePathname();
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
+  const { openShortcuts } = useHotkeyContext();
   const currentEvent = events.find((event) => event.id === currentEventId) ?? events[0];
+
+  /**
+   * The outermost scope, claimed once for the whole workspace. Everything a screen registers lands
+   * inside it, so these keys keep working anywhere the screen has not deliberately shadowed them.
+   */
+  useHotkeys(SCOPES.organizerGlobal, {
+    'command-palette': () => setCommandOpen((open) => !open),
+    'shortcuts-help': openShortcuts,
+    ...Object.fromEntries(
+      Object.entries(GOTO_HREFS).map(([id, href]) => [id, () => router.push(href)]),
+    ),
+  });
 
   /** Longest matching href wins, so /organizer/forms/abc highlights Forms rather than Overview. */
   const activeId = useMemo(() => {
@@ -145,7 +175,10 @@ export function OrganizerShell({
         <header className={styles.topbar}>
           <EventSwitcher events={events} currentEventId={currentEventId} />
           <div className={styles.topbarRight}>
-            <InfoPanel onOpenCommand={() => setCommandOpen(true)} />
+            <InfoPanel
+              onOpenCommand={() => setCommandOpen(true)}
+              onOpenShortcuts={openShortcuts}
+            />
             <ThemeToggle />
             <Link
               href="/organizer/account"
@@ -164,11 +197,16 @@ export function OrganizerShell({
         currentEventSlug={currentEvent?.slug}
         onOpenCommand={() => setCommandOpen(true)}
       />
+      {/*
+        `hotkey={false}` hands ⌘K to the registry. The palette keeps its own listener for consumers
+        that mount it alone, but here it would be a second ⌘K firing beside the registered one, and
+        the help overlay would have no way to know the palette existed.
+      */}
       <CommandMenu
         items={commands}
         open={commandOpen}
         onOpenChange={setCommandOpen}
-        hotkey
+        hotkey={false}
         placeholder="Jump to…"
       />
     </div>

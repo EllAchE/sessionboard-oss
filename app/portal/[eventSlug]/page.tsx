@@ -87,7 +87,7 @@ export default async function PortalHomePage({
       </section>
 
       {/*
-        `AR-44`. Below the stats and above "what you owe", because these are dates a speaker plans
+        `AR-49`. Below the stats and above "what you owe", because these are dates a speaker plans
         around rather than work they owe. They are the organizers' own milestones, so nothing here
         is addressed to the speaker as a task and none of it reaches the overdue count above.
       */}

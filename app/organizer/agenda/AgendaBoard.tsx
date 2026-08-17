@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
-  pointerWithin,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -14,7 +14,9 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { AlertTriangle, CheckCircle2, Plus, Send, Sparkles } from 'lucide-react';
+import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import { Badge, Button, useToast } from '@/components/ui';
+import { SCOPES } from '@/lib/hotkeys/registry';
 import {
   DEFAULT_SESSION_MINUTES,
   agendaDayKeys,
@@ -51,8 +53,17 @@ import {
 } from './actions';
 import { AiProposalDialog } from './AiProposalDialog';
 import type { AgendaData } from './data';
-import { fromWire, type NamedFormat, type NamedRoom, type NamedTrack, type WireEntry } from './wire';
+import {
+  fromWire,
+  unavailabilityFromWire,
+  type NamedFormat,
+  type NamedRoom,
+  type NamedTrack,
+  type WireEntry,
+  type WireUnavailability,
+} from './wire';
 import { DayGrid, OrphanedNotice, UnscheduledRail, parseCellId, type DragPayload } from './Grid';
+import { agendaCollisionDetection, cellCoordinateGetter } from './keyboardCoordinates';
 import {
   SessionDialog,
   draftFor,
@@ -112,6 +123,7 @@ export function AgendaBoard({
   tracks,
   formats,
   entries: wireEntries,
+  unavailability: wireUnavailability,
   queue: initialQueue,
   descriptions,
   modelConfigured,
@@ -122,6 +134,8 @@ export function AgendaBoard({
   tracks: NamedTrack[];
   formats: NamedFormat[];
   entries: WireEntry[];
+  /** `AD-2`. Speaker-declared blackout windows, for the availability conflict kind. */
+  unavailability: WireUnavailability[];
   queue: QueueItem[];
   descriptions: Record<string, string>;
   modelConfigured: boolean;
@@ -165,13 +179,32 @@ export function AgendaBoard({
     [rooms, tracks],
   );
 
-  const settled = useMemo(() => detectConflicts(entries, labels), [entries, labels]);
+  /**
+   * `AD-2`. Rehydrated once rather than on every detection pass: the drag path below runs the
+   * detector on each hovered cell, and rebuilding a few dozen `Date`s per frame for a set that
+   * never changes during a drag is pure waste.
+   */
+  const unavailability = useMemo(
+    () => unavailabilityFromWire(wireUnavailability),
+    [wireUnavailability],
+  );
+
+  const settled = useMemo(
+    () => detectConflicts(entries, labels, unavailability),
+    [entries, labels, unavailability],
+  );
 
   /** What the board renders while a drag is in flight: the agenda as this drop would leave it. */
   const live = useMemo(() => {
     if (!drag?.hover) return settled;
-    return previewConflicts(entries, [drag.hover.placement], labels, drag.hover.additions);
-  }, [drag, entries, labels, settled]);
+    return previewConflicts(
+      entries,
+      [drag.hover.placement],
+      labels,
+      drag.hover.additions,
+      unavailability,
+    );
+  }, [drag, entries, labels, settled, unavailability]);
 
   /**
    * `AR-35`. Optimistic so the switch reads as instant; the server action is the authority and
@@ -196,6 +229,15 @@ export function AgendaBoard({
   const sensors = useSensors(
     // A block is both draggable and clickable; without a threshold, opening one is impossible.
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    /**
+     * The same block is also focusable, so Space lifts it and the arrows walk it across rooms and
+     * time. Enter is left out of the sensor's keys deliberately: it stays the way into the session,
+     * which is what it already did before a session could be lifted at all.
+     */
+    useSensor(KeyboardSensor, {
+      coordinateGetter: cellCoordinateGetter,
+      keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space'] },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -329,9 +371,13 @@ export function AgendaBoard({
      * server's `onWarn` will confirm what actually committed, so nothing is announced here that the
      * database might not agree with.
      */
-    const conflicts = previewConflicts(entries, [hover.placement], labels, hover.additions).filter(
-      (item) => item.sessionIds.includes(hover.placement.sessionId),
-    );
+    const conflicts = previewConflicts(
+      entries,
+      [hover.placement],
+      labels,
+      hover.additions,
+      unavailability,
+    ).filter((item) => item.sessionIds.includes(hover.placement.sessionId));
     const refused = blockingConflicts(conflicts, policy);
     if (refused.length > 0) {
       toast({
@@ -487,6 +533,45 @@ export function AgendaBoard({
       return result;
     });
 
+  // -------------------------------------------------------------------------
+  // Keyboard
+  // -------------------------------------------------------------------------
+
+  const shiftDay = (step: 1 | -1) => {
+    const index = dayKeys.indexOf(dayKey);
+    const next = dayKeys[index + step];
+    if (next) {
+      setDayKey(next);
+      setView('conference');
+    }
+  };
+
+  /**
+   * Screen-level keys, deliberately none of which move a session — that is the sensor's job above.
+   * They stand down mid-lift so an arrow-key move cannot be interrupted by a day change underneath
+   * it, and a read-only organizer gets the navigation keys without the ones that would write.
+   */
+  useHotkeys(
+    SCOPES.agenda,
+    {
+      'new-session': () => {
+        if (canManage) openNew();
+      },
+      'publish-day': () => {
+        if (canManage && draftsOnDay.length > 0) publishDay();
+      },
+      'prev-day': () => shiftDay(-1),
+      'next-day': () => shiftDay(1),
+      view: (fired) => {
+        const option = VIEWS[Number(fired.key) - 1];
+        if (option) setView(option.id);
+      },
+    },
+    { active: drag === null },
+  );
+
+  useHotkeyScope(SCOPES.dialog, dialog !== null || proposalOpen);
+
   const dialogConflicts = dialog?.draft.sessionId
     ? (conflictIndex.get(dialog.draft.sessionId) ?? [])
     : [];
@@ -598,7 +683,7 @@ export function AgendaBoard({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={pointerWithin}
+        collisionDetection={agendaCollisionDetection}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}

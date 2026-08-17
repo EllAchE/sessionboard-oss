@@ -22,6 +22,19 @@ describe('public speaker seed invariants', () => {
     },
   );
 
+  /**
+   * The demo event published its entire roster without headshots because the generator was wired
+   * into one seed and not the other, and nothing failed on the way: `headshot_file_id` is nullable,
+   * `speakerHeadshotPath` answers null for it, and the roster quietly renders initials. Assert the
+   * wiring, since no type is going to.
+   */
+  it.each(['./seed.ts', './seeds/first-settlement.ts'])(
+    'gives the public profiles in %s a generated headshot',
+    (path) => {
+      expect(participantInsert(path)).toMatch(/headshotFileId: profileArt\.get\(/);
+    },
+  );
+
   it('keeps the public bundle gated to confirmed participants', () => {
     const publicQueries = source('../app/embed/queries.ts');
     expect(publicQueries).toContain("eq(participant.workflowStatus, 'confirmed')");

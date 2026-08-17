@@ -100,7 +100,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
       </section>
 
       {/*
-        `AR-44`. The two milestones the organizers set for themselves, shown here because "when will
+        `AR-49`. The two milestones the organizers set for themselves, shown here because "when will
         the full agenda be up?" is the question this page gets asked and cannot otherwise answer.
         Nothing published here is a commitment the product enforces — see `lib/event-deadlines.ts`.
       */}

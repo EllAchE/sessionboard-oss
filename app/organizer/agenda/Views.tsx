@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CalendarX2, Users } from 'lucide-react';
+import { AlertTriangle, CalendarOff, CalendarX2, Users } from 'lucide-react';
 import { Badge, Switch } from '@/components/ui';
 import {
   entriesForDay,
@@ -11,6 +11,7 @@ import {
   monthGrid,
   zonedDayKey,
   type Conflict,
+  type ConflictKind,
   type ConflictPolicy,
   type ScheduleEntry,
 } from '@/lib/services/schedule';
@@ -18,6 +19,18 @@ import type { NamedRoom, NamedTrack } from './wire';
 import styles from './agenda.module.css';
 
 /** `A-3` list / room / track views, the `A-2` conflicts view, and the `A-9` month view. */
+
+/**
+ * One name per kind, in one place, so the conflicts rail and the block flag on the grid cannot end
+ * up calling the same thing two things. A `Record` rather than a chain of ternaries because it is
+ * the compiler, not a reviewer, that should notice when a kind is added and this is not.
+ */
+export const CONFLICT_KIND_LABEL: Record<ConflictKind, string> = {
+  room: 'Room double-booking',
+  speaker: 'Speaker double-booking',
+  track: 'Track collision',
+  availability: 'Speaker unavailable',
+};
 
 type Labels = { rooms: Record<string, string>; tracks: Record<string, string> };
 
@@ -286,7 +299,7 @@ export function ConflictsView({
         <span className={styles.policyTitle}>Block clashes on save</span>
         <span className={styles.policyHint}>
           {policy === 'block'
-            ? 'A room or speaker double-booking is refused. Track collisions are still allowed, and still listed here.'
+            ? 'A room or speaker double-booking is refused. Track collisions and speaker-declared unavailability are still allowed, and still listed here.'
             : 'Clashes are saved and listed here as warnings. Turn this on to refuse room and speaker double-bookings outright.'}
         </span>
       </div>
@@ -322,17 +335,15 @@ export function ConflictsView({
           >
             {conflict.kind === 'speaker' ? (
               <Users size={16} aria-hidden />
+            ) : conflict.kind === 'availability' ? (
+              <CalendarOff size={16} aria-hidden />
             ) : (
               <AlertTriangle size={16} aria-hidden />
             )}
             <div className={styles.conflictBody}>
               <span className={styles.conflictMessage}>{conflict.message}</span>
               <span className={styles.conflictMeta}>
-                {conflict.kind === 'speaker'
-                  ? 'Speaker double-booking'
-                  : conflict.kind === 'room'
-                    ? 'Room double-booking'
-                    : 'Track collision'}
+                {CONFLICT_KIND_LABEL[conflict.kind]}
                 {first && isPlaced(first)
                   ? ` · ${formatZonedRange(first.startsAt, first.endsAt, timeZone)}`
                   : ''}

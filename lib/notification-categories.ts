@@ -8,7 +8,7 @@
  * of them kept their own copy of the list inline.
  *
  * Two copies of a list is two chances to forget one. Adding the `deadline` category for the
- * milestone reminders (`AR-45`) updated the service and neither UI, so the mails were sendable and
+ * milestone reminders (`AR-50`) updated the service and neither UI, so the mails were sendable and
  * unswitchable-off — the preference resolved correctly on the server, but no toggle existed to set
  * it. Both surfaces now render this list, so a category added here appears in both or in neither.
  */

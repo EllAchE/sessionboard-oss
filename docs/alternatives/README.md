@@ -31,6 +31,24 @@ The nine not analyzed, with reasons — an honest denominator matters more than 
 Discovery is recorded in [`discovery-log.md`](discovery-log.md). The survey was specified in
 [`../handoff/alternative-designs-survey.md`](../handoff/alternative-designs-survey.md).
 
+## Derived from this survey
+
+The prose on this page is hand-written. Everything below is generated from
+[`data/projects.json`](data/projects.json) and [`data/features.json`](data/features.json) by
+`bun run alternatives:build` — do not hand-edit it, and rerun the build after changing the data.
+`bun run alternatives:check` fails CI if a generated file is stale.
+
+| | |
+|---|---|
+| [`feature-matrix.md`](feature-matrix.md) | All 71 features × all 32 projects, unfiltered. |
+| [`visual/index.html`](visual/index.html) | The same grid, browsable, with filtering and rollups. |
+| [`../07-comparative-requirements.md`](../07-comparative-requirements.md) | `AD-1`…`AD-48` — what the field built that Cicero did not. |
+| [`data/survey.json`](data/survey.json) | Machine-readable rollup: counts, scale, stack, area totals. |
+
+To add a project to the survey, use the `survey-alternative-designs` skill in
+[`../../.agents/skills/`](../../.agents/skills/survey-alternative-designs/SKILL.md). It carries the
+security constraints, the note template, and the data contract.
+
 The 32 analyzed projects span 43–1,600 files (median ≈ 380), 1–5 contributors, and commit histories
 that begin no earlier than 2026-08-08 — everyone built inside the same short window.
 

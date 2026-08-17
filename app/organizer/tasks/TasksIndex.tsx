@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import {
   Badge,
   Button,
@@ -17,6 +18,7 @@ import {
   useToast,
 } from '@/components/ui';
 import type { DataTableColumn } from '@/components/ui';
+import { SCOPES } from '@/lib/hotkeys/registry';
 import type {
   OrganizerTaskRow,
   OutstandingTaskRow,
@@ -219,6 +221,16 @@ export function TasksIndex({
         },
       ]
     : COLUMNS;
+
+  useHotkeys(SCOPES.tasks, {
+    'new-task': () => {
+      if (canManage) openNew();
+    },
+    'view-people': () => setView('assignments'),
+    'view-tasks': () => setView('tasks'),
+  });
+
+  useHotkeyScope(SCOPES.dialog, editorOpen || confirming !== null);
 
   return (
     <div className={styles.page}>

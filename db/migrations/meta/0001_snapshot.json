@@ -1,5 +1,5 @@
 {
-  "id": "58b5072f-c94d-4ffd-8ccf-2fdece64dbf3",
+  "id": "834c35d8-02d9-4dc0-b08d-bc03ec3962b3",
   "prevId": "9ede1f60-72fa-48c1-b617-cd6db18d3099",
   "version": "7",
   "dialect": "postgresql",
@@ -1741,18 +1741,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "speaker_deadline_at": {
-          "name": "speaker_deadline_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "agenda_deadline_at": {
-          "name": "agenda_deadline_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "website_url": {
           "name": "website_url",
@@ -5668,6 +5656,151 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.speaker_unavailability": {
+      "name": "speaker_unavailability",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "event_id": {
+          "name": "event_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authored_timezone": {
+          "name": "authored_timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "speaker_unavailability_participant_idx": {
+          "name": "speaker_unavailability_participant_idx",
+          "columns": [
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "starts_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "speaker_unavailability_event_idx": {
+          "name": "speaker_unavailability_event_idx",
+          "columns": [
+            {
+              "expression": "event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "starts_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "speaker_unavailability_event_id_event_id_fk": {
+          "name": "speaker_unavailability_event_id_event_id_fk",
+          "tableFrom": "speaker_unavailability",
+          "tableTo": "event",
+          "columnsFrom": [
+            "event_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "speaker_unavailability_participant_id_participant_id_fk": {
+          "name": "speaker_unavailability_participant_id_participant_id_fk",
+          "tableFrom": "speaker_unavailability",
+          "tableTo": "participant",
+          "columnsFrom": [
+            "participant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "speaker_unavailability_window_check": {
+          "name": "speaker_unavailability_window_check",
+          "value": "\"speaker_unavailability\".\"ends_at\" > \"speaker_unavailability\".\"starts_at\""
+        }
+      },
       "isRLSEnabled": false
     },
     "public.sponsor": {

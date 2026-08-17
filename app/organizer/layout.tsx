@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { HotkeyProvider } from '@/components/hotkeys/HotkeyProvider';
 import { currentActor } from '@/lib/auth';
 import { currentEventId, listEventsForUser } from '@/lib/services/events';
 import { OrganizerShell } from './OrganizerShell';
@@ -29,9 +30,20 @@ export default async function OrganizerLayout({ children }: { children: React.Re
   }
   if (!organizing.some((candidate) => candidate.id === eventId)) eventId = organizing[0].id;
 
+  /**
+   * The provider wraps the shell rather than living inside it, so the shell itself can register the
+   * workspace-wide shortcuts through `useHotkeys` instead of having to nest a second component just
+   * to reach a context it would otherwise be providing.
+   */
   return (
-    <OrganizerShell events={organizing} currentEventId={eventId} actorName={actor.name ?? actor.email}>
-      {children}
-    </OrganizerShell>
+    <HotkeyProvider>
+      <OrganizerShell
+        events={organizing}
+        currentEventId={eventId}
+        actorName={actor.name ?? actor.email}
+      >
+        {children}
+      </OrganizerShell>
+    </HotkeyProvider>
   );
 }

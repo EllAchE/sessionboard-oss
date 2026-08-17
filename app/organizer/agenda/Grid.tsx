@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { AlertTriangle, Users } from 'lucide-react';
+import { AlertTriangle, CalendarOff, Users } from 'lucide-react';
 import {
   DEFAULT_GRID,
   blockGeometry,
@@ -144,18 +144,35 @@ function Block({
 
   const { offsetSlots, spanSlots } = blockGeometry(entry, timeZone, grid);
   const severity = worstSeverity(conflicts);
+  /**
+   * The block is small and gets one line, so it names the worst thing rather than everything. A
+   * person in two places at once beats a speaker-declared window, which beats a bare count.
+   */
   const speakerClash = conflicts.some((conflict) => conflict.kind === 'speaker');
+  const unavailable = conflicts.some((conflict) => conflict.kind === 'availability');
+
+  /**
+   * Space now belongs to the `KeyboardSensor`, which lifts the block so the arrows can move it, so
+   * it has to reach dnd-kit's own listener. Enter is handled here and goes no further: opening the
+   * session is what Enter did before the block could be lifted, and it stays that way.
+   */
+  const liftKey = listeners?.onKeyDown as
+    | ((fired: React.KeyboardEvent<HTMLDivElement>) => void)
+    | undefined;
+
+  const onKeyDown = (fired: React.KeyboardEvent<HTMLDivElement>) => {
+    if (fired.key === 'Enter') {
+      fired.preventDefault();
+      onOpen(entry);
+      return;
+    }
+    liftKey?.(fired);
+  };
 
   return (
     <div
       ref={setNodeRef}
       onClick={() => onOpen(entry)}
-      onKeyDown={(fired) => {
-        if (fired.key === 'Enter' || fired.key === ' ') {
-          fired.preventDefault();
-          onOpen(entry);
-        }
-      }}
       className={[
         styles.block,
         isDragging ? styles.blockDragging : '',
@@ -174,6 +191,7 @@ function Block({
       aria-label={`${entry.title}, ${formatZonedRange(entry.startsAt, entry.endsAt, timeZone)}`}
       {...listeners}
       {...attributes}
+      onKeyDown={onKeyDown}
     >
       <span className={styles.blockTime}>
         {formatZonedRange(entry.startsAt, entry.endsAt, timeZone)}
@@ -186,8 +204,16 @@ function Block({
       )}
       {severity && (
         <span className={styles.blockFlag}>
-          <AlertTriangle size={11} aria-hidden />
-          {speakerClash ? 'Speaker clash' : `${conflicts.length} conflict`}
+          {unavailable && !speakerClash ? (
+            <CalendarOff size={11} aria-hidden />
+          ) : (
+            <AlertTriangle size={11} aria-hidden />
+          )}
+          {speakerClash
+            ? 'Speaker clash'
+            : unavailable
+              ? 'Speaker unavailable'
+              : `${conflicts.length} conflict`}
         </span>
       )}
     </div>

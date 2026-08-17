@@ -28,6 +28,8 @@ import {
   Select,
   type DataTableColumn,
 } from '../../../components/ui';
+import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
+import { SCOPES } from '@/lib/hotkeys/registry';
 import { CopyPermalinkButton } from './CopyPermalinkButton';
 import {
   decideAction,
@@ -510,91 +512,48 @@ export function SubmissionQueue(props: QueueProps) {
     );
   }, [decide, queueStage, rows]);
 
-  // Shortcuts land on the window rather than the grid so they work whether or not the table has
-  // focus; anything typed into a field is left alone.
-  useEffect(() => {
-    const isTyping = (target: EventTarget | null) => {
-      const node = target as HTMLElement | null;
-      if (!node) return false;
-      return (
-        node.tagName === 'INPUT' ||
-        node.tagName === 'TEXTAREA' ||
-        node.tagName === 'SELECT' ||
-        node.isContentEditable
-      );
-    };
+  /**
+   * Shortcuts land on the window rather than the grid so they work whether or not the table has
+   * focus. The typing guard, the modifier guard and the "a dialog owns the keyboard" rule all live
+   * in the hotkey layer now — the last of those is the `ui.dialog` scope below, which is `modal`
+   * and therefore silences this scope wholesale while any of the three panels is open.
+   */
+  const activeRow = rows[Math.max(0, Math.min(rows.length - 1, active))];
+  /** A shortcut acts on the selection when there is one, and on the row under the cursor when not. */
+  const subjects = selected.length > 0 ? selected : activeRow ? [activeRow.id] : [];
 
-    const onKey = (event: KeyboardEvent) => {
-      if (isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey) return;
-      // A dialog owns the keyboard while it is open; `a` in the columns panel must not accept, and
-      // `a` behind the commit confirmation must not accept the one row under the cursor either.
-      if (saveOpen || columnsOpen || commitOpen) return;
-      if (rows.length === 0) return;
-      const row = rows[Math.max(0, Math.min(rows.length - 1, active))];
-      const subjects = selected.length > 0 ? selected : [row.id];
+  useHotkeys(
+    SCOPES.submissionsQueue,
+    {
+      next: () => setActive((index) => Math.min(rows.length - 1, index + 1)),
+      prev: () => setActive((index) => Math.max(0, index - 1)),
+      toggle: () => {
+        if (!activeRow) return;
+        setSelected((current) =>
+          current.includes(activeRow.id)
+            ? current.filter((id) => id !== activeRow.id)
+            : [...current, activeRow.id],
+        );
+      },
+      open: () => {
+        if (activeRow) router.push(`/organizer/submissions/${activeRow.id}`);
+      },
+      clear: () => setSelected([]),
 
-      switch (event.key) {
-        case 'j':
-          event.preventDefault();
-          setActive((index) => Math.min(rows.length - 1, index + 1));
-          break;
-        case 'k':
-          event.preventDefault();
-          setActive((index) => Math.max(0, index - 1));
-          break;
-        case 'x':
-          event.preventDefault();
-          setSelected((current) =>
-            current.includes(row.id)
-              ? current.filter((id) => id !== row.id)
-              : [...current, row.id],
-          );
-          break;
-        case 'o':
-        case 'Enter':
-          event.preventDefault();
-          router.push(`/organizer/submissions/${row.id}`);
-          break;
-        case 'a':
-          event.preventDefault();
-          decide(subjects, 'accept');
-          break;
-        case 'd':
-          event.preventDefault();
-          decide(subjects, 'decline');
-          break;
-        case 'w':
-          event.preventDefault();
-          decide(subjects, 'waitlist');
-          break;
-        // Shift is "propose it" to the same letter's "do it".
-        case 'A':
-          event.preventDefault();
-          stage(subjects, 'accept');
-          break;
-        case 'D':
-          event.preventDefault();
-          stage(subjects, 'decline');
-          break;
-        case 'H':
-          event.preventDefault();
-          stage(subjects, 'hold');
-          break;
-        case 'C':
-          event.preventDefault();
-          stage(subjects, null);
-          break;
-        case 'Escape':
-          setSelected([]);
-          break;
-        default:
-          break;
-      }
-    };
+      accept: () => decide(subjects, 'accept'),
+      decline: () => decide(subjects, 'decline'),
+      waitlist: () => decide(subjects, 'waitlist'),
 
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [active, columnsOpen, commitOpen, decide, rows, router, saveOpen, selected, stage]);
+      // Shift is "propose it" to the same letter's "do it".
+      'stage-accept': () => stage(subjects, 'accept'),
+      'stage-decline': () => stage(subjects, 'decline'),
+      'stage-hold': () => stage(subjects, 'hold'),
+      'stage-clear': () => stage(subjects, null),
+    },
+    { active: rows.length > 0 },
+  );
+
+  useHotkeyScope(SCOPES.dialog, saveOpen || columnsOpen || commitOpen);
 
   const allColumns = useMemo<Array<DataTableColumn<QueueRowWire>>>(
     () => [

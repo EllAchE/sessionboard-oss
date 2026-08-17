@@ -255,7 +255,7 @@ export const event = pgTable(
     startsOn: text('starts_on').notNull(),
     endsOn: text('ends_on').notNull(),
     /**
-     * `AR-44`. The two internal milestones that pace an edition between the call closing and the
+     * `AR-49`. The two internal milestones that pace an edition between the call closing and the
      * doors opening: when the speaker roster is meant to be settled, and when the agenda is.
      *
      * Nothing enforces them. No write is refused, warned on or scored for being past one, because
@@ -793,6 +793,52 @@ export const participantRole = pgTable(
   (t) => ({
     uniquePair: unique('participant_role_pair').on(t.submissionId, t.participantId),
     byParticipant: index('participant_role_participant_idx').on(t.participantId),
+  }),
+);
+
+/**
+ * `AD-2`. A window a speaker has declared they cannot present in.
+ *
+ * **Blackout-shaped, not availability-shaped.** A row says "not then"; the absence of rows says
+ * nothing at all. The inverse model — rows meaning "only then" — makes the empty state read as
+ * *available never*, so every speaker who ignores the portal silently becomes unschedulable and the
+ * organizer's board fills with conflicts nobody authored. Declaring absence is also the smaller ask:
+ * a speaker knows their one Thursday clash, not their whole free/busy calendar.
+ *
+ * **Stored as absolute instants, exactly like `scheduled_session.starts_at`.** The comparison the
+ * detector makes is instant-against-instant, so no zone conversion happens at compare time and no
+ * DST rule can move a stored window out from under a schedule that was already checked against it.
+ * The zone belongs to *authoring*: the portal turns the speaker's local wall clock into an instant
+ * with `zonedTimeToUtc` (which resolves the offset twice, so the two days a year a zone shifts are
+ * not off by an hour), and the organizer's board renders the same instant back in the event's zone.
+ * `authoredTimezone` records which zone the speaker typed in — kept so the portal can round-trip the
+ * window to the same wall clock it was entered as, and so an organizer can be told "09:00 in Rome"
+ * rather than only the event-local translation. It is never consulted by conflict detection.
+ */
+export const speakerUnavailability = pgTable(
+  'speaker_unavailability',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => participant.id, { onDelete: 'cascade' }),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /** The IANA zone the speaker authored the window in. Display only — see the note above. */
+    authoredTimezone: text('authored_timezone').notNull(),
+    /** Optional, speaker-authored. "Flight lands 14:00" is worth far more to an organizer than a bare block. */
+    note: text('note'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    byParticipant: index('speaker_unavailability_participant_idx').on(t.participantId, t.startsAt),
+    byEvent: index('speaker_unavailability_event_idx').on(t.eventId, t.startsAt),
+    /** A zero-length or inverted window overlaps nothing, so it can only ever be a data-entry bug. */
+    orderedWindow: check('speaker_unavailability_window_check', sql`${t.endsAt} > ${t.startsAt}`),
   }),
 );
 

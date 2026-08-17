@@ -655,7 +655,7 @@ function buildVars(input: {
     'event.url': branding.eventUrl,
     'event.supportEmail': branding.supportEmail ?? '',
     /**
-     * `AR-45`. Available to every template rather than only to the milestone reminders below, because
+     * `AR-50`. Available to every template rather than only to the milestone reminders below, because
      * the one email a speaker is most likely to read — their acceptance — is also the best place to
      * tell them when the programme firms up. Empty when the edition does not track it, which
      * `{{event.agendaDeadline|soon}}` turns into whatever the organizer would rather say.
@@ -924,7 +924,7 @@ export const DEFAULT_TEMPLATES: Array<{
     ].join('\n'),
   },
   /*
-   * `AR-45`. These two go to organizers, not speakers, which is why they say "your" about the work
+   * `AR-50`. These two go to organizers, not speakers, which is why they say "your" about the work
    * rather than about a submission and point at the organizer surfaces. Both are built from the
    * narrow `vars` map in `runEventDeadlineReminders`, so like `form.deadline` above they may only
    * use the event fields — there is no speaker or submission in scope.
@@ -1625,7 +1625,7 @@ async function loadSubmission(submissionId: string) {
 /** `F-12`, called by the form engine once a submission leaves draft. */
 export async function sendSubmissionConfirmation(submissionId: string): Promise<SendOutcome> {
   const row = await loadSubmission(submissionId);
-  return fanOutSubmissionTemplate(row.eventId, submissionId, 'submission.confirmation');
+  return fanOutSubmissionTemplate(row, 'submission.confirmation');
 }
 
 /**
@@ -1646,15 +1646,20 @@ export async function sendDecisionNotice(submissionId: string): Promise<SendOutc
   if (!key) {
     throw invalid('Only an accepted, waitlisted or declined submission has a decision to send');
   }
-  return fanOutSubmissionTemplate(row.eventId, submissionId, key);
+  return fanOutSubmissionTemplate(row, key);
 }
 
 async function fanOutSubmissionTemplate(
-  eventId: string,
-  submissionId: string,
+  row: typeof submission.$inferSelect,
   key: string,
 ): Promise<SendOutcome> {
-  const participantIds = await participantsForSubmission(submissionId);
+  const participantIds = await participantsForSubmission(row.id);
+  const submissionVars: TemplateVars = {
+    'submission.title': row.title,
+    'submission.ref': formatRef('submission', row.ref),
+    'submission.status': row.status,
+    'submission.decisionNote': row.decisionNote ?? '',
+  };
   const outcome: SendOutcome = {
     recipients: 0,
     sent: 0,
@@ -1665,10 +1670,18 @@ async function fanOutSubmissionTemplate(
   };
 
   for (const participantId of participantIds) {
-    const recipient = await recipientForParticipant(eventId, participantId);
+    const recipient = await recipientForParticipant(row.eventId, participantId);
     if (!recipient) continue;
     outcome.recipients += 1;
-    applyDispatch(outcome, await sendTemplated({ eventId, key, recipient }));
+    applyDispatch(
+      outcome,
+      await sendTemplated({
+        eventId: row.eventId,
+        key,
+        recipient,
+        extraVars: submissionVars,
+      }),
+    );
   }
 
   return outcome;
@@ -1930,7 +1943,7 @@ export const notifySessionCancelled = (sessionId: string) =>
 export type ReminderRun = {
   taskRemindersSent: number;
   deadlineRemindersSent: number;
-  /** `AR-45`. The event's own milestones, counted apart from the form deadlines above. */
+  /** `AR-50`. The event's own milestones, counted apart from the form deadlines above. */
   eventDeadlineRemindersSent: number;
   checkedAt: string;
 };
@@ -2237,7 +2250,7 @@ export async function runDraftDeadlineReminders(
 }
 
 /**
- * `AR-45`. The two advisory milestones on the event, in the order an edition reaches them.
+ * `AR-50`. The two advisory milestones on the event, in the order an edition reaches them.
  *
  * `field` names the column, `templateKey` the mail, and `variable` the merge field that carries the
  * date — kept together so a third milestone is one entry rather than three edits.
@@ -2252,7 +2265,7 @@ const EVENT_MILESTONES = [
 ] as const;
 
 /**
- * `AR-45`'s milestone reminder. Each of the two advisory deadlines fires once inside the three days
+ * `AR-50`'s milestone reminder. Each of the two advisory deadlines fires once inside the three days
  * before it falls, guarded — like the draft reminder above — by a lookup in `email_log`, the only
  * durable record of a send.
  *

@@ -18,7 +18,7 @@ import styles from './settings.module.css';
  * a time of day and both are read in the event's own timezone, not the browser's — an organizer in
  * Berlin setting up a Los Angeles conference means 09:00 in Los Angeles. `E-2` added the metadata
  * below the fold: the columns behind description, website, venue and theme already existed and were
- * already read by the merge fields and the public pages, but nothing could write them. `AR-44` added
+ * already read by the merge fields and the public pages, but nothing could write them. `AR-49` added
  * the two milestones under **Milestones**, which read in the same timezone as the dates above them
  * and enforce nothing — see the hint on that group.
  *

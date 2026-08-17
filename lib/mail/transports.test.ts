@@ -12,10 +12,10 @@ const { sendMail, createTransport } = vi.hoisted(() => {
 vi.mock('nodemailer', () => ({ createTransport }));
 
 /**
- * `C-3`'s failure mode is not a message that bounces — it is a message that arrives, looks right,
- * and does the opposite of what it says. A cancellation whose MIME part still reads `method=REQUEST`
- * re-invites the speaker to the session it was meant to withdraw, and Outlook believes the MIME
- * parameter over the body. So these assert the parameter on the wire, per transport.
+ * `C-3`'s failure mode is not a message that bounces — it is a message that arrives and is not a
+ * usable meeting request. Outlook needs the VCALENDAR as a MIME alternative, and believes that
+ * part's method over the body. So these assert both the transport route and the method handed to the
+ * MIME composer.
  */
 
 const EVENT: CalendarEvent = {
@@ -56,35 +56,43 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('resend attachments', () => {
-  it('sends an invitation as method=REQUEST', async () => {
+describe('resend calendar delivery', () => {
+  it('uses Resend SMTP so an invitation is a calendar MIME alternative', async () => {
     const fetchMock = stubFetch();
     await resendTransport('key').send({
       ...BASE,
       ics: { body: buildInvite(EVENT), method: 'REQUEST' },
     });
 
-    const attachment = (resendBody(fetchMock) as never as { attachments: { content_type: string }[] })
-      .attachments[0];
-    expect(attachment.content_type).toBe('text/calendar; method=REQUEST; charset=utf-8');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: 'smtp.resend.com',
+        port: 465,
+        secure: true,
+        auth: { user: 'resend', pass: 'key' },
+      }),
+    );
+    const [message] = sendMail.mock.calls[0] as unknown as [{ icalEvent: { method: string } }];
+    expect(message.icalEvent.method).toBe('REQUEST');
   });
 
-  it('sends a cancellation as method=CANCEL', async () => {
+  it('uses the cancellation method on the Resend SMTP calendar part', async () => {
     const fetchMock = stubFetch();
     await resendTransport('key').send({
       ...BASE,
       ics: { body: buildCancellation(EVENT), method: 'CANCEL' },
     });
 
-    const attachment = (
-      resendBody(fetchMock) as never as { attachments: { content_type: string; content: string }[] }
-    ).attachments[0];
-    expect(attachment.content_type).toBe('text/calendar; method=CANCEL; charset=utf-8');
-    // The body still has to be the cancellation the caller built, base64 of the same bytes.
-    expect(atob(attachment.content)).toContain('METHOD:CANCEL');
+    expect(fetchMock).not.toHaveBeenCalled();
+    const [message] = sendMail.mock.calls[0] as unknown as [
+      { icalEvent: { method: string; content: string; filename: string } },
+    ];
+    expect(message.icalEvent).toMatchObject({ method: 'CANCEL', filename: 'cancel.ics' });
+    expect(message.icalEvent.content).toContain('METHOD:CANCEL');
   });
 
-  it('omits the attachment entirely when there is no calendar', async () => {
+  it('keeps ordinary mail on Resend HTTP with no attachment', async () => {
     const fetchMock = stubFetch();
     await resendTransport('key').send(BASE);
     expect(resendBody(fetchMock)).not.toHaveProperty('attachments');

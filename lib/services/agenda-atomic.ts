@@ -5,6 +5,7 @@ import {
   type Conflict,
   type ConflictPolicy,
   type ScheduleEntry,
+  type SpeakerUnavailability,
 } from './schedule';
 
 export type AgendaMutation<T> = {
@@ -22,6 +23,12 @@ export type AtomicAgendaDependencies<T, Transaction> = {
    * Omitted means the product default, which is `warn`.
    */
   loadPolicy?: (transaction: Transaction) => Promise<ConflictPolicy>;
+  /**
+   * `AD-2`. The speaker-declared blackout windows, read inside the same lock for the same reason the
+   * policy is. Omitted means none, which is the safe empty state: a caller that has never heard of
+   * availability behaves exactly as it did before.
+   */
+  loadUnavailability?: (transaction: Transaction) => Promise<SpeakerUnavailability[]>;
   /**
    * Called with the clashes the mutation is about to commit under a `warn` policy. The write is not
    * refused, but it is not silent either — the caller records them so the organizer is told what
@@ -46,7 +53,11 @@ export async function runAtomicAgendaMutation<T, Transaction>(
     await dependencies.lock(transaction);
     const result = await mutate(transaction);
     const changed = new Set(result.changedSessionIds);
-    const touching = detectConflicts(await dependencies.loadEntries(transaction)).filter((item) =>
+    const [entries, unavailability] = await Promise.all([
+      dependencies.loadEntries(transaction),
+      dependencies.loadUnavailability?.(transaction) ?? Promise.resolve([]),
+    ]);
+    const touching = detectConflicts(entries, {}, unavailability).filter((item) =>
       item.sessionIds.some((sessionId) => changed.has(sessionId)),
     );
     if (touching.length === 0) return result.data;

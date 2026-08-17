@@ -1,6 +1,13 @@
 import { asc, eq, inArray, sql } from 'drizzle-orm';
 import { getDb, type Database } from '../../db/client';
-import { event, participant, participantRole, scheduledSession, user } from '../../db/schema';
+import {
+  event,
+  participant,
+  participantRole,
+  scheduledSession,
+  speakerUnavailability,
+  user,
+} from '../../db/schema';
 import { runAtomicAgendaMutation, type AgendaMutation } from './agenda-atomic';
 import {
   parseConflictPolicy,
@@ -8,6 +15,7 @@ import {
   type ConflictPolicy,
   type ScheduleEntry,
   type SpeakerRef,
+  type SpeakerUnavailability,
 } from './schedule';
 
 type TransactionCallback = Parameters<Database['transaction']>[0];
@@ -79,6 +87,26 @@ async function loadPolicy(
   return parseConflictPolicy(row?.agendaConflictPolicy);
 }
 
+/**
+ * `AD-2`. Under the same lock again: a speaker adding a blackout while an organizer drags into it
+ * should resolve one way or the other, not half-see the window.
+ */
+async function loadUnavailability(
+  transaction: AgendaTransaction,
+  eventId: string,
+): Promise<SpeakerUnavailability[]> {
+  const rows = await transaction.query.speakerUnavailability.findMany({
+    where: eq(speakerUnavailability.eventId, eventId),
+  });
+  return rows.map((row) => ({
+    participantId: row.participantId,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    timezone: row.authoredTimezone,
+    note: row.note,
+  }));
+}
+
 export type AtomicAgendaOptions = {
   /**
    * Clashes the event's `warn` policy let through. They committed, so this is not an error path —
@@ -104,6 +132,7 @@ export async function mutateAgendaAtomically<T>(
       },
       loadEntries: (transaction) => loadEntries(transaction, eventId),
       loadPolicy: (transaction) => loadPolicy(transaction, eventId),
+      loadUnavailability: (transaction) => loadUnavailability(transaction, eventId),
       onWarn: options.onWarn ? (conflicts) => options.onWarn?.(conflicts) : undefined,
     },
     mutate,
