@@ -7,11 +7,14 @@ The hosted demo remains on an older revision, so current-source and deployed cla
 
 **Submission refresh verified:** 2026-08-17
 
-**Product baseline audited:** `d9231a4` (`origin/main` at the final source audit)
+**Product baseline audited:** `1017ca9` (`origin/main` at the final source audit)
 
 **Production-build/browser capture:** 2026-08-16 at `ce8d88b`
 
 **Hosted demo rechecked:** 2026-08-17
+
+**Submission Worker refreshed and verified:** 2026-08-17 (initial refreshed publish
+`393b28c7-8fed-4d55-bfee-68ab736f9773`)
 
 **Hosted demo:** <https://cicero-three.vercel.app>
 
@@ -24,12 +27,19 @@ The hosted demo remains on an older revision, so current-source and deployed cla
 ## Current-source submission refresh
 
 The refresh traced every merged product commit from the original narrative in `f68026a` through the
-`d9231a4` baseline. It corrected stale roadmap language and added the shipped capabilities that had
+`1017ca9` baseline. It corrected stale roadmap language and added the shipped capabilities that had
 not reached the submission: event duplication, speaker availability, revocable draft-programme
 links, numbered restorable content revisions, typed scorecard criteria, advisory milestones,
 attendee agenda starring and personal schedules, seven live embed views, JSON/XML/subscribable
 `.ics` output, per-event `llms.txt`, the readable and Scalar API references, browser CORS, the
 demo-first landing path, and the renamed Actions panel.
+
+The final source audit also incorporates the post-refresh product work: idempotent small, medium,
+and large versions of the same demo conference; one acting-user lookup per request; recording-board
+mutations that refresh in place; consistent truncation and explicit score scales in dense organizer
+tables; validated identifiers and caller input returning useful client errors; and unavailable
+database connections returning retryable service-unavailable responses rather than opaque 500s. It
+also removes the landing page's repeated About facts while retaining its source link and anchor.
 
 It also recovered the copy-ready form-answer draft from the unmerged `22a03e4` branch, updated its
 testing path and product/process claims, and added it to the repository documentation maps without
@@ -42,7 +52,7 @@ detail, and standalone-submission rendering. Results on the refresh branch:
 
 | Check | Result |
 | --- | --- |
-| Full Vitest suite | 1,927 tests passed across 179 files |
+| Full Vitest suite | 1,983 tests passed across 186 files |
 | Focused Vitest suite across 11 files | 147 tests passed |
 | `bun run typecheck` | Passed |
 | `bun run build` | Production build passed; route table includes event duplication, availability, share-link, feed, API-reference, embed-gallery, and per-event `llms.txt` surfaces |
@@ -75,11 +85,12 @@ browser navigation, screenshots, and video remain attached to
 
 ## Public artifact Workers: live verification
 
-The repository artifacts were published independently from the application on 16 August 2026:
+The repository artifacts were published independently from the application on 16 August 2026. The
+submission Worker was refreshed from the current branch and reverified on 17 August:
 
 | Public origin | Deployment shape | Live result |
 | --- | --- | --- |
-| <https://cicero-submission.elehche.workers.dev/> | Generated submission HTML, stylesheet and evidence images behind a dedicated static Worker; source-document links redirect to GitHub | Root redirected to the full write-up; full, short-form and evidence pages returned HTTP 200; stylesheet and sampled evidence image returned HTTP 200 |
+| <https://cicero-submission.elehche.workers.dev/> | Generated submission HTML, stylesheet and evidence images behind a dedicated static Worker; source-document links redirect to GitHub | Root redirected to the refreshed full write-up; full, short-form and evidence pages returned HTTP 200; stylesheet and sampled evidence image returned HTTP 200; the live evidence copy contained the audited baseline and full-suite result |
 | <https://cicero-field-survey.elehche.workers.dev/> | One self-contained generated survey document behind a second dedicated static Worker | Root returned HTTP 200 with all 71 feature rows and no external asset dependency |
 
 Both origins returned content security, anti-framing, referrer and MIME-sniffing protections. Browser
@@ -89,9 +100,13 @@ evidence images completed with non-zero natural widths, and the survey's search,
 link was also navigated successfully. These are public static Workers, not routes in the Cicero
 Next.js application; the production build route table remains unchanged.
 
-The submission Worker root was rechecked on 17 August and still returned HTTP 200 after redirecting
-to `/submission/index.html`. It continues to serve the earlier reading copy until this refresh is
-merged and deployed; this document does not present the new prose as already live there.
+The refreshed submission Worker was first published as version
+`393b28c7-8fed-4d55-bfee-68ab736f9773`. Its root returned HTTP 302 to
+`/submission/index.html`; the full write-up, short form, evidence page, stylesheet, and a sampled
+evidence image all returned HTTP 200. The responses retained the content-security, anti-framing,
+referrer, permissions, opener, and MIME-sniffing protections. After these facts were written into
+this evidence record, the generated pages were published once more so the live copy includes its
+own verification result.
 
 During the 16 August artifact work, the production origin was rechecked after that PR branch was
 pushed. `/demo/agenda`

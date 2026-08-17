@@ -50,6 +50,11 @@ client with a deterministic credential-free demo mode.
 MIT source, Docker Compose, Postgres, MinIO-compatible storage, magic-link roles, and a seeded demo
 make the product testable without buying another service.
 
+The seed now creates the same sample conference at three idempotent scales: an 18-submission small
+event, the 96-submission medium `/demo` used by default, and a 384-submission large event. That makes
+queue density, pagination, reviewer load, and agenda legibility inspectable without confusing scale
+with different content.
+
 ## What we added beyond the brief
 
 The most important additions are operational rather than decorative:
@@ -62,6 +67,10 @@ The most important additions are operational rather than decorative:
   review shortcuts for repeated triage, scoring, staging, and decisions;
 - a persistent Actions panel, demo-first role entry, live sample embeds, and quick actions with
   discoverable keyboard bindings;
+- a landing page that gives API, embeds, and agent setup one proof-bearing home instead of repeating
+  them as abstract About-page claims;
+- one truncation rule across dense organizer tables, explicit score scales, and in-place recording
+  updates that preserve working context;
 - speaker double-booking, availability windows, event-level warn/block conflict policy, and private
   draft-programme previews;
 - versioned speaker files and comments, numbered restorable content revisions, and post-conference
@@ -105,12 +114,15 @@ The UI and public API call one shared service layer; the UI never calls its own 
 keeps deadlines, authorization, publication filters, conflicts, and idempotency consistent across
 human and automated entry points. Core programme fields are typed Postgres columns; flexible form
 answers use JSONB. Magic links are short-lived and single-use, with guarded on-screen access for
-reserved seeded identities.
+reserved seeded identities. The acting user is resolved once per request, malformed identifiers and
+input become useful client errors, and database outages become retryable service-unavailable
+responses rather than opaque 500s.
 
 On 2026-08-16, the then-current source was production-built in Docker, migrated, seeded, and walked
-in a browser. The 2026-08-17 refresh audited merged product changes through `d9231a4`, regenerated
+in a browser. The 2026-08-17 refresh audited merged product changes through `1017ca9`, regenerated
 the standalone reading copies, and reran the source checks recorded in the evidence document. A live
 recheck returned HTTP 200 for the demo, public agenda, and agenda API with five sessions in three
 rooms, but confirmed that the host is still on an older `/admin` organizer and landing-page revision
-than current `/organizer` source. The core demo works; the new features above remain current-source
-claims until a fresh application deployment closes that gap.
+than current `/organizer` source. The dedicated submission Worker was refreshed and verified on 17
+August; the core application demo works, while the new application features above remain
+current-source claims until a fresh application deployment closes that separate gap.
