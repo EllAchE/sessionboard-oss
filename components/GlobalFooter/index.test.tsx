@@ -22,13 +22,18 @@ describe('GlobalFooter links', () => {
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).not.toContain(href);
   });
 
+  /**
+   * The destinations are the contract here, not the wording: these two links are the only way to
+   * reach agent setup and the API reference from a page that is not the landing page. Assert the
+   * hrefs first so a future relabel cannot quietly drop either one.
+   */
   it('keeps agent setup and API docs available on every instance', () => {
     const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable={false} />);
 
     expect(html).toContain('href="/#agent-quick-start"');
-    expect(html).toContain('Agent setup');
+    expect(html).toContain('<span>Agents</span>');
     expect(html).toContain('href="/docs/api"');
-    expect(html).toContain('API docs');
+    expect(html).toContain('<span>API</span>');
   });
 
   it('sends API docs to the rendered reference rather than the raw spec', () => {
