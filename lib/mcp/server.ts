@@ -29,6 +29,7 @@ import {
   agentMailPreviewInput,
   agentMailSendInput,
   MCP_TOOL_DEFINITIONS,
+  type McpToolDefinition,
   type McpToolName,
 } from './tools';
 
@@ -45,10 +46,18 @@ function schema<T>(source: ZodTypeAny): StandardSchemaWithJSON<unknown, T> {
   return fromJsonSchema<T>(toJsonSchema(source));
 }
 
-function toolDefinition(name: McpToolName) {
+/**
+ * Narrowed by the name, so `toolDefinition('cicero_sessions_list').inputSchema.parse(...)` gives
+ * that tool's filters rather than the union of every tool's. Returning the union let a handler read
+ * a field off the wrong tool's input and typecheck, and made the three list handlers below depend on
+ * whichever member of the union Zod's inference happened to collapse to.
+ */
+function toolDefinition<TName extends McpToolName>(
+  name: TName,
+): Extract<McpToolDefinition, { name: TName }> {
   const definition = MCP_TOOL_DEFINITIONS.find((candidate) => candidate.name === name);
   if (!definition) throw new Error(`Unknown MCP tool: ${name}`);
-  return definition;
+  return definition as Extract<McpToolDefinition, { name: TName }>;
 }
 
 function result(value: Record<string, unknown>) {

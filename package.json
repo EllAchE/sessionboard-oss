@@ -63,15 +63,17 @@
     "@types/pg": "^8.11.10",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "drizzle-kit": "^0.31.10",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.1",
     "tsx": "^4.19.2",
-    "typescript": "^7.0.2",
+    "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^4.1.10",
     "wrangler": "^4.86.0"
   },
   "overrides": {
+    "@typescript/old": "npm:typescript@^6.0.0",
     "postcss": "^8.5.26",
     "sharp": "^0.35.2"
   }

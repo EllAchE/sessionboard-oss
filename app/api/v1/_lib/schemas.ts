@@ -132,7 +132,7 @@ export const submissionSchema = z
     level: z.string().nullable(),
     tags: z.array(z.string()),
     submitter: z.object({ name: z.string().nullable(), email: z.string() }),
-    answers: z.record(z.unknown()).describe('Custom form answers, keyed by field key'),
+    answers: z.record(z.string(), z.unknown()).describe('Custom form answers, keyed by field key'),
     submittedAt: z.string().nullable().describe('ISO 8601'),
     decidedAt: z.string().nullable().describe('ISO 8601'),
   })
@@ -378,7 +378,7 @@ export const formFieldSchema = z.object({
   step: z.number().int(),
   required: z.boolean(),
   options: z.array(z.string()).nullable(),
-  optionLabels: z.record(z.string()).nullable(),
+  optionLabels: z.record(z.string(), z.string()).nullable(),
   showIf: conditionSchema.nullable(),
   minLength: z.number().int().nullable(),
   maxLength: z.number().int().nullable(),
@@ -772,7 +772,7 @@ export const errorResponse = z
       ]),
       message: z.string(),
       details: z
-        .record(z.string())
+        .record(z.string(), z.string())
         .optional()
         .describe('Field-keyed messages when code is invalid'),
     }),

@@ -84,7 +84,13 @@ export const deliveryPreferenceInput = z
     smsHourlyLimit: z.number().int().min(1).max(100).optional(),
     eventNotifyEmail: z.boolean().nullable().optional(),
     eventNotifySms: z.boolean().nullable().optional(),
-    categories: z.record(z.enum(NOTIFICATION_CATEGORIES), categoryInput).optional(),
+    /*
+     * `partialRecord`, not `record`. Both panels submit only the categories the person touched, and
+     * an enum-keyed `z.record` in Zod 4 means every key is required — it would reject the ordinary
+     * save of a single toggle. Zod 3's `z.record` was partial for every key type, so this reads as
+     * a rename but is the behaviour the callers always had.
+     */
+    categories: z.partialRecord(z.enum(NOTIFICATION_CATEGORIES), categoryInput).optional(),
   })
   .superRefine((value, ctx) => {
     if ((value.quietStart === null) !== (value.quietEnd === null)) {

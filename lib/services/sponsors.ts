@@ -68,12 +68,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const name = z.string().trim().min(1, 'Name is required').max(120);
 
-const kind = z.enum(SPONSOR_KINDS, {
-  errorMap: () => ({ message: 'Choose sponsor or exhibitor' }),
-});
+// `error`, not Zod 3's `errorMap`; same single override, and the only two `z.enum` calls in the
+// codebase that customise their message.
+const kind = z.enum(SPONSOR_KINDS, { error: () => 'Choose sponsor or exhibitor' });
 
 export const sponsorStatusInput = z.enum(SPONSOR_STATUSES, {
-  errorMap: () => ({ message: 'Choose draft or published' }),
+  error: () => 'Choose draft or published',
 });
 
 const optionalText = (max: number, message: string) =>
