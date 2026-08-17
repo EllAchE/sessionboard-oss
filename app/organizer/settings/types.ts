@@ -7,6 +7,8 @@
  * layer only decides what the organizer is shown.
  */
 
+import type { NotificationCategory } from '@/lib/notification-categories';
+
 export type ActionResult<T = null> =
   | { ok: true; data: T }
   | { ok: false; message: string; details?: Record<string, string> };
@@ -112,8 +114,13 @@ export type NotificationsWire = {
   smsHourlyLimit: number;
   eventNotifyEmail: boolean | null;
   eventNotifySms: boolean | null;
+  /**
+   * Keyed off `NotificationCategory` rather than a literal union repeated here: this record and the
+   * panel that renders it are the two halves of the same list, and spelling it out twice is how
+   * `deadline` (`AR-45`) reached the service without ever reaching a toggle.
+   */
   categories: Record<
-    'submission' | 'session' | 'task' | 'form' | 'adhoc',
+    NotificationCategory,
     { notifyEmail: boolean | null; notifySms: boolean | null }
   >;
 };

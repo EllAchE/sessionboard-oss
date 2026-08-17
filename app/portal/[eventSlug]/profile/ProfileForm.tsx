@@ -6,6 +6,7 @@ import { ImageIcon, Plus, Trash2 } from 'lucide-react';
 import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Switch, Textarea } from '@/components/ui';
 import { PhoneVerificationControl } from '@/components/notifications/PhoneVerificationControl';
 import { renderMarkdown } from '@/lib/markdown';
+import { NOTIFICATION_CATEGORY_ROWS } from '@/lib/notification-categories';
 import { normalizeProfileImage } from '@/lib/profile-image';
 import type { Participant, ProfileName } from '@/lib/services/portal';
 import type { NotificationPrefs } from '@/lib/services/settings';
@@ -354,15 +355,7 @@ export function ProfileForm({
               <PreferenceSelect name="eventNotifySms" label="Texts for this event" value={notifications.eventNotifySms} />
             </div>
             <div className={styles.stackTight}>
-              {(
-                [
-                  ['submission', 'Submission updates'],
-                  ['session', 'Schedule changes'],
-                  ['task', 'Task reminders'],
-                  ['form', 'Submission deadlines'],
-                  ['adhoc', 'Organizer announcements'],
-                ] as const
-              ).map(([key, label]) => (
+              {NOTIFICATION_CATEGORY_ROWS.map(([key, label]) => (
                 <div className={styles.switchRow} key={key}>
                   <span className={styles.switchLabel}>{label}</span>
                   <PreferenceSelect name={`category:${key}:email`} label="Email" value={notifications.categories[key].notifyEmail} />
