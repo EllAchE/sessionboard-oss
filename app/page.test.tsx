@@ -1,5 +1,5 @@
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import { ToastProvider } from '@/components/ui';
+import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -44,7 +44,7 @@ describe('fresh-instance home page', () => {
   it('describes the product through organizer, reviewer, speaker, and attendee outcomes', () => {
     const html = renderHome(true);
 
-    expect(html).toContain('From call for speakers to public program');
+    expect(html).toContain('From call for speakers to first day');
     expect(html).toContain('One conference, four purpose-built experiences.');
     expect(html).toContain('Organizer');
     expect(html).toContain('Reviewer');
