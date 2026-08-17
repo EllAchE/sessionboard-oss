@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   analyzed,
   areaTotals,
+  closedExtras,
   extrasByProject,
   loadSurvey,
   median,
@@ -77,6 +78,40 @@ describe('validate', () => {
     const broken = clone();
     broken.projects.push({ ...broken.projects[0] });
     expect(validate(broken).join('\n')).toContain('duplicate project slug');
+  });
+
+  it('rejects a closed gap that does not cite a pull request number', () => {
+    const broken = clone();
+    broken.features.extras[0].ciceroShipped = { pr: 0, on: '2026-08-17', note: 'shipped' };
+    expect(validate(broken).join('\n')).toContain('must be a pull request number');
+  });
+
+  it('rejects a merge date that is not YYYY-MM-DD', () => {
+    const broken = clone();
+    broken.features.extras[0].ciceroShipped = { pr: 199, on: 'August 2026', note: 'shipped' };
+    expect(validate(broken).join('\n')).toContain('must be a YYYY-MM-DD date');
+  });
+
+  it('rejects a closed gap with no note saying what Cicero does now', () => {
+    const broken = clone();
+    broken.features.extras[0].ciceroShipped = { pr: 199, on: '2026-08-17', note: '  ' };
+    expect(validate(broken).join('\n')).toContain('needs a note');
+  });
+});
+
+describe('closedExtras', () => {
+  it('returns only the gaps Cicero has since closed, in catalogue order', () => {
+    const closed = closedExtras(survey);
+    expect(closed.length).toBeGreaterThan(0);
+    for (const extra of closed) expect(extra.ciceroShipped, extra.id).toBeTruthy();
+    expect(closed.map((e) => e.n)).toEqual([...closed.map((e) => e.n)].sort((a, b) => a - b));
+  });
+
+  it('leaves the catalogue itself intact — closed rows are marked, never removed', () => {
+    const closed = closedExtras(survey);
+    const open = survey.features.extras.filter((e) => !e.ciceroShipped);
+    expect(closed.length + open.length).toBe(survey.features.extras.length);
+    expect(summarize(survey).counts.extrasClosedSince).toBe(closed.length);
   });
 });
 
