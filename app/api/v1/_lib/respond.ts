@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { httpStatus, invalid, toPublicError } from '@/lib/errors';
+import { isDatabaseUnavailableError } from '@/lib/database-errors';
+import { AppError, httpStatus, invalid, isAppError, toPublicError } from '@/lib/errors';
 
 /**
  * Handlers stay thin (`docs/02-architecture.md` §5): parse, validate, call, translate. Everything
@@ -37,8 +38,11 @@ export function errorJson(error: unknown): Response {
   if (publicError.code === 'internal') {
     console.error(error instanceof Error ? error.message : String(error));
   }
+  // Both of these mean "not now" rather than "not ever", so both carry the hint that says so.
   const retryAfter =
-    publicError.code === 'rate_limited' ? publicError.details?.retryAfterSeconds : undefined;
+    publicError.code === 'rate_limited' || publicError.code === 'unavailable'
+      ? publicError.details?.retryAfterSeconds
+      : undefined;
   return json(
     { error: publicError },
     {
@@ -53,6 +57,17 @@ export async function handle(work: () => Promise<Response>): Promise<Response> {
   try {
     return await work();
   } catch (error) {
+    // A database that is down is the one unrecognised throw worth naming. Left alone it is a 500,
+    // which tells an embed or a partner integration to give up; as a 503 with `Retry-After` it
+    // tells them to come back, which is both true and recoverable.
+    if (!isAppError(error) && isDatabaseUnavailableError(error)) {
+      console.error(error instanceof Error ? error.message : String(error));
+      return errorJson(
+        new AppError('unavailable', 'That data is temporarily unavailable. Try again shortly.', {
+          retryAfterSeconds: '30',
+        }),
+      );
+    }
     return errorJson(error);
   }
 }

@@ -20,8 +20,29 @@ export function hasDemoEntryMemberships(rows: readonly DemoMembership[]): boolea
   );
 }
 
-/** Request-scoped so the home page and global footer share one small availability query. */
+/**
+ * Request-scoped so the home page and global footer share one small availability query.
+ *
+ * The footer renders on every page, including `/` and the 404, so an unhandled throw here is the
+ * difference between "the demo links are missing" and "every page returns 500 while the database is
+ * down" — including pages that need no database at all. Hiding the links is the honest degraded
+ * answer regardless: if the query cannot run, the seeded identities behind those links cannot be
+ * confirmed, and advertising an entry point that will fail is worse than omitting it.
+ */
 export const demoEntryPointsAreAvailable = cache(async (): Promise<boolean> => {
+  try {
+    return await queryDemoEntryPoints();
+  } catch (error) {
+    console.error(
+      `demo entry point availability check failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return false;
+  }
+});
+
+async function queryDemoEntryPoints(): Promise<boolean> {
   const rows = await getDb()
     .select({ email: user.email, role: membership.role })
     .from(event)
@@ -38,4 +59,4 @@ export const demoEntryPointsAreAvailable = cache(async (): Promise<boolean> => {
     );
 
   return hasDemoEntryMemberships(rows);
-});
+}

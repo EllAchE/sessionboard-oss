@@ -15,6 +15,7 @@ import {
 } from '@/db/schema';
 import { appUrl } from '@/lib/env';
 import { notFound } from '@/lib/errors';
+import { isQueryableSlug } from '@/lib/identifiers';
 import { formatRef } from '@/lib/ids';
 import { publicSpeakerHeadshotUrl } from '@/lib/speaker-headshot';
 import { publicSponsorLogoUrl } from '@/lib/sponsor-branding';
@@ -35,6 +36,12 @@ import type {
 export type EventRow = typeof eventTable.$inferSelect;
 
 export async function requireEvent(slug: string): Promise<EventRow> {
+  // Every public read funnels through here, and the slug is a raw path segment — no schema has seen
+  // it. A null byte in a text comparison is a driver error rather than an empty result, so it would
+  // reach the caller as an unrecognised throw and be reported as a 500. It is a 404: no row can have
+  // that slug.
+  if (!isQueryableSlug(slug)) throw notFound('That event');
+
   const row = await getDb().query.event.findFirst({
     where: eq(eventTable.slug, slug),
   });
