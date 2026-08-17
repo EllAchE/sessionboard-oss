@@ -40,7 +40,9 @@ export default async function PublicAgendaPage({
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <h2 className={styles.sectionTitle}>Agenda</h2>
-          <span className={styles.sectionLink}>{bundle.sessions.length} published sessions</span>
+          <span className={styles.sectionLink}>
+            {bundle.sessions.length} published sessions · star one to add it to your schedule
+          </span>
         </div>
         <EmbedBody
           view="agenda"
