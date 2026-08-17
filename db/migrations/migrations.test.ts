@@ -102,3 +102,59 @@ describe('0001_speaker_unavailability', () => {
     expect(indexes.join('\n')).toMatch(/speaker_unavailability_event_idx.*"event_id","starts_at"/);
   });
 });
+
+/**
+ * `AD-4`. The failure this file exists to catch is exactly the one drizzle generated here: it
+ * emitted `ADD COLUMN "revision_number" integer NOT NULL` as a single statement, which applies
+ * perfectly to an empty database and cannot apply to one that already holds a revision. CI migrates
+ * a clean server, so nothing but these assertions stands between that and every deployed database.
+ */
+describe('0002_wealthy_turbo', () => {
+  const statements = migration('0002_wealthy_turbo');
+  const at = (pattern: RegExp) => statements.findIndex((statement) => pattern.test(statement));
+
+  it('adds both new entity kinds to the enum', () => {
+    for (const value of ['scheduled_session', 'sponsor']) {
+      expect(statements.join('\n')).toMatch(
+        new RegExp(`ALTER TYPE "public"\\."content_revision_kind" ADD VALUE '${value}'`),
+      );
+    }
+  });
+
+  it('adds the column nullable rather than NOT NULL in one step', () => {
+    const added = statements.find((statement) => /ADD COLUMN "revision_number"/.test(statement));
+    expect(added).toBeDefined();
+    expect(added).not.toMatch(/NOT NULL/i);
+  });
+
+  it('backfills every existing row before demanding NOT NULL', () => {
+    const backfill = at(/UPDATE "content_revision"[\s\S]*row_number\(\)/i);
+    expect(backfill).toBeGreaterThanOrEqual(0);
+    expect(backfill).toBeLessThan(at(/ALTER COLUMN "revision_number" SET NOT NULL/i));
+  });
+
+  /**
+   * Per entity, not per event. A partition missing `entity_id` would number every session in an
+   * event into one sequence and leave "revision 4" naming four different things.
+   */
+  it('partitions the backfill by event, kind and entity', () => {
+    expect(statements[at(/row_number\(\)/i)]).toMatch(
+      /PARTITION BY "event_id", "entity_kind", "entity_id"/i,
+    );
+  });
+
+  /**
+   * `created_at` is not a total order — two edits inside one millisecond would be numbered
+   * arbitrarily, and a re-run after a failed deploy could number them the other way round.
+   */
+  it('orders the backfill deterministically, with a tiebreak after created_at', () => {
+    expect(statements[at(/row_number\(\)/i)]).toMatch(/ORDER BY "created_at" ASC, "id" ASC/i);
+  });
+
+  /** The unique constraint is what settles a race between two concurrent inserts. */
+  it('makes the number unique per entity, and adds that constraint last', () => {
+    const constraint = at(/ADD CONSTRAINT "content_revision_entity_number" UNIQUE/);
+    expect(statements[constraint]).toMatch(/"event_id","entity_kind","entity_id","revision_number"/);
+    expect(constraint).toBe(statements.length - 1);
+  });
+});

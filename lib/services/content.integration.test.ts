@@ -143,13 +143,13 @@ describe('revision numbers', () => {
     const before = await rowsFor(fixture, fixture.sponsorId);
 
     /**
-     * The statement shipped in `0001`, run verbatim. It is what every existing database's history
+     * The statement shipped in `0002`, run verbatim. It is what every existing database's history
      * was numbered by, and it is idempotent by construction — recomputing over rows that already
-     * hold the right numbers must be a no-op, or a re-run during a failed deploy would reshuffle
+     * hold the right numbers must be a no-op, or a re-run after a failed deploy would reshuffle
      * numbers people have already quoted to each other.
      */
     const migration = readFileSync(
-      fileURLToPath(new URL('../../db/migrations/0001_fancy_aqueduct.sql', import.meta.url)),
+      fileURLToPath(new URL('../../db/migrations/0002_wealthy_turbo.sql', import.meta.url)),
       'utf8',
     );
     const backfill = migration
