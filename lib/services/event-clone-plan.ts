@@ -632,9 +632,11 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
     reason:
       'Holds `tokenHash`, a bearer credential that shows a draft programme to anyone holding the ' +
       "URL and never asks them to sign in. A copy would hand every recipient of last year's link " +
-      "an unannounced window onto next year's unpublished draft. `expiresAt` is set against the " +
-      'source event, so the copy would also arrive already expired or expiring at an arbitrary ' +
-      'moment, and the unique `tokenHash` means one link could only ever be shared, not reissued.',
+      "an unannounced window onto next year's unpublished draft. Its lifecycle is stale on arrival " +
+      'too: `expiresAt` and `revokedAt` were both decided against an event that has already ' +
+      'happened, so a copied link is either dead on creation or live on a schedule nobody chose. ' +
+      'And `tokenHash` is unique, so one link could only ever be shared across the two events, ' +
+      'never reissued for the new one.',
   },
 
   // -------------------------------------------------------------------------
