@@ -36,19 +36,72 @@
       <article class="article">
 <h1 id="submission-evidence">Submission evidence</h1>
 <p>This is the dated verification record behind the claims in
-<a href="index.html"><code>06-submission-narrative.md</code></a>. It separates what was exercised on the
-current source tree from what is available on the hosted demo, because those two environments were
-not on the same revision when this evidence was captured.</p>
-<p><strong>Verified:</strong> 2026-08-16</p>
-<p><strong>Source revision:</strong> <code>ce8d88b</code> (<code>origin/main</code> at the start of the verification)</p>
+<a href="index.html"><code>06-submission-narrative.md</code></a>. It preserves two layers of evidence: the
+production-build/browser capture from 16 August and the source/documentation refresh from 17 August.
+The hosted demo remains on an older revision, so current-source and deployed claims stay separate.</p>
+<p><strong>Submission refresh verified:</strong> 2026-08-17</p>
+<p><strong>Product baseline audited:</strong> <code>d9231a4</code> (<code>origin/main</code> at the final source audit)</p>
+<p><strong>Production-build/browser capture:</strong> 2026-08-16 at <code>ce8d88b</code></p>
+<p><strong>Hosted demo rechecked:</strong> 2026-08-17</p>
 <p><strong>Hosted demo:</strong> <a href="https://cicero-three.vercel.app/" target="_blank" rel="noreferrer">https://cicero-three.vercel.app</a></p>
 <p><strong>Readable HTML:</strong> <a href="https://cicero-submission.elehche.workers.dev/submission/evidence.html" target="_blank" rel="noreferrer">https://cicero-submission.elehche.workers.dev/submission/evidence.html</a></p>
 <p><strong>Repository mirror:</strong> <a href="evidence.html"><code>submission/evidence.html</code></a></p>
 <p><strong>Field survey:</strong> <a href="https://cicero-field-survey.elehche.workers.dev/" target="_blank" rel="noreferrer">https://cicero-field-survey.elehche.workers.dev/</a></p>
+<h2 id="current-source-submission-refresh">Current-source submission refresh</h2>
+<p>The refresh traced every merged product commit from the original narrative in <code>f68026a</code> through the
+<code>d9231a4</code> baseline. It corrected stale roadmap language and added the shipped capabilities that had
+not reached the submission: event duplication, speaker availability, revocable draft-programme
+links, numbered restorable content revisions, typed scorecard criteria, advisory milestones,
+attendee agenda starring and personal schedules, seven live embed views, JSON/XML/subscribable
+<code>.ics</code> output, per-event <code>llms.txt</code>, the readable and Scalar API references, browser CORS, the
+demo-first landing path, and the renamed Actions panel.</p>
+<p>It also recovered the copy-ready form-answer draft from the unmerged <code>22a03e4</code> branch, updated its
+testing path and product/process claims, and added it to the repository documentation maps without
+publishing the form-only answers as a fourth standalone HTML tab.</p>
+<p>The focused verification suite covered the new claims that do not require a database: the exhaustive
+event-clone plan and clone transaction, speaker availability parsing, attendee schedule storage,
+portable embed feeds, live embed samples, role-based demo entry, API CORS, the Actions panel, review
+detail, and standalone-submission rendering. Results on the refresh branch:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Full Vitest suite</td>
+<td>1,927 tests passed across 179 files</td>
+</tr>
+<tr>
+<td>Focused Vitest suite across 11 files</td>
+<td>147 tests passed</td>
+</tr>
+<tr>
+<td><code>bun run typecheck</code></td>
+<td>Passed</td>
+</tr>
+<tr>
+<td><code>bun run build</code></td>
+<td>Production build passed; route table includes event duplication, availability, share-link, feed, API-reference, embed-gallery, and per-event <code>llms.txt</code> surfaces</td>
+</tr>
+<tr>
+<td><code>bun run docs:submission</code></td>
+<td>Regenerated all three standalone reading copies from the refreshed Markdown</td>
+</tr>
+<tr>
+<td><code>git diff --check</code></td>
+<td>Passed</td>
+</tr>
+</tbody></table>
+<p>The source tree also retains database-backed integration coverage for share-link privacy/revocation,
+content revision restore, and schema migrations. This refresh did not start a new external <code>sbek</code>
+evaluation cycle; the preserved evaluator runs remain in <code>docs/evals/sessionboard/</code>.</p>
 <h2 id="standalone-submission-mirror-current-branch-verification">Standalone submission mirror: current-branch verification</h2>
-<p>The three canonical Markdown documents are mirrored into standalone, checked-in HTML files. They
-remain repository artifacts rather than application routes, can be opened directly or served from
-any local static file server, and are published separately at
+<p>The three public artifact Markdown documents are mirrored into standalone, checked-in HTML files;
+the copy-ready form answers remain source-only. The generated pages remain repository artifacts
+rather than application routes, can be opened directly or served from any local static file server,
+and are published separately at
 <a href="https://cicero-submission.elehche.workers.dev/" target="_blank" rel="noreferrer">https://cicero-submission.elehche.workers.dev/</a>.</p>
 <table>
 <thead>
@@ -75,9 +128,9 @@ any local static file server, and are published separately at
 </tr>
 </tbody></table>
 <p><code>bun run docs:submission</code> regenerates all three files. CI runs the generator and fails if
-<code>docs/submission/</code> changes, making drift between the prose sources and reading copies visible. A
-headless browser navigated through all three standalone documents and recorded screenshots plus a
-video; those visual artifacts are attached to
+<code>docs/submission/</code> changes, making drift between the prose sources and reading copies visible. The
+17 August refresh regenerated the three copies and reran the renderer tests. The original headless
+browser navigation, screenshots, and video remain attached to
 <a href="https://github.com/EllAchE/sessionboard-oss/pull/185" target="_blank" rel="noreferrer">PR #185</a>.</p>
 <h2 id="public-artifact-workers-live-verification">Public artifact Workers: live verification</h2>
 <p>The repository artifacts were published independently from the application on 16 August 2026:</p>
@@ -106,14 +159,18 @@ evidence images completed with non-zero natural widths, and the survey&#39;s sea
 “Only beyond-the-brief” mode and feature-detail interaction worked. The reciprocal survey-to-write-up
 link was also navigated successfully. These are public static Workers, not routes in the Cicero
 Next.js application; the production build route table remains unchanged.</p>
-<p>The production origin was rechecked separately after the PR branch was pushed. <code>/demo/agenda</code>
+<p>The submission Worker root was rechecked on 17 August and still returned HTTP 200 after redirecting
+to <code>/submission/index.html</code>. It continues to serve the earlier reading copy until this refresh is
+merged and deployed; this document does not present the new prose as already live there.</p>
+<p>During the 16 August artifact work, the production origin was rechecked after that PR branch was
+pushed. <code>/demo/agenda</code>
 remained healthy and its browser view reported 11 published sessions across five rooms. A
 subsequent API read returned HTTP 200 with 12 sessions across five rooms and zero unscheduled
 sessions; the hosted seed is mutable, so those counts are point-in-time evidence rather than a
 fixture guarantee. The standalone submission artifacts remain outside the application deployment
 and are served by their own static Worker.</p>
-<h2 id="current-source-local-production-build-and-seeded-walkthrough">Current source: local production build and seeded walkthrough</h2>
-<p>The current source was run as the production Docker image, backed by fresh Postgres and MinIO
+<h2 id="2026-08-16-source-local-production-build-and-seeded-walkthrough">2026-08-16 source: local production build and seeded walkthrough</h2>
+<p>The <code>ce8d88b</code> source was run as the production Docker image, backed by fresh Postgres and MinIO
 containers. Host ports <code>3217</code>, <code>5545</code>, <code>9100</code>, and <code>9101</code> were used so unrelated local stacks were
 left untouched.</p>
 <pre><code class="language-bash">docker compose \
@@ -205,6 +262,31 @@ browser capture.</p>
 <h4 id="signed-out-published-agenda">Signed-out published agenda</h4>
 <p><img src="../images/submission-evidence/local-seeded-agenda.png" alt="Seeded public agenda" loading="lazy"></p>
 <h2 id="hosted-demo-verification">Hosted demo verification</h2>
+<p>The public deployment was rechecked on 17 August before the documentation update:</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Live result on 2026-08-17</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/</code></td>
+<td>HTTP 200; still the pre-refresh landing revision</td>
+</tr>
+<tr>
+<td><code>/demo/agenda</code></td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td><code>/api/v1/events/demo/agenda</code></td>
+<td>HTTP 200; five published sessions across three rooms, zero unscheduled</td>
+</tr>
+<tr>
+<td>Organizer route family</td>
+<td>Still exposes the older <code>/admin</code> shell rather than current-source <code>/organizer</code></td>
+</tr>
+</tbody></table>
 <p>The following checks were performed against <a href="https://cicero-three.vercel.app/" target="_blank" rel="noreferrer">https://cicero-three.vercel.app</a>:</p>
 <table>
 <thead>
@@ -246,24 +328,27 @@ browser capture.</p>
 <h4 id="hosted-agenda">Hosted agenda</h4>
 <p><img src="../images/submission-evidence/deployed-demo-agenda.png" alt="Hosted demo agenda" loading="lazy"></p>
 <h2 id="deployment-parity-finding">Deployment parity finding</h2>
-<p>The hosted demo is healthy for the public and authenticated core paths above, but it is running an
-older application revision than the current source tree:</p>
+<p>The hosted demo is healthy for the public and authenticated core paths above, but the 17 August
+recheck confirms that it is running an older application revision than the current source tree:</p>
 <ul>
 <li>the hosted organizer shell uses legacy <code>/admin</code> routes; current source uses <code>/organizer</code>;</li>
 <li>the hosted landing content is the earlier Roman-themed version;</li>
 <li>current-source additions such as the expanded command-driven review workflow, Updates navigation,
-Exhibitor map navigation, and the latest assisted-chasing surface should be demonstrated locally
+Exhibitor map navigation, the latest assisted-chasing surface, event duplication, attendee
+starring, live embed gallery, and current API-reference work should be demonstrated from source
 until a fresh deployment is made.</li>
 </ul>
 <p>This is a deployment-parity gap, not a claim that the hosted demo is down. Submission language
 should say that the hosted <strong>core demo works</strong>, and should not say that every screenshot from current
 <code>main</code> is already deployed. A final pre-submission deploy and repeat of this checklist would close
 the gap.</p>
-<h2 id="what-the-persistent-health-control-means">What the persistent “Health” control means</h2>
-<p>The control is deliberately a <strong>workspace-readiness</strong> indicator. It means the organizer is signed
-in and an active event is selected in that browser. It does not poll Postgres, object storage,
-email/SMS providers, Accelevents, or the deployment platform. Both the UI and the submission use
-that narrower term so a green indicator is never mistaken for infrastructure monitoring.</p>
+<h2 id="what-the-persistent-actions-workspace-status-means">What the persistent Actions workspace status means</h2>
+<p>The 16 August screenshot labels the floating control <strong>Health</strong>. Current source renames the broader
+container <strong>Actions</strong>, puts a real keyboard binding on every row, and retains the same deliberately
+narrow workspace status inside it: Ready means the organizer is signed in and an active event is
+selected in that browser. It does not poll Postgres, object storage, email/SMS providers,
+Accelevents, or the deployment platform. The UI and submission keep that boundary explicit so a
+green status is never mistaken for infrastructure monitoring.</p>
 
       </article>
     </div>
