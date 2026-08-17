@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 import { magicLinkMayBeShown, requestMagicLink } from '@/lib/auth';
 import { isAppError } from '@/lib/errors';
+import { getEventBySlug } from '@/lib/services/events';
 import type { DeliveryState } from './copy';
 import { localAuthOrigin } from './redirect';
 
@@ -18,6 +19,7 @@ export async function requestLinkAction(_prev: SignInState, formData: FormData):
   try {
     const { email: address, link } = await requestMagicLink({
       email,
+      eventId: await eventIdForSlug(String(formData.get('event') ?? '')),
       redirectTo: next,
       developmentOrigin: localAuthOrigin(await headers()),
     });
@@ -41,5 +43,26 @@ export async function requestLinkAction(_prev: SignInState, formData: FormData):
     };
   } catch (error) {
     return { sent: false, error: isAppError(error) ? error.message : 'Something went wrong. Try again.' };
+  }
+}
+
+/**
+ * A sign-in URL may name the event it is for — `/signin?email=…&next=/review&event=demo` — and the
+ * slug rides through to `magic_token.event_id`, which `consumeMagicLink` adopts onto the session.
+ * Without it the three demo tours all sign in with no event named, and each surface then guesses
+ * from a different rule: the organizer shell takes the soonest upcoming event, the reviewer queue
+ * the next one to happen, the portal index asks. Four seeded events, three different answers.
+ *
+ * An unknown slug is dropped rather than refused. Nothing here grants anything — `adoptTokenEvent`
+ * rechecks membership before it writes the cookie, so the worst a hand-typed slug can do is name an
+ * event its recipient does not belong to, which is then ignored. Failing the sign-in over it would
+ * turn a stale link into a locked door.
+ */
+async function eventIdForSlug(slug: string): Promise<string | null> {
+  if (!slug.trim()) return null;
+  try {
+    return (await getEventBySlug(slug.trim())).id;
+  } catch {
+    return null;
   }
 }
