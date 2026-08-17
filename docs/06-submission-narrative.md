@@ -87,7 +87,7 @@ Cicero supplies.
 | Organizer dashboard | Accepted speakers with outstanding tasks, counters, linked next actions, speaker-roster and agenda milestones, accurate overdue pacing, breakdowns, five prebuilt dashboards, custom dashboards | The first screen names the people and work blocking the event instead of showing only decorative totals |
 | Public output | Public event/session/speaker pages, agenda starring and personal itinerary, seven embeddable views, live sample embeds, JSON/XML/subscribable `.ics` feeds, per-event `llms.txt` | Publication is a live read of the same programme; attendees can plan without an account, and websites or agents can consume the same configured output without copied schedules |
 | Required integration | One-way accepted-speaker push behind an Accelevents client interface with deterministic fixture mode | The judged path exercises real field mapping, authentication and error outcomes without inventing credentials or undocumented remote capability |
-| Open-source operation | MIT source, magic-link roles, Postgres, storage abstraction, Docker Compose, Cloudflare/OpenNext target, Vercel-hosted demo | A new operator can run the product without buying a proprietary dependency or providing an email/SMS/AI key |
+| Open-source operation | MIT source, magic-link roles, Postgres, storage abstraction, Docker Compose, Cloudflare/OpenNext target, Vercel-hosted demo, and idempotent sample events at small, medium, and large conference scales | A new operator can run the product without buying a proprietary dependency or providing an email/SMS/AI key, then inspect real queue and agenda pressure rather than judging only a toy fixture |
 
 The complete browser path is mapped in the demo runbook, and the current seed plus hosted smoke
 results are recorded in [`06-submission-evidence.md`](06-submission-evidence.md). The important proof
@@ -160,6 +160,8 @@ Session, speaker, agenda, and sponsor edits also produce numbered content revisi
 diffed and restored; a restoration becomes a new revision, so recovery is itself undoable.
 Post-conference recordings have independent organizer and public publication gates. These features
 extend the lifecycle beyond “collect one slide deck” while retaining deliberate visibility control.
+Recording mutations refresh the board in place, so attaching, replacing, publishing, or removing a
+source does not discard the organizer's scroll and navigation context with a full document reload.
 
 #### Sponsors, exhibitors, and an exhibitor-map embed
 
@@ -249,7 +251,8 @@ Current source includes:
 The point is not to advertise a clever shortcut list. It is to reduce the distance between “I have
 another forty proposals to process” and the next valid action. Keyboard behavior has guardrails:
 inputs and editable regions win, modifier collisions are ignored, and confirmation dialogs retain
-control.
+control. The dense queues use one truncation contract for long cell content, and numeric review
+scores print their scale beside the value, so scanability does not erase meaning under load.
 
 ### Persistent actions and workspace context
 
@@ -277,6 +280,16 @@ public embed gallery renders every view the fixture can fill with the exact scri
 snippets that produced it. The API reference and MCP setup prompt remain visible for an evaluator
 who wants to move from the product to its automation surfaces.
 
+The landing page also avoids repeating those claims as abstract About-page facts: API, live embeds,
+and role-scoped agent setup each have one nearby proof-bearing home. The About anchor and repository
+link remain, while the redundant three-column list is gone.
+
+The default `/demo` fixture is now deliberately medium-sized: 96 submissions, 45 speakers, five
+rooms, and two days. The same conference is also seeded as `/demo-small` (18 submissions, eight
+speakers) and `/demo-large` (384 submissions, 180 speakers, ten rooms, and three days). The three
+idempotent scales make pagination, queue density, agenda legibility, and reviewer workload visible
+without changing the story being compared.
+
 The interactive helper shown in that drawer is still a preview, not a shipped assistant. The
 distinction is visible in the interface and retained in this submission.
 
@@ -294,7 +307,8 @@ db/**              Drizzle schema, migrations, seed
 The UI does not call Cicero's own HTTP API. Both UI and API call the same service function. A
 conflict rule, deadline, publication filter, authorization check, or idempotency guard therefore has
 one implementation. The MCP layer also calls services directly rather than making a loopback HTTP
-request.
+request. Authentication resolves the acting user once per request and reuses that result through the
+server-rendered tree, avoiding repeated session/database work without weakening authorization.
 
 This matters most where a superficial clone fails:
 
@@ -304,6 +318,8 @@ This matters most where a superficial clone fails:
 - public reads default to published, so drafts do not leak through a forgotten endpoint;
 - agenda conflicts behave the same from the board and reconciliation API;
 - event duplication must account for every event-scoped table and column before the clone can ship.
+- malformed identifiers and caller input produce useful client errors, while a genuinely unreachable
+  database produces a retryable service-unavailable response instead of an opaque 500.
 
 ### A hybrid submission schema
 
@@ -483,20 +499,23 @@ organizer dashboard, command menu, and readiness/quick-action drawer were exerci
 also served the public agenda, embed, First Settlement event, organizer login, and the agenda API;
 the API returned HTTP 200 with five sessions across three rooms.
 
-The documentation refresh audited every product commit through `d9231a4`, regenerated the reading
-copies, and reran the source checks recorded in the evidence document. A live recheck on 2026-08-17
+The documentation refresh audited every product commit through `1017ca9`, including three-scale demo
+data, per-request acting-user reuse, in-place recording-board refresh, resilient error
+classification, clearer dense-table scoring, and a less repetitive landing page. It regenerated the reading copies and reran the
+source checks recorded in the evidence document. A live recheck on 2026-08-17
 found the same deployment boundary: the hosted demo and its five-session agenda are healthy, but the
 organizer shell still uses `/admin` and the landing page predates the current demo-first revision.
 The newest features in this narrative are therefore current-source claims until a fresh application
-deploy closes the gap. The screenshots, commands, and route results are preserved in
+deploy closes the gap. The separate static submission Worker was refreshed and verified on 17
+August, so the public reading copy now matches this branch. The screenshots, commands, and route results are preserved in
 [`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## 9. What we would build next
 
 In product order rather than novelty order:
 
-1. Deploy current `main` and repeat the evidence checklist so the hosted demo and submission images
-   are on one revision.
+1. Deploy the current application `main` and repeat the authenticated evidence checklist so the
+   hosted demo and current source are on one revision.
 2. Verify a sender domain and prove real transactional email/calendar delivery without removing the
    reserved-address inbox-free demo.
 3. Replace broad impersonation with scoped, dual-attributed organizer assistance.

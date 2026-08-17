@@ -1,10 +1,10 @@
 # Kill My SaaS submission draft: Cicero
 
-> **Draft status:** form answers refreshed against `main` at `d9231a4` on 17 August 2026. The full
+> **Draft status:** form answers refreshed against `main` at `1017ca9` on 17 August 2026. The full
 > source build, typecheck, and test suite pass; the hosted home page, public agenda, agenda API, and
-> submission Worker return HTTP 200. The hosted application still predates the current `/organizer`
-> and demo-first landing revision, so deploy it and repeat the private-browser organizer path before
-> submitting.
+> refreshed submission Worker return HTTP 200. The hosted application still predates the current
+> `/organizer` and demo-first landing revision, so deploy it and repeat the private-browser organizer
+> path before submitting.
 
 This document collects the answers for the Kill My SaaS submission form. It complements the
 [`short submission summary`](06-submission-summary.md) and
@@ -40,6 +40,10 @@ Copy/paste answer:
 > `/embed/demo/agenda`, and `/api/v1/events/demo/agenda` are all live. For a richer seeded programme,
 > use `/first-settlement`, its agenda, speakers, itinerary, CFP, and embeds. The public agenda and
 > API were rechecked on 17 August and returned five published sessions across three rooms.
+> Current source also seeds the Cicero Forum at three comparable scales: `/demo-small` has 18
+> submissions and eight speakers, the default `/demo` has 96 submissions and 45 speakers, and
+> `/demo-large` has 384 submissions and 180 speakers. Those new fixtures await the next application
+> deployment; they are useful for checking pagination, queue density, and agenda legibility locally.
 >
 > You can also enter your own email on the sign-in page. Cicero creates the account, emails a magic
 > link, and takes you to an isolated new event. The hosted demo currently captures seeded-recipient
@@ -199,7 +203,7 @@ Copy/paste answer:
 > Verification was iterative rather than a final ceremony. I used focused unit and integration
 > tests, a requirements audit, adversarial/security passes, generated OpenAPI/MCP contracts, seeded
 > demos, live HTTP checks, performance measurements, and a presenter runbook. The current tree's
-> automated suite passes 1,927 tests across 179 files and carries two squashed SQL migrations.
+> automated suite passes 1,983 tests across 186 files and carries two squashed SQL migrations.
 > Later passes corrected authentication leaks, scoping mistakes, configuration drift, incomplete
 > requirements, and claims that no longer matched production.
 >
@@ -225,11 +229,17 @@ Copy/paste answer:
 > a one-way mirror rather than the source of truth so it cannot weaken transactions or agenda
 > conflict detection.
 >
+> The final polish also makes scale and failure behavior inspectable: the same demo conference ships
+> at small, medium, and large sizes; dense table cells truncate consistently; scores retain their
+> visible scale; recording changes update in place; the acting user is resolved once per request;
+> bad caller input or a database outage no longer collapses into an undifferentiated 500; and the
+> landing page no longer repeats API, embed, and agent claims that its neighboring sections prove.
+>
 > The important omissions are explicit. The live Vercel demo is healthy but still on the older
 > `/admin` and landing-page revision, so the new event-duplication, attendee-schedule, live-embed,
 > Actions, and API-reference work is proven from current source rather than misrepresented as live.
-> The maintained
-> Worker build is 3.42 MiB gzipped, about 14% over the free plan's 3 MiB limit, while the $5 paid plan
+> The standalone submission write-up has been refreshed and deployed separately. The maintained
+> application Worker build is 3.42 MiB gzipped, about 14% over the free plan's 3 MiB limit, while the $5 paid plan
 > would fit it without code changes. Real outbound email is implemented through Resend and SMTP but
 > is not configured on the hosted demo because there is no verified sender domain/key; seeded mail
 > is captured at `/admin/mail`, and calendar files are generated and downloadable, but provider
@@ -268,7 +278,7 @@ The form answers can become a public post with this shorter structure:
    builder and Codex as the independent reviewer.
 5. **What failed honestly:** parallel-work collisions, docs/deployment drift, the Workers free-tier
    ceiling, and outbound-email configuration.
-6. **What shipped:** a seeded app, Docker self-host, 1,927 tests, public/embedded/portable programme
+6. **What shipped:** a seeded app, Docker self-host, 1,983 tests, public/embedded/portable programme
    output, API/OpenAPI/MCP, and explicit deployment gaps.
 
 Use [`06-submission-narrative.md`](06-submission-narrative.md) as the source for that post rather
@@ -278,7 +288,8 @@ draws on [`decisions-long-form.md`](decisions-long-form.md) for the deeper desig
 ## Before submitting
 
 - [x] Recheck the live home page, public agenda, agenda API, and submission Worker.
-- [ ] Deploy current `main` and the refreshed submission Worker, then repeat the evidence checklist.
+- [x] Deploy the refreshed submission Worker and repeat its public evidence checklist.
+- [ ] Deploy current application `main` and repeat the authenticated demo evidence checklist.
 - [ ] Verify organizer sign-in once more in a fresh/private browser after that deploy.
 - [ ] Confirm the shared demo has not been left in a confusing mutated state.
 - [ ] Capture subscription receipts if requesting reimbursement.
