@@ -2044,9 +2044,12 @@ export function reviewResultsCsv(
     'Reviewer email',
     'Review status',
     'Reviewer score (1-5)',
-    ...orderedCriteria.map(
-      (criterion) =>
-        `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`,
+    // A dropdown or free-text criterion has no scale and no weight, so its column says what it is
+    // rather than advertising a maximum that never applied to it.
+    ...orderedCriteria.map((criterion) =>
+      criterion.type === 'numeric'
+        ? `${criterion.label} (max ${criterion.maxScore}; weight ${criterion.weight})`
+        : `${criterion.label} (${criterion.type === 'select' ? 'choice' : 'text'})`,
     ),
     'Reviewer comment',
     'Review completed at',
@@ -2078,7 +2081,7 @@ export function reviewResultsCsv(
           ? aggregateScorecard(criteria, reviewer.scores)
           : null;
         const scoreByCriterion = new Map(
-          reviewer?.scores.map((entry) => [entry.criterionId, entry.value]) ?? [],
+          reviewer?.scores.map((entry) => [entry.criterionId, entry]) ?? [],
         );
         return [
           formatRef('submission', submission.ref),
@@ -2095,7 +2098,9 @@ export function reviewResultsCsv(
           reviewer?.reviewerEmail ?? '',
           reviewer?.status ?? '',
           exportScore(reviewerAggregate?.average ?? null),
-          ...orderedCriteria.map((criterion) => scoreByCriterion.get(criterion.id) ?? ''),
+          ...orderedCriteria.map((criterion) =>
+            answerText(criterion, scoreByCriterion.get(criterion.id)),
+          ),
           reviewer?.comment ?? '',
           reviewer?.completedAt?.toISOString() ?? '',
         ];
@@ -2184,6 +2189,7 @@ export async function buildReviewResultsExport(
           assignmentId: scoreTable.reviewAssignmentId,
           criterionId: scoreTable.criterionId,
           value: scoreTable.value,
+          textValue: scoreTable.textValue,
         })
         .from(scoreTable)
         .where(
@@ -2197,7 +2203,11 @@ export async function buildReviewResultsExport(
   const scoresByAssignment = groupBy(
     scores,
     (row) => row.assignmentId,
-    (row) => ({ criterionId: row.criterionId, value: row.value }),
+    (row): ScoreValue => ({
+      criterionId: row.criterionId,
+      value: row.value,
+      text: row.textValue,
+    }),
   );
   const assignmentsBySubmission = groupBy(
     assignments,
@@ -2625,6 +2635,7 @@ export async function loadSubmissionReview(
           assignmentId: scoreTable.reviewAssignmentId,
           criterionId: scoreTable.criterionId,
           value: scoreTable.value,
+          textValue: scoreTable.textValue,
         })
         .from(scoreTable)
         .where(inArray(scoreTable.reviewAssignmentId, assignmentIds))
@@ -2633,7 +2644,7 @@ export async function loadSubmissionReview(
   const scoresByAssignment = new Map<string, ScoreValue[]>();
   for (const entry of scoreRows) {
     const list = scoresByAssignment.get(entry.assignmentId) ?? [];
-    list.push({ criterionId: entry.criterionId, value: entry.value });
+    list.push({ criterionId: entry.criterionId, value: entry.value, text: entry.textValue });
     scoresByAssignment.set(entry.assignmentId, list);
   }
 
@@ -3549,7 +3560,9 @@ export async function loadAiReviewSubject(
     speakerBios: detail.speakers
       .map((speaker) => speaker.bioMarkdown)
       .filter((bio): bio is string => Boolean(bio)),
-    criteria: detail.criteria,
+    // The model is asked for numbers only. A recommendation or a written note is the reviewer's to
+    // give, and an advisory suggestion has no business pre-filling either.
+    criteria: numericCriteria(detail.criteria),
     roundId: detail.round?.id ?? null,
   };
 }

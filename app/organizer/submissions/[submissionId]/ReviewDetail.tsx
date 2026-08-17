@@ -34,6 +34,10 @@ export type DetailCriterion = {
   id: string;
   label: string;
   description: string | null;
+  /** `ABS-03`: which control this line of the scorecard renders. */
+  type: 'numeric' | 'select' | 'text';
+  /** The choices for a `select` criterion; empty for the others. */
+  options: string[];
   weight: number;
   maxScore: number;
 };
@@ -47,6 +51,8 @@ export type DetailReviewer = {
   completedAt: string | null;
   average: number | null;
   isMe: boolean;
+  /** This reviewer's non-numeric answers, already resolved to label and text for display. */
+  answers: Array<{ label: string; text: string }>;
 };
 
 export type DetailSpeaker = {
@@ -146,8 +152,23 @@ function formatDate(iso: string | null): string {
 export function ReviewDetail(props: ReviewDetailProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  /**
+   * `ABS-03`. Numbers and words are kept in separate maps, exactly as they are in storage: a
+   * dropdown choice must never reach the weighted average, and a rating must never be saved as text.
+   */
   const [scores, setScores] = useState<Record<string, number>>(() =>
-    Object.fromEntries(props.myScores.map((entry) => [entry.criterionId, entry.value])),
+    Object.fromEntries(
+      props.myScores
+        .filter((entry) => typeof entry.value === 'number')
+        .map((entry) => [entry.criterionId, entry.value as number]),
+    ),
+  );
+  const [textAnswers, setTextAnswers] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      props.myScores
+        .filter((entry) => typeof entry.text === 'string' && entry.text.length > 0)
+        .map((entry) => [entry.criterionId, entry.text as string]),
+    ),
   );
   const [comment, setComment] = useState(props.myComment ?? '');
   const [activeCriterion, setActiveCriterion] = useState(0);
