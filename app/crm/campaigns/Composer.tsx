@@ -121,7 +121,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
           <Button
             size="sm"
             variant="secondary"
-            href="/organizer/mail"
+            href="/organizer/sent?channel=email"
             iconRight={<ArrowUpRight size={14} />}
           >
             Open the email log
@@ -262,8 +262,9 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                 </div>
               ))}
               <p className={styles.hint}>
-                Every one of these is also in <Link href="/organizer/mail">the email log</Link> with
-                its rendered body.
+                Every one of these is also in{' '}
+                <Link href="/organizer/sent?channel=email">the email log</Link> with its rendered
+                body.
               </p>
             </div>
           )}

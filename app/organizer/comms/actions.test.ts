@@ -208,11 +208,15 @@ describe('channel selection', () => {
 });
 
 describe('sending', () => {
-  it('refreshes both the mail and sms logs, since either may have gained rows', async () => {
+  /**
+   * One path, because there is now one log. A campaign can put rows in `email_log` and `sms_log` in
+   * the same send, and `/organizer/sent` reads both — so revalidating it covers what the two old
+   * per-channel paths used to cover between them.
+   */
+  it('refreshes the sent log, which either channel may have added rows to', async () => {
     await actions.sendCampaignAction(form());
 
-    expect(revalidatePath).toHaveBeenCalledWith('/organizer/mail');
-    expect(revalidatePath).toHaveBeenCalledWith('/organizer/sms');
+    expect(revalidatePath).toHaveBeenCalledWith('/organizer/sent');
   });
 
   it('returns the outcome of a partly failed send rather than throwing it away', async () => {
@@ -247,11 +251,11 @@ describe('sending', () => {
 });
 
 describe('reminders', () => {
-  it('reports both reminder counts and refreshes the mail log', async () => {
+  it('reports both reminder counts and refreshes the sent log', async () => {
     expect(await actions.runRemindersAction()).toEqual({
       ok: true,
       data: { taskRemindersSent: 2, deadlineRemindersSent: 1 },
     });
-    expect(revalidatePath).toHaveBeenCalledWith('/organizer/mail');
+    expect(revalidatePath).toHaveBeenCalledWith('/organizer/sent');
   });
 });
