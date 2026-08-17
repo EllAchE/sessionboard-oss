@@ -107,6 +107,18 @@ describe('SiteNav', () => {
 
     expect(html).not.toContain('spotlight');
   });
+
+  /**
+   * The flag carries its version, so a later note can show itself once more by incrementing it. A
+   * key without one can only be re-shown by renaming it, which is the same change with no record of
+   * why it happened.
+   */
+  it('versions the key that remembers the introduction', () => {
+    const source = readFileSync(new URL('./DemoMenu.tsx', import.meta.url), 'utf8');
+    const key = source.match(/INTRODUCED_KEY = '([^']+)'/)?.[1];
+
+    expect(key).toMatch(/^cicero:demos-introduced:v\d+$/);
+  });
 });
 
 /**

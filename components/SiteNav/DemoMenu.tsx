@@ -16,8 +16,19 @@ import styles from './DemoMenu.module.css';
 /**
  * Set the first time this menu introduces itself, so it opens on its own exactly once per browser
  * and stays a plain menu on every visit after that, including a back navigation.
+ *
+ * The version belongs in the key, an idea taken from the role-onboarding branch (#150) that this
+ * replaced: a later rewrite of the note can deliberately show itself once more by incrementing it,
+ * without the flag ever becoming durable account data. Bump it only for a note worth interrupting a
+ * returning visitor with -- rewording the note itself is not that.
+ *
+ * TODO: show this by referrer rather than to everyone. Every first-time visitor currently gets a
+ * note addressed to the Smol team, which is the deliberate simple version: the judges reach the
+ * site by links we do not control, so targeting them by `document.referrer` (or a campaign
+ * parameter on the links we do publish) risks missing the audience it is written for. Revisit once
+ * there is a known referrer worth keying on, and keep a generic fallback for everyone else.
  */
-const INTRODUCED_KEY = 'cicero-demos-introduced';
+const INTRODUCED_KEY = 'cicero:demos-introduced:v1';
 
 /**
  * Every seeded demo, signed-in and public, behind the one navigation entry that used to open the
