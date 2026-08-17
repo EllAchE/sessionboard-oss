@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Download, ExternalLink, FileText, Trash2 } from 'lucide-react';
 import { Badge, Button, IconButton, cn } from '@/components/ui';
-import { acceptAttribute, describeAcceptedTypes, formatBytes } from '@/lib/services/file-format';
+import { acceptAttribute, acceptedTypesHint, formatBytes } from '@/lib/services/file-format';
 import type { PortalTask } from '@/lib/services/tasks';
 import { IDLE_STATE } from '../../form-state';
 import { TASK_STATUS_LABEL, formatDate, formatDateTime, relativeDue, taskTone } from '../../format';
@@ -188,7 +188,7 @@ function FileTask({ task, eventSlug }: { task: PortalTask; eventSlug: string }) 
           intent="task"
           assignmentId={task.assignmentId}
           accept={spec ? acceptAttribute(spec) : undefined}
-          acceptedLabel={spec ? describeAcceptedTypes(spec) : 'Any file type'}
+          acceptedLabel={spec ? acceptedTypesHint(spec) : 'Any file type'}
           maxSizeMb={spec?.maxSizeMb ?? 25}
           multiple={spec?.allowMultiple ?? true}
           buttonLabel={task.files.length > 0 ? 'Upload another' : 'Upload'}

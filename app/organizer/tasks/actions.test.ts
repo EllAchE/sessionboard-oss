@@ -55,6 +55,7 @@ const input = (over: Partial<TaskFormInput> = {}): TaskFormInput => ({
   required: true,
   linkUrl: '',
   formId: '',
+  acceptedTypes: '',
   reminderDaysBefore: '',
   reminderDaysAfterSend: '',
   ...over,
@@ -160,6 +161,20 @@ describe('form linkage', () => {
     await actions.createTaskAction(input({ formId: 'form-headshot' }));
 
     expect(sentInput().formId).toBe('form-headshot');
+  });
+});
+
+describe('accepted file types', () => {
+  it('splits the chosen preset into the types the service stores', async () => {
+    await actions.createTaskAction(input({ acceptedTypes: 'application/pdf|.pptx' }));
+
+    expect(sentInput().acceptedTypes).toEqual(['application/pdf', '.pptx']);
+  });
+
+  it('reads "Any file type" as no constraint rather than one empty rule', async () => {
+    await actions.createTaskAction(input({ acceptedTypes: '' }));
+
+    expect(sentInput().acceptedTypes).toEqual([]);
   });
 });
 

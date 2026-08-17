@@ -25,6 +25,8 @@ export type TaskFormInput = {
   required: boolean;
   linkUrl: string;
   formId: string;
+  /** `file_upload` only. One of `ACCEPTED_TYPE_PRESETS`, stored `|`-joined; blank is unconstrained. */
+  acceptedTypes: string;
   reminderDaysBefore: string;
   reminderDaysAfterSend: string;
 };
@@ -83,6 +85,7 @@ function toServiceInput(input: TaskFormInput): tasks.TaskInput {
     required: input.required,
     linkUrl: input.linkUrl,
     formId: input.formId || null,
+    acceptedTypes: input.acceptedTypes.split('|').filter((entry) => entry.trim() !== ''),
     reminderDaysBefore: input.reminderDaysBefore
       .split(',')
       .map((part) => Number(part.trim()))
