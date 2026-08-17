@@ -40,8 +40,13 @@ const RESOURCE_LINKS = [
     label: 'Agent setup',
     icon: Bot,
   },
+  /**
+   * The rendered reference at `/docs/api`, not the raw `openapi.json` this used to point at — a
+   * spec file is a download prompt in most browsers, and "API docs" has to open something a person
+   * can read. The spec is still one click away from that page.
+   */
   {
-    href: '/api/v1/openapi.json',
+    href: '/docs/api',
     label: 'API docs',
     icon: FileCheck,
   },
@@ -124,7 +129,12 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
               <span>{label}</span>
             </a>
           ))}
-          <span className={styles.divider} aria-hidden="true" />
+          {/*
+            No divider ahead of it: merch is the tail of the social row, not a group of its own. The
+            rule it used to carry, plus its own left margin, gave the flex line two more things to
+            fit and pushed the button onto a row by itself at ordinary desktop widths. It wraps now
+            only when the line genuinely runs out of room.
+          */}
           <a className={styles.merch} href={MERCH_URL} target="_blank" rel="noreferrer">
             <Gift size={15} aria-hidden="true" />
             <span>Free merch</span>
