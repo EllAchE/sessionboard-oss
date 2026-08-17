@@ -117,15 +117,15 @@ describe('fresh-instance home page', () => {
 
     expect(html).toContain('href="#products"');
     expect(html).toContain('Products');
-    expect(html).toContain('href="/api/v1/openapi.json"');
-    expect(html).toContain('>Docs<');
+    expect(html).toContain('href="/docs/api"');
+    expect(html).toContain('>API<');
     expect(html).not.toContain('Agent quick start');
   });
 
   it('orders the navigation about, products, docs, then demo', () => {
     const html = renderHome(true);
 
-    const navOrder = ['href="#about"', 'href="#products"', 'href="/api/v1/openapi.json"'].map(
+    const navOrder = ['href="#about"', 'href="#products"', 'href="/docs/api"'].map(
       (marker) => html.indexOf(marker),
     );
     expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));

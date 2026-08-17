@@ -210,8 +210,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <a className={styles.productsLink} href="#products">
             Product
           </a>
-          <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
-            Docs
+          <a className={styles.apiDocsLink} href="/docs/api">
+            API
           </a>
           {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
         </div>
