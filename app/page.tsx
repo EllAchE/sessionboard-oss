@@ -148,7 +148,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
                 AI-guided setup
               </p>
               <p className={styles.agentStarterHint}>
-                Claude or ChatGPT walks you through it, one safe step at a time.
+                Claude or ChatGPT walks you through it.
               </p>
               {/*
                 The hint names two agents in prose; the marks show the rest, and they are the same
