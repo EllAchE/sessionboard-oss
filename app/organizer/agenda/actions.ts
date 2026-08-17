@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import { scheduledSession, sessionFormat, submission } from '@/db/schema';
-import { requireCapability } from '@/lib/context';
+import { requireCapability, type EventContext } from '@/lib/context';
 import { conflict, invalid, toPublicError } from '@/lib/errors';
 import {
   mutateAgendaAtomically,
@@ -12,6 +12,7 @@ import {
   type AgendaTransaction,
 } from '@/lib/services/agenda-guard';
 import { loadRecipientGraph, sendSessionInvites, type RecipientGraph } from '@/lib/services/comms';
+import { recordRevision } from '@/lib/services/content';
 import {
   allocateSessionRef,
   mintIcsUid,
@@ -82,7 +83,13 @@ function placementTimes(input: PlacementInput): { startsAt: Date; endsAt: Date }
   return { startsAt, endsAt };
 }
 
+/**
+ * Every snapshot here is written on `transaction`, never on `getDb()`. A drag the conflict policy
+ * refuses rolls the whole mutation back, and a revision written on a second connection would
+ * survive that rollback — leaving a history entry for a move that never happened.
+ */
 async function placeSession(
+  ctx: EventContext,
   transaction: AgendaTransaction,
   eventId: string,
   input: PlacementInput,
@@ -94,6 +101,14 @@ async function placeSession(
       where: and(eq(scheduledSession.id, input.targetId), eq(scheduledSession.eventId, eventId)),
     });
     if (!existing) throw conflict('That session is no longer on this agenda');
+
+    await recordRevision(
+      ctx,
+      'scheduled_session',
+      existing.id,
+      `Moved ${existing.title}`,
+      transaction,
+    );
 
     await transaction
       .update(scheduledSession)
@@ -114,6 +129,8 @@ async function placeSession(
     ),
   });
   if (already) {
+    await recordRevision(ctx, 'scheduled_session', already.id, `Moved ${already.title}`, transaction);
+
     await transaction
       .update(scheduledSession)
       .set({ roomId: input.roomId, startsAt, endsAt, updatedAt: new Date() })
@@ -154,7 +171,7 @@ export async function placeSessionAction(
     const sessionId = await mutateAgendaAtomically(
       ctx.eventId,
       async (transaction) => {
-        const changedSessionId = await placeSession(transaction, ctx.eventId, input);
+        const changedSessionId = await placeSession(ctx, transaction, ctx.eventId, input);
         return { data: changedSessionId, changedSessionIds: [changedSessionId] };
       },
       { onWarn: (conflicts) => warnings.push(...conflicts) },
@@ -203,6 +220,8 @@ export async function unscheduleSessionAction(sessionId: string): Promise<Action
     if (existing.status === 'published' && existing.startsAt) {
       await sendSessionInvites(sessionId, { cancel: true });
     }
+
+    await recordRevision(ctx, 'scheduled_session', sessionId, `Unscheduled ${existing.title}`);
 
     await db
       .update(scheduledSession)
@@ -300,6 +319,14 @@ export async function saveManualSessionAction(
         });
         if (!existing) throw conflict('That session is no longer on this agenda');
 
+        await recordRevision(
+          ctx,
+          'scheduled_session',
+          existing.id,
+          `Edited ${existing.title}`,
+          transaction,
+        );
+
         await transaction
           .update(scheduledSession)
           .set(patch)
@@ -357,6 +384,13 @@ export async function saveManualSessionAction(
   }
 }
 
+/** How the three states read in a history entry, where "cancelled" is the one people search for. */
+const STATUS_LABEL: Record<'draft' | 'published' | 'cancelled', string> = {
+  draft: 'Draft',
+  published: 'Published',
+  cancelled: 'Cancelled',
+};
+
 /** `A-6`. Publishing is what lets a session out to the public embeds and the speaker's calendar. */
 export async function setSessionStatusAction(
   sessionId: string,
@@ -380,6 +414,14 @@ export async function setSessionStatusAction(
       if (status === 'published' && (!existing.startsAt || !existing.endsAt || !existing.roomId)) {
         throw invalid('Give it a room and a time before publishing it');
       }
+
+      await recordRevision(
+        ctx,
+        'scheduled_session',
+        sessionId,
+        `Set ${existing.title} to ${STATUS_LABEL[status]}`,
+        transaction,
+      );
 
       await transaction
         .update(scheduledSession)
@@ -431,6 +473,14 @@ export async function publishAllAction(
         if (!existing.startsAt || !existing.endsAt || !existing.roomId) {
           throw invalid('Every session needs a room and a time before publishing the day');
         }
+
+        await recordRevision(
+          ctx,
+          'scheduled_session',
+          sessionId,
+          `Published ${existing.title} with the day`,
+          transaction,
+        );
 
         await transaction
           .update(scheduledSession)
@@ -484,7 +534,7 @@ export async function applyProposalAction(
     const sessionIds = await mutateAgendaAtomically(ctx.eventId, async (transaction) => {
       const changedSessionIds: string[] = [];
       for (const placement of placements) {
-        changedSessionIds.push(await placeSession(transaction, ctx.eventId, placement));
+        changedSessionIds.push(await placeSession(ctx, transaction, ctx.eventId, placement));
       }
       return { data: changedSessionIds, changedSessionIds };
     });
