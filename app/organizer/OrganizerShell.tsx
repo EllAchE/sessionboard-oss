@@ -24,9 +24,11 @@ import {
   Users,
 } from 'lucide-react';
 import { CiceroBrand } from '@/components/CiceroBrand';
+import { HotkeyHint } from '@/components/hotkeys/HotkeyHint';
 import { useHotkeyContext, useHotkeys } from '@/components/hotkeys/HotkeyProvider';
 import { Avatar, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
-import { SCOPES } from '@/lib/hotkeys/registry';
+import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
+import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import type { EventSummary } from '@/lib/services/events';
 import { ActionsPanel } from './ActionsPanel';
 import { EventSwitcher } from './EventSwitcher';
@@ -48,8 +50,8 @@ type NavEntry = {
 };
 
 /**
- * Where each `g` sequence lands. The registry owns which letter reaches a binding; this owns where
- * that binding goes, so adding a destination never means editing the matcher.
+ * Where each navigation binding lands. The registry owns which chord reaches a binding; this owns
+ * where that binding goes, so adding a destination never means editing the matcher.
  */
 const GOTO_HREFS: Record<string, string> = {
   'goto-overview': '/organizer',
@@ -63,6 +65,24 @@ const GOTO_HREFS: Record<string, string> = {
   'goto-new-event': '/events/new',
   'goto-portal': '/portal',
   // `goto-public` is deliberately absent: its destination depends on the event in hand.
+};
+
+/**
+ * Which sidebar entry each navigation binding opens.
+ *
+ * The other direction of `GOTO_HREFS`, and separate from it because the two do not line up: the
+ * portal, the public programme and the new-event form have chords but no sidebar row, and most
+ * sidebar rows have no chord at all. Only the ones named here wear a hint.
+ */
+const NAV_BINDINGS: Record<string, string> = {
+  overview: 'goto-overview',
+  updates: 'goto-updates',
+  submissions: 'goto-submissions',
+  agenda: 'goto-agenda',
+  speakers: 'goto-speakers',
+  forms: 'goto-forms',
+  tasks: 'goto-tasks',
+  messages: 'goto-comms',
 };
 
 const NAV: { id: string; title: string; items: NavEntry[] }[] = [
@@ -186,6 +206,32 @@ export function OrganizerShell({
     'goto-public': currentEvent?.slug ? () => go(`/${currentEvent.slug}`) : undefined,
   });
 
+  /**
+   * The sidebar, with the keystroke attached to every entry that has one: announced through
+   * `aria-keyshortcuts`, and drawn on the row itself while the workspace modifier is held. Holding
+   * ⌘⌃ and reading the sidebar is meant to be the whole of learning this workspace's navigation —
+   * the section you want is right there, and so is the letter that reaches it.
+   */
+  const navSections = useMemo(
+    () =>
+      NAV.map((section) => ({
+        ...section,
+        items: section.items.map((item) => {
+          const bindingId = NAV_BINDINGS[item.id];
+          const chord = bindingId
+            ? getBinding(SCOPES.organizerGlobal, bindingId)?.chords[0]
+            : undefined;
+          if (!chord) return item;
+          return {
+            ...item,
+            keyshortcuts: ariaKeyshortcuts(chord),
+            badge: <HotkeyHint chord={chord} />,
+          };
+        }),
+      })),
+    [],
+  );
+
   /** Longest matching href wins, so /organizer/forms/abc highlights Forms rather than Overview. */
   const activeId = useMemo(() => {
     const all = NAV.flatMap((section) => section.items);
@@ -249,7 +295,7 @@ export function OrganizerShell({
     <div className={styles.root}>
       <aside className={styles.sidebar}>
         <SidebarNav
-          sections={NAV}
+          sections={navSections}
           activeId={activeId}
           header={<CiceroBrand markSize={22} />}
         />

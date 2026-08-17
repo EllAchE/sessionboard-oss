@@ -11,6 +11,11 @@ interface SidebarNavItem {
   badge?: ReactNode;
   href?: string;
   disabled?: boolean;
+  /**
+   * The keystroke that reaches this destination, in `aria-keyshortcuts` spelling. Announced rather
+   * than drawn, so a screen reader learns the key without the sighted hint badge being on screen.
+   */
+  keyshortcuts?: string;
 }
 
 interface SidebarNavSection {
@@ -74,6 +79,7 @@ function SidebarNav({
                       className={itemClassName}
                       aria-current={isActive ? 'page' : undefined}
                       aria-disabled={item.disabled || undefined}
+                      aria-keyshortcuts={item.keyshortcuts}
                       tabIndex={item.disabled ? -1 : undefined}
                       onClick={handleClick}
                     >
@@ -85,6 +91,7 @@ function SidebarNav({
                       className={itemClassName}
                       aria-current={isActive ? 'page' : undefined}
                       aria-disabled={item.disabled || undefined}
+                      aria-keyshortcuts={item.keyshortcuts}
                       disabled={item.disabled}
                       onClick={handleClick}
                     >

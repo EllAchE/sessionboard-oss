@@ -16,6 +16,16 @@ export interface Chord {
   key: string;
   /** ⌘ on Apple keyboards, Ctrl elsewhere. Matched against either, as the ⌘K palette already does. */
   mod: boolean;
+  /**
+   * The workspace tier: ⌘⌃ on Apple keyboards, Ctrl+Alt elsewhere. Every organizer shortcut but the
+   * ⌘K palette carries it, which is what stops a stray letter from deciding a submission.
+   *
+   * Not ⌘⌥. That combination is spoken for above the page — ⌘⌥I/J/C open devtools, ⌘⌥U views
+   * source, ⌘⌥B/L/W belong to Safari, ⌘⌥D/H to macOS, ⌘⌥←/→ to tab switching — and none of it can
+   * be taken back with `preventDefault`. ⌘⌃ is nearly empty by comparison, so the letters get to
+   * mean what they say.
+   */
+  hyper: boolean;
   shift: boolean;
   alt: boolean;
 }
@@ -26,6 +36,13 @@ export interface Chord {
  */
 export interface KeyDescriptor {
   key: string;
+  /**
+   * `KeyboardEvent.code` — the physical key, whatever the layout prints on it. Read as a second
+   * spelling when `key` misses, because a modified keystroke does not always report the letter that
+   * was struck: AltGr rewrites `key` on Windows layouts, and Option does the same on macOS.
+   * Optional, so tests and non-keyboard callers can leave it out.
+   */
+  code?: string;
   metaKey?: boolean;
   ctrlKey?: boolean;
   altKey?: boolean;
@@ -60,21 +77,22 @@ export interface Binding {
   /** Heading the overlay groups this under. */
   group: string;
   /**
-   * Key caps to draw instead of the parsed chords, for ranges that would otherwise render as nine
-   * near-identical rows (`['1', '–', '9']`).
+   * Key caps to draw instead of the parsed chords. For a key this table documents but does not own
+   * — the agenda's Space-to-lift, which belongs to dnd-kit's keyboard sensor.
    */
   display?: string[];
+  /**
+   * Draw the chords as a span rather than a list: the first chord in full, then `–`, then the last
+   * chord's key. Nine caps for a 1–9 score range is noise, and writing the span out by hand in
+   * `display` would hard-code one platform's modifier into a table that renders on both.
+   */
+  range?: boolean;
   /**
    * Fires even while focus is in a text field. Reserved for chords that cannot collide with typing
    * — the ⌘K palette and Escape. Everything else stands down so that typing `a` in a search box
    * never accepts a submission.
    */
   allowInInput?: boolean;
-  /**
-   * Leading key of a two-key sequence: `{ prefix: 'g', chords: ['s'] }` is "g then s". The prefix
-   * is armed by its own keypress and expires on the next key or after a timeout.
-   */
-  prefix?: string;
   /** Kept out of the overlay. For aliases that would read as duplicates. */
   hidden?: boolean;
 }

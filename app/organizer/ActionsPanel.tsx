@@ -3,6 +3,7 @@
 import { useHotkeyContext } from '@/components/hotkeys/HotkeyProvider';
 import { KeyCaps } from '@/components/hotkeys/KeyCaps';
 import { Button, Dialog, Kbd } from '@/components/ui';
+import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
 import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import {
   Activity,
@@ -141,9 +142,7 @@ export function ActionsList({
            * key twice.
            */
           const shortcut = binding?.chords[0];
-          const chordHint = shortcut
-            ? { 'aria-keyshortcuts': binding?.prefix ? `${binding.prefix} ${shortcut}` : shortcut }
-            : {};
+          const chordHint = shortcut ? { 'aria-keyshortcuts': ariaKeyshortcuts(shortcut) } : {};
 
           return row.href ? (
             <a className={styles.row} href={row.href} key={row.bindingId} {...chordHint}>
@@ -199,7 +198,9 @@ export function ActionsPanel({
         type="button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        aria-keyshortcuts={panelBinding?.chords[0]}
+        aria-keyshortcuts={
+          panelBinding?.chords[0] ? ariaKeyshortcuts(panelBinding.chords[0]) : undefined
+        }
         onClick={() => onOpenChange(true)}
       >
         <Zap size={20} aria-hidden="true" />
