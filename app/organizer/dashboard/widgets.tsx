@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowRight, Download } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -21,6 +19,8 @@ import type {
   TaskCompletionSummary,
 } from '@/lib/services/dashboard';
 import { REPORTS } from '@/lib/services/dashboard-catalog';
+import { ArrowRight, Download } from 'lucide-react';
+import Link from 'next/link';
 import styles from './dashboard.module.css';
 
 export function Counter({
@@ -135,7 +135,6 @@ export function NudgesWidget({ nudges }: { nudges: Nudge[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Next actions</CardTitle>
-        <CardDescription>Each one links straight to the fix.</CardDescription>
       </CardHeader>
       <CardBody>
         {nudges.length === 0 ? (
