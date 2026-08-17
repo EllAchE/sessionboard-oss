@@ -45,23 +45,23 @@
 <p><strong>Short form:</strong> <a href="summary.html"><code>06-submission-summary.md</code></a></p>
 <p><strong>Copy-ready form answers:</strong> <a href="../06-submission-form-answers.md"><code>06-submission-form-answers.md</code></a></p>
 <h2 id="philosophy-first">Philosophy First</h2>
-<p>Anyone here has context for what was built, and why. What I want to share with you is th philosophy behind my product decisions, and how that ultimately manifested in Cicero.</p>
+<p>Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, and how that ultimately manifested in Cicero.</p>
 <h3 id="agent-first-portal-second">Agent-first, portal-second</h3>
 <p>The future of all &quot;SaaS&quot; is agent-first. The way I want someone to use this product is by talking to an agent, not by opening a tab.
 That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
 is a first-class surface rather than an integration afterthought, and why the REST API is essential.</p>
-<p>The portal still has role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
+<p>The portal still has a role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
 — the reading, the reconciling, the drafting, the chasing — is work an agent should be doing on
 someone&#39;s behalf, and the portal is where they go to confirm it looks right.</p>
 <p>The portal complements what you can do with an agent and natural language queries of what you want.
 The final form of this is an in-app agent, with that you basically have a full feature set all living within 1 space.
-I did not implement the in app agent because:</p>
+I did not implement the in-app agent because:</p>
 <ol>
-<li>I did not wanna link tokens,</li>
 <li>Was short on time</li>
+<li>I did not wanna link tokens</li>
 <li>You expose new attack vectors with a full-access agent</li>
 </ol>
-<p>Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you&#39;re an organizer. So if your day Includes working with other tools as well, you&#39;re not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case a MCP server and/or API is essential; you need them to make the best version possible of the product.</p>
+<p>Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you&#39;re an organizer. So if your day includes working with other tools as well, you&#39;re not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case an MCP server and/or API is essential; you need them to make the best version possible of the product.</p>
 <h3 id="power-users-first">Power users first</h3>
 <p>The person to design for is the one who performs an operation five hundred times, not the one who
 performs it once. So each design decision gets measured the same way: what is this person spending

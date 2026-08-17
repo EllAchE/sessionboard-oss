@@ -19,7 +19,7 @@ proof is in [`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## Philosophy First
 
-Anyone here has context for what was built, and why. What I want to share with you is th philosophy behind my product decisions, and how that ultimately manifested in Cicero.
+Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, and how that ultimately manifested in Cicero.
 
 ### Agent-first, portal-second
 
@@ -27,19 +27,19 @@ The future of all "SaaS" is agent-first. The way I want someone to use this prod
 That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
 is a first-class surface rather than an integration afterthought, and why the REST API is essential.
 
-The portal still has role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
+The portal still has a role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
 — the reading, the reconciling, the drafting, the chasing — is work an agent should be doing on
 someone's behalf, and the portal is where they go to confirm it looks right.
 
 The portal complements what you can do with an agent and natural language queries of what you want.
 The final form of this is an in-app agent, with that you basically have a full feature set all living within 1 space.
-I did not implement the in app agent because:
+I did not implement the in-app agent because:
 
-1. I did not wanna link tokens,
-2. Was short on time
+1. Was short on time
+2. I did not wanna link tokens
 3. You expose new attack vectors with a full-access agent
 
-Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you're an organizer. So if your day Includes working with other tools as well, you're not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case a MCP server and/or API is essential; you need them to make the best version possible of the product.
+Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you're an organizer. So if your day includes working with other tools as well, you're not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case an MCP server and/or API is essential; you need them to make the best version possible of the product.
 
 ### Power users first
 
