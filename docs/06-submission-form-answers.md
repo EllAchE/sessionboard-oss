@@ -16,7 +16,9 @@ so the copy-ready answers never ship a summarized version of them.
 
 ## Philosophy
 
-Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, the experience/process of building and how that ultimately manifested in Cicero.
+The title here might have been "Kill My SaaS", but I took it as an opportunity to "Improve My SaaS"; thinking from the ground up about how (without user input) I would expect a product like this to function and designing accordingly.
+
+So what makes an interesting writeup here to me is the philosophy behind my product decisions, the experience/process of building and how that ultimately manifested in Cicero.
 
 ### Agent-first, portal-second
 
