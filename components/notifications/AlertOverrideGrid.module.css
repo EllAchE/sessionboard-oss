@@ -10,12 +10,15 @@
  * One column for the row name and one per channel. The channel columns are fixed so every switch
  * in the panel lands on the same two vertical lines however long a category label runs.
  */
+/*
+ * No `column-gap`: the rule between rows is drawn per cell, and a gap would break it into three
+ * segments. The channel columns are wide enough to hold a centred switch with air either side.
+ */
 .grid {
   --alert-column: 4rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--alert-column) var(--alert-column);
   align-items: center;
-  column-gap: var(--space-3);
 }
 
 .columnLabel {
@@ -35,7 +38,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-05);
-  padding: var(--space-2) 0;
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
   min-width: 0;
 }
 
