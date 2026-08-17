@@ -45,12 +45,10 @@ describe('fresh-instance home page', () => {
     const html = renderHome(true);
 
     expect(html).toContain('From call for speakers to first day');
-    expect(html).toContain('One conference, four purpose-built experiences.');
     expect(html).toContain('Organizer');
     expect(html).toContain('Reviewer');
     expect(html).toContain('Speaker');
-    expect(html).toContain('Attendee');
-    expect(html).toContain('Plan the day from the live programme.');
+    expect(html).toContain('Attendees plan the day from the live programme');
     expect(html).toContain('For organizers');
     expect(html).toContain('Know what needs attention');
     expect(html).toContain('Build a schedule that catches collisions');
@@ -71,9 +69,8 @@ describe('fresh-instance home page', () => {
   it('ranks the reviewer above the attendee and keeps them in the closing tour', () => {
     const html = renderHome(true);
 
-    expect(html).toContain('Score proposals, not spreadsheets.');
-    expect(html.indexOf('Score proposals, not spreadsheets.')).toBeLessThan(
-      html.indexOf('Plan the day from the live programme.'),
+    expect(html.indexOf('For reviewers')).toBeLessThan(
+      html.indexOf('Attendees plan the day from the live programme'),
     );
     expect(html).toContain('Try the reviewer queue');
     expect(html).toContain('Rate proposals as a reviewer');
@@ -83,7 +80,7 @@ describe('fresh-instance home page', () => {
     const html = renderHome(false);
 
     expect(html).toContain('href="#products"');
-    expect(html).toContain('Products');
+    expect(html).toContain('>Product<');
     expect(html).toContain('href="/api/v1/openapi.json"');
     expect(html).toContain('>Docs<');
     expect(html).not.toContain('Agent quick start');
@@ -114,5 +111,23 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('href="/demo/agenda"');
     for (const href of Object.values(DEMO_ENTRY_LINKS)) expect(html).toContain(href.replaceAll('&', '&amp;'));
     expect(html).not.toContain('Fresh instance');
+  });
+
+  it('opens and closes the page on an entry point for every seeded role', () => {
+    const html = renderHome(true);
+
+    // The hero personas and the closing call to action are the only two role-complete entry
+    // points on the page, so a visitor reaches any demo without scrolling back to the top.
+    for (const label of ['Run the conference', 'Score the proposals', 'Give a talk']) {
+      expect(html).toContain(label);
+    }
+    for (const label of [
+      'Open the organizer dashboard',
+      'Rate proposals as a reviewer',
+      'Prepare a talk as a speaker',
+    ]) {
+      expect(html).toContain(label);
+      expect(html.indexOf(label)).toBeGreaterThan(html.indexOf('Give a talk'));
+    }
   });
 });

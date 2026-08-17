@@ -106,33 +106,6 @@ const SPEAKER_FEATURES = [
   },
 ];
 
-const ROLE_PRODUCTS = [
-  {
-    icon: LayoutDashboard,
-    role: 'Organizer',
-    title: 'Keep the whole conference moving.',
-    body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up.',
-  },
-  {
-    icon: ClipboardCheck,
-    role: 'Reviewer',
-    title: 'Score proposals, not spreadsheets.',
-    body: 'Work an assigned queue, rate the round’s criteria, and stay blind to peer scores until it closes.',
-  },
-  {
-    icon: Megaphone,
-    role: 'Speaker',
-    title: 'Stay ready from proposal to stage.',
-    body: 'Submit a talk, maintain your profile, send deliverables, and upload your slides.',
-  },
-  {
-    icon: CalendarDays,
-    role: 'Attendee',
-    title: 'Plan the day from the live programme.',
-    body: 'Browse the agenda, discover speakers, and build a personal itinerary, no account needed.',
-  },
-] as const;
-
 /**
  * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
  * visitor reaches a populated view of the role they care about without reading the page first. The
@@ -251,7 +224,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           {demoAvailable ? (
             <div className={styles.personas}>
               <p className={styles.personasTitle} id="personas-title">
-                Or explore a conference already in progress
+                Or explore a conference already in motion
               </p>
               <ul className={styles.personaList} aria-labelledby="personas-title">
                 {PERSONAS.map((persona) => (
@@ -306,34 +279,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
 
       <div className={styles.mosaicRule} aria-hidden="true" />
 
-      <section
-        className={styles.productsOverview}
-        id="products"
-        aria-labelledby="products-title"
-      >
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Products by role</p>
-          <h2 id="products-title">One conference, four purpose-built experiences.</h2>
-          <p>
-            Everyone works from the same event, while each person sees the tools and context that
-            belong to their role.
-          </p>
-        </div>
-        <div className={styles.roleProducts}>
-          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body }) => (
-            <article className={`${styles.feature} ${styles.roleProduct}`} key={role}>
-              <span className={styles.featureIcon}>
-                <Icon size={20} aria-hidden="true" />
-              </span>
-              <p className={styles.roleProductRole}>{role}</p>
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className={styles.product} id="organizers">
+      <section className={styles.product} id="products">
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>
             <LayoutDashboard size={17} aria-hidden="true" />
@@ -394,11 +340,15 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           />
         </div>
         <div className={styles.programmeCopy}>
-          <p className={styles.eyebrow}>For organizers</p>
+          <p className={styles.eyebrow}>For organizers and attendees</p>
           <h2>Publish once. Keep every public view in sync.</h2>
           <p>
             The agenda, session pages, speaker directory, and website embeds all read from the
             programme your team already manages in Cicero.
+          </p>
+          <p>
+            Attendees plan the day from the live programme: browse the agenda, discover speakers,
+            and build a personal itinerary, no account needed.
           </p>
           <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
             {demoAvailable ? 'Explore the demo programme' : 'Publish your first programme'}{' '}
