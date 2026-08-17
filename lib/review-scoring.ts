@@ -1,7 +1,11 @@
 const SCORE_SCALE = 5;
 
 export type WeightedCriterion = { id: string; weight: number; maxScore: number };
-export type WeightedScore = { criterionId: string; value: number };
+/**
+ * `value` is nullable because a scorecard also carries dropdown and free-text criteria, whose rows
+ * hold no number at all. They are skipped below rather than counted as a zero.
+ */
+export type WeightedScore = { criterionId: string; value: number | null };
 
 export type WeightedScoreResult = {
   average: number | null;
