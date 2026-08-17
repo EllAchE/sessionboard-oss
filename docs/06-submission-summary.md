@@ -1,8 +1,9 @@
 # Cicero — submission (short form)
 
-> **Dated competition artifact.** This copy and its evidence were prepared on 16 August 2026. Use
-> [`../README.md`](../README.md), [`README.md`](README.md), and the latest CI run for the maintained
-> operating state.
+> **Dated competition artifact.** This copy was refreshed on 17 August 2026 against the latest
+> merged product baseline. The evidence record separates current-source verification from the older
+> hosted revision. Use [`../README.md`](../README.md), [`README.md`](README.md), and the latest CI run
+> for the maintained operating state.
 
 **Live demo:** <https://cicero-three.vercel.app>
 
@@ -16,9 +17,10 @@
 
 **License:** MIT
 
-This is the form-field version of the
-[`full submission narrative`](06-submission-narrative.md). The dated browser and deployment proof is
-in [`06-submission-evidence.md`](06-submission-evidence.md).
+This is the compact public version of the
+[`full submission narrative`](06-submission-narrative.md). Copy-ready application responses are in
+[`06-submission-form-answers.md`](06-submission-form-answers.md), and the dated browser and deployment
+proof is in [`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## What it is
 
@@ -37,11 +39,13 @@ silently sent.
 
 The replacement spine works end to end: event taxonomy and branding; multi-form CFP builder with
 custom fields, conditional logic and routing; cold public submission with in-flow account creation,
-draft/resume and portal redirect; speaker profile, files, tasks and resources; named weighted review
-across rounds; accept/decline decisions; drag-and-drop scheduling with room, track and speaker
-conflicts; email templates, send log and updating `.ics` invitations; outstanding-task dashboards;
-public event/session/speaker pages, itinerary and embeds; and the required one-way accepted-speaker
-Accelevents client with a deterministic credential-free demo mode.
+draft/resume and portal redirect; speaker profile, files, tasks, resources and availability windows;
+multi-round review with weighted score, dropdown and text criteria; accept/decline decisions;
+drag-and-drop scheduling with room, track, speaker and availability conflicts plus revocable draft
+share links; email templates, send log and updating `.ics` invitations; milestone-aware
+outstanding-task dashboards; public event/session/speaker pages, agenda starring, a personal
+itinerary, seven embeds and portable feeds; and the required one-way accepted-speaker Accelevents
+client with a deterministic credential-free demo mode.
 
 MIT source, Docker Compose, Postgres, MinIO-compatible storage, magic-link roles, and a seeded demo
 make the product testable without buying another service.
@@ -52,17 +56,24 @@ The most important additions are operational rather than decorative:
 
 - assisted chasing from every outstanding-task row, with server-enforced preview and stale-state
   refusal;
+- whole-event duplication that carries reusable forms, taxonomy, tasks, review setup and templates
+  into a clean edition while excluding people, submissions, files, credentials, logs and sync state;
 - keyboard-first organizer workflows inspired by Linear: `⌘K`/`Ctrl-K` navigation plus queue and
   review shortcuts for repeated triage, scoring, staging, and decisions;
-- persistent workspace readiness and quick actions, explicitly scoped to signed-in/active-event
-  context rather than falsely claiming infrastructure health;
-- speaker double-booking plus event-level warn/block conflict policy;
-- versioned speaker files, comments, and post-conference recordings;
+- a persistent Actions panel, demo-first role entry, live sample embeds, and quick actions with
+  discoverable keyboard bindings;
+- speaker double-booking, availability windows, event-level warn/block conflict policy, and private
+  draft-programme previews;
+- versioned speaker files and comments, numbered restorable content revisions, and post-conference
+  recordings;
+- browser-local, event-scoped attendee schedules plus JSON, XML and subscribable `.ics` output from
+  the same embed configuration;
 - SMS consent/verification/preferences/quiet hours and no-login unsubscribe;
 - cross-event speaker CRM, sponsor/exhibitor data, and a public exhibitor-map embed;
-- organizer Updates, review permalinks, decision-note exports, and full speaker-portal assistance;
-- REST/OpenAPI, signed webhooks, MCP and agent workflows, Airtable mirroring, and safe
-  preview/apply/idempotency patterns for programme automation.
+- organizer Updates, accurate overdue pacing, advisory event milestones, review permalinks,
+  decision-note exports, unified Messages navigation, and full speaker-portal assistance;
+- REST/OpenAPI with readable and Scalar references, browser CORS, signed webhooks, MCP and agent
+  workflows, per-event `llms.txt`, Airtable mirroring, and safe preview/apply/idempotency patterns.
 
 ## What we deliberately left for later
 
@@ -84,8 +95,9 @@ truth while an operations team works in its existing project. Stable IDs, explic
 webhooks, reconciliation, and loop prevention are required. The first version should send canonical
 links—not silently copy speaker PII, files, or comments into third parties.
 
-Next after that: event cloning, so an annual conference can preserve taxonomy, forms, tasks, and
-templates while starting with clean submissions and participant state.
+Event cloning is now shipped. The next trust and operations work is an append-only Updates source,
+headshot consent bound to the exact published file version, scoped dual-attributed organizer
+assistance, and provider-neutral task sync with Linear first.
 
 ## Architecture and evidence
 
@@ -95,9 +107,10 @@ human and automated entry points. Core programme fields are typed Postgres colum
 answers use JSONB. Magic links are short-lived and single-use, with guarded on-screen access for
 reserved seeded identities.
 
-On 2026-08-16, the current source was production-built in Docker, migrated, seeded, and walked in a
-browser. The hosted demo also served its public agenda, embed, First Settlement event, organizer
-login, and agenda API; the API returned HTTP 200 with five sessions in three rooms. The evidence pass
-also found that the host is on an older `/admin` organizer revision than current `/organizer` source.
-The core demo works, but a fresh deployment is required before claiming the newest ergonomics are
-live.
+On 2026-08-16, the then-current source was production-built in Docker, migrated, seeded, and walked
+in a browser. The 2026-08-17 refresh audited merged product changes through `d9231a4`, regenerated
+the standalone reading copies, and reran the source checks recorded in the evidence document. A live
+recheck returned HTTP 200 for the demo, public agenda, and agenda API with five sessions in three
+rooms, but confirmed that the host is still on an older `/admin` organizer and landing-page revision
+than current `/organizer` source. The core demo works; the new features above remain current-source
+claims until a fresh application deployment closes that gap.

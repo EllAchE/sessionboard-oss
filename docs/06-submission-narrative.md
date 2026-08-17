@@ -1,8 +1,9 @@
 # Cicero — full submission narrative
 
-> **Dated competition artifact.** This narrative and its evidence capture were prepared on 16
-> August 2026. Use [`../README.md`](../README.md), [`README.md`](README.md), and the latest CI run for
-> the maintained operating state.
+> **Dated competition artifact.** This narrative was refreshed on 17 August 2026 against the latest
+> merged product baseline. The evidence record keeps the earlier browser capture and a separate
+> current-source verification so deployment gaps remain visible. Use [`../README.md`](../README.md),
+> [`README.md`](README.md), and the latest CI run for the maintained operating state.
 
 **Live demo:** <https://cicero-three.vercel.app>
 
@@ -20,12 +21,15 @@
 
 **Short form:** [`06-submission-summary.md`](06-submission-summary.md)
 
+**Copy-ready form answers:** [`06-submission-form-answers.md`](06-submission-form-answers.md)
+
 ## The submission in one sentence
 
 Cicero is a self-hostable, open-source replacement for the part of Sessionboard an event team
 actually uses: it carries a conference from call for speakers, through review and scheduling, to
-speaker onboarding, communications, and a published programme—then adds the operational visibility,
-safe automation, and keyboard ergonomics that frequent organizers need.
+speaker onboarding, communications, a published programme, and an attendee's personal
+schedule—then adds the operational visibility, safe automation, and keyboard ergonomics that
+frequent organizers need.
 
 The submission is best understood in three buckets:
 
@@ -73,15 +77,15 @@ Cicero supplies.
 
 | Requested capability | What Cicero ships | Why this is replacement-grade |
 | --- | --- | --- |
-| Event setup | Event creation, dates, timezone, branding, tracks, rooms, tags, formats, multi-event scoping and switching | A judge can create a second event without contaminating the seed; the taxonomy used by forms, review, and agenda is shared rather than copied |
+| Event setup | Event creation, dates, timezone, branding, tracks, rooms, tags, formats, multi-event scoping, switching, and safe duplication of a prior edition | A judge can create a second event without contaminating the seed or reuse an operating model without carrying over people, submissions, files, credentials, logs, or integration state |
 | Call for speakers | Multiple drag-and-drop forms, built-in and custom fields, conditional logic, category routing, participant roles, welcome/success pages, deadlines | The builder and public runtime use the same definition; deadlines are enforced in the page, actions, upload routes, and API |
 | Cold submission | Public mobile-friendly multi-step flow, account creation inside the flow, draft/resume, review step, confirmation, portal redirect | A speaker arrives without an account and leaves with a usable portal instead of hitting an authentication seam |
-| Speaker portal | Profile and bio editing, headshots, versioned slides/documents, submissions, tasks, resources, raw organizer-authored HTML, group access, calendar download | The accepted speaker can finish the real onboarding work without an organizer relaying every file and field by email |
-| Review and decisions | Status queues, named and weighted scoring, multi-round review, evaluation plans, routing, recusal, anonymized modes, saved views, exports, inline and bulk decisions | Routing begins at the form and drives the reviewer's queue; staged recommendations remain distinct from committed decisions |
-| Agenda | Drag-and-drop placement, unscheduled rail, list/day/week/room/track/month views, room/track/speaker conflict detection, draft versus published state | Organizers can rearrange privately, see physically impossible collisions, and publish only the intended programme |
+| Speaker portal | Profile and bio editing, headshots, versioned slides/documents, submissions, tasks, resources, raw organizer-authored HTML, group access, availability/blackout windows, calendar download | The accepted speaker can finish the real onboarding work and declare when they cannot present without an organizer relaying every file and field by email |
+| Review and decisions | Status queues, named and weighted score, dropdown, and text criteria, multi-round review, evaluation plans, routing, recusal, anonymized modes, saved views, exports, inline and bulk decisions | Routing begins at the form and drives the reviewer's queue; qualitative evidence stays beside normalized numeric scoring, and staged recommendations remain distinct from committed decisions |
+| Agenda | Drag-and-drop placement, unscheduled rail, list/day/week/room/track/month views, room/track/speaker/availability conflict detection, draft share links, draft versus published state | Organizers can rearrange privately, review a private live programme with stakeholders, see physically impossible collisions, and publish only the intended programme |
 | Communications | Editable templates, triggered and filtered sends, delivery log, task reminders, `.ics` invitations with stable UID and sequence, add-to-calendar links | Rescheduling updates an existing calendar item instead of leaving stale duplicates; the log answers “did we send it?” |
-| Organizer dashboard | Accepted speakers with outstanding tasks, counters, linked next actions, pacing, breakdowns, five prebuilt dashboards, custom dashboards | The first screen names the people and work blocking the event instead of showing only decorative totals |
-| Public output | Public event/session/speaker pages, gallery, itinerary, agenda and five embeddable views with stable snippets | Publication is a live read of the same programme; existing websites do not need copied schedules or replacement embed code |
+| Organizer dashboard | Accepted speakers with outstanding tasks, counters, linked next actions, speaker-roster and agenda milestones, accurate overdue pacing, breakdowns, five prebuilt dashboards, custom dashboards | The first screen names the people and work blocking the event instead of showing only decorative totals |
+| Public output | Public event/session/speaker pages, agenda starring and personal itinerary, seven embeddable views, live sample embeds, JSON/XML/subscribable `.ics` feeds, per-event `llms.txt` | Publication is a live read of the same programme; attendees can plan without an account, and websites or agents can consume the same configured output without copied schedules |
 | Required integration | One-way accepted-speaker push behind an Accelevents client interface with deterministic fixture mode | The judged path exercises real field mapping, authentication and error outcomes without inventing credentials or undocumented remote capability |
 | Open-source operation | MIT source, magic-link roles, Postgres, storage abstraction, Docker Compose, Cloudflare/OpenNext target, Vercel-hosted demo | A new operator can run the product without buying a proprietary dependency or providing an email/SMS/AI key |
 
@@ -120,6 +124,12 @@ partial: the current watermark is browser-local and some source tables preserve 
 update rather than an append-only history. The shipped slice is useful, but we do not claim it is a
 complete durable audit log yet.
 
+Event-level speaker-roster and agenda milestones now give the dashboard, portal, public event, and
+reminder runner the same deadlines. Overdue counts include only participants who are actually late,
+so the pacing signal cannot be inflated by future or completed work. Organizers reach composing,
+templates, campaigns, preferences, share links, and delivery history through one **Messages** area
+rather than learning the system's channel boundaries first.
+
 #### Review permalinks and decision-note exports
 
 Reviewers and organizers can copy stable submission links and preserve decision context outside the
@@ -146,6 +156,8 @@ inside a broad track can be legitimate. The same decision function governs the b
 #### Versioned files and recordings
 
 Speaker deliverables retain versions and comments instead of overwriting the previous upload.
+Session, speaker, agenda, and sponsor edits also produce numbered content revisions that can be
+diffed and restored; a restoration becomes a new revision, so recovery is itself undoable.
 Post-conference recordings have independent organizer and public publication gates. These features
 extend the lifecycle beyond “collect one slide deck” while retaining deliberate visibility control.
 
@@ -173,15 +185,38 @@ and curated segments, and a sourcing pipeline. This was initially excluded and t
 built because recurring conferences do not experience speakers as isolated rows recreated every
 year. The event remains the unit of programme truth; the CRM supplies cross-event memory.
 
-### 3.5 API and automation surfaces
+Event duplication handles the other half of recurrence. It copies the reusable operating model—the
+taxonomy, forms, review rounds and criteria, tasks, templates, and selected content—while reopening
+time-bound workflows as drafts and clearing old due dates. The clone plan is exhaustive over the
+event-scoped schema and fails tests when a new table or column has no explicit copy/clear/skip rule.
+People, submissions, files, share links, credentials, logs, and integration state never cross into
+the new edition.
+
+### 3.5 Reviewable drafts and attendee-owned schedules
+
+An organizer can mint a time-limited, revocable no-login share link for the draft programme. The
+preview intentionally includes draft sessions and unapproved copy for stakeholder review, while
+excluding contact, accommodation, credential, and other private data. The plaintext token is never
+stored, and cloning an event cannot revive or carry one forward.
+
+After publication, attendees can star sessions directly from the agenda grid and see the same
+selection as a personal itinerary. The schedule is browser-local and event-scoped: it needs no
+account, does not leak one conference's choices into another, and works in the public pages and
+embeds. It is deliberately personal planning, not an attendee-registration claim.
+
+### 3.6 API and automation surfaces
 
 Beyond the required Accelevents push, Cicero ships:
 
 - a versioned REST API with generated OpenAPI;
+- a readable, deep-linkable API reference plus a Scalar rendering and cross-origin preflight
+  support for browser clients;
 - signed outbound webhooks;
 - a Streamable HTTP MCP server and generated manifest;
 - role-scoped agent workflows;
 - public agenda data used by the same public/embedded programme;
+- JSON, XML, and subscribable `.ics` representations of an organizer's embed configuration;
+- per-event `llms.txt` discovery for agents;
 - an Airtable mirror path;
 - preview/apply/idempotency patterns for programme reconciliation.
 
@@ -216,24 +251,31 @@ another forty proposals to process” and the next valid action. Keyboard behavi
 inputs and editable regions win, modifier collisions are ignored, and confirmation dialogs retain
 control.
 
-### Persistent workspace readiness
+### Persistent actions and workspace context
 
-The persistent Health control answers a narrower question than its label might suggest: **is this
-browser ready for organizer work?** Today, Ready means a signed-in organizer and an active event.
-The drawer states explicitly that it is not a live database, infrastructure, storage, or
-third-party health check.
+The persistent **Actions** control is the discoverable form of the global keyboard layer. Every row
+shows the binding that invokes the same move without opening the panel, and it includes a narrow
+workspace status: Ready means a signed-in organizer and an active event in this browser. The drawer
+states explicitly that this is not a live database, infrastructure, storage, or third-party health
+check.
 
 That limited promise is intentional. A permanently green “system health” badge that never queried
 the system would erode trust. Workspace readiness is still useful because this is a multi-event,
 multi-persona app: it confirms the context in which the next action will occur and exposes recovery
 shortcuts without overstating what was measured.
 
-### Quick actions
+### Demo-first entry and quick actions
 
 The same persistent control opens one-click paths to search/jump, the organizer dashboard, event
 creation, the speaker portal, and the active public programme. These are the escape hatches an
 organizer needs when context gets lost. They also make the product easier to demonstrate without
 turning the primary navigation into a wall of buttons.
+
+The signed-out landing page now does the same job for evaluation: its organizer, reviewer, speaker,
+and attendee cards each open the relevant seeded tour; the demo menu groups all role paths; and the
+public embed gallery renders every view the fixture can fill with the exact script and iframe
+snippets that produced it. The API reference and MCP setup prompt remain visible for an evaluator
+who wants to move from the product to its automation surfaces.
 
 The interactive helper shown in that drawer is still a preview, not a shipped assistant. The
 distinction is visible in the interface and retained in this submission.
@@ -260,7 +302,8 @@ This matters most where a superficial clone fails:
 - blind review redacts before search, so a hidden author cannot be rediscovered by filtering;
 - decisions commit before best-effort notification and only real state transitions send;
 - public reads default to published, so drafts do not leak through a forgotten endpoint;
-- agenda conflicts behave the same from the board and reconciliation API.
+- agenda conflicts behave the same from the board and reconciliation API;
+- event duplication must account for every event-scoped table and column before the clone can ship.
 
 ### A hybrid submission schema
 
@@ -363,19 +406,14 @@ without them it is credential issuance on request.
   workflows, where frequent review, triage, and scheduling work is most likely to happen on a
   desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
   especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
-  host-site compatibility pass.
-- The landing experience for a reviewer or speaker who arrives without an invitation link was not
-  thought through deeply. The design assumed invited arrival: an organizer sends a magic link and it
-  lands the person on the one surface they need. Someone who instead types the domain, follows a
-  colleague's link, or returns months later gets a page written mostly for organizers and evaluators
-  — the role cards name organizer, speaker, and attendee but not reviewer, and none of them is an
-  entry point. Sign-in with no `next` defaults to `/organizer`, and the routing that corrects it is a
-  chain of redirects rather than a deliberate destination: the organizer layout bounces a reviewer to
-  `/review` and a speaker to `/portal`, but sends anyone with no event membership to `/events/new`,
-  which asks a speaker or reviewer waiting to be added to create a conference instead. The right
-  answer is probably an explicit post-authentication router that resolves a person's roles before
-  choosing a destination, plus a signed-out landing path that lets a speaker or reviewer say which
-  event they belong to, rather than more redirect rules layered on the organizer shell.
+  host-site compatibility pass. Agenda starring improves the attendee path but has not replaced
+  that device-and-host verification work.
+- The signed-out landing page now gives organizers, reviewers, speakers, and attendees explicit demo
+  entry points. A real reviewer or speaker who arrives without an invitation still has no event
+  discovery path, however. Sign-in with no `next` begins at `/organizer` and relies on role-aware
+  redirects to reach `/review` or `/portal`; a person with no membership is still sent toward event
+  creation. The next fix is a deliberate post-authentication role/event router, not more shell
+  redirects.
 - The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
   not been proven there even though message generation and `.ics` behavior are tested.
 - R2 and Twilio adapters are implemented and tested but have not been exercised against paid
@@ -439,16 +477,19 @@ Other useful integration directions follow the same rule:
 
 ## 8. Evidence and demo status
 
-On 2026-08-16 the current source tree was built as a production Docker image, migrated, seeded, and
-walked in Chrome. Both seed events loaded; public agenda, reserved-address magic-link sign-in,
+On 2026-08-16 the then-current source tree was built as a production Docker image, migrated, seeded,
+and walked in Chrome. Both seed events loaded; public agenda, reserved-address magic-link sign-in,
 organizer dashboard, command menu, and readiness/quick-action drawer were exercised. The hosted demo
 also served the public agenda, embed, First Settlement event, organizer login, and the agenda API;
 the API returned HTTP 200 with five sessions across three rooms.
 
-The same pass found that the hosted demo uses the older `/admin` organizer shell while current source
-uses `/organizer`. The public and authenticated core is working, but the newest ergonomics should be
-demonstrated from current source until a fresh deploy closes that parity gap. The screenshots and
-route-by-route results are preserved in [`06-submission-evidence.md`](06-submission-evidence.md).
+The documentation refresh audited every product commit through `d9231a4`, regenerated the reading
+copies, and reran the source checks recorded in the evidence document. A live recheck on 2026-08-17
+found the same deployment boundary: the hosted demo and its five-session agenda are healthy, but the
+organizer shell still uses `/admin` and the landing page predates the current demo-first revision.
+The newest features in this narrative are therefore current-source claims until a fresh application
+deploy closes the gap. The screenshots, commands, and route results are preserved in
+[`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## 9. What we would build next
 
@@ -460,17 +501,17 @@ In product order rather than novelty order:
    reserved-address inbox-free demo.
 3. Replace broad impersonation with scoped, dual-attributed organizer assistance.
 4. Make Updates append-only and cross-device.
-5. Build the provider-neutral task connector with Linear as the first implementation.
-6. Add event cloning: copy taxonomy, forms, tasks, templates, and selected content into a new edition
-   without copying submissions or private speaker state.
+5. Bind headshot publication consent to the exact file version being published.
+6. Build the provider-neutral task connector with Linear as the first implementation, then evaluate
+   bidirectional Airtable reconciliation with explicit field ownership.
 7. Re-measure public-route CPU in the target runtime and reduce the OpenNext bundle below the free
    Workers limit.
 8. Evaluate intelligent agenda optimization only after demand, capacity, and schedule-quality data
    exist.
 
-Event cloning is the highest-value product feature the brief did not ask for. Conference teams repeat
-an edition annually; the correct clone would preserve their operating system while creating clean
-programme and participant state.
+Event cloning was the highest-value product feature the brief did not ask for, and it is now part of
+the submission. The next trust boundary is narrower but more important than another broad feature:
+an approved headshot must remain approved only for the exact file the speaker consented to publish.
 
 ## Closing
 

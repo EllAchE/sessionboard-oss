@@ -441,6 +441,7 @@ current policy.
 - [`docs/04-demo-runbook.md`](docs/04-demo-runbook.md) — presenter-ready walkthrough and safety gates
 - [`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md) — actor and permission model
 - [`docs/api/program-reconcile.md`](docs/api/program-reconcile.md) — safe inbound program reconciliation
+- [`docs/06-submission-form-answers.md`](docs/06-submission-form-answers.md) — copy-ready competition form answers
 - [`docs/06-submission-narrative.md`](docs/06-submission-narrative.md) — full competition submission
 - [Public submission write-up](https://cicero-submission.elehche.workers.dev/) — readable HTML on its own Worker
 - [`docs/submission/index.html`](docs/submission/index.html) — checked-in HTML mirror of the submission
