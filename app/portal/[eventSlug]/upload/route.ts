@@ -78,7 +78,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ eve
       revalidatePath(`/portal/${eventSlug}`, 'layout');
       return NextResponse.json({
         ok: true,
-        message: `Uploaded as version ${next.version} — the earlier version is still on file`,
+        message: `Uploaded as version ${next.version}. The earlier version is still on file`,
         fileId: next.id,
       });
     }

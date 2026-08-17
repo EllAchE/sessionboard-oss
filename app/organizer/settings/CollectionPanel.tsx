@@ -424,7 +424,7 @@ export function CollectionPanel({ spec, rows, canManage }: Props) {
                 )
               }
             >
-              <option value="">Nothing — leave the field empty</option>
+              <option value="">Nothing, leave the field empty</option>
               {siblings.map((row) => (
                 <option key={row.id} value={row.id}>
                   {row.values[nameKey]}

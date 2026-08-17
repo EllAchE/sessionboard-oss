@@ -112,7 +112,7 @@ export function AlertOverrideGrid({
                 <Switch
                   size="sm"
                   checked={row.email}
-                  aria-label={`Email — ${row.label.toLowerCase()}`}
+                  aria-label={`Email for ${row.label.toLowerCase()}`}
                   onCheckedChange={(checked) =>
                     row.change({ ...row.overrides, notifyEmail: checked })
                   }
@@ -123,7 +123,7 @@ export function AlertOverrideGrid({
                   size="sm"
                   checked={row.sms}
                   disabled={smsLocked}
-                  aria-label={`Text message — ${row.label.toLowerCase()}`}
+                  aria-label={`Text message for ${row.label.toLowerCase()}`}
                   onCheckedChange={(checked) => row.change({ ...row.overrides, notifySms: checked })}
                 />
               </span>

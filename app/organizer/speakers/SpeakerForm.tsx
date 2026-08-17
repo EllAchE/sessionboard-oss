@@ -312,7 +312,7 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
               <p className={styles.fieldHint}>
                 {photo
                   ? photo.name
-                  : 'JPEG, PNG, GIF or WebP up to 10 MB. Upload a square photo — anything else is center-cropped when you save.'}
+                  : 'JPEG, PNG, GIF or WebP up to 10 MB. Upload a square photo. Anything else is center-cropped when you save.'}
               </p>
             </div>
           </div>

@@ -131,7 +131,7 @@ export function NudgeComposer({
         title: `Nudge sent to ${result.data.recipientName}`,
         description: result.data.delivered
           ? result.data.recipientEmail
-          : `Recorded in the mail log — this deployment's transport does not hand mail to a provider.`,
+          : `Recorded in the mail log. This deployment's transport does not hand mail to a provider.`,
         tone: 'success',
       });
       router.refresh();
@@ -141,7 +141,7 @@ export function NudgeComposer({
 
   const warnings = [
     ...(draft?.unknownVariables ?? []).map(
-      (path) => `{{${path}}} is not a merge field — it will render as nothing.`,
+      (path) => `{{${path}}} is not a merge field, so it will render as nothing.`,
     ),
     ...(draft?.rendered.missing ?? []).map((path) => `{{${path}}} is empty for this recipient.`),
   ];
@@ -153,7 +153,7 @@ export function NudgeComposer({
         if (!next) onClose();
       }}
       size="lg"
-      title={`Draft a nudge — ${row.taskName}`}
+      title={`Draft a nudge: ${row.taskName}`}
       description={
         draft
           ? `To ${draft.recipient.name} <${draft.recipient.email}>. Nothing is sent until you read it and press send.`

@@ -275,7 +275,7 @@ export function SpeakerRoster({
             <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`} dir="auto">
               {person.name}
             </a>
-            {role ? ` — ${role}` : null}
+            {role ? `, ${role}` : null}
           </span>
         );
       })}

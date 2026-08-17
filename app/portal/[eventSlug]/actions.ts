@@ -235,7 +235,7 @@ export async function saveTaskFormAction(_prev: FormState, formData: FormData): 
     refresh(eventSlug);
     return {
       status: 'ok',
-      message: submit ? 'Submitted — check your email for a copy' : 'Progress saved',
+      message: submit ? 'Submitted. Check your email for a copy' : 'Progress saved',
     };
   } catch (error) {
     return fail(error);
@@ -259,7 +259,7 @@ export async function postDeliverableCommentAction(
     const deliverable = await myDeliverable(ctx, me, text(formData, 'fileId'));
     await addFileComment(ctx, deliverable.current.id, text(formData, 'body'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'Comment posted — the organizers can see it' };
+    return { status: 'ok', message: 'Comment posted. The organizers can see it' };
   } catch (error) {
     return fail(error);
   }

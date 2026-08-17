@@ -388,7 +388,7 @@ export function RoundsManager(props: RoundsManagerProps) {
         `${result.data.created} assignment${result.data.created === 1 ? '' : 's'} across ` +
           `${result.data.routed} submission${result.data.routed === 1 ? '' : 's'}` +
           (result.data.unrouted.length > 0
-            ? `. ${result.data.unrouted.length} could not be routed — listed below.`
+            ? `. ${result.data.unrouted.length} could not be routed, and they are listed below.`
             : '. Nothing was left unrouted.'),
       );
       router.refresh();

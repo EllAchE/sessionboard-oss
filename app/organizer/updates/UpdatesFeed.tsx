@@ -231,7 +231,7 @@ export function UpdatesFeed({
           <p className={styles.eyebrow}>Notifications &amp; updates</p>
           <h1 className={styles.title}>{eventName}</h1>
           <p className={styles.subtitle}>
-            A rundown of submissions, reviews, speakers, tasks, program changes, and files—all in
+            A rundown of submissions, reviews, speakers, tasks, program changes, and files, all in
             one place.
           </p>
         </div>

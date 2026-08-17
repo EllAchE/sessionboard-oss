@@ -259,7 +259,7 @@ export async function chaseDeliverables(
 
   for (const row of rows) {
     if (row.state !== 'outstanding') {
-      skipped.push(`${row.speakerName} — ${row.taskName} is already ${row.state}`);
+      skipped.push(`${row.speakerName}: ${row.taskName} is already ${row.state}`);
       continue;
     }
 

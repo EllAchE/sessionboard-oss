@@ -220,7 +220,7 @@ export function SessionDialog({
           ? 'Times are in the event timezone.'
           : form.sourceSubmissionId
             ? 'Schedule this accepted proposal. Its speakers and submission stay linked.'
-          : 'For anything without a submission behind it — a keynote, a break, lunch.'
+          : 'For anything without a submission behind it: a keynote, a break, lunch.'
       }
       size="lg"
       footer={

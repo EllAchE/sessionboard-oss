@@ -377,7 +377,7 @@ export async function testConnection(): Promise<{
     const listed = await gateway.listSpeakers({ size: 1 });
     return {
       ok: true,
-      message: `Connected to ${gateway.eventUrl} — ${listed.total} speaker${listed.total === 1 ? '' : 's'} on file`,
+      message: `Connected to ${gateway.eventUrl}, with ${listed.total} speaker${listed.total === 1 ? '' : 's'} on file`,
       authHeaderUsed: listed.authHeaderUsed,
     };
   } catch (error) {

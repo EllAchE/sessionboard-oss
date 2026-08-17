@@ -135,7 +135,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
         <Card>
           <CardHeader>
             <CardTitle>Recipients</CardTitle>
-            <CardDescription>{selected.length} selected — at least two are needed.</CardDescription>
+            <CardDescription>{selected.length} selected, and at least two are needed.</CardDescription>
           </CardHeader>
           <CardBody>
             <div className={styles.recipientList}>
@@ -255,7 +255,7 @@ export function Composer({ contacts, preselected, events, campaigns }: Props) {
                   <div className={styles.stack}>
                     {campaign.recipients.map((recipient) => (
                       <span key={recipient.email} className={styles.timelineMeta}>
-                        {recipient.email} — {recipient.renderedSubject}
+                        {recipient.email}: {recipient.renderedSubject}
                       </span>
                     ))}
                   </div>

@@ -144,7 +144,7 @@ export function ProfileForm({
                   }}
                 />
                 <p id="headshot-help" className={styles.hint}>
-                  JPEG, PNG, GIF or WebP up to 10 MB. Upload a square photo — anything else is
+                  JPEG, PNG, GIF or WebP up to 10 MB. Upload a square photo. Anything else is
                   center-cropped to a 512 px square.
                 </p>
                 <FieldError state={state} field="headshot" />

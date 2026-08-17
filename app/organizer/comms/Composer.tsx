@@ -270,7 +270,7 @@ export function Composer(props: ComposerProps) {
                     setPreview(null);
                   }}
                 >
-                  <option value="auto">Auto — each recipient&rsquo;s own preference</option>
+                  <option value="auto">Auto: each recipient&rsquo;s own preference</option>
                   <option value="email">Force email, for everyone with an address</option>
                   <option value="sms">SMS, for everyone who opted in</option>
                 </Select>
@@ -293,7 +293,7 @@ export function Composer(props: ComposerProps) {
 
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="bodyMarkdown">
-                  Body — markdown
+                  Body (markdown)
                 </label>
                 <Textarea
                   id="bodyMarkdown"
@@ -310,7 +310,7 @@ export function Composer(props: ComposerProps) {
 
               <div className={styles.field}>
                 <label className={styles.label} htmlFor="smsBody">
-                  SMS body — plain text
+                  SMS body (plain text)
                 </label>
                 <Textarea
                   id="smsBody"
@@ -325,7 +325,7 @@ export function Composer(props: ComposerProps) {
               </div>
 
               <div className={styles.field}>
-                <span className={styles.label}>Merge fields — click to insert</span>
+                <span className={styles.label}>Merge fields, click to insert</span>
                 <div className={styles.variables}>
                   {props.variables.map((variable) => (
                     <button

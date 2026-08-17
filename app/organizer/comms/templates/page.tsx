@@ -34,7 +34,7 @@ export default async function TemplatesPage({
         <h1 className={styles.title}>Email templates</h1>
         <Card>
           <CardBody>
-            <p className={styles.empty}>Create an event first — templates are scoped to one.</p>
+            <p className={styles.empty}>Create an event first. Templates are scoped to one.</p>
           </CardBody>
         </Card>
       </div>

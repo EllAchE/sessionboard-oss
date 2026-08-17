@@ -117,7 +117,7 @@ export function ParticipantsPanel({
                   {field.maxLength ? `Up to ${field.maxLength} characters. ` : ''}
                   {field.requiredLocked
                     ? 'This is what identifies the person, so it cannot be switched off.'
-                    : 'Required, or optional — the question is always asked.'}
+                    : 'Required or optional, the question is always asked.'}
                 </span>
               </span>
               <Switch

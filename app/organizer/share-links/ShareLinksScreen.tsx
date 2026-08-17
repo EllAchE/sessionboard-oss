@@ -157,8 +157,8 @@ export function ShareLinksScreen({ links }: { links: ShareLinkRow[] }) {
       <div className={styles.headings}>
         <h1 className={styles.title}>Guest links</h1>
         <p className={styles.note}>
-          A link that opens one view of this event for someone with no Cicero account — a keynote
-          speaker, a sponsor, a venue contact. Unlike the public programme it <strong>includes
+          A link that opens one view of this event for someone with no Cicero account, like a keynote
+          speaker, a sponsor, or a venue contact. Unlike the public programme it <strong>includes
           sessions, speakers and sponsors you have not published yet</strong>, so treat it as you
           would the draft itself. It never shows contact details, review scores or decisions, and
           anyone holding it can only read. Revoke it and it stops working immediately.
@@ -231,7 +231,7 @@ export function ShareLinksScreen({ links }: { links: ShareLinkRow[] }) {
             </Button>
           </div>
           <p className={styles.newLinkNote}>
-            Cicero stores only a hash of this link, so nobody — including you — can recover it later.
+            Cicero stores only a hash of this link, so nobody, including you, can recover it later.
             Anyone who has it can read the page, so send it to one person rather than a mailing list.
           </p>
         </div>

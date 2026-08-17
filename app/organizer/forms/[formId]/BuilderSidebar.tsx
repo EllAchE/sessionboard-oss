@@ -145,7 +145,7 @@ export function BuilderSidebar({
           <div className={styles.groupSummary}>
             {groups.map((group) => (
               <span key={group.group}>
-                <strong>{group.group}</strong> — {group.limit} characters across{' '}
+                <strong>{group.group}</strong>: {group.limit} characters across{' '}
                 {group.fields.map((field) => field.label).join(', ')}
               </span>
             ))}

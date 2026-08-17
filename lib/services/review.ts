@@ -3926,7 +3926,7 @@ export function reminderBody(
     '',
     `You have ${count} submission${count === 1 ? '' : 's'} still waiting for your score in **${round.name}**.`,
     '',
-    ...reviewer.outstanding.map((row) => `- ${row.displayRef} — ${row.title}`),
+    ...reviewer.outstanding.map((row) => `- ${row.displayRef}: ${row.title}`),
     '',
     `[Open your review queue](${link})`,
   ];
@@ -3973,7 +3973,7 @@ export async function remindOutstandingReviewers(
     const body = reminderBody(reviewer, round, link, options.note);
     const result = await sendMail({
       to: reviewer.email,
-      subject: `${reviewer.outstanding.length} review${reviewer.outstanding.length === 1 ? '' : 's'} outstanding — ${round.name}`,
+      subject: `${reviewer.outstanding.length} review${reviewer.outstanding.length === 1 ? '' : 's'} outstanding for ${round.name}`,
       html: wrapInBranding(branding, renderMarkdown(body)),
       text: markdownToText(body),
       eventId: ctx.eventId,

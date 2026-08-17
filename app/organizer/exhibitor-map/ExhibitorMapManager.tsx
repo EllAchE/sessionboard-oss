@@ -108,7 +108,7 @@ export function ExhibitorMapManager({
           <h1 className={dashboard.title}>Exhibitor map</h1>
           <p className={dashboard.subtitle}>
             Upload the finished floor plan you already have. Cicero publishes that PDF as a static,
-            embeddable document—no booth drawing or map setup required.
+            embeddable document, with no booth drawing or map setup required.
           </p>
         </div>
       </div>
