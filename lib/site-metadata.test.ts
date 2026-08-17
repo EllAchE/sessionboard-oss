@@ -3,6 +3,7 @@ import {
   absoluteSiteUrl,
   createSiteMetadata,
   createSocialMetadata,
+  renderStaticSocialMetadata,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TITLE,
@@ -65,5 +66,23 @@ describe('site metadata', () => {
     expect(metadata.description).toBe(SITE_DESCRIPTION);
     expect(metadata.applicationName).toBe(SITE_NAME);
     expect(metadata.alternates?.canonical).toBe('https://cicero.example/');
+  });
+
+  it('renders complete social tags for static deployments', () => {
+    const metadata = renderStaticSocialMetadata({
+      origin: 'https://cicero.example/',
+      path: '/',
+      title: 'Cicero & friends',
+      description: 'Conference operations, from submission to schedule.',
+    });
+
+    expect(metadata).toContain('<link rel="canonical" href="https://cicero.example/">');
+    expect(metadata).toContain('<meta property="og:title" content="Cicero &amp; friends">');
+    expect(metadata).toContain(
+      '<meta property="og:image" content="https://cicero.example/social/cicero-card-archetypes.png">',
+    );
+    expect(metadata).toContain('<meta property="og:image:width" content="1200">');
+    expect(metadata).toContain('<meta property="og:image:height" content="630">');
+    expect(metadata).toContain('<meta name="twitter:card" content="summary_large_image">');
   });
 });
