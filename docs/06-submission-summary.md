@@ -1,22 +1,5 @@
 # Cicero — submission (short form)
 
-**Live demo:** <https://cicero-three.vercel.app>
-
-**Readable HTML:** <https://cicero-submission.elehche.workers.dev/submission/summary.html>
-
-**Repository mirror:** [`submission/summary.html`](submission/summary.html)
-
-**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
-
-**Source:** <https://github.com/EllAchE/sessionboard-oss>
-
-**License:** MIT
-
-This is the compact public version of the
-[`full submission narrative`](06-submission-narrative.md). Copy-ready application responses are in
-[`06-submission-form-answers.md`](06-submission-form-answers.md), and the dated browser and deployment
-proof is in [`06-submission-evidence.md`](06-submission-evidence.md).
-
 ## Philosophy First
 
 Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, and how that ultimately manifested in Cicero.
@@ -204,3 +187,25 @@ rooms, but confirmed that the host is still on an older `/admin` organizer and l
 than current `/organizer` source. The dedicated submission Worker was refreshed and verified on 17
 August; the core application demo works, while the new application features above remain
 current-source claims until a fresh application deployment closes that separate gap.
+
+## Links
+
+**Live demo:** <https://cicero-three.vercel.app>
+
+**Readable HTML:** <https://cicero-submission.elehche.workers.dev/submission/summary.html>
+
+**Repository mirror:** [`submission/summary.html`](submission/summary.html)
+
+**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
+
+**Source:** <https://github.com/EllAchE/sessionboard-oss>
+
+**License:** MIT
+
+**Full narrative:** [`06-submission-narrative.md`](06-submission-narrative.md) — this document is its
+compact public version.
+
+**Copy-ready form answers:** [`06-submission-form-answers.md`](06-submission-form-answers.md)
+
+**Evidence:** [`06-submission-evidence.md`](06-submission-evidence.md) — dated browser and deployment
+proof.
