@@ -33,6 +33,35 @@ const AGENT_STARTER_PROMPT = `Set up Cicero for my conference, then connect its 
 const MCP_ENDPOINT = '/api/v1/events/{event-slug}/mcp';
 
 /**
+ * The clients the starter prompt is known to work in. Both places that offer the prompt render this
+ * same list, so the hero cannot advertise a different set of agents than the MCP panel further down
+ * that explains what connecting one actually does.
+ */
+const AGENT_PROVIDERS = [
+  { src: '/brand/agents/openai.svg', alt: 'OpenAI' },
+  { src: '/brand/agents/claude.svg', alt: 'Anthropic Claude' },
+  { src: '/brand/agents/google-antigravity.svg', alt: 'Google Antigravity' },
+] as const;
+
+/** Marks only; the surface each row sits on owns the ring and the label colour in `home.module.css`. */
+function AgentProviders({ size }: { size: number }) {
+  return (
+    <div className={styles.agentProviders} aria-label="Supported AI agents">
+      {AGENT_PROVIDERS.map((provider) => (
+        <Image
+          key={provider.src}
+          src={provider.src}
+          alt={provider.alt}
+          width={size}
+          height={size}
+        />
+      ))}
+      <span className={styles.agentProvidersMore}>+ more</span>
+    </div>
+  );
+}
+
+/**
  * The four experiences, and the only route into the seeded demo from the page body. Each card
  * carries the demo for its own role (`lib/demo-entry-links.ts`), so a visitor picks a tour from the
  * description of what that role does rather than from a separate list of names above the fold. The
@@ -100,6 +129,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         demoAvailable={demoAvailable}
         links={[
           { href: '#products', label: 'Product' },
+          { href: '#agent-quick-start', label: 'Agent quick start' },
           { href: '/docs/api', label: 'API' },
         ]}
       />
@@ -120,6 +150,12 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               <p className={styles.agentStarterHint}>
                 Claude or ChatGPT walks you through it, one safe step at a time.
               </p>
+              {/*
+                The hint names two agents in prose; the marks show the rest, and they are the same
+                marks the MCP panel carries beside the same prompt. Smaller here because the copy
+                button, not the logo row, is what this card is asking a visitor to press.
+              */}
+              <AgentProviders size={28} />
             </div>
             <CopyAgentPromptButton
               prompt={AGENT_STARTER_PROMPT}
@@ -307,17 +343,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               Paste into your agent
             </span>
             <div className={styles.agentPromptActions}>
-              <div className={styles.agentProviders} aria-label="Supported AI agents">
-                <Image src="/brand/agents/openai.svg" alt="OpenAI" width={34} height={34} />
-                <Image src="/brand/agents/claude.svg" alt="Anthropic Claude" width={34} height={34} />
-                <Image
-                  src="/brand/agents/google-antigravity.svg"
-                  alt="Google Antigravity"
-                  width={34}
-                  height={34}
-                />
-                <span className={styles.agentProvidersMore}>+ more</span>
-              </div>
+              <AgentProviders size={34} />
               <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
             </div>
           </div>

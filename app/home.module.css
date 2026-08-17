@@ -505,13 +505,36 @@
 
 .agentProviders img {
   border-radius: 8px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
 .agentProvidersMore {
-  color: var(--stone-300);
   font: var(--weight-medium) var(--text-xs) / 1 var(--font-ui);
   white-space: nowrap;
+}
+
+/*
+  The row renders twice -- on the marble hero card and on the dark MCP panel -- so the ring around
+  each mark and the colour of the trailing label belong to the surface, not to the row. The single
+  hard-coded white ring these rules replaced was invisible on the hero.
+*/
+.agentPrompt .agentProviders img {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.agentPrompt .agentProvidersMore {
+  color: var(--stone-300);
+}
+
+.agentStarter .agentProviders {
+  margin-top: var(--space-1);
+}
+
+.agentStarter .agentProviders img {
+  box-shadow: 0 0 0 1px rgba(86, 44, 30, 0.16);
+}
+
+.agentStarter .agentProvidersMore {
+  color: var(--text-faint);
 }
 
 .agentPromptLabel svg,
