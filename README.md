@@ -26,7 +26,10 @@ counts may drift between resets. Use the checked-in seed when an exact fixture i
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/organizer/mail`](https://cicero-three.vercel.app/organizer/mail).
+[`/admin/mail`](https://cicero-three.vercel.app/admin/mail). The hosted demo was still on the legacy
+`/admin` organizer revision during the [2026-08-16 evidence
+pass](docs/06-submission-evidence.md); current source uses `/organizer` and includes newer organizer
+ergonomics.
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
@@ -427,6 +430,13 @@ current policy.
 - [`docs/04-demo-runbook.md`](docs/04-demo-runbook.md) — presenter-ready walkthrough and safety gates
 - [`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md) — actor and permission model
 - [`docs/api/program-reconcile.md`](docs/api/program-reconcile.md) — safe inbound program reconciliation
+- [`docs/06-submission-narrative.md`](docs/06-submission-narrative.md) — full competition submission
+- [Public submission write-up](https://cicero-submission.elehche.workers.dev/) — readable HTML on its own Worker
+- [`docs/submission/index.html`](docs/submission/index.html) — checked-in HTML mirror of the submission
+- [`docs/06-submission-summary.md`](docs/06-submission-summary.md) — short-form application copy
+- [`docs/06-submission-evidence.md`](docs/06-submission-evidence.md) — dated local and hosted demo proof
+- [Public field survey](https://cicero-field-survey.elehche.workers.dev/) — source-verified comparison of 32 codebases
+- [`docs/alternatives/visual/index.html`](docs/alternatives/visual/index.html) — checked-in field-survey HTML
 - [`docs/openapi.json`](docs/openapi.json) and [`docs/mcp-tools.json`](docs/mcp-tools.json) — generated contracts
 
 The goals, original requirements, delivery plan, submission narrative, and pinned requirements audit

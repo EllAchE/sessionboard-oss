@@ -854,6 +854,12 @@ export type TaskInput = {
   reminderDaysBefore?: number[];
   /** Repeat interval after the latest reminder/nudge; null means deadline-only reminders. */
   reminderDaysAfterSend?: number | null;
+  /**
+   * `file_upload` only. What the task will accept, in any of the forms `matchesAcceptedType`
+   * understands. Empty means no constraint — which is a choice the organizer now makes rather than
+   * the only thing the editor could express.
+   */
+  acceptedTypes?: string[];
 };
 
 function normalizeTaskInput(input: TaskInput): TaskInput {
@@ -898,6 +904,14 @@ function normalizeTaskInput(input: TaskInput): TaskInput {
       reminderDaysAfterSend > 0
         ? reminderDaysAfterSend
         : null,
+    acceptedTypes:
+      input.kind === 'file_upload'
+        ? [
+            ...new Set(
+              (input.acceptedTypes ?? []).map((entry) => entry.trim().toLowerCase()).filter(Boolean),
+            ),
+          ]
+        : [],
   };
 }
 
@@ -1152,7 +1166,7 @@ async function reconcileAssignments(taskId: string, targets: AssignmentTarget[])
 async function createRequestFor(eventId: string, clean: TaskInput): Promise<string> {
   const [created] = await getDb()
     .insert(fileRequest)
-    .values({ eventId, label: clean.name })
+    .values({ eventId, label: clean.name, acceptedTypes: clean.acceptedTypes ?? [] })
     .returning({ id: fileRequest.id });
   return created.id;
 }
@@ -1243,7 +1257,7 @@ export async function updateTask(
   if (row.fileRequestId && clean.kind === 'file_upload') {
     await db
       .update(fileRequest)
-      .set({ label: clean.name })
+      .set({ label: clean.name, acceptedTypes: clean.acceptedTypes ?? [] })
       .where(eq(fileRequest.id, row.fileRequestId));
   }
   await fanOutAssignments(ctx.eventId);

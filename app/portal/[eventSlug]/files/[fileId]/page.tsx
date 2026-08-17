@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { ChevronLeft, Download, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { isAppError } from '@/lib/errors';
-import { acceptAttribute, describeAcceptedTypes, formatBytes } from '@/lib/services/file-format';
+import { acceptAttribute, acceptedTypesHint, formatBytes } from '@/lib/services/file-format';
 import { formatDateTime } from '../../../format';
 import styles from '../../../portal.module.css';
 import { portalSession } from '../../context';
@@ -67,7 +67,7 @@ export default async function DeliverablePage({
           intent="replace"
           fileId={current.id}
           accept={spec ? acceptAttribute(spec) : 'image/*'}
-          acceptedLabel={spec ? describeAcceptedTypes(spec) : 'JPEG, PNG'}
+          acceptedLabel={spec ? acceptedTypesHint(spec) : 'JPEG or PNG only'}
           maxSizeMb={spec?.maxSizeMb ?? 10}
           buttonLabel="Upload a new version"
         />

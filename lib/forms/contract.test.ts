@@ -10,6 +10,7 @@ import {
   charLimitUsage,
   clearHiddenAnswers,
   evaluateCondition,
+  resolveFieldType,
   splitAnswers,
   validateAnswers,
   validateConditions,
@@ -398,5 +399,57 @@ describe('validateParticipantCounts', () => {
         validateParticipantCounts(roles, ['co_speaker'], null, 'ceilings'),
       ).not.toThrow();
     });
+  });
+});
+
+describe('resolveFieldType', () => {
+  it('leaves a custom field with the type the organizer picked', () => {
+    expect(resolveFieldType({ builtinKey: null, type: 'select' })).toBe('select');
+    expect(resolveFieldType({ builtinKey: null, type: 'radio' })).toBe('radio');
+    expect(resolveFieldType({ entity: 'abstract', builtinKey: null, type: 'long_text' })).toBe(
+      'long_text',
+    );
+  });
+
+  /**
+   * The `CFP-01` gap. `db/seed.ts` stored the built-in `level` as `radio` while `BUILTIN_META` calls
+   * it a dropdown, and the two surfaces disagreed about which one to believe.
+   */
+  it('overrules a stored type that contradicts an abstract built-in', () => {
+    expect(resolveFieldType({ entity: 'abstract', builtinKey: 'level', type: 'radio' })).toBe(
+      'select',
+    );
+    expect(resolveFieldType({ builtinKey: 'description', type: 'short_text' })).toBe('markdown');
+  });
+
+  it('overrules a stored type that contradicts a participant built-in', () => {
+    expect(
+      resolveFieldType({ entity: 'participant', participantKey: 'email', type: 'short_text' }),
+    ).toBe('email');
+    expect(
+      resolveFieldType({ entity: 'participant', builtinKey: 'biography', type: 'short_text' }),
+    ).toBe('markdown');
+  });
+
+  it('agrees with the constants for every built-in in both namespaces', () => {
+    for (const key of BUILTIN_FIELDS) {
+      expect(resolveFieldType({ entity: 'abstract', builtinKey: key, type: 'file' })).toBe(
+        BUILTIN_META[key].type,
+      );
+    }
+    for (const key of PARTICIPANT_BUILTIN_FIELDS) {
+      expect(resolveFieldType({ entity: 'participant', participantKey: key, type: 'file' })).toBe(
+        PARTICIPANT_BUILTIN_META[key].type,
+      );
+    }
+  });
+
+  it('falls back to the stored type when the key is not a built-in at all', () => {
+    expect(resolveFieldType({ entity: 'abstract', builtinKey: 'nonsense', type: 'number' })).toBe(
+      'number',
+    );
+    expect(
+      resolveFieldType({ entity: 'participant', participantKey: 'nonsense', type: 'number' }),
+    ).toBe('number');
   });
 });

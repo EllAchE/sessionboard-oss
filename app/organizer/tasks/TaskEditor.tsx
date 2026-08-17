@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Checkbox, Dialog, Input, Select, Textarea, useToast } from '@/components/ui';
 import type { OrganizerTaskRow } from '@/lib/services/dashboard';
+import { ACCEPTED_TYPE_PRESETS } from '@/lib/services/file-format';
 import { createTaskAction, updateTaskAction, type TaskFormInput } from './actions';
 import styles from './editor.module.css';
 
@@ -71,6 +72,7 @@ const BLANK: TaskFormInput = {
   required: true,
   linkUrl: '',
   formId: '',
+  acceptedTypes: '',
   reminderDaysBefore: '7, 1',
   reminderDaysAfterSend: '',
 };
@@ -93,6 +95,7 @@ export function draftFrom(row: OrganizerTaskRow): TaskFormInput {
     required: row.required,
     linkUrl: row.linkUrl ?? '',
     formId: row.formId ?? '',
+    acceptedTypes: row.acceptedTypes.join('|'),
     reminderDaysBefore: row.reminderDaysBefore.join(', '),
     reminderDaysAfterSend: row.reminderDaysAfterSend?.toString() ?? '',
   };
@@ -319,6 +322,26 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
             {forms.length === 0 ? (
               <span className={styles.hint}>Create a form first.</span>
             ) : null}
+          </label>
+        ) : null}
+
+        {draft.kind === 'file_upload' ? (
+          <label className={styles.field}>
+            <span className={styles.label}>Accepted file types</span>
+            <Select
+              value={draft.acceptedTypes}
+              onChange={(event) => set('acceptedTypes', event.target.value)}
+            >
+              {ACCEPTED_TYPE_PRESETS.map((preset) => (
+                <option key={preset.label} value={preset.types.join('|')}>
+                  {preset.label}
+                </option>
+              ))}
+            </Select>
+            <span className={styles.hint}>
+              The portal states this above the upload button and rejects anything else on the way
+              in. Asking for a PDF in the instructions alone does not restrict anything.
+            </span>
           </label>
         ) : null}
 

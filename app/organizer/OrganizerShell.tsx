@@ -10,7 +10,9 @@ import {
   ClipboardList,
   Contact,
   FileText,
+  FolderOpen,
   LayoutDashboard,
+  Link2,
   Mail,
   Map as MapIcon,
   MessageSquare,
@@ -68,6 +70,13 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
     items: [
       { id: 'forms', label: 'Forms', href: '/organizer/forms', icon: <FileText size={15} /> },
       { id: 'tasks', label: 'Tasks', href: '/organizer/tasks', icon: <ClipboardList size={15} /> },
+      /**
+       * `SPK-10`. The library has always existed; it was only reachable from a tab strip inside the
+       * submission screens, so "where are the files" ended at a guessed URL and a 404. It is filed
+       * under Collect because that is what it is the other half of: Forms and Tasks ask for things,
+       * this is where the things arrive.
+       */
+      { id: 'files', label: 'Files', href: '/organizer/submissions/files', icon: <FolderOpen size={15} /> },
     ],
   },
   {
@@ -78,6 +87,7 @@ const NAV: { id: string; title: string; items: NavEntry[] }[] = [
       { id: 'mail', label: 'Mailbox', href: '/organizer/mail', icon: <Mail size={15} /> },
       { id: 'sms', label: 'SMS', href: '/organizer/sms', icon: <MessageSquare size={15} /> },
       { id: 'embeds', label: 'Embeds', href: '/organizer/embeds', icon: <Plug size={15} /> },
+      { id: 'share-links', label: 'Share links', href: '/organizer/share-links', icon: <Link2 size={15} /> },
     ],
   },
   {

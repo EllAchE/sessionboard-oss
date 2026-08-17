@@ -469,7 +469,9 @@ const cfpFields = await db
     {
       formId: cfp.id,
       position: 4,
-      type: 'radio' as const,
+      // `BUILTIN_META.level.type`. A built-in cannot be retyped in the builder, so writing anything
+      // else here was a value nothing would honour — the runtime resolved it back to a dropdown.
+      type: 'select' as const,
       key: 'level',
       builtinKey: 'level',
       label: 'Audience level',

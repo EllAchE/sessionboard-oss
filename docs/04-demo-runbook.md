@@ -6,10 +6,12 @@ spine first, then shows API and automation work as bonus value. The source of tr
 [`01-requirements.md`](01-requirements.md); the public Sessionboard survey is supporting context,
 not an extra scope list.
 
-> **Last verified 16 August 2026.** The hosted demo runs on Vercel. `demo`, `first-settlement`, the
-> generated OpenAPI, and public agenda APIs were live at the last read-only preflight. The shared
-> data is mutable and deployments can lag `main`, so record the deployed revision and re-run the
-> checklist below before presenting.
+> **Last verified 16 August 2026.** The hosted `demo` and `first-settlement` public programmes,
+> agenda embed, public agenda API, reserved-address magic-link flow, and organizer dashboard were
+> exercised successfully. The host uses the older `/admin` organizer shell while current source
+> uses `/organizer` and includes newer command-menu, review-keyboard, Updates, exhibitor-map, and
+> chasing ergonomics. The shared data is mutable, so record the deployed revision and re-run the
+> checklist before presenting. See [`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## Demo charter
 
@@ -43,9 +45,9 @@ The production base URL is <https://cicero-three.vercel.app>.
 | Purpose | URL | Pre-demo expectation |
 | --- | --- | --- |
 | Home | <https://cicero-three.vercel.app> | Live |
-| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/organizer> | Live; submit `organizer@example.com`; the page returns the demo magic link |
-| Organizer dashboard | <https://cicero-three.vercel.app/organizer> | Live after sign-in |
-| Captured demo mail | <https://cicero-three.vercel.app/organizer/mail> | Live after sign-in |
+| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
+| Organizer dashboard | <https://cicero-three.vercel.app/admin> | Live after sign-in; legacy hosted route |
+| Captured demo mail | <https://cicero-three.vercel.app/admin/mail> | Verify during preflight; legacy hosted route |
 | Existing public demo | <https://cicero-three.vercel.app/demo> | Live fallback |
 | Existing demo agenda | <https://cicero-three.vercel.app/demo/agenda> | Live fallback |
 | Existing public CFP | <https://cicero-three.vercel.app/submit/demo/speak> | Live fallback |
@@ -140,7 +142,7 @@ The checkpoint column tells the producer what must be visibly true before the dr
 | 20:00–21:30 | Required: Accelevents outbound | Organizer → Integrations → **Push accepted speakers**. Use fixture mode unless a real push was separately approved. Explain verified live scope: speaker create/list, duplicate email treated as already present. | Summary shows `created`, `alreadyThere`, `skipped`, and `failed`; log retains outcomes. |
 | 21:30–23:00 | Bonus: Accelevents-shaped program update | Show live OpenAPI first. If the reconcile route is deployed, preview the First Settlement collection, apply the approved change, repeat for no-ops, and verify the public agenda. | Stable external IDs yield create/update/delete/no-op; second applied run is idempotent. |
 | 23:00–24:00 | Bonus: full outbound CRUD fixture | If deployed, reset the deterministic fake Accelevents program, preview drift, safely apply creates/updates, approve the fixture delete, and repeat. Never describe this as live remote support. | Response says `adapter: "fake"`; expected counts and final all-noop result are visible. |
-| 24:00–25:00 | Bonus and close | Show the `$manage-cicero-event` prompt, then summarize: open source, hosted on Vercel with Cloudflare supported, self-hostable, no passwords, API bonus, safe automation. | Audience can name the replacement spine and added value. |
+| 24:00–25:00 | Ergonomics and close | On current source, open `⌘K`/`Ctrl-K`, show queue/review keyboard hints, and open workspace readiness/quick actions. Then summarize: MIT source, Vercel-hosted demo, Cloudflare-supported and self-hostable, no passwords, human-controlled automation. | Audience can name the replacement spine, added value, and why frequent organizers can work without constant mouse travel. |
 
 If the Roman event fails preflight, do not repair or seed production during the presentation. Use
 the existing `demo` event for the required browser flow and report the Roman environment as
@@ -554,7 +556,7 @@ or remote Accelevents calls to make the screen look right during a demo.
 | --- | --- |
 | First Settlement returns 404 | Treat it as deployment or shared-data drift; use `/demo` and do not mutate production during the presentation. |
 | Hosted organizer route errors | Reload once, record the failing route and deployed revision, then use open public tabs and captured evidence. |
-| Sign-in email unavailable | Use the on-page magic link or `/organizer/mail`; for a seeded speaker, use organizer impersonation. |
+| Sign-in email unavailable | Use the on-page magic link or hosted `/admin/mail`; on current source use `/organizer/mail`; for a seeded speaker, use organizer impersonation. |
 | Upload or task write fails | Show pre-seeded file/task state; do not retry with personal files. |
 | Calendar client cannot import | Show captured mail attachment and UID/SEQUENCE fixture; do not send another real invitation. |
 | Reconcile route missing from OpenAPI | Stop the write segment, show proposed contract/fixture, and use the public read API. |
@@ -568,7 +570,8 @@ or remote Accelevents calls to make the screen look right during a demo.
 
 - [ ] Approval owner and scope are written down for every live mutation.
 - [ ] Live home, sign-in, `demo` pages, embed, and public API respond.
-- [ ] Organizer magic link works without an inbox and `/organizer/mail` is reachable.
+- [ ] Organizer magic link works without an inbox and the environment's mail route (`/admin/mail`
+      hosted, `/organizer/mail` on current source) is reachable.
 - [ ] First Settlement is verified live after an approved targeted seed, or fallback wording is in
       the speaker notes.
 - [ ] Event switcher selects the intended event before every write.

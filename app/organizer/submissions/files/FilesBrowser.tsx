@@ -31,10 +31,13 @@ export type FileRowWire = {
   source: 'submission' | 'task' | 'headshot' | 'unattached';
   ownerName: string | null;
   ownerEmail: string | null;
+  taskName: string | null;
+  taskStatus: string | null;
   submissionId: string | null;
   submissionRef: string | null;
   submissionTitle: string | null;
   submissionStatus: string | null;
+  submissionInferred: boolean;
   version: number;
   versionCount: number;
   isCurrent: boolean;
@@ -48,6 +51,13 @@ const SOURCE_LABEL: Record<FileRowWire['source'], string> = {
   unattached: 'Unattached',
 };
 
+/**
+ * `CNT-13`. Two status vocabularies share one column, because an organizer scanning for what is
+ * still outstanding does not care which table the answer came from: a submission answer inherits its
+ * talk's decision, and a speaker-task upload carries its own assignment's progress. The filter keeps
+ * them apart by prefixing the scope, so "Submitted" the decision and "Completed" the task cannot be
+ * selected as though they were one thing.
+ */
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
   submitted: 'Submitted',
@@ -56,6 +66,10 @@ const STATUS_LABEL: Record<string, string> = {
   waitlisted: 'Waitlisted',
   declined: 'Declined',
   withdrawn: 'Withdrawn',
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  waived: 'Waived',
 };
 
 const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | 'danger'> = {
@@ -66,10 +80,37 @@ const STATUS_TONE: Record<string, 'neutral' | 'info' | 'success' | 'warning' | '
   waitlisted: 'warning',
   declined: 'danger',
   withdrawn: 'neutral',
+  not_started: 'warning',
+  in_progress: 'info',
+  completed: 'success',
+  waived: 'neutral',
 };
 
 function statusLabel(status: string): string {
   return STATUS_LABEL[status] ?? status.replace(/_/g, ' ');
+}
+
+type EffectiveStatus = { value: string; scope: 'submission' | 'task' };
+
+/** The one status a row actually has: its talk's decision, or its task assignment's progress. */
+function effectiveStatus(row: FileRowWire): EffectiveStatus | null {
+  if (row.submissionStatus) return { value: row.submissionStatus, scope: 'submission' };
+  if (row.taskStatus) return { value: row.taskStatus, scope: 'task' };
+  return null;
+}
+
+function statusKey(status: EffectiveStatus): string {
+  return `${status.scope}:${status.value}`;
+}
+
+function statusOptionLabel(status: EffectiveStatus): string {
+  return `${status.scope === 'task' ? 'Task' : 'Submission'} · ${statusLabel(status.value)}`;
+}
+
+/** What the "Belongs to" cell says a file came from — the task's own name when there is one. */
+function sourceLabel(row: FileRowWire): string {
+  const base = SOURCE_LABEL[row.source];
+  return row.source === 'task' && row.taskName ? `${base} · ${row.taskName}` : base;
 }
 
 function formatDate(iso: string): string {
@@ -100,8 +141,14 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const statuses = useMemo(() => {
-    const present = new Set(rows.map((row) => row.submissionStatus).filter(Boolean) as string[]);
-    return [...present].sort((a, b) => statusLabel(a).localeCompare(statusLabel(b)));
+    const present = new Map<string, EffectiveStatus>();
+    for (const row of rows) {
+      const found = effectiveStatus(row);
+      if (found) present.set(statusKey(found), found);
+    }
+    return [...present.entries()].sort(([, a], [, b]) =>
+      statusOptionLabel(a).localeCompare(statusOptionLabel(b)),
+    );
   }, [rows]);
 
   const visible = useMemo(() => {
@@ -109,9 +156,19 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
     return rows.filter((row) => {
       if (!showSuperseded && !row.isCurrent) return false;
       if (kind && row.kind !== kind) return false;
-      if (status && row.submissionStatus !== status) return false;
+      if (status) {
+        const found = effectiveStatus(row);
+        if (!found || statusKey(found) !== status) return false;
+      }
       if (!needle) return true;
-      return [row.filename, row.ownerName, row.ownerEmail, row.submissionRef, row.submissionTitle]
+      return [
+        row.filename,
+        row.ownerName,
+        row.ownerEmail,
+        row.taskName,
+        row.submissionRef,
+        row.submissionTitle,
+      ]
         .filter(Boolean)
         .some((value) => (value as string).toLowerCase().includes(needle));
     });
@@ -223,10 +280,10 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
           row.ownerName || row.ownerEmail ? (
             <span className={styles.owner}>
               <span>{row.ownerName ?? row.ownerEmail}</span>
-              <span className={queue.muted}>{SOURCE_LABEL[row.source]}</span>
+              <span className={queue.muted}>{sourceLabel(row)}</span>
             </span>
           ) : (
-            <span className={queue.muted}>{SOURCE_LABEL[row.source]}</span>
+            <span className={queue.muted}>{sourceLabel(row)}</span>
           ),
       },
       {
@@ -236,9 +293,16 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         space: 'wide',
         render: (row) =>
           row.submissionId ? (
-            <Link className={styles.fileLink} href={`/organizer/submissions/${row.submissionId}`}>
-              <span className={styles.ref}>{row.submissionRef}</span> {row.submissionTitle}
-            </Link>
+            <span className={styles.owner}>
+              <Link className={styles.fileLink} href={`/organizer/submissions/${row.submissionId}`}>
+                <span className={styles.ref}>{row.submissionRef}</span> {row.submissionTitle}
+              </Link>
+              {row.submissionInferred ? (
+                <span className={queue.muted} title="This upload names no session; it is the only one this speaker is on.">
+                  speaker&rsquo;s only session
+                </span>
+              ) : null}
+            </span>
           ) : (
             <span className={queue.muted}>—</span>
           ),
@@ -248,14 +312,16 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         header: 'Status',
         width: '108px',
         space: 'compact',
-        render: (row) =>
-          row.submissionStatus ? (
-            <Badge tone={STATUS_TONE[row.submissionStatus] ?? 'neutral'}>
-              {statusLabel(row.submissionStatus)}
+        render: (row) => {
+          const found = effectiveStatus(row);
+          return found ? (
+            <Badge tone={STATUS_TONE[found.value] ?? 'neutral'} title={statusOptionLabel(found)}>
+              {statusLabel(found.value)}
             </Badge>
           ) : (
             <span className={queue.muted}>—</span>
-          ),
+          );
+        },
       },
       {
         id: 'uploaded',
@@ -353,14 +419,14 @@ export function FilesBrowser({ rows, storage }: { rows: FileRowWire[]; storage: 
         </Select>
         <Select
           selectSize="sm"
-          aria-label="Filter by submission status"
+          aria-label="Filter by status"
           value={status}
           onChange={(event) => setStatus(event.target.value)}
         >
-          <option value="">Any submission status</option>
-          {statuses.map((entry) => (
-            <option key={entry} value={entry}>
-              {statusLabel(entry)}
+          <option value="">Any status</option>
+          {statuses.map(([key, entry]) => (
+            <option key={key} value={key}>
+              {statusOptionLabel(entry)}
             </option>
           ))}
         </Select>
