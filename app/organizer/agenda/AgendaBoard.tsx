@@ -691,7 +691,7 @@ export function AgendaBoard({
           <AlertTriangle size={15} aria-hidden />
           <span>
             {summary.total} conflict{summary.total === 1 ? '' : 's'} on this agenda.
-            {policy === 'warn' ? ' Saved as warnings — nothing is blocked.' : ''}
+            {policy === 'warn' ? ' Saved as warnings, and nothing is blocked.' : ''}
           </span>
           <span className={styles.bannerCounts}>
             <span>{summary.room} room</span>

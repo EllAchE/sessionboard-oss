@@ -248,8 +248,8 @@ function heuristicReview(subject: AiReviewSubject): AiReviewResult {
   });
 
   const observations = [
-    `- Abstract: **${abstract} words**${abstract < 25 ? ' — thin enough that a reviewer cannot judge it' : ''}`,
-    `- Speaker bio: **${bio} words**${bio === 0 ? ' — none supplied' : ''}`,
+    `- Abstract: **${abstract} words**${abstract < 25 ? ', thin enough that a reviewer cannot judge it' : ''}`,
+    `- Speaker bio: **${bio} words**${bio === 0 ? ', none supplied' : ''}`,
     `- Title: **${titleWords} words**`,
     `- Classification: **${classified} of 3** set (track, format, level)`,
     `- Extra questions answered: **${answered}**`,

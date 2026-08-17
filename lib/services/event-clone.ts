@@ -272,7 +272,7 @@ function cloneNotes(copied: Record<string, number>): string[] {
   if (copied.task) {
     notes.push('Task due dates were cleared, and tasks pinned to one talk were left behind.');
   }
-  notes.push('Logos, banners and any other uploaded file need re-uploading — file storage is scoped to one event.');
+  notes.push('Logos, banners and any other uploaded file need re-uploading, because file storage is scoped to one event.');
   notes.push('API keys, webhook endpoints and sponsors were not copied.');
   return notes;
 }

@@ -404,7 +404,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
             {partial ? (
               <p className={styles.partial}>
                 A partial import. The {result.created} row{result.created === 1 ? '' : 's'} above are
-                already in the queue — fix and re-import only the rows listed below, or importing
+                already in the queue. Fix and re-import only the rows listed below, or importing
                 this file again will duplicate them.
               </p>
             ) : null}

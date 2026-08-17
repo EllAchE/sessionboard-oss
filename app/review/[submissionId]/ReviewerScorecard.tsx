@@ -458,7 +458,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
         open={recusalOpen}
         onOpenChange={setRecusalOpen}
         title="Recuse yourself from this submission"
-        description={`${props.displayRef} — ${props.title}`}
+        description={`${props.displayRef}: ${props.title}`}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRecusalOpen(false)}>

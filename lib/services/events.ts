@@ -430,7 +430,7 @@ export function assertUntouchedDeadlinesFit(
     const at = current[key];
     if (!at || at.getTime() <= startsAt.getTime()) continue;
     throw invalid(`The ${what} falls after the event starts`, {
-      startsAt: `Move the ${what} first — it falls after this start`,
+      startsAt: `Move the ${what} first, because it falls after this start`,
     });
   }
 }

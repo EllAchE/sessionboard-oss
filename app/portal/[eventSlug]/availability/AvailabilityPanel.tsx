@@ -49,8 +49,8 @@ export function AvailabilityPanel({
             <p className={styles.hint}>
               Times are read in <strong>{timezone}</strong>
               {timezoneSource === 'event'
-                ? ' — the event timezone, because your profile does not name one yet. '
-                : ' — the timezone on your profile. '}
+                ? ', the event timezone, because your profile does not name one yet. '
+                : ', the timezone on your profile. '}
               <a className={styles.checkLink} href={`/portal/${eventSlug}/profile`}>
                 {timezoneSource === 'event' ? 'Set your timezone' : 'Change it on your profile'}
               </a>
@@ -61,7 +61,7 @@ export function AvailabilityPanel({
                 <div className={styles.emptyTitle}>No blocked time</div>
                 <p>
                   Your organizers can schedule you at any time during the event. Add a window below
-                  for anything that would not work — a flight, another commitment, a whole day away.
+                  for anything that would not work, like a flight, another commitment, or a whole day away.
                 </p>
               </div>
             ) : (

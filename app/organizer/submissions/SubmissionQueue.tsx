@@ -961,7 +961,7 @@ export function SubmissionQueue(props: QueueProps) {
         open={commitOpen}
         onOpenChange={setCommitOpen}
         title={queueStage === 'accept' ? 'Accept this batch' : 'Decline this batch'}
-        description={`${rows.length} submission${rows.length === 1 ? '' : 's'} — every row this queue is showing, filters included. Each speaker is notified, and the staging is cleared as the decision lands.`}
+        description={`${rows.length} submission${rows.length === 1 ? '' : 's'}, every row this queue is showing, filters included. Each speaker is notified, and the staging is cleared as the decision lands.`}
         size="sm"
         footer={
           <>

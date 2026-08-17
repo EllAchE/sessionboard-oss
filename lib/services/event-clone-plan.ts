@@ -309,7 +309,7 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
 
   room: {
     action: 'copy',
-    reason: 'Same venue, same rooms — and re-entering a floor plan by hand is the complaint.',
+    reason: 'Same venue, same rooms, and re-entering a floor plan by hand is the complaint.',
     scope: { column: 'eventId' },
     columns: {
       id: generated(),
@@ -351,7 +351,7 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
 
   file_request: {
     action: 'copy',
-    reason: 'What the event asks speakers to upload — a definition, holding no uploaded bytes.',
+    reason: 'What the event asks speakers to upload: a definition, holding no uploaded bytes.',
     scope: { column: 'eventId' },
     columns: {
       id: generated(),
@@ -422,7 +422,7 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
 
   review_round: {
     action: 'copy',
-    reason: 'The review process — rounds, blinding, the decision bar — is reused, its verdicts are not.',
+    reason: 'The review process (rounds, blinding, the decision bar) is reused, its verdicts are not.',
     scope: { column: 'eventId' },
     columns: {
       id: generated(),
@@ -483,7 +483,7 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
 
   portal_theme: {
     action: 'copy',
-    reason: 'Portal branding and welcome copy — the "branding" half of AD-1.',
+    reason: 'Portal branding and welcome copy, the "branding" half of AD-1.',
     scope: { column: 'eventId' },
     columns: {
       id: generated(),
@@ -748,7 +748,7 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
 export const EVENT_COLUMN_PLAN: Record<string, ColumnRule> = {
   id: generated(),
   slug: input('A second event cannot share a URL; the caller names the new one.'),
-  name: input('The edition changes — "…2027" — so the caller names it.'),
+  name: input('The edition changes ("…2027"), so the caller names it.'),
   tagline: copy(),
   descriptionMarkdown: copy(),
   eventType: copy(),

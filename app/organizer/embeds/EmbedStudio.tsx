@@ -612,14 +612,14 @@ export function EmbedStudio({
             <CardHeader>
               <CardTitle>Paste this into your site</CardTitle>
               <CardDescription>
-                Works in any CMS that accepts an HTML block — WordPress, Webflow, Squarespace, a
+                Works in any CMS that accepts an HTML block: WordPress, Webflow, Squarespace, a
                 hand-written page.
               </CardDescription>
             </CardHeader>
             <CardBody>
               <p className={styles.note}>
                 This embed auto-updates. The iframe renders live data on every page load, so a
-                rescheduled talk or a newly published speaker appears immediately — you never re-paste
+                rescheduled talk or a newly published speaker appears immediately, and you never re-paste
                 the snippet.
               </p>
 

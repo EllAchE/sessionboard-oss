@@ -157,7 +157,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
               <option key={kind} value={kind} />
             ))}
           </datalist>
-          <span className={styles.hint}>Yours to name — the list is only a suggestion.</span>
+          <span className={styles.hint}>Yours to name. The list is only a suggestion.</span>
           {error('eventType')}
         </label>
 
@@ -208,7 +208,7 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
           <h3 className={styles.subTitle}>Milestones</h3>
           <span className={styles.hint}>
             Internal dates that pace the edition between the call closing and the doors opening.
-            Nothing is locked when one passes — they are here to be read, and to be counted down to
+            Nothing is locked when one passes. They are here to be read, and to be counted down to
             in the reminder mail. Leave either blank to drop it.
           </span>
         </div>

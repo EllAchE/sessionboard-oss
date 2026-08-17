@@ -92,7 +92,7 @@ export function DuplicateForm({
         </label>
       </div>
       <span className={styles.hint}>
-        Suggested 52 weeks on, so the same days of the week. Check them — nothing else carries a
+        Suggested 52 weeks on, so the same days of the week. Check them, because nothing else carries a
         date across.
       </span>
 

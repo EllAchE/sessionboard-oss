@@ -340,7 +340,7 @@ export function ImportSpeakers({
               {plan.skipped.map((row) => (
                 <p className={styles.skipItem} key={row.line}>
                   <span className={styles.skipLine}>Line {row.line}</span>
-                  {row.label} — {row.reason}
+                  {row.label}: {row.reason}
                 </p>
               ))}
             </div>
@@ -375,7 +375,7 @@ export function ImportSpeakers({
             </div>
             {result.failed.map((row) => (
               <p className={styles.skipItem} key={row.label}>
-                {row.label} — {row.message}
+                {row.label}: {row.message}
               </p>
             ))}
             <div className={`${styles.formActions} ${styles.spaced}`}>

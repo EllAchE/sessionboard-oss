@@ -529,7 +529,7 @@ function AccelEventsSection({ panel }: { panel: AccelEventsPanel }) {
       const { created, alreadyThere, skipped, failed, authHeaderUsed } = result.data;
       setPushed(
         `${created} created, ${alreadyThere} already there, ${skipped} skipped as duplicates, ${failed} failed` +
-          (authHeaderUsed ? ` — Accelevents accepted the \`${authHeaderUsed}\` header` : ''),
+          (authHeaderUsed ? `. Accelevents accepted the \`${authHeaderUsed}\` header` : ''),
       );
     });
   };
@@ -672,7 +672,7 @@ function AirtableSection({ panel }: { panel: AirtablePanel }) {
       }
       const { attempted, created, updated, failed, incomplete } = result.data;
       setProgress(
-        `${attempted} attempted — ${created} created, ${updated} updated, ${failed} failed.` +
+        `${attempted} attempted: ${created} created, ${updated} updated, ${failed} failed.` +
           (incomplete ? ' More remain; run it again to continue where it stopped.' : ''),
       );
     });
@@ -785,9 +785,9 @@ function SmsSection({ panel }: { panel: SmsPanel }) {
         </div>
         <div className={styles.actions}>
           {panel.transport === 'twilio' ? (
-            <Badge tone="success">Live — Twilio</Badge>
+            <Badge tone="success">Live via Twilio</Badge>
           ) : (
-            <Badge tone="warning">Safe mailbox — check transport and APP_URL</Badge>
+            <Badge tone="warning">Safe mailbox: check transport and APP_URL</Badge>
           )}
         </div>
       </div>

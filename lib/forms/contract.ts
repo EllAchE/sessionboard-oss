@@ -239,7 +239,7 @@ export function welcomeScreenErrors(input: {
   if (!heading) {
     errors.pageHeading = 'The welcome step needs a heading';
   } else if (heading.length > PAGE_HEADING_MAX_LENGTH) {
-    errors.pageHeading = `${heading.length} characters — the limit is ${PAGE_HEADING_MAX_LENGTH}`;
+    errors.pageHeading = `${heading.length} characters, and the limit is ${PAGE_HEADING_MAX_LENGTH}`;
   }
 
   return errors;

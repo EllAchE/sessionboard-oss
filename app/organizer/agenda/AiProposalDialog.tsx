@@ -157,7 +157,7 @@ export function AiProposalDialog({
             <h3 className={styles.groupTitle}>Left for you</h3>
             {proposal.unplaced.map((row) => (
               <p key={row.title} className={styles.proposalRationale}>
-                {row.title} — {row.reason}
+                {row.title}: {row.reason}
               </p>
             ))}
           </div>

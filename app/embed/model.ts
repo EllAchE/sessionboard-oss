@@ -362,8 +362,8 @@ export const EMBED_STATUSES = ['published', 'scheduled', 'tba'] as const;
 export type EmbedStatus = (typeof EMBED_STATUSES)[number];
 
 export const EMBED_STATUS_LABEL: Record<EmbedStatus, string> = {
-  published: 'Published — every public session',
-  scheduled: 'Scheduled — confirmed time only',
+  published: 'Published: every public session',
+  scheduled: 'Scheduled: confirmed time only',
   tba: 'Time to be announced only',
 };
 

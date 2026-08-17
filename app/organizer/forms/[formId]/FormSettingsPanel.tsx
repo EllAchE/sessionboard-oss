@@ -188,8 +188,8 @@ export function FormSettingsPanel({
                   update({ targetType: event.target.value as FormTargetType })
                 }
               >
-                <option value="abstract">Abstracts — proposals that go to review</option>
-                <option value="session">Sessions — entries straight onto the programme</option>
+                <option value="abstract">Abstracts: proposals that go to review</option>
+                <option value="session">Sessions: entries straight onto the programme</option>
               </Select>
               <span className={styles.help}>
                 {draft.targetType === 'session'

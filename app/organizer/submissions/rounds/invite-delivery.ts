@@ -39,7 +39,7 @@ export function inviteDeliveryCopy(
   if (delivery === 'undelivered') {
     return {
       message: `${reviewer.name} can review this event, but the invitation email did not go out.`,
-      note: `Mail to ${reviewer.email} was refused, so they have no link yet. Their reviewer access is already granted — send the invitation again, or reach them another way and have them sign in at /signin with this address.`,
+      note: `Mail to ${reviewer.email} was refused, so they have no link yet. Their reviewer access is already granted, so send the invitation again, or reach them another way and have them sign in at /signin with this address.`,
     };
   }
 

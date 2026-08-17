@@ -273,7 +273,7 @@ export function detectConflicts(
             subjectId: speaker.participantId,
             subjectName: speaker.name,
             message: window.note
-              ? `${speaker.name} is unavailable when ${entry.title} is scheduled — ${window.note}`
+              ? `${speaker.name} is unavailable when ${entry.title} is scheduled: ${window.note}`
               : `${speaker.name} said they are unavailable when ${entry.title} is scheduled`,
           });
         }

@@ -35,13 +35,13 @@ export const eventSchema = z
       .string()
       .nullable()
       .describe(
-        'ISO 8601 instant the speaker roster is meant to be settled. Advisory — no write is refused after it passes. Null when the organizers do not track it',
+        'ISO 8601 instant the speaker roster is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it',
       ),
     agendaDeadlineAt: z
       .string()
       .nullable()
       .describe(
-        'ISO 8601 instant the agenda is meant to be settled. Advisory — no write is refused after it passes. Null when the organizers do not track it',
+        'ISO 8601 instant the agenda is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it',
       ),
     websiteUrl: z.string().nullable(),
     venueName: z.string().nullable(),

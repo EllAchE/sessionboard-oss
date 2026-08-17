@@ -98,7 +98,7 @@ async function sendSubmissionEmails(input: {
   const bodyMarkdown = fill(
     formRow?.confirmationBodyMarkdown ||
       [
-        `Thanks${input.toName ? ' {{name}}' : ''} — **{{title}}** is in.`,
+        `Thanks${input.toName ? ' {{name}}' : ''}, **{{title}}** is in.`,
         '',
         'Your reference is **{{ref}}**.',
         '',

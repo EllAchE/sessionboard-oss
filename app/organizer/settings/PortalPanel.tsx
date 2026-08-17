@@ -88,7 +88,7 @@ function LogoSlot({ url, canManage }: { url: string | null; canManage: boolean }
           // eslint-disable-next-line @next/next/no-img-element -- served by a route handler, not the image optimiser
           <img src={url} alt="Logo shown in the speaker portal" className={styles.brandingImage} />
         ) : (
-          <span className={styles.hint}>Nothing uploaded — the portal shows the event name</span>
+          <span className={styles.hint}>Nothing uploaded, so the portal shows the event name</span>
         )}
       </div>
       <span className={styles.hint}>
@@ -229,7 +229,7 @@ export function PortalPanel({
           <Textarea
             value={draft.welcomeMarkdown}
             rows={5}
-            placeholder={`Markdown. Shown at the top of the portal home screen — the first thing a ${eventName} speaker reads.`}
+            placeholder={`Markdown. Shown at the top of the portal home screen, the first thing a ${eventName} speaker reads.`}
             disabled={!canManage}
             invalid={Boolean(errors.welcomeMarkdown)}
             onChange={set('welcomeMarkdown')}

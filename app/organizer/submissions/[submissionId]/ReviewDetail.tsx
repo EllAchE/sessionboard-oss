@@ -290,7 +290,7 @@ export function ReviewDetail(props: ReviewDetailProps) {
         return;
       }
       setAi(result.data);
-      setMessage('AI suggestion generated. It is advisory — nothing was decided.');
+      setMessage('AI suggestion generated. It is advisory, and nothing was decided.');
     });
   }, [props.submissionId, roundId]);
 

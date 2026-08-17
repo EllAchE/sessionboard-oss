@@ -571,7 +571,7 @@ export function Directory({
                 checked={segmentKind === 'dynamic'}
                 onChange={() => setSegmentKind('dynamic')}
               />
-              <span className={styles.value}>Dynamic — updates with these filters</span>
+              <span className={styles.value}>Dynamic, so it updates with these filters</span>
             </label>
             <label className={styles.row}>
               <Radio
@@ -580,7 +580,7 @@ export function Directory({
                 checked={segmentKind === 'curated'}
                 onChange={() => setSegmentKind('curated')}
               />
-              <span className={styles.value}>Curated — keeps these {rows.length} contacts</span>
+              <span className={styles.value}>Curated, so it keeps these {rows.length} contacts</span>
             </label>
           </fieldset>
         </div>

@@ -254,7 +254,7 @@ export function SponsorBoard({
           <Field
             label="Tier"
             error={errors.tier}
-            hint="However this event names its levels — Gold, Principal, Supporting."
+            hint="However this event names its levels: Gold, Principal, Supporting."
           >
             <Input
               value={draft.tier}

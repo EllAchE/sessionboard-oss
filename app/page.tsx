@@ -277,7 +277,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <h2 id="attendees-title">Give attendees the programme, not a PDF.</h2>
           <p>
             The moment a session is scheduled and published it appears on the event site and in
-            every widget on your own website — no export, no re-upload, no stale copy to chase.
+            every widget on your own website. You never export it, re-upload it, or chase down a
+            copy that has gone stale.
           </p>
         </div>
 
@@ -354,8 +355,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </h2>
           <p>
             Cicero is built to be driven by an agent. Connect its MCP server and Claude or ChatGPT
-            works the event itself — reading submissions, reconciling the program, drafting speaker
-            email — instead of narrating what you should click.
+            works the event itself: it reads the submissions, reconciles the program, and writes the
+            speaker email, instead of telling you what to click.
           </p>
           {/*
             A numbered `Copy one line / Create a key / Connect the MCP` list used to sit here and
@@ -365,7 +366,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             sentence and a link, not a section.
           */}
           <p>
-            Copy the prompt, paste it into your agent, and it does the rest — hosting, your first
+            Copy the prompt, paste it into your agent, and it handles the rest: hosting, your first
             event, and the API key the MCP server needs.
           </p>
 
@@ -405,7 +406,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <p className={styles.agentPromptNote}>
             <KeyRound size={17} aria-hidden="true" />
             Streamable HTTP, authenticated with an event API key as a Bearer token. Create one under
-            Organizer → Integrations: read-only or read and write, shown once, hashed at rest.
+            Organizer → Integrations, either read-only or read and write. The key is shown once and
+            stored as a hash.
           </p>
 
           <div className={styles.agentPromptHeader}>

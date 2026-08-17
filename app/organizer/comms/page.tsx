@@ -54,7 +54,7 @@ export default async function CommsPage({
         <Card>
           <CardBody>
             <p className={styles.empty}>
-              Create an event first — templates and audiences are scoped to one.
+              Create an event first. Templates and audiences are scoped to one.
             </p>
           </CardBody>
         </Card>

@@ -218,7 +218,7 @@ export function TemplateManager({
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="templateBody">
-                Body — markdown
+                Body (markdown)
               </label>
               <Textarea
                 id="templateBody"
@@ -230,7 +230,7 @@ export function TemplateManager({
 
             <div className={styles.field}>
               <label className={styles.label} htmlFor="templateSmsBody">
-                SMS body — plain text
+                SMS body (plain text)
               </label>
               <Textarea
                 id="templateSmsBody"
@@ -247,7 +247,7 @@ export function TemplateManager({
                 onCheckedChange={(enabled) => setDraft({ ...draft, enabled })}
                 aria-label="Template is active"
               />
-              <span className={styles.subtle}>Active — triggered sends use this template</span>
+              <span className={styles.subtle}>Active, so triggered sends use this template</span>
             </div>
 
             <div className={styles.row}>

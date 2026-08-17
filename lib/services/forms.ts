@@ -452,7 +452,7 @@ export async function updateForm(
     if (first) {
       throw invalid(
         first === 'externalTitle'
-          ? 'Give the form an external title — speakers read it at the top of the page'
+          ? 'Give the form an external title, which speakers read at the top of the page'
           : `The page heading is required, and limited to ${PAGE_HEADING_MAX_LENGTH} characters`,
         Object.fromEntries(touched.map((key) => [key, problems[key]])),
       );
@@ -659,7 +659,7 @@ export async function deleteForm(ctx: EventContext, formId: string): Promise<voi
   const submissions = await submissionCount(formId);
   if (submissions > 0) {
     throw conflict(
-      `This form has ${submissions} submission${submissions === 1 ? '' : 's'}. Close it instead — deleting it would take their answers with it.`,
+      `This form has ${submissions} submission${submissions === 1 ? '' : 's'}. Close it instead, because deleting it would take their answers with it.`,
     );
   }
   await getDb().delete(form).where(eq(form.id, formId));
@@ -740,7 +740,7 @@ export async function publishForm(ctx: EventContext, formId: string): Promise<Fo
     const problems = welcomeScreenErrors(record);
     if (Object.keys(problems).length > 0) {
       throw invalid(
-        'The welcome screen is not finished — fill in the external form title and the page heading under Settings',
+        'The welcome screen is not finished. Fill in the external form title and the page heading under Settings',
         problems,
       );
     }
@@ -1095,7 +1095,7 @@ export async function saveFieldToLibrary(
   const field = fields.find((entry) => entry.id === fieldId);
   if (!field) throw notFound('That question');
   if (field.builtinKey) {
-    throw invalid('Built-in fields are already on every call for speakers — there is nothing to save.');
+    throw invalid('Built-in fields are already on every call for speakers, so there is nothing to save.');
   }
   if (!collectsAnswer(field.type)) {
     throw invalid('A section break collects no answers, so it is not worth saving to the library.');

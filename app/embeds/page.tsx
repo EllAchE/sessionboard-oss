@@ -28,7 +28,7 @@ export const dynamic = 'force-dynamic';
 
 const TITLE = 'Live embed samples · Cicero';
 const DESCRIPTION =
-  'Every Cicero embed — speaker gallery, agenda, sessions, sponsors — running live against a real conference, with the snippet that produces each one.';
+  'Every Cicero embed (speaker gallery, agenda, sessions, sponsors) running live against a real conference, with the snippet that produces each one.';
 
 export function generateMetadata(): Metadata {
   return createSocialMetadata({
@@ -96,13 +96,13 @@ export function EmbedsShowcase({
         <h1>Put the programme on your event website.</h1>
         <p className={styles.heroLead}>
           {samples.length > 0
-            ? `Every view below is live — the same widget your visitors would load, reading ${conference} as it stands right now. Copy a snippet and it renders your event instead.`
+            ? `Every view below is live. It is the same widget your visitors would load, reading ${conference} as it stands right now. Copy a snippet and it renders your event instead.`
             : 'Cicero publishes the agenda, sessions, speakers, gallery, and sponsor wall as widgets you can drop into any page.'}
         </p>
         <ul className={styles.heroFacts}>
           <li>
             <RefreshCw size={17} aria-hidden="true" />
-            Live on every page load — no snapshot to re-paste when the schedule changes.
+            Live on every page load, so there is no snapshot to re-paste when the schedule changes.
           </li>
           <li>
             <ShieldCheck size={17} aria-hidden="true" />
@@ -211,7 +211,7 @@ function SampleCard({ sample, conference }: { sample: EmbedSample; conference: s
         <iframe
           className={styles.frame}
           src={sample.framePath}
-          title={`${sample.label} — live embed of ${conference}`}
+          title={`${sample.label}: live embed of ${conference}`}
           style={{ height: `${sample.frameHeight}px` }}
           loading="lazy"
         />

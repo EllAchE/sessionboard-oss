@@ -50,7 +50,7 @@ export function ShareFrame({
 
       <footer className={styles.footer}>
         <p>
-          Please keep this link to yourself — anyone who has it can read this page. Send corrections
+          Please keep this link to yourself, because anyone who has it can read this page. Send corrections
           to whoever shared it with you.
         </p>
       </footer>

@@ -692,7 +692,7 @@ function buildVars(input: {
       .map(
         (t) =>
           `- ${t.name}${t.submissionTitle ? ` (${t.submissionTitle})` : ''}` +
-          `${t.dueAt ? ` — due ${formatInZone(t.dueAt, zone, false)}` : ''}`,
+          `${t.dueAt ? `, due ${formatInZone(t.dueAt, zone, false)}` : ''}`,
       )
       .join('\n'),
     'tasks.next': sortedTasks[0]?.name ?? '',
@@ -867,7 +867,7 @@ export const DEFAULT_TEMPLATES: Array<{
   {
     key: 'session.invite',
     name: 'Calendar invitation',
-    subject: '{{session.title}} — {{session.startsAt}}',
+    subject: '{{session.title}} at {{session.startsAt}}',
     attachIcs: true,
     // An SMS cannot carry the .ics part, so the add-to-calendar download (`C-3a`) is the link here.
     smsBody:
@@ -955,7 +955,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'The date you set for the **{{event.name}}** speaker roster is {{event.speakerDeadline}}.',
       '',
-      'This is a reminder, not a cutoff — nothing locks and you can still accept, decline or swap a',
+      'This is a reminder, not a cutoff. Nothing locks and you can still accept, decline or swap a',
       'speaker afterwards.',
       '',
       '[Review the speakers]({{organizer.url}})',
@@ -970,7 +970,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'The date you set for the **{{event.name}}** agenda is {{event.agendaDeadline}}.',
       '',
-      'This is a reminder, not a cutoff — nothing locks and you can still move a session afterwards.',
+      'This is a reminder, not a cutoff. Nothing locks and you can still move a session afterwards.',
       '',
       '[Open the agenda]({{organizer.url}})',
     ].join('\n'),

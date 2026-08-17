@@ -68,7 +68,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
     if (props.recused.length > 0) {
       return {
         headline: 'Nothing left in your queue',
-        body: `You recused yourself from everything you were given in ${props.round.name}. There is no action to take — the organizer reassigns those proposals.`,
+        body: `You recused yourself from everything you were given in ${props.round.name}. There is no action to take, and the organizer reassigns those proposals.`,
       };
     }
     if (props.coveredTracks.length === 0) {
@@ -296,7 +296,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           {caughtUp ? (
             <p className={styles.emptyBody}>
               You are caught up. Everything assigned to you here is scored, so there is no action to
-              take — open a row only if you want to revise what you gave it.
+              take. Open a row only if you want to revise what you gave it.
             </p>
           ) : null}
         </CardBody>
@@ -352,7 +352,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         title="Recuse yourself from this submission"
         description={
           recusing
-            ? `${recusing.displayRef} — ${recusing.title}. It leaves your queue and the organizer can reassign it.`
+            ? `${recusing.displayRef}: ${recusing.title}. It leaves your queue and the organizer can reassign it.`
             : undefined
         }
         footer={

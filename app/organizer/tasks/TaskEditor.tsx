@@ -261,7 +261,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
                 <option value="">Every accepted session</option>
                 {submissions.map((entry) => (
                   <option key={entry.id} value={entry.id}>
-                    {entry.ref} — {entry.title}
+                    {entry.ref}: {entry.title}
                     {entry.accepted ? '' : ' (not accepted)'}
                   </option>
                 ))}
@@ -398,7 +398,7 @@ export function TaskEditor({ open, onClose, editing, forms, speakers, submission
             checked={draft.required}
             onChange={(event) => set('required', event.target.checked)}
           />
-          <span>Required — counts as outstanding until completed</span>
+          <span>Required, so it counts as outstanding until completed</span>
         </label>
       </div>
     </Dialog>

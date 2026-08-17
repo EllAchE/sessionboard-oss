@@ -177,7 +177,7 @@ function toAppError(status: number, parsed: unknown, raw: string): AppError {
     case 429:
       // Airtable locks the base out for 30 seconds after a burst, so this is not worth retrying
       // inside the request; the resumable backfill picks it up on the next run instead.
-      return rateLimited('Airtable is rate limiting this base — wait 30 seconds and resume');
+      return rateLimited('Airtable is rate limiting this base. Wait 30 seconds and resume');
     default:
       return unavailable(`Airtable error ${status}: ${message}`);
   }
