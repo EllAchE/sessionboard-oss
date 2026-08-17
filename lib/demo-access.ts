@@ -52,7 +52,13 @@ import { undeliverableRecipient } from './mail/config';
  * greylist — an auth bypass triggerable by a stranger with a bounce.
  */
 
-const DEFAULT_DEMO_EVENT_SLUGS = ['demo', 'first-settlement'] as const;
+/**
+ * Every event the seed creates. `demo-small` and `demo-large` are the same conference at other
+ * scales, and they are listed here for condition 4 above rather than as a convenience: a speaker
+ * generated onto one of them holds a membership, and an omission here would read that membership as
+ * "this identity has been let into a real event" and quietly close the demo sign-in for everybody.
+ */
+const DEFAULT_DEMO_EVENT_SLUGS = ['demo', 'demo-small', 'demo-large', 'first-settlement'] as const;
 
 /** Which events count as the demo. `DEMO_EVENT_SLUGS` overrides it for a differently seeded clone. */
 export function demoEventSlugs(): string[] {
