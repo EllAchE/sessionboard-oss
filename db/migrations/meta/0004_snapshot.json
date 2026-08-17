@@ -1,6 +1,6 @@
 {
-  "id": "89d2e4a3-2b22-4c13-a523-5aa7934a553e",
-  "prevId": "81ae206e-8238-494c-aa8d-1bfb04863f7b",
+  "id": "1b1e4a08-4eff-4c4b-835e-78887275efaf",
+  "prevId": "89d2e4a3-2b22-4c13-a523-5aa7934a553e",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4996,7 +4996,13 @@
           "name": "value",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "text_value": {
+          "name": "text_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -5078,6 +5084,21 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "scorecard_criterion_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'numeric'"
+        },
+        "options": {
+          "name": "options",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
         },
         "weight": {
           "name": "weight",
@@ -7848,6 +7869,15 @@
         "draft",
         "published",
         "cancelled"
+      ]
+    },
+    "public.scorecard_criterion_type": {
+      "name": "scorecard_criterion_type",
+      "schema": "public",
+      "values": [
+        "numeric",
+        "select",
+        "text"
       ]
     },
     "public.segment_kind": {

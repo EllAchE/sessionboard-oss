@@ -38,6 +38,7 @@ export type RevisionWire = {
   entityKind: ContentEntityKind;
   entityId: string;
   entityLabel: string;
+  revisionNumber: number;
   summary: string;
   editorName: string;
   when: string;
@@ -61,8 +62,23 @@ const APPROVAL_TONE: Record<ContentApprovalStatus, 'info' | 'success' | 'warning
   changes_requested: 'warning',
 };
 
-const SESSION_EDITABLE = ['title', 'level', 'descriptionMarkdown'];
-const SPEAKER_EDITABLE = ['displayName', 'jobTitle', 'company', 'bioMarkdown'];
+/**
+ * Empty means "history only". A scheduled session is edited on the agenda board and a sponsor on
+ * the sponsors board, where their scheduling and uniqueness rules live; this screen shows their
+ * history and restores it, and offers no second editor that would bypass those rules.
+ */
+const EDITABLE_BY_KIND: Record<ContentEntityKind, string[]> = {
+  session: ['title', 'level', 'descriptionMarkdown'],
+  participant: ['displayName', 'jobTitle', 'company', 'bioMarkdown'],
+  scheduled_session: [],
+  sponsor: [],
+};
+
+const EDITED_ELSEWHERE: Partial<Record<ContentEntityKind, string>> = {
+  scheduled_session: 'Edited on the agenda board.',
+  sponsor: 'Edited on the sponsors board.',
+};
+
 const LONG_FIELDS = new Set(['descriptionMarkdown', 'bioMarkdown']);
 
 function approvalLabel(status: ContentApprovalStatus): string {
@@ -76,13 +92,11 @@ function approvalLabel(status: ContentApprovalStatus): string {
 export function ContentHistory({
   entities,
   revisions,
-  sessionFields,
-  speakerFields,
+  fieldLabels,
 }: {
   entities: EntityWire[];
   revisions: RevisionWire[];
-  sessionFields: Record<string, string>;
-  speakerFields: Record<string, string>;
+  fieldLabels: Record<ContentEntityKind, Record<string, string>>;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -99,8 +113,8 @@ export function ContentHistory({
     setDraft(selected ? { ...selected.fields } : {});
   }, [selected]);
 
-  const labels = selected?.kind === 'session' ? sessionFields : speakerFields;
-  const editable = selected?.kind === 'session' ? SESSION_EDITABLE : SPEAKER_EDITABLE;
+  const labels = selected ? fieldLabels[selected.kind] : {};
+  const editable = selected ? EDITABLE_BY_KIND[selected.kind] : [];
 
   const shown = useMemo(
     () => (selected ? revisions.filter((entry) => entry.entityId === selected.id) : revisions),
@@ -222,7 +236,21 @@ export function ContentHistory({
             </CardBody>
           </Card>
 
-          {selected && (
+          {selected && editable.length === 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{selected.label}</CardTitle>
+              </CardHeader>
+              <CardBody>
+                <p className={queue.muted}>
+                  {EDITED_ELSEWHERE[selected.kind] ?? 'Edited elsewhere.'} Its history is on the
+                  right, and every version stays restorable from here.
+                </p>
+              </CardBody>
+            </Card>
+          )}
+
+          {selected && editable.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Edit {selected.label}</CardTitle>
@@ -286,8 +314,10 @@ export function ContentHistory({
                     <div className={styles.revisionHead}>
                       <div className={styles.stackTight}>
                         <span className={styles.commentAuthor}>{entry.summary}</span>
+                        {/* The number, not the timestamp, is what someone quotes when they ask a
+                            colleague to put a session back. Two edits can share a minute. */}
                         <span className={styles.faint}>
-                          {entry.editorName} · {entry.when}
+                          Revision {entry.revisionNumber} · {entry.editorName} · {entry.when}
                           {selected ? '' : ` · ${entry.entityLabel}`}
                         </span>
                       </div>

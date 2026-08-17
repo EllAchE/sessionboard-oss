@@ -73,6 +73,11 @@ its output can be evaluated. Automatic post-event messaging needs opt-in timing,
 enforcement, and an editable purpose. Interactive exhibitor maps and presigned uploads were also
 unnecessary for the first release.
 
+Mobile responsiveness received less design and verification time on the dense organizer workflows,
+where power users are most likely to review, triage, and schedule on a desktop. The higher-priority
+mobile case is attendee-facing output—especially agenda, itinerary, and speaker embeds inside event
+websites—and those surfaces still need a focused device and host-site compatibility pass.
+
 The most useful proposed integration is provider-neutral external task sync, with Linear first and
 Jira, Asana, Trello, and GitHub Issues following. Cicero would remain the source of conference task
 truth while an operations team works in its existing project. Stable IDs, explicit state mappings,
