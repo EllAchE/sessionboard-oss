@@ -194,7 +194,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             About
           </a>
           <a className={styles.productsLink} href="#products">
-            Products
+            Product
           </a>
           <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
             Docs
@@ -224,7 +224,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>Conference operations, end to end</p>
-          <h1>From call for speakers to public program</h1>
+          <h1>From call for speakers to first day</h1>
           <p className={styles.heroLead}>
             Manage submissions, review, sourcing, scheduling, speaker tasks, and publishing in one place.
           </p>

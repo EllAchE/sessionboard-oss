@@ -93,7 +93,7 @@ export function DemoMenu({ className }: { className?: string }) {
         onClick={() => setOpen((wasOpen) => !wasOpen)}
         ref={triggerRef}
       >
-        Demo
+        Demos
         <ChevronDown
           className={open ? `${styles.chevron} ${styles.chevronOpen}` : styles.chevron}
           size={15}
