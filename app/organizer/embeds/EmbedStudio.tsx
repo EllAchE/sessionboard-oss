@@ -14,13 +14,24 @@ import {
   Input,
   Select,
   Switch,
+  Textarea,
 } from '@/components/ui';
 import {
+  EMBED_STATUSES,
+  EMBED_STATUS_LABEL,
   EMBED_VIEWS,
   EMBED_VIEW_LABEL,
   EMBED_VIEW_SUMMARY,
+  sanitizeEmbedCss,
+  type EmbedStatus,
   type EmbedView,
 } from '../../embed/model';
+import {
+  EMBED_FEED_FORMATS,
+  EMBED_FEED_LABEL,
+  EMBED_FEED_SEGMENT,
+  feedSupportsFormat,
+} from '../../embed/formats';
 import dashboard from '../dashboard/dashboard.module.css';
 import styles from './embeds.module.css';
 
@@ -33,6 +44,7 @@ type Config = {
   enabled: boolean;
   tracks: string[];
   rooms: string[];
+  status: EmbedStatus;
   speaker: string | null;
   showBio: boolean;
   showPhoto: boolean;
@@ -41,6 +53,7 @@ type Config = {
   showDescription: boolean;
   columns: number;
   accent: string;
+  css: string;
   theme: 'auto' | 'light' | 'dark';
   limit: string;
 };
@@ -55,6 +68,7 @@ function blank(view: View = 'agenda'): Config {
     enabled: true,
     tracks: [],
     rooms: [],
+    status: 'published',
     speaker: null,
     showBio: true,
     showPhoto: true,
@@ -63,6 +77,7 @@ function blank(view: View = 'agenda'): Config {
     showDescription: true,
     columns: 3,
     accent: '',
+    css: '',
     theme: 'auto',
     limit: '',
   };
@@ -93,6 +108,7 @@ function queryFor(config: Config): string {
   const params = new URLSearchParams();
   if (config.tracks.length > 0) params.set('track', config.tracks.join(','));
   if (config.rooms.length > 0) params.set('room', config.rooms.join(','));
+  if (config.status !== 'published') params.set('status', config.status);
   if (config.speaker) params.set('sb-speaker-id', config.speaker);
   if (!config.showBio) params.set('bio', '0');
   if (!config.showPhoto) params.set('photo', '0');
@@ -103,14 +119,27 @@ function queryFor(config: Config): string {
   if (/^#?[0-9a-f]{6}$/i.test(config.accent)) params.set('accent', config.accent.replace('#', ''));
   if (config.theme !== 'auto') params.set('theme', config.theme);
   if (config.limit.trim()) params.set('limit', config.limit.trim());
+  /**
+   * `AD-3`. Only CSS the widget would actually honour is put on the URL, so an organizer who pastes
+   * something the sanitiser rejects sees it disappear from the snippet rather than silently ship a
+   * parameter that the embed drops on arrival.
+   */
+  const css = sanitizeEmbedCss(config.css);
+  if (css) params.set('css', css);
   const query = params.toString();
   return query ? `?${query}` : '';
+}
+
+/** HTML attribute values are the one place a legal CSS `"` would break the snippet. */
+function attrValue(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 }
 
 function datasetFor(config: Config): string[] {
   const attrs = [`data-cicero-embed="${config.view}"`];
   if (config.tracks.length > 0) attrs.push(`data-track="${config.tracks.join(',')}"`);
   if (config.rooms.length > 0) attrs.push(`data-room="${config.rooms.join(',')}"`);
+  if (config.status !== 'published') attrs.push(`data-status="${config.status}"`);
   if (config.speaker) attrs.push(`data-sb-speaker-id="${config.speaker}"`);
   if (!config.showBio) attrs.push('data-bio="0"');
   if (!config.showPhoto) attrs.push('data-photo="0"');
@@ -122,6 +151,8 @@ function datasetFor(config: Config): string[] {
     attrs.push(`data-accent="${config.accent.replace('#', '')}"`);
   if (config.theme !== 'auto') attrs.push(`data-theme="${config.theme}"`);
   if (config.limit.trim()) attrs.push(`data-limit="${config.limit.trim()}"`);
+  const css = sanitizeEmbedCss(config.css);
+  if (css) attrs.push(`data-css="${attrValue(css)}"`);
   return attrs;
 }
 
@@ -205,6 +236,28 @@ export function EmbedStudio({
       }),
     [active, eventSlug, origin],
   );
+
+  /**
+   * `AD-3`. The data feeds are the same configuration in another wrapper, not a second product: the
+   * query string is exactly the one the script and iframe snippets carry, so a filter or field the
+   * organizer changes above moves every format at once.
+   */
+  const feeds = useMemo(
+    () =>
+      EMBED_FEED_FORMATS.filter((format) => feedSupportsFormat(active.view, format)).map(
+        (format) => ({
+          format,
+          label: EMBED_FEED_LABEL[format],
+          url: `${origin}/embed/${eventSlug}/${active.view}/${EMBED_FEED_SEGMENT[format]}${queryFor(active)}`,
+        }),
+      ),
+    [active, eventSlug, origin],
+  );
+
+  const cssError =
+    active.css.trim() && !sanitizeEmbedCss(active.css)
+      ? 'Remove @import, url(), angle brackets or trim below 4000 characters.'
+      : null;
 
   const copy = (text: string, key: string) => {
     void navigator.clipboard.writeText(text).then(() => {
@@ -349,6 +402,25 @@ export function EmbedStudio({
                 ) : null}
 
                 <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Publication status</span>
+                  <Select
+                    selectSize="sm"
+                    value={active.status}
+                    onChange={(e) => update({ status: e.target.value as EmbedStatus })}
+                  >
+                    {EMBED_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {EMBED_STATUS_LABEL[status]}
+                      </option>
+                    ))}
+                  </Select>
+                  <span className={styles.fieldHint}>
+                    Narrows what the embed shows within your published programme. Drafts, sessions
+                    awaiting review and unconfirmed speakers are never embeddable at any setting.
+                  </span>
+                </label>
+
+                <label className={styles.field}>
                   <span className={styles.fieldLabel}>Deep-link to one speaker</span>
                   <Select
                     selectSize="sm"
@@ -440,7 +512,59 @@ export function EmbedStudio({
                     />
                   </label>
                 </div>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Custom CSS</span>
+                  <Textarea
+                    rows={4}
+                    spellCheck={false}
+                    invalid={Boolean(cssError)}
+                    value={active.css}
+                    placeholder=".sb-session-title { font-family: Georgia, serif; }"
+                    onChange={(e) => update({ css: e.target.value })}
+                  />
+                  <span className={styles.fieldHint}>
+                    {cssError ??
+                      'Applied inside the widget only. Imports, url() and markup are rejected, so a stylesheet cannot phone home or inject script.'}
+                  </span>
+                </label>
               </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Data feeds</CardTitle>
+              <CardDescription>
+                The same configuration as machine-readable data. Every filter, field and limit above
+                applies identically here.
+              </CardDescription>
+            </CardHeader>
+            <CardBody>
+              <div className={styles.savedList}>
+                {feeds.map((feed) => (
+                  <div key={feed.format} className={styles.savedRow}>
+                    <div className={styles.savedName}>
+                      <Badge variant="neutral">{feed.format.toUpperCase()}</Badge>
+                      <span className={styles.savedMeta}>{feed.label}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      iconLeft={
+                        copied === `feed-${feed.format}` ? <Check size={14} /> : <Copy size={14} />
+                      }
+                      onClick={() => copy(feed.url, `feed-${feed.format}`)}
+                    >
+                      {copied === `feed-${feed.format}` ? 'Copied' : 'Copy URL'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <p className={styles.note}>
+                {feedSupportsFormat(active.view, 'ics')
+                  ? 'The .ics URL is a live subscription: paste it into Google Calendar, Outlook or Apple Calendar and it re-checks hourly, updating sessions in place rather than duplicating them.'
+                  : 'This widget has no dated sessions, so it publishes data feeds but no calendar.'}
+              </p>
             </CardBody>
           </Card>
         </div>
