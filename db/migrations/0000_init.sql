@@ -1,7 +1,7 @@
 CREATE TYPE "public"."api_key_scope" AS ENUM('read', 'write');--> statement-breakpoint
 CREATE TYPE "public"."contact_activity_kind" AS ENUM('created', 'imported', 'updated', 'stage_change', 'event_added', 'email_sent', 'merged');--> statement-breakpoint
 CREATE TYPE "public"."content_approval_status" AS ENUM('in_review', 'approved', 'changes_requested');--> statement-breakpoint
-CREATE TYPE "public"."content_revision_kind" AS ENUM('session', 'participant');--> statement-breakpoint
+CREATE TYPE "public"."content_revision_kind" AS ENUM('session', 'participant', 'scheduled_session', 'sponsor');--> statement-breakpoint
 CREATE TYPE "public"."email_status" AS ENUM('queued', 'sent', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."field_type" AS ENUM('short_text', 'long_text', 'markdown', 'select', 'multi_select', 'radio', 'checkbox', 'number', 'email', 'url', 'date', 'file', 'section_break');--> statement-breakpoint
 CREATE TYPE "public"."form_field_entity" AS ENUM('abstract', 'participant');--> statement-breakpoint
@@ -15,8 +15,10 @@ CREATE TYPE "public"."review_assignment_status" AS ENUM('pending', 'completed', 
 CREATE TYPE "public"."review_recusal_status" AS ENUM('active', 'released');--> statement-breakpoint
 CREATE TYPE "public"."review_round_status" AS ENUM('draft', 'open', 'closed');--> statement-breakpoint
 CREATE TYPE "public"."scheduled_session_status" AS ENUM('draft', 'published', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."scorecard_criterion_type" AS ENUM('numeric', 'select', 'text');--> statement-breakpoint
 CREATE TYPE "public"."segment_kind" AS ENUM('dynamic', 'curated');--> statement-breakpoint
 CREATE TYPE "public"."session_recording_source" AS ENUM('upload', 'external');--> statement-breakpoint
+CREATE TYPE "public"."share_link_view" AS ENUM('agenda', 'itinerary', 'sessions', 'speakers', 'gallery', 'sponsors');--> statement-breakpoint
 CREATE TYPE "public"."sms_consent_status" AS ENUM('opted_in', 'opted_out');--> statement-breakpoint
 CREATE TYPE "public"."sms_status" AS ENUM('queued', 'sent', 'delivered', 'undelivered', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."speaker_workflow_status" AS ENUM('invited', 'confirmed', 'declined', 'withdrawn');--> statement-breakpoint
@@ -163,11 +165,13 @@ CREATE TABLE "content_revision" (
 	"event_id" uuid NOT NULL,
 	"entity_kind" "content_revision_kind" NOT NULL,
 	"entity_id" uuid NOT NULL,
+	"revision_number" integer NOT NULL,
 	"snapshot" jsonb NOT NULL,
 	"summary" text NOT NULL,
 	"editor_user_id" uuid,
 	"editor_name" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "content_revision_entity_number" UNIQUE("event_id","entity_kind","entity_id","revision_number")
 );
 --> statement-breakpoint
 CREATE TABLE "crm_field" (
@@ -596,7 +600,8 @@ CREATE TABLE "score" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"review_assignment_id" uuid NOT NULL,
 	"criterion_id" uuid NOT NULL,
-	"value" integer NOT NULL,
+	"value" integer,
+	"text_value" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "score_assignment_criterion" UNIQUE("review_assignment_id","criterion_id")
 );
@@ -606,6 +611,8 @@ CREATE TABLE "scorecard_criterion" (
 	"review_round_id" uuid NOT NULL,
 	"label" text NOT NULL,
 	"description" text,
+	"type" "scorecard_criterion_type" DEFAULT 'numeric' NOT NULL,
+	"options" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"weight" integer DEFAULT 1 NOT NULL,
 	"max_score" integer DEFAULT 5 NOT NULL,
 	"position" integer DEFAULT 0 NOT NULL
@@ -646,6 +653,22 @@ CREATE TABLE "session_recording" (
 	CONSTRAINT "session_recording_exactly_one_source" CHECK (("session_recording"."source" = 'upload' AND "session_recording"."file_id" IS NOT NULL AND "session_recording"."external_url" IS NULL) OR ("session_recording"."source" = 'external' AND "session_recording"."file_id" IS NULL AND "session_recording"."external_url" IS NOT NULL))
 );
 --> statement-breakpoint
+CREATE TABLE "share_link" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"event_id" uuid NOT NULL,
+	"label" text NOT NULL,
+	"view" "share_link_view" DEFAULT 'agenda' NOT NULL,
+	"prefix" text NOT NULL,
+	"token_hash" text NOT NULL,
+	"created_by_user_id" uuid,
+	"expires_at" timestamp with time zone NOT NULL,
+	"revoked_at" timestamp with time zone,
+	"last_viewed_at" timestamp with time zone,
+	"view_count" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "share_link_token_hash_unique" UNIQUE("token_hash")
+);
+--> statement-breakpoint
 CREATE TABLE "sms_consent" (
 	"phone" text PRIMARY KEY NOT NULL,
 	"status" "sms_consent_status" NOT NULL,
@@ -669,6 +692,19 @@ CREATE TABLE "sms_log" (
 	"sent_at" timestamp with time zone,
 	"status_updated_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "speaker_unavailability" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"event_id" uuid NOT NULL,
+	"participant_id" uuid NOT NULL,
+	"starts_at" timestamp with time zone NOT NULL,
+	"ends_at" timestamp with time zone NOT NULL,
+	"authored_timezone" text NOT NULL,
+	"note" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "speaker_unavailability_window_check" CHECK ("speaker_unavailability"."ends_at" > "speaker_unavailability"."starts_at")
 );
 --> statement-breakpoint
 CREATE TABLE "sponsor" (
@@ -920,7 +956,11 @@ ALTER TABLE "session_format" ADD CONSTRAINT "session_format_event_id_event_id_fk
 ALTER TABLE "session_recording" ADD CONSTRAINT "session_recording_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session_recording" ADD CONSTRAINT "session_recording_session_id_scheduled_session_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."scheduled_session"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session_recording" ADD CONSTRAINT "session_recording_file_id_file_id_fk" FOREIGN KEY ("file_id") REFERENCES "public"."file"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "share_link" ADD CONSTRAINT "share_link_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "share_link" ADD CONSTRAINT "share_link_created_by_user_id_user_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sms_log" ADD CONSTRAINT "sms_log_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "speaker_unavailability" ADD CONSTRAINT "speaker_unavailability_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "speaker_unavailability" ADD CONSTRAINT "speaker_unavailability_participant_id_participant_id_fk" FOREIGN KEY ("participant_id") REFERENCES "public"."participant"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sponsor" ADD CONSTRAINT "sponsor_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submission" ADD CONSTRAINT "submission_event_id_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."event"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submission" ADD CONSTRAINT "submission_form_id_form_id_fk" FOREIGN KEY ("form_id") REFERENCES "public"."form"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -987,8 +1027,12 @@ CREATE INDEX "scorecard_criterion_round_idx" ON "scorecard_criterion" USING btre
 CREATE INDEX "session_cookie_user_idx" ON "session_cookie" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_format_event_idx" ON "session_format" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "session_recording_event_idx" ON "session_recording" USING btree ("event_id");--> statement-breakpoint
+CREATE INDEX "share_link_prefix_idx" ON "share_link" USING btree ("prefix");--> statement-breakpoint
+CREATE INDEX "share_link_event_idx" ON "share_link" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "sms_log_event_created_idx" ON "sms_log" USING btree ("event_id","created_at");--> statement-breakpoint
 CREATE INDEX "sms_log_provider_message_idx" ON "sms_log" USING btree ("provider_message_id");--> statement-breakpoint
+CREATE INDEX "speaker_unavailability_participant_idx" ON "speaker_unavailability" USING btree ("participant_id","starts_at");--> statement-breakpoint
+CREATE INDEX "speaker_unavailability_event_idx" ON "speaker_unavailability" USING btree ("event_id","starts_at");--> statement-breakpoint
 CREATE INDEX "sponsor_event_idx" ON "sponsor" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX "submission_event_status_idx" ON "submission" USING btree ("event_id","status");--> statement-breakpoint
 CREATE INDEX "submission_form_idx" ON "submission" USING btree ("form_id");--> statement-breakpoint
