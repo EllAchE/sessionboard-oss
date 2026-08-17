@@ -192,17 +192,12 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             Run submissions, review, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.agentStarter}>
-            <div className={styles.agentStarterCopy}>
-              <p className={styles.agentStarterLabel}>
-                <Sparkles size={17} aria-hidden="true" />
-                AI-guided setup
-              </p>
-              <p>Let Claude or ChatGPT walk through setup with you, one safe step at a time.</p>
-            </div>
+            <p className={styles.agentStarterLabel}>
+              <Sparkles size={17} aria-hidden="true" />
+              AI-guided setup
+            </p>
             <CopyAgentPromptButton
               prompt={AGENT_STARTER_PROMPT}
-              label="Copy AI setup prompt"
-              copiedLabel="AI setup prompt copied"
               size="lg"
               variant="primary"
             />
