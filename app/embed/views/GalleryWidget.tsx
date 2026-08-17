@@ -1,17 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Image from 'next/image';
 import { Dialog } from '@/components/ui';
 import {
-  initialsOf,
   sessionsForSpeaker,
   sortSpeakers,
   speakerMatches,
   type EmbedOptions,
   type PublicBundle,
 } from '../model';
-import { SearchField, SpeakerProfile } from './parts';
+import { SearchField, SpeakerPhoto, SpeakerProfile } from './parts';
 import styles from '../embed.module.css';
 
 /**
@@ -69,20 +67,13 @@ export function GalleryWidget({
               onClick={() => setOpenId(speaker.id)}
             >
               {options.showPhoto ? (
-                speaker.headshotUrl ? (
-                  <Image
-                    className={styles.headshot}
-                    src={speaker.headshotUrl}
-                    alt=""
-                    width={640}
-                    height={640}
-                    unoptimized
-                  />
-                ) : (
-                  <span className={styles.headshotFallback} aria-hidden>
-                    {initialsOf(speaker.name)}
-                  </span>
-                )
+                <SpeakerPhoto
+                  speaker={speaker}
+                  className={styles.headshot}
+                  fallbackClassName={styles.headshotFallback}
+                  width={640}
+                  height={640}
+                />
               ) : null}
               <span className={styles.speakerName} dir="auto">
                 {speaker.name}
