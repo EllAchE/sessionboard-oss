@@ -84,6 +84,17 @@ export const reviewAssignmentStatus = pgEnum('review_assignment_status', [
   'declined',
 ]);
 /**
+ * `ABS-03`. What a reviewer is asked *for* on one line of the scorecard. `numeric` is the only kind
+ * that carries weight and feeds an average; `select` and `text` record a judgment that a number
+ * would misrepresent — a Recommendation of "Maybe" is not 3 out of 5, and no arithmetic should ever
+ * treat it as one.
+ */
+export const scorecardCriterionType = pgEnum('scorecard_criterion_type', [
+  'numeric',
+  'select',
+  'text',
+]);
+/**
  * `V-1`. What an organizer said about a submission's *staging*, which is not a decision and never
  * writes a status. `hold` is the third value on purpose: without it there is no way to take a
  * proposal the panel's average put in a queue back out of it, and "remove from the queue" would
@@ -905,6 +916,9 @@ export const scorecardCriterion = pgTable(
       .references(() => reviewRound.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     description: text('description'),
+    type: scorecardCriterionType('type').notNull().default('numeric'),
+    /** The choices a `select` criterion offers, in the order the reviewer sees them. Empty otherwise. */
+    options: jsonb('options').$type<string[]>().notNull().default([]),
     weight: integer('weight').notNull().default(1),
     maxScore: integer('max_score').notNull().default(5),
     position: integer('position').notNull().default(0),
@@ -990,7 +1004,13 @@ export const score = pgTable(
     criterionId: uuid('criterion_id')
       .notNull()
       .references(() => scorecardCriterion.id, { onDelete: 'cascade' }),
-    value: integer('value').notNull(),
+    /**
+     * `ABS-03`. Set for a `numeric` criterion and null for every other kind, so the weighted average
+     * reads one column and can never pick up a dropdown choice or an essay by accident.
+     */
+    value: integer('value'),
+    /** The reviewer's answer to a `select` or `text` criterion; null for a numeric one. */
+    textValue: text('text_value'),
     createdAt: createdAt(),
   },
   (t) => ({ uniquePair: unique('score_assignment_criterion').on(t.reviewAssignmentId, t.criterionId) }),
