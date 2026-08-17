@@ -40,9 +40,30 @@ next one; do not accumulate a log here, because a stale entry reads as a live au
 | Target | <https://cicero-three.vercel.app> |
 | Scope | the 18 required scenarios **and** the 2 optional Speaker CRM scenarios |
 | Evaluator ref | `d8fafa4` — the same ref that produced both preserved baselines |
-| Product ref at plan time | `1017ca9` |
+| `main` at plan time | `1017ca9` |
+| Deployed build | **stale — predates `e2b2143` (2026-08-16 18:35)** |
+| Status | **halted before browsing**, see below |
 | Authority | score, archive the baseline, remediate, and open PRs |
 | **Withheld** | merging, deploying, and hosted configuration changes |
+
+### Why this run was halted before it browsed anything
+
+The target is not serving `main`. Two independent markers agree:
+
+- the landing page still renders `Convene the crowd. Command the programme.`, a headline
+  `e2b2143` deleted at 2026-08-16 18:35;
+- `/demo/llms.txt` 404s although `#188` added the per-event `llms.txt` at 20:31, while the older
+  root `/llms.txt` still answers 200. `/docs` and `/embeds` 404 for the same reason.
+
+So the deployed build predates 18:35 on 2026-08-16 — which is also *before* the
+`2026-08-16T20-25-39` baseline was collected. Both facts follow: that baseline scored this same
+stale build, and none of the ten defect fixes that merged between 21:28 and 22:52 have ever been
+served. Re-running now would re-measure the identical build, reproduce the identical nine defects,
+and mutate the fixture to learn nothing.
+
+This is the case step 4 names directly: *do not start a new evaluation merely to compensate for a
+deployment that has not happened.* The run directory is created and empty, so it can simply be
+resumed once the deployment actually carries the fixes.
 
 `ANTHROPIC_API_KEY` stays unset by operator decision, so ABS-14 is expected to score `cannot_judge`
 again and coverage is expected to cap near 98%. That is the documented outcome in
