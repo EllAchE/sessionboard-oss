@@ -91,4 +91,19 @@ describe('AgendaWidget scaling affordances', () => {
       'aria-label="A readable session title 1, 1:00 PM – 1:30 PM, Room 1, Track 1 track"',
     );
   });
+
+  it('opens the gutter an hour before the first session and leaves the header row clear', () => {
+    const html = renderToStaticMarkup(
+      <AgendaWidget bundle={bundle(1)} options={options} speakerBase="/speakers" />,
+    );
+
+    // The only session starts at 13:00 UTC, so the day is drawn from 12:00 rather than flush to it.
+    expect(html).toContain('>12:00 PM<');
+    // Row 1 is the sticky room header and row 2 is the gap under it, so the day opens on row 3.
+    expect(html).toContain('grid-row:3 / span 2');
+    // 13:00 is four quarter-hour rows past the 12:00 opening.
+    expect(html).toContain('grid-row:7 / 9');
+    // A half hour of tail keeps the last block off the bottom edge.
+    expect(html).toContain('>2:00 PM<');
+  });
 });

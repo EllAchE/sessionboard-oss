@@ -22,6 +22,18 @@ import styles from '../embed.module.css';
 /** One row of the grid is a quarter hour; the gutter is labelled on the half hour. */
 const ROW_MINUTES = 15;
 const LABEL_MINUTES = 30;
+/**
+ * Empty time held either side of the programme. Starting the gutter on the first session makes the
+ * day look like it begins the instant the first talk does, and leaves that block flush against the
+ * room header; an hour in front and a half hour behind reads as a day with edges.
+ */
+const LEAD_MINUTES = 60;
+const TAIL_MINUTES = 30;
+/**
+ * Row 1 is the sticky room header. Row 2 is deliberately left empty so the first time label clears
+ * the header instead of tucking underneath it when the grid is scrolled to the top.
+ */
+const FIRST_GRID_ROW = 3;
 const UNASSIGNED = 'Unassigned';
 
 type Placement = {
@@ -98,17 +110,23 @@ function layoutFor(day: AgendaDay, timezone: string, roomOrder: string[]): DayLa
     placements.length > 0 ? 0 : 17 * 60,
   );
 
-  const gridStart = Math.floor(earliest / LABEL_MINUTES) * LABEL_MINUTES;
-  const gridEnd = Math.max(
-    Math.ceil(latest / LABEL_MINUTES) * LABEL_MINUTES,
-    gridStart + LABEL_MINUTES * 2,
+  const gridStart = Math.max(
+    0,
+    Math.floor((earliest - LEAD_MINUTES) / LABEL_MINUTES) * LABEL_MINUTES,
+  );
+  const gridEnd = Math.min(
+    24 * 60,
+    Math.max(
+      Math.ceil((latest + TAIL_MINUTES) / LABEL_MINUTES) * LABEL_MINUTES,
+      gridStart + LABEL_MINUTES * 2,
+    ),
   );
 
   for (const entry of placements) {
-    entry.startRow = 2 + Math.round((entry.startsAtMinute - gridStart) / ROW_MINUTES);
+    entry.startRow = FIRST_GRID_ROW + Math.round((entry.startsAtMinute - gridStart) / ROW_MINUTES);
     entry.endRow = Math.max(
       entry.startRow + 2,
-      2 + Math.round((entry.endsAtMinute - gridStart) / ROW_MINUTES),
+      FIRST_GRID_ROW + Math.round((entry.endsAtMinute - gridStart) / ROW_MINUTES),
     );
   }
 
@@ -279,14 +297,14 @@ export function AgendaWidget({
           ))}
 
           {labelRows.map((minute) => {
-            const row = 2 + (minute - layout.gridStart) / ROW_MINUTES;
+            const row = FIRST_GRID_ROW + (minute - layout.gridStart) / ROW_MINUTES;
             return (
               <div key={`rule-${minute}`} className={styles.gridRule} style={{ gridRow: row }} />
             );
           })}
 
           {labelRows.map((minute) => {
-            const row = 2 + (minute - layout.gridStart) / ROW_MINUTES;
+            const row = FIRST_GRID_ROW + (minute - layout.gridStart) / ROW_MINUTES;
             return (
               <span
                 key={`time-${minute}`}
