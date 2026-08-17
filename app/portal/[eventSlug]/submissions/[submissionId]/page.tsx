@@ -8,6 +8,7 @@ import {
   listGroupMembers,
   submissionFields,
   submissionLevelOptions,
+  submissionTaxonomy,
   type PortalSubmission,
 } from '@/lib/services/portal';
 import {
@@ -39,9 +40,10 @@ export default async function SubmissionDetailPage({
     throw error;
   }
 
-  const [fields, levelOptions, members] = await Promise.all([
+  const [fields, levelOptions, taxonomy, members] = await Promise.all([
     submissionFields(submission.formId),
     submissionLevelOptions(submission.formId),
+    submissionTaxonomy(submission.formId, event.id),
     listGroupMembers(submission.id, me.id),
   ]);
 
@@ -142,6 +144,7 @@ export default async function SubmissionDetailPage({
           submission={submission}
           fields={fields}
           levelOptions={levelOptions}
+          taxonomy={taxonomy}
         />
       ) : (
         <Card>

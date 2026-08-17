@@ -1,10 +1,19 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Card, CardBody, CardHeader, CardTitle, Input, Select, Textarea } from '@/components/ui';
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Checkbox,
+  Input,
+  Select,
+  Textarea,
+} from '@/components/ui';
 import type { FormFieldSpec } from '@/lib/forms/contract';
 import { renderMarkdown } from '@/lib/markdown';
-import type { PortalSubmission } from '@/lib/services/portal';
+import type { PortalSubmission, PortalTaxonomy } from '@/lib/services/portal';
 import { IDLE_STATE } from '../../../form-state';
 import styles from '../../../portal.module.css';
 import { saveSubmissionAction, withdrawSubmissionAction } from '../../actions';
@@ -19,12 +28,15 @@ export function SubmissionEditor({
   submission,
   fields,
   levelOptions,
+  taxonomy,
 }: {
   eventSlug: string;
   submission: PortalSubmission;
   fields: FormFieldSpec[];
   /** What the form offers for Audience level, or `null` if it does not ask. */
   levelOptions: string[] | null;
+  /** The event's formats, tracks and tags — each `null` where the form does not ask. */
+  taxonomy: PortalTaxonomy;
 }) {
   const [state, action] = useActionState(saveSubmissionAction, IDLE_STATE);
   const [description, setDescription] = useState(submission.descriptionMarkdown ?? '');
@@ -116,6 +128,85 @@ export function SubmissionEditor({
                   ))}
                 </Select>
                 <FieldError state={state} field="level" />
+              </div>
+            )}
+
+            {/*
+              Session format and Track. Both were asked on the way in and neither was editable
+              afterwards — Track appeared only as read-only header text — so a speaker who picked
+              the wrong one had no way to say so, on the two fields organizers filter and route on.
+              The options are the event's own lists, and the value is the id rather than the name,
+              because renaming a track must not detach the submissions that chose it.
+            */}
+            {taxonomy.formats && (
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="formatId">
+                  Session format
+                </label>
+                <Select
+                  id="formatId"
+                  name="formatId"
+                  defaultValue={submission.formatId ?? ''}
+                  invalid={Boolean(state.details?.formatId)}
+                >
+                  <option value="">Not specified</option>
+                  {taxonomy.formats.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError state={state} field="formatId" />
+              </div>
+            )}
+
+            {taxonomy.tracks && (
+              <div className={styles.field}>
+                <label className={styles.label} htmlFor="trackId">
+                  Track
+                </label>
+                <Select
+                  id="trackId"
+                  name="trackId"
+                  defaultValue={submission.trackId ?? ''}
+                  invalid={Boolean(state.details?.trackId)}
+                >
+                  <option value="">Not specified</option>
+                  {taxonomy.tracks.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name}
+                    </option>
+                  ))}
+                </Select>
+                <FieldError state={state} field="trackId" />
+              </div>
+            )}
+
+            {/*
+              Checkboxes rather than a multi-select, which is how the public form asks it. An event
+              with the tags question but no tags yet gets the note instead of an empty box, so the
+              blank is explained rather than looking broken.
+            */}
+            {taxonomy.tags && (
+              <div className={styles.field}>
+                <span className={styles.label}>Tags</span>
+                {taxonomy.tags.length === 0 ? (
+                  <span className={styles.hint}>The organizers have not set up any tags yet.</span>
+                ) : (
+                  <div className={styles.choiceList}>
+                    {taxonomy.tags.map((option) => (
+                      <label key={option.id} className={styles.choice}>
+                        <Checkbox
+                          name="tagIds"
+                          value={option.id}
+                          defaultChecked={submission.tagIds.includes(option.id)}
+                        />
+                        {option.name}
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <FieldError state={state} field="tagIds" />
               </div>
             )}
           </div>

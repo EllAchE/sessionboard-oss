@@ -14,6 +14,8 @@ import {
   scheduledSession,
   sessionFormat,
   submission,
+  submissionTag,
+  tag,
   track,
   user,
 } from '../../db/schema';
@@ -37,7 +39,7 @@ import {
 import { activeSmsTransportName } from '../sms';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
-import { DEFAULT_LEVELS } from './submissions';
+import { DEFAULT_LEVELS, type NamedRow } from './submissions';
 import { phoneVerificationIsCurrent } from './notification-preferences';
 
 /**
@@ -436,6 +438,10 @@ export type PortalSubmission = {
   level: string | null;
   formatName: string | null;
   trackName: string | null;
+  /* The ids behind those two names, and the tags, because the portal edits them and names are not keys. */
+  formatId: string | null;
+  trackId: string | null;
+  tagIds: string[];
   formId: string;
   formSlug: string;
   formName: string;
@@ -491,16 +497,27 @@ export async function listMySubmissions(participantId: string): Promise<PortalSu
 
   if (rows.length === 0) return [];
 
-  const scheduled = await db
-    .select({ session: scheduledSession, roomName: room.name })
-    .from(scheduledSession)
-    .leftJoin(room, eq(room.id, scheduledSession.roomId))
-    .where(
-      inArray(
-        scheduledSession.submissionId,
-        rows.map((row) => row.submission.id),
-      ),
-    );
+  const ids = rows.map((row) => row.submission.id);
+
+  const [scheduled, tagRows] = await Promise.all([
+    db
+      .select({ session: scheduledSession, roomName: room.name })
+      .from(scheduledSession)
+      .leftJoin(room, eq(room.id, scheduledSession.roomId))
+      .where(inArray(scheduledSession.submissionId, ids)),
+    db
+      .select({ submissionId: submissionTag.submissionId, tagId: submissionTag.tagId })
+      .from(submissionTag)
+      .where(inArray(submissionTag.submissionId, ids)),
+  ]);
+
+  /* Tags live in their own table, so one batched read rather than a query per submission. */
+  const tagsBySubmission = new Map<string, string[]>();
+  for (const row of tagRows) {
+    const held = tagsBySubmission.get(row.submissionId);
+    if (held) held.push(row.tagId);
+    else tagsBySubmission.set(row.submissionId, [row.tagId]);
+  }
   const slotBySubmission = new Map(
     scheduled
       .filter((row) => row.session.submissionId)
@@ -528,6 +545,9 @@ export async function listMySubmissions(participantId: string): Promise<PortalSu
     level: row.level,
     formatName,
     trackName,
+    formatId: row.formatId,
+    trackId: row.trackId,
+    tagIds: tagsBySubmission.get(row.id) ?? [],
     formId: parent.id,
     formSlug: parent.slug,
     formName: parent.name,
@@ -595,10 +615,75 @@ export async function submissionLevelOptions(formId: string): Promise<string[] |
   return row.options?.length ? row.options : [...DEFAULT_LEVELS];
 }
 
+/**
+ * The event lists behind Session format, Track and Tags — each `null` where the form does not ask.
+ *
+ * Same shape as the `Taxonomy` the public form is built from, and the same source rows, so what a
+ * speaker can pick when editing is what they could have picked when submitting. The lists are
+ * event-scoped rather than form-scoped: a track renamed since the submission still resolves, which
+ * is the whole reason these columns hold ids and not names.
+ */
+export type PortalTaxonomy = {
+  formats: NamedRow[] | null;
+  tracks: NamedRow[] | null;
+  tags: NamedRow[] | null;
+};
+
+export async function submissionTaxonomy(
+  formId: string,
+  eventId: string,
+): Promise<PortalTaxonomy> {
+  const db = getDb();
+  const asked = new Set(
+    (
+      await db
+        .select({ builtinKey: formField.builtinKey })
+        .from(formField)
+        .where(
+          and(
+            eq(formField.formId, formId),
+            inArray(formField.builtinKey, ['format', 'track', 'tags']),
+          ),
+        )
+    ).map((row) => row.builtinKey),
+  );
+  if (asked.size === 0) return { formats: null, tracks: null, tags: null };
+
+  /* Only the lists the form actually asks for: a CFP with no tags question should cost no query. */
+  const [formats, tracks, tags] = await Promise.all([
+    asked.has('format')
+      ? db
+          .select({ id: sessionFormat.id, name: sessionFormat.name })
+          .from(sessionFormat)
+          .where(eq(sessionFormat.eventId, eventId))
+          .orderBy(asc(sessionFormat.position))
+      : null,
+    asked.has('track')
+      ? db
+          .select({ id: track.id, name: track.name })
+          .from(track)
+          .where(eq(track.eventId, eventId))
+          .orderBy(asc(track.position))
+      : null,
+    asked.has('tags')
+      ? db
+          .select({ id: tag.id, name: tag.name })
+          .from(tag)
+          .where(eq(tag.eventId, eventId))
+          .orderBy(asc(tag.name))
+      : null,
+  ]);
+
+  return { formats, tracks, tags };
+}
+
 export const submissionEditSchema = z.object({
   title: z.string().trim().min(3, 'Give the session a title').max(255),
   descriptionMarkdown: z.string().max(5000, 'Description is limited to 5,000 characters').optional(),
   level: z.string().trim().max(60).optional(),
+  formatId: z.string().trim().optional(),
+  trackId: z.string().trim().optional(),
+  tagIds: z.array(z.string().trim()).optional(),
 });
 
 /**
@@ -620,6 +705,36 @@ export function levelError(
   if (!options) return 'This form does not ask for an audience level';
   if (!options.includes(value)) return `Choose one of ${options.join(', ')}`;
   return null;
+}
+
+/**
+ * The id has to name a row the event actually has. Same reasoning as `levelError` and the same
+ * shape, minus the tolerance for a legacy value: `format_id` and `track_id` are foreign keys, so
+ * whatever is on the record was picked from this list to begin with.
+ *
+ * `question` is the wording a speaker sees, so it reads as the label above the control did.
+ */
+export function choiceError(
+  question: string,
+  value: string | undefined,
+  options: NamedRow[] | null,
+): string | null {
+  if (!value) return null;
+  if (!options) return `This form does not ask for a ${question}`;
+  if (!options.some((row) => row.id === value)) return `Choose one of the ${question}s offered`;
+  return null;
+}
+
+/**
+ * Every tag has to be one the event offers, and there is no partial save: an id the event does not
+ * have means the request did not come from the form, and taking the rest of it would leave the
+ * speaker looking at a set of tags they did not choose.
+ */
+export function tagsError(values: string[] | undefined, options: NamedRow[] | null): string | null {
+  if (!values || values.length === 0) return null;
+  if (!options) return 'This form does not ask for tags';
+  const known = new Set(options.map((row) => row.id));
+  return values.every((value) => known.has(value)) ? null : 'Choose from the tags offered';
 }
 
 export type SubmissionEditInput = z.infer<typeof submissionEditSchema> & { answers?: AnswerMap };
@@ -658,29 +773,58 @@ export async function updateMySubmission(
     throw invalid('Some details need attention', details);
   }
 
-  const levelOptions = await submissionLevelOptions(current.formId);
-  const levelProblem = levelError(parsed.data.level, levelOptions, current.level);
-  if (levelProblem) throw invalid('Some details need attention', { level: levelProblem });
+  const [levelOptions, taxonomy] = await Promise.all([
+    submissionLevelOptions(current.formId),
+    submissionTaxonomy(current.formId, ctx.eventId),
+  ]);
+
+  const details: Record<string, string> = {};
+  const note = (field: string, problem: string | null) => {
+    if (problem) details[field] = problem;
+  };
+  note('level', levelError(parsed.data.level, levelOptions, current.level));
+  note('formatId', choiceError('session format', parsed.data.formatId, taxonomy.formats));
+  note('trackId', choiceError('track', parsed.data.trackId, taxonomy.tracks));
+  note('tagIds', tagsError(parsed.data.tagIds, taxonomy.tags));
+  if (Object.keys(details).length > 0) throw invalid('Some details need attention', details);
 
   const fields = await submissionFields(current.formId);
   const answers = input.answers ? clearHiddenAnswers(fields, input.answers) : current.answers;
   if (input.answers) validateAnswers(fields, answers);
 
-  await getDb()
+  const db = getDb();
+  await db
     .update(submission)
     .set({
       title: parsed.data.title,
       descriptionMarkdown: blankToNull(parsed.data.descriptionMarkdown),
       /*
-        Only when the form asks. The editor renders no control for a question the form does not
-        have, so an empty `level` in that case means "nobody was shown this" rather than "cleared" —
-        writing it through would quietly drop a value on the next unrelated save.
+        Only the questions the form asks. The editor renders no control for one it does not have,
+        so an empty value in that case means "nobody was shown this" rather than "cleared" — writing
+        it through would quietly drop a value on the next unrelated save.
       */
       ...(levelOptions ? { level: blankToNull(parsed.data.level) } : {}),
+      ...(taxonomy.formats ? { formatId: blankToNull(parsed.data.formatId) } : {}),
+      ...(taxonomy.tracks ? { trackId: blankToNull(parsed.data.trackId) } : {}),
       answers,
       updatedAt: new Date(),
     })
     .where(and(eq(submission.id, submissionId), eq(submission.eventId, ctx.eventId)));
+
+  /*
+    Tags are rows rather than a column, so the set is replaced the same way a submit replaces it.
+    Only when the form asks — and `tagIds` being absent from the payload is left alone too, so a
+    caller that saves nothing but a title does not silently untag the session.
+  */
+  if (taxonomy.tags && parsed.data.tagIds) {
+    await db.delete(submissionTag).where(eq(submissionTag.submissionId, submissionId));
+    if (parsed.data.tagIds.length > 0) {
+      await db
+        .insert(submissionTag)
+        .values(parsed.data.tagIds.map((tagId) => ({ submissionId, tagId })))
+        .onConflictDoNothing();
+    }
+  }
 }
 
 /**

@@ -284,6 +284,10 @@ export async function saveSubmissionAction(_prev: FormState, formData: FormData)
       title: text(formData, 'title'),
       descriptionMarkdown: text(formData, 'descriptionMarkdown'),
       level: text(formData, 'level'),
+      formatId: text(formData, 'formatId'),
+      trackId: text(formData, 'trackId'),
+      /* Checkboxes, so an empty list is "untag everything" and has to reach the service as one. */
+      tagIds: formData.getAll('tagIds').map((entry) => String(entry)),
       answers: fields.length > 0 ? readAnswers(fields, formData) : undefined,
     });
 
