@@ -58,16 +58,22 @@ export function SiteNav({
           Sign in
         </Button>
         {/*
-          "Start an event" rather than "Sign up", because this bar was the entry point that said the
-          least about where it leads. The body calls to action on `/` and `/embeds` already say
-          "Create an event"; this one said "Sign up" and then landed the visitor on an event form,
-          which reads as the product assuming everybody who arrives means to run a conference.
-          Deliberately not the same words as those two: `SiteNav` renders on `/` above the hero
-          button, and the walkthrough rule documented in `app/page.tsx` treats two links whose labels
-          share a leading word as an ambiguous target.
+          "Create an event" rather than "Sign up", because this bar was the entry point that said the
+          least about where it leads -- it named the paperwork and then landed the visitor on an
+          event form. It borrows the words the rest of the product already uses for that job: the
+          hero on `/`, the fresh-instance card on `/embeds`, the organizer's own action panel and
+          the `/events/new` heading all say "Create an event". A third phrasing here would have been
+          one more thing to recognise, so the bar repeats the standard label instead of inventing.
+
+          This deliberately makes the label identical to the hero button on `/`, which the
+          walkthrough rule in `app/page.tsx` cares about: matching link text from its start no longer
+          identifies a single target on that page. The demo menu and the footer's first row already
+          name the same five destinations identically for the same reason, so a walkthrough scopes
+          its match to one surface before matching -- `app/page.test.tsx` does exactly that with
+          `heroOf`. Prefix collisions *within* one surface are still forbidden; this is not one.
         */}
         <Button className={styles.navCta} href="/signup" variant="primary" size="sm">
-          Start an event
+          Create an event
         </Button>
       </div>
     </nav>

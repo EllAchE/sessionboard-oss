@@ -4,7 +4,7 @@ import { authCopy, deliveryCopy } from './copy';
 describe('authentication copy', () => {
   it('presents account creation as a distinct flow, and names the job it starts', () => {
     expect(authCopy('sign-up')).toMatchObject({
-      title: 'Start an event on Cicero',
+      title: 'Create an event on Cicero',
       submit: 'Create my account',
       switchHref: '/signin',
     });

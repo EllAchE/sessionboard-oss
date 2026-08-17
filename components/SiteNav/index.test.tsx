@@ -30,7 +30,7 @@ describe('SiteNav', () => {
       expect(html).toContain('href="/signin"');
       expect(html).toContain('Sign in');
       expect(html).toContain('href="/signup"');
-      expect(html).toContain('Start an event');
+      expect(html).toContain('Create an event');
     }
   });
 

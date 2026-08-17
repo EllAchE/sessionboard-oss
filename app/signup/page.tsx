@@ -2,11 +2,10 @@ import { SignInForm } from '../signin/SignInForm';
 import { authRedirect } from '../signin/redirect';
 import styles from '../signin/signin.module.css';
 
-// Titled for the form this page renders, not for the "Start an event" button that leads here. The
-// heading below it already reads "Create your Cicero account", and since `SIGN_UP_FALLBACK` sends
-// the visitor to `/welcome` to say what they came for, "Sign up" was the last place left where the
-// product named the paperwork instead of the thing being asked for.
-export const metadata = { title: 'Create your account · Cicero' };
+// Follows the heading this page renders (`authCopy('sign-up').title`) and the bar button that leads
+// here, both of which say "Create an event". The tab was the last place the product still called
+// this "Sign up", which named the paperwork rather than the thing the visitor came to do.
+export const metadata = { title: 'Create an event · Cicero' };
 
 /**
  * `/welcome` rather than `/events/new`. Pointing sign-up straight at the event form made "create an

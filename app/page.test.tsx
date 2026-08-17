@@ -52,7 +52,10 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('alt="Anthropic Claude"');
     expect(html).toContain('alt="Google Antigravity"');
     expect(html).toContain('+ more');
-    expect(html.indexOf('Copy prompt')).toBeLessThan(html.indexOf('Create an event'));
+    // Scoped to the hero: the bar above it now carries the same "Create an event" label, so an
+    // unscoped indexOf would find the nav button and compare against the wrong one.
+    const hero = heroOf(html);
+    expect(hero.indexOf('Copy prompt')).toBeLessThan(hero.indexOf('Create an event'));
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
     );
