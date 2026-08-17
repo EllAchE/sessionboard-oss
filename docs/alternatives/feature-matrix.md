@@ -10,8 +10,14 @@ Every feature row against every analyzed project. 71 rows ×
 In the baseline band every cell was verified in source. In the beyond-the-brief band a blank
 cell means the capability was **not attributed** to that project, which is weaker than a
 verified absence — those rows were built by reading what each project *added*, not by checking
-all 48 against all 32. The Cicero band records field-wide counts; only the three rows with a
-matching baseline area carry real per-project values.
+all 48 against all 32. The Cicero band records
+field-wide counts; only the three rows with a matching baseline area carry real per-project
+values.
+
+Every project column is fixed at the commit it was read at. The Cicero column is not: 7
+beyond-the-brief rows now read `✓` for Cicero because it built the capability after the survey
+was taken. They are listed with the pull request that closed each one in
+`docs/07-comparative-requirements.md`.
 
 A browsable version of this same grid lives at `docs/alternatives/visual/index.html`.
 
@@ -34,17 +40,17 @@ A browsable version of this same grid lives at `docs/alternatives/visual/index.h
 | speaker-crm · Speaker CRM | ✓ | ✓ | ✓ | ✓ | ~ | ✗ | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | ~ | ~ | ~ | ✗ | ✓ | ✗ | ✓ | ✓ | ~ | ✓ | ✓ | ✓ | ✓ | ~ | ~ | ✗ | ✓ | ✓ | ✓ |
 | sponsors · Sponsors | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ~ | ~ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ | ✓ | ✗ | ✗ | ✗ | ~ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
 | **Beyond the brief (48)** |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| AD-1 · Whole-event cloning / reusable event templates | ✗ |  | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |
-| AD-2 · Speaker availability / blackout windows as a scheduling constraint | ✗ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  | ✓ |
-| AD-3 · Richer embed output formats | ✗ |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  |  | ✓ |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  | ✓ |  |
-| AD-4 · Revision history with organizer restore | ✗ |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  | ✓ |  |
+| AD-1 · Whole-event cloning / reusable event templates | ✓ |  | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |
+| AD-2 · Speaker availability / blackout windows as a scheduling constraint | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  | ✓ |
+| AD-3 · Richer embed output formats | ✓ |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  |  | ✓ |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  | ✓ |  |
+| AD-4 · Revision history with organizer restore | ✓ |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  | ✓ |  |
 | AD-5 · Bidirectional Airtable sync | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  |  |  |  | ✓ |  |  | ✓ | ✓ |  |  |  |  |  |
 | AD-6 · Authentication beyond magic links | ✗ |  | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  | ✓ |  |  |  |  |  |  |  |  |  | ✓ |  |  |
 | AD-7 · Real-time collaborative agenda over Durable Objects + WebSockets | ✗ |  |  | ✓ |  |  |  | ✓ |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |
 | AD-8 · In-product streaming AI assistant with tool use | ✗ |  |  |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  | ✓ |  | ✓ |  |  |  |  |  |  |  |  |
-| AD-9 · Tokenized no-login share links | ✗ |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  |  |  | ✓ |  |  |  |  |  |  |  |  |
+| AD-9 · Tokenized no-login share links | ✓ |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  | ✓ |  |  |  | ✓ |  |  |  |  |  |  |  |  |
 | AD-10 · OAuth 2.1 authorization server for MCP | ✗ |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| AD-11 · Per-event `llms.txt` | ✗ |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |
+| AD-11 · Per-event `llms.txt` | ✓ |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |
 | AD-12 · Accelevents integration | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | AD-13 · Privacy export and erasure | ✗ |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |
 | AD-14 · Organization-level team administration | ✗ |  | ✓ |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |
@@ -70,7 +76,7 @@ A browsable version of this same grid lives at `docs/alternatives/visual/index.h
 | AD-34 · Public incremental changes feed | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |
 | AD-35 · Direct Sessionize speaker-profile import | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |  |
 | AD-36 · Fail-closed audit persistence | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |  |  |  |  |
-| AD-37 · Mixed-type rubric criteria | ✗ |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| AD-37 · Mixed-type rubric criteria | ✓ |  |  |  | ✓ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | AD-38 · AI-seeded scorecards that the server refuses | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |
 | AD-39 · Cancellable queued decision notices | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |
 | AD-40 · Persistent cross-device attendee schedules | ✗ |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ✓ |  |  |

@@ -79,6 +79,20 @@ export interface Area {
   description: string;
 }
 
+/**
+ * An extra the survey recorded as absent from Cicero and Cicero has built since. The row stays in
+ * the catalogue — deleting it would erase both the attribution and the evidence that the field
+ * arrived at the gap first — so this is how "no longer true of Cicero" gets said out loud.
+ */
+export interface CiceroShipped {
+  /** The pull request that closed the gap. */
+  pr: number;
+  /** The date it merged, `YYYY-MM-DD`. */
+  on: string;
+  /** What Cicero does now, and where in source to read it. */
+  note: string;
+}
+
 export interface Extra {
   id: string;
   n: number;
@@ -87,6 +101,8 @@ export interface Extra {
   convergence: number;
   tier: string;
   projects: string[];
+  /** Present only once Cicero has shipped it; absent means the gap is still open. */
+  ciceroShipped?: CiceroShipped;
 }
 
 export interface CiceroDifferentiator {
@@ -212,6 +228,18 @@ export function validate(survey: Survey, alternativesDir = ALTERNATIVES_DIR): st
         problems.push(`${extra.id} is attributed to "${slug}", which is not an analyzed project`);
       }
     }
+    const shipped = extra.ciceroShipped;
+    if (shipped) {
+      if (!Number.isInteger(shipped.pr) || shipped.pr <= 0) {
+        problems.push(`${extra.id}: ciceroShipped.pr must be a pull request number`);
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(shipped.on)) {
+        problems.push(`${extra.id}: ciceroShipped.on must be a YYYY-MM-DD date`);
+      }
+      if (!shipped.note?.trim()) {
+        problems.push(`${extra.id}: ciceroShipped needs a note saying what Cicero does now`);
+      }
+    }
   }
 
   for (const differentiator of survey.features.ciceroDifferentiators) {
@@ -246,6 +274,11 @@ export function areaTotals(survey: Survey): AreaTotals[] {
     for (const project of projects) totals[project.coverage?.[area.id] ?? 'unknown'] += 1;
     return totals;
   });
+}
+
+/** The extras Cicero has built since the field was read, in catalogue order. */
+export function closedExtras(survey: Survey): Extra[] {
+  return survey.features.extras.filter((e) => e.ciceroShipped).sort((a, b) => a.n - b.n);
 }
 
 /** Extras attributed to a project, so the grid can be read by column as well as by row. */
@@ -289,6 +322,7 @@ export function summarize(survey: Survey) {
       noPublicSource: counts['no-public-source'] ?? 0,
       baselineAreas: survey.features.areas.length,
       extras: survey.features.extras.length,
+      extrasClosedSince: closedExtras(survey).length,
       ciceroDifferentiators: survey.features.ciceroDifferentiators.length,
       totalFeatureRows:
         survey.features.areas.length +
@@ -324,7 +358,13 @@ export function summarize(survey: Survey) {
     })),
     extrasByConvergence: [...survey.features.extras]
       .sort((a, b) => b.convergence - a.convergence || a.n - b.n)
-      .map((e) => ({ id: e.id, title: e.title, convergence: e.convergence, projects: e.projects })),
+      .map((e) => ({
+        id: e.id,
+        title: e.title,
+        convergence: e.convergence,
+        projects: e.projects,
+        ciceroShipped: e.ciceroShipped ?? null,
+      })),
     extrasPerProject: Object.fromEntries(
       [...extrasPerProject.entries()]
         .map(([slug, extras]) => [slug, extras.map((e) => e.id)] as const)

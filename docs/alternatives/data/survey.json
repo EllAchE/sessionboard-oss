@@ -9,6 +9,7 @@
     "noPublicSource": 8,
     "baselineAreas": 15,
     "extras": 48,
+    "extrasClosedSince": 7,
     "ciceroDifferentiators": 8,
     "totalFeatureRows": 71,
     "attributions": 85
@@ -244,7 +245,12 @@
         "maddiedreese-ProgramLoom",
         "TheThingInTheThing-namos-sessions-webapp",
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 199,
+        "on": "2026-08-17",
+        "note": "`lib/services/event-clone.ts` plans a structure-only clone and `app/organizer/duplicate/` previews it before applying; people and operational history are deliberately excluded."
+      }
     },
     {
       "id": "AD-3",
@@ -256,7 +262,12 @@
         "iankar8-event-manager-os",
         "westoque-session-hero",
         "akakabrian-sessionslate"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 210,
+        "on": "2026-08-17",
+        "note": "`app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as `feed.json`, `feed.xml` and a subscribable `feed.ics` off the same query string the iframe and script snippets carry."
+      }
     },
     {
       "id": "AD-5",
@@ -268,7 +279,8 @@
         "guangyusong-opencallboard",
         "SteveMLC-lectern",
         "red-omotenashi"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-6",
@@ -280,7 +292,8 @@
         "M31-Labs-rostrum",
         "adityak6798-ManageMyConference",
         "mkly-gatherpulse"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-2",
@@ -291,7 +304,12 @@
         "TheThingInTheThing-namos-sessions-webapp",
         "0xOsprey-saas-killa",
         "yisding-openboard.events"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 194,
+        "on": "2026-08-17",
+        "note": "A `speaker_unavailability` window declared in the portal is read by `lib/services/speaker-availability.ts` and enforced through the same agenda guard as double-booking."
+      }
     },
     {
       "id": "AD-4",
@@ -302,7 +320,12 @@
         "westoque-session-hero",
         "SteveMLC-lectern",
         "realgenekim-curtain-call-cfp"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 200,
+        "on": "2026-08-17",
+        "note": "Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage."
+      }
     },
     {
       "id": "AD-7",
@@ -313,7 +336,8 @@
         "caseymanos-opensession",
         "jpoehnelt-session-party",
         "thedatadavis-seshmesh"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-8",
@@ -324,7 +348,8 @@
         "getzenai-untitledconference",
         "nayamoss-namos-sessions-public",
         "Phantastic-AI-fireside"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-9",
@@ -335,7 +360,12 @@
         "Phantastic-AI-fireside",
         "mkly-gatherpulse",
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 201,
+        "on": "2026-08-17",
+        "note": "`lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account."
+      }
     },
     {
       "id": "AD-14",
@@ -345,7 +375,8 @@
         "yisding-openboard.events",
         "CampbellVentures-smolboard",
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-10",
@@ -354,7 +385,8 @@
       "projects": [
         "d4mr-opensesh",
         "maddiedreese-ProgramLoom"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-11",
@@ -363,7 +395,12 @@
       "projects": [
         "conorbronsdon-callboard-app",
         "red-omotenashi"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 188,
+        "on": "2026-08-17",
+        "note": "`app/(public)/[slug]/llms.txt/route.ts` generates a per-event file from current published state, alongside the site-level `app/llms.txt`."
+      }
     },
     {
       "id": "AD-12",
@@ -372,7 +409,8 @@
       "projects": [
         "iankar8-event-manager-os",
         "jpoehnelt-session-party"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-13",
@@ -381,7 +419,8 @@
       "projects": [
         "caseymanos-opensession",
         "yisding-openboard.events"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-15",
@@ -389,7 +428,8 @@
       "convergence": 1,
       "projects": [
         "0xOsprey-saas-killa"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-16",
@@ -397,7 +437,8 @@
       "convergence": 1,
       "projects": [
         "0xOsprey-saas-killa"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-17",
@@ -405,7 +446,8 @@
       "convergence": 1,
       "projects": [
         "M31-Labs-rostrum"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-18",
@@ -413,7 +455,8 @@
       "convergence": 1,
       "projects": [
         "M31-Labs-rostrum"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-19",
@@ -421,7 +464,8 @@
       "convergence": 1,
       "projects": [
         "M31-Labs-rostrum"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-20",
@@ -429,7 +473,8 @@
       "convergence": 1,
       "projects": [
         "Phantastic-AI-fireside"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-21",
@@ -437,7 +482,8 @@
       "convergence": 1,
       "projects": [
         "Phantastic-AI-fireside"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-22",
@@ -445,7 +491,8 @@
       "convergence": 1,
       "projects": [
         "ChaiWithJai-open-speaker-operations"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-23",
@@ -453,7 +500,8 @@
       "convergence": 1,
       "projects": [
         "ChaiWithJai-open-speaker-operations"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-24",
@@ -461,7 +509,8 @@
       "convergence": 1,
       "projects": [
         "EquipeAI-stagestack"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-25",
@@ -469,7 +518,8 @@
       "convergence": 1,
       "projects": [
         "EquipeAI-stagestack"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-26",
@@ -477,7 +527,8 @@
       "convergence": 1,
       "projects": [
         "getzenai-untitledconference"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-27",
@@ -485,7 +536,8 @@
       "convergence": 1,
       "projects": [
         "getzenai-untitledconference"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-28",
@@ -493,7 +545,8 @@
       "convergence": 1,
       "projects": [
         "getzenai-untitledconference"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-29",
@@ -501,7 +554,8 @@
       "convergence": 1,
       "projects": [
         "d4mr-opensesh"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-30",
@@ -509,7 +563,8 @@
       "convergence": 1,
       "projects": [
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-31",
@@ -517,7 +572,8 @@
       "convergence": 1,
       "projects": [
         "adityak6798-ManageMyConference"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-32",
@@ -525,7 +581,8 @@
       "convergence": 1,
       "projects": [
         "blockbrain-ai-speakerops"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-33",
@@ -533,7 +590,8 @@
       "convergence": 1,
       "projects": [
         "guangyusong-opencallboard"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-34",
@@ -541,7 +599,8 @@
       "convergence": 1,
       "projects": [
         "realgenekim-curtain-call-cfp"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-35",
@@ -549,7 +608,8 @@
       "convergence": 1,
       "projects": [
         "realgenekim-curtain-call-cfp"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-36",
@@ -557,7 +617,8 @@
       "convergence": 1,
       "projects": [
         "red-omotenashi"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-37",
@@ -565,7 +626,12 @@
       "convergence": 1,
       "projects": [
         "akakabrian-sessionslate"
-      ]
+      ],
+      "ciceroShipped": {
+        "pr": 212,
+        "on": "2026-08-17",
+        "note": "`scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning."
+      }
     },
     {
       "id": "AD-38",
@@ -573,7 +639,8 @@
       "convergence": 1,
       "projects": [
         "twilwa-session-bored"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-39",
@@ -581,7 +648,8 @@
       "convergence": 1,
       "projects": [
         "twilwa-session-bored"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-40",
@@ -589,7 +657,8 @@
       "convergence": 1,
       "projects": [
         "twilwa-session-bored"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-41",
@@ -597,7 +666,8 @@
       "convergence": 1,
       "projects": [
         "westoque-session-hero"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-42",
@@ -605,7 +675,8 @@
       "convergence": 1,
       "projects": [
         "TheThingInTheThing-namos-sessions-webapp"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-43",
@@ -613,7 +684,8 @@
       "convergence": 1,
       "projects": [
         "mkly-gatherpulse"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-44",
@@ -621,7 +693,8 @@
       "convergence": 1,
       "projects": [
         "mkly-gatherpulse"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-45",
@@ -629,7 +702,8 @@
       "convergence": 1,
       "projects": [
         "conorbronsdon-callboard-app"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-46",
@@ -637,7 +711,8 @@
       "convergence": 1,
       "projects": [
         "CampbellVentures-smolboard"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-47",
@@ -645,7 +720,8 @@
       "convergence": 1,
       "projects": [
         "mauricedesaxe-openboard"
-      ]
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-48",
@@ -653,7 +729,8 @@
       "convergence": 1,
       "projects": [
         "SteveMLC-lectern"
-      ]
+      ],
+      "ciceroShipped": null
     }
   ],
   "extrasPerProject": {
