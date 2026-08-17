@@ -1,3 +1,4 @@
+import { formatMinutes, zonedDayKey, zonedMinutes } from '@/lib/services/schedule';
 import type { TaskStatus } from '@/lib/services/tasks';
 
 /**
@@ -110,3 +111,54 @@ export const ROLE_LABEL: Record<string, string> = {
   moderator: 'Moderator',
   panelist: 'Panelist',
 };
+
+/**
+ * `AD-2`. A blackout window rendered back in the zone the speaker authored it in — their own wall
+ * clock, not the event's. This is the one screen where the event timezone is the wrong answer: the
+ * speaker typed "09:00" meaning their 09:00, and showing them the organizer's translation of it
+ * would make a correctly stored window look wrong and invite them to "fix" it.
+ *
+ * The organizer's side of the same window is translated into the event zone by the agenda, from the
+ * same stored instant. Two renderings, one instant, no conversion in between.
+ */
+export function formatUnavailabilityWindow(
+  startsAt: Date,
+  endsAt: Date,
+  timezone: string,
+): string {
+  const startDay = zonedDayKey(startsAt, timezone);
+  const startMinute = zonedMinutes(startsAt, timezone);
+  const rawEndDay = zonedDayKey(endsAt, timezone);
+  const rawEndMinute = zonedMinutes(endsAt, timezone);
+
+  /**
+   * A window ending at local midnight is the *end of the previous day*, not a zero-length sliver of
+   * the next one. Half-open intervals make midnight the natural end of an all-day block, so without
+   * this every "12 October, all day" reads back as "12 Oct 00:00 – 13 Oct 00:00".
+   */
+  const endsAtMidnight = rawEndMinute === 0 && rawEndDay !== startDay;
+  const endDay = endsAtMidnight ? previousDayKey(rawEndDay) : rawEndDay;
+  const endMinute = endsAtMidnight ? 24 * 60 : rawEndMinute;
+
+  const sameDay = startDay === endDay;
+  const wholeDays = startMinute === 0 && endMinute === 24 * 60;
+
+  if (wholeDays && sameDay) return `All day, ${dayLabel(startDay, timezone)}`;
+  if (wholeDays) return `${dayLabel(startDay, timezone)} – ${dayLabel(endDay, timezone)}, all day`;
+  if (sameDay) {
+    return `${dayLabel(startDay, timezone)}, ${formatMinutes(startMinute)}–${formatMinutes(endMinute)}`;
+  }
+  return `${dayLabel(startDay, timezone)} ${formatMinutes(startMinute)} – ${dayLabel(endDay, timezone)} ${formatMinutes(endMinute)}`;
+}
+
+function previousDayKey(dayKey: string): string {
+  const [year, month, day] = dayKey.split('-').map(Number);
+  const previous = new Date(Date.UTC(year, month - 1, day) - 86_400_000);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${previous.getUTCFullYear()}-${pad(previous.getUTCMonth() + 1)}-${pad(previous.getUTCDate())}`;
+}
+
+/** Noon, so no zone can pull the label onto the day either side of the one meant. */
+function dayLabel(dayKey: string, timezone: string): string {
+  return formatDate(dayKey, timezone);
+}
