@@ -50,6 +50,31 @@
   display: none;
 }
 
+/*
+ * Sits above the five destinations on a first visit only, so it is separated by a rule rather than
+ * by a card of its own: it introduces the list it belongs to instead of competing with it.
+ */
+.intro {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-default);
+}
+
+.introTitle {
+  margin: 0;
+  color: var(--text-accent);
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.introBody {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-xs) / var(--leading-normal) var(--font-ui);
+}
+
 .destination {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
