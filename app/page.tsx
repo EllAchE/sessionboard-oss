@@ -189,7 +189,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <p className={styles.eyebrow}>Conference operations, end to end</p>
           <h1>From call for speakers to public program</h1>
           <p className={styles.heroLead}>
-            Run submissions, review, scheduling, speaker tasks, and publishing in one place.
+            Manage submissions, review, sourcing, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.agentStarter}>
             <p className={styles.agentStarterLabel}>
