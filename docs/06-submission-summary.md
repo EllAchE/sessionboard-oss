@@ -1,10 +1,5 @@
 # Cicero — submission (short form)
 
-> **Dated competition artifact.** This copy was refreshed on 17 August 2026 against the latest
-> merged product baseline. The evidence record separates current-source verification from the older
-> hosted revision. Use [`../README.md`](../README.md), [`README.md`](README.md), and the latest CI run
-> for the maintained operating state.
-
 **Live demo:** <https://cicero-three.vercel.app>
 
 **Readable HTML:** <https://cicero-submission.elehche.workers.dev/submission/summary.html>

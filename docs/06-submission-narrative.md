@@ -1,10 +1,5 @@
 # Cicero — full submission narrative
 
-> **Dated competition artifact.** This narrative was refreshed on 17 August 2026 against the latest
-> merged product baseline. The evidence record keeps the earlier browser capture and a separate
-> current-source verification so deployment gaps remain visible. Use [`../README.md`](../README.md),
-> [`README.md`](README.md), and the latest CI run for the maintained operating state.
-
 **Live demo:** <https://cicero-three.vercel.app>
 
 **Readable HTML:** <https://cicero-submission.elehche.workers.dev/>
