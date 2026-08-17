@@ -52,6 +52,7 @@ function index(patch: Partial<FileIndexInput> = {}): EventFileRow[] {
         status: 'accepted',
         answers: {},
         participantId: GRACE,
+        ownerDisplayName: null,
         ownerName: 'Grace Hopper',
         ownerEmail: 'grace@example.com',
       },
@@ -62,6 +63,7 @@ function index(patch: Partial<FileIndexInput> = {}): EventFileRow[] {
         status: 'waitlisted',
         answers: {},
         participantId: ADA,
+        ownerDisplayName: null,
         ownerName: 'Ada Lovelace',
         ownerEmail: 'ada@example.com',
       },
@@ -69,7 +71,7 @@ function index(patch: Partial<FileIndexInput> = {}): EventFileRow[] {
     taskUploads: [],
     headshots: [],
     speakingRoles: [],
-    uploaders: [{ id: 'user-ada', name: 'Ada Lovelace', email: 'ada@example.com' }],
+    uploaders: [{ id: 'user-ada', displayName: null, name: 'Ada Lovelace', email: 'ada@example.com' }],
     commentCounts: new Map(),
     ...patch,
   });
@@ -87,6 +89,7 @@ function taskUpload(patch: Partial<TaskUpload> = {}): TaskUpload {
     pinnedSubmissionId: null,
     taskName: 'Upload your slides',
     taskStatus: 'completed',
+    ownerDisplayName: null,
     ownerName: 'Ada Lovelace',
     ownerEmail: 'ada@example.com',
     ...patch,
@@ -178,11 +181,14 @@ describe('metadata a speaker record needs', () => {
         {
           fileId: PHOTO,
           participantId: ADA,
+          ownerDisplayName: null,
           ownerName: 'Ada Lovelace',
           ownerEmail: 'ada@example.com',
         },
       ],
-      uploaders: [{ id: 'user-organizer', name: 'Hedy Lamarr', email: 'hedy@example.com' }],
+      uploaders: [
+        { id: 'user-organizer', displayName: null, name: 'Hedy Lamarr', email: 'hedy@example.com' },
+      ],
     });
 
     expect(row.source).toBe('headshot');
@@ -191,6 +197,38 @@ describe('metadata a speaker record needs', () => {
     expect(row.uploaderName).toBe('Hedy Lamarr');
     expect(row.filename).toBe('ada.jpg');
     expect(row.createdAt.toISOString()).toBe('2026-08-01T09:00:00.000Z');
+  });
+
+  /*
+    `CNT-S3`. The account name and this event's name for the same person can differ, and did: a
+    speaker renamed on one conference kept her account's old name on every file she owned or
+    uploaded. Both columns read the event's name now.
+  */
+  it('files a renamed speaker under the name this event gave her', () => {
+    const [row] = index({
+      files: [record({ id: PHOTO, filename: 'priya.jpg', uploadedByUserId: 'user-priya' })],
+      submissions: [],
+      headshots: [
+        {
+          fileId: PHOTO,
+          participantId: ADA,
+          ownerDisplayName: 'Priya Raman',
+          ownerName: 'Marcus Vitruvius Pollio',
+          ownerEmail: 'vitruvius@example.com',
+        },
+      ],
+      uploaders: [
+        {
+          id: 'user-priya',
+          displayName: 'Priya Raman',
+          name: 'Marcus Vitruvius Pollio',
+          email: 'vitruvius@example.com',
+        },
+      ],
+    });
+
+    expect(row.ownerName).toBe('Priya Raman');
+    expect(row.uploaderName).toBe('Priya Raman');
   });
 
   it('leaves the uploader null rather than guessing when the account is gone', () => {
@@ -231,6 +269,7 @@ describe('metadata a speaker record needs', () => {
           status: 'accepted',
           answers: { deck: DECK },
           participantId: GRACE,
+          ownerDisplayName: null,
           ownerName: 'Grace Hopper',
           ownerEmail: 'grace@example.com',
         },

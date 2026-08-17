@@ -39,6 +39,26 @@ export function joinPersonName(name: PersonName): string | null {
 }
 
 /**
+ * `CNT-S3`, `SPK-S1`. What this event calls a person.
+ *
+ * `participant.display_name` is per-event and `user.name` is the account; renaming a speaker for one
+ * conference writes the first and deliberately leaves the second alone. A surface reading the
+ * account name directly therefore keeps showing whoever that person was before the organizer
+ * renamed them — which is how one speaker's uploads, her comment thread and three of her submission
+ * rows were all filed under a name no other screen in the app used for her.
+ *
+ * The email is the last resort rather than a blank, because "who uploaded this" is a question a
+ * deliverables library has to answer even for an account that never filled in a name.
+ */
+export function eventPersonName(person: {
+  displayName?: string | null;
+  name?: string | null;
+  email: string;
+}): string {
+  return person.displayName?.trim() || person.name?.trim() || person.email;
+}
+
+/**
  * Validates both halves with the same rules a single speaker name gets — control characters,
  * invisible joiners and length are rejected identically, so a name cannot slip past by arriving in
  * two pieces. Throws the same `invalid` error `parseSpeakerName` throws.
