@@ -2,7 +2,12 @@ import { cookies } from 'next/headers';
 import { currentActor } from '@/lib/auth';
 import type { EventContext } from '@/lib/context';
 import { can } from '@/lib/context';
-import { EVENT_COOKIE, listEventsForUser, type EventSummary } from '@/lib/services/events';
+import {
+  EVENT_COOKIE,
+  listEventsForUser,
+  pickDefaultEvent,
+  type EventSummary,
+} from '@/lib/services/events';
 
 /**
  * The reviewer surface resolves its own event rather than calling `currentEventId`, whose fallback
@@ -27,8 +32,18 @@ export async function reviewerSession(): Promise<ReviewerSession | null> {
   );
   if (reviewing.length === 0) return null;
 
+  /**
+   * With no cookie this used to take `reviewing[0]` — `listEventsForUser` order, which is newest
+   * created — so a reviewer on several events opened the queue for whichever one happened to be
+   * made last. `pickDefaultEvent` is the rule the organizer shell already resolves by: the edition
+   * you are running is almost always the next one to happen. Sharing it means the two surfaces name
+   * the same event when neither has been told which, instead of disagreeing on sight.
+   */
   const preferred = (await cookies()).get(EVENT_COOKIE)?.value;
-  const event = reviewing.find((candidate) => candidate.id === preferred) ?? reviewing[0];
+  const event =
+    reviewing.find((candidate) => candidate.id === preferred) ??
+    pickDefaultEvent(reviewing) ??
+    reviewing[0];
   const ctx: EventContext = { actor, eventId: event.id, roles: event.roles };
 
   return { ctx, event, canDecide: can(ctx, 'submission:decide') };

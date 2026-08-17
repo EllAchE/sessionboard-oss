@@ -8,15 +8,20 @@ export const metadata = { title: 'Sign in · Cicero' };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; email?: string }>;
+  searchParams: Promise<{ next?: string; email?: string; event?: string }>;
 }) {
-  const { next, email } = await searchParams;
+  const { next, email, event } = await searchParams;
 
   const safeNext = authRedirect(next, '/organizer');
 
   return (
     <main className={styles.root}>
-      <SignInForm next={safeNext} defaultEmail={email ?? ''} demoEmail={demoSignInEmail()} />
+      <SignInForm
+        next={safeNext}
+        defaultEmail={email ?? ''}
+        event={event ?? ''}
+        demoEmail={demoSignInEmail()}
+      />
     </main>
   );
 }

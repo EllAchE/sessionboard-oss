@@ -1,7 +1,8 @@
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { currentActor } from '@/lib/auth';
-import { listEventsForUser } from '@/lib/services/events';
+import { EVENT_COOKIE, listEventsForUser } from '@/lib/services/events';
 import styles from './portal.module.css';
 
 export const metadata = { title: 'Speaker portal · Cicero' };
@@ -16,6 +17,17 @@ export default async function PortalIndexPage() {
 
   const events = await listEventsForUser(actor.userId);
   if (events.length === 1) redirect(`/portal/${events[0].slug}`);
+
+  /**
+   * A link that named an event leaves that event on the session (`adoptTokenEvent`), and someone who
+   * arrived through one has already answered the only question this page asks. Offering the list
+   * anyway made the organizer workspace's own "Speaker portal" action open a chooser rather than a
+   * portal. Matched against live memberships, so a cookie that outlived its event falls through to
+   * the list rather than redirecting into a 404.
+   */
+  const preferred = (await cookies()).get(EVENT_COOKIE)?.value;
+  const named = preferred ? events.find((candidate) => candidate.id === preferred) : undefined;
+  if (named) redirect(`/portal/${named.slug}`);
 
   return (
     <main className={styles.main}>

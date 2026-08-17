@@ -12,11 +12,18 @@ const INITIAL: SignInState = { sent: false };
 export function SignInForm({
   next,
   defaultEmail,
+  event = '',
   intent = 'sign-in',
   demoEmail = null,
 }: {
   next: string;
   defaultEmail: string;
+  /**
+   * Slug of the event this link is for, when the URL named one. It reaches `magic_token.event_id`,
+   * so the session opens on the event the link was about rather than on whichever one each surface
+   * would otherwise fall back to.
+   */
+  event?: string;
   intent?: AuthIntent;
   /** Set only where the deployment has opted into on-screen links for seeded demo identities. */
   demoEmail?: string | null;
@@ -54,6 +61,7 @@ export function SignInForm({
           ) : (
             <form action={action} className={styles.form}>
               <input type="hidden" name="next" value={next} />
+              <input type="hidden" name="event" value={event} />
               <label className={styles.field}>
                 <span className={styles.label}>Email</span>
                 <Input
@@ -82,6 +90,7 @@ export function SignInForm({
               </p>
               <form action={action}>
                 <input type="hidden" name="next" value={next} />
+                <input type="hidden" name="event" value={event} />
                 <input type="hidden" name="email" value={demoEmail} />
                 <Button type="submit" variant="secondary" fullWidth>
                   Explore the demo event
