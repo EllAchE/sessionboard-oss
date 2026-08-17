@@ -81,6 +81,11 @@ Do not silently broaden authority. If the cycle approval did not include merging
 leave reviewed PRs ready and report that boundary at check-in. Do not start a new evaluation merely
 to compensate for a deployment that has not happened.
 
+Some findings cannot be closed by a PR — a hosted configuration gap, a fixture requirement, or a
+judging instruction the next fresh context needs. Record those in
+[`sessionboard-eval-remediation.md`](sessionboard-eval-remediation.md) so they survive the cycle,
+and read that file before judging a repeat of an item listed there.
+
 ## 5. Check in, then stop
 
 Before any new `sbek plan`, report:
