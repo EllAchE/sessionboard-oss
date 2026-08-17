@@ -80,6 +80,27 @@ const SPEAKER_FEATURES = [
   },
 ];
 
+const ROLE_PRODUCTS = [
+  {
+    icon: LayoutDashboard,
+    role: 'Organizer',
+    title: 'Keep the whole conference moving.',
+    body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up from one workspace.',
+  },
+  {
+    icon: Megaphone,
+    role: 'Speaker',
+    title: 'Stay ready from proposal to stage.',
+    body: 'Submit a talk, maintain your profile, send deliverables, and keep every event task in view.',
+  },
+  {
+    icon: CalendarDays,
+    role: 'Attendee',
+    title: 'Plan the day from the live programme.',
+    body: 'Browse the agenda, discover speakers, and build a personal itinerary without an account.',
+  },
+] as const;
+
 /**
  * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
  * visitor reaches a populated view of the role they care about without reading the page first. The
@@ -128,6 +149,9 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <CiceroBrand markSize={34} />
         </a>
         <div className={styles.navLinks}>
+          <a className={styles.productsLink} href="#products">
+            Products
+          </a>
           <a className={styles.aboutLink} href="#about">
             About
           </a>
@@ -137,7 +161,10 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </a>
           ) : null}
           <a className={styles.agentLink} href="#agent-quick-start">
-            Agent quick start
+            Agent setup
+          </a>
+          <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
+            API docs
           </a>
           <a className={styles.signInLink} href="/signin">
             Sign in
@@ -244,6 +271,33 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
       </section>
 
       <div className={styles.mosaicRule} aria-hidden="true" />
+
+      <section
+        className={styles.productsOverview}
+        id="products"
+        aria-labelledby="products-title"
+      >
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>Products by role</p>
+          <h2 id="products-title">One conference, three purpose-built experiences.</h2>
+          <p>
+            Everyone works from the same event, while each person sees the tools and context that
+            belong to their role.
+          </p>
+        </div>
+        <div className={styles.roleProducts}>
+          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body }) => (
+            <article className={`${styles.feature} ${styles.roleProduct}`} key={role}>
+              <span className={styles.featureIcon}>
+                <Icon size={20} aria-hidden="true" />
+              </span>
+              <p className={styles.roleProductRole}>{role}</p>
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className={styles.product} id="organizers">
         <div className={styles.sectionHeading}>

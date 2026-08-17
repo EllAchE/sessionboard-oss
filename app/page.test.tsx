@@ -33,10 +33,15 @@ describe('fresh-instance home page', () => {
     );
   });
 
-  it('describes the product through organizer and speaker outcomes', () => {
+  it('describes the product through organizer, speaker, and attendee outcomes', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable />);
 
     expect(html).toContain('From call for speakers to public program');
+    expect(html).toContain('One conference, three purpose-built experiences.');
+    expect(html).toContain('Organizer');
+    expect(html).toContain('Speaker');
+    expect(html).toContain('Attendee');
+    expect(html).toContain('Plan the day from the live programme.');
     expect(html).toContain('For organizers');
     expect(html).toContain('Know what needs attention');
     expect(html).toContain('Build a schedule that catches collisions');
@@ -49,6 +54,17 @@ describe('fresh-instance home page', () => {
     expect(html).not.toMatch(
       /\b(?:forum|empire|imperial|petition|orator|fasti|magistrate|province|decree)\b/i,
     );
+  });
+
+  it('makes products, agent setup, and API docs discoverable from the primary navigation', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+
+    expect(html).toContain('href="#products"');
+    expect(html).toContain('Products');
+    expect(html).toContain('Agent setup');
+    expect(html).not.toContain('Agent quick start');
+    expect(html).toContain('href="/api/v1/openapi.json"');
+    expect(html).toContain('API docs');
   });
 
   it('offers only working cold-start paths before the demo fixture is loaded', () => {

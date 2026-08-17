@@ -41,6 +41,7 @@
 .hero,
 .mosaicRule,
 .about,
+.productsOverview,
 .product,
 .programme,
 .agentQuickStart,
@@ -79,9 +80,11 @@
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
 }
 
+.productsLink,
 .aboutLink,
 .demoLink,
 .agentLink,
+.apiDocsLink,
 .githubLink,
 .signInLink {
   display: inline-flex;
@@ -91,9 +94,11 @@
   text-decoration: none;
 }
 
+.productsLink:hover,
 .aboutLink:hover,
 .demoLink:hover,
 .agentLink:hover,
+.apiDocsLink:hover,
 .githubLink:hover,
 .signInLink:hover {
   color: var(--text-accent);
@@ -521,6 +526,28 @@
   padding-block: var(--space-24) var(--space-32);
 }
 
+.productsOverview {
+  padding-block: var(--space-24) var(--space-8);
+}
+
+.roleProducts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-16);
+}
+
+.roleProduct .featureIcon {
+  grid-row: span 3;
+}
+
+.feature .roleProductRole {
+  color: var(--text-accent);
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
 .speakerProduct {
   margin-top: var(--space-24);
   padding-inline: var(--space-12);
@@ -864,8 +891,17 @@
 }
 
 @media (max-width: 820px) {
+  .navLinks {
+    gap: var(--space-4);
+  }
+
+  .demoLink {
+    display: none;
+  }
+
   .about,
   .features,
+  .roleProducts,
   .programme,
   .agentQuickStart {
     grid-template-columns: 1fr;
@@ -888,6 +924,7 @@
   .nav,
   .hero,
   .about,
+  .productsOverview,
   .product,
   .programme,
   .agentQuickStart,
@@ -905,7 +942,9 @@
     gap: var(--space-4);
   }
 
-  .aboutLink {
+  .productsLink,
+  .aboutLink,
+  .apiDocsLink {
     display: none;
   }
 
@@ -979,6 +1018,7 @@
   }
 
   .product,
+  .productsOverview,
   .about,
   .programme,
   .agentQuickStart {
@@ -1011,6 +1051,10 @@
   }
 
   .features {
+    margin-top: var(--space-12);
+  }
+
+  .roleProducts {
     margin-top: var(--space-12);
   }
 
