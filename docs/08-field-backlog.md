@@ -13,17 +13,23 @@ count, and the project slugs it is attributed to.
 
 This document is the next step: a priority order over those items, with the reasoning shown.
 
-**Four are being implemented right now and are excluded from the ranking below** — they are not
-"skipped", they are simply already someone's current work:
+**Five have been taken off the ranking below** — they are not "skipped", they are shipped or are
+someone's current work:
 
 | | | |
 |---|---|---|
-| `AD-1` | Whole-event cloning / reusable event templates | in flight |
-| `AD-4` | Revision history with organizer restore | in flight |
-| `AD-9` | Tokenized no-login share links | in flight |
-| `AD-11` | Per-event `llms.txt` | in flight |
+| `AD-2` | Speaker availability / blackout windows | shipped — [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) |
+| `AD-11` | Per-event `llms.txt` | shipped — [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) |
+| `AD-4` | Revision history with organizer restore | in review — [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) |
+| `AD-9` | Tokenized no-login share links | in review — [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) |
+| `AD-1` | Whole-event cloning / reusable event templates | in flight — [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) |
 
-That leaves 44 items, all of which appear below exactly once.
+`AD-4` was the one item the survey mis-scored against Cicero. Most of it already existed —
+`recordRevision`, `listContentRevisions` and `restoreContentRevision` in `lib/services/content.ts`
+were a complete record → list → diff → restore loop before any of this work started. What #200 adds
+is a monotonic revision number and coverage for the agenda and sponsors, not the feature.
+
+That leaves 43 items, all of which appear below exactly once.
 
 ### Convergence is evidence about the brief, not a grade
 
@@ -80,8 +86,12 @@ those items are sized where they are.
 
 ## Tier 1 — Pick up next
 
-Six items. Each either completes an investment Cicero has already made, or closes a gap where the
+Four items. Each either completes an investment Cicero has already made, or closes a gap where the
 current behaviour is not merely thin but arguably wrong.
+
+`AD-8`, the in-product AI assistant, would otherwise sit in this tier on leverage alone. It is not
+here: it has been declined outright on inference cost, and the reasoning is under
+[Deliberately declining](#deliberately-declining) rather than in a ranking of things to pick up.
 
 ### 1. `AD-3` — Richer embed output formats · convergence 5 · **S**
 
@@ -124,26 +134,7 @@ activity table must cross W0 deliberately" — so the ownership question is sett
 starts. Unblocks `AD-36`, cheapens `AD-34` and `AD-44`, and is the missing substrate under
 `AD-14`'s audit trail.
 
-### 3. `AD-2` — Speaker availability / blackout windows · convergence 4 · **M**
-
-Cicero's scheduler detects three conflict kinds — `type ConflictKind = 'room' | 'track' | 'speaker'`
-in `lib/services/schedule.ts` — and a repo-wide search for `availability` / `blackout` /
-`unavailable` finds nothing scheduling-related. So Cicero can tell you a speaker is in two rooms at
-once, and cannot tell you a speaker is scheduled on a day they said they cannot attend. That is the
-same class of failure the existing `A-7` speaker double-booking check exists to prevent, which is
-what makes this completion rather than expansion: `AR-35` already built the whole severity /
-policy / surfacing apparatus (`severityForKind`, `blockingConflicts`, `event.agenda_conflict_policy`),
-and a fourth kind slots into it.
-
-The cost is M rather than S for two concrete reasons. Availability has to be *collected*, which
-means a form-field entity or a portal surface, and `Conflict.sessionIds` is typed
-`[string, string]` — a pair — whereas an availability clash is one session against a window, so the
-type widens and every consumer of it moves.
-
-*Touches:* new availability table (W0), `lib/services/schedule.ts` + `agenda-atomic.ts` (W4), CFP
-form or portal capture (W1/W2), conflicts view (W4).
-
-### 4. `AD-45` — Headshot publication consent bound to the current file · convergence 1 · **S**
+### 3. `AD-45` — Headshot publication consent bound to the current file · convergence 1 · **S**
 
 Cheapest item in the tier and the clearest trust gap in the catalogue. Grepping `consent` across
 `db/schema.ts` and the file services returns only `sms_consent` — SMS is the one place Cicero models
@@ -161,37 +152,7 @@ column plus a check at the publish boundary.
 *Touches:* `file` or `participant` (W0, one column), `lib/services/files.ts` /
 `lib/speaker-headshot.ts` (W2), public speaker page and gallery embed (W6).
 
-### 5. `AD-8` — In-product streaming AI assistant with tool use · convergence 4 · **L**
-
-The highest-leverage item in the document, and the reason it is fifth rather than first is purely
-cost — of two distinct kinds, and the second is the binding one.
-
-**Inference cost is the actual reason this is not being built.** Every other item in this tier is
-paid for once, in engineering time. An in-product assistant is paid for on every keystroke, forever,
-by us rather than by the organizer: a chat surface with tool use runs the full tool registry through
-a model on each turn, and the bill scales with how much people like it. That is a product-economics
-decision, not a technical one, and it is deliberate. The out-of-band MCP surface deliberately puts
-that cost on whoever brings their own client and their own key — which is why it exists and this
-does not.
-
-The build cost is the lesser half. Cicero has already built every hard part except the chat surface: `lib/mcp/tools.ts` defines
-ten tools including mutating ones (`cicero_mail_send`, `cicero_program_reconcile`), `lib/mcp/server.ts`
-wires them to transport-neutral service functions, and — critically — `AR-31` already established
-Cicero's answer to the approval question, server-side: the send path "requires the reviewed
-subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the
-recipient and re-renders the message and refuses if either moved"
-(`docs/05-additional-requirements.md`). An in-product assistant is the same tool registry and the
-same review gate behind a different front end.
-
-L because it is a genuinely new surface: streaming responses, persisted threads, and an approval
-step per mutation, none of which exist today. The survey's framing that "Cicero's AI is
-advisory-only and out-of-band" is accurate but slightly undersells it — the out-of-band surface is
-fully tool-capable, it just has no organizer-facing client.
-
-*Touches:* new thread/message tables (W0), `lib/mcp/tools.ts` reuse (W7), new organizer chat surface
-(W9 mounted into W3/W4), streaming route.
-
-### 6. `AD-5` — Bidirectional Airtable sync · convergence 5 · **L**
+### 4. `AD-5` — Bidirectional Airtable sync · convergence 5 · **L**
 
 Joint-highest convergence, ranked last in the tier, and the disagreement is worth naming: this is
 the item where axis 1 and axis 3 point hardest in opposite directions. `lib/airtable/mirror.ts:29`
@@ -217,7 +178,7 @@ Twenty-two items, ordered. Everything here is a real gap with a real answer; not
 enough to displace Tier 1, and several are cheap enough that they would sensibly be folded into
 whatever adjacent work is already open.
 
-### 7. `AD-46` — Two-step content publication gate · convergence 1 · **S/M**
+### 5. `AD-46` — Two-step content publication gate · convergence 1 · **S/M**
 
 `contentApprovalStatus` already exists (`db/schema.ts:169`: `in_review` / `approved` /
 `changes_requested`) on `submission.contentStatus`, and it already gates public visibility —
@@ -231,7 +192,7 @@ to pin. Sequence this after `AD-4` lands, since it consumes the same table.
 *Touches:* `content_revision` / approval columns (W0), `lib/services/content.ts` (W2), public page
 read path (W6).
 
-### 8. `AD-44` — Immutable numbered program publication snapshots · convergence 1 · **M**
+### 6. `AD-44` — Immutable numbered program publication snapshots · convergence 1 · **M**
 
 Publication today is `scheduled_session.status = 'published'`, one row at a time
 (`scheduledSessionStatus`, `db/schema.ts:140`); the only `published_at` column in the whole schema
@@ -241,7 +202,7 @@ announced it," and no unpublish that is distinguishable from deleting rows. Pair
 
 *Touches:* new snapshot table (W0), `lib/services/schedule.ts` publish path (W4), public agenda (W6).
 
-### 9. `AD-38` — AI-seeded scorecards the server refuses until confirmed · convergence 1 · **S/M**
+### 7. `AD-38` — AI-seeded scorecards the server refuses until confirmed · convergence 1 · **S/M**
 
 Narrower than the title suggests, because the bridge already half-exists.
 `ai_review.criterion_scores` stores per-criterion AI suggestions as `{criterionId, value, note}[]`
@@ -258,7 +219,7 @@ applies to outbound mail.
 *Touches:* `lib/services/review.ts` and the reviewer scorecard (W3). No schema change beyond a
 per-criterion confirmation flag.
 
-### 10. `AD-48` — AI-drafted decision emails and schedule notices · convergence 1 · **M**
+### 8. `AD-48` — AI-drafted decision emails and schedule notices · convergence 1 · **M**
 
 Fits Cicero's documented shape better than almost anything else in the catalogue. `AR-30`–`AR-33`
 built assisted chasing on an explicit finding — the tool drafts, a human reviews and sends — and
@@ -271,7 +232,7 @@ draft is validated against merge-field presence, not just rendered.
 
 *Touches:* `lib/services/review.ts`, `lib/services/comms.ts` (W3/W5), `lib/ai/` (W9).
 
-### 11. `AD-36` — Fail-closed audit persistence on private REST reads · convergence 1 · **S**
+### 9. `AD-36` — Fail-closed audit persistence on private REST reads · convergence 1 · **S**
 
 Small, and blocked on `AD-19`. Today `requireApiKey` (`app/api/v1/_lib/auth.ts`) best-effort updates
 `api_key.last_used_at` and nothing else, so an organizer-scoped read of `/submissions` leaves a
@@ -281,7 +242,7 @@ choke point. Ranked here rather than higher only because its cost is almost enti
 
 *Touches:* `app/api/v1/_lib/auth.ts` and `respond.ts` (W7).
 
-### 12. `AD-26` — Resubmit-with-guidance as a first-class decision · convergence 1 · **S/M**
+### 10. `AD-26` — Resubmit-with-guidance as a first-class decision · convergence 1 · **S/M**
 
 `submissionStatus` (`db/schema.ts:65`) is `draft / submitted / under_review / accepted / declined /
 waitlisted / withdrawn`. There is no state for "we want this, not like this," so an organizer who
@@ -292,7 +253,7 @@ lets the speaker edit a submitted proposal again.
 
 *Touches:* `submission_status` enum (W0), `lib/services/review.ts` (W3), portal (W2).
 
-### 13. `AD-22` — Named acceptance waves · convergence 1 · **M**
+### 11. `AD-22` — Named acceptance waves · convergence 1 · **M**
 
 Cicero already stages decisions without committing them: `submission_stage` is
 `accept / decline / hold` (`db/schema.ts:92`), the schema comment is explicit that staging "is not a
@@ -304,7 +265,7 @@ and no history of which wave a talk went out in.
 *Touches:* new wave table plus a `submission` FK (W0), `lib/services/review.ts` and the decision
 queue (W3).
 
-### 14. `AD-39` — Cancellable queued decision notices · convergence 1 · **M**
+### 12. `AD-39` — Cancellable queued decision notices · convergence 1 · **M**
 
 `email_log.status` has a `queued` value (`db/schema.ts:130`), but it is a transient in-flight marker
 rather than a hold window: `sendMail` (`lib/mail/index.ts`) inserts the row as `queued`, then invokes
@@ -320,7 +281,7 @@ and would be wasteful done separately.
 
 *Touches:* `email_log` or a new outbox (W0), `lib/services/comms.ts` and the cron route (W5).
 
-### 15. `AD-18` — Automatic reviewer-company conflict recusal · convergence 1 · **M**
+### 13. `AD-18` — Automatic reviewer-company conflict recusal · convergence 1 · **M**
 
 Recusal is already modelled well: `review_recusal` (`db/schema.ts:908`) is submission-scoped rather
 than round-scoped, survives the assignment it was made against, carries a reason, and has an
@@ -336,7 +297,7 @@ explicitly declining an assignment — proposing is the reading that fits.
 
 *Touches:* reviewer affiliation column (W0), `lib/services/review.ts` auto-assign and queue (W3).
 
-### 16. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M**
+### 14. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M**
 
 `scorecard_criterion` (`db/schema.ts:853`) carries `weight` and `max_score` and nothing else, and
 `score.value` is `integer` (`db/schema.ts:947`) — the rubric is numeric by construction. Adding
@@ -350,7 +311,7 @@ precise rather than being silently skipped.
 *Touches:* `scorecard_criterion` + `score` (W0), `lib/review-scoring.ts`, `lib/services/review.ts`,
 reviewer scorecard (W3).
 
-### 17. `AD-34` — Public incremental changes feed · convergence 1 · **M**
+### 15. `AD-34` — Public incremental changes feed · convergence 1 · **M**
 
 The REST API returns whole collections with `Cache-Control: public, max-age=30`
 (`app/api/v1/_lib/respond.ts`) and supports no `since` cursor, no sequence numbers, and no ETags. A
@@ -361,7 +322,7 @@ the review-half items because nothing is *wrong* today, it is just expensive to 
 
 *Touches:* `app/api/v1/**` and `lib/services/public-api.ts` (W7), depends on `AD-19`.
 
-### 18. `AD-13` — Privacy export and erasure · convergence 2 · **M**
+### 16. `AD-13` — Privacy export and erasure · convergence 2 · **M**
 
 `lib/services/account.ts` exposes exactly `getAccountProfile` and `saveAccountProfile`; there is no
 export path and no deletion path anywhere in the app. Cicero holds speaker bios, headshots,
@@ -373,7 +334,7 @@ preserving the program while removing the person — is not.
 
 *Touches:* `lib/services/account.ts` (W2), a new export route, cascade audit across `db/schema.ts`.
 
-### 19. `AD-10` — OAuth 2.1 authorization server for MCP · convergence 2 · **L**
+### 17. `AD-10` — OAuth 2.1 authorization server for MCP · convergence 2 · **L**
 
 Uniquely well-motivated by Cicero's own documents. `docs/05-additional-requirements.md` §"Still
 open" names this as the one remaining question that blocks a build: "Who is the MCP server for? An
@@ -387,7 +348,7 @@ surface, not a feature — it is the wrong thing to build in a hurry.
 *Touches:* new `.well-known` and authorization routes, client/grant/refresh tables (W0),
 `lib/mcp/server.ts` and `app/api/v1/_lib/auth.ts` (W7).
 
-### 20. `AD-12` — Accelevents preview/apply against the live platform · convergence 2 · **S/M**
+### 18. `AD-12` — Accelevents preview/apply against the live platform · convergence 2 · **S/M**
 
 Listed as a gap, but the honest description is narrower than the title: Cicero *has* the preview/apply
 diff machinery. `lib/accelevents/program.ts` implements `ProgramSyncMode = 'preview' | 'apply'`,
@@ -401,7 +362,7 @@ account access Cicero does not currently have.
 
 *Touches:* `lib/accelevents/client.ts` and `program.ts` (W7).
 
-### 21. `AD-40` — Persistent cross-device attendee schedules · convergence 1 · **S/M**
+### 19. `AD-40` — Persistent cross-device attendee schedules · convergence 1 · **S/M**
 
 `app/embed/views/ItineraryWidget.tsx` keeps starred sessions in `localStorage`, and its header
 comment explains why: "an attendee reading an embedded widget on somebody else's website has no
@@ -414,7 +375,7 @@ higher.
 
 *Touches:* new starred-session table (W0), `app/(public)/**` and the itinerary widget (W6).
 
-### 22. `AD-28` — Printable organizer run-of-show · convergence 1 · **S**
+### 20. `AD-28` — Printable organizer run-of-show · convergence 1 · **S**
 
 There is no `@media print` rule and no print view anywhere in `app/` or `components/`. A conference
 day is run off paper or a tablet at the back of a room, and the organizer surfaces are all
@@ -424,7 +385,7 @@ reach — but the layout itself is one route over data `lib/services/schedule.ts
 
 *Touches:* new organizer print route and stylesheet (W4/W6).
 
-### 23. `AD-24` — Primary-manager delegation · convergence 1 · **M**
+### 21. `AD-24` — Primary-manager delegation · convergence 1 · **M**
 
 `participant_role` already carries `is_primary` and a `kind` of
 `speaker / co_speaker / moderator / panelist` (`db/schema.ts:74`, `:776`), and the flag is
@@ -439,7 +400,7 @@ rather than S.
 *Touches:* `participant_role_kind` enum plus a handoff table (W0), `lib/services/submissions.ts` and
 `participants.ts`, portal (W2).
 
-### 24. `AD-29` — Named agenda draft variants · convergence 1 · **L**
+### 22. `AD-29` — Named agenda draft variants · convergence 1 · **L**
 
 Cicero has no agenda scenarios. `saved_view` (`db/schema.ts:1641`) is a per-user filter preset, not
 a variant, and `scheduled_session.status` is per-session rather than a program-wide draft mode.
@@ -452,7 +413,7 @@ advisory lock (`lib/services/agenda-guard.ts`) has to decide what it is locking.
 *Touches:* `scheduled_session` variant key (W0), all of `lib/services/schedule.ts` /
 `agenda-atomic.ts` / `agenda-guard.ts` and the board (W4).
 
-### 25. `AD-42` — Sponsor tiers with contacts, onboarding tasks, and form routing · convergence 1 · **M**
+### 23. `AD-42` — Sponsor tiers with contacts, onboarding tasks, and form routing · convergence 1 · **M**
 
 The one place in the field where another implementation went deeper than Cicero on Cicero's clearest
 differentiator, which makes it worth reading carefully. `sponsor` (`db/schema.ts:468`) has free-text
@@ -466,7 +427,7 @@ break that invariant deliberately.
 *Touches:* `sponsor_tier` / `sponsor_contact` tables and a `sponsor_id` on tasks (W0),
 `lib/services/sponsors.ts` and `tasks.ts` (W6/W2).
 
-### 26. `AD-43` — Public sponsor/exhibitor intake forms · convergence 1 · **M**
+### 24. `AD-43` — Public sponsor/exhibitor intake forms · convergence 1 · **M**
 
 Sponsors are organizer-entered only — `lib/services/sponsors.ts` guards every write with
 `requireCapability(ctx, 'event:manage')`, and the public surface is three read-only functions. The
@@ -478,7 +439,7 @@ new form. Sequence after `AD-42`, since "reviewed into tiered partner groups" pr
 *Touches:* `form_target_type` enum (W0), `lib/forms/contract.ts` and `lib/services/forms.ts` (W1),
 `lib/services/sponsors.ts` (W6).
 
-### 27. `AD-35` — Direct Sessionize speaker-profile import · convergence 1 · **S/M**
+### 25. `AD-35` — Direct Sessionize speaker-profile import · convergence 1 · **S/M**
 
 No occurrence of "Sessionize" in the codebase outside the survey docs. The value is concentrated in
 one moment — a speaker filling in the public CFP form who already maintains a profile elsewhere —
@@ -489,7 +450,7 @@ failure modes, not a data model.
 
 *Touches:* `lib/services/participants.ts` (W1), public CFP form (W1).
 
-### 28. `AD-32` — First-party TypeScript SDK and CLI · convergence 1 · **M**
+### 26. `AD-32` — First-party TypeScript SDK and CLI · convergence 1 · **M**
 
 `package.json` has no `bin` and there is no `sdk/` or `cli/` directory; `scripts/` holds internal
 `tsx` scripts only. The unusual thing here is that the hard prerequisite is already done — the
@@ -510,7 +471,7 @@ Nine items. Each is a coherent thing to want and none is wrong; they are here be
 surfaces Cicero does not currently have, for a demand nobody has expressed against Cicero
 specifically. Ordered by how small a nudge it would take to move them up.
 
-### 29. `AD-27` — Predecessor-linked carry-forward lane · convergence 1 · **M**
+### 27. `AD-27` — Predecessor-linked carry-forward lane · convergence 1 · **M**
 
 Blocked on `AD-1`, which is in flight. Nothing links one event to another today —
 `lib/services/events.ts` `createEvent()` is a from-scratch insert with no source-event parameter —
@@ -518,7 +479,7 @@ and cloning will have to establish that link anyway. Once it exists, "invite or 
 proposals" is a query and a lane in the submissions queue. Worth revisiting the moment cloning
 lands; premature before then.
 
-### 30. `AD-25` — Approval-gated AI import planning across CSV/XLS/XLSX/ODS · convergence 1 · **L**
+### 28. `AD-25` — Approval-gated AI import planning across CSV/XLS/XLSX/ODS · convergence 1 · **L**
 
 Cicero imports CSV only: `lib/csv.ts` is a hand-written RFC-4180 parser, and
 `app/organizer/submissions/import/ImportSubmissions.tsx` sets `accept=".csv,text/csv"`. There is no
@@ -527,7 +488,7 @@ but the format half means a new binary-parsing dependency inside a Workers/Verce
 "deterministic idempotent application" half means an operation log. Large, and the current CSV path
 is not visibly failing anyone.
 
-### 31. `AD-47` — In-app problem reporting · convergence 1 · **S/M**
+### 29. `AD-47` — In-app problem reporting · convergence 1 · **S/M**
 
 No bug-report form, no CAPTCHA or Turnstile, no incident routing anywhere — anti-abuse is entirely
 the Postgres rate limiter (`lib/rate-limit.ts`). The privacy-redaction half has a good precedent to
@@ -535,7 +496,7 @@ build on (`lib/mail/redact.ts`), and the delivery half is `lib/services/comms.ts
 rather than in Tier 2 because a self-hosted product's problem reports go to the self-hoster, and
 what "an incident policy" means is theirs to decide, not Cicero's.
 
-### 32. `AD-14` — Organization-level team administration · convergence 3 · **XL**
+### 30. `AD-14` — Organization-level team administration · convergence 3 · **XL**
 
 Highest convergence in this tier, and the item whose placement is most likely to be wrong. There is
 no organization entity: `membership` is `(userId, eventId, role)` (`db/schema.ts:291`), `event` has
@@ -547,14 +508,14 @@ tenant-shaped hole filled with a user id. It stays here because introducing a te
 event-scoped table in a 90-table schema is the single largest change in this document, and because
 the thing it would unlock (`AR-40`) is itself excluded.
 
-### 33. `AD-31` — Organization-level branded multi-program sites · convergence 1 · **XL**
+### 31. `AD-31` — Organization-level branded multi-program sites · convergence 1 · **XL**
 
 Strictly downstream of `AD-14` — there is no organization to brand. Cicero has per-event branding
 already (`lib/event-branding.ts`, `portal_theme`, `portal_page`), so the raw material exists, but
 a multi-program site with custom pages and versioned privacy consent is a second product surface
 sitting on a tenant that does not exist.
 
-### 34. `AD-30` — Organizer-defined roles with per-field hide/edit policies · convergence 1 · **L**
+### 32. `AD-30` — Organizer-defined roles with per-field hide/edit policies · convergence 1 · **L**
 
 `membership_role` is a fixed Postgres enum of three values and capabilities are a hardcoded table in
 `lib/context.ts` (`CAPABILITIES: Record<MembershipRole, readonly Capability[]>`), gating whole
@@ -564,7 +525,7 @@ excluded." So this item asks Cicero to reverse a stated exclusion, which is a pr
 rather than a backlog item. The "preview as role" half is nearly free by contrast, because full
 impersonation already exists (`startImpersonation`, `lib/auth.ts`).
 
-### 35. `AD-41` — Self-expiring per-visitor demo sandbox · convergence 1 · **M**
+### 33. `AD-41` — Self-expiring per-visitor demo sandbox · convergence 1 · **M**
 
 Cicero solves the same judge-can't-reach-a-demo problem a different way: `lib/demo-access.ts` gates
 on-screen magic links behind four independent conditions, and `docs/06-submission-narrative.md`
@@ -572,7 +533,7 @@ argues that case at length. A per-visitor sandbox with a global cap and a purge 
 generous answer and the more expensive one, and it would need the rate limiter, a tenancy notion,
 and a recurring purge. Worth building if the demo deployment ever gets abused; not before.
 
-### 36. `AD-23` — Cross-conference historical program corpus · convergence 1 · **L**
+### 34. `AD-23` — Cross-conference historical program corpus · convergence 1 · **L**
 
 The nearest thing Cicero has is the CRM, which is genuinely cross-event by design
 (`db/schema.ts:1659`: "The speaker database sits *above* events… a speaker who came back for the
@@ -580,7 +541,7 @@ third year running should not be re-keyed") and already supports reversible merg
 *program* corpus with field provenance and auditable link/split/relink is a different and larger
 object than a contact directory, and it presumes archives to ingest.
 
-### 37. `AD-15` — Awards · convergence 1 · **L**
+### 35. `AD-15` — Awards · convergence 1 · **L**
 
 Nominations, committee ballots, attendee voting, tallies, and winner notifications. Every piece has
 a near-neighbour in Cicero — rubric scoring, rounds, decision notices — and none of them is the same
@@ -591,9 +552,39 @@ A coherent feature, cleanly separable, waiting on someone to want it.
 
 ## Deliberately declining
 
-Seven items. These are not ranked low; they are declined, because they conflict with a decision
+Eight items. These are not ranked low; they are declined, because they conflict with a decision
 Cicero has already made and written down, or because they belong to a product Cicero is not. Saying
-so plainly is more useful than burying them at position 44.
+so plainly is more useful than burying them at position 43.
+
+### `AD-8` — In-product streaming AI assistant with tool use · convergence 4 · **L**
+
+On leverage this is the strongest item in the whole catalogue, and it is declined anyway. **The
+reason is inference cost, and it is a product-economics decision rather than a technical one.**
+
+Every other item in this document is paid for once, in engineering time. An in-product assistant is
+paid for on every keystroke, forever, and by us rather than by the organizer: a chat surface with
+tool use runs the full tool registry through a model on each turn, so the bill scales with how much
+people like the feature. Cicero's existing MCP surface is the deliberate alternative — it is
+out-of-band precisely so that the cost sits with whoever brings their own client and their own key.
+That is why the MCP server exists and this does not.
+
+The build cost is the lesser half, and worth recording because it is genuinely small. Cicero has
+already built every hard part except the chat surface: `lib/mcp/tools.ts` defines ten tools
+including mutating ones (`cicero_mail_send`, `cicero_program_reconcile`), `lib/mcp/server.ts` wires
+them to transport-neutral service functions, and — critically — `AR-31` already established
+Cicero's answer to the approval question, server-side: the send path "requires the reviewed
+subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the
+recipient and re-renders the message and refuses if either moved"
+(`docs/05-additional-requirements.md`). An in-product assistant is the same tool registry and the
+same review gate behind a different front end — L only because streaming responses, persisted
+threads, and a per-mutation approval step are a new surface.
+
+The survey's framing that "Cicero's AI is advisory-only and out-of-band" is accurate but undersells
+it: the out-of-band surface is fully tool-capable. It simply has no organizer-facing client, on
+purpose.
+
+**What would reverse this:** organizer-supplied API keys, or a plan tier priced to carry inference.
+Both make the cost land somewhere other than us, which is the only objection.
 
 ### `AD-6` — Authentication beyond magic links · convergence 5
 
