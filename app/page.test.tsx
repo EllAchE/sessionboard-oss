@@ -4,7 +4,9 @@ import {
   DEMO_EVENT_SLUG,
   DEMO_PUBLIC_LINKS,
   DEMO_PUBLIC_SITE_LINK,
+  EMBED_SHOWCASE_PATH,
 } from '@/lib/demo-entry-links';
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -181,20 +183,51 @@ describe('fresh-instance home page', () => {
    * this page's rewrite was already written, so the rewrite's conflict resolution deleted it as
    * "not mine" and every check stayed green. These assertions are the tripwire that was missing.
    */
-  it('shows attendees the live programme, not a description of it', () => {
+  it('points attendees at the programme and the embeds at their showcase', () => {
     const html = renderHome(true);
 
     expect(html).toContain('id="attendees"');
     expect(html).toContain('Give attendees the programme, not a PDF.');
 
-    // The real widget, framed on the page: a screenshot here would drift from the product.
-    expect(html).toContain(`src="/embed/${DEMO_EVENT_SLUG}/gallery"`);
-    expect(html).toContain('loading="lazy"');
-
     for (const href of Object.values(DEMO_PUBLIC_LINKS)) {
       expect(html).toContain(`href="${href}"`);
     }
+    expect(html).toContain(`href="${EMBED_SHOWCASE_PATH}"`);
     expect(html).toContain('See every embed running live');
+  });
+
+  /*
+   * The section framed a live `/embed/.../gallery` iframe under a class this page's stylesheet never
+   * defined, so it rendered unconstrained between two centred neighbours and took a screenful to say
+   * what the showcase link says in a line. `/embeds` runs every widget against the real conference;
+   * nothing on the landing page needs to run one of them a second time.
+   */
+  it('runs no embed inline', () => {
+    const html = renderHome(true);
+
+    expect(html).not.toContain('<iframe');
+    expect(html).not.toContain(`/embed/${DEMO_EVENT_SLUG}/gallery`);
+  });
+
+  /**
+   * The attendee section asked for `styles.product`, which `home.module.css` never defined, so it
+   * rendered classless and full-bleed while every neighbour stayed centred at the page measure.
+   * Nothing caught it: vitest resolves a CSS module to a proxy that hands back the key as the class
+   * name, so the markup looks identical either way and only the stylesheet knows. Read it.
+   */
+  it('defines every class the page asks its stylesheet for', () => {
+    const source = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+    const stylesheet = readFileSync(new URL('./home.module.css', import.meta.url), 'utf8');
+
+    const used = new Set(
+      [...source.matchAll(/\bstyles\.([A-Za-z][\w-]*)/g)].map(([, name]) => name),
+    );
+    expect(used.size).toBeGreaterThan(10);
+
+    const defined = new Set(
+      [...stylesheet.matchAll(/\.([A-Za-z][\w-]*)/g)].map(([, name]) => name),
+    );
+    expect([...used].filter((name) => !defined.has(name))).toEqual([]);
   });
 
   it('keeps the attendee section between the role cards and about', () => {

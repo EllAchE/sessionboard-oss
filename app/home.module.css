@@ -41,13 +41,22 @@
 .hero,
 .mosaicRule,
 .about,
+.attendees,
 .productsOverview,
 .agentQuickStart {
   width: min(100% - var(--space-12), var(--content-max));
   margin-inline: auto;
 }
 
+/*
+ * `backdrop-filter` makes this bar a stacking context, which caps the demo menu's own `z-index: 30`
+ * at whatever order the bar paints in. With no z-index here that order is 0, so every later
+ * positioned sibling -- the hero screenshot first among them -- painted over the open panel. The
+ * bar holds the only always-on-top surface on the page, so it takes the highest layer.
+ */
 .nav {
+  position: relative;
+  z-index: 40;
   min-height: 72px;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -558,51 +567,45 @@
   gap: var(--space-3);
 }
 
-.attendeeShowcase {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-  align-items: start;
-  gap: var(--space-8);
-  margin-top: var(--space-16);
-}
-
-.attendeeFrame {
-  overflow: hidden;
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-xs);
-  background: var(--surface-card);
-  box-shadow:
-    0 18px 42px rgba(52, 47, 39, 0.09),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.6);
+/*
+ * The section markup asked for `.product`, which this file never defined, so it rendered classless
+ * and full-bleed between two centred neighbours. It carries the same measure as every other band on
+ * the page and matches `.productsOverview`'s block rhythm, since it plays the same part.
+ */
+.attendees {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-10);
+  padding-block: var(--space-16) var(--space-8);
 }
 
 /*
- * A height rather than an aspect ratio: the widget scrolls its own content, so the frame is a
- * viewport onto the gallery and its shape is this page's choice. A host site instead sizes itself
- * from the height the embed posts back (`app/embed/layout.tsx`) and sets no height at all.
+ * Full width now that no widget frame shares the row, so the five deep links read as a band of
+ * cards rather than a narrow sidebar column. `auto-fit` lets the row drop to three, then two, then
+ * one without a breakpoint of its own.
  */
-.attendeeEmbed {
-  display: block;
-  width: 100%;
-  height: clamp(420px, 38vw, 560px);
-  border: 0;
-  background: var(--surface-card);
-}
-
 .attendeeLinks {
+  width: 100%;
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/*
+ * Icon above the copy rather than beside it, for the reason the role cards stack theirs: at the
+ * card widths this row produces, a side-by-side icon leaves "Day-by-day agenda" about 120px to sit
+ * in and breaks every label across three lines.
+ */
 .attendeeLink {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-4);
-  align-items: center;
-  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4);
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-xs);
   background: rgba(255, 255, 255, 0.72);
@@ -624,7 +627,6 @@
 }
 
 .attendeeLink .featureIcon {
-  grid-row: span 2;
   width: 36px;
   height: 36px;
 }
@@ -662,68 +664,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-4);
-}
-
-.agentSteps {
-  display: grid;
-  gap: var(--space-5);
-  margin: var(--space-4) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.agentSteps > li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: var(--space-4);
-}
-
-.agentStepNumber {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: var(--border-width) solid var(--border-accent);
-  border-radius: var(--radius-full);
-  background: var(--accent-subtle);
-  color: var(--text-accent);
-  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-ui);
-}
-
-.agentStepCopy {
-  min-width: 0;
-  display: grid;
-  gap: var(--space-1);
-}
-
-.agentStepCopy h3 {
-  margin: 0;
-  color: var(--text-strong);
-  font: var(--type-heading);
-}
-
-.agentStepCopy p {
-  margin: 0;
-  color: var(--text-muted);
-  font: var(--type-body);
-}
-
-.agentStepCopy a {
-  color: var(--text-accent);
-}
-
-.agentStepCopy code {
-  width: fit-content;
-  max-width: 100%;
-  margin-top: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  border: var(--border-width) solid var(--border-hairline);
-  border-radius: var(--radius-xs);
-  color: var(--text-body);
-  background: rgba(255, 255, 255, 0.72);
-  font: var(--type-mono);
-  font-size: var(--text-xs);
-  overflow-wrap: anywhere;
 }
 
 .agentLinks {
@@ -884,30 +824,21 @@
   }
 
   .about,
-  .attendeeShowcase,
   .roleProducts,
   .agentQuickStart {
     grid-template-columns: 1fr;
   }
 
-  /*
-   * Stacked, the frame no longer shares the row with the link list, so the viewport-relative height
-   * has nothing left to track and a fixed one keeps the gallery from swallowing a phone screen.
-   */
-  .attendeeEmbed {
-    height: 520px;
-  }
-
   .aboutHeading h2 {
     max-width: 18ch;
   }
-
 }
 
 @media (max-width: 640px) {
   .nav,
   .hero,
   .about,
+  .attendees,
   .productsOverview,
   .agentQuickStart {
     width: min(100% - var(--space-8), var(--content-max));
@@ -994,6 +925,7 @@
 
   .productsOverview,
   .about,
+  .attendees,
   .agentQuickStart {
     padding-block: var(--space-20);
   }
