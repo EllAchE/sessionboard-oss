@@ -276,6 +276,7 @@ function fakeDb(rec: Recorder) {
     delete: remove,
     query: {
       task: { findMany: () => Promise.resolve(rec.rows.get(task) ?? []) },
+      fileRequest: { findMany: () => Promise.resolve(rec.rows.get(fileRequest) ?? []) },
     },
   };
 }
@@ -393,10 +394,41 @@ describe('createTask', () => {
     });
 
     const request = rec.inserted.find((entry) => entry.table === fileRequest);
-    expect(request?.values).toMatchObject({ eventId: EVENT_ID, label: 'Send your badge photo' });
+    expect(request?.values).toMatchObject({
+      eventId: EVENT_ID,
+      label: 'Send your badge photo',
+      acceptedTypes: [],
+    });
     const created = rec.inserted.find((entry) => entry.table === task);
     expect(created?.values).toMatchObject({ kind: 'file_upload', required: false });
     expect((created?.values as { fileRequestId: string }).fileRequestId).toBeTruthy();
+  });
+
+  /**
+   * `CNT-02`. The constraint the organizer picked has to reach the request row, or the portal shows
+   * "Any file type" no matter what the task instructions asked for.
+   */
+  it('stores the accepted file types the organizer chose for an upload task', async () => {
+    await createTask(context(), {
+      name: 'File the written oration',
+      kind: 'file_upload',
+      audience: 'accepted_participants',
+      acceptedTypes: ['Application/PDF', ' application/pdf ', ''],
+    });
+
+    const request = rec.inserted.find((entry) => entry.table === fileRequest);
+    expect(request?.values).toMatchObject({ acceptedTypes: ['application/pdf'] });
+  });
+
+  it('keeps a type constraint off a task that collects no files', async () => {
+    await createTask(context(), {
+      name: 'Confirm your travel',
+      kind: 'acknowledge',
+      audience: 'accepted_participants',
+      acceptedTypes: ['application/pdf'],
+    });
+
+    expect(rec.inserted.find((entry) => entry.table === fileRequest)).toBeUndefined();
   });
 
   it('drops reminder offsets that are not usable and sorts the rest furthest-out first', async () => {
