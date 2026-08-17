@@ -13,6 +13,7 @@ import {
   Checkbox,
   Kbd,
   ScoreStars,
+  Select,
   Tag,
   Textarea,
 } from '../../../../components/ui';
@@ -186,16 +187,35 @@ export function ReviewDetail(props: ReviewDetailProps) {
     [props.reviewers],
   );
 
+  /** Only these carry a rating, and only these answer to the number keys. */
+  const ratedCriteria = useMemo(
+    () => criteria.filter((criterion) => criterion.type === 'numeric'),
+    [criteria],
+  );
+
   const scoreList = useMemo<ScoreWire[]>(
     () =>
       criteria
-        .filter((criterion) => typeof scores[criterion.id] === 'number')
-        .map((criterion) => ({ criterionId: criterion.id, value: scores[criterion.id] })),
-    [criteria, scores],
+        .map((criterion): ScoreWire | null => {
+          if (criterion.type === 'numeric') {
+            const value = scores[criterion.id];
+            return typeof value === 'number' ? { criterionId: criterion.id, value } : null;
+          }
+          const text = (textAnswers[criterion.id] ?? '').trim();
+          return text ? { criterionId: criterion.id, value: null, text } : null;
+        })
+        .filter((entry): entry is ScoreWire => entry !== null),
+    [criteria, scores, textAnswers],
   );
 
   const setScore = useCallback((criterionId: string, value: number) => {
     setScores((current) => ({ ...current, [criterionId]: value }));
+    setDirty(true);
+    setMessage(null);
+  }, []);
+
+  const setTextAnswer = useCallback((criterionId: string, value: string) => {
+    setTextAnswers((current) => ({ ...current, [criterionId]: value }));
     setDirty(true);
     setMessage(null);
   }, []);
@@ -317,13 +337,14 @@ export function ReviewDetail(props: ReviewDetailProps) {
      * covers a range rather than nine separate keys.
      */
     score: (event) => {
-      if (criteria.length === 0) return;
-      const index = Math.max(0, Math.min(criteria.length - 1, activeCriterion));
-      const criterion = criteria[index];
+      if (ratedCriteria.length === 0) return;
+      const index = Math.max(0, Math.min(ratedCriteria.length - 1, activeCriterion));
+      const criterion = ratedCriteria[index];
       setScore(criterion.id, Math.min(criterion.maxScore, Number(event.key)));
-      setActiveCriterion(Math.min(criteria.length - 1, index + 1));
+      setActiveCriterion(Math.min(ratedCriteria.length - 1, index + 1));
     },
-    'criterion-next': () => setActiveCriterion((index) => Math.min(criteria.length - 1, index + 1)),
+    'criterion-next': () =>
+      setActiveCriterion((index) => Math.min(ratedCriteria.length - 1, index + 1)),
     'criterion-prev': () => setActiveCriterion((index) => Math.max(0, index - 1)),
     'save-draft': () => save(false),
     submit: () => save(true),
@@ -542,37 +563,70 @@ export function ReviewDetail(props: ReviewDetailProps) {
                 <p className={styles.muted}>No review round exists yet.</p>
               )}
 
-              {criteria.map((criterion, index) => (
-                <div
-                  key={criterion.id}
-                  className={styles.criterion}
-                  data-active={index === activeCriterion}
-                >
-                  <div className={styles.criterionHead}>
-                    <span className={styles.criterionLabel}>{criterion.label}</span>
-                    <span className={styles.criterionWeight}>×{criterion.weight}</span>
+              {/*
+                `ABS-03`: a criterion renders as the control its type calls for. Only the numeric
+                ones take part in the digit-key run, so the cursor counts through those alone.
+               */}
+              {criteria.map((criterion) => {
+                const ratedIndex = ratedCriteria.findIndex((entry) => entry.id === criterion.id);
+                const active = ratedIndex >= 0 && ratedIndex === activeCriterion;
+                return (
+                  <div key={criterion.id} className={styles.criterion} data-active={active}>
+                    <div className={styles.criterionHead}>
+                      <span className={styles.criterionLabel}>{criterion.label}</span>
+                      {criterion.type === 'numeric' ? (
+                        <span className={styles.criterionWeight}>×{criterion.weight}</span>
+                      ) : null}
+                    </div>
+                    {criterion.description ? (
+                      <span className={styles.criterionDescription}>{criterion.description}</span>
+                    ) : null}
+                    {criterion.type === 'numeric' ? (
+                      <div
+                        className={styles.criterionControl}
+                        onFocus={() => ratedIndex >= 0 && setActiveCriterion(ratedIndex)}
+                      >
+                        <ScoreStars
+                          value={scores[criterion.id] ?? 0}
+                          max={criterion.maxScore}
+                          readOnly={false}
+                          label={criterion.label}
+                          onChange={(value) => {
+                            if (ratedIndex >= 0) setActiveCriterion(ratedIndex);
+                            setScore(criterion.id, value);
+                          }}
+                        />
+                        <span className={styles.criterionValue}>
+                          {scores[criterion.id]
+                            ? `${scores[criterion.id]}/${criterion.maxScore}`
+                            : '—'}
+                        </span>
+                        {active ? <Kbd size="sm">1–{criterion.maxScore}</Kbd> : null}
+                      </div>
+                    ) : criterion.type === 'select' ? (
+                      <Select
+                        aria-label={criterion.label}
+                        value={textAnswers[criterion.id] ?? ''}
+                        onChange={(event) => setTextAnswer(criterion.id, event.target.value)}
+                      >
+                        <option value="">Choose…</option>
+                        {criterion.options.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <Textarea
+                        aria-label={criterion.label}
+                        rows={4}
+                        value={textAnswers[criterion.id] ?? ''}
+                        onChange={(event) => setTextAnswer(criterion.id, event.target.value)}
+                      />
+                    )}
                   </div>
-                  {criterion.description ? (
-                    <span className={styles.criterionDescription}>{criterion.description}</span>
-                  ) : null}
-                  <div className={styles.criterionControl} onFocus={() => setActiveCriterion(index)}>
-                    <ScoreStars
-                      value={scores[criterion.id] ?? 0}
-                      max={criterion.maxScore}
-                      readOnly={false}
-                      label={criterion.label}
-                      onChange={(value) => {
-                        setActiveCriterion(index);
-                        setScore(criterion.id, value);
-                      }}
-                    />
-                    <span className={styles.criterionValue}>
-                      {scores[criterion.id] ? `${scores[criterion.id]}/${criterion.maxScore}` : '—'}
-                    </span>
-                    {index === activeCriterion ? <Kbd size="sm">1–{criterion.maxScore}</Kbd> : null}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className={styles.field}>
                 <label className={styles.fieldLabel} htmlFor="review-comment">
@@ -642,6 +696,15 @@ export function ReviewDetail(props: ReviewDetailProps) {
                           {reviewer.average === null ? '—' : reviewer.average.toFixed(1)}
                         </span>
                       </div>
+                      {/*
+                        `ABS-03`: a dropdown choice and a written answer are findings in their own
+                        right, so they read back beside the average rather than vanishing into it.
+                       */}
+                      {reviewer.answers.map((answer) => (
+                        <p key={answer.label} className={styles.reviewerComment}>
+                          <strong>{answer.label}:</strong> {answer.text}
+                        </p>
+                      ))}
                       {reviewer.comment ? (
                         <p className={styles.reviewerComment}>{reviewer.comment}</p>
                       ) : null}
