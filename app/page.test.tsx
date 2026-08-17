@@ -23,14 +23,45 @@ describe('fresh-instance home page', () => {
   it('leads with a copyable setup prompt for Claude and ChatGPT', () => {
     const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
 
-    expect(html).toContain('AI-guided setup');
+    expect(html).toContain('Agent-first');
     expect(html).toContain('Copy AI setup prompt');
-    expect(html).toContain('Let Claude or ChatGPT walk through setup with you');
-    expect(html).toContain('Claude &amp; ChatGPT setup prompt');
+    expect(html).toContain('Let Claude or ChatGPT set Cicero up and run it for you over MCP');
+    expect(html).toContain('Setup prompt');
     expect(html.indexOf('Copy AI setup prompt')).toBeLessThan(html.indexOf('Create an event'));
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
     );
+  });
+
+  /**
+   * The prompt is one instruction and one URL on purpose. It used to restate the whole onboarding
+   * contract, which both buried the section under a wall of monospace and duplicated rules that
+   * `onboard-cicero/SKILL.md` already owns. Guard the size, not the exact wording.
+   */
+  it('keeps the pasted setup prompt to a single short instruction', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+    const prompt = html.slice(html.indexOf('Set up Cicero for my conference'));
+
+    expect(prompt.slice(0, 400)).toContain('onboard-cicero/SKILL.md');
+    expect(html).not.toContain('Walk me through one unfinished milestone at a time');
+    expect(html).not.toContain('hand off to $manage-cicero-event');
+  });
+
+  /**
+   * The MCP server is deployed and event-scoped, so the section leads with the endpoint and states
+   * the API-key prerequisite rather than implying the integration is unavailable.
+   */
+  it('leads the agent section with the MCP server and its key prerequisite', () => {
+    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+
+    expect(html).toContain('MCP server');
+    expect(html).toContain('/api/v1/events/{event-slug}/mcp');
+    expect(html).toContain('href="/api/v1/mcp-tools.json"');
+    expect(html).toContain('event API key as a Bearer token');
+    expect(html).toContain('Integrations');
+    expect(html).toContain('Let your AI assistant handle the hard work.');
+    expect(html.indexOf('MCP server')).toBeLessThan(html.indexOf('Setup prompt'));
+    expect(html).not.toContain('setup checklist');
   });
 
   it('describes the product through organizer, speaker, and attendee outcomes', () => {

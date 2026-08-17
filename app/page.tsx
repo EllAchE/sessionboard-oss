@@ -468,9 +468,6 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </ol>
 
           <div className={styles.agentLinks}>
-            <a className={styles.textLink} href="/api/v1/mcp-tools.json">
-              Browse the MCP tools <ArrowRight size={16} aria-hidden="true" />
-            </a>
             <a
               className={styles.textLink}
               href="https://github.com/EllAchE/sessionboard-oss/tree/main/.agents/skills/onboard-cicero"

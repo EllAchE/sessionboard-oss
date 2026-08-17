@@ -51,6 +51,7 @@ Ask only for facts that remain unknown, in this order:
 4. Whether the event exists and, if it does, its exact slug.
 5. Whether work has already reached any later milestone.
 6. Whether work should remain read-only or `CICERO_API_KEY` is securely configured.
+7. Whether an MCP client should be connected to the event, or the user will drive it over REST.
 
 Do not ask for the API key value. Determine only whether the environment variable is non-empty,
 without printing it:
@@ -99,8 +100,10 @@ milestone so the next invocation resumes cleanly.
 
 ## Handoff
 
-When all milestones through `api-key-ready` are verified and the key status is `configured`, mark
-`handoff-ready` and transfer ongoing event work to `$manage-cicero-event`. Supply only the saved
+When all milestones through `mcp-connected` are verified and the key status is `configured`, mark
+`handoff-ready` and transfer ongoing event work to `$manage-cicero-event`. An `mcp` status of
+`skipped` settles that milestone too — the organizer agent uses the REST API either way, so a user
+who wants no MCP client is not blocked from handoff. Supply only the saved
 base URL and exact event slug plus the user's attached or pasted event specification. Require its
 compare → preview → confirm → apply → verify workflow; onboarding does not authorize apply.
 
