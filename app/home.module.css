@@ -801,6 +801,31 @@
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
 }
 
+.agentPromptActions,
+.agentProviders {
+  display: flex;
+  align-items: center;
+}
+
+.agentPromptActions {
+  gap: var(--space-4);
+}
+
+.agentProviders {
+  gap: var(--space-2);
+}
+
+.agentProviders img {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.agentProvidersMore {
+  color: var(--stone-300);
+  font: var(--weight-medium) var(--text-xs) / 1 var(--font-ui);
+  white-space: nowrap;
+}
+
 .agentPromptLabel svg,
 .agentPromptSafety svg {
   color: var(--vermilion-300);
@@ -1070,6 +1095,16 @@
 
   .agentPrompt {
     box-shadow: var(--shadow-lg);
+  }
+
+  .agentPromptHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agentPromptActions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .features {

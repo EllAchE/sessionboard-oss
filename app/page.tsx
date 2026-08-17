@@ -577,9 +577,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
               <Sparkles size={17} aria-hidden="true" />
-              Claude &amp; ChatGPT setup prompt
+              Paste into your agent
             </span>
-            <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+            <div className={styles.agentPromptActions}>
+              <div className={styles.agentProviders} aria-label="Supported AI agents">
+                <Image src="/brand/agents/openai.svg" alt="OpenAI" width={34} height={34} />
+                <Image src="/brand/agents/claude.svg" alt="Anthropic Claude" width={34} height={34} />
+                <Image
+                  src="/brand/agents/google-antigravity.svg"
+                  alt="Google Antigravity"
+                  width={34}
+                  height={34}
+                />
+                <span className={styles.agentProvidersMore}>+ more</span>
+              </div>
+              <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+            </div>
           </div>
           <pre>
             <code>{AGENT_STARTER_PROMPT}</code>

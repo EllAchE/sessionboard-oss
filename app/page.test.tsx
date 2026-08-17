@@ -34,7 +34,11 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('Copy prompt');
     expect(html).not.toContain('Copy AI setup prompt');
     expect(html).not.toContain('Let Claude or ChatGPT walk through setup with you');
-    expect(html).toContain('Claude &amp; ChatGPT setup prompt');
+    expect(html).toContain('Paste into your agent');
+    expect(html).toContain('alt="OpenAI"');
+    expect(html).toContain('alt="Anthropic Claude"');
+    expect(html).toContain('alt="Google Antigravity"');
+    expect(html).toContain('+ more');
     expect(html.indexOf('Copy prompt')).toBeLessThan(html.indexOf('Create an event'));
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
@@ -68,9 +72,7 @@ describe('fresh-instance home page', () => {
     expect(html).toContain('event API key as a Bearer token');
     expect(html).toContain('Integrations');
     expect(html).toContain('Let your AI assistant handle the hard work.');
-    expect(html.indexOf('MCP server')).toBeLessThan(
-      html.indexOf('Claude &amp; ChatGPT setup prompt'),
-    );
+    expect(html.indexOf('MCP server')).toBeLessThan(html.indexOf('Paste into your agent'));
     expect(html).not.toContain('setup checklist');
   });
 
