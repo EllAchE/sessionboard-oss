@@ -1,4 +1,5 @@
 import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
+import { ToastProvider } from '@/components/ui';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -18,23 +19,30 @@ vi.mock('next/image', () => ({
 }));
 
 const { HomeContent } = await import('./page');
+const renderHome = (demoAvailable: boolean) =>
+  renderToStaticMarkup(
+    <ToastProvider>
+      <HomeContent demoAvailable={demoAvailable} />
+    </ToastProvider>,
+  );
 
 describe('fresh-instance home page', () => {
-  it('leads with a copyable setup prompt for Claude and ChatGPT', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+  it('leads with a concise copyable setup prompt', () => {
+    const html = renderHome(false);
 
     expect(html).toContain('AI-guided setup');
-    expect(html).toContain('Copy AI setup prompt');
-    expect(html).toContain('Let Claude or ChatGPT walk through setup with you');
+    expect(html).toContain('Copy prompt');
+    expect(html).not.toContain('Copy AI setup prompt');
+    expect(html).not.toContain('Let Claude or ChatGPT walk through setup with you');
     expect(html).toContain('Claude &amp; ChatGPT setup prompt');
-    expect(html.indexOf('Copy AI setup prompt')).toBeLessThan(html.indexOf('Create an event'));
+    expect(html.indexOf('Copy prompt')).toBeLessThan(html.indexOf('Create an event'));
     expect(html).toContain(
       'https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md',
     );
   });
 
   it('describes the product through organizer, reviewer, speaker, and attendee outcomes', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable />);
+    const html = renderHome(true);
 
     expect(html).toContain('From call for speakers to public program');
     expect(html).toContain('One conference, four purpose-built experiences.');
@@ -61,7 +69,7 @@ describe('fresh-instance home page', () => {
   });
 
   it('ranks the reviewer above the attendee and keeps them in the closing tour', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable />);
+    const html = renderHome(true);
 
     expect(html).toContain('Score proposals, not spreadsheets.');
     expect(html.indexOf('Score proposals, not spreadsheets.')).toBeLessThan(
@@ -72,7 +80,7 @@ describe('fresh-instance home page', () => {
   });
 
   it('makes products and docs discoverable from the primary navigation', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+    const html = renderHome(false);
 
     expect(html).toContain('href="#products"');
     expect(html).toContain('Products');
@@ -82,14 +90,14 @@ describe('fresh-instance home page', () => {
   });
 
   it('keeps agent setup reachable from the page body once it leaves the navigation', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+    const html = renderHome(false);
 
     expect(html).toContain('href="#agent-quick-start"');
     expect(html).toContain('Set up with an AI guide');
   });
 
   it('offers only working cold-start paths before the demo fixture is loaded', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable={false} />);
+    const html = renderHome(false);
 
     expect(html).toContain('Fresh instance');
     expect(html).toContain('Create your first event');
@@ -100,7 +108,7 @@ describe('fresh-instance home page', () => {
   });
 
   it('restores every public and role tour after the demo fixture is loaded', () => {
-    const html = renderToStaticMarkup(<HomeContent demoAvailable />);
+    const html = renderHome(true);
 
     expect(html).toContain('href="/demo"');
     expect(html).toContain('href="/demo/agenda"');

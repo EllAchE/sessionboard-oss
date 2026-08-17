@@ -261,3 +261,46 @@ describe('content_revision', () => {
     );
   });
 });
+
+describe('0001_event_deadlines', () => {
+  const statements = migration('0001_event_deadlines');
+
+  /**
+   * `AR-50`. Two columns on a table that already exists, and nothing else. It is worth pinning
+   * precisely because it is small: an `ALTER TABLE` that grew a `NOT NULL`, a default or a backfill
+   * would change what every already-deployed edition means, and each of those is one generated word
+   * away from this file.
+   */
+  it('adds the two milestones to event and touches nothing else', () => {
+    expect(statements).toHaveLength(2);
+    for (const statement of statements) {
+      expect(statement).toMatch(/^ALTER TABLE "event" ADD COLUMN/);
+    }
+    expect(statements.join('\n')).toMatch(/"speaker_deadline_at"/);
+    expect(statements.join('\n')).toMatch(/"agenda_deadline_at"/);
+  });
+
+  /**
+   * Nullable and undefaulted is what makes this additive in the sense that matters to a reader
+   * rather than only to `DROP`-grepping above. A conference that tracks neither milestone must come
+   * back from this migration with neither set, so `describeEventDeadlines` renders nothing at all
+   * instead of announcing a date the organizer never chose.
+   */
+  it('leaves both nullable and defaults neither', () => {
+    for (const statement of statements) {
+      expect(statement).not.toMatch(/NOT NULL/);
+      expect(statement).not.toMatch(/\bDEFAULT\b/i);
+    }
+  });
+
+  /**
+   * Same decision as `0001`, for the same reason. `updateEvent` compares a milestone against
+   * `event.starts_at` to refuse a deadline that falls inside its own edition, and that comparison is
+   * only meaningful if both sides are absolute instants.
+   */
+  it('stores both as absolute instants', () => {
+    for (const statement of statements) {
+      expect(statement).toMatch(/timestamp with time zone/);
+    }
+  });
+});

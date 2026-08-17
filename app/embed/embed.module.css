@@ -803,6 +803,8 @@ a.sponsorMark:hover .sponsorName {
   display: flex;
   gap: var(--space-1);
   flex-wrap: wrap;
+  /* The tabs are a control for the grid, not part of it — they need a gap to read as separate. */
+  margin-bottom: var(--space-4);
 }
 
 .dayTab {
@@ -942,10 +944,27 @@ a.sponsorMark:hover .sponsorName {
   margin-left: calc(100% * var(--lane, 0) / var(--lanes, 1) + var(--space-05));
   z-index: 1;
   min-height: 0;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+/*
+  A block opens the session detail, so hovering has to say so with more than the cursor: the border
+  takes the full accent and the title underlines, which survives both themes and forced colours.
+*/
 .block:hover {
+  border-color: var(--accent);
   box-shadow: var(--shadow-md);
+}
+
+.block:hover .blockTitle {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.block:hover .blockTime {
+  color: var(--text-body);
 }
 
 .block:focus-visible {

@@ -6,6 +6,7 @@ import {
   event as eventTable,
   form,
   magicToken,
+  membership,
   participant,
   participantRole,
   portalTheme,
@@ -88,6 +89,14 @@ export const TEMPLATE_VARIABLES: TemplateVariable[] = [
   { path: 'event.website', description: 'Event website URL' },
   { path: 'event.url', description: 'Public Cicero page for the event' },
   { path: 'event.supportEmail', description: 'Organizer support address' },
+  {
+    path: 'event.speakerDeadline',
+    description: 'When the speaker roster is meant to be settled (empty when not tracked)',
+  },
+  {
+    path: 'event.agendaDeadline',
+    description: 'When the agenda is meant to be settled (empty when not tracked)',
+  },
   { path: 'speaker.name', description: 'Speaker display name' },
   { path: 'speaker.firstName', description: 'First name only' },
   { path: 'speaker.email', description: 'Speaker email address' },
@@ -120,6 +129,10 @@ export const TEMPLATE_VARIABLES: TemplateVariable[] = [
   { path: 'form.name', description: 'Form name (deadline reminders only)' },
   { path: 'form.closesAt', description: 'Form close date (deadline reminders only)' },
   { path: 'form.url', description: 'Public form URL (deadline reminders only)' },
+  {
+    path: 'organizer.url',
+    description: 'Organizer console for the event (milestone reminders only)',
+  },
 ];
 
 const KNOWN_PATHS = new Set(TEMPLATE_VARIABLES.map((entry) => entry.path));
@@ -140,6 +153,7 @@ const MARKDOWN_URL_VARIABLES = new Set([
   'portal.url',
   'portal.link',
   'form.url',
+  'organizer.url',
 ]);
 
 function renderTemplateMarkdown(source: string, vars: TemplateVars): string {
@@ -638,6 +652,14 @@ function buildVars(input: {
     'event.website': event.websiteUrl ?? '',
     'event.url': branding.eventUrl,
     'event.supportEmail': branding.supportEmail ?? '',
+    /**
+     * `AR-51`. Available to every template rather than only to the milestone reminders below, because
+     * the one email a speaker is most likely to read — their acceptance — is also the best place to
+     * tell them when the programme firms up. Empty when the edition does not track it, which
+     * `{{event.agendaDeadline|soon}}` turns into whatever the organizer would rather say.
+     */
+    'event.speakerDeadline': formatInZone(event.speakerDeadlineAt, zone, false),
+    'event.agendaDeadline': formatInZone(event.agendaDeadlineAt, zone, false),
 
     'speaker.name': person.name,
     'speaker.firstName': speakerFirstName(person.firstName, person.name),
@@ -912,6 +934,45 @@ export const DEFAULT_TEMPLATES: Array<{
       'Your **{{event.name}}** draft is not submitted. {{form.name}} closes {{form.closesAt}}.',
       '',
       '[Finish your submission]({{form.url}})',
+    ].join('\n'),
+  },
+  /*
+   * `AR-51`. These two go to organizers, not speakers, which is why they say "your" about the work
+   * rather than about a submission and point at the organizer surfaces. Both are built from the
+   * narrow `vars` map in `runEventDeadlineReminders`, so like `form.deadline` above they may only
+   * use the event fields — there is no speaker or submission in scope.
+   *
+   * Neither says anything is late or blocked. Nothing is: the milestone passing changes no
+   * behaviour anywhere in the product, and copy implying otherwise would be a lie the schema
+   * does not back up.
+   */
+  {
+    key: 'deadline.speakers',
+    name: 'Speaker roster milestone',
+    subject: 'Your {{event.name}} speaker roster date is {{event.speakerDeadline}}',
+    smsBody:
+      '{{event.name}}: your speaker roster date is {{event.speakerDeadline}}. Review: {{organizer.url}}',
+    bodyMarkdown: [
+      'The date you set for the **{{event.name}}** speaker roster is {{event.speakerDeadline}}.',
+      '',
+      'This is a reminder, not a cutoff — nothing locks and you can still accept, decline or swap a',
+      'speaker afterwards.',
+      '',
+      '[Review the speakers]({{organizer.url}})',
+    ].join('\n'),
+  },
+  {
+    key: 'deadline.agenda',
+    name: 'Agenda milestone',
+    subject: 'Your {{event.name}} agenda date is {{event.agendaDeadline}}',
+    smsBody:
+      '{{event.name}}: your agenda date is {{event.agendaDeadline}}. Review: {{organizer.url}}',
+    bodyMarkdown: [
+      'The date you set for the **{{event.name}}** agenda is {{event.agendaDeadline}}.',
+      '',
+      'This is a reminder, not a cutoff — nothing locks and you can still move a session afterwards.',
+      '',
+      '[Open the agenda]({{organizer.url}})',
     ].join('\n'),
   },
 ];
@@ -1895,6 +1956,8 @@ export const notifySessionCancelled = (sessionId: string) =>
 export type ReminderRun = {
   taskRemindersSent: number;
   deadlineRemindersSent: number;
+  /** `AR-51`. The event's own milestones, counted apart from the form deadlines above. */
+  eventDeadlineRemindersSent: number;
   checkedAt: string;
 };
 
@@ -2200,6 +2263,192 @@ export async function runDraftDeadlineReminders(
 }
 
 /**
+ * `AR-51`. The two advisory milestones on the event, in the order an edition reaches them.
+ *
+ * `field` names the column, `templateKey` the mail, and `variable` the merge field that carries the
+ * date — kept together so a third milestone is one entry rather than three edits.
+ */
+const EVENT_MILESTONES = [
+  {
+    field: 'speakerDeadlineAt',
+    column: eventTable.speakerDeadlineAt,
+    templateKey: 'deadline.speakers',
+  },
+  { field: 'agendaDeadlineAt', column: eventTable.agendaDeadlineAt, templateKey: 'deadline.agenda' },
+] as const;
+
+/**
+ * `AR-51`'s milestone reminder. Each of the two advisory deadlines fires once inside the three days
+ * before it falls, guarded — like the draft reminder above — by a lookup in `email_log`, the only
+ * durable record of a send.
+ *
+ * **Organizers only.** Both dates are the organizers' own commitment about work only they can do:
+ * settling the roster and settling the agenda. A speaker cannot act on either, and mailing the whole
+ * roster a date they have no lever on is noise. Speakers still read both — on the portal, on the
+ * public page, and through the `{{event.speakerDeadline}}` / `{{event.agendaDeadline}}` merge fields
+ * that every template can use — which is what carrying these to speakers actually means.
+ *
+ * Nothing changes when the date passes. The copy says so, and no write anywhere consults it.
+ */
+export async function runEventDeadlineReminders(
+  options: { eventId?: string; now?: Date } = {},
+): Promise<number> {
+  const db = getDb();
+  const now = options.now ?? new Date();
+  const horizon = new Date(now.getTime() + DEADLINE_WINDOW_MS);
+  const approaching = (column: (typeof EVENT_MILESTONES)[number]['column']) =>
+    and(isNotNull(column), gte(column, now), lte(column, horizon));
+
+  const rows = await db
+    .select({ id: eventTable.id })
+    .from(eventTable)
+    .where(
+      and(
+        or(...EVENT_MILESTONES.map((milestone) => approaching(milestone.column))),
+        ...(options.eventId ? [eq(eventTable.id, options.eventId)] : []),
+      ),
+    );
+
+  let sent = 0;
+
+  for (const row of rows) {
+    const { branding, event } = await loadCommsContext(row.id);
+    // Both dates go into every one of this event's milestone mails: an organizer being told the
+    // roster date is days away is the same organizer who wants to know the agenda date behind it.
+    const vars: TemplateVars = {
+      'event.name': event.name,
+      'event.url': branding.eventUrl,
+      'event.speakerDeadline': formatInZone(event.speakerDeadlineAt, event.timezone, false),
+      'event.agendaDeadline': formatInZone(event.agendaDeadlineAt, event.timezone, false),
+      'organizer.url': `${appUrl()}/organizer`,
+    };
+
+    // Organizers of this event, not every member: reviewers and speakers hold no membership role
+    // that makes either milestone their work.
+    const organizers = await db
+      .select({
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        phoneVerifiedAt: user.phoneVerifiedAt,
+        phoneVerificationTransport: user.phoneVerificationTransport,
+        notifyEmail: user.notifyEmail,
+        notifySms: user.notifySms,
+      })
+      .from(membership)
+      .innerJoin(user, eq(user.id, membership.userId))
+      .where(and(eq(membership.eventId, row.id), eq(membership.role, 'organizer')));
+
+    if (organizers.length === 0) continue;
+
+    for (const milestone of EVENT_MILESTONES) {
+      const at = event[milestone.field];
+      if (!at || at.getTime() < now.getTime() || at.getTime() > horizon.getTime()) continue;
+
+      const stored = await getTemplate(row.id, milestone.templateKey);
+      const fallback = DEFAULT_TEMPLATES.find((t) => t.key === milestone.templateKey)!;
+      if (stored && !stored.enabled) continue;
+      const bodyMarkdown = stored?.bodyMarkdown ?? fallback.bodyMarkdown;
+
+      for (const person of organizers) {
+        const delivery = await resolveRecipientDelivery({
+          userId: person.id,
+          eventId: row.id,
+          templateKey: milestone.templateKey,
+          baseEmail: person.notifyEmail,
+          baseSms: person.notifySms,
+          phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
+        });
+        /*
+         * Scoped to this event, unlike the form-deadline guard above. A milestone is a property of
+         * the edition, so the same organizer running two conferences holds two genuinely different
+         * `deadline.speakers` dates — and a guard keyed only on address and template key would read
+         * the first event's send as covering the second and drop it silently. The address alone is
+         * enough for `form.deadline` because a form belongs to one event and its recipients are that
+         * event's speakers; it is not enough here, and `email_log_event_created_idx` already covers
+         * the column.
+         */
+        const alreadyEmailed = delivery.notifyEmail
+          ? await db
+              .select({ id: emailLog.id })
+              .from(emailLog)
+              .where(
+                and(
+                  eq(emailLog.eventId, row.id),
+                  eq(emailLog.toEmail, person.email),
+                  eq(emailLog.templateKey, milestone.templateKey),
+                  gte(emailLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
+                ),
+              )
+              .limit(1)
+          : [];
+        const alreadyTexted =
+          delivery.notifySms && person.phone
+            ? await db
+                .select({ id: smsLog.id })
+                .from(smsLog)
+                .where(
+                  and(
+                    eq(smsLog.eventId, row.id),
+                    eq(smsLog.toPhone, person.phone),
+                    eq(smsLog.templateKey, milestone.templateKey),
+                    gte(smsLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
+                  ),
+                )
+                .limit(1)
+            : [];
+
+        const wantEmail = delivery.notifyEmail && alreadyEmailed.length === 0;
+        const wantSms =
+          Boolean(person.phone) &&
+          alreadyTexted.length === 0 &&
+          (await maySendSmsNow(person.phone!, delivery, now));
+        if (!wantEmail && !wantSms) continue;
+
+        let dispatched = false;
+
+        if (wantEmail) {
+          const message = renderMessage(
+            branding,
+            stored?.subject ?? fallback.subject,
+            bodyMarkdown,
+            vars,
+          );
+          const result = await sendMail({
+            to: person.email,
+            subject: message.subject,
+            html: message.html,
+            text: message.text,
+            eventId: row.id,
+            templateKey: milestone.templateKey,
+          });
+          if (result.sent) dispatched = true;
+        }
+
+        if (wantSms) {
+          const smsText = renderSmsText(
+            stored?.smsBody ?? fallback.smsBody ?? null,
+            bodyMarkdown,
+            vars,
+          );
+          const result = await sendSms({
+            to: person.phone!,
+            body: smsText,
+            eventId: row.id,
+            templateKey: milestone.templateKey,
+          });
+          if (result.sent) dispatched = true;
+        }
+
+        if (dispatched) sent += 1;
+      }
+    }
+  }
+
+  return sent;
+}
+
+/**
  * Everything `/api/cron` runs. Safe to call repeatedly; each job carries its own guard.
  *
  * Cron passes no `eventId` because it is the whole deployment's clock. Anything triggered by a
@@ -2213,9 +2462,11 @@ export async function runScheduledJobs(
   const { eventId } = options;
   const taskRemindersSent = await runTaskReminders({ eventId, now });
   const deadlineRemindersSent = await runDraftDeadlineReminders({ eventId, now });
+  const eventDeadlineRemindersSent = await runEventDeadlineReminders({ eventId, now });
   return {
     taskRemindersSent,
     deadlineRemindersSent,
+    eventDeadlineRemindersSent,
     checkedAt: now.toISOString(),
   };
 }

@@ -27,7 +27,7 @@ export function RunRemindersButton() {
             const outcome = await runRemindersAction();
             setResult(
               outcome.ok
-                ? `${outcome.data.taskRemindersSent} task, ${outcome.data.deadlineRemindersSent} deadline reminders sent`
+                ? `${outcome.data.taskRemindersSent} task, ${outcome.data.deadlineRemindersSent} deadline, ${outcome.data.eventDeadlineRemindersSent} milestone reminders sent`
                 : outcome.error,
             );
           })

@@ -18,7 +18,9 @@ import styles from './settings.module.css';
  * a time of day and both are read in the event's own timezone, not the browser's — an organizer in
  * Berlin setting up a Los Angeles conference means 09:00 in Los Angeles. `E-2` added the metadata
  * below the fold: the columns behind description, website, venue and theme already existed and were
- * already read by the merge fields and the public pages, but nothing could write them.
+ * already read by the merge fields and the public pages, but nothing could write them. `AR-50` added
+ * the two milestones under **Milestones**, which read in the same timezone as the dates above them
+ * and enforce nothing — see the hint on that group.
  *
  * The slug is shown and not editable. `updateEvent` does not accept one, and it is the public URL
  * every submitted talk, embed and calendar invite already points at — see `tasks/W10-notes.md`.
@@ -34,6 +36,8 @@ type Draft = {
   timezone: string;
   startsAt: string;
   endsAt: string;
+  speakerDeadlineAt: string;
+  agendaDeadlineAt: string;
   venueName: string;
   venueAddress: string;
   websiteUrl: string;
@@ -49,6 +53,8 @@ function draftOf(event: EventWire): Draft {
     timezone: event.timezone,
     startsAt: event.startsAt,
     endsAt: event.endsAt,
+    speakerDeadlineAt: event.speakerDeadlineAt,
+    agendaDeadlineAt: event.agendaDeadlineAt,
     venueName: event.venueName ?? '',
     venueAddress: event.venueAddress ?? '',
     websiteUrl: event.websiteUrl ?? '',
@@ -83,6 +89,8 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
         timezone: draft.timezone,
         startsAt: draft.startsAt,
         endsAt: draft.endsAt,
+        speakerDeadlineAt: draft.speakerDeadlineAt,
+        agendaDeadlineAt: draft.agendaDeadlineAt,
         venueName: draft.venueName,
         venueAddress: draft.venueAddress,
         websiteUrl: draft.websiteUrl,
@@ -194,6 +202,41 @@ export function EventPanel({ event, canManage }: { event: EventWire; canManage: 
             onChange={set('endsAt')}
           />
           {error('endsAt')}
+        </label>
+
+        <div className={styles.groupHeading}>
+          <h3 className={styles.subTitle}>Milestones</h3>
+          <span className={styles.hint}>
+            Internal dates that pace the edition between the call closing and the doors opening.
+            Nothing is locked when one passes — they are here to be read, and to be counted down to
+            in the reminder mail. Leave either blank to drop it.
+          </span>
+        </div>
+
+        <label className={styles.field}>
+          <span className={styles.label}>Speaker roster settled</span>
+          <Input
+            type="datetime-local"
+            value={draft.speakerDeadlineAt}
+            disabled={!canManage}
+            invalid={Boolean(errors.speakerDeadlineAt)}
+            onChange={set('speakerDeadlineAt')}
+          />
+          <span className={styles.hint}>When acceptances should be out and confirmations in.</span>
+          {error('speakerDeadlineAt')}
+        </label>
+
+        <label className={styles.field}>
+          <span className={styles.label}>Agenda settled</span>
+          <Input
+            type="datetime-local"
+            value={draft.agendaDeadlineAt}
+            disabled={!canManage}
+            invalid={Boolean(errors.agendaDeadlineAt)}
+            onChange={set('agendaDeadlineAt')}
+          />
+          <span className={styles.hint}>When every accepted talk should have a room and a slot.</span>
+          {error('agendaDeadlineAt')}
         </label>
 
         <label className={styles.field}>
