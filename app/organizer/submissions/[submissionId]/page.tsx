@@ -160,12 +160,15 @@ export default async function SubmissionReviewPage({
         id: criterion.id,
         label: criterion.label,
         description: criterion.description,
+        type: criterion.type,
+        options: criterion.options,
         weight: criterion.weight,
         maxScore: criterion.maxScore,
       }))}
       myScores={detail.myScores.map((entry) => ({
         criterionId: entry.criterionId,
         value: entry.value,
+        text: entry.text ?? null,
       }))}
       myComment={detail.myComment}
       mySubmitted={myReviewer?.status === 'completed'}
@@ -179,6 +182,17 @@ export default async function SubmissionReviewPage({
         completedAt: reviewer.completedAt ? reviewer.completedAt.toISOString() : null,
         average: averageByAssignment.get(reviewer.assignmentId) ?? null,
         isMe: reviewer.reviewerUserId === ctx.actor.userId,
+        // `ABS-03`: the peer's dropdown and written answers, so an average is not the only thing a
+        // committee can read back off a submitted review.
+        answers: detail.criteria
+          .map((criterion) => {
+            const entry = reviewer.scores.find((score) => score.criterionId === criterion.id);
+            const text = review.answerText(criterion, entry);
+            return criterion.type === 'numeric' || !text
+              ? null
+              : { label: criterion.label, text };
+          })
+          .filter((entry): entry is { label: string; text: string } => entry !== null),
       }))}
       availableReviewers={availableReviewers.map((reviewer) => ({
         userId: reviewer.userId,

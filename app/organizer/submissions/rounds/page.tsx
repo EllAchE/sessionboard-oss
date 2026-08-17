@@ -77,6 +77,8 @@ export default async function ReviewRoundsPage({
         id: criterion.id,
         label: criterion.label,
         description: criterion.description,
+        type: criterion.type,
+        options: criterion.options,
         weight: criterion.weight,
         maxScore: criterion.maxScore,
       }))}

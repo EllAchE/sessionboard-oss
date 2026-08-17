@@ -449,6 +449,10 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
       reviewRoundId: remap('review_round'),
       label: copy(),
       description: copy(),
+      // `ABS-03`: which question the criterion asks, and a dropdown's choices. Both are rubric, so
+      // the next edition inherits the same scorecard rather than a numeric shadow of it.
+      type: copy(),
+      options: copy(),
       weight: copy(),
       maxScore: copy(),
       position: copy(),
