@@ -2,6 +2,8 @@ import React from 'react';
 import { renderToStaticMarkup as renderRaw } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../../../components/ui';
+import { formatChordString } from '@/lib/hotkeys/match';
+import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import {
   COLUMNS,
   DEFAULT_COLUMNS,
@@ -218,14 +220,24 @@ describe('SubmissionQueue staging controls', () => {
     expect(html).not.toContain('Accept all');
   });
 
+  /**
+   * The legend is drawn from the registry, so this asserts the correspondence rather than the caps:
+   * every verb the strip offers names a binding, and the keys it prints are that binding's keys. The
+   * hand-written version was advertising `o` to open a row long after the key had become Enter,
+   * which is the failure the assertion is shaped against.
+   */
   it('advertises the staging shortcuts beside the decision ones it did not change', () => {
     const html = renderToStaticMarkup(<SubmissionQueue {...props} rows={[row({ id: 'one' })]} />);
 
-    expect(html).toContain('accept');
-    expect(html).toContain('⇧a');
-    expect(html).toContain('⇧d');
-    expect(html).toContain('⇧h');
-    expect(html).toContain('⇧c');
+    for (const id of ['accept', 'stage-accept', 'stage-decline', 'stage-hold', 'stage-clear']) {
+      const binding = getBinding(SCOPES.submissionsQueue, id);
+      expect(binding, `the queue no longer binds ${id}`).toBeDefined();
+      for (const cap of formatChordString(binding?.chords[0] ?? '', 'other')) {
+        expect(html, `the legend does not print ${cap} for ${id}`).toContain(`>${cap}<`);
+      }
+    }
+    expect(html).toContain('stage accept');
+    expect(html).toContain('clear staging');
   });
 
   it('combines queue placement and decisions in one selection bar', () => {

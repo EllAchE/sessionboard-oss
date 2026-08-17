@@ -74,7 +74,9 @@ function rangeCaps(binding: Binding, platform: Platform): string[] {
  */
 const SPOKEN: Record<string, string> = {
   '⌘': 'Command',
+  '⌃': 'Control',
   '⌥': 'Option',
+  '⇧': 'Shift',
   Ctrl: 'Control',
   Alt: 'Alt',
   '↵': 'Enter',
@@ -84,6 +86,7 @@ const SPOKEN: Record<string, string> = {
   '→': 'Right arrow',
   '⌫': 'Backspace',
   '.': 'Period',
+  '/': 'Slash',
   '?': 'Question mark',
   '–': 'through',
   '[': 'Left bracket',
