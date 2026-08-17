@@ -1,3 +1,4 @@
+import { describeEventDeadlines } from '@/lib/event-deadlines';
 import { currentEventContext, getEvent, listEventsForUser } from '@/lib/services/events';
 import {
   listSpeakers,
@@ -44,6 +45,7 @@ export default async function OrganizerOverviewPage() {
     <Dashboard
       data={{
         eventName: event.name,
+        deadlines: describeEventDeadlines(event),
         outstanding,
         taskSummary: summarizeTaskCompletion(outstanding),
         counters,

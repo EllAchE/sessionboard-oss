@@ -1,0 +1,44 @@
+/*
+ * Theme-aware on purpose: this page is reached from the marketing site, the organizer workspace,
+ * the reviewer queue, and public event pages alike, so it reads from tokens instead of pinning the
+ * light palette the way the marketing routes do.
+ */
+
+.root {
+  display: grid;
+  place-items: center;
+  min-height: max(60dvh, 22rem);
+  padding: var(--space-16) var(--space-6);
+  background: var(--surface-page);
+}
+
+.panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  width: min(100%, 34rem);
+  text-align: center;
+}
+
+.code {
+  font: var(--type-mono);
+  letter-spacing: var(--tracking-inscribed);
+  color: var(--text-faint);
+}
+
+.title {
+  font: var(--type-title);
+  color: var(--text-strong);
+}
+
+.body {
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}

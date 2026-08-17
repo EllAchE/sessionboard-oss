@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Switch, useToast } from '@/components/ui';
 import { PhoneVerificationControl } from '@/components/notifications/PhoneVerificationControl';
+import { NOTIFICATION_CATEGORY_ROWS } from '@/lib/notification-categories';
 import {
   saveMyNotificationDeliveryPrefsAction,
   saveMyNotificationPrefsAction,
@@ -167,15 +168,7 @@ export function NotificationsPanel({ prefs }: { prefs: NotificationsWire }) {
       </div>
 
       <h3>Notification types for this event</h3>
-      {(
-        [
-          ['submission', 'Submission updates'],
-          ['session', 'Schedule changes'],
-          ['task', 'Task reminders'],
-          ['form', 'Submission deadlines'],
-          ['adhoc', 'Organizer announcements'],
-        ] as const
-      ).map(([key, label]) => (
+      {NOTIFICATION_CATEGORY_ROWS.map(([key, label]) => (
         <div className={styles.switchRow} key={key}>
           <span className={styles.switchText}><span className={styles.switchLabel}>{label}</span></span>
           <OverrideSelect
