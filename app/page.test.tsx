@@ -45,6 +45,39 @@ describe('fresh-instance home page', () => {
     );
   });
 
+  /**
+   * The prompt is one instruction and one URL on purpose. It used to restate the whole onboarding
+   * contract, which both buried the section under a wall of monospace and duplicated rules that
+   * `onboard-cicero/SKILL.md` already owns. Guard the size, not the exact wording.
+   */
+  it('keeps the pasted setup prompt to a single short instruction', () => {
+    const html = renderHome(false);
+    const prompt = html.slice(html.indexOf('Set up Cicero for my conference'));
+
+    expect(prompt.slice(0, 400)).toContain('onboard-cicero/SKILL.md');
+    expect(html).not.toContain('Walk me through one unfinished milestone at a time');
+    expect(html).not.toContain('hand off to $manage-cicero-event');
+  });
+
+  /**
+   * The MCP server is deployed and event-scoped, so the section leads with the endpoint and states
+   * the API-key prerequisite rather than implying the integration is unavailable.
+   */
+  it('leads the agent section with the MCP server and its key prerequisite', () => {
+    const html = renderHome(false);
+
+    expect(html).toContain('MCP server');
+    expect(html).toContain('/api/v1/events/{event-slug}/mcp');
+    expect(html).toContain('href="/api/v1/mcp-tools.json"');
+    expect(html).toContain('event API key as a Bearer token');
+    expect(html).toContain('Integrations');
+    expect(html).toContain('Let your AI assistant handle the hard work.');
+    expect(html.indexOf('MCP server')).toBeLessThan(
+      html.indexOf('Claude &amp; ChatGPT setup prompt'),
+    );
+    expect(html).not.toContain('setup checklist');
+  });
+
   it('describes the product through organizer, reviewer, speaker, and attendee outcomes', () => {
     const html = renderHome(true);
 
@@ -88,15 +121,15 @@ describe('fresh-instance home page', () => {
 
     expect(html).toContain('href="#products"');
     expect(html).toContain('Products');
-    expect(html).toContain('href="/api/v1/openapi.json"');
-    expect(html).toContain('>Docs<');
+    expect(html).toContain('href="/docs/api"');
+    expect(html).toContain('>API<');
     expect(html).not.toContain('Agent quick start');
   });
 
   it('orders the navigation about, products, docs, then demo', () => {
     const html = renderHome(true);
 
-    const navOrder = ['href="#about"', 'href="#products"', 'href="/api/v1/openapi.json"'].map(
+    const navOrder = ['href="#about"', 'href="#products"', 'href="/docs/api"'].map(
       (marker) => html.indexOf(marker),
     );
     expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));
