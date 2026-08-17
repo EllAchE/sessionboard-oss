@@ -317,6 +317,7 @@ roadmap list.
 | Automatic post-conference messages | Ending an event is not consent to send a message; the right follow-up varies between thank-you, feedback, recording, and next-event invitation | Opt-in event policy, editable content/timing, existing preference enforcement, and delivery-log integration |
 | Presigned direct uploads | The current storage abstraction keeps validation and authorization in the application and is adequate for conference-sized files | Proven large-file or throughput pressure that warrants the additional upload-state and cleanup model |
 | Interactive exhibitor map | Static PDF upload and embed satisfies the current operational need | Demand for booths, hotspots, wayfinding, search, or region links as a first-class product |
+| First-class PowerPoint and Google Slides decks | Speaker deck support is only PDF and Keynote today; PowerPoint and Google Slides are accepted as opaque bytes rather than as understood deck formats | Organizer or speaker demand for PowerPoint and Google Slides as supported deck formats, which we do want to add |
 
 ### Known gaps, not strategic exclusions
 
