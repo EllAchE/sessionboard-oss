@@ -4,7 +4,6 @@ import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organ
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
 import {
   DEMO_ENTRY_LINKS,
-  DEMO_EVENT_SLUG,
   DEMO_PUBLIC_LINKS,
   DEMO_PUBLIC_SITE_LINK,
   EMBED_SHOWCASE_PATH,
@@ -136,9 +135,6 @@ const ATTENDEE_LINKS = [
   },
 ] as const;
 
-/** The live speaker gallery widget, framed on this page exactly as a host site would embed it. */
-const GALLERY_EMBED_SRC = `/embed/${DEMO_EVENT_SLUG}/gallery`;
-
 export default async function Home() {
   return <HomeContent demoAvailable={await demoEntryPointsAreAvailable()} />;
 }
@@ -168,12 +164,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
         </div>
         <div className={styles.navAuth}>
-          <Button
-            className={styles.navSignIn}
-            href="/signin"
-            variant="secondary"
-            size="sm"
-          >
+          {/* No class of its own: the one this asked for was never defined, and `variant` styles it. */}
+          <Button href="/signin" variant="secondary" size="sm">
             Sign in
           </Button>
           <Button
@@ -295,7 +287,16 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         </div>
       </section>
 
-      <section className={styles.product} id="attendees" aria-labelledby="attendees-title">
+      {/*
+        This section used to frame a live `/embed/.../gallery` iframe here, under
+        `className={styles.product}` -- a class `home.module.css` never defined. With no class the
+        section escaped the width constraint every neighbour carries, so it rendered full-bleed and
+        pulled the page's rhythm apart around it, and a fixed-height widget frame took a screenful
+        to say what the link below it says in a line. The embeds have a home that shows all of them
+        against the real conference with the snippet that produces each one -- `/embeds` -- so this
+        section points there instead of running one of them inline.
+      */}
+      <section className={styles.attendees} id="attendees" aria-labelledby="attendees-title">
         <div className={styles.sectionHeading}>
           <p className={styles.eyebrow}>
             <CalendarDays size={17} aria-hidden="true" />
@@ -309,53 +310,28 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         </div>
 
         {demoAvailable ? (
-          <>
-            <div className={styles.attendeeShowcase}>
-              <div className={styles.attendeeFrame}>
-                <div className={styles.windowBar} aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                {/*
-                  The real widget, not a screenshot: this is the speaker gallery a visitor would get
-                  from the snippet on `/embeds`, rendering the demo conference as it stands now. A
-                  plain lazy iframe rather than `embed.js` keeps it out of the critical path and
-                  visible without JavaScript.
-                */}
-                <iframe
-                  className={styles.attendeeEmbed}
-                  src={GALLERY_EMBED_SRC}
-                  title="Live speaker gallery from the demo conference"
-                  loading="lazy"
-                />
-              </div>
-              <ul className={styles.attendeeLinks}>
-                {ATTENDEE_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <a className={styles.attendeeLink} href={link.href}>
-                      <span className={styles.featureIcon}>
-                        <link.icon size={20} aria-hidden="true" />
-                      </span>
-                      <span className={styles.attendeeLinkLabel}>
-                        {link.label}
-                        <ArrowRight size={15} aria-hidden="true" />
-                      </span>
-                      <span className={styles.attendeeLinkBlurb}>{link.blurb}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
-              See every embed running live <ArrowRight size={16} aria-hidden="true" />
-            </a>
-          </>
-        ) : (
-          <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
-            See what the embeds publish <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        )}
+          <ul className={styles.attendeeLinks}>
+            {ATTENDEE_LINKS.map((link) => (
+              <li key={link.label}>
+                <a className={styles.attendeeLink} href={link.href}>
+                  <span className={styles.featureIcon}>
+                    <link.icon size={20} aria-hidden="true" />
+                  </span>
+                  <span className={styles.attendeeLinkLabel}>
+                    {link.label}
+                    <ArrowRight size={15} aria-hidden="true" />
+                  </span>
+                  <span className={styles.attendeeLinkBlurb}>{link.blurb}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <a className={styles.textLink} href={EMBED_SHOWCASE_PATH}>
+          {demoAvailable ? 'See every embed running live' : 'See what the embeds publish'}{' '}
+          <ArrowRight size={16} aria-hidden="true" />
+        </a>
       </section>
 
       <section className={styles.about} id="about" aria-labelledby="about-title">
@@ -409,33 +385,17 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             works the event itself — reading submissions, reconciling the program, drafting speaker
             email — instead of narrating what you should click.
           </p>
-
-          <ol className={styles.agentSteps}>
-            <li>
-              <span className={styles.agentStepNumber}>1</span>
-              <div className={styles.agentStepCopy}>
-                <h3>Copy one line</h3>
-                <p>Paste it into Claude or ChatGPT. The guide sets up hosting and your event.</p>
-              </div>
-            </li>
-            <li>
-              <span className={styles.agentStepNumber}>2</span>
-              <div className={styles.agentStepCopy}>
-                <h3>Create a key</h3>
-                <p>
-                  Organizer → <strong>Integrations</strong> → Create key. Read-only or read and
-                  write; shown once, hashed at rest.
-                </p>
-              </div>
-            </li>
-            <li>
-              <span className={styles.agentStepNumber}>3</span>
-              <div className={styles.agentStepCopy}>
-                <h3>Connect the MCP</h3>
-                <p>Point your client at your event’s URL. Ten tools, scoped by that key.</p>
-              </div>
-            </li>
-          </ol>
+          {/*
+            A numbered `Copy one line / Create a key / Connect the MCP` list used to sit here and
+            spent three headings restating the panel beside it: the prompt to copy, the endpoint to
+            point a client at, and the key that authenticates it are all already shown there, as the
+            literal strings a reader has to use rather than a description of them. Setup is one
+            sentence and a link, not a section.
+          */}
+          <p>
+            Copy the prompt, paste it into your agent, and it does the rest — hosting, your first
+            event, and the API key the MCP server needs.
+          </p>
 
           <div className={styles.agentLinks}>
             <a
@@ -472,8 +432,8 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </pre>
           <p className={styles.agentPromptNote}>
             <KeyRound size={17} aria-hidden="true" />
-            Streamable HTTP, authenticated with an event API key as a Bearer token. Keys are
-            event-scoped, so you need your own event first — the prompt below gets you there.
+            Streamable HTTP, authenticated with an event API key as a Bearer token. Create one under
+            Organizer → Integrations: read-only or read and write, shown once, hashed at rest.
           </p>
 
           <div className={styles.agentPromptHeader}>

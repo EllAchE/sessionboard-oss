@@ -39,9 +39,26 @@ describe('GlobalFooter links', () => {
     expect(html).toContain('<span>Agents</span>');
     // The showcase explains itself on an unseeded instance, so it needs no demo gate of its own.
     expect(html).toContain('href="/embeds"');
-    expect(html).toContain('<span>Embeds</span>');
+    expect(html).toContain('<span>Sample embeds</span>');
     expect(html).toContain('href="/docs/api"');
     expect(html).toContain('<span>API</span>');
+  });
+
+  /**
+   * Row one is what a visitor can go and look at, row two is what they can build on. The showcase
+   * is the seeded conference rendered through the widgets, so it closes the tours; agent setup and
+   * the API reference are neither tours nor samples and sit with the creator links instead.
+   */
+  it('closes the demo row with the showcase and leaves the rest below it', () => {
+    const html = renderToStaticMarkup(<GlobalFooterContent demoAvailable />);
+
+    const [demoRow] = html.split('<span>Agents</span>');
+    expect(demoRow).toContain('<span>Sample event</span>');
+    expect(demoRow).toContain('<span>Sample embeds</span>');
+    expect(html.indexOf('<span>Sample event</span>')).toBeLessThan(
+      html.indexOf('<span>Sample embeds</span>'),
+    );
+    expect(html.indexOf('<span>API</span>')).toBeLessThan(html.indexOf('<span>GitHub</span>'));
   });
 
   it('sends API docs to the rendered reference rather than the raw spec', () => {
