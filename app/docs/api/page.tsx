@@ -2,15 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ExternalLink, FileJson, KeyRound, Link2, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui';
-import { curlFor, exampleFor, urlFor, type WorkedExample } from './examples';
+import { curlFor, exampleFor, type WorkedExample } from './examples';
 import { SchemaBlock } from './SchemaFields';
 import {
   baseUrl,
+  constraintsOf,
   doc,
   endpointsByTag,
   jsonSchemaOf,
   partitionResponses,
-  resolveSchema,
+  typeLabel,
   type Endpoint,
   type Parameter,
 } from './spec';
@@ -43,48 +44,31 @@ function ParameterList({ parameters, title }: { parameters: Parameter[]; title: 
     <div className={styles.block}>
       <h4 className={styles.blockTitle}>{title}</h4>
       <ul className={styles.fields}>
-        {parameters.map((parameter) => (
-          <li className={styles.field} key={`${parameter.in}-${parameter.name}`}>
-            <p className={styles.fieldHead}>
-              <code className={styles.fieldName}>{parameter.name}</code>
-              <span className={styles.fieldType}>{typeOf(parameter)}</span>
-              {parameter.required ? (
-                <span className={styles.fieldRequired}>required</span>
-              ) : (
-                <span className={styles.fieldOptional}>optional</span>
-              )}
-            </p>
-            {parameter.description ? (
-              <p className={styles.fieldNote}>{parameter.description}</p>
-            ) : null}
-            {constraintText(parameter) ? (
-              <p className={styles.fieldConstraints}>{constraintText(parameter)}</p>
-            ) : null}
-          </li>
-        ))}
+        {parameters.map((parameter) => {
+          const constraints = constraintsOf(parameter.schema);
+          return (
+            <li className={styles.field} key={`${parameter.in}-${parameter.name}`}>
+              <p className={styles.fieldHead}>
+                <code className={styles.fieldName}>{parameter.name}</code>
+                <span className={styles.fieldType}>{typeLabel(parameter.schema)}</span>
+                {parameter.required ? (
+                  <span className={styles.fieldRequired}>required</span>
+                ) : (
+                  <span className={styles.fieldOptional}>optional</span>
+                )}
+              </p>
+              {parameter.description ? (
+                <p className={styles.fieldNote}>{parameter.description}</p>
+              ) : null}
+              {constraints.length ? (
+                <p className={styles.fieldConstraints}>{constraints.join(' · ')}</p>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
-}
-
-function typeOf(parameter: Parameter): string {
-  const schema = parameter.schema;
-  if (!schema) return 'string';
-  const types = Array.isArray(schema.type) ? schema.type : schema.type ? [schema.type] : ['string'];
-  const base = types.join(' | ');
-  return schema.format ? `${base} (${schema.format})` : base;
-}
-
-function constraintText(parameter: Parameter): string {
-  const schema = parameter.schema;
-  if (!schema) return '';
-  const notes: string[] = [];
-  if (schema.enum) notes.push(`one of ${schema.enum.map((value) => JSON.stringify(value)).join(', ')}`);
-  if (schema.minLength !== undefined) notes.push(`min length ${schema.minLength}`);
-  if (schema.maxLength !== undefined) notes.push(`max length ${schema.maxLength}`);
-  if (schema.minimum !== undefined) notes.push(`min ${schema.minimum}`);
-  if (schema.maximum !== undefined) notes.push(`max ${schema.maximum}`);
-  return notes.join(' · ');
 }
 
 function Example({ example, endpoint }: { example: WorkedExample; endpoint: Endpoint }) {
@@ -101,7 +85,7 @@ function Example({ example, endpoint }: { example: WorkedExample; endpoint: Endp
         <span className={styles.status} data-tone="success">
           {example.status}
         </span>
-        <span>{urlFor(example, endpoint)}</span>
+        <span>{endpoint.operation.responses?.[example.status]?.description}</span>
       </p>
       <pre className={styles.sample} tabIndex={0} aria-label={`Example response for ${endpoint.summary}`}>
         <code>{JSON.stringify(example.response, null, 2)}</code>
@@ -165,7 +149,7 @@ function EndpointArticle({ endpoint }: { endpoint: Endpoint }) {
             <span className={styles.status} data-tone="success">
               {response.status}
             </span>
-            {response.description}
+            <span className={styles.blockHint}>{response.description}</span>
           </summary>
           {response.schema ? (
             <SchemaBlock schema={response.schema} />
@@ -204,7 +188,6 @@ function EndpointArticle({ endpoint }: { endpoint: Endpoint }) {
 export default function ApiDocsPage() {
   const groups = endpointsByTag();
   const count = groups.reduce((total, group) => total + group.endpoints.length, 0);
-  const errorSchema = resolveSchema({ $ref: '#/components/schemas/Error' });
   const schemes = doc.components?.securitySchemes ?? {};
 
   return (
@@ -320,8 +303,7 @@ export default function ApiDocsPage() {
               Errors
             </h2>
             <p className={styles.groupNote}>
-              {errorSchema?.description ?? 'Every non-2xx response has this shape'}. Each endpoint
-              below lists the statuses it can return.
+              Each endpoint below lists the statuses it can return; the body is the same either way.
             </p>
             <SchemaBlock schema={{ $ref: '#/components/schemas/Error' }} />
           </section>

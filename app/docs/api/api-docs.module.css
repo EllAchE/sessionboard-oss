@@ -463,8 +463,10 @@ details[open] > summary.blockTitle::before {
   text-transform: uppercase;
 }
 
+/* Nearly every response field is required, so this stays quiet; the word carries the meaning. */
 .fieldRequired {
-  color: var(--text-accent);
+  color: var(--text-muted);
+  font-weight: var(--weight-semibold);
 }
 
 .fieldOptional {
@@ -521,6 +523,8 @@ details[open] > summary.blockTitle::before {
 }
 
 .status {
+  flex: none;
+  white-space: nowrap;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   background: var(--status-success-bg);
