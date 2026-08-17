@@ -1167,14 +1167,45 @@ export type EditableEntity = {
   id: string;
   label: string;
   secondary: string | null;
+  /**
+   * Empty for the kinds this screen only *shows*. A scheduled session is edited on the agenda board
+   * and a sponsor on the sponsor board, and giving each a second editor here would be two screens
+   * writing the same row through different validation. They are listed so their history is
+   * selectable and restorable, which is the whole reason to have them on this page.
+   */
   fields: Record<string, string>;
   contentStatus: ContentApprovalStatus | null;
 };
 
-/** Everything the history screen can edit, so the loop edit → history → restore never leaves it. */
+/**
+ * Everything the history screen can select, so the loop edit → history → restore never leaves it.
+ */
 export async function listEditableContent(ctx: EventContext): Promise<EditableEntity[]> {
   requireCapability(ctx, 'submission:read_all');
   const db = getDb();
+
+  const [scheduled, sponsors] = await Promise.all([
+    db
+      .select({
+        id: scheduledSession.id,
+        ref: scheduledSession.ref,
+        title: scheduledSession.title,
+        status: scheduledSession.status,
+      })
+      .from(scheduledSession)
+      .where(eq(scheduledSession.eventId, ctx.eventId))
+      .orderBy(asc(scheduledSession.ref)),
+    db
+      .select({
+        id: sponsor.id,
+        name: sponsor.name,
+        kind: sponsor.kind,
+        status: sponsor.status,
+      })
+      .from(sponsor)
+      .where(eq(sponsor.eventId, ctx.eventId))
+      .orderBy(asc(sponsor.position), asc(sponsor.name)),
+  ]);
 
   const [sessions, speakers] = await Promise.all([
     db
@@ -1232,6 +1263,26 @@ export async function listEditableContent(ctx: EventContext): Promise<EditableEn
           company: row.company ?? '',
           bioMarkdown: row.bioMarkdown ?? '',
         },
+        contentStatus: null,
+      }),
+    ),
+    ...scheduled.map(
+      (row): EditableEntity => ({
+        kind: 'scheduled_session',
+        id: row.id,
+        label: `${formatRef('session', row.ref)} ${row.title}`,
+        secondary: `Agenda · ${row.status}`,
+        fields: {},
+        contentStatus: null,
+      }),
+    ),
+    ...sponsors.map(
+      (row): EditableEntity => ({
+        kind: 'sponsor',
+        id: row.id,
+        label: row.name,
+        secondary: `${row.kind} · ${row.status}`,
+        fields: {},
         contentStatus: null,
       }),
     ),

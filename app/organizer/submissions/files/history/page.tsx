@@ -2,6 +2,7 @@ import {
   listContentRevisions,
   listEditableContent,
   trackedFields,
+  type ContentEntityKind,
 } from '../../../../../lib/services/content';
 import { decideContext } from '../../context';
 import { ContentHistory, type EntityWire, type RevisionWire } from './ContentHistory';
@@ -35,6 +36,7 @@ export default async function ContentHistoryPage() {
     entityKind: revision.entityKind,
     entityId: revision.entityId,
     entityLabel: revision.entityLabel,
+    revisionNumber: revision.revisionNumber,
     summary: revision.summary,
     editorName: revision.editorName,
     when: revision.createdAt.toISOString().slice(0, 16).replace('T', ' '),
@@ -46,12 +48,17 @@ export default async function ContentHistoryPage() {
     })),
   }));
 
+  /**
+   * One map keyed by kind rather than a prop per kind. The screen grew from two entity kinds to
+   * four, and a `sessionFields`/`speakerFields`/… list would need editing again for the fifth.
+   */
+  const fieldLabels = Object.fromEntries(
+    (['session', 'participant', 'scheduled_session', 'sponsor'] as ContentEntityKind[]).map(
+      (kind) => [kind, trackedFields(kind)],
+    ),
+  ) as Record<ContentEntityKind, Record<string, string>>;
+
   return (
-    <ContentHistory
-      entities={entityWire}
-      revisions={revisionWire}
-      sessionFields={trackedFields('session')}
-      speakerFields={trackedFields('participant')}
-    />
+    <ContentHistory entities={entityWire} revisions={revisionWire} fieldLabels={fieldLabels} />
   );
 }
