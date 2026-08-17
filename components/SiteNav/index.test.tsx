@@ -90,9 +90,22 @@ describe('SiteNav', () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain('Smol team');
     expect(html).not.toContain('Each link opens the same seeded conference');
+    expect(html).not.toContain('Shown once, on your first visit');
+    expect(html).not.toContain('Got it');
     // The five destinations themselves still ship server-rendered, hidden until the panel opens.
     expect(html).toContain('Organizer demo');
     expect(html).toContain('Embed showcase');
+  });
+
+  /**
+   * The dimming is a portal into `document.body`, which the server does not have, and it is measured
+   * from live layout, which the server cannot do either. Rendering it here would be both a crash and
+   * a page that arrives dark for everyone, first visit or not.
+   */
+  it('never ships the first-visit dimming from the server', () => {
+    const html = renderToStaticMarkup(<SiteNav links={LINKS} demoAvailable />);
+
+    expect(html).not.toContain('spotlight');
   });
 });
 
@@ -113,5 +126,17 @@ describe('DemoMenu stylesheet', () => {
       [...stylesheet.matchAll(/\.([A-Za-z][\w-]*)/g)].map(([, name]) => name),
     );
     expect([...used].filter((name) => !defined.has(name))).toEqual([]);
+  });
+
+  /**
+   * The dimming is painted over the menu it is pointing at, so the one property that decides whether
+   * the introduction helps or traps the visitor is this one: without it the transparent cutout eats
+   * every click meant for the five links below it.
+   */
+  it('lets clicks through the dimming it paints over the menu', () => {
+    const stylesheet = readFileSync(new URL('./DemoMenu.module.css', import.meta.url), 'utf8');
+    const spotlight = stylesheet.slice(stylesheet.indexOf('.spotlight {'));
+
+    expect(spotlight.slice(0, spotlight.indexOf('}'))).toContain('pointer-events: none');
   });
 });

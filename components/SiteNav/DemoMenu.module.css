@@ -51,6 +51,46 @@
 }
 
 /*
+ * While the introduction is up the panel is the only lit thing on the page, so it stops borrowing
+ * the bar's restraint: a deeper drop shadow to sit it above the dimming, and an accent ring so the
+ * cutout's edge reads as deliberate framing rather than a gap in the dark.
+ */
+.panelLit {
+  box-shadow:
+    0 24px 64px rgba(52, 47, 39, 0.3),
+    0 0 0 1px color-mix(in srgb, var(--border-accent) 70%, transparent),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.7);
+}
+
+/*
+ * The dimming, portalled to the body and positioned over the trigger and panel together. It has no
+ * background of its own: the shadow spread is what darkens the page, and it spreads outward from
+ * this box, so the box itself stays clear and the menu inside it keeps its own colours. 200vmax
+ * covers any viewport from anywhere in it, and a box shadow adds nothing to the scrollable area, so
+ * a number that large costs no scrollbar.
+ */
+.spotlight {
+  position: fixed;
+  z-index: 50;
+  border-radius: var(--radius-md);
+  /*
+   * Deeper than `--surface-overlay`, which the dialogs use: a modal dims the page behind a card the
+   * eye is already on, while this has to make one corner of the bar the brightest thing on a page
+   * that is otherwise all light marble and headline.
+   */
+  box-shadow: 0 0 0 200vmax rgba(38, 34, 28, 0.62);
+  /* The menu underneath stays clickable, and a click anywhere else reaches the dismissal handler. */
+  pointer-events: none;
+  animation: spotlightIn 240ms ease-out;
+}
+
+@keyframes spotlightIn {
+  from {
+    box-shadow: 0 0 0 200vmax transparent;
+  }
+}
+
+/*
  * Sits above the five destinations on a first visit only, so it is separated by a rule rather than
  * by a card of its own: it introduces the list it belongs to instead of competing with it.
  */
@@ -73,6 +113,47 @@
   margin: 0;
   color: var(--text-muted);
   font: var(--weight-regular) var(--text-xs) / var(--leading-normal) var(--font-ui);
+}
+
+/*
+ * What the introduction is, on the same line as the way out of it: one says the panel opened itself
+ * and will not again, the other closes it. Below the sentence rather than beside it, so the note
+ * qualifies the whole introduction and not just the button.
+ */
+.introFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-1) 0 0;
+}
+
+/* Sentence case, unlike the eyebrow above it: two shouted lines in one small panel is one too many. */
+.introNote {
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-xs) / var(--leading-normal) var(--font-ui);
+}
+
+.introDismiss {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid
+    color-mix(in srgb, var(--border-accent) 55%, var(--border-default));
+  border-radius: var(--radius-xs);
+  background: rgba(253, 244, 241, 0.84);
+  color: var(--text-accent);
+  font: var(--weight-semibold) var(--text-xs) / 1 var(--font-ui);
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.introDismiss:hover {
+  background: rgba(253, 244, 241, 1);
+}
+
+.introDismiss:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
 }
 
 .destination {
@@ -125,7 +206,13 @@
 
 @media (prefers-reduced-motion: reduce) {
   .chevron,
-  .destination {
+  .destination,
+  .introDismiss {
     transition: none;
+  }
+
+  /* The dimming still arrives, it just arrives at once. */
+  .spotlight {
+    animation: none;
   }
 }
