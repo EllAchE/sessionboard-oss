@@ -89,6 +89,27 @@ describe('fresh-instance home page', () => {
     expect(html).not.toContain('Agent quick start');
   });
 
+  it('orders the navigation about, products, docs, then demo', () => {
+    const html = renderHome(true);
+
+    const navOrder = ['href="#about"', 'href="#products"', 'href="/api/v1/openapi.json"'].map(
+      (marker) => html.indexOf(marker),
+    );
+    expect(navOrder).toEqual([...navOrder].sort((first, second) => first - second));
+    expect(navOrder.at(-1)).toBeLessThan(html.indexOf('>Demo'));
+  });
+
+  it('collects every demo behind the navigation demo menu', () => {
+    const html = renderHome(true);
+
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('Organizer dashboard');
+    expect(html).toContain('Reviewer queue');
+    expect(html).toContain('Speaker portal');
+    expect(html).toContain('Public event page');
+    expect(html).toContain('Public agenda');
+  });
+
   it('keeps agent setup reachable from the page body once it leaves the navigation', () => {
     const html = renderHome(false);
 

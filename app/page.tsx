@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
+import { DemoMenu } from './DemoMenu';
 import styles from './home.module.css';
 
 const AGENT_STARTER_PROMPT = `$onboard-cicero
@@ -183,21 +184,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <a className={styles.brand} href="/" aria-label="Cicero home">
           <CiceroBrand markSize={34} />
         </a>
+        {/*
+          Demo sits last because it is the only entry that leaves the marketing page for a live
+          product surface, and because it opens a menu rather than jumping to a section -- a
+          trigger that expands in place reads as the end of the row, not a step in it.
+        */}
         <div className={styles.navLinks}>
-          <a className={styles.productsLink} href="#products">
-            Products
-          </a>
           <a className={styles.aboutLink} href="#about">
             About
           </a>
-          {demoAvailable ? (
-            <a className={styles.demoLink} href="/demo">
-              Demo
-            </a>
-          ) : null}
+          <a className={styles.productsLink} href="#products">
+            Products
+          </a>
           <a className={styles.apiDocsLink} href="/api/v1/openapi.json">
             Docs
           </a>
+          {demoAvailable ? <DemoMenu className={styles.demoLink} /> : null}
         </div>
         <div className={styles.navAuth}>
           <Button
