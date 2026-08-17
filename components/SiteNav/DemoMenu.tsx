@@ -9,8 +9,14 @@ import {
   LayoutDashboard,
   Megaphone,
 } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import styles from './DemoMenu.module.css';
+
+/**
+ * Set the first time this menu introduces itself, so it opens on its own exactly once per browser
+ * and stays a plain menu on every visit after that, including a back navigation.
+ */
+const INTRODUCED_KEY = 'cicero-demos-introduced';
 
 /**
  * Every seeded demo, signed-in and public, behind the one navigation entry that used to open the
@@ -55,18 +61,44 @@ const DEMO_DESTINATIONS = DEMO_TOURS.map(({ key, href, label }) => ({
 export function DemoMenu({ className }: { className?: string }) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
+  /** True only while the panel is showing itself uninvited, which is what the note explains. */
+  const [introducing, setIntroducing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setIntroducing(false);
+  }, []);
+
+  /*
+   * Opens itself once, on the first page a visitor loads, so the five demos are read rather than
+   * found. It runs after mount rather than from the initial state because the server has no
+   * `localStorage`: the panel must render closed on the server and on the first client paint, or
+   * hydration disagrees with the markup. The flag is written as it opens, so a reload or a back
+   * navigation gets the ordinary closed menu.
+   */
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(INTRODUCED_KEY)) return;
+      window.localStorage.setItem(INTRODUCED_KEY, 'seen');
+    } catch {
+      // A browser that refuses storage cannot be told this happened, so it is never shown at all.
+      return;
+    }
+    setOpen(true);
+    setIntroducing(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
 
     const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+      if (!containerRef.current?.contains(event.target as Node)) close();
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      setOpen(false);
+      close();
       triggerRef.current?.focus();
     };
 
@@ -76,7 +108,7 @@ export function DemoMenu({ className }: { className?: string }) {
       document.removeEventListener('pointerdown', closeOnOutsidePointer);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [open]);
+  }, [close, open]);
 
   return (
     <div className={className ? `${styles.menu} ${className}` : styles.menu} ref={containerRef}>
@@ -86,7 +118,7 @@ export function DemoMenu({ className }: { className?: string }) {
         aria-controls={panelId}
         aria-expanded={open}
         aria-haspopup="true"
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
+        onClick={() => (open ? close() : setOpen(true))}
         ref={triggerRef}
       >
         Demos
@@ -101,6 +133,19 @@ export function DemoMenu({ className }: { className?: string }) {
         and `hidden` keeps them out of the tab order and the accessibility tree until it opens.
       */}
       <ul className={styles.panel} hidden={!open} id={panelId}>
+        {/*
+          Only while the panel opened itself: it says who opened it and what the five links below
+          have in common. Once dismissed it never returns, so nothing here may carry a destination
+          the rest of the menu does not.
+        */}
+        {introducing ? (
+          <li className={styles.intro}>
+            <p className={styles.introTitle}>Smol team: start here</p>
+            <p className={styles.introBody}>
+              Each link opens the same seeded conference as a different kind of user.
+            </p>
+          </li>
+        ) : null}
         {DEMO_DESTINATIONS.map(({ href, icon: Icon, label, blurb }) => (
           <li key={label}>
             <a className={styles.destination} href={href}>
