@@ -406,7 +406,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               size="lg"
               iconRight={<ArrowRight size={17} aria-hidden="true" />}
             >
-              Create your event
+              Create your first event
             </Button>
             <Button href="/signin" size="lg">
               Sign in
