@@ -111,7 +111,7 @@ export type NotificationsWire = {
   timezone: string | null;
   quietStart: string | null;
   quietEnd: string | null;
-  smsHourlyLimit: number;
+  /** No `smsHourlyLimit`: the service caps texts per hour on its own and no panel sets it. */
   eventNotifyEmail: boolean | null;
   eventNotifySms: boolean | null;
   /**

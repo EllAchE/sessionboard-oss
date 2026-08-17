@@ -1,0 +1,94 @@
+/* The alert override grid. Tokens only — no literal colours anywhere in this file. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/*
+ * One column for the row name and one per channel. The channel columns are fixed so every switch
+ * in the panel lands on the same two vertical lines however long a category label runs.
+ */
+/*
+ * No `column-gap`: the rule between rows is drawn per cell, and a gap would break it into three
+ * segments. The channel columns are wide enough to hold a centred switch with air either side.
+ */
+.grid {
+  --alert-column: 4rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--alert-column) var(--alert-column);
+  align-items: center;
+}
+
+.columnLabel {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  padding-bottom: var(--space-2);
+}
+
+.line {
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.rowLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-05);
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  min-width: 0;
+}
+
+.child {
+  padding-left: var(--space-4);
+}
+
+.name {
+  font: var(--type-body);
+  color: var(--text-body);
+}
+
+.leadName {
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+}
+
+.cell {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+.reset {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: var(--type-label);
+  color: var(--text-faint);
+}
+
+.reset:hover {
+  color: var(--text-body);
+  text-decoration: underline;
+}
+
+.reset:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--ring-focus);
+}
+
+.note {
+  margin: 0;
+  font: var(--type-label);
+  color: var(--text-faint);
+}

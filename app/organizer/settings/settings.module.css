@@ -196,6 +196,11 @@
   margin: 0;
 }
 
+/* The sub-panel is a flex column with its own gap; a paragraph's default margin doubles it. */
+.subPanel > .hint {
+  margin: 0;
+}
+
 .brandingPreview {
   display: grid;
   place-items: center;

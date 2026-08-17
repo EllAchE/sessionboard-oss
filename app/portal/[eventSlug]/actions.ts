@@ -148,7 +148,8 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       timezone: text(formData, 'notificationTimezone').trim() || null,
       quietStart: text(formData, 'quietStart') || null,
       quietEnd: text(formData, 'quietEnd') || null,
-      smsHourlyLimit: Number(text(formData, 'smsHourlyLimit')),
+      // No `smsHourlyLimit`: the hourly cap is a guardrail, not a preference. Leaving it out of the
+      // patch keeps whatever the account already stores, and the service's own default otherwise.
       eventNotifyEmail: channelOverride(formData, 'eventNotifyEmail'),
       eventNotifySms: channelOverride(formData, 'eventNotifySms'),
       categories: Object.fromEntries(
