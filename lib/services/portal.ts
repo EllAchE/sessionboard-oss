@@ -658,11 +658,8 @@ export async function updateMySubmission(
     throw invalid('Some details need attention', details);
   }
 
-  const levelProblem = levelError(
-    parsed.data.level,
-    await submissionLevelOptions(current.formId),
-    current.level,
-  );
+  const levelOptions = await submissionLevelOptions(current.formId);
+  const levelProblem = levelError(parsed.data.level, levelOptions, current.level);
   if (levelProblem) throw invalid('Some details need attention', { level: levelProblem });
 
   const fields = await submissionFields(current.formId);
@@ -674,7 +671,12 @@ export async function updateMySubmission(
     .set({
       title: parsed.data.title,
       descriptionMarkdown: blankToNull(parsed.data.descriptionMarkdown),
-      level: blankToNull(parsed.data.level),
+      /*
+        Only when the form asks. The editor renders no control for a question the form does not
+        have, so an empty `level` in that case means "nobody was shown this" rather than "cleared" —
+        writing it through would quietly drop a value on the next unrelated save.
+      */
+      ...(levelOptions ? { level: blankToNull(parsed.data.level) } : {}),
       answers,
       updatedAt: new Date(),
     })
