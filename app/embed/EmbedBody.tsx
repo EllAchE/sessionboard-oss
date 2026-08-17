@@ -57,6 +57,14 @@ export function EmbedBody({
       data-theme={options.theme === 'auto' ? undefined : options.theme}
       data-embed-view={view}
     >
+      {/*
+        `AD-3`. The organizer's own CSS, last so it beats the widget's rules without `!important`.
+        `options.css` has already been through `sanitizeEmbedCss`, which rejects the value whole if
+        it contains `<`, `>`, `@import`, `url(` or any of the script-in-CSS constructs — so what
+        arrives here cannot close this element or reach off-origin. It is written raw because React
+        would otherwise HTML-escape the quotes and angle-free selectors into nonsense.
+      */}
+      {options.css ? <style dangerouslySetInnerHTML={{ __html: options.css }} /> : null}
       {showHeader ? (
         <header className={styles.head}>
           <span className={styles.eventName}>{filtered.event.name}</span>

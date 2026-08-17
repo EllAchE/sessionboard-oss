@@ -4,7 +4,9 @@ import { ChevronLeft } from 'lucide-react';
 import { Badge, Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
 import { isAppError } from '@/lib/errors';
 import { can } from '@/lib/context';
+import { listParticipantFileIndex } from '@/lib/services/files';
 import { SPEAKER_WORKFLOW_OPTIONS, getSpeakerProfile } from '@/lib/services/participants';
+import { SpeakerFiles, toSpeakerFileRow } from '../SpeakerFiles';
 import { SpeakerForm, type SpeakerFormValues } from '../SpeakerForm';
 import { SpeakerStatus } from '../SpeakerStatus';
 import { ViewPortalAsButton } from '../ViewPortalAs';
@@ -35,6 +37,8 @@ export default async function SpeakerDetailPage({
     if (isAppError(error) && error.code === 'not_found') notFound();
     throw error;
   });
+
+  const files = (await listParticipantFileIndex(ctx, speaker.id)).map(toSpeakerFileRow);
 
   const initial: SpeakerFormValues = {
     id: speaker.id,
@@ -126,6 +130,8 @@ export default async function SpeakerDetailPage({
           </CardBody>
         </Card>
       </div>
+
+      <SpeakerFiles files={files} />
 
       <SpeakerForm initial={initial} />
     </div>

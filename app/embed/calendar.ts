@@ -1,4 +1,4 @@
-import { buildDownload } from '@/lib/ics';
+import { buildDownload, buildFeed, type CalendarEvent } from '@/lib/ics';
 import type { PublicEvent, PublicSession } from './model';
 
 /**
@@ -23,19 +23,30 @@ function veventOf(calendar: string): string {
   return calendar.slice(start, end + 'END:VEVENT'.length);
 }
 
-export function calendarEventFor(session: PublicSession, event: PublicEvent) {
+/**
+ * `AD-3`. The organizer's field selection reaches the calendar too: an embed configured without
+ * session descriptions or without room labels must not smuggle them back through the `.ics`.
+ */
+export type CalendarFields = { description?: boolean; room?: boolean };
+
+export function calendarEventFor(
+  session: PublicSession,
+  event: PublicEvent,
+  fields: CalendarFields = {},
+): CalendarEvent {
   const startsAt = new Date(session.startsAt as string);
   const endsAt = session.endsAt
     ? new Date(session.endsAt)
     : new Date(startsAt.getTime() + 60 * 60 * 1000);
+  const room = fields.room === false ? null : session.room;
   return {
     uid: session.icsUid,
     sequence: session.icsSequence,
     summary: session.title,
     startsAt,
     endsAt,
-    description: session.descriptionText || null,
-    location: [session.room, event.venueName].filter(Boolean).join(', ') || null,
+    description: fields.description === false ? null : session.descriptionText || null,
+    location: [room, event.venueName].filter(Boolean).join(', ') || null,
     url: event.websiteUrl,
     organizer: { email: ORGANIZER_EMAIL, name: event.name },
   };
@@ -55,6 +66,44 @@ export function buildScheduleCalendar(sessions: PublicSession[], event: PublicEv
   if (extra.length === 0) return first;
 
   return first.replace('END:VCALENDAR', `${extra.join('\r\n')}\r\nEND:VCALENDAR`);
+}
+
+/**
+ * `AD-3`. The subscribable form of exactly the sessions an embed configuration selected. This is
+ * not the `EMB-11` download above: a subscriber's client re-fetches this URL on a schedule, so the
+ * body carries a calendar name and a refresh hint, and it is built from `lib/ics`'s feed writer
+ * rather than by splicing VEVENT text together.
+ *
+ * Undated sessions are dropped rather than given an invented time — "time to be announced" is
+ * information a calendar cannot hold, and a placeholder slot would put a wrong entry on somebody's
+ * real calendar. They remain visible in the JSON and XML renderings of the same configuration.
+ */
+export function buildSubscriptionCalendar(
+  sessions: PublicSession[],
+  event: PublicEvent,
+  options: { name?: string | null; fields?: CalendarFields } = {},
+): string {
+  const dated = sessions.filter((session) => session.startsAt);
+  return buildFeed(
+    dated.map((session) => calendarEventFor(session, event, options.fields ?? {})),
+    {
+      name: options.name ?? event.name,
+      description: event.tagline,
+      timezone: event.timezone,
+      refreshMinutes: 60,
+    },
+  );
+}
+
+/** A stable, descriptive filename for a subscription URL, e.g. `orator-2026-sessions.ics`. */
+export function feedCalendarFilename(event: PublicEvent, view: string): string {
+  const stem =
+    event.slug
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'schedule';
+  return `${stem}-${view}.ics`;
 }
 
 export function calendarFilename(event: PublicEvent): string {

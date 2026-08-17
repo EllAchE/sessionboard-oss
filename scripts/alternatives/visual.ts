@@ -2,8 +2,8 @@
  * Renders the survey as a single self-contained HTML page: the full feature grid, every feature
  * against every analyzed project, plus the rollups that put it in context.
  *
- * No external requests — the page is published as an Artifact under a CSP that blocks them, and it
- * has to open straight from disk too. Everything is inline.
+ * No external asset requests — the published Worker applies a CSP that blocks them, and the page
+ * has to open straight from disk too. Its style and behavior therefore stay inline.
  */
 
 import { analyzed, areaTotals, extrasByProject, summarize, type Coverage, type Survey } from './survey';
@@ -107,6 +107,7 @@ a { color: var(--accent); text-underline-offset: 2px; }
   color: var(--ink-faint); margin: 0;
 }
 .lede { color: var(--ink-muted); font-size: 17px; }
+.companion { font-size: 14px; }
 .muted { color: var(--ink-muted); }
 .small { font-size: 13px; }
 
@@ -400,8 +401,16 @@ export function renderVisual(survey: Survey): string {
     )
     .join('');
 
-  return `<title>Sessionboard clones — the full feature grid</title>
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A source-verified feature survey of 32 Sessionboard clone codebases.">
+<title>Sessionboard clones — the full feature grid</title>
 <style>${CSS}</style>
+</head>
+<body>
 <div class="wrap">
   <header class="masthead">
     <p class="eyebrow">${escapeHtml(survey.brief)} · surveyed ${escapeHtml(survey.surveyedOn)}</p>
@@ -409,6 +418,7 @@ export function renderVisual(survey: Survey): string {
     <p class="lede">Every feature found across every entrant's Sessionboard clone that published source, read from
       code at a pinned commit rather than from a README. Cicero is the first column. Nothing is ranked — teams
       solving one specification is a natural experiment, and the output is the spread of choices, not a scoreboard.</p>
+    <p class="companion">Companion: <a href="https://cicero-submission.elehche.workers.dev/">read the Cicero submission write-up</a>.</p>
     <div class="stats">
       <div class="stat"><b>${stats.counts.submissionsFound}</b><span>submissions found</span></div>
       <div class="stat"><b>${stats.counts.analyzed}</b><span>source analyzed</span></div>
@@ -578,5 +588,7 @@ export function renderVisual(survey: Survey): string {
   });
 })();
 </script>
+</body>
+</html>
 `;
 }

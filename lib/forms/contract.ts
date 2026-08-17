@@ -162,6 +162,31 @@ export function isParticipantBuiltinKey(
   return !!key && (PARTICIPANT_BUILTIN_FIELDS as readonly string[]).includes(key);
 }
 
+/**
+ * The control a field actually renders as, from either built-in namespace.
+ *
+ * A built-in's type is fixed by `BUILTIN_META` / `PARTICIPANT_BUILTIN_META` — `canChangeFieldType`
+ * refuses to retype one — so `form_field.type` is a *copy* of that constant rather than a choice the
+ * organizer made, and a copy can go stale. It did: the public runtime resolved through the constant
+ * while the builder read the column straight, so the demo's built-in "Audience level" was a dropdown
+ * for the speaker filling the form in and radio buttons for the organizer who configured it. One
+ * rule, called from both sides, is what keeps the two surfaces describing the same control.
+ *
+ * A custom field has no constant to defer to, so its stored type is the answer and stays the answer.
+ */
+export function resolveFieldType(field: {
+  entity?: FieldEntity | null;
+  builtinKey?: string | null;
+  participantKey?: string | null;
+  type: FieldType;
+}): FieldType {
+  if (field.entity === 'participant' || field.participantKey) {
+    const key = field.participantKey ?? field.builtinKey;
+    return isParticipantBuiltinKey(key) ? PARTICIPANT_BUILTIN_META[key].type : field.type;
+  }
+  return isBuiltinKey(field.builtinKey) ? BUILTIN_META[field.builtinKey].type : field.type;
+}
+
 /** The ceiling the engine will not let a built-in exceed, whichever entity it belongs to. */
 export function builtinMaxLength(
   entity: FieldEntity,

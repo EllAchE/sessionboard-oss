@@ -26,6 +26,12 @@ export function EventSwitcher({
           window.location.href = '/events/new';
           return;
         }
+        // `AD-1`. The switcher is where somebody reaches when they want another event, and next
+        // year's edition is far more often a copy of this one than a blank.
+        if (next === '__duplicate') {
+          window.location.href = '/organizer/duplicate';
+          return;
+        }
         startTransition(() => {
           void switchEvent(next);
         });
@@ -37,6 +43,7 @@ export function EventSwitcher({
         </option>
       ))}
       <option value="__new">+ New event…</option>
+      <option value="__duplicate">⧉ Duplicate this event…</option>
     </Select>
   );
 }

@@ -7,6 +7,7 @@ import {
   form,
   membership,
   participant,
+  participantRole,
   reviewAssignment,
   reviewRound,
   scorecardCriterion,
@@ -103,12 +104,15 @@ export async function seedReviewFixture(
 
   // The queue reads the author's display name off the participant row, so a bare user is not
   // enough for the authorship-hiding assertions to mean anything.
-  await db.insert(participant).values({
-    eventId: eventRow.id,
-    userId: author.userId,
-    displayName: 'Vitruvius Pollio',
-    company: 'The Aqueduct Office',
-  });
+  const [authorParticipant] = await db
+    .insert(participant)
+    .values({
+      eventId: eventRow.id,
+      userId: author.userId,
+      displayName: 'Vitruvius Pollio',
+      company: 'The Aqueduct Office',
+    })
+    .returning();
 
   const [formRow] = await db
     .insert(form)
@@ -139,6 +143,12 @@ export async function seedReviewFixture(
       },
     ])
     .returning();
+
+  await db.insert(participantRole).values({
+    submissionId: mine.id,
+    participantId: authorParticipant.id,
+    isPrimary: true,
+  });
 
   const [roundRow] = await db
     .insert(reviewRound)

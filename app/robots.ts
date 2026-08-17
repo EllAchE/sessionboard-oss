@@ -55,6 +55,12 @@ const DEV_ROUTES = [
 const SUBMIT_FLOW_PATHS = ['/submit/*/*/upload', '/submit/*/*/done'];
 
 /**
+ * `AD-9` share links. The subtree only, deliberately not `closed('/s')`: the bare `/s` is not a
+ * route here, while `/s$` would hide a published event whose organizer picked the slug `s`.
+ */
+const SHARE_LINK_PATHS = ['/s/'];
+
+/**
  * `/{slug}/llms.txt` needs no rule and gets none. It hangs off a published conference at the root,
  * so no disallow prefix reaches it, and it is meant to be fetched — it is the cheapest possible
  * read of a programme that would otherwise cost a crawler the agenda, speaker and sponsor pages.
@@ -67,6 +73,11 @@ const SUBMIT_FLOW_PATHS = ['/submit/*/*/upload', '/submit/*/*/done'];
  * own metadata, and a crawler has to be allowed to fetch a page before it can read that. Third
  * party event sites iframe and link them, so disallowing here would trade a clean "do not index"
  * for URL-only entries Google cannot drop.
+ *
+ * `/s/*` takes the opposite decision for the opposite reason. A share-link URL is itself the
+ * credential, so the goal is not "fetch it and discover it says noindex" but "do not fetch it".
+ * Losing the fetch costs nothing here: nobody links a private preview from a page a crawler can
+ * reach, and if one does leak, `X-Robots-Tag` and the page metadata still say noindex.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -87,6 +98,7 @@ export default function robots(): MetadataRoute.Robots {
           ...PRIVATE_ROUTES.flatMap(closed),
           ...DEV_ROUTES.flatMap(closed),
           ...SUBMIT_FLOW_PATHS,
+          ...SHARE_LINK_PATHS,
           ...closed('/api'),
         ],
       },

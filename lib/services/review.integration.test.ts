@@ -211,7 +211,9 @@ describe('anonymity, enforced in SQL rather than in the view', () => {
 
     expect(detail.authorHidden).toBe(true);
     expect(detail.submitterName).not.toContain('Vitruvius');
+    expect(detail.speakers).toHaveLength(1);
     expect(JSON.stringify(detail.speakers)).not.toContain('Vitruvius');
+    expect(JSON.stringify(detail.speakers)).not.toContain('Aqueduct Office');
     expect(JSON.stringify(detail)).not.toContain(fixture.author.email);
   });
 

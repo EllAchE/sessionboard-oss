@@ -31,6 +31,7 @@ import {
 import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import { SCOPES } from '@/lib/hotkeys/registry';
 import { CopyPermalinkButton } from './CopyPermalinkButton';
+import { ReviewExportButton } from './ReviewExportButton';
 import {
   decideAction,
   deleteViewAction,
@@ -697,15 +698,7 @@ export function SubmissionQueue(props: QueueProps) {
               >
                 Files
               </Button>
-              {props.roundId ? (
-                <Button
-                  variant="ghost"
-                  iconLeft={<Download size={14} />}
-                  href={`/organizer/submissions/export?round=${encodeURIComponent(props.roundId)}`}
-                >
-                  Export CSV
-                </Button>
-              ) : null}
+              {props.roundId ? <ReviewExportButton roundId={props.roundId} /> : null}
               <Button variant="ghost" onClick={() => router.push('/organizer/submissions/rounds')}>
                 Rounds
               </Button>
