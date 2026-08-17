@@ -55,6 +55,14 @@ const DEV_ROUTES = [
 const SUBMIT_FLOW_PATHS = ['/submit/*/*/upload', '/submit/*/*/done'];
 
 /**
+ * `/{slug}/llms.txt` needs no rule and gets none. It hangs off a published conference at the root,
+ * so no disallow prefix reaches it, and it is meant to be fetched — it is the cheapest possible
+ * read of a programme that would otherwise cost a crawler the agenda, speaker and sponsor pages.
+ * No allow rule either: an allow only matters against a disallow, and adding one here would imply
+ * the surrounding conference pages are closed.
+ */
+
+/**
  * `/embed/*` is deliberately absent. Those pages already carry `robots: { index: false }` in their
  * own metadata, and a crawler has to be allowed to fetch a page before it can read that. Third
  * party event sites iframe and link them, so disallowing here would trade a clean "do not index"
