@@ -374,6 +374,11 @@ roadmap list.</p>
 <td>Demand for booths, hotspots, wayfinding, search, or region links as a first-class product</td>
 </tr>
 <tr>
+<td>First-class PowerPoint and Google Slides decks</td>
+<td>Speaker deck support is only PDF and Keynote today; PowerPoint and Google Slides are accepted as opaque bytes rather than as understood deck formats</td>
+<td>Organizer or speaker demand for PowerPoint and Google Slides as supported deck formats, which we do want to add</td>
+</tr>
+<tr>
 <td>Arbitrary event resource uploads</td>
 <td>Every upload path is bound to a known slot — headshot, speaker deliverable, submission form file field, exhibitor-map PDF, recording — so type validation, size caps, and publication rules can be specific to each one. Speaker-facing reference material is organizer-written portal pages rather than attached files. A general &quot;attach anything to the event&quot; library would need its own permission, visibility, and retention model</td>
 <td>Organizers wanting to publish documents that are not one of the known slots — a speaker handbook, an event history page, a media kit, a sponsor prospectus — at which point a generic resource library with per-file audience control is a better answer than another bespoke slot</td>
@@ -386,6 +391,18 @@ workflows, where frequent review, triage, and scheduling work is most likely to 
 desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
 especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
 host-site compatibility pass.</li>
+<li>The landing experience for a reviewer or speaker who arrives without an invitation link was not
+thought through deeply. The design assumed invited arrival: an organizer sends a magic link and it
+lands the person on the one surface they need. Someone who instead types the domain, follows a
+colleague&#39;s link, or returns months later gets a page written mostly for organizers and evaluators
+— the role cards name organizer, speaker, and attendee but not reviewer, and none of them is an
+entry point. Sign-in with no <code>next</code> defaults to <code>/organizer</code>, and the routing that corrects it is a
+chain of redirects rather than a deliberate destination: the organizer layout bounces a reviewer to
+<code>/review</code> and a speaker to <code>/portal</code>, but sends anyone with no event membership to <code>/events/new</code>,
+which asks a speaker or reviewer waiting to be added to create a conference instead. The right
+answer is probably an explicit post-authentication router that resolves a person&#39;s roles before
+choosing a destination, plus a signed-out landing path that lets a speaker or reviewer say which
+event they belong to, rather than more redirect rules layered on the organizer shell.</li>
 <li>The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
 not been proven there even though message generation and <code>.ics</code> behavior are tested.</li>
 <li>R2 and Twilio adapters are implemented and tested but have not been exercised against paid
