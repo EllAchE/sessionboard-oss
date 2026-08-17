@@ -109,11 +109,16 @@
   box-shadow: var(--shadow-sm);
 }
 
+/*
+ * Centred rather than top-aligned: the hero copy lost the role-demo list to the products section,
+ * and against the full-viewport minimum the shorter column left a screen-height gap under "Create
+ * an event" while the dashboard preview sat alone at the top of the right column.
+ */
 .hero {
   min-height: calc(100vh - 88px);
   display: grid;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  align-items: start;
+  align-items: center;
   gap: clamp(var(--space-10), 6vw, var(--space-20));
   padding-block: var(--space-20) var(--space-24);
 }
@@ -183,6 +188,11 @@
     inset 0 0 0 3px rgba(255, 255, 255, 0.58);
 }
 
+.agentStarterCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
 .agentStarterLabel {
   display: inline-flex;
   align-items: center;
@@ -198,6 +208,12 @@
   flex: 0 0 auto;
 }
 
+.agentStarterHint {
+  margin: 0;
+  color: var(--text-muted);
+  font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
+}
+
 .manualStart {
   display: flex;
   flex-wrap: wrap;
@@ -211,27 +227,26 @@
   font: var(--weight-regular) var(--text-sm) / var(--leading-snug) var(--font-ui);
 }
 
-/* Stands in for the role cards' demo links on an instance that has no seeded event to tour. */
 .freshStart {
   width: 100%;
   max-width: 540px;
   display: grid;
-  justify-items: start;
   gap: var(--space-3);
-  margin: var(--space-6) auto 0;
+  margin-top: var(--space-4);
   padding: var(--space-5);
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-xs);
   background: rgba(255, 255, 255, 0.7);
 }
 
-.freshStart p {
+.freshStart p:last-child {
   margin: 0;
   color: var(--text-muted);
   font: var(--type-body);
 }
 
-.freshStart .freshStartTitle {
+.freshStartTitle {
+  margin: 0;
   color: var(--text-faint);
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
@@ -417,7 +432,7 @@
 }
 
 .productsOverview {
-  padding-block: var(--space-24);
+  padding-block: var(--space-24) var(--space-8);
 }
 
 .roleProducts {
@@ -430,19 +445,49 @@
 /*
  * Four role cards share the row that used to hold three, so the icon sits above the copy instead of
  * beside it. A side-by-side icon would leave the title around 200px wide at the desktop width and
- * break short headings like "Score proposals, not spreadsheets." across three lines. Stacking as a
- * flex column also lets the demo link fall to the bottom of every card, so the four links line up
- * across the row no matter how many lines each body runs to.
+ * break short headings like "Score proposals, not spreadsheets." across three lines.
+ *
+ * A flex column rather than the base card's grid: each card now ends with the demo link for its
+ * role, and `margin-top: auto` on that link keeps all four sitting on the same baseline however
+ * many lines the title and body above them take.
  */
 .feature.roleProduct {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: var(--space-3);
 }
 
-.feature.roleProduct .featureIcon {
-  grid-row: auto;
-  flex: none;
+.roleProductDemo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  color: var(--text-accent);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-ui);
+  text-decoration: none;
+  transition: gap 120ms ease;
+}
+
+.roleProductDemo:hover {
+  gap: var(--space-3);
+}
+
+.roleProductDemo:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--ring-focus);
+}
+
+.roleProductDemo svg {
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roleProductDemo {
+    transition: none;
+  }
 }
 
 .feature .roleProductRole {
@@ -450,12 +495,6 @@
   font: var(--type-label);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
-}
-
-/* The card's demo link closes it out, so it settles against the bottom edge. */
-.feature.roleProduct .textLink {
-  margin-top: auto;
-  padding-top: var(--space-2);
 }
 
 .sectionHeading {
@@ -536,6 +575,17 @@
 
 .textLink:hover {
   gap: var(--space-3);
+}
+
+.aboutFactLink {
+  color: inherit;
+  text-decoration-color: var(--border-default);
+  text-underline-offset: 3px;
+}
+
+.aboutFactLink:hover {
+  color: var(--text-accent);
+  text-decoration-color: currentColor;
 }
 
 .agentQuickStart {
@@ -654,6 +704,31 @@
   font: var(--weight-medium) var(--text-sm) / 1 var(--font-ui);
 }
 
+.agentPromptActions,
+.agentProviders {
+  display: flex;
+  align-items: center;
+}
+
+.agentPromptActions {
+  gap: var(--space-4);
+}
+
+.agentProviders {
+  gap: var(--space-2);
+}
+
+.agentProviders img {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.agentProvidersMore {
+  color: var(--stone-300);
+  font: var(--weight-medium) var(--text-xs) / 1 var(--font-ui);
+  white-space: nowrap;
+}
+
 .agentPromptLabel svg,
 .agentPromptSafety svg {
   color: var(--vermilion-300);
@@ -759,9 +834,6 @@
     max-width: 18ch;
   }
 
-  .roleProducts {
-    gap: var(--space-8);
-  }
 }
 
 @media (max-width: 640px) {
@@ -875,8 +947,22 @@
     box-shadow: var(--shadow-lg);
   }
 
+  .agentPromptHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .agentPromptActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .roleProducts {
     margin-top: var(--space-12);
+  }
+
+  .feature {
+    grid-template-columns: auto 1fr;
   }
 
   .mosaicRule {

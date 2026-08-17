@@ -1,4 +1,4 @@
-import type { AnyApiReferenceConfiguration } from '@scalar/types/api-reference';
+import type { AnyApiReferenceConfiguration } from '@scalar/client-side-rendering';
 
 /**
  * The spec Scalar reads is the one the API itself publishes, not a copy checked in beside this
@@ -7,6 +7,8 @@ import type { AnyApiReferenceConfiguration } from '@scalar/types/api-reference';
  * handlers validate against, so a reference pointed at it cannot drift from the API it documents.
  */
 export const SPEC_URL = '/api/v1/openapi.json';
+
+export const PAGE_TITLE = 'API reference (Scalar) · Cicero';
 
 /**
  * Deliberately close to the configuration String runs, so that comparing this page against the

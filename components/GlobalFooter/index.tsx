@@ -1,9 +1,14 @@
 import { CiceroMark } from '@/components/CiceroBrand';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
+  EMBED_SHOWCASE_PATH,
+} from '@/lib/demo-entry-links';
 import {
   Bot,
   CalendarDays,
+  Code2,
   FileCheck,
   Gift,
   Github,
@@ -49,6 +54,11 @@ const RESOURCE_LINKS = [
     href: '/#agent-quick-start',
     label: 'Agents',
     icon: Bot,
+  },
+  {
+    href: EMBED_SHOWCASE_PATH,
+    label: 'Embeds',
+    icon: Code2,
   },
   /**
    * The rendered reference at `/docs/api`, not the raw `openapi.json` this used to point at — a

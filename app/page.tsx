@@ -2,7 +2,11 @@ import { CiceroBrand } from '@/components/CiceroBrand';
 import { Button } from '@/components/ui';
 import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
 import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
+import {
+  DEMO_ENTRY_LINKS,
+  DEMO_PUBLIC_SITE_LINK,
+  EMBED_SHOWCASE_PATH,
+} from '@/lib/demo-entry-links';
 import {
   ArrowRight,
   CalendarDays,
@@ -35,20 +39,21 @@ const AGENT_STARTER_PROMPT = `Set up Cicero for my conference, then connect its 
 const MCP_ENDPOINT = '/api/v1/events/{event-slug}/mcp';
 
 /**
- * The four ways into the seeded demo event (`lib/demo-entry-links.ts`), one per product role. This
- * section is the only place in the page body that links to the demo: the hero makes the argument,
- * these cards let a visitor open the role they actually care about. The attendee card comes last
- * because it is what the other three produce, and it is the only one that opens without an account.
+ * The four experiences, and the only route into the seeded demo from the page body. Each card
+ * carries the demo for its own role (`lib/demo-entry-links.ts`), so a visitor picks a tour from the
+ * description of what that role does rather than from a separate list of names above the fold. The
+ * attendee tour is the published event site, which needs no sign-in: it is what the other three
+ * produce, and the cheapest look at a finished conference.
  *
- * `linkLabel` leads with a verb rather than the role noun on purpose, and the role noun is the card
- * label instead. Automated walkthroughs pick a click target by matching link text from its start and
- * treat two matches as an error rather than choosing between them, and the global footer already
- * ships `Organizer demo`, `Reviewer demo`, and `Speaker demo` on this same page. That rules out the
- * role nouns and their stems here -- `Organize`, `Review`, and `Speak` are each still a prefix of
- * the matching footer label -- so `Run`, `Score`, `Give`, and `Browse` keep all seven entry points
- * separable at their first word. It is also why the link sits at the foot of the card rather than
- * the whole card being an anchor: a card-wide link would take the role noun as its text and clash.
- * Re-check the page and the footer together before rewording any of these.
+ * `demoLabel` leads with a verb rather than the role noun on purpose. Automated walkthroughs pick a
+ * click target by matching label text from the start and treat two matches as an error rather than
+ * choosing between them, and the footer already ships `Organizer demo`, `Reviewer demo`, and
+ * `Speaker demo` on this same page. That rules out the role nouns and their stems here --
+ * `Organize`, `Review` and `Speak` are each still a prefix of the matching footer label -- so `Run`,
+ * `Score`, `Give`, and `Browse` keep every entry point separable at its first word. Only the start
+ * of the link text disambiguates, so the role stays legible from `role` and `body` without
+ * reintroducing the clash. `DemoMenu` in the navigation holds a third copy of the same rule; check
+ * it and the footer before rewording any of these.
  */
 const ROLE_PRODUCTS = [
   {
@@ -56,32 +61,32 @@ const ROLE_PRODUCTS = [
     role: 'Organizer',
     title: 'Keep the whole conference moving.',
     body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up.',
-    href: DEMO_ENTRY_LINKS.organizer,
-    linkLabel: 'Run the organizer dashboard',
+    demoHref: DEMO_ENTRY_LINKS.organizer,
+    demoLabel: 'Run the conference',
   },
   {
     icon: ClipboardCheck,
     role: 'Reviewer',
     title: 'Score proposals, not spreadsheets.',
     body: 'Work an assigned queue, rate the round’s criteria, and stay blind to peer scores until it closes.',
-    href: DEMO_ENTRY_LINKS.reviewer,
-    linkLabel: 'Score the review queue',
+    demoHref: DEMO_ENTRY_LINKS.reviewer,
+    demoLabel: 'Score the proposals',
   },
   {
     icon: Megaphone,
     role: 'Speaker',
     title: 'Stay ready from proposal to stage.',
     body: 'Submit a talk, maintain your profile, send deliverables, and upload your slides.',
-    href: DEMO_ENTRY_LINKS.speaker,
-    linkLabel: 'Give a talk from the portal',
+    demoHref: DEMO_ENTRY_LINKS.speaker,
+    demoLabel: 'Give a talk',
   },
   {
     icon: CalendarDays,
     role: 'Attendee',
     title: 'Plan the day from the live programme.',
     body: 'Browse the agenda, discover speakers, and build a personal itinerary, no account needed.',
-    href: `${DEMO_PUBLIC_SITE_LINK}/agenda`,
-    linkLabel: 'Browse the public agenda',
+    demoHref: DEMO_PUBLIC_SITE_LINK,
+    demoLabel: 'Browse the programme',
   },
 ] as const;
 
@@ -141,10 +146,15 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             Manage submissions, review, sourcing, scheduling, speaker tasks, and publishing in one place.
           </p>
           <div className={styles.agentStarter}>
-            <p className={styles.agentStarterLabel}>
-              <Sparkles size={17} aria-hidden="true" />
-              AI-guided setup
-            </p>
+            <div className={styles.agentStarterCopy}>
+              <p className={styles.agentStarterLabel}>
+                <Sparkles size={17} aria-hidden="true" />
+                AI-guided setup
+              </p>
+              <p className={styles.agentStarterHint}>
+                Claude or ChatGPT walks you through it, one safe step at a time.
+              </p>
+            </div>
             <CopyAgentPromptButton
               prompt={AGENT_STARTER_PROMPT}
               size="lg"
@@ -161,6 +171,19 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               Create an event
             </Button>
           </div>
+
+          {/*
+            The role demos used to sit here as a fourth stack of links under the two setup calls to
+            action, which pushed the hero long and asked a first-time visitor to pick a role before
+            the page had said what each one does. They now hang off the matching card in the
+            products section, where the role is already described.
+          */}
+          {demoAvailable ? null : (
+            <div className={styles.freshStart}>
+              <p className={styles.freshStartTitle}>Fresh instance</p>
+              <p>No demo event yet. Create an event or load demo data from the README.</p>
+            </div>
+          )}
         </div>
 
         <div className={styles.heroVisual} aria-label="Cicero organizer dashboard preview">
@@ -201,11 +224,11 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <h2 id="products-title">One conference, four purpose-built experiences.</h2>
           <p>
             Everyone works from the same event, while each person sees the tools and context that
-            belong to their role. Open any of them in the seeded demo conference.
+            belong to their role.
           </p>
         </div>
         <div className={styles.roleProducts}>
-          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body, href, linkLabel }) => (
+          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body, demoHref, demoLabel }) => (
             <article className={`${styles.feature} ${styles.roleProduct}`} key={role}>
               <span className={styles.featureIcon}>
                 <Icon size={20} aria-hidden="true" />
@@ -214,25 +237,13 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
               <h3>{title}</h3>
               <p>{body}</p>
               {demoAvailable ? (
-                <a className={styles.textLink} href={href}>
-                  {linkLabel} <ArrowRight size={16} aria-hidden="true" />
+                <a className={styles.roleProductDemo} href={demoHref}>
+                  {demoLabel} <ArrowRight size={15} aria-hidden="true" />
                 </a>
               ) : null}
             </article>
           ))}
         </div>
-        {demoAvailable ? null : (
-          <div className={styles.freshStart}>
-            <p className={styles.freshStartTitle}>Fresh instance</p>
-            <p>
-              No demo event yet, so there is nothing to tour. Create an event or load demo data from
-              the README.
-            </p>
-            <a className={styles.textLink} href="/signup">
-              Start your first event <ArrowRight size={16} aria-hidden="true" />
-            </a>
-          </div>
-        )}
       </section>
 
       <section className={styles.about} id="about" aria-labelledby="about-title">
@@ -252,7 +263,11 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
             </div>
             <div>
               <dt>Publish</dt>
-              <dd>Live embeddable views</dd>
+              <dd>
+                <a className={styles.aboutFactLink} href={EMBED_SHOWCASE_PATH}>
+                  Live embeddable views
+                </a>
+              </dd>
             </div>
             <div>
               <dt>Adapt</dt>
@@ -361,9 +376,22 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
               <Sparkles size={17} aria-hidden="true" />
-              Claude &amp; ChatGPT setup prompt
+              Paste into your agent
             </span>
-            <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+            <div className={styles.agentPromptActions}>
+              <div className={styles.agentProviders} aria-label="Supported AI agents">
+                <Image src="/brand/agents/openai.svg" alt="OpenAI" width={34} height={34} />
+                <Image src="/brand/agents/claude.svg" alt="Anthropic Claude" width={34} height={34} />
+                <Image
+                  src="/brand/agents/google-antigravity.svg"
+                  alt="Google Antigravity"
+                  width={34}
+                  height={34}
+                />
+                <span className={styles.agentProvidersMore}>+ more</span>
+              </div>
+              <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+            </div>
           </div>
           <pre>
             <code>{AGENT_STARTER_PROMPT}</code>
@@ -374,6 +402,7 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
           </p>
         </div>
       </section>
+
     </main>
   );
 }
