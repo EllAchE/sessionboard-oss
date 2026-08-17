@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState, useTransition, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ImagePlus, Save } from 'lucide-react';
+import { ImagePlus, Plus, Save, Trash2 } from 'lucide-react';
 import {
   Avatar,
   Button,
@@ -11,6 +11,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  IconButton,
   Input,
   Textarea,
   useToast,
@@ -28,12 +29,19 @@ export type SpeakerFormValues = {
   jobTitle: string;
   company: string;
   bioMarkdown: string;
-  website: string;
+  /**
+   * Every link the person has, not the one the organizer happened to type. A speaker keeps these
+   * from their own portal, so a screen showing one of them is a screen hiding the rest.
+   */
+  links: { label: string; url: string }[];
   timezone: string;
   dietaryNotes: string;
   accessibilityNotes: string;
   headshotFileId: string | null;
 };
+
+/** What `profileSchema` accepts. Matched here so the limit is refused by the button, not the save. */
+const MAX_LINKS = 8;
 
 export const EMPTY_SPEAKER: SpeakerFormValues = {
   id: null,
@@ -43,7 +51,7 @@ export const EMPTY_SPEAKER: SpeakerFormValues = {
   jobTitle: '',
   company: '',
   bioMarkdown: '',
-  website: '',
+  links: [],
   timezone: '',
   dietaryNotes: '',
   accessibilityNotes: '',
@@ -103,6 +111,29 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
     [],
   );
 
+  const setLink = useCallback(
+    (index: number, patch: Partial<{ label: string; url: string }>) =>
+      setValues((current) => {
+        /* Typing into the blank row a speaker with no links is offered creates it. */
+        const base = current.links.length > 0 ? current.links : [{ label: '', url: '' }];
+        return {
+          ...current,
+          links: base.map((link, at) => (at === index ? { ...link, ...patch } : link)),
+        };
+      }),
+    [],
+  );
+
+  /* One blank row so a speaker with no links yet still has somewhere to type. */
+  const rows = values.links.length > 0 ? values.links : [{ label: '', url: '' }];
+
+  /*
+    `updateProfile` reports a bad address against its own row (`links.2.url`). The row is marked and
+    the message is shown once under the group rather than repeated beside each address.
+  */
+  const linkError =
+    errors.links ?? Object.entries(errors).find(([key]) => key.startsWith('links.'))?.[1];
+
   const pickPhoto = useCallback((file: File | null) => {
     setPhoto(file);
     setPhotoPreview((current) => {
@@ -146,7 +177,15 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
         jobTitle: values.jobTitle,
         company: values.company,
         bioMarkdown: values.bioMarkdown,
-        website: values.website,
+        /*
+          A row left half-filled is dropped rather than saved, and a row with an address and no
+          label is filed under the address — the same rule the portal's own Links section applies,
+          so the two screens cannot disagree about what a speaker's links are.
+        */
+        links: values.links
+          .map((link) => ({ label: link.label.trim(), url: link.url.trim() }))
+          .filter((link) => link.label.length > 0 || link.url.length > 0)
+          .map((link) => ({ label: link.label || link.url, url: link.url })),
         timezone: values.timezone,
         dietaryNotes: values.dietaryNotes,
         accessibilityNotes: values.accessibilityNotes,
@@ -249,13 +288,59 @@ export function SpeakerForm({ initial }: { initial: SpeakerFormValues }) {
                 onChange={(event) => set('pronouns', event.target.value)}
               />
             </Field>
-            <Field label="Website" htmlFor="speaker-website" error={errors['links.0.url']}>
-              <Input
-                id="speaker-website"
-                value={values.website}
-                placeholder="example.com/ada"
-                onChange={(event) => set('website', event.target.value)}
-              />
+            <Field
+              label="Links"
+              htmlFor="speaker-link-label-0"
+              wide
+              hint="Website, LinkedIn, anything else. A speaker can edit these from their own portal."
+              error={linkError}
+            >
+              <div className={styles.linkRows}>
+                {rows.map((row, index) => (
+                  <div key={index} className={styles.linkRow}>
+                    <Input
+                      id={`speaker-link-label-${index}`}
+                      value={row.label}
+                      placeholder="Website"
+                      aria-label="Link label"
+                      onChange={(event) => setLink(index, { label: event.target.value })}
+                    />
+                    <Input
+                      value={row.url}
+                      placeholder="example.com/ada"
+                      aria-label="Link address"
+                      invalid={Boolean(errors[`links.${index}.url`])}
+                      onChange={(event) => setLink(index, { url: event.target.value })}
+                    />
+                    <IconButton
+                      label="Remove this link"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        set(
+                          'links',
+                          values.links.filter((_, at) => at !== index),
+                        )
+                      }
+                    >
+                      <Trash2 size={15} />
+                    </IconButton>
+                  </div>
+                ))}
+                {rows.length < MAX_LINKS && (
+                  <div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      iconLeft={<Plus size={14} />}
+                      onClick={() => set('links', [...rows, { label: '', url: '' }])}
+                    >
+                      Add a link
+                    </Button>
+                  </div>
+                )}
+              </div>
             </Field>
             <Field
               label="Biography"
