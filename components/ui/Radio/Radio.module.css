@@ -3,8 +3,10 @@
   display: inline-block;
   vertical-align: middle;
   box-sizing: border-box;
-  width: var(--control-xs);
-  height: var(--control-xs);
+  /* Sized with the checkbox: the two sit in the same forms and must read as one control family. */
+  width: var(--control-2xs);
+  height: var(--control-2xs);
+  flex: none;
   margin: 0;
   position: relative;
   background: var(--surface-card);

@@ -95,6 +95,9 @@
   --radius-xs:2px; --radius-sm:3px; --radius-md:5px; --radius-lg:8px; --radius-xl:12px; --radius-full:999px;
   --border-width:1px; --border-width-thick:2px;
 
+  /* `2xs` is the tick-box scale: checkbox and radio, sized against 14px body text rather than
+     against the other controls, which carry a label and need a touch target. */
+  --control-2xs:16px;
   --control-xs:22px; --control-sm:28px; --control-md:32px; --control-lg:40px;
   --row-height:36px; --sidebar-width:232px; --topbar-height:48px;
   --content-max:1200px; --prose-max:68ch;

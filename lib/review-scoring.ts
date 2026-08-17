@@ -1,4 +1,8 @@
-const SCORE_SCALE = 5;
+/**
+ * Every average is normalised back onto this scale whatever a criterion's own max is, so it is also
+ * the denominator any surface has to print beside a score for the number to mean anything.
+ */
+export const SCORE_SCALE = 5;
 
 export type WeightedCriterion = { id: string; weight: number; maxScore: number };
 /**

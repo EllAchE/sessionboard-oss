@@ -30,6 +30,7 @@ import {
 } from '../../../components/ui';
 import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import { SCOPES } from '@/lib/hotkeys/registry';
+import { SCORE_SCALE } from '@/lib/review-scoring';
 import { CopyPermalinkButton } from './CopyPermalinkButton';
 import { ReviewExportButton } from './ReviewExportButton';
 import {
@@ -612,6 +613,7 @@ export function SubmissionQueue(props: QueueProps) {
         header: 'Status',
         width: '140px',
         space: 'compact',
+        truncate: false,
         // The staging note sits under the status rather than replacing it: staging is what an
         // organizer proposes, the status is what the submission is, and they are never the same
         // claim. A row nobody staged renders exactly the single badge it always did.
@@ -647,12 +649,15 @@ export function SubmissionQueue(props: QueueProps) {
         width: '92px',
         space: 'compact',
         align: 'right',
+        // A bare 3.2 tells an organizer nothing until they know the scale, and scorecards are free
+        // to run their criteria on any max, so the denominator travels with the number.
         render: (row) =>
           row.averageScore === null ? (
             <span className={styles.muted}>—</span>
           ) : (
             <span className={styles.scoreCell}>
               <span className={styles.scoreNumber}>{row.averageScore.toFixed(1)}</span>
+              <span className={styles.scoreScale}>/{SCORE_SCALE}</span>
             </span>
           ),
       },
@@ -677,7 +682,7 @@ export function SubmissionQueue(props: QueueProps) {
           <p className={styles.subtitle}>
             {rows.length} shown
             {props.rounds.length > 0 && props.roundId
-              ? ` · scoring ${props.rounds.find((round) => round.id === props.roundId)?.name ?? ''}`
+              ? ` · scoring · ${props.rounds.find((round) => round.id === props.roundId)?.name ?? ''}`
               : ' · no review round yet'}
           </p>
         </div>
