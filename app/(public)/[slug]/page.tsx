@@ -135,6 +135,7 @@ export default async function PublicEventPage({ params }: { params: Promise<Para
             options={{ ...options, showBio: false }}
             speakerBase={`/${event.slug}/speakers`}
             sessionBase={`/${event.slug}/sessions`}
+            showSearch={false}
           />
         </section>
       ) : null}
