@@ -3,6 +3,7 @@ import {
   DECISION_TEMPLATES,
   DEFAULT_TEMPLATES,
   SMS_MAX_LENGTH,
+  recipientFirstNameColumn,
   renderMessage,
   renderSmsText,
   renderTemplateText,
@@ -516,5 +517,52 @@ describe('speaker.firstName', () => {
   it('falls back to the whole string when there is nothing to split', () => {
     expect(speakerFirstName(null, 'Cicero')).toBe('Cicero');
     expect(speakerFirstName(null, '')).toBe('');
+  });
+});
+
+/**
+ * Renaming a speaker for one event writes `participant.display_name` and leaves the account alone,
+ * so the `first_name` column above can outlive the name every other line of the message uses.
+ */
+describe('recipientFirstNameColumn', () => {
+  it('drops a column the event rename has left behind', () => {
+    const column = recipientFirstNameColumn({
+      displayName: 'Priya Raman',
+      userName: 'Marcus Vitruvius Pollio',
+      userFirstName: 'Marcus Vitruvius',
+    });
+
+    expect(column).toBeNull();
+    expect(speakerFirstName(column, 'Priya Raman')).toBe('Priya');
+  });
+
+  it('keeps the column while the display name still agrees with the account', () => {
+    expect(
+      recipientFirstNameColumn({
+        displayName: 'Cicero of Arpinum',
+        userName: 'Cicero of Arpinum',
+        userFirstName: 'Marcus Tullius',
+      }),
+    ).toBe('Marcus Tullius');
+  });
+
+  it('keeps the column for a participant the organizer never renamed', () => {
+    expect(
+      recipientFirstNameColumn({
+        displayName: null,
+        userName: 'Ada Lovelace',
+        userFirstName: 'Ada',
+      }),
+    ).toBe('Ada');
+  });
+
+  it('has nothing to drop when the account never filled the column in', () => {
+    expect(
+      recipientFirstNameColumn({
+        displayName: 'Priya Raman',
+        userName: 'Marcus Vitruvius Pollio',
+        userFirstName: null,
+      }),
+    ).toBeNull();
   });
 });
