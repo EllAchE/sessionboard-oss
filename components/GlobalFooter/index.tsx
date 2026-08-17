@@ -49,16 +49,24 @@ const DEMO_LINKS = [
   },
 ] as const;
 
+/**
+ * The showcase closes the demo row rather than opening the resource row: `/embeds` is the same
+ * seeded conference the four tours above it open, rendered through the widgets, so it belongs with
+ * the things a visitor can go and look at rather than with the things they can go and build on.
+ * `Sample embeds` over `Embeds` for the reason `Sample event` beats `Attendee demo` beside it --
+ * the row reads as one set of samples, and the bare noun looked like documentation for the feature.
+ */
+const SHOWCASE_LINK = {
+  href: EMBED_SHOWCASE_PATH,
+  label: 'Sample embeds',
+  icon: Code2,
+} as const;
+
 const RESOURCE_LINKS = [
   {
     href: '/#agent-quick-start',
     label: 'Agents',
     icon: Bot,
-  },
-  {
-    href: EMBED_SHOWCASE_PATH,
-    label: 'Embeds',
-    icon: Code2,
   },
   /**
    * The rendered reference at `/docs/api`, not the raw `openapi.json` this used to point at — a
@@ -120,29 +128,35 @@ export function GlobalFooterContent({ demoAvailable }: { demoAvailable: boolean 
               : 'Cicero resource and creator links'
           }
         >
-          {/* Row one is the product: the role tours, then the two ways to build on it. */}
+          {/* Row one is what there is to look at: every seeded tour, then the embed samples. */}
           <div className={styles.row}>
-            {demoAvailable ? (
-              <>
-                {DEMO_LINKS.map(({ href, icon: Icon, label }) => (
+            {demoAvailable
+              ? DEMO_LINKS.map(({ href, icon: Icon, label }) => (
                   <Link key={label} className={styles.link} href={href}>
                     <Icon size={15} aria-hidden="true" />
                     <span>{label}</span>
                   </Link>
-                ))}
-                <span className={styles.divider} aria-hidden="true" />
-              </>
-            ) : null}
+                ))
+              : null}
+            <Link className={styles.link} href={SHOWCASE_LINK.href}>
+              <SHOWCASE_LINK.icon size={15} aria-hidden="true" />
+              <span>{SHOWCASE_LINK.label}</span>
+            </Link>
+          </div>
+
+          {/*
+            Row two is what to build on and who built it. Agent setup and the API reference moved
+            down here from the demo row: neither is something to go and look at, and the two of them
+            plus the tours plus the showcase made the first line long enough to wrap on its own.
+          */}
+          <div className={styles.row}>
             {RESOURCE_LINKS.map(({ href, icon: Icon, label }) => (
               <Link key={label} className={styles.link} href={href}>
                 <Icon size={15} aria-hidden="true" />
                 <span>{label}</span>
               </Link>
             ))}
-          </div>
-
-          {/* Row two is the people: where to find the author, with merch closing out the line. */}
-          <div className={styles.row}>
+            <span className={styles.divider} aria-hidden="true" />
             {SOCIAL_LINKS.map(({ href, icon: Icon, label }) => (
               <a key={label} className={styles.link} href={href} target="_blank" rel="noreferrer">
                 <Icon size={15} aria-hidden="true" />
