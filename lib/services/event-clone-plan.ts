@@ -622,6 +622,14 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
       'Holds `signingSecret`. Copying it shares one secret across two events, and points a fresh ' +
       "event's traffic at last year's integration without anyone re-confirming the URL.",
   },
+  share_link: {
+    action: 'skip',
+    category: 'credential',
+    reason:
+      'A bearer token that opens a draft programme with no login. Copying one hands whoever held ' +
+      "last year's link an unannounced view of this year's unpublished agenda, and carries an " +
+      '`expiresAt` and a `revokedAt` decided for an event that has already happened.',
+  },
 
   // -------------------------------------------------------------------------
   // Operational history — a record of things that happened, which did not happen here
