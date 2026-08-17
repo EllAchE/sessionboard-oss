@@ -551,6 +551,38 @@
   color: var(--text-strong);
 }
 
+/*
+ * ---- Alert groups ----
+ *
+ * The alerts card holds three tiers — the account default, the quiet hours that bound it, and the
+ * per-event overrides — and they only read as tiers if each one is titled and ruled off. Without
+ * this the card was a single run of rows in which "Email" meant two different scopes.
+ */
+
+.alertGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.alertGroup:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.groupTitle {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.alertGroup .groupTitle + .hint {
+  margin-top: calc(-1 * var(--space-2));
+}
+
 .choiceList {
   display: flex;
   flex-direction: column;
