@@ -14,20 +14,6 @@
 }
 
 /* `align-self` so the hit area is the label, not the full width of the header column. */
-.backLink {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--text-muted);
-  font: var(--type-label);
-  text-decoration: none;
-}
-
-.backLink:hover {
-  color: var(--text-accent);
-}
-
 .eyebrow {
   color: var(--text-faint);
   font: var(--type-label);

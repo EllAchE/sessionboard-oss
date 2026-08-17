@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import spec from '@/docs/openapi.json';
 import { curlFor, EXAMPLES, urlFor } from './examples';
-import ApiDocsPage from './page';
+import { ApiDocsContent } from './page';
 import {
   allEndpoints,
   baseUrl,
@@ -19,7 +19,7 @@ import {
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
-const html = renderToStaticMarkup(<ApiDocsPage />);
+const html = renderToStaticMarkup(<ApiDocsContent demoAvailable={false} />);
 const endpoints = allEndpoints();
 
 /**
