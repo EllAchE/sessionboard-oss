@@ -89,8 +89,8 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
       return (
         <Card className={styles.wide}>
           <CardHeader>
-            <CardTitle>Who owes what</CardTitle>
-            <CardDescription>One row per speaker task, sorted by urgency.</CardDescription>
+            <CardTitle>Outstanding tasks</CardTitle>
+            <CardDescription>One row per participant task, sorted by urgency.</CardDescription>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={data.outstanding} />
