@@ -11,6 +11,31 @@ not on the same revision when this evidence was captured.
 
 **Hosted demo:** <https://cicero-three.vercel.app>
 
+**Readable HTML:** <https://cicero-three.vercel.app/submission/evidence>
+
+## Readable submission mirror: current-branch verification
+
+After the original product walkthrough below, the three canonical submission documents were wired
+to public HTML views and verified from the current PR branch against the same isolated seeded
+Postgres and MinIO stack. The app ran at `http://localhost:3218`, with its local Hyperdrive binding
+pointed explicitly at that seeded database.
+
+| Route | Source | Browser result |
+| --- | --- | --- |
+| `/submission` | `docs/06-submission-narrative.md` | Full write-up, internal document links, relative GitHub source links, headings, code and feature tables rendered |
+| `/submission/summary` | `docs/06-submission-summary.md` | Short-form copy rendered and the Short form tab was identified as the active document |
+| `/submission/evidence` | `docs/06-submission-evidence.md` | Evidence tables and all five locally bundled screenshots resolved from emitted Next.js assets |
+
+`bun run lint`, `bun run typecheck`, `bun run build`, `bun run db:check`, and the full 1,433-test
+suite passed. A headless browser then navigated through all three documents and recorded four
+full-page screenshots plus a video; those visual artifacts are attached to
+[PR #185](https://github.com/EllAchE/sessionboard-oss/pull/185).
+
+The production demo cannot expose these new routes until this PR is merged and deployed. That is a
+deployment-order constraint, not hidden parity: the hosted core checks in this document remain the
+current production evidence, while the submission mirror is current-branch evidence. The HTML
+routes must be repeated against the hosted origin as part of the final pre-submission deploy check.
+
 ## Current source: local production build and seeded walkthrough
 
 The current source was run as the production Docker image, backed by fresh Postgres and MinIO

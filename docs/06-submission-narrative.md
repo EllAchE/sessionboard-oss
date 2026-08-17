@@ -6,6 +6,8 @@
 
 **Live demo:** <https://cicero-three.vercel.app>
 
+**Readable HTML:** <https://cicero-three.vercel.app/submission>
+
 **Source:** <https://github.com/EllAchE/sessionboard-oss>
 
 **License:** MIT
