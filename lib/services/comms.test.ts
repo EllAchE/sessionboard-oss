@@ -14,6 +14,7 @@ import {
   wrapInBranding,
   type TemplateVars,
 } from './comms';
+import { notificationCategory } from './notification-preferences';
 
 describe('SMS recipient identity', () => {
   it('resolves exactly one account and fails closed on missing or duplicate phone matches', () => {
@@ -135,6 +136,21 @@ describe('shipped templates', () => {
     const keys = DEFAULT_TEMPLATES.map((t) => t.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
+
+  /**
+   * `notificationCategory` reads the key prefix and falls back to `adhoc` for anything it does not
+   * recognise — silently. A new template family shipped without its category would therefore land
+   * under "Organizer announcements", where switching announcements off would also switch it off.
+   * `deadline` is the family this caught.
+   */
+  it('each belong to a category of their own rather than falling through to adhoc', () => {
+    for (const template of DEFAULT_TEMPLATES) {
+      expect({ key: template.key, category: notificationCategory(template.key) }).toEqual({
+        key: template.key,
+        category: template.key.split('.')[0],
+      });
+    }
+  });
 });
 
 /**
@@ -226,6 +242,8 @@ describe('shipped SMS bodies', () => {
     'event.website',
     'event.url',
     'event.supportEmail',
+    'event.speakerDeadline',
+    'event.agendaDeadline',
   ];
   const SPEAKER_FIELDS = [
     'speaker.name',
@@ -273,6 +291,22 @@ describe('shipped SMS bodies', () => {
       'form.closesAt',
       'form.url',
     ],
+    // `AR-51`. Narrower still, and organizer-facing: `runEventDeadlineReminders` resolves its
+    // recipients through `membership`, so there is no speaker or submission in scope to name.
+    'deadline.speakers': [
+      'event.name',
+      'event.url',
+      'event.speakerDeadline',
+      'event.agendaDeadline',
+      'organizer.url',
+    ],
+    'deadline.agenda': [
+      'event.name',
+      'event.url',
+      'event.speakerDeadline',
+      'event.agendaDeadline',
+      'organizer.url',
+    ],
   };
 
   /**
@@ -307,6 +341,9 @@ describe('shipped SMS bodies', () => {
     'form.closesAt': 'Friday 4 September 2026',
     'form.url':
       'https://speakers.distsys-conf.example.org/submit/distsys-2026/call-for-proposals-main-track',
+    'event.speakerDeadline': 'Wednesday 16 September 2026',
+    'event.agendaDeadline': 'Wednesday 16 September 2026',
+    'organizer.url': 'https://speakers.distsys-conf.example.org/organizer',
   };
 
   it('ships a purpose-written body for every template', () => {
@@ -375,6 +412,8 @@ describe('shipped SMS bodies', () => {
       .map((t) => t.key)
       .sort();
     expect(linked).toEqual([
+      'deadline.agenda',
+      'deadline.speakers',
       'form.deadline',
       'session.invite',
       'submission.accepted',

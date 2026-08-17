@@ -13,6 +13,7 @@ const RESULT: ScheduledJobResult = {
   ok: true,
   taskRemindersSent: 3,
   deadlineRemindersSent: 2,
+  eventDeadlineRemindersSent: 1,
   checkedAt: '2026-08-13T16:00:00.000Z',
 };
 

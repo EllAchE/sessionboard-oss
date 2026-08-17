@@ -26,6 +26,7 @@ export type ScheduledJobResult = {
   ok: true;
   taskRemindersSent: number;
   deadlineRemindersSent: number;
+  eventDeadlineRemindersSent: number;
   checkedAt: string;
 };
 

@@ -13,7 +13,7 @@ import {
   type PublicSession,
   type PublicSpeaker,
 } from './model';
-import { SpeakerProfile, SpeakerRoster } from './views/parts';
+import { hasUsableSpeakerPhoto, SpeakerProfile, SpeakerRoster } from './views/parts';
 
 (globalThis as typeof globalThis & { React: typeof React }).React = React;
 
@@ -166,6 +166,17 @@ describe('embed query boundaries', () => {
 });
 
 describe('public programme relation links', () => {
+  it('falls back when a headshot URL has failed to load', () => {
+    expect(hasUsableSpeakerPhoto(null, null)).toBe(false);
+    expect(hasUsableSpeakerPhoto('/embed/republic/headshot/file-1', null)).toBe(true);
+    expect(
+      hasUsableSpeakerPhoto(
+        '/embed/republic/headshot/file-1',
+        '/embed/republic/headshot/file-1',
+      ),
+    ).toBe(false);
+  });
+
   it('keeps identical display names independently addressable by id', () => {
     expect(speakerSlug('aaaaaaaa-1111', 'Alex Kim')).toBe('alex-kim-aaaaaaaa');
     expect(speakerSlug('bbbbbbbb-2222', 'Alex Kim')).toBe('alex-kim-bbbbbbbb');
