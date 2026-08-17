@@ -14,7 +14,8 @@ export const SUBMISSION_DOCUMENTS = [
     sourceFile: '06-submission-narrative.md',
     outputFile: 'index.html',
     tabLabel: 'Full write-up',
-    description: 'The complete product thesis, feature coverage, additions, tradeoffs, and roadmap.',
+    description:
+      'The complete product philosophy, build journey, feature coverage, additions, tradeoffs, and roadmap.',
   },
   {
     slug: 'summary',

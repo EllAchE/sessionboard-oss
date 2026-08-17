@@ -10,13 +10,13 @@ This document collects the answers for the Kill My SaaS submission form. It comp
 [`short submission summary`](06-submission-summary.md) and
 [`full submission narrative`](06-submission-narrative.md), which can become the public build post.
 
-The philosophy below is the lead of the submission: paste it ahead of the process overview
-answer and use it as the opening of any public post. It is reproduced here in full so the
-copy-ready answers never ship a summarized version of it.
+The opening narrative below is the lead of the submission: use it as the process overview answer
+and as the opening of any public post. The philosophy and build journey are reproduced here in full
+so the copy-ready answers never ship a summarized version of them.
 
-## Philosophy First
+## Philosophy
 
-Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, and how that ultimately manifested in Cicero.
+Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, the experience/process of building and how that ultimately manifested in Cicero.
 
 ### Agent-first, portal-second
 
@@ -96,6 +96,22 @@ accept a talk or publish a schedule. Cicero drafts a targeted task reminder but 
 send it. External programme updates can be previewed and replayed idempotently before they are
 applied. The product helps a person move faster without pretending it understands the political,
 commercial, and interpersonal context that makes conference work difficult.
+
+## The Journey & The Tools
+
+I've spent a decent amount of time vibe coding so I've built up a good stable of tools, skills, tricks and process for shipping quickly. However still learned so much doing this. Here's my process and learnings. A TLDR first
+
+- Establish an efficient working environment first
+- Build eval loops and run them autonomously
+- Figure out a way to codify "taste"
+
+I started by creating a new cicero/sessionboard-oss repo, but I was still launching agents from the working directory of my primary codebase rather than from the new clone. The reasoning behind this was that I built a lot of tooling centered around that repo. It worked decently for a while, but ultimately I decided that the setup time was worth it for the performance benefits I would get from running everything from the root repo. From there, super smooth sailing. Takeaway - Establish an efficient working environment first
+
+The next learning I need to give credit to the Smol team for. They built a great eval tool set that I was able to run to assess the coverage of my own product. I ran it multiple times and even attempted to set it to run overnight in a remote dev box one night. I saw massive massive value in codifying outcomes and giving a verification step. You move so much faster, because you can just let an agent keep trying and verifying until it reaches its goal.
+
+I've laid this philosophy out before at String, but without going deeply into it, there's an order of magnitude greater efficiency that you can achieve with a well structured eval loop and when you're still directing each action/agentic session. Building for verification loops is the next paradigm in agentic coding; if you aren't already doing it you're falling behind the frontier. The trade off of letting an agent run like this is that your agent can drift quite far from the original requirements. The best way to mitigate that is strong verification, simplicity and tests.
+
+The last point is less a learning and more an unsolved problem - in this project the biggest challenge came in the final stage, when I needed to incorporate taste. What that meant - baking in all the lifetime learnings I've had about good product design, good UI and good UX in a way that an agent could follow; not just in places where I saw bad design but app wide. I have yet to succeed in getting an agent to generalize good UX/UI/product design beyond any 1 place in which I call out a bad design decision. I have seen so many skills promise this but have yet to see one deliver on that promise. Would love to change that though!
 
 ## Form answers
 
@@ -271,35 +287,9 @@ unnecessary private context.
 
 ### Process overview
 
-Copy/paste answer, led by the [`Philosophy First`](#philosophy-first) section above pasted in full
-and unabridged ahead of the paragraphs below:
-
-> I began by converting the brief and screenshots into a tagged requirements ledger instead of
-> coding directly from an inconsistent prose document. I separated required, important, optional,
-> excluded, and competition-bonus items, then used a separate Sessionboard product survey only as a
-> coverage check. That produced one end-to-end spine: organizer creates an event and CFP; a cold
-> speaker submits; reviewers score; the organizer decides and schedules; speakers finish profiles
-> and deliverables; communications and calendar updates go out; outstanding work is visible; and the
-> public programme is published as pages, embeds, and an API.
->
-> I designed the shared kernel next: event-scoped Postgres schema, Zod/service contracts, magic-link
-> authentication, storage and mail interfaces, and the design system. Those boundaries were frozen
-> before parallel implementation. Work was divided by directory into forms, speaker portal, review,
-> agenda, communications, publishing/dashboard, integrations/API, deployment/demo, and AI features,
-> with each task isolated in its own worktree and branch.
->
-> Verification was iterative rather than a final ceremony. I used focused unit and integration
-> tests, a requirements audit, adversarial/security passes, generated OpenAPI/MCP contracts, seeded
-> demos, live HTTP checks, performance measurements, and a presenter runbook. The current tree's
-> automated suite passes 1,983 tests across 186 files and carries two squashed SQL migrations.
-> Later passes corrected authentication leaks, scoping mistakes, configuration drift, incomplete
-> requirements, and claims that no longer matched production.
->
-> Cloudflare Workers was intentionally reversible. When the built Worker measured 3.42 MiB gzipped
-> against the free plan's 3 MiB ceiling, I moved the hosted demo to Vercel rather than pay for a mild
-> competition bonus. The Worker/Hyperdrive deployment path remains maintained, and the same app also
-> runs through Docker Compose with Postgres and MinIO. That fallback let deployment fail without
-> forcing an application rewrite.
+Copy/paste the [`Philosophy`](#philosophy) and
+[`The Journey & The Tools`](#the-journey--the-tools) sections above in full and unabridged. They
+replace the older generated process answer; stop before **Form answers**.
 
 ### Notable additions or omissions
 
@@ -358,17 +348,18 @@ happy to discuss what that could look like.
 
 The form answers can become a public post with this shorter structure:
 
-1. **The philosophy:** the [`Philosophy First`](#philosophy-first) section above, reproduced in full
-   rather than condensed — agent-first/portal-second, power users first, opinionated over flexible,
-   and the line all three sit behind.
-2. **The thesis:** replace the conference-programme workflow, not every screen in a mature SaaS.
-3. **The spine:** CFP → speaker portal → review → agenda → communications → public programme.
-4. **The product calls:** outstanding-task dashboard, no passwords, safe event duplication, private
+1. **The philosophy:** the [`Philosophy`](#philosophy) section above, reproduced in full rather than
+   condensed — agent-first/portal-second, power users first, opinionated over flexible, and the line
+   all three sit behind.
+2. **The build journey:** [`The Journey & The Tools`](#the-journey--the-tools) above, reproduced in
+   full — establish an efficient working environment, run autonomous eval loops, and keep
+   working on how to codify product taste.
+3. **The thesis:** replace the conference-programme workflow, not every screen in a mature SaaS.
+4. **The spine:** CFP → speaker portal → review → agenda → communications → public programme.
+5. **The product calls:** outstanding-task dashboard, no passwords, safe event duplication, private
    draft previews, speaker availability/conflicts, attendee schedules, and stable calendar updates.
-5. **How it was built:** freeze the kernel, divide work by directory, run Claude Code as the primary
-   builder and Codex as the independent reviewer.
-6. **What failed honestly:** parallel-work collisions, docs/deployment drift, the Workers free-tier
-   ceiling, and outbound-email configuration.
+6. **What failed honestly:** agent drift, parallel-work collisions, docs/deployment drift, the
+   Workers free-tier ceiling, and outbound-email configuration.
 7. **What shipped:** a seeded app, Docker self-host, 1,983 tests, public/embedded/portable programme
    output, API/OpenAPI/MCP, and explicit deployment gaps.
 
