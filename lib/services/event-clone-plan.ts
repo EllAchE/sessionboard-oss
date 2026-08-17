@@ -519,6 +519,14 @@ export const CLONE_PLAN: Record<string, PlanEntry> = {
     category: 'people',
     reason: 'A reviewer volunteers per edition; re-rostering them silently is not consent.',
   },
+  speaker_unavailability: {
+    action: 'skip',
+    category: 'people',
+    reason:
+      'One named speaker saying they cannot present between two specific instants. It is people ' +
+      "data and time-bearing data at once: it hangs off a participant who is not copied, and its " +
+      "window falls inside last year's event dates, so it could only ever block the wrong hours.",
+  },
   notification_preference: {
     action: 'skip',
     category: 'user-preference',

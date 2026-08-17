@@ -402,7 +402,7 @@ describe('the shape of the decision', () => {
   it('copies configuration and skips the rest', () => {
     const scoped = deriveEventScopedTables();
     const copied = copiedTables();
-    expect(scoped.length).toBe(49);
+    expect(scoped.length).toBe(50);
     expect(copied.length).toBe(16);
     expect(copied.sort()).toEqual(
       [
