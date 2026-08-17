@@ -1,17 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Check, Plus, X } from 'lucide-react';
 import {
   Button,
   Card,
   CardBody,
-  CardDescription,
   CardHeader,
   CardTitle,
   Dialog,
   IconButton,
-  Input,
+  Input
 } from '@/components/ui';
 import type { EventDeadline } from '@/lib/event-deadlines';
 import type {
@@ -27,6 +24,9 @@ import type {
   WidgetId,
 } from '@/lib/services/dashboard';
 import { PREBUILT_DASHBOARDS, WIDGETS } from '@/lib/services/dashboard-catalog';
+import { Check, Plus, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import styles from './dashboard.module.css';
 import { OutstandingTasks } from './OutstandingTasks';
 import { SpeakerTrackingWidget } from './SpeakerTracking';
 import {
@@ -39,7 +39,6 @@ import {
   ScheduleHealthWidget,
   StatusBreakdownWidget,
 } from './widgets';
-import styles from './dashboard.module.css';
 
 export type DashboardData = {
   eventName: string;
@@ -96,7 +95,6 @@ function Widget({ id, data }: { id: WidgetId; data: DashboardData }) {
         <Card className={styles.wide}>
           <CardHeader>
             <CardTitle>Who owes what</CardTitle>
-            <CardDescription>One row per speaker task, sorted by urgency.</CardDescription>
           </CardHeader>
           <CardBody>
             <OutstandingTasks rows={data.outstanding} />

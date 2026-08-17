@@ -1,4 +1,3 @@
-import { eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   event,
@@ -21,6 +20,7 @@ import {
 import type { EventContext } from '@/lib/context';
 import { requireCapability } from '@/lib/context';
 import { spreadsheetSafeCellText } from '@/lib/csv';
+import { eq, inArray } from 'drizzle-orm';
 import type { ReportId } from './dashboard-catalog';
 
 /**
@@ -311,28 +311,28 @@ export async function loadNudges(ctx: EventContext, now = new Date()): Promise<N
     },
     {
       id: 'needs-slot',
-      label: 'sessions still need a time slot',
+      label: 'sessions need a time slot',
       count: needsSlot,
       href: '/organizer/agenda',
       tone: 'warning',
     },
     {
       id: 'accepted-unscheduled',
-      label: 'accepted talks are not on the agenda yet',
+      label: 'accepted talks not on the agenda',
       count: acceptedWithoutSession,
       href: '/organizer/agenda',
       tone: 'warning',
     },
     {
       id: 'missing-profile',
-      label: 'speakers are missing a bio or headshot',
+      label: 'speakers missing a bio or headshot',
       count: missingProfile,
       href: '/organizer/speakers',
       tone: 'warning',
     },
     {
       id: 'awaiting-review',
-      label: 'submissions are still awaiting a decision',
+      label: 'submissions awaiting a decision',
       count: awaitingReview,
       href: '/organizer/submissions',
       tone: 'info',
@@ -957,10 +957,8 @@ export async function buildReport(ctx: EventContext, report: ReportId): Promise<
 }
 
 export {
-  REPORTS,
-  WIDGETS,
-  PREBUILT_DASHBOARDS,
-  isWidgetId,
-  type ReportId,
-  type WidgetId,
+  isWidgetId, PREBUILT_DASHBOARDS, REPORTS,
+  WIDGETS, type ReportId,
+  type WidgetId
 } from './dashboard-catalog';
+

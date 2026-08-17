@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { listPortalPages } from '@/lib/services/portal';
+import Link from 'next/link';
 import styles from '../../portal.module.css';
 import { portalSession } from '../context';
 
@@ -20,7 +20,7 @@ export default async function PortalPagesIndex({
       <div className={styles.pageHead}>
         <h1 className={styles.pageTitle}>Speaker information</h1>
         <p className={styles.pageLead}>
-          Reference material written by the {event.name} organizers — travel, AV, house style.
+          Reference material written by the {event.name} organizers i.e. travel, AV, house style.
         </p>
       </div>
 
