@@ -44,7 +44,7 @@ import {
   type ReviewerInviteOutcome,
 } from './actions';
 import { inviteDeliveryCopy } from './invite-delivery';
-import { assignedReviewerIds } from './reviewer-pool';
+import { assignedReviewerKey, reviewerPoolFromKey } from './reviewer-pool';
 import {
   UNROUTED_REASON_LABEL,
   coverageGaps,
@@ -244,7 +244,13 @@ export function RoundsManager(props: RoundsManagerProps) {
   const [criterionWeight, setCriterionWeight] = useState('1');
   const [criterionMax, setCriterionMax] = useState('5');
 
-  const assignedReviewers = useMemo(() => assignedReviewerIds(props.workload), [props.workload]);
+  /**
+   * Keyed on who is assigned rather than on the array saying so, because `props.workload` is a new
+   * array on every server render and every save on this page ends in `router.refresh()`. Watching
+   * the array re-seeded the checkboxes on each of those and threw the organizer's selection away.
+   */
+  const assignedKey = assignedReviewerKey(props.workload);
+  const assignedReviewers = useMemo(() => reviewerPoolFromKey(assignedKey), [assignedKey]);
   const [selectedReviewers, setSelectedReviewers] = useState<string[]>(assignedReviewers);
   const [perSubmission, setPerSubmission] = useState('2');
   const [unrouted, setUnrouted] = useState<UnroutedWire[]>([]);
