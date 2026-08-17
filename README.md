@@ -20,10 +20,16 @@ one-command self-host that needs no API key from anyone.
 
 **<https://cicero-three.vercel.app>** is deployed and seeded.
 
+The hosted demo is shared and editable. Its seed data is a baseline, not a permanent record, so
+counts may drift between resets. Use the checked-in seed when an exact fixture is required.
+
 Sign in as `organizer@example.com` and you land in the organizer dashboard. It is a seeded demo
 account at a reserved domain with no inbox behind it, so its sign-in link comes straight back on the
 page and you never need one; every message the demo sends to a demo identity is readable at
-[`/admin/mail`](https://cicero-three.vercel.app/admin/mail).
+[`/admin/mail`](https://cicero-three.vercel.app/admin/mail). The hosted demo was still on the legacy
+`/admin` organizer revision during the [2026-08-16 evidence
+pass](docs/06-submission-evidence.md); current source uses `/organizer` and includes newer organizer
+ergonomics.
 
 Type your own address instead and an account is created on the spot and the link is mailed to you —
 you land at "create an event," which is the cold path this was built to survive. Your event and the
@@ -34,6 +40,9 @@ Without signing in at all: the [public event page](https://cicero-three.vercel.a
 [open call for speakers](https://cicero-three.vercel.app/submit/demo/speak) you can submit to,
 the [embeddable agenda](https://cicero-three.vercel.app/embed/demo/agenda) an event site would
 iframe, and the [REST API](https://cicero-three.vercel.app/api/v1/events/demo/agenda).
+
+> The screenshots below capture the competition-submission build. Use the live demo for the current
+> interface and sample data.
 
 ![The organizer dashboard, opening on outstanding speaker tasks](docs/images/dashboard.jpg)
 
@@ -51,7 +60,7 @@ docker compose up
 Then open <http://localhost:3000>. That brings up the app, Postgres and MinIO, migrates the
 database before serving, and creates the file bucket — there is no second command and nothing to
 configure. Email has no API key in a fresh clone, so every message the app would send is recorded
-and readable at **`/admin/mail`**; sign-in links included. Nothing about the walkthrough depends on
+and readable at **`/organizer/mail`**; sign-in links included. Nothing about the walkthrough depends on
 a real inbox. The first page starts in cold-create mode; demo links appear automatically after the
 optional sample data below is loaded.
 
@@ -66,15 +75,26 @@ docker compose exec app npm run db:seed
 machine below uses `bun`, because `bun.lock` is the lockfile — `npm install` would ignore it and
 resolve a different tree.)
 
-The seed creates two idempotent cases:
+The seed creates four idempotent cases. The first three are one conference at three scales, so you
+can see what a screen does under load without writing a fixture for it:
 
-- **Cicero Forum** — a fictional Roman-themed conference with 14 submissions mid-review, 7
-  historically inspired speakers, 4 tracks, 3 rooms, and a two-day agenda with gaps still in it.
-- **The First Settlement** — a Roman Senate-themed programme inspired by the sessions of
-  13–16 January 27 BCE, with motions, consular review, a partly scheduled agenda, and outstanding
-  speaker tasks.
+- **Cicero Forum** (`/demo`) — **the default sample event**, at the medium size: 96 submissions
+  mid-review, 45 speakers, 4 tracks, 5 rooms, and a two-day agenda with gaps still in it. The first
+  14 proposals and 7 speakers are hand-written and are what you meet first; the rest is generated,
+  and is what gives the review queue and the agenda grid some weight.
+- **Provincial Assembly** (`/demo-small`) — the same conference sized like a meetup: 18 submissions,
+  8 speakers, one day, two rooms.
+- **Imperial Congress** (`/demo-large`) — and sized like a large one: 384 submissions, 180 speakers,
+  three days, ten rooms. Open this when the question is whether a list paginates, a grid stays
+  readable, or a query falls over.
+- **The First Settlement** (`/first-settlement`) — a Roman Senate-themed programme inspired by the
+  sessions of 13–16 January 27 BCE, with motions, consular review, a partly scheduled agenda, and
+  outstanding speaker tasks.
 
-Run it twice and you get the same two events, not four.
+Every generated speaker gets a procedurally drawn portrait and an address on an IANA-reserved
+domain (`@demo-large.example` and friends), so nothing the seed writes can receive mail.
+
+Run it twice and you get the same four events, not eight.
 
 ## Local development
 
@@ -86,35 +106,44 @@ bun run db:seed            # optional
 bun run dev
 ```
 
-Everything in `.env.example` is documented inline. The only variable that must be right in a real
-deployment is `APP_URL`, because magic links, embed snippets and calendar invites are all built
-from it.
+Everything in `.env.example` is documented inline. Every deployment needs a database connection or
+Hyperdrive binding and a correct `APP_URL`; storage, mail, scheduled jobs, SMS, AI, and integrations
+have their own optional settings. Apply migrations before serving a new application revision.
 
 | Script | |
 |---|---|
 | `bun run dev` | Next dev server |
 | `bun run typecheck` | `tsc --noEmit` |
-| `npm test` | `vitest run` — no database needed |
+| `bun run test` | `vitest run` — no database needed |
 | `bun run test:integration` | The database-backed suite (see below) |
+| `bun run audit` | Audit the locked dependency tree (gates on high and critical) |
 | `bun run db:generate` | Generate a migration from `db/schema.ts` |
+| `bun run db:check` | Validate Drizzle migration snapshots |
 | `bun run db:migrate` | Apply migrations |
-| `bun run db:seed` | Seed both demo conferences (idempotent) |
+| `bun run db:migrate:remote` | Apply migrations to a deployment target; ignores `.env`, rejects localhost |
+| `bun run db:seed` | Seed all four demo conferences, `demo` included (idempotent) |
 | `bun run db:seed:first-settlement` | [Plan or seed only the Roman demo](docs/first-settlement-seed.md) |
 | `bun run cf:deploy` | Build and deploy to Cloudflare Workers |
 
 ### Sending real email
 
 Out of the box `MAIL_TRANSPORT=log`: every message is written to `email_log` and rendered at
-`/admin/mail`, sign-in links included, and nothing is delivered. That is the right default for a
+`/organizer/mail`, sign-in links included, and nothing is delivered. That is the right default for a
 clone, and nothing in the walkthrough needs more than it.
 
 To actually send, pick a transport:
 
 | | Set | Notes |
 |---|---|---|
-| **Resend** | `MAIL_TRANSPORT=resend`, `RESEND_API_KEY` | HTTP, so it works on Workers and self-hosted alike. The only option on Cloudflare. |
-| **SMTP** | `MAIL_TRANSPORT=smtp`, and either `SMTP_URL` or `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`) | Self-host only — Workers has no raw TCP. `SMTP_ALLOW_INSECURE=true` accepts a self-signed certificate, for MailHog and other local catchers. |
+| **Resend** | `MAIL_TRANSPORT=resend`, `RESEND_API_KEY` | Ordinary mail uses HTTP. Calendar mail uses Resend's SMTP submission endpoint with the same key so Outlook receives a real calendar MIME part. This remains the recommended option on Cloudflare. |
+| **SMTP** | `MAIL_TRANSPORT=smtp`, and either `SMTP_URL` or `SMTP_HOST` (+ `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_SECURE`) | Intended for Node/self-hosted deployments and local MailHog. `SMTP_ALLOW_INSECURE=true` accepts a self-signed certificate. Cloudflare deployments should use the Resend transport, whose calendar path uses port 465 rather than Workers' blocked port 25. |
 | **Auto** | `MAIL_TRANSPORT=auto` | Takes whichever of the two has credentials, and the dev mailbox when neither does. Lets an instance be switched on by adding a key rather than by editing its configuration; it is what the deployed demo runs. |
+
+The split inside the Resend transport is deliberate. Resend's HTTP attachment API can attach an
+`.ics` file, but it cannot express the `multipart/alternative` calendar part Outlook uses to
+recognize a meeting request. Calendar messages therefore go through `smtp.resend.com:465` and
+Nodemailer's `icalEvent` path, which emits both `text/calendar; method=…` and a downloadable `.ics`
+fallback. Everything without a calendar stays on the HTTP API.
 
 Both paths need **`MAIL_FROM` set to an address at a domain the provider has verified** (Resend:
 Domains → add and complete the DNS records; SMTP: whatever your relay's envelope rules allow).
@@ -122,7 +151,7 @@ Sending from an unverified domain is rejected by the provider or filed as spam b
 it is the usual reason a correctly configured transport still produces no mail.
 
 Naming a transport you have not configured — `MAIL_TRANSPORT=smtp` with no server set — falls back
-to `log` and warns on the server console. Mail keeps working and stays readable at `/admin/mail`;
+to `log` and warns on the server console. Mail keeps working and stays readable at `/organizer/mail`;
 it just is not delivered. Check that console line first if sends look successful and no one is
 receiving anything.
 
@@ -132,24 +161,22 @@ Nothing can be delivered to them; a real provider would hard-bounce the seeded d
 fictional senators and charge every bounce against your sending reputation. Real recipients in the
 same run still get real mail.
 
-#### Turning on mail for the hosted demo
+#### Turning on mail for a deployment
 
-The deployment runs `MAIL_TRANSPORT: auto` with no key, so it is on the dev mailbox and one secret
-away from real sending. To flip it, in this order:
+The hosted demo runs `MAIL_TRANSPORT=auto` with no key, so it uses the development mailbox. To turn
+on real delivery, in this order:
 
 1. **Verify a sender domain in Resend** — Domains → Add Domain, then publish the DKIM/SPF records it
    gives you and wait for the status to go green. Nothing below works without this.
-2. **Point `MAIL_FROM` at that domain** in `wrangler.jsonc`, e.g. `Cicero <cicero@your-domain.tld>`.
-   The placeholder there is `onboarding@resend.dev`, Resend's shared test sender: it delivers only
-   to the Resend account owner and returns 403 for everyone else. Leave it in place with a key set
-   and the app says so on the server console on the first send.
-3. **`wrangler secret put RESEND_API_KEY`** and paste the key. A secret, never a `var` — vars in
-   `wrangler.jsonc` are committed.
-4. Deploy (`bun run cf:deploy`), then confirm the banner at `/admin/mail` names `resend` and send
-   yourself something from `/admin/comms`.
+2. **Set `MAIL_FROM`** to an address at that domain, e.g. `Cicero <cicero@your-domain.tld>`.
+3. **Set `RESEND_API_KEY` as a platform secret.** On the hosted Vercel deployment use
+   `vercel env add`; on Workers use `wrangler secret put`; on a self-hosted instance use its secret
+   manager. Never commit the key or add it to `wrangler.jsonc` vars.
+4. Redeploy, confirm the banner at `/organizer/mail` names `resend`, and send yourself a test from
+   `/organizer/comms`.
 
-Step 3 alone is what changes behaviour, so a key without step 1 sends nothing and a key without
-step 2 sends only to you.
+Step 3 selects the real transport, but a key without a verified domain and matching sender still
+does not produce production delivery.
 
 #### Letting a visitor in without an inbox
 
@@ -167,7 +194,7 @@ Leave it off on any instance running a real event.
 
 ### The two test suites
 
-`npm test` is the fast one and needs nothing: everything it touches is either pure or mocked at the
+`bun run test` is the fast one and needs nothing: everything it touches is either pure or mocked at the
 service boundary. Keep it that way — it is what makes the suite runnable on any checkout.
 
 `bun run test:integration` runs `*.integration.test.ts` against a real Postgres, because the rules
@@ -212,7 +239,7 @@ programme is built by passing through invalid intermediate states; an organizer 
 stricter behaviour turns on **Block clashes on save** and room and speaker double-bookings are then
 refused outright.
 
-**Post-conference recordings.** **Admin → Recordings** attaches a bounded video upload, an existing
+**Post-conference recordings.** **Organizer → Recordings** attaches a bounded video upload, an existing
 event video, or an HTTPS streaming URL to a session. Media stays draft until an organizer publishes
 it after the session ends; only then do public programme pages and embeds show **Watch recording**.
 Replacing the source unpublishes it automatically. Full-length recordings should use a streaming
@@ -223,12 +250,11 @@ host—the through-app upload is intentionally capped at 25 MB.
 **Comms.** Branded templates, a send log, and a real `.ics` `METHOD:REQUEST` that bumps `SEQUENCE`
 so a reschedule *updates the existing calendar entry in place* rather than adding a second one.
 
-![The mailbox, showing a rendered reminder with its links pulled out](docs/images/mailbox.jpg)
-
-**Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary
-and speaker gallery — all server-rendered, all readable with no account, each with a copyable embed
-snippet, per-embed filters and styling. The embed is an auto-resizing iframe over a live route, so
-"updates without re-pasting the snippet" comes for free.
+**Public surfaces and embeds.** Sessions list, speakers directory, agenda grid, schedule itinerary,
+speaker gallery, sponsor wall, and a static PDF exhibitor map — all server-rendered, all readable
+with no account, each with a copyable embed snippet. Program widgets support per-embed filters and
+styling; the exhibitor map displays the organizer's uploaded PDF as-is. Every embed is an
+auto-resizing iframe over a live route, so "updates without re-pasting the snippet" comes for free.
 
 **Integrations.** A rate-limited public REST API with read/write event keys and a generated
 [`docs/openapi.json`](docs/openapi.json) schema, a Streamable HTTP MCP server with a generated
@@ -286,6 +312,9 @@ The discovery location and `$skill-name` invocation follow the
 ```bash
 vercel link
 vercel env add DATABASE_URL production     # a POOLED Postgres URL
+vercel env add APP_URL production
+vercel env pull .env.production.local --environment=production
+bun --env-file=.env.production.local run db:migrate
 vercel deploy --prod
 ```
 
@@ -299,11 +328,17 @@ delivery rather than duplicating or corrupting it.
 
 ```bash
 wrangler hyperdrive create cicero --connection-string="<your-direct-postgres-url>"
-# put the returned id in wrangler.jsonc
+# put the returned id and your APP_URL in wrangler.jsonc
+wrangler hyperdrive update <returned-id> --caching-disabled
+export DATABASE_URL="<your-direct-postgres-url>"   # the migration step, not the Worker
 bun run cf:deploy
 ```
 
-This path is complete and current — it is not a leftover. `bun run cf:build` succeeds, and the
+`cf:deploy` applies pending migrations through the direct `DATABASE_URL` and only then deploys the
+Worker. The Worker uses Hyperdrive at runtime. Unlike `bun run db:migrate`, the deploy path reads no
+`.env` file and refuses a `DATABASE_URL` pointing at localhost, because the failure it exists to
+prevent is migrating a development database and shipping the Worker anyway. The path is current:
+`bun run cf:build` succeeds, and the
 bundle weighs **3.42 MiB gzipped** (`wrangler deploy --dry-run`, 2026-08-16). That fits **Workers
 Paid**'s 10 MiB ceiling about three times over, so on a paid account the deploy above is all there
 is to it.
@@ -334,10 +369,10 @@ handler and adds a scheduled handler that dispatches task and draft-deadline rem
 send it as a bearer token when the route is exposed publicly. Each reminder job is idempotent, so
 Cloudflare's at-least-once delivery does not intentionally duplicate messages.
 
-One thing to know before you deploy this yourself: **`next build` reads `.env` and inlines what it
-finds into the bundle**, so a `.env` sitting in the working directory at build time ships baked into
-the deployed artifact. Keep secrets in `wrangler secret put` (or `vercel env add`), and check that
-`.env` holds only local development values before you build.
+Keep production secrets in the hosting platform's secret store (`vercel env add`, `wrangler secret
+put`, or the self-host's equivalent). Only variables deliberately prefixed `NEXT_PUBLIC_` belong in
+browser bundles; Cicero does not use that prefix for credentials. The Docker build context excludes
+`.env` files.
 
 ## Judgment calls worth arguing about
 
@@ -348,8 +383,12 @@ actually use." These are ours, stated out loud rather than buried.
   password for a site they visit twice a year. They forget it, and the organizer becomes a help
   desk.
 - **Impersonation, not preview.** The organizer's session carries `impersonated_by` and every write
-  goes through *as the speaker* while staying attributable. A read-only "view as" is useless for
-  support — the point is to finish the stuck speaker's task for them.
+  goes through *as the speaker*. A read-only "view as" is useless for support — the point is to
+  finish the stuck speaker's task for them. Full-session impersonation is also an intentional
+  shortcut, not the production end state: it exposes speaker settings, and task, upload and comment
+  records do not all preserve the organizer as the acting identity. One of the first hardening steps
+  would keep organizer-assisted edits while scoping them away from speaker-only settings and
+  recording both the organizer and speaker on every action.
 - **Speaker double-booking detection.** A room clash is a spreadsheet error someone catches. A
   speaker booked in two rooms at once is a failure the audience watches happen.
 - **Calendar invites that update in place.** A real `METHOD:REQUEST` with a bumped `SEQUENCE`, so
@@ -394,30 +433,27 @@ coexist without either seeing the other.
 
 ## Documentation
 
-1. **[`docs/00-goals.md`](docs/00-goals.md)** — what we are building and why, in prose
-2. **[`docs/01-requirements.md`](docs/01-requirements.md)** — every requirement and deliverable,
-   tagged `[REQUIRED]` / `[IMPORTANT]` / `[OPTIONAL]` / `[EXCLUDED]` / `[BONUS]`
-3. **[`docs/02-architecture.md`](docs/02-architecture.md)** — hosting, the stack, the database and
-   API layers, and the form-engine and integration decisions
-4. **[`docs/03-plan.md`](docs/03-plan.md)** — the spine, the tiered scope, and the verification plan
-5. **[`docs/04-adversarial-test-plan.md`](docs/04-adversarial-test-plan.md)** — the hostile-input
-   matrix, current implementation audit, and safe execution gate for adversarial testing
-6. **[`docs/04-demo-runbook.md`](docs/04-demo-runbook.md)** — the presenter-ready walkthrough,
-   requirement traceability, API bonus, fallbacks, resets, and go/no-go checks
-7. **[`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md)** — the actor model,
-   what each role can and cannot do, and the permission matrix
-8. **[`docs/05-additional-requirements.md`](docs/05-additional-requirements.md)** — requirements
-   added by the owner after the brief was frozen, with build status per row and what the optional
-   add-ons cost a self-hoster
-9. **[`docs/openapi.json`](docs/openapi.json)** — the generated OpenAPI 3.1 schema for the public API
-10. **[`docs/mcp-tools.json`](docs/mcp-tools.json)** — the generated MCP tool manifest
+[`docs/README.md`](docs/README.md) separates current operating documentation from historical
+competition records and completed handoffs. Start there rather than treating every numbered file as
+current policy.
 
-Alongside those, two unnumbered companions:
+- [`docs/02-architecture.md`](docs/02-architecture.md) — current hosting, stack, database, and API decisions
+- [`docs/04-demo-runbook.md`](docs/04-demo-runbook.md) — presenter-ready walkthrough and safety gates
+- [`docs/04-user-roles-and-actions.md`](docs/04-user-roles-and-actions.md) — actor and permission model
+- [`docs/api/program-reconcile.md`](docs/api/program-reconcile.md) — safe inbound program reconciliation
+- [`docs/06-submission-form-answers.md`](docs/06-submission-form-answers.md) — copy-ready competition form answers
+- [`docs/06-submission-narrative.md`](docs/06-submission-narrative.md) — full competition submission
+- [Public submission write-up](https://cicero-submission.elehche.workers.dev/) — readable HTML on its own Worker
+- [`docs/submission/index.html`](docs/submission/index.html) — checked-in HTML mirror of the submission
+- [`docs/06-submission-summary.md`](docs/06-submission-summary.md) — short-form application copy
+- [`docs/06-submission-evidence.md`](docs/06-submission-evidence.md) — dated local and hosted demo proof
+- [Public field survey](https://cicero-field-survey.elehche.workers.dev/) — source-verified comparison of 32 codebases
+- [`docs/alternatives/visual/index.html`](docs/alternatives/visual/index.html) — checked-in field-survey HTML
+- [`docs/openapi.json`](docs/openapi.json) and [`docs/mcp-tools.json`](docs/mcp-tools.json) — generated contracts
 
-- [`docs/requirements-audit-checklist.md`](docs/requirements-audit-checklist.md) — every requirement
-  ID from `01-requirements.md` audited COMPLETE / PARTIAL / OUTSTANDING against a pinned revision
-- [`docs/decisions-long-form.md`](docs/decisions-long-form.md) — the narrative rationale: why the
-  product was scoped, built and named the way it was, including what was deliberately not built
+The goals, original requirements, delivery plan, submission narrative, and pinned requirements audit
+are preserved as historical competition artifacts. Their counts and deployment observations are not
+live status.
 
 ### Reference material
 
@@ -461,9 +497,9 @@ first dead end.
   earliest-free-slot planner for the agenda. Hiding an unconfigured feature hides the shape of it,
   and the shape is the point: they propose, they never decide. The demo runs without a key.
 - **The demo no longer runs on Cloudflare, and the CPU ceiling that used to break it is gone.**
-  On the Workers free plan a 10ms-per-request CPU cap meant a dense admin page on a cold isolate
+  On the Workers free plan a 10ms-per-request CPU cap meant a dense organizer page on a cold isolate
   answered `error code: 1102` with a 503 — roughly one navigation in eight. Nothing in the code can
-  render an admin table in 10ms of CPU, so that was never fixable in the app. The demo now runs on
+  render an organizer table in 10ms of CPU, so that was never fixable in the app. The demo now runs on
   Vercel, which has no such quota. For scale rather than for the cap: `bun run bench` measures a
   self-hosted `docker compose up` at 41–58ms p50 with a zero error rate across 7000 requests to the
   five public routes, and 29–46ms of server CPU per rendered page — which is where a 10ms budget
@@ -471,10 +507,10 @@ first dead end.
   numbers, and [`docs/02-architecture.md`](docs/02-architecture.md) §1 records why the host changed.
 - **The compose screen can't address one named person.** `manual` is a real audience kind in the
   service layer (`lib/services/comms.ts:293`) and the MCP surface reaches it, but it is not
-  selectable in [`app/admin/comms/Composer.tsx`](app/admin/comms/Composer.tsx) — every send from
+  selectable in [`app/organizer/comms/Composer.tsx`](app/organizer/comms/Composer.tsx) — every send from
   that screen goes to a computed group. This bullet used to also claim reviewers could only be added
   by role; that stopped being true once `inviteReviewerAction`
-  (`app/admin/submissions/rounds/actions.ts:67`) and per-submission `assignReviewers`
-  (`app/admin/submissions/actions.ts:167`) shipped, and both work today.
+  (`app/organizer/submissions/rounds/actions.ts:67`) and per-submission `assignReviewers`
+  (`app/organizer/submissions/actions.ts:167`) shipped, and both work today.
 - **The embed builder exports HTML and an iframe snippet only.** JSON, XML and iCal exports of the
-  same data are reachable through the REST API but have no button in the embed admin.
+  same data are reachable through the REST API but have no button in the embed management screen.

@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cicero-field-survey",
+  "main": "workers/readable-site.ts",
+  "compatibility_date": "2025-03-25",
+  "workers_dev": true,
+  "vars": {
+    "SITE_KIND": "field-survey"
+  },
+  "assets": {
+    "directory": ".wrangler-artifacts/field-survey",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "none",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true
+  }
+}

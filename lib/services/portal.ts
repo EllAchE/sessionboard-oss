@@ -53,6 +53,9 @@ export type PortalEvent = {
   timezone: string;
   startsOn: string | null;
   endsOn: string | null;
+  /** `AR-50`. Advisory milestones the portal shows as key dates — see `lib/event-deadlines.ts`. */
+  speakerDeadlineAt: Date | null;
+  agendaDeadlineAt: Date | null;
   websiteUrl: string | null;
   venueName: string | null;
 };
@@ -242,7 +245,7 @@ export async function updateProfile(
 
   // Phone, channel preference and the name halves live on `user`, not `participant` — they are
   // global to the person, not per-event, which is what lets an organizer (no `participant` row)
-  // set the same preference from `/admin/settings`.
+  // set the same preference from `/organizer/settings`.
   const namesChanged = data.firstName !== undefined || data.lastName !== undefined;
   if (
     namesChanged ||

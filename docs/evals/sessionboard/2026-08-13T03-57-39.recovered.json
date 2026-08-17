@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "kind": "recovered-transcript-summary",
+    "runId": "2026-08-13T03-57-39",
+    "evaluatorRef": null,
+    "productRef": null,
+    "reportSha256": null,
+    "sourceSessions": [
+      "codex:019ffb84-bfad-7763-af92-4f7450b35662"
+    ],
+    "limitations": [
+      "The raw report, screenshots, evidence manifests, and manual checklist were discarded from /private/tmp.",
+      "Scores and defects were recovered from the independent judge's final transcript and cannot be re-derived from raw evidence.",
+      "The transcript preserved the total manual-pending count but not the per-area rubric ids, and it named only the CRM authorization defect's severity."
+    ]
+  },
+  "targetUrl": "https://cicero-three.vercel.app",
+  "startedAt": "2026-08-13T03:57:39",
+  "finishedAt": null,
+  "kitVersion": null,
+  "models": null,
+  "score": {
+    "overallPct": 92.7,
+    "coveragePct": 97.3,
+    "withheld": false,
+    "manualPending": 17
+  },
+  "areas": [
+    {
+      "area": "call-for-papers",
+      "title": "Call for Papers",
+      "optional": false,
+      "pct": 95.9,
+      "coveragePct": 97.4,
+      "pendingManual": null
+    },
+    {
+      "area": "abstract-management",
+      "title": "Abstract Management",
+      "optional": false,
+      "pct": 77.8,
+      "coveragePct": 96.4,
+      "pendingManual": null
+    },
+    {
+      "area": "speaker-management",
+      "title": "Speaker Management",
+      "optional": false,
+      "pct": 96.9,
+      "coveragePct": 97,
+      "pendingManual": null
+    },
+    {
+      "area": "content-management",
+      "title": "Content Management",
+      "optional": false,
+      "pct": 89.7,
+      "coveragePct": 93.5,
+      "pendingManual": null
+    },
+    {
+      "area": "ai-agenda",
+      "title": "AI Agenda",
+      "optional": false,
+      "pct": 100,
+      "coveragePct": 100,
+      "pendingManual": null
+    },
+    {
+      "area": "public-widgets",
+      "title": "Public Widgets",
+      "optional": false,
+      "pct": 100,
+      "coveragePct": 100,
+      "pendingManual": null
+    },
+    {
+      "area": "speaker-crm",
+      "title": "Speaker CRM",
+      "optional": true,
+      "pct": 97.4,
+      "coveragePct": 100,
+      "pendingManual": null
+    }
+  ],
+  "defects": [
+    {
+      "area": "speaker-crm",
+      "severity": "critical",
+      "description": "A speaker account could access organization CRM and pipeline routes, exposing organizer data and capabilities.",
+      "where": "/crm and /crm/pipeline"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "unknown",
+      "description": "Reviewer anonymity leaked author identity.",
+      "where": "reviewer flow"
+    },
+    {
+      "area": "abstract-management",
+      "severity": "unknown",
+      "description": "The reviewer queue was scoped incorrectly.",
+      "where": "reviewer queue"
+    },
+    {
+      "area": "unknown",
+      "severity": "unknown",
+      "description": "An organizer route returned a server error during the recorded run.",
+      "where": "exact route unavailable in the recovered transcript"
+    },
+    {
+      "area": "speaker-crm",
+      "severity": "unknown",
+      "description": "A pipeline score did not persist.",
+      "where": "CRM pipeline"
+    }
+  ]
+}

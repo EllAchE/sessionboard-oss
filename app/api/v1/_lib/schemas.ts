@@ -31,6 +31,18 @@ export const eventSchema = z
     endsOn: z.string().nullable().describe('ISO date, in the event timezone'),
     startsAt: z.string().describe('ISO 8601 instant the event starts'),
     endsAt: z.string().describe('ISO 8601 instant the event ends'),
+    speakerDeadlineAt: z
+      .string()
+      .nullable()
+      .describe(
+        'ISO 8601 instant the speaker roster is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it',
+      ),
+    agendaDeadlineAt: z
+      .string()
+      .nullable()
+      .describe(
+        'ISO 8601 instant the agenda is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it',
+      ),
     websiteUrl: z.string().nullable(),
     venueName: z.string().nullable(),
     venueAddress: z.string().nullable(),

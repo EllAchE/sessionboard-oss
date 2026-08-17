@@ -661,9 +661,9 @@ function DataSection() {
   const { toast } = useToast();
 
   const columns: Array<DataTableColumn<SessionRow>> = [
-    { id: 'ref', header: 'Ref', width: 'calc(var(--space-24) - var(--space-4))', mono: true, render: (row) => row.ref },
-    { id: 'title', header: 'Title', strong: true, render: (row) => row.title },
-    { id: 'speaker', header: 'Speaker', width: 'var(--sidebar-width)', render: (row) => (
+    { id: 'ref', header: 'Ref', width: 'calc(var(--space-24) - var(--space-4))', space: 'compact', mono: true, render: (row) => row.ref },
+    { id: 'title', header: 'Title', strong: true, space: 'wide', render: (row) => row.title },
+    { id: 'speaker', header: 'Speaker', width: 'var(--sidebar-width)', space: 'wide', render: (row) => (
         <span className={styles.choice}>
           <Avatar name={row.speaker} size="xs" />
           {row.speaker}
@@ -680,6 +680,7 @@ function DataSection() {
       id: 'score',
       header: 'Score',
       width: 'var(--space-32)',
+      space: 'wide',
       align: 'right',
       render: (row) => <ScoreStars value={row.score} size="sm" label={`Score for ${row.ref}`} />,
     },

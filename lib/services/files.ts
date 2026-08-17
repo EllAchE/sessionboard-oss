@@ -6,7 +6,14 @@ import type { EventContext } from '../context';
 import { conflict, invalid, notFound } from '../errors';
 import { getStorage, storageKey } from '../storage';
 import { isNotNull } from 'drizzle-orm';
-import { participant, submission, taskAssignment, user } from '../../db/schema';
+import {
+  participant,
+  participantRole,
+  submission,
+  task,
+  taskAssignment,
+  user,
+} from '../../db/schema';
 import { requireCapability } from '../context';
 import { formatRef } from '../ids';
 import { renderMarkdown } from '../markdown';
@@ -457,19 +464,43 @@ export async function listEventFiles(eventId: string): Promise<FileRecord[]> {
  */
 export type EventFileSource = 'submission' | 'task' | 'headshot' | 'unattached';
 
-export type EventFileRow = FileRecord & {
+/**
+ * What the file index knows about a file besides its bytes. Split out from `EventFileRow` because
+ * deriving it is the part worth testing on its own: which session a speaker's upload belongs to is
+ * answered from three different places depending on how the task was scoped, and a wrong answer
+ * renders as an empty cell rather than as anything that looks like a bug.
+ */
+export type FileAttribution = {
   source: EventFileSource;
+  /** The speaker this file belongs to, so one person's record can show their own uploads. */
+  participantId: string | null;
   ownerName: string | null;
   ownerEmail: string | null;
+  /** `CNT-13`. The task that collected the upload — "Speaker task" alone names nothing. */
+  taskName: string | null;
+  /** The assignment's own status, which is the only status a task upload has. */
+  taskStatus: string | null;
   submissionId: string | null;
   submissionRef: string | null;
   submissionTitle: string | null;
   submissionStatus: string | null;
-  lineageId: string;
-  versionCount: number;
-  isCurrent: boolean;
-  commentCount: number;
+  /**
+   * True when the session was derived from the speaker's programme rather than named on the upload
+   * itself. A contact-scoped task carries no session at all, so this is the difference between "this
+   * deck is for SESS-4" and "this speaker only has SESS-4" — worth showing, not worth conflating.
+   */
+  submissionInferred: boolean;
 };
+
+export type EventFileRow = FileRecord &
+  FileAttribution & {
+    uploaderName: string | null;
+    uploaderEmail: string | null;
+    lineageId: string;
+    versionCount: number;
+    isCurrent: boolean;
+    commentCount: number;
+  };
 
 const FILE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -486,118 +517,157 @@ function uuidsIn(answers: Record<string, unknown>): string[] {
   return found;
 }
 
+/** Everything `attributeEventFiles` needs, in the shape the reads below happen to return it. */
+export type FileIndexSubmission = {
+  id: string;
+  ref: number;
+  title: string;
+  status: string;
+  answers: Record<string, unknown>;
+  participantId: string | null;
+  ownerName: string | null;
+  ownerEmail: string | null;
+};
+
+export type FileIndexTaskUpload = {
+  fileId: string | null;
+  answers: Record<string, unknown> | null;
+  participantId: string;
+  /** The session this assignment is about. Null on a contact-scoped task. */
+  submissionId: string | null;
+  /** `task.submissionId` — the session the organizer pinned the task itself to, if any. */
+  pinnedSubmissionId: string | null;
+  taskName: string;
+  taskStatus: string;
+  ownerName: string | null;
+  ownerEmail: string | null;
+};
+
+export type FileIndexHeadshot = {
+  fileId: string | null;
+  participantId: string;
+  ownerName: string | null;
+  ownerEmail: string | null;
+};
+
+export type FileIndexInput = {
+  files: FileRecord[];
+  submissions: FileIndexSubmission[];
+  taskUploads: FileIndexTaskUpload[];
+  headshots: FileIndexHeadshot[];
+  /** One entry per session a speaker presents on, which is what makes the fallback below safe. */
+  speakingRoles: Array<{ participantId: string; submissionId: string }>;
+  uploaders: Array<{ id: string; name: string | null; email: string }>;
+  commentCounts: Map<string, number>;
+};
+
+const UNATTACHED: FileAttribution = {
+  source: 'unattached',
+  participantId: null,
+  ownerName: null,
+  ownerEmail: null,
+  taskName: null,
+  taskStatus: null,
+  submissionId: null,
+  submissionRef: null,
+  submissionTitle: null,
+  submissionStatus: null,
+  submissionInferred: false,
+};
+
 /**
- * The bulk-download screen's backing query. Which answer holds a file id is a property of the form
- * rather than of the submission, so submission attribution collects anything uuid-shaped out of
- * `answers` and lets the join against `file` decide what was really a file — the same trick
- * `listSubmissionFiles` uses, widened from a set of submissions to the whole event.
+ * `V-11`, `CNT-13`. Who a file belongs to and what it is about, as a pure function — no database,
+ * nothing to stub. It is pure because the interesting part has nothing to do with the reads: a
+ * speaker-task upload can reach its session through the assignment, through the task's pin, or — on
+ * a contact-scoped task, which carries no session by design — not at all, and that last case is what
+ * left the library's Submission and Status columns empty for exactly the deliverables an organizer
+ * chases hardest. An empty cell looks like an absent file rather than like a missing join, which is
+ * why this is worth pinning down in a test instead of on screen.
+ *
+ * The programme fallback only fires when the speaker presents on a single session, because "their
+ * only talk" is a fact rather than a guess; a speaker on two panels gets no session, since saying
+ * nothing beats naming the wrong one. Anything derived that way is flagged, so the screen can show
+ * it as a lead rather than as a stated association.
  */
-export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRow[]> {
-  requireCapability(ctx, 'submission:read_all');
-  const db = getDb();
-
-  const [files, submissions, taskUploads, headshots] = await Promise.all([
-    listEventFiles(ctx.eventId),
-    db
-      .select({
-        id: submission.id,
-        ref: submission.ref,
-        title: submission.title,
-        status: submission.status,
-        answers: submission.answers,
-        ownerName: user.name,
-        ownerEmail: user.email,
-      })
-      .from(submission)
-      .innerJoin(user, eq(user.id, submission.submitterUserId))
-      .where(eq(submission.eventId, ctx.eventId)),
-    db
-      .select({
-        fileId: taskAssignment.fileId,
-        answers: taskAssignment.answers,
-        submissionId: taskAssignment.submissionId,
-        ownerName: user.name,
-        ownerEmail: user.email,
-      })
-      .from(taskAssignment)
-      .innerJoin(participant, eq(participant.id, taskAssignment.participantId))
-      .innerJoin(user, eq(user.id, participant.userId))
-      .where(eq(participant.eventId, ctx.eventId)),
-    db
-      .select({
-        fileId: participant.headshotFileId,
-        ownerName: user.name,
-        ownerEmail: user.email,
-      })
-      .from(participant)
-      .innerJoin(user, eq(user.id, participant.userId))
-      .where(and(eq(participant.eventId, ctx.eventId), isNotNull(participant.headshotFileId))),
-  ]);
-
+export function attributeEventFiles(input: FileIndexInput): EventFileRow[] {
+  const { files } = input;
   if (files.length === 0) return [];
 
-  type Attribution = {
-    source: EventFileSource;
-    ownerName: string | null;
-    ownerEmail: string | null;
-    submissionId: string | null;
-    submissionRef: string | null;
-    submissionTitle: string | null;
-    submissionStatus: string | null;
-  };
-  const submissionById = new Map(submissions.map((row) => [row.id, row]));
-  const attribution = new Map<string, Attribution>();
+  const submissionById = new Map(input.submissions.map((row) => [row.id, row]));
 
-  const describe = (
-    source: EventFileSource,
-    owner: { ownerName: string | null; ownerEmail: string | null },
-    submissionId: string | null,
-  ): Attribution => {
+  const sessionsOf = new Map<string, Set<string>>();
+  for (const role of input.speakingRoles) {
+    const seen = sessionsOf.get(role.participantId) ?? new Set<string>();
+    seen.add(role.submissionId);
+    sessionsOf.set(role.participantId, seen);
+  }
+  const onlySessionOf = (participantId: string): string | null => {
+    const seen = sessionsOf.get(participantId);
+    return seen && seen.size === 1 ? [...seen][0] : null;
+  };
+
+  const describe = (submissionId: string | null, inferred: boolean) => {
     const parent = submissionId ? submissionById.get(submissionId) : undefined;
     return {
-      source,
-      ownerName: owner.ownerName,
-      ownerEmail: owner.ownerEmail,
       submissionId: parent?.id ?? null,
       submissionRef: parent ? formatRef('submission', parent.ref) : null,
       submissionTitle: parent?.title ?? null,
       submissionStatus: parent?.status ?? null,
+      submissionInferred: Boolean(parent) && inferred,
     };
   };
 
-  for (const row of headshots) {
-    if (row.fileId) attribution.set(row.fileId, describe('headshot', row, null));
+  const attribution = new Map<string, FileAttribution>();
+
+  for (const row of input.headshots) {
+    if (!row.fileId) continue;
+    attribution.set(row.fileId, {
+      ...UNATTACHED,
+      source: 'headshot',
+      participantId: row.participantId,
+      ownerName: row.ownerName,
+      ownerEmail: row.ownerEmail,
+    });
   }
-  for (const row of taskUploads) {
-    const attributed = describe('task', row, row.submissionId);
+
+  for (const row of input.taskUploads) {
+    const named = row.submissionId ?? row.pinnedSubmissionId;
+    const attributed: FileAttribution = {
+      source: 'task',
+      participantId: row.participantId,
+      ownerName: row.ownerName,
+      ownerEmail: row.ownerEmail,
+      taskName: row.taskName,
+      taskStatus: row.taskStatus,
+      ...describe(named ?? onlySessionOf(row.participantId), named === null),
+    };
     if (row.fileId) attribution.set(row.fileId, attributed);
     for (const candidate of uuidsIn(row.answers ?? {})) {
       attribution.set(candidate, attributed);
     }
   }
+
   // Last, because a file reachable from a submission answer is best described by that submission.
-  for (const row of submissions) {
+  for (const row of input.submissions) {
     for (const candidate of uuidsIn(row.answers)) {
-      attribution.set(candidate, describe('submission', row, row.id));
+      attribution.set(candidate, {
+        source: 'submission',
+        participantId: row.participantId,
+        ownerName: row.ownerName,
+        ownerEmail: row.ownerEmail,
+        taskName: null,
+        taskStatus: null,
+        ...describe(row.id, false),
+      });
     }
   }
-
-  const unattached: Attribution = {
-    source: 'unattached',
-    ownerName: null,
-    ownerEmail: null,
-    submissionId: null,
-    submissionRef: null,
-    submissionTitle: null,
-    submissionStatus: null,
-  };
 
   /**
    * A replacement upload is attached to nothing — the submission answer or task assignment still
    * names an earlier version. Attribution is therefore resolved per lineage, or every re-upload
    * would drop out of the organizer's table as an orphan the moment it was made.
    */
-  const byLineage = new Map<string, Attribution>();
+  const byLineage = new Map<string, FileAttribution>();
   for (const record of files) {
     const direct = attribution.get(record.id);
     if (direct) byLineage.set(lineageIdOf(record), direct);
@@ -611,18 +681,128 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
     topVersions.set(root, Math.max(topVersions.get(root) ?? 0, record.version));
   }
 
-  const commentCounts = await countCommentsByLineage(ctx.eventId);
+  const uploaderById = new Map(input.uploaders.map((row) => [row.id, row]));
 
   return files.map((record) => {
     const root = lineageIdOf(record);
+    const uploader = record.uploadedByUserId ? uploaderById.get(record.uploadedByUserId) : undefined;
     return {
       ...record,
-      ...(attribution.get(record.id) ?? byLineage.get(root) ?? unattached),
+      ...(attribution.get(record.id) ?? byLineage.get(root) ?? UNATTACHED),
+      uploaderName: uploader?.name ?? null,
+      uploaderEmail: uploader?.email ?? null,
       lineageId: root,
       versionCount: versionCounts.get(root) ?? 1,
       isCurrent: record.version === (topVersions.get(root) ?? record.version),
-      commentCount: commentCounts.get(root) ?? 0,
+      commentCount: input.commentCounts.get(root) ?? 0,
     };
   });
+}
+
+/**
+ * The bulk-download screen's backing query. Which answer holds a file id is a property of the form
+ * rather than of the submission, so submission attribution collects anything uuid-shaped out of
+ * `answers` and lets the join against `file` decide what was really a file — the same trick
+ * `listSubmissionFiles` uses, widened from a set of submissions to the whole event.
+ */
+export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRow[]> {
+  requireCapability(ctx, 'submission:read_all');
+  const db = getDb();
+
+  const [files, submissions, taskUploads, headshots, speakingRoles] = await Promise.all([
+    listEventFiles(ctx.eventId),
+    db
+      .select({
+        id: submission.id,
+        ref: submission.ref,
+        title: submission.title,
+        status: submission.status,
+        answers: submission.answers,
+        participantId: participant.id,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
+      .from(submission)
+      .innerJoin(user, eq(user.id, submission.submitterUserId))
+      // Left, because a submitter is not always on the roster as a participant of this event.
+      .leftJoin(
+        participant,
+        and(eq(participant.userId, submission.submitterUserId), eq(participant.eventId, ctx.eventId)),
+      )
+      .where(eq(submission.eventId, ctx.eventId)),
+    db
+      .select({
+        fileId: taskAssignment.fileId,
+        answers: taskAssignment.answers,
+        participantId: taskAssignment.participantId,
+        submissionId: taskAssignment.submissionId,
+        pinnedSubmissionId: task.submissionId,
+        taskName: task.name,
+        taskStatus: taskAssignment.status,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
+      .from(taskAssignment)
+      .innerJoin(task, eq(task.id, taskAssignment.taskId))
+      .innerJoin(participant, eq(participant.id, taskAssignment.participantId))
+      .innerJoin(user, eq(user.id, participant.userId))
+      .where(eq(participant.eventId, ctx.eventId)),
+    db
+      .select({
+        fileId: participant.headshotFileId,
+        participantId: participant.id,
+        ownerName: user.name,
+        ownerEmail: user.email,
+      })
+      .from(participant)
+      .innerJoin(user, eq(user.id, participant.userId))
+      .where(and(eq(participant.eventId, ctx.eventId), isNotNull(participant.headshotFileId))),
+    db
+      .select({
+        participantId: participantRole.participantId,
+        submissionId: participantRole.submissionId,
+      })
+      .from(participantRole)
+      .innerJoin(submission, eq(submission.id, participantRole.submissionId))
+      .where(eq(submission.eventId, ctx.eventId)),
+  ]);
+
+  if (files.length === 0) return [];
+
+  const uploaderIds = [
+    ...new Set(files.map((row) => row.uploadedByUserId).filter((id): id is string => Boolean(id))),
+  ];
+  const [uploaders, commentCounts] = await Promise.all([
+    uploaderIds.length
+      ? db
+          .select({ id: user.id, name: user.name, email: user.email })
+          .from(user)
+          .where(inArray(user.id, uploaderIds))
+      : Promise.resolve([] as Array<{ id: string; name: string | null; email: string }>),
+    countCommentsByLineage(ctx.eventId),
+  ]);
+
+  return attributeEventFiles({
+    files,
+    submissions,
+    taskUploads,
+    headshots,
+    speakingRoles,
+    uploaders,
+    commentCounts,
+  });
+}
+
+/**
+ * `SPK-10`. The same index narrowed to one speaker, so their organizer-side record can show what
+ * they actually uploaded — filename, uploader, timestamp, a link that downloads — instead of a badge
+ * asserting that a photo exists somewhere.
+ */
+export async function listParticipantFileIndex(
+  ctx: EventContext,
+  participantId: string,
+): Promise<EventFileRow[]> {
+  const rows = await listEventFileIndex(ctx);
+  return rows.filter((row) => row.participantId === participantId);
 }
 

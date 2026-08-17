@@ -11,7 +11,7 @@
  * This module is the pattern and nothing else. Two callers apply it, at opposite ends:
  *
  *  - `./index.ts`, at write time, on the way into `email_log` — see `sendMail`.
- *  - `app/admin/mail/magic-links.ts`, at read time, on the way onto `/admin/mail` — see that file
+ *  - `app/organizer/mail/magic-links.ts`, at read time, on the way onto `/organizer/mail` — see that file
  *    for the visibility rule and why a read-time check is the one that can be conditional.
  *
  * They share a regex because a second copy of it is a second thing to get wrong: a pattern that

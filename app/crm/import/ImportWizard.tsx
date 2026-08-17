@@ -104,6 +104,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
       id: 'line',
       header: 'Line',
       width: '8%',
+      space: 'compact',
       mono: true,
       render: (row) => row.line,
     },
@@ -117,6 +118,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
       id: 'email',
       header: 'Email',
       width: '24%',
+      space: 'wide',
       mono: true,
       render: (row) => row.values.email || '—',
     },
@@ -136,6 +138,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
       id: 'issues',
       header: 'Problems',
       width: '18%',
+      space: 'wide',
       render: (row) =>
         row.issues.length === 0 ? (
           <span className={styles.muted}>—</span>
@@ -162,10 +165,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>Import contacts</h1>
-          <p className={styles.subtitle}>
-            Upload a CSV or paste one in. Every row is mapped and checked before anything is
-            written.
-          </p>
+          <p className={styles.subtitle}>Upload or paste a CSV, then preview the import.</p>
         </div>
       </div>
 
@@ -189,9 +189,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
                   if (file) readFile(file);
                 }}
               />
-              <span className={styles.hint}>
-                No file handy? Paste the rows below instead — the two paths run the same check.
-              </span>
+              <span className={styles.hint}>Or paste CSV rows below.</span>
             </div>
             <Textarea
               rows={8}
@@ -228,9 +226,7 @@ export function ImportWizard({ fields, sampleCsv }: Props) {
           <Card>
             <CardHeader>
               <CardTitle>2. Column mapping</CardTitle>
-              <CardDescription>
-                Guessed from the header names. Change any of them and the preview re-runs.
-              </CardDescription>
+              <CardDescription>Review the detected columns.</CardDescription>
             </CardHeader>
             <CardBody>
               <div className={styles.mappingGrid}>

@@ -1,8 +1,13 @@
-# Cicero requirements audit checklist
+# Historical Cicero requirements audit
 
 This checklist compares Cicero with the competition's [original brief](reference/source-brief.txt)
-and the repository's [normalized requirements ledger](01-requirements.md). It is intended to remain
-the scrollable source of truth for what is complete and what still needs work.
+and the repository's [normalized requirements ledger](01-requirements.md).
+
+> **Frozen snapshot, not current status.** The row verdicts below are pinned to commit `416101e` on
+> 2026-08-13. Later notes corrected a few especially visible deployment claims, but the body was not
+> re-audited. Use current CI, the live OpenAPI, and [`../README.md`](../README.md) for present
+> behavior. Retaining this file preserves the competition evidence without making an old checklist
+> an operational source of truth.
 
 ## Audit snapshot
 
@@ -211,7 +216,7 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   X, Facebook, and personal sites.
 - [x] **S-9 · I · COMPLETE — View and edit submitted proposals.** Speakers have a post-submit editor.
 - [x] **S-10 · R · COMPLETE — Full admin impersonation.** Organizers can act as a speaker, complete
-  writes, and return to admin mode.
+  writes, and return to organizer mode.
 - [x] **S-11 · O · COMPLETE — Portal appearance settings.** *Was PARTIAL: `portal_theme` was read by
   the portal layout and the branded email wrapper but written by nothing except the seeds, so on any
   non-seeded event the settings did not exist.* Settings now carries a **Speaker portal** tab that
@@ -219,7 +224,7 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   `savePortalAppearance`/`setPortalLogo` in `lib/services/settings.ts` upsert on the unique
   `portal_theme.event_id`, so the first save on an event nobody seeded creates the row and a later
   one updates it without blanking the columns it was not asked about. The logo uploads through
-  `/admin/settings/portal/upload` on the same `validateUpload`/`storeFile` path as `E-3` and `E-7`.
+  `/organizer/settings/portal/upload` on the same `validateUpload`/`storeFile` path as `E-3` and `E-7`.
   The accent is validated to a literal hex, on the way in and again on the way out, because it is
   interpolated into a `style` attribute on the portal and into an inline style in email. An event
   with no row still renders: the masthead, the home screen and the footer each fall back to their
@@ -249,7 +254,7 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   an error class that exists because two columns answer one question. `form.target_type` stays
   `abstract`/`session`, which is `F-4`'s different question — what a submission becomes. The
   reasoning is recorded at both ends, on `FormTargetType` in `lib/services/forms.ts` and on `SCOPES`
-  in `app/admin/tasks/TaskEditor.tsx`, so the next reader finds it where they look for the gap.
+  in `app/organizer/tasks/TaskEditor.tsx`, so the next reader finds it where they look for the gap.
 - [x] **S-18 · I · COMPLETE — Named file requests.** Files are collected and versioned against a
   request/task assignment.
 - [x] **S-19 · O · COMPLETE — Portal-form confirmation email.** Completion sends configurable copy
@@ -329,7 +334,8 @@ contact/group/submission triple belongs to `task.scope` and not to the form.
   relevant participant, submission, session, and task audiences.
 - [x] **C-5 · I · COMPLETE — Send log.** Per-recipient status, timestamps, and content are retained.
 - [x] **C-6 · O · COMPLETE — Branded email layout.** Event branding wraps rendered messages.
-- [x] **C-7 · O · COMPLETE — Reminder cadence per task.** Reminder-day offsets are configurable.
+- [x] **C-7 · O · COMPLETE — Reminder cadence per task.** Deadline offsets and a repeating
+  days-after-send follow-up interval are configurable; neither path chases completed or waived work.
 
 ## 9. Dashboard
 
@@ -491,9 +497,8 @@ covering real recipients, the log transport, and seeded demo identities.
   ICS generation, deployment configuration, and tests.
 - `bun run test`: **75 test files, 825 tests, all passed** (up from 35 files / 381 tests at the
   previous audit).
-  *Updated 2026-08-16:* the suite now runs **129 files, 1371 tests, all passed**. The row verdicts
-  above were not re-audited against that tree — only this count was re-measured, so treat the
-  verdicts as pinned to `416101e` and this number as current.
+  *Measured later on 2026-08-16:* the suite then ran **129 files, 1371 tests, all passed**. That is a
+  dated measurement, not a live counter; consult the latest CI run for current totals.
 - `bun run typecheck`: passed.
 - `bun run lint`: passed.
 - `bun run build`: production build passed.

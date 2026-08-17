@@ -21,11 +21,11 @@ import {
 import { conflict, forbidden, invalid, isAppError, notFound } from '../errors';
 import { spreadsheetSafeCellText } from '../csv';
 import {
-  BUILTIN_META,
   PARTICIPANT_BUILTIN_META,
   clearHiddenAnswers,
   emptyParticipant,
   participantValues,
+  resolveFieldType,
   splitAnswers,
   validateAnswers,
   validateParticipantCounts,
@@ -119,7 +119,6 @@ export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeFi
 
   const fields = ordered.map((row) => {
     const builtinKey = (row.builtinKey ?? null) as BuiltinKey | null;
-    const meta = builtinKey ? BUILTIN_META[builtinKey] : null;
 
     let options = row.options;
     let optionLabels: Record<string, string> | null = null;
@@ -141,7 +140,7 @@ export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeFi
       id: row.id,
       key: row.key,
       builtinKey,
-      type: (meta?.type ?? row.type) as FieldType,
+      type: resolveFieldType({ builtinKey, type: row.type }),
       label: row.label,
       position: row.position,
       step: row.step,
@@ -1106,7 +1105,7 @@ function renderAnswer(
 
 /**
  * One column per question, built-ins first in their real order. Written here rather than in the
- * admin surface because the `answers` shape is this module's business and nowhere else's.
+ * organizer surface because the `answers` shape is this module's business and nowhere else's.
  */
 export function buildCsv(
   fields: RuntimeField[],

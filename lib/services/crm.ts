@@ -1497,7 +1497,7 @@ export function buildImportPreview(
     else if (known.has(email))
       issues.push({
         severity: 'warning',
-        message: 'Already in the directory — will be updated',
+        message: 'Already in the directory, and will be updated',
       });
 
     if (email !== '') seen.add(email);

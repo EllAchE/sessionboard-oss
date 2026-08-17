@@ -14,6 +14,12 @@ export type PublicEvent = {
   endsOn: string | null;
   /** Exact event end, used to gate historical recordings when a session has no end time. */
   endsAt?: string;
+  /**
+   * `AR-50`. ISO instants for the two advisory milestones. Optional for the same reason the branding
+   * below is: a fixture that renders an agenda has no business knowing about them.
+   */
+  speakerDeadlineAt?: string | null;
+  agendaDeadlineAt?: string | null;
   websiteUrl: string | null;
   venueName: string | null;
   /**
@@ -103,6 +109,7 @@ export const EMBED_VIEWS = [
   'speakers',
   'gallery',
   'sponsors',
+  'exhibitor-map',
 ] as const;
 
 export type EmbedView = (typeof EMBED_VIEWS)[number];
@@ -114,6 +121,7 @@ export const EMBED_VIEW_LABEL: Record<EmbedView, string> = {
   speakers: 'Speakers list',
   gallery: 'Speaker gallery',
   sponsors: 'Sponsor wall',
+  'exhibitor-map': 'Exhibitor map',
 };
 
 export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
@@ -123,6 +131,7 @@ export const EMBED_VIEW_SUMMARY: Record<EmbedView, string> = {
   speakers: 'An alphabetical speaker directory that drills into a profile.',
   gallery: 'A photo grid of speakers with a detail panel.',
   sponsors: 'Published sponsors and exhibitors, grouped by type and tier.',
+  'exhibitor-map': 'The event’s uploaded PDF map as a static document.',
 };
 
 export function isEmbedView(value: string): value is EmbedView {
@@ -341,10 +350,28 @@ export function sessionsForSpeaker(
   );
 }
 
+/**
+ * `AD-3`. The publication-status filter. Every value here names a subset of what is *already*
+ * public: `loadPublicBundle` only ever loads `published` scheduled sessions whose submission is
+ * `approved`, so this narrows that set and can never widen it. `draft` and `cancelled` are
+ * deliberately absent rather than rejected-with-an-error — an unrecognised value falls back to
+ * `published`, so a hand-edited URL asking for drafts gets the public programme, not a leak.
+ */
+export const EMBED_STATUSES = ['published', 'scheduled', 'tba'] as const;
+
+export type EmbedStatus = (typeof EMBED_STATUSES)[number];
+
+export const EMBED_STATUS_LABEL: Record<EmbedStatus, string> = {
+  published: 'Published: every public session',
+  scheduled: 'Scheduled: confirmed time only',
+  tba: 'Time to be announced only',
+};
+
 export type EmbedOptions = {
   tracks: string[];
   rooms: string[];
   formats: string[];
+  status: EmbedStatus;
   showBio: boolean;
   showPhoto: boolean;
   showRoom: boolean;
@@ -352,6 +379,8 @@ export type EmbedOptions = {
   showDescription: boolean;
   columns: number;
   accent: string | null;
+  /** `AD-3`. Organizer-authored CSS, already through `sanitizeEmbedCss`. */
+  css: string | null;
   theme: 'auto' | 'light' | 'dark';
   limit: number | null;
   speaker: string | null;
@@ -363,6 +392,46 @@ const HEX = /^[0-9a-f]{6}$/i;
 const MAX_EMBED_FILTERS = 20;
 const MAX_EMBED_FILTER_LENGTH = 120;
 const MAX_EMBED_QUERY_LENGTH = 200;
+const MAX_EMBED_CSS_LENGTH = 4000;
+
+/**
+ * Custom CSS is a query parameter like every other option, which means a stranger can put anything
+ * in it and send the link to somebody. So the rule is all-or-nothing: a declaration block that
+ * contains any of the constructs below is dropped whole rather than partially stripped, because a
+ * sanitizer that edits CSS is a sanitizer somebody eventually slips past.
+ *
+ *   - `<` / `>` cannot close the `<style>` element the value is written into.
+ *   - `@import`, `@charset`, `@namespace` cannot pull in a stylesheet from somewhere else.
+ *   - `url()` is refused outright. It is the exfiltration primitive — `background:url(https://…)`
+ *     fires a request the moment the rule matches — and no legitimate embed skin needs it, since
+ *     the widget's own images come from the event.
+ *   - `expression()`, `behavior:` and `-moz-binding` are the legacy script-in-CSS vectors.
+ */
+const CSS_FORBIDDEN =
+  /[<>]|@import|@charset|@namespace|url\s*\(|expression\s*\(|behaviou?r\s*:|-moz-binding|javascript\s*:/i;
+
+const CSS_CONTROL = /\p{Cc}/u;
+
+export function sanitizeEmbedCss(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > MAX_EMBED_CSS_LENGTH) return null;
+  if (CSS_FORBIDDEN.test(trimmed)) return null;
+  // Control characters have no meaning in CSS and only exist here to confuse a reader or a parser.
+  return CSS_CONTROL.test(trimmed) ? null : trimmed;
+}
+
+/** `URLSearchParams` in the shape `parseEmbedOptions` reads, repeated keys kept as arrays. */
+export function embedSearchRecord(
+  params: URLSearchParams,
+): Record<string, string | string[] | undefined> {
+  const record: Record<string, string | string[] | undefined> = {};
+  for (const key of new Set(params.keys())) {
+    const values = params.getAll(key);
+    record[key] = values.length === 1 ? values[0] : values;
+  }
+  return record;
+}
 
 /** `G-7`. Every option is a query parameter so a snippet is one copyable line with no state. */
 export function parseEmbedOptions(
@@ -402,11 +471,15 @@ export function parseEmbedOptions(
   const limitRaw = parseBoundedInteger(single('limit', 3), 200);
   const columnsRaw = parseBoundedInteger(single('columns', 1), 4);
   const dayRaw = single('day', 10);
+  const statusRaw = single('status', 12);
 
   return {
     tracks: list('track'),
     rooms: list('room'),
     formats: list('format'),
+    status: (EMBED_STATUSES as readonly string[]).includes(statusRaw ?? '')
+      ? (statusRaw as EmbedStatus)
+      : 'published',
     showBio: flag('bio', true),
     showPhoto: flag('photo', true),
     showRoom: flag('room_label', true),
@@ -414,6 +487,7 @@ export function parseEmbedOptions(
     showDescription: flag('description', true),
     columns: columnsRaw ?? 3,
     accent: HEX.test(accentRaw) ? `#${accentRaw}` : null,
+    css: sanitizeEmbedCss(single('css', MAX_EMBED_CSS_LENGTH)),
     theme: themeRaw === 'dark' || themeRaw === 'light' ? themeRaw : 'auto',
     limit: limitRaw,
     /** Sessionboard's own parameter name, kept so an existing embed URL ports across (`G-8`). */
@@ -454,13 +528,23 @@ export function applyFilters(bundle: PublicBundle, options: EmbedOptions): Publi
     if (roomFilter.size > 0 && !roomFilter.has(session.room?.toLowerCase() ?? '')) return false;
     if (formatFilter.size > 0 && !formatFilter.has(session.format?.toLowerCase() ?? ''))
       return false;
+    /**
+     * `AD-3`. Narrowing only: every session reaching this point is already published and approved,
+     * so the worst an unexpected `status` can do is show the full public programme.
+     */
+    if (options.status === 'scheduled' && !session.startsAt) return false;
+    if (options.status === 'tba' && session.startsAt) return false;
     return true;
   });
 
   if (options.limit) sessions = sessions.slice(0, options.limit);
 
   const restrictSpeakersToSessions =
-    trackFilter.size > 0 || roomFilter.size > 0 || formatFilter.size > 0 || Boolean(options.limit);
+    trackFilter.size > 0 ||
+    roomFilter.size > 0 ||
+    formatFilter.size > 0 ||
+    options.status !== 'published' ||
+    Boolean(options.limit);
   const keep = new Set(sessions.flatMap((session) => session.speakers.map((entry) => entry.id)));
   let speakers = restrictSpeakersToSessions
     ? bundle.speakers.filter((speaker) => keep.has(speaker.id))

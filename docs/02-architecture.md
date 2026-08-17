@@ -34,7 +34,7 @@ supported secondary target, not the thing the architecture bends around.
 | Database | Neon Postgres via **Hyperdrive** | Neon Postgres via `DATABASE_URL` | Postgres 16 in `docker-compose` |
 | DB driver | `pg` + `drizzle-orm/node-postgres` | **the same two packages** | **the same two packages** |
 | File storage | Postgres by default, R2 binding when bound | Postgres `file_blob` | MinIO, or any S3 endpoint |
-| Email | Resend HTTP API | Resend HTTP API | SMTP via nodemailer |
+| Email | Resend HTTP; Resend SMTP for calendar MIME | Resend HTTP; Resend SMTP for calendar MIME | SMTP via nodemailer |
 | Scheduled sends | Hourly Cron Trigger → custom Worker → `/api/cron` in-process | Vercel Cron → `GET /api/cron` | any cron hitting `/api/cron` |
 
 `wrangler.jsonc` points at `custom-worker.ts`, which preserves OpenNext's generated `fetch` handler
@@ -91,7 +91,7 @@ Two details of that sentence are load-bearing, and the spike caught both the har
   pool. Self-hosted, the cached pool is kept, because there it is correct.
 
 That is what makes the hosting choice **reversible**, and reversibility is the point. Postgres,
-S3-compatible storage and HTTP email are all host-agnostic. If Workers turns hostile at hour six we
+S3-compatible storage and Resend's submission endpoints are all host-agnostic. If Workers turns hostile at hour six we
 redeploy to Vercel or Fly and lose exactly one thing — the `Z-1` bonus, which the brief itself calls
 "mild." Nothing else in the codebase changes.
 
@@ -144,8 +144,9 @@ run, so production silently stayed on a pre-2026-08-13 build for two days — 8 
 **What we declined.** Workers Paid is $5/month and raises the ceiling to 10 MiB with 30s CPU per
 request. Measured rather than assumed, it **does** carry this bundle — 3.42 MiB against 10 MiB — and
 it would keep `Z-1` and close the 10ms CPU defect in the same $5. That is a real option and a cheap
-one, and it stays one line away: upgrade the plan and run `bun run cf:deploy`, with no change to any
-file in this repo. We passed on it because `Z-1` is a **"mild"** bonus by the brief's own wording
+one. For the configured account it stays one command away: upgrade the plan, provide the direct
+`DATABASE_URL` used for migrations, and run `bun run cf:deploy`. A different account must also put
+its Hyperdrive id and `APP_URL` in `wrangler.jsonc`. We passed on Paid because `Z-1` is a **"mild"** bonus by the brief's own wording
 (`01-requirements.md`) and paying a subscription to keep a mild bonus is the wrong trade for a
 project whose README asks a stranger to clone and run it. A reader who wants `Z-1` should upgrade
 the plan — nothing in this repo has to change to take that path, which is the same reversibility
@@ -203,16 +204,24 @@ badly.
 | Icons | `lucide-react` | Already the design system's icon set |
 | Drag & drop | `@dnd-kit/core` + `/sortable` | Headless, no stylesheet to override. Powers `A-1` and the form builder |
 | Rich text | Markdown textarea + live preview | Tiptap is ~100KB and half a day. Markdown is what power users want, has no XSS surface, and renders identically in email and embeds |
-| Email | Resend HTTP behind a `MailTransport` interface | Three impls: `resend`, `smtp`, `log`. Workers cannot open SMTP sockets; self-host should not need an API key |
+| Email | Resend behind a `MailTransport` interface | Three impls: `resend`, `smtp`, `log`. Resend uses HTTP for ordinary mail and its SMTP submission endpoint for Outlook-compatible calendar MIME; self-host should not need an API key |
 | Calendar | Hand-written VCALENDAR, ~80 lines | No npm package does `METHOD:REQUEST` with `SEQUENCE` bumping correctly, which is the hard half of `C-3` |
 | Fonts | `next/font/local` over the extracted woff2 | Self-hosted, no runtime Google request, no layout shift |
 | AI features | Anthropic SDK, `claude-sonnet-5` | Powers `V-9` and `A-8`; degrades to disabled when no key is set |
 
 ## 3. Database layer
 
-Postgres 16. Drizzle migrations live in `db/migrations/` and are applied by a `predeploy` step.
-Workers cannot run migrations at boot the way a container entrypoint can — this is the one
-operational difference between the two targets, and it resolves to a `package.json` script.
+Postgres 16. Drizzle migrations live in `db/migrations/` and are always applied explicitly. The
+container entrypoint migrates before it starts Next. `bun run cf:deploy` runs `db:migrate:remote`
+through a direct `DATABASE_URL` before deploying the Worker, whose runtime traffic uses Hyperdrive.
+Vercel operators run `db:migrate` before `vercel deploy --prod`; preview builds never mutate a
+database.
+
+The deploy variant exists because the ordinary `db:migrate` loads `.env` if one is present, and the
+`.env` a contributor gets from `.env.example` points at localhost. Migrating a development database
+and then deploying the Worker regardless is a silent failure — a production database left
+unmigrated behind a new revision — so `db:migrate:remote` reads no `.env` and refuses a localhost
+host outright.
 
 ### Event scoping is not optional
 
@@ -275,7 +284,7 @@ and submission-content approval before returning the storage stream.
 ### `email_log` doubles as the dev mailbox
 
 With `MAIL_TRANSPORT=log` — or alongside any real transport — every send is recorded and
-`/admin/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
+`/organizer/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
 single point of failure during judging. A judge who never receives a message can still see it.
 
 ### Reserved recipients are why `T-6` and `T-7a` can both hold
@@ -286,8 +295,10 @@ a magic link is handing out a session for whatever address was typed into the bo
 transport those two are in direct conflict, which is what kept the deployment on `log`.
 
 The resolution is that the demo identities are undeliverable *by construction*, rather than delivery
-being off for everyone. Both seeds are built entirely from IANA-reserved domains
-(`organizer@example.com`, the senate at `@first-settlement.example`), and `sendMail` routes any
+being off for everyone. Every seeded event is built entirely from IANA-reserved domains
+(`organizer@example.com`, the senate at `@first-settlement.example`, and the generated rosters that
+fill the three sized sample events at `@demo.example`, `@demo-small.example` and
+`@demo-large.example`), and `sendMail` routes any
 recipient at a reserved domain to the log transport whatever else is configured — real addresses in
 the same run still get real mail, and the provider is never asked to bounce six hundred fictional
 senators. An on-screen link for such an address therefore cannot lock a real person out of anything,
@@ -365,11 +376,18 @@ Auth is `Authorization: Bearer <key>`, keys are per event, hashed at rest.
 ### Embeds are server-rendered routes, not a JS widget
 
 `G-1`–`G-3` ship as `/embed/:slug/agenda`, `/embed/:slug/speakers`, `/embed/:slug/sessions`, and
-`/embed/:slug/sponsors`,
-served with `frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing
-iframe. The requirement that an embed "auto-updates with no re-paste" is then free rather than
-engineered: the iframe renders live data on every load, so there is no snapshot to go stale and no
-client bundle to version.
+`/embed/:slug/sponsors`. `AR-37` adds `/embed/:slug/exhibitor-map`, which wraps the event's current
+PDF map rather than inventing a second interactive floor-plan model. All are served with
+`frame-ancestors *`, plus a `<script src="/embed.js">` that injects an auto-resizing iframe. The
+requirement that an embed "auto-updates with no re-paste" is then free rather than engineered: the
+iframe renders live data on every load, so there is no snapshot to go stale and no client bundle to
+version.
+
+The map's stable `/embed/:slug/exhibitor-map/file` route does not expose arbitrary event files. It
+joins `event_exhibitor_map` to a `file` with the same event id on every request, sends `no-store`,
+and returns 404 after the organizer removes the slot. Upload, replacement, and removal reuse the
+same storage service as speaker deliverables; only PDF input with an actual `%PDF-` signature is
+accepted.
 
 Sponsor rows add one more structural gate: only `status = published` rows enter the public page,
 embed, REST list, navigation presence check, or logo authorization. Changing a row back to draft

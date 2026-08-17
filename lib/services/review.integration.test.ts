@@ -199,6 +199,112 @@ describe('scoring, persisted', () => {
   });
 });
 
+/**
+ * `ABS-03`. A scorecard is not only ratings: an organizer builds a dropdown and a written question
+ * too, and the answers to those have to come back off the round trip intact and stay out of the
+ * weighted average.
+ */
+describe('criterion field types, end to end', () => {
+  it('stores and reads back a rating, a dropdown choice and a written answer', async () => {
+    const fixture = await seed();
+    const organizer = fixture.ctx(fixture.organizer, 'organizer');
+    const reviewer = fixture.ctx(fixture.reviewer, 'reviewer');
+    const [relevance] = fixture.criteria;
+
+    const recommendation = await review.addCriterion(organizer, fixture.roundId, {
+      label: 'Recommendation',
+      type: 'select',
+      options: ['Accept', 'Maybe', 'Reject'],
+    });
+    const comments = await review.addCriterion(organizer, fixture.roundId, {
+      label: 'Comments',
+      type: 'text',
+    });
+
+    expect(recommendation.options).toEqual(['Accept', 'Maybe', 'Reject']);
+    // Neither type carries weight, so neither can tilt an average.
+    expect(recommendation.weight).toBe(0);
+    expect(comments.weight).toBe(0);
+
+    const saved = await review.saveScorecard(reviewer, {
+      roundId: fixture.roundId,
+      submissionId: fixture.submissionId,
+      scores: [
+        { criterionId: relevance.id, value: 4 },
+        { criterionId: recommendation.id, value: null, text: 'Accept' },
+        { criterionId: comments.id, value: null, text: 'Strong fit for the opening track.' },
+      ],
+      complete: true,
+    });
+
+    // Only Relevance was rated, and only Relevance counts: 4 of 5, renormalized, is 4.
+    expect(saved.aggregate.average).toBe(4);
+
+    const reloaded = await review.loadAssignedReview(reviewer, fixture.submissionId, fixture.roundId);
+    const answer = (criterionId: string) =>
+      reloaded.myScores.find((score) => score.criterionId === criterionId);
+
+    expect(answer(relevance.id)?.value).toBe(4);
+    expect(answer(recommendation.id)).toMatchObject({ value: null, text: 'Accept' });
+    expect(answer(comments.id)).toMatchObject({
+      value: null,
+      text: 'Strong fit for the opening track.',
+    });
+    expect(reloaded.criteria.find((entry) => entry.id === comments.id)?.type).toBe('text');
+  });
+
+  it('refuses a choice the organizer never offered', async () => {
+    const fixture = await seed();
+    const organizer = fixture.ctx(fixture.organizer, 'organizer');
+
+    const recommendation = await review.addCriterion(organizer, fixture.roundId, {
+      label: 'Recommendation',
+      type: 'select',
+      options: ['Accept', 'Reject'],
+    });
+
+    await expect(
+      review.saveScorecard(fixture.ctx(fixture.reviewer, 'reviewer'), {
+        roundId: fixture.roundId,
+        submissionId: fixture.submissionId,
+        scores: [{ criterionId: recommendation.id, value: null, text: 'Maybe' }],
+      }),
+    ).rejects.toSatisfy((error: unknown) => message(error).includes('not an option'));
+  });
+
+  it('refuses a dropdown with nothing to choose between', async () => {
+    const fixture = await seed();
+
+    await expect(
+      review.addCriterion(fixture.ctx(fixture.organizer, 'organizer'), fixture.roundId, {
+        label: 'Recommendation',
+        type: 'select',
+        options: ['Accept'],
+      }),
+    ).rejects.toSatisfy((error: unknown) => message(error).includes('at least two options'));
+  });
+
+  it('clears answers given against the question a criterion used to be', async () => {
+    const fixture = await seed();
+    const organizer = fixture.ctx(fixture.organizer, 'organizer');
+    const reviewer = fixture.ctx(fixture.reviewer, 'reviewer');
+    const [relevance] = fixture.criteria;
+
+    await review.saveScorecard(reviewer, {
+      roundId: fixture.roundId,
+      submissionId: fixture.submissionId,
+      scores: [{ criterionId: relevance.id, value: 5 }],
+    });
+    await review.updateCriterion(organizer, relevance.id, {
+      type: 'select',
+      options: ['Accept', 'Reject'],
+    });
+
+    const reloaded = await review.loadAssignedReview(reviewer, fixture.submissionId, fixture.roundId);
+    expect(reloaded.myScores.find((score) => score.criterionId === relevance.id)).toBeUndefined();
+  });
+});
+
 describe('anonymity, enforced in SQL rather than in the view', () => {
   it('keeps the author out of what an anonymized round hands a reviewer', async () => {
     const fixture = await seed({ anonymized: true });
@@ -211,7 +317,9 @@ describe('anonymity, enforced in SQL rather than in the view', () => {
 
     expect(detail.authorHidden).toBe(true);
     expect(detail.submitterName).not.toContain('Vitruvius');
+    expect(detail.speakers).toHaveLength(1);
     expect(JSON.stringify(detail.speakers)).not.toContain('Vitruvius');
+    expect(JSON.stringify(detail.speakers)).not.toContain('Aqueduct Office');
     expect(JSON.stringify(detail)).not.toContain(fixture.author.email);
   });
 

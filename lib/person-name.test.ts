@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { joinPersonName, parsePersonName, personNameColumns, splitPersonName } from './person-name';
 
-/**
- * `F-6`. The split rule is mirrored in `db/migrations/0008_tiny_maximus.sql`, which backfills every
- * row that existed before first and last name were separate columns. A row written by the app and a
- * row written by that migration have to be indistinguishable, so what is asserted here is the rule
- * itself — not an implementation detail of either side.
- */
+/** `F-6`. Imported names may be normalized, but the split rule must not lose any name content. */
 
 describe('splitPersonName', () => {
   it.each([
@@ -26,11 +21,7 @@ describe('splitPersonName', () => {
     expect(splitPersonName(undefined)).toEqual({ firstName: null, lastName: null });
   });
 
-  /**
-   * The property that makes the split safe to run over a live table: it never loses characters. A
-   * rule that dropped a particle or a suffix would quietly corrupt names on migration, and nobody
-   * would notice until a badge was printed.
-   */
+  /** Only whitespace normalization may change an imported name; particles and suffixes survive. */
   it.each([
     'Marcus Tullius Cicero',
     'Sulpicia',

@@ -1,0 +1,69 @@
+.page {
+  background: var(--surface-page);
+  color: var(--text-body);
+  font: var(--type-body);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Warning-toned rather than neutral. A reader who was forwarded this page needs to register that it
+ * is a working copy before they quote a session time back to somebody.
+ */
+.banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.bannerMain {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1 1 24rem;
+}
+
+.pill {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background: var(--status-warning-fg);
+  color: var(--text-on-accent);
+}
+
+.bannerText {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  min-width: 0;
+}
+
+.bannerMeta {
+  margin: 0;
+  font: var(--type-label);
+  white-space: nowrap;
+}
+
+.footer {
+  margin-top: auto;
+  padding: var(--space-4);
+  border-top: 1px solid var(--border-hairline);
+  color: var(--text-faint);
+  font: var(--type-label);
+}
+
+.footer p {
+  margin: 0;
+}

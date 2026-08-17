@@ -1,12 +1,12 @@
 import type { Metadata } from 'next';
 
 export const SITE_NAME = 'Cicero';
-export const SITE_TITLE = 'Cicero · Rule your conference from the Forum';
+export const SITE_TITLE = 'Cicero · Conference operations for organizers and speakers';
 export const SITE_DESCRIPTION =
-  'Convene petitions, councils, orators, fasti, and dispatches in one commanding conference Forum.';
+  'Run submissions, review, scheduling, speaker tasks, and publishing in one place.';
 export const SOCIAL_IMAGE_ALT =
-  'Cicero’s conference Forum, illustrated with a Roman theatre and fasti tablets.';
-const SOCIAL_IMAGE_PATH = '/social/cicero-card.png';
+  'Cicero connects the organizer workspace and speaker portal in one conference workflow.';
+const SOCIAL_IMAGE_PATH = '/social/cicero-card-archetypes.png';
 
 type SocialMetadataInput = {
   origin: string;

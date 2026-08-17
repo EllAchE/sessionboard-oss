@@ -109,7 +109,7 @@ export function conferenceClock(
   if (now < startsAt) {
     return {
       phase: "upcoming",
-      label: "Conference begins in",
+      label: "Conference begins",
       remaining: remainingUntil(startsAt, now),
     };
   }

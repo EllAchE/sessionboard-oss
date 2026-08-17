@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { consumeMagicLink } from '@/lib/auth';
 import { appUrl } from '@/lib/env';
-import { authRedirect } from '@/app/signin/redirect';
+import { authRedirect, localAuthOrigin } from '@/app/signin/redirect';
 
-function publicRedirect(path: string): NextResponse {
-  return NextResponse.redirect(new URL(path, appUrl()));
+function publicRedirect(path: string, request: NextRequest): NextResponse {
+  return NextResponse.redirect(new URL(path, localAuthOrigin(request.headers) ?? appUrl()));
 }
 
 /**
@@ -14,13 +14,13 @@ function publicRedirect(path: string): NextResponse {
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token');
   if (!token) {
-    return publicRedirect('/signin?error=missing');
+    return publicRedirect('/signin?error=missing', request);
   }
 
   try {
     const { redirectTo } = await consumeMagicLink(token);
-    return publicRedirect(authRedirect(redirectTo, '/admin'));
+    return publicRedirect(authRedirect(redirectTo, '/organizer'), request);
   } catch {
-    return publicRedirect('/signin?error=expired');
+    return publicRedirect('/signin?error=expired', request);
   }
 }

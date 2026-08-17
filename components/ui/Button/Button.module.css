@@ -9,6 +9,12 @@
   border: var(--border-width) solid transparent;
   cursor: pointer;
   white-space: nowrap;
+  /*
+    `href` renders this as an anchor, and the global `a` rule underlines those. A filled or outlined
+    control that also carries an underline reads as two affordances stacked on one target, so the
+    button shape wins here: Sign in, Sign up, and `Create an event` are all anchors.
+  */
+  text-decoration: none;
   transition:
     background-color var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard),
@@ -44,6 +50,15 @@
 .icon {
   display: inline-flex;
   align-items: center;
+}
+
+/**
+ * A slot whose child renders nothing still arrives as an element, so the wrapper is drawn and
+ * `.content`'s gap pads the button for an icon that is not there. The hint badges do exactly that
+ * for as long as the modifier is not held, which is nearly always.
+ */
+.icon:empty {
+  display: none;
 }
 
 .spinner {

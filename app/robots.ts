@@ -9,7 +9,7 @@ import type { MetadataRoute } from 'next';
 
 /**
  * Both halves of closing a route off, because neither one alone is right. Robots patterns match by
- * prefix, so `/admin/` leaves the bare `/admin` crawlable — and a bare `/admin` overshoots in the
+ * prefix, so `/organizer/` leaves the bare `/organizer` crawlable — and a bare `/organizer` overshoots in the
  * other direction, swallowing any event whose organizer picked a slug starting with those letters.
  * Published events live at the root as `/{slug}` and nothing reserves a slug against a route name,
  * so `/review` as a pattern would hide a real conference called `review-2026`. `$` ends the match
@@ -27,15 +27,16 @@ function closed(path: string): string[] {
  */
 const PRIVATE_ROUTES = [
   '/admin',
+  '/organizer',
   '/auth',
   '/crm',
   '/dashboard',
   '/events',
-  '/organizer',
   '/portal',
   '/review',
   '/signin',
   '/signup',
+  '/welcome',
 ];
 
 /** The `(dev)` group ships in every build. It is scaffolding for us, not product for anyone else. */
@@ -49,16 +50,35 @@ const DEV_ROUTES = [
 
 /**
  * The call for speakers itself is meant to be found, linked, and indexed — that is the whole point
- * of publishing it at a public URL. The upload step and the confirmation page after a petition are
+ * of publishing it at a public URL. The upload step and the confirmation page after a submission are
  * dead ends that only make sense mid-flow.
  */
 const SUBMIT_FLOW_PATHS = ['/submit/*/*/upload', '/submit/*/*/done'];
+
+/**
+ * `AD-9` share links. The subtree only, deliberately not `closed('/s')`: the bare `/s` is not a
+ * route here, while `/s$` would hide a published event whose organizer picked the slug `s`.
+ */
+const SHARE_LINK_PATHS = ['/s/'];
+
+/**
+ * `/{slug}/llms.txt` needs no rule and gets none. It hangs off a published conference at the root,
+ * so no disallow prefix reaches it, and it is meant to be fetched — it is the cheapest possible
+ * read of a programme that would otherwise cost a crawler the agenda, speaker and sponsor pages.
+ * No allow rule either: an allow only matters against a disallow, and adding one here would imply
+ * the surrounding conference pages are closed.
+ */
 
 /**
  * `/embed/*` is deliberately absent. Those pages already carry `robots: { index: false }` in their
  * own metadata, and a crawler has to be allowed to fetch a page before it can read that. Third
  * party event sites iframe and link them, so disallowing here would trade a clean "do not index"
  * for URL-only entries Google cannot drop.
+ *
+ * `/s/*` takes the opposite decision for the opposite reason. A share-link URL is itself the
+ * credential, so the goal is not "fetch it and discover it says noindex" but "do not fetch it".
+ * Losing the fetch costs nothing here: nobody links a private preview from a page a crawler can
+ * reach, and if one does leak, `X-Robots-Tag` and the page metadata still say noindex.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -66,19 +86,20 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: [
-          '/',
           /**
            * `/api/` is closed below: JSON responses are data for a client, not documents worth
-           * indexing, and `/api/mail` is a demo-mode inbox. The OpenAPI description is the
-           * exception — it is documentation, and `/llms.txt` points an agent straight at it. The
-           * longer, more specific rule wins wherever `Allow`/`Disallow` precedence is implemented.
+           * indexing, and `/api/mail` is a demo-mode inbox. The generated REST and MCP contracts
+           * are documentation, and `/llms.txt` points an agent straight at them. Their longer,
+           * more specific allow rules win over the API-tree disallow.
            */
           '/api/v1/openapi.json',
+          '/api/v1/mcp-tools.json',
         ],
         disallow: [
           ...PRIVATE_ROUTES.flatMap(closed),
           ...DEV_ROUTES.flatMap(closed),
           ...SUBMIT_FLOW_PATHS,
+          ...SHARE_LINK_PATHS,
           ...closed('/api'),
         ],
       },

@@ -19,44 +19,60 @@ function matches(pattern: string, path: string): boolean {
   return new RegExp(`^${expression}${anchored ? '$' : ''}`).test(path);
 }
 
-const blocked = (path: string) => disallow.some((pattern) => matches(pattern, path));
+function specificity(pattern: string): number {
+  return pattern.replace(/\*|\$$/g, '').length;
+}
+
+/** Longest matching rule wins; Allow wins a tie, as major crawlers implement robots.txt. */
+function blocked(path: string): boolean {
+  return [
+    ...allow.map((pattern) => ({ pattern, blocked: false })),
+    ...disallow.map((pattern) => ({ pattern, blocked: true })),
+  ]
+    .filter((rule) => matches(rule.pattern, path))
+    .sort(
+      (left, right) =>
+        specificity(right.pattern) - specificity(left.pattern) ||
+        Number(left.blocked) - Number(right.blocked),
+    )[0]?.blocked ?? false;
+}
 
 describe('robots.txt', () => {
-  it('closes every signed-in, magic-linked and internal surface', () => {
-    for (const path of [
-      '/admin/agenda',
-      '/auth/verify',
-      '/crm/pipeline',
-      '/dashboard',
-      '/events/new',
+  it('closes every private root without swallowing similarly named event slugs', () => {
+    for (const root of [
+      '/admin',
       '/organizer',
-      '/portal/demo/tasks',
-      '/review/abc123',
+      '/auth',
+      '/crm',
+      '/dashboard',
+      '/events',
+      '/portal',
+      '/review',
       '/signin',
       '/signup',
-      '/kitchen-sink',
-      '/db-probe',
-      '/api/mail',
+      '/welcome',
     ]) {
-      expect(blocked(path), path).toBe(true);
+      expect(blocked(root), root).toBe(true);
+      expect(blocked(`${root}/example`), `${root}/example`).toBe(true);
+      expect(blocked(`${root}-summit`), `${root}-summit`).toBe(false);
     }
   });
 
-  it('closes the bare route as well as its subtree', () => {
-    for (const path of ['/admin', '/portal', '/review', '/crm', '/signin', '/api']) {
-      expect(blocked(path), path).toBe(true);
-    }
-  });
-
-  it('does not swallow an event whose slug merely starts like a route name', () => {
-    // Nothing reserves a slug against a route name, and published events live at the root.
-    for (const path of ['/review-2026', '/dashboard-summit', '/adminsummit', '/events-2026']) {
-      expect(blocked(path), path).toBe(false);
+  it('closes every internal development route', () => {
+    for (const root of [
+      '/db-probe',
+      '/kitchen-sink',
+      '/logo-lab',
+      '/roman-assets',
+      '/roman-headshots',
+    ]) {
+      expect(blocked(root), root).toBe(true);
+      expect(blocked(`${root}/example`), `${root}/example`).toBe(true);
+      expect(blocked(`${root}-summit`), `${root}-summit`).toBe(false);
     }
   });
 
   it('leaves the public programme and the open call for speakers crawlable', () => {
-    expect(allow).toContain('/');
     for (const path of [
       '/',
       '/demo',
@@ -65,9 +81,17 @@ describe('robots.txt', () => {
       '/demo/speakers/marcus-tullius',
       '/demo/gallery',
       '/submit/demo/speak',
+      '/unsubscribe/demo',
     ]) {
       expect(blocked(path), path).toBe(false);
     }
+  });
+
+  it('leaves both the site-wide and the per-event llms.txt fetchable', () => {
+    expect(blocked('/llms.txt')).toBe(false);
+    expect(blocked('/demo/llms.txt')).toBe(false);
+    /** A slug that collides with a private route stays closed, its llms.txt included. */
+    expect(blocked('/review/llms.txt')).toBe(true);
   });
 
   it('closes the mid-flow steps of a submission, which are dead ends in a search result', () => {
@@ -79,11 +103,16 @@ describe('robots.txt', () => {
     expect(blocked('/embed/demo/agenda')).toBe(false);
   });
 
-  it('reopens the OpenAPI description inside the closed /api tree', () => {
+  it('reopens generated documentation inside the closed API tree', () => {
+    expect(blocked('/api')).toBe(true);
     expect(blocked('/api/v1/events/demo/agenda')).toBe(true);
-    // Only useful if the exception is the more specific of the two matching rules.
-    const exception = allow.find((rule) => rule.startsWith('/api/'));
-    expect(exception).toBe('/api/v1/openapi.json');
-    expect((exception ?? '').length).toBeGreaterThan('/api/'.length);
+    expect(blocked('/api/v1/events/demo/mcp')).toBe(true);
+    expect(blocked('/api/v1/openapi.json')).toBe(false);
+    expect(blocked('/api/v1/mcp-tools.json')).toBe(false);
+    expect(allow).toEqual(['/api/v1/openapi.json', '/api/v1/mcp-tools.json']);
+  });
+
+  it('does not advertise a sitemap until one exists', () => {
+    expect(robots()).not.toHaveProperty('sitemap');
   });
 });

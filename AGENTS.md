@@ -3,13 +3,14 @@
 `AGENTS.md` is the canonical, tool-neutral policy source. Claude Code reads the same bytes through
 the root `CLAUDE.md` symlink; never replace that link with a second policy copy.
 
-This is a Bun-based Next.js app deployed to Cloudflare Workers (OpenNext + Hyperdrive). See
-`README.md` for environment setup and `docs/02-architecture.md` / `docs/03-plan.md` for the system
-design and workstream ownership map.
+This is a Bun-based Next.js app. The hosted demo runs on Vercel; Cloudflare Workers through OpenNext
+and Hyperdrive remains a supported deployment target. See `README.md` for setup and deployment,
+`docs/02-architecture.md` for system design, and `CONTRIBUTING.md` for the maintenance workflow.
 
 - Install dependencies with `bun install` only when needed.
-- After changes, run `bun run lint`, `bun run typecheck`, `bun run build`, and `bun run test` as
-  relevant to what changed — these are exactly the CI gates in `.github/workflows/ci.yml`.
+- After changes, run the relevant scripts from `package.json`. CI independently gates lint,
+  typechecking, build/generated docs/Compose configuration, unit tests, database integration tests,
+  and `bun audit`.
 
 ## Worktrees and Branches — read this before touching any file
 
@@ -30,11 +31,36 @@ this checkout — do not repeat it.
 - Treat any dirty state you find in the primary checkout or in another worktree as another session's
   in-progress work. Do not stash, restore, reset, clean, stage, or commit it — surface it once and
   make sure your own task is isolated in its own worktree instead.
-- Respect the ownership boundaries in `docs/03-plan.md` §3 (the workstream table and the
-  schema/service-signature/`components/ui` freeze rule) when your change crosses directories another
-  workstream owns.
+- Inspect active worktrees and pull requests before broad changes. The freezes in `docs/03-plan.md`
+  describe the original competition build and are historical, not current ownership policy.
 - After opening a PR, remove only the worktree and branch this session created; leave every other
   worktree and every other session's dirty state alone.
+
+## Session Completion and Delivery
+
+Every repository-changing task—code, documentation, configuration, or guidance—must finish with a
+pushed branch and an open pull request. A local commit is only an intermediate checkpoint and is
+never sufficient delivery.
+
+- Before ending the session, verify that the remote branch and pull request both exist, then report
+  the PR URL and its review state to the user.
+- Do not describe repository-changing work as complete when no PR was opened. If the user explicitly
+  asks to keep the work local, or publishing is blocked by credentials, permissions, or an external
+  outage, state that exception and the remaining publish step clearly.
+
+## External Sessionboard eval rerun gate
+
+The hosted `sbek` evaluation mutates its target while it creates proposals, reviews, sessions, and
+agenda data. An explicit approval starts **one evaluation cycle**: finish or resume that run, judge
+it in fresh context, preserve its scored baseline, and remediate findings within the authority the
+user gave. Before creating another run with `sbek plan`, report the preserved score, coverage,
+manual checks, defects, fixes, deployment state, and proposed next scope, then wait for a new
+explicit approval. Never infer approval for a rerun from the original cycle request, an unattended
+or overnight instruction, or the absence of a reply. Continuing unfinished scenarios in the same
+run is not a rerun.
+
+Follow `docs/handoff/sessionboard-eval-loop.md` for the cycle and archive the scored summary with
+`bun run eval:archive -- --run <evaluator-run-directory>` before changing the product.
 
 ## PR Conventions
 

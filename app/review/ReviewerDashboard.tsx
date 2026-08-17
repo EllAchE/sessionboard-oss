@@ -49,6 +49,39 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
 
   const total = props.pendingCount + props.completedCount;
   const percent = total === 0 ? 0 : Math.round((props.completedCount / total) * 100);
+  const nothingAssigned = total === 0;
+  const caughtUp = total > 0 && props.pendingCount === 0;
+
+  /**
+   * A reviewer with an empty queue has to be told two things: why it is empty, and that nothing is
+   * expected of them. Without both, the page's own furniture — a zeroed progress bar over an empty
+   * table — reads as a surface that failed to load rather than one with no work in it. Every branch
+   * is a state the service can actually produce, so none of this is a generic fallback.
+   */
+  const emptyState = useMemo(() => {
+    if (!props.round) {
+      return {
+        headline: 'No review round is open',
+        body: 'There is nothing for you to do right now. When the organizer opens a round and routes proposals to you, they appear here.',
+      };
+    }
+    if (props.recused.length > 0) {
+      return {
+        headline: 'Nothing left in your queue',
+        body: `You recused yourself from everything you were given in ${props.round.name}. There is no action to take, and the organizer reassigns those proposals.`,
+      };
+    }
+    if (props.coveredTracks.length === 0) {
+      return {
+        headline: 'Nothing is assigned to you',
+        body: `You are not routed to any track, so no proposal reaches you automatically in ${props.round.name}. There is no action to take until an organizer assigns you one.`,
+      };
+    }
+    return {
+      headline: 'Nothing is assigned to you yet',
+      body: `You cover ${props.coveredTracks.join(', ')}. Proposals in those tracks appear here as the organizer routes ${props.round.name}. There is no action to take until one does.`,
+    };
+  }, [props.coveredTracks, props.recused.length, props.round]);
 
   const open = useCallback(
     (row: AssignmentWire) =>
@@ -80,6 +113,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'title',
         header: 'Submission',
         strong: true,
+        space: 'wide',
         render: (row) => (
           <span className={styles.rowTitle}>
             <span className={styles.rowRef}>{row.displayRef}</span>
@@ -90,7 +124,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       {
         id: 'author',
         header: 'Author',
-        width: '18%',
+        width: '16%',
         render: (row) =>
           props.authorHidden ? (
             <span className={styles.muted}>
@@ -100,11 +134,12 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             row.submitterName
           ),
       },
-      { id: 'track', header: 'Track', width: '14%', render: (row) => row.trackName ?? '—' },
+      { id: 'track', header: 'Track', width: '12%', render: (row) => row.trackName ?? '—' },
       {
         id: 'status',
         header: 'Status',
         width: '110px',
+        space: 'compact',
         render: (row) =>
           row.status === 'completed' ? (
             <Badge tone="success">Scored</Badge>
@@ -116,6 +151,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'score',
         header: 'Your score',
         width: '96px',
+        space: 'compact',
         align: 'right',
         render: (row) =>
           row.average === null ? (
@@ -128,6 +164,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'actions',
         header: '',
         width: '176px',
+        space: 'wide',
         render: (row) => (
           <span className={styles.rowActions}>
             <Button size="sm" variant="ghost" onClick={() => open(row)}>
@@ -157,6 +194,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         id: 'title',
         header: 'Submission',
         strong: true,
+        space: 'wide',
         render: (row) => (
           <span className={styles.rowTitle}>
             <span className={styles.rowRef}>{row.displayRef}</span>
@@ -167,6 +205,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
       {
         id: 'reason',
         header: 'Reason you gave',
+        space: 'wide',
         render: (row) => row.comment ?? <span className={styles.muted}>No reason given</span>,
       },
     ],
@@ -180,9 +219,11 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           <span className={styles.eyebrow}>{props.eventName}</span>
           <h1 className={styles.title}>Your reviews</h1>
           <p className={styles.subtitle}>
-            {props.round
-              ? `${props.round.name} · ${props.pendingCount} to score, ${props.completedCount} done`
-              : 'No review round is open yet.'}
+            {!props.round
+              ? 'No review round is open yet.'
+              : nothingAssigned
+                ? props.round.name
+                : `${props.round.name} · ${props.pendingCount} to score, ${props.completedCount} done`}
           </p>
         </div>
         {props.rounds.length > 1 ? (
@@ -208,58 +249,78 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
 
       <Card>
         <CardBody>
-          <div className={styles.progressCard}>
-            <span className={styles.progressStat}>
-              <span className={styles.bigNumber}>{props.pendingCount}</span>
-              <span className={styles.progressLabel}>still to score</span>
-            </span>
-            <span className={styles.progressStat}>
-              <span className={styles.bigNumber}>{props.completedCount}</span>
-              <span className={styles.progressLabel}>submitted</span>
-            </span>
-            <div className={styles.track}>
-              <div className={styles.trackFill} style={{ width: `${percent}%` }} />
+          {nothingAssigned ? (
+            <div className={styles.emptyState}>
+              <p className={styles.emptyHeadline}>{emptyState.headline}</p>
+              <p className={styles.emptyBody}>{emptyState.body}</p>
             </div>
-            <span className={styles.progressLabel}>{percent}% complete</span>
-          </div>
+          ) : (
+            <div className={styles.progressCard}>
+              <span className={styles.progressStat}>
+                <span className={styles.bigNumber}>{props.pendingCount}</span>
+                <span className={styles.progressLabel}>still to score</span>
+              </span>
+              <span className={styles.progressStat}>
+                <span className={styles.bigNumber}>{props.completedCount}</span>
+                <span className={styles.progressLabel}>submitted</span>
+              </span>
+              <div className={styles.track}>
+                <div className={styles.trackFill} style={{ width: `${percent}%` }} />
+              </div>
+              <span className={styles.progressLabel}>{percent}% complete</span>
+            </div>
+          )}
           <div className={styles.metaRow}>
             {props.round ? <Badge tone="info">{props.round.status}</Badge> : null}
             {props.round?.blindUntilClose ? <Badge>Peer scores hidden</Badge> : null}
             {props.authorHidden ? (
-              <Badge tone="warning">Anonymized — you cannot see who submitted</Badge>
+              <Badge tone="warning">Anonymized</Badge>
             ) : null}
             {props.criterionCount === 0 && props.round ? (
               <Badge tone="danger">This round has no criteria yet</Badge>
             ) : null}
           </div>
-          {/* `V-5`: the queue above is the organizer's track routing, seen from this side. */}
-          <p className={styles.muted}>
-            {props.coveredTracks.length > 0
-              ? `You cover ${props.coveredTracks.join(', ')}. Submissions filed under ${
-                  props.coveredTracks.length === 1 ? 'that track' : 'those tracks'
-                } are routed to you.`
-              : 'No track is routed to you yet, so anything below was assigned by hand.'}
-          </p>
+          {/*
+            `V-5`: the queue below is the organizer's track routing, seen from this side. With an
+            empty queue the routing is already part of the copy above, and saying it twice — or
+            saying "items below were assigned manually" over nothing at all — is what made this
+            page read as broken.
+          */}
+          {nothingAssigned ? null : (
+            <p className={styles.muted}>
+              {props.coveredTracks.length > 0
+                ? `You cover ${props.coveredTracks.join(', ')}.`
+                : 'No tracks assigned; the items below were assigned to you by hand.'}
+            </p>
+          )}
+          {caughtUp ? (
+            <p className={styles.emptyBody}>
+              You are caught up. Everything assigned to you here is scored, so there is no action to
+              take. Open a row only if you want to revise what you gave it.
+            </p>
+          ) : null}
         </CardBody>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Assigned to you</CardTitle>
-        </CardHeader>
-        <CardBody>
-          <div className={styles.tableWrap}>
-            <DataTable
-              columns={columns}
-              rows={props.assignments}
-              getRowId={(row) => row.assignmentId}
-              label="Your assignments"
-              emptyState="Nothing is assigned to you in this round yet."
-              onRowActivate={open}
-            />
-          </div>
-        </CardBody>
-      </Card>
+      {nothingAssigned ? null : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Assigned to you</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <div className={styles.tableWrap}>
+              <DataTable
+                columns={columns}
+                rows={props.assignments}
+                getRowId={(row) => row.assignmentId}
+                label="Your assignments"
+                emptyState="Nothing is assigned to you in this round yet."
+                onRowActivate={open}
+              />
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {props.recused.length > 0 ? (
         <Card>
@@ -268,7 +329,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
           </CardHeader>
           <CardBody>
             <p className={styles.muted}>
-              These are off your queue. The organizer sees them as declined and can reassign them.
+              Removed from your queue and available for reassignment.
             </p>
             <div className={styles.tableWrap}>
               <DataTable
@@ -291,7 +352,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
         title="Recuse yourself from this submission"
         description={
           recusing
-            ? `${recusing.displayRef} — ${recusing.title}. It leaves your queue and the organizer can reassign it.`
+            ? `${recusing.displayRef}: ${recusing.title}. It leaves your queue and the organizer can reassign it.`
             : undefined
         }
         footer={
@@ -313,7 +374,7 @@ export function ReviewerDashboard(props: ReviewerDashboardProps) {
             id="recusal-reason"
             rows={3}
             value={reason}
-            placeholder="A conflict of interest, or simply no capacity."
+            placeholder="Conflict of interest or availability."
             onChange={(event) => setReason(event.target.value)}
           />
         </div>

@@ -85,6 +85,11 @@
   margin-left: auto;
 }
 
+/** The hint badges render nothing until the modifier is held; the slot should not hold a gap open. */
+.badge:empty {
+  display: none;
+}
+
 .active {
   background: var(--surface-selected);
   color: var(--text-accent);

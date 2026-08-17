@@ -33,7 +33,18 @@ import {
 
 export const AGENDA_MODEL = 'claude-sonnet-5';
 
-const MAX_OUTPUT_TOKENS = 4096;
+/**
+ * `max_tokens` is one ceiling over reasoning *and* visible text, and on `claude-sonnet-5` the model
+ * reasons by default — so a budget sized for the placements alone gets spent thinking and the JSON
+ * arrives cut off. A programme is exactly the kind of answer that earns a long think, and the body
+ * grows with the queue, so both halves are large here. The neighbouring fixes are worse:
+ * `budget_tokens` is rejected outright by this model, and turning thinking off is documented to let
+ * reasoning prose leak into the text block, which is the string `extractJson` reads. So the ceiling
+ * is set wide enough for both. An unused ceiling is free — billing counts tokens generated, not
+ * tokens allowed — and this one stays under the size where a non-streaming request risks an HTTP
+ * timeout.
+ */
+const MAX_OUTPUT_TOKENS = 16_000;
 
 export function available(): boolean {
   return features.ai();
@@ -218,6 +229,21 @@ type RawPlacement = {
 };
 
 /** Models wrap JSON in prose or a fence often enough that the first `{`…`}` is the reliable read. */
+/**
+ * A draft cut off by the ceiling has to say so, because nothing downstream can tell. `extractJson`
+ * treats a fragment exactly as it treats prose — it returns no placements — and `validateProposal`
+ * then reports an empty proposal, which reads on the board as "the planner had nothing to suggest".
+ * That is the wrong sentence: the planner had plenty to suggest and ran out of room saying it.
+ * `max_tokens` is the one stop reason that means there was more coming.
+ */
+export function proposalText(response: Anthropic.Message): string | null {
+  if (response.stop_reason === 'max_tokens') return null;
+  return response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('\n');
+}
+
 export function extractJson(text: string): { placements: RawPlacement[]; notes: string | null } {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
@@ -355,7 +381,7 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       placements,
       unplaced,
       notes:
-        'Drafted by the built-in planner, which fills the earliest free slot in each room. It has no view of what makes two talks a bad pair — read it as a starting grid, not a programme.',
+        'Drafted by the built-in planner, which fills the earliest free slot in each room. It has no view of what makes two talks a bad pair, read it as a starting grid, not a programme.',
       model: null,
     };
   }
@@ -370,10 +396,18 @@ export async function proposeAgenda(context: ProposalContext): Promise<AgendaPro
       messages: [{ role: 'user', content: buildPrompt(context) }],
     });
 
-    const text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n');
+    const text = proposalText(response);
+    if (text === null) {
+      return {
+        status: 'error',
+        placements: [],
+        unplaced: [],
+        notes: null,
+        model: AGENDA_MODEL,
+        message:
+          'The agenda assistant ran out of room before it finished the draft. Try again with fewer items in the queue. The board is unaffected.',
+      };
+    }
 
     const { placements: raw, notes } = extractJson(text);
     const { placements, unplaced } = validateProposal(context, raw);

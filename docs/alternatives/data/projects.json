@@ -1,0 +1,1644 @@
+{
+  "$comment": "Authoritative denominator for the alternative-designs survey. Hand-maintained; `bun run alternatives:build` validates it and regenerates every derived artifact. Add a repository here, write its docs/alternatives/<slug>.md note, then rerun the build.",
+  "surveyedOn": "2026-08-16",
+  "brief": "Kill My SaaS — Sessionboard clone",
+  "projects": [
+    {
+      "slug": "0xOsprey-saas-killa",
+      "project": "0xOsprey/saas-killa",
+      "status": "analyzed",
+      "source": "https://github.com/0xOsprey/saas-killa",
+      "live": "https://saas-killa.0xosprey.com/",
+      "foundVia": "assigned local survey batch (discovery already complete)",
+      "analyzedOn": "2026-08-16",
+      "commit": "b68f286a0c5d",
+      "note": "0xOsprey-saas-killa.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Next.js",
+        "datastore": "PostgreSQL",
+        "dataAccess": "Drizzle",
+        "hosting": "unknown",
+        "auth": [
+          "magic link"
+        ]
+      },
+      "stackProse": "Next.js 15 App Router and React 19, TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS 4 plus local UI primitives, and passwordless single-use magic-link sessions.",
+      "scale": {
+        "lines": 51162,
+        "files": 304,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 2,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "adityak6798-ManageMyConference",
+      "project": "adityak6798/ManageMyConference",
+      "status": "analyzed",
+      "source": "https://github.com/adityak6798/ManageMyConference",
+      "live": "https://project-greenroom-api.adityak6798.workers.dev",
+      "foundVia": "pre-cloned survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "2e9e71d",
+      "note": "adityak6798-ManageMyConference.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "email code",
+          "OAuth"
+        ]
+      },
+      "stackProse": "Cloudflare Workers with Hono and a Vite/React 19 SPA, TypeScript, Drizzle ORM over Cloudflare D1 (SQLite), R2-backed assets, plain CSS, and emailed-code sessions with optional Google OAuth; Zod contracts generate OpenAPI.",
+      "scale": {
+        "lines": 233075,
+        "files": 856,
+        "commits": 442,
+        "commitsAreLowerBound": true,
+        "authors": 2,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-15"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "agrimsingh-conference-engine",
+      "project": "agrimsingh/conference-engine",
+      "status": "analyzed",
+      "source": "https://github.com/agrimsingh/conference-engine",
+      "live": "https://conference-engine.65labs.org",
+      "foundVia": "assigned local survey batch (discovery already complete)",
+      "analyzedOn": "2026-08-16",
+      "commit": "90078bf0bcda",
+      "note": "agrimsingh-conference-engine.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Next.js",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link",
+          "API token"
+        ]
+      },
+      "stackProse": "Next.js 16 App Router and React 19, TypeScript, direct prepared SQL without an ORM, Cloudflare D1 (SQLite) plus R2 and a per-event Durable Object, Tailwind CSS 4, and passwordless one-time-link sessions with hashed event API tokens.",
+      "scale": {
+        "lines": 97896,
+        "files": 820,
+        "commits": 56,
+        "commitsAreLowerBound": true,
+        "authors": 2,
+        "firstCommit": "2026-08-10",
+        "lastCommit": "2026-08-16"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "akakabrian-sessionslate",
+      "project": "akakabrian/sessionslate",
+      "status": "analyzed",
+      "source": "https://github.com/akakabrian/sessionslate",
+      "live": null,
+      "foundVia": "provided survey batch; discovery was completed before analysis",
+      "analyzedOn": "2026-08-16",
+      "commit": "aac9749",
+      "note": "akakabrian-sessionslate.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Next.js",
+        "datastore": "PostgreSQL",
+        "dataAccess": "Drizzle",
+        "hosting": "unknown",
+        "auth": [
+          "password"
+        ]
+      },
+      "stackProse": "Next.js 16 and React 19 in a pnpm TypeScript monorepo, with a separate worker process. Drizzle ORM targets PostgreSQL; `pg-boss` supplies durable background jobs. The UI uses CSS Modules and a local component package. Submitter authentication uses email/password accounts, Argon2id password hashes, and database-backed server sessions.",
+      "scale": {
+        "lines": 90100,
+        "files": 927,
+        "commits": 52,
+        "commitsAreLowerBound": true,
+        "authors": 3,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "partial",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "blockbrain-ai-speakerops",
+      "project": "blockbrain-ai/speakerops",
+      "status": "analyzed",
+      "source": "https://github.com/blockbrain-ai/speakerops",
+      "live": "https://www.speakerops.org",
+      "foundVia": "pre-discovered batch manifest",
+      "analyzedOn": "2026-08-16",
+      "commit": "c479ec2fb254c748cd5e87e6f0c3677371c4c66b",
+      "note": "blockbrain-ai-speakerops.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link",
+          "API key"
+        ]
+      },
+      "stackProse": "React 18 and Vite SPA, TypeScript, Hono on Cloudflare Workers, Drizzle ORM, Cloudflare D1 (SQLite) plus R2 and Queues, custom CSS/Lumen components, magic-link session cookies, and scoped API keys.",
+      "scale": {
+        "lines": 193083,
+        "files": 950,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-12",
+        "lastCommit": "2026-08-16"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "partial",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "absent",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "CampbellVentures-smolboard",
+      "project": "CampbellVentures/smolboard",
+      "status": "analyzed",
+      "source": "https://github.com/CampbellVentures/smolboard",
+      "live": "https://www.smolboard.app",
+      "foundVia": "repository supplied in this survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "0f05f7f47ef954caf16f869e55c68ecd3aad6b95",
+      "note": "CampbellVentures-smolboard.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "PylonSync",
+        "datastore": "PylonSync entity store",
+        "dataAccess": "PylonSync",
+        "hosting": "PylonSync runtime",
+        "auth": [
+          "password",
+          "magic code"
+        ]
+      },
+      "stackProse": "PylonSync 0.4.17 provides the full-stack entity store, functions, live client synchronization, authentication, and deployment runtime. The application and React 19 UI are TypeScript. There is no separate ORM or SQL database layer in the repository; persisted entities are declared in the Pylon application manifest. Styling uses Tailwind CSS 4 and Radix primitives. Pylon authentication supports organizer password/magic-code access and speaker magic-code access.",
+      "scale": {
+        "lines": 42500,
+        "files": 405,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-12",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "partial",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "caseymanos-opensession",
+      "project": "caseymanos/opensession",
+      "status": "analyzed",
+      "source": "https://github.com/caseymanos/opensession",
+      "live": "https://opensessionboard.com/",
+      "foundVia": "pre-discovered batch manifest",
+      "analyzedOn": "2026-08-16",
+      "commit": "87981a4c9239eeaa2be6ac42bb9c154afe89cde2",
+      "note": "caseymanos-opensession.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Airtable + D1 projection",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link",
+          "API key"
+        ]
+      },
+      "stackProse": "React 19 and Vite, TypeScript, Hono on Cloudflare Workers, raw SQL/repository code rather than an ORM, Airtable as authoritative program storage with Cloudflare D1 projections, Durable Objects, R2, Queues, custom CSS/UI packages, magic-link sessions, and scoped API keys.",
+      "scale": {
+        "lines": 195653,
+        "files": 560,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-10",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "partial",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "absent",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "absent",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "ChaiWithJai-open-speaker-operations",
+      "project": "ChaiWithJai/open-speaker-operations",
+      "status": "analyzed",
+      "source": "`git@github.com:ChaiWithJai/open-speaker-operations.git`",
+      "live": null,
+      "foundVia": "provided repository batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "0960280",
+      "note": "ChaiWithJai-open-speaker-operations.md",
+      "stack": {
+        "language": "Python",
+        "framework": "Django (Pretalx plugin)",
+        "datastore": "PostgreSQL",
+        "dataAccess": "Django ORM",
+        "hosting": "unknown",
+        "auth": [
+          "inherited from Pretalx"
+        ]
+      },
+      "stackProse": "A Python 3.11 Django plugin installed into Pretalx; PostgreSQL is the authoritative deployment database with SQLite supported for local development, Django ORM supplies persistence, Redis/Celery support background work, and Django/Pretalx templates with CSS and JavaScript provide the UI. Authentication and event permissions are inherited from Pretalx.",
+      "scale": {
+        "lines": 42920,
+        "files": 343,
+        "commits": 88,
+        "commitsAreLowerBound": true,
+        "authors": 5,
+        "firstCommit": "2026-08-08",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "partial",
+        "ai-features": "partial",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "chuchuisrich-rgb-speaker-harmony",
+      "project": "chuchuisrich-rgb/speaker-harmony",
+      "status": "analyzed",
+      "source": "git@github.com:chuchuisrich-rgb/speaker-harmony.git",
+      "live": null,
+      "foundVia": "Pre-discovered repository batch supplied for this survey.",
+      "analyzedOn": "2026-08-16",
+      "commit": "bad9cf0dbc46ed9576933821753229f0a70487f5",
+      "note": "chuchuisrich-rgb-speaker-harmony.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "TanStack Start",
+        "datastore": "Airtable",
+        "dataAccess": "REST adapter",
+        "hosting": "unknown",
+        "auth": [
+          "none"
+        ]
+      },
+      "stackProse": "TanStack Start with React 19 and TypeScript; client context state and `localStorage` with Airtable REST synchronization and no ORM; Tailwind CSS 4 and Radix; no authentication layer.",
+      "scale": {
+        "lines": 9218,
+        "files": 97,
+        "commits": 66,
+        "commitsAreLowerBound": false,
+        "authors": 4,
+        "firstCommit": "2026-08-08",
+        "lastCommit": "2026-08-10"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "partial",
+        "anonymized-review": "absent",
+        "decisions-notifications": "partial",
+        "agenda-scheduling": "full",
+        "conflict-detection": "partial",
+        "speaker-portal": "partial",
+        "content-deliverables": "partial",
+        "comms-templates": "partial",
+        "public-pages": "partial",
+        "embeds": "full",
+        "rest-api": "absent",
+        "ai-features": "partial",
+        "speaker-crm": "absent",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "conorbronsdon-callboard-app",
+      "project": "conorbronsdon/callboard-app",
+      "status": "analyzed",
+      "source": "https://github.com/conorbronsdon/callboard-app",
+      "live": "https://demo.callboardhq.com",
+      "foundVia": "provided survey batch; discovery was completed before analysis",
+      "analyzedOn": "2026-08-16",
+      "commit": "08725c0",
+      "note": "conorbronsdon-callboard-app.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "React Router 8",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link"
+        ]
+      },
+      "stackProse": "React Router 8 framework mode with React 19, Vite 8, and TypeScript 5.9, deployed as a Cloudflare Worker. Drizzle ORM targets Cloudflare D1/SQLite and files are stored in R2. Styling is Tailwind CSS 4. Authentication uses emailed magic links, one-time auth-token rows, and database sessions. Cloudflare Workers AI supplies the model-backed review triage.",
+      "scale": {
+        "lines": 121500,
+        "files": 611,
+        "commits": 24,
+        "commitsAreLowerBound": false,
+        "authors": 1,
+        "firstCommit": "2026-08-12",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "d4mr-opensesh",
+      "project": "d4mr/opensesh",
+      "status": "analyzed",
+      "source": "git@github.com:d4mr/opensesh.git",
+      "live": "https://app.opensesh.io",
+      "foundVia": "Pre-discovered repository batch supplied for this survey.",
+      "analyzedOn": "2026-08-16",
+      "commit": "35450414ef90dbf552c8d74c9c6613fac1223e23",
+      "note": "d4mr-opensesh.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "TanStack Start",
+        "datastore": "PostgreSQL",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password",
+          "OAuth"
+        ]
+      },
+      "stackProse": "pnpm workspace monorepo; TanStack Start, React 19, and TypeScript; Effect-based domain and repository services; Drizzle ORM with PostgreSQL; Tailwind CSS, shadcn/ui, and Radix; Better Auth with email/password, organizations, and MCP OAuth; deployed to Cloudflare Workers with Hyperdrive, R2, and Queues.",
+      "scale": {
+        "lines": 95728,
+        "files": 1155,
+        "commits": 61,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-13",
+        "lastCommit": "2026-08-14"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "EquipeAI-stagestack",
+      "project": "EquipeAI/stagestack",
+      "status": "analyzed",
+      "source": "`git@github.com:EquipeAI/stagestack.git`",
+      "live": "https://stagestack.dev",
+      "foundVia": "provided repository batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "d3ed11f",
+      "note": "EquipeAI-stagestack.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "TanStack Start",
+        "datastore": "Convex",
+        "dataAccess": "Convex",
+        "hosting": "unknown",
+        "auth": [
+          "Clerk"
+        ]
+      },
+      "stackProse": "TanStack Start and React 19 on Vite, written in TypeScript; Convex supplies the database and server functions without a separate ORM; Tailwind CSS 4 and a vendored component system provide styling; Clerk provides authentication. The workspace also includes a server-side import worker, Resend delivery, and Vercel/Convex deployment configuration.",
+      "scale": {
+        "lines": 150914,
+        "files": 1137,
+        "commits": 126,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-09",
+        "lastCommit": "2026-08-15"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "getzenai-untitledconference",
+      "project": "getzenai/untitledconference",
+      "status": "analyzed",
+      "source": "git@github.com:getzenai/untitledconference.git",
+      "live": "https://untitledconference.com",
+      "foundVia": "pre-cloned alternatives survey batch (discovery supplied)",
+      "analyzedOn": "2026-08-16",
+      "commit": "6c2bbb8",
+      "note": "getzenai-untitledconference.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "SvelteKit",
+        "datastore": "PostgreSQL",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password",
+          "passkey",
+          "OAuth"
+        ]
+      },
+      "stackProse": "SvelteKit 2 and Svelte 5, TypeScript, Drizzle ORM, PostgreSQL, Tailwind CSS 4 with shadcn-svelte/Bits UI, and Better Auth with passwords, passkeys, organizations, and OAuth-provider support. The Cloudflare deployment also uses Hyperdrive and R2; pg-boss runs queued work outside the request path.",
+      "scale": {
+        "lines": 157900,
+        "files": 1347,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 2,
+        "firstCommit": "2026-08-16",
+        "lastCommit": "2026-08-16"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "partial",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "partial"
+      }
+    },
+    {
+      "slug": "guangyusong-opencallboard",
+      "project": "guangyusong/opencallboard",
+      "status": "analyzed",
+      "source": "`git@github.com:guangyusong/opencallboard.git`",
+      "live": "https://opencallboard.com",
+      "foundVia": "provided repository batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "a131cca",
+      "note": "guangyusong-opencallboard.md",
+      "stack": {
+        "language": "JavaScript",
+        "framework": "React SPA + Worker API",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link"
+        ]
+      },
+      "stackProse": "React 19 on Vite, written in JavaScript; a Cloudflare Worker supplies the API, raw SQL targets Cloudflare D1 without an ORM, R2 stores files, and Cloudflare Queues carry email jobs. Plain CSS styles the application. Authentication is a custom one-time-link and secure-session system with organizer accounts and role-scoped speaker/reviewer grants.",
+      "scale": {
+        "lines": 26712,
+        "files": 103,
+        "commits": 13,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "partial",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "partial",
+        "speaker-crm": "partial",
+        "sponsors": "partial"
+      }
+    },
+    {
+      "slug": "iankar8-event-manager-os",
+      "project": "iankar8/event-manager-os",
+      "status": "analyzed",
+      "source": "git@github.com:iankar8/event-manager-os.git",
+      "live": "https://program-desk.ian-208.workers.dev",
+      "foundVia": "pre-cloned alternatives survey batch (discovery supplied)",
+      "analyzedOn": "2026-08-16",
+      "commit": "84b6fcb",
+      "note": "iankar8-event-manager-os.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password",
+          "magic link"
+        ]
+      },
+      "stackProse": "React 19 with React Router DOM 7 on Vite, TypeScript, Hono on Cloudflare Workers, raw SQL over Cloudflare D1/SQLite (no ORM), custom CSS/design tokens, and password plus magic-link authentication with hashed D1 sessions.",
+      "scale": {
+        "lines": 9300,
+        "files": 97,
+        "commits": 22,
+        "commitsAreLowerBound": false,
+        "authors": 1,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "partial",
+        "speaker-crm": "partial",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "jpoehnelt-session-party",
+      "project": "jpoehnelt/session-party",
+      "status": "analyzed",
+      "source": "git@github.com:jpoehnelt/session-party.git",
+      "live": "https://sessionparty.com",
+      "foundVia": "pre-cloned alternatives survey batch (discovery supplied)",
+      "analyzedOn": "2026-08-16",
+      "commit": "bc46bee",
+      "note": "jpoehnelt-session-party.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link"
+        ]
+      },
+      "stackProse": "React 19 and React Router 8 on Vite, TypeScript, Hono on Cloudflare Workers, Effect-based services, Drizzle ORM over Cloudflare D1/SQLite, R2, Tailwind CSS 4 with Radix/custom components, and passwordless magic-link authentication with hashed sessions and Turnstile.",
+      "scale": {
+        "lines": 197500,
+        "files": 466,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-12",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "partial",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "M31-Labs-rostrum",
+      "project": "M31-Labs/rostrum",
+      "status": "analyzed",
+      "source": "https://github.com/M31-Labs/rostrum",
+      "live": "https://rostrum.m31labs.dev",
+      "foundVia": "pre-cloned survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "7dbab2a",
+      "note": "M31-Labs-rostrum.md",
+      "stack": {
+        "language": "Go",
+        "framework": "GoSX",
+        "datastore": "JSON / SQLite / PostgreSQL aggregate",
+        "dataAccess": "custom aggregate",
+        "hosting": "unknown",
+        "auth": [
+          "magic link",
+          "passkey",
+          "OAuth"
+        ]
+      },
+      "stackProse": "Go 1.26 with GoSX server-rendered file routes, an Arbiter policy engine, a whole-workspace aggregate persisted to JSON, SQLite, or PostgreSQL, hand-written CSS, and signed sessions supporting magic links, WebAuthn passkeys, and optional GitHub/Google OAuth.",
+      "scale": {
+        "lines": 45780,
+        "files": 233,
+        "commits": 48,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-09",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "partial",
+        "speaker-crm": "absent",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "maddiedreese-ProgramLoom",
+      "project": "maddiedreese/ProgramLoom",
+      "status": "analyzed",
+      "source": "https://github.com/maddiedreese/ProgramLoom",
+      "live": "https://app.programloom.com",
+      "foundVia": "pre-discovered batch manifest",
+      "analyzedOn": "2026-08-16",
+      "commit": "0411789b457d14449d47fb7cad6783f5afbc82eb",
+      "note": "maddiedreese-ProgramLoom.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React Router",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "magic link",
+          "API token",
+          "OAuth 2.1"
+        ]
+      },
+      "stackProse": "React 19, React Router 7, and Vite, TypeScript, Hono on Cloudflare Workers, raw D1 SQL rather than an ORM, Cloudflare D1/R2/Queues, custom CSS, passwordless magic-link sessions, scoped API tokens, and OAuth 2.1 clients.",
+      "scale": {
+        "lines": 79278,
+        "files": 340,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "mauricedesaxe-openboard",
+      "project": "mauricedesaxe/openboard",
+      "status": "analyzed",
+      "source": "https://github.com/mauricedesaxe/openboard",
+      "live": "https://openboard.alexlazar.dev/",
+      "foundVia": "provided survey batch; discovery was completed before analysis",
+      "analyzedOn": "2026-08-16",
+      "commit": "d40c01f",
+      "note": "mauricedesaxe-openboard.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "React SPA + tRPC",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "email code"
+        ]
+      },
+      "stackProse": "A Vite 8 React 19 single-page application using React Router 8, tRPC 11, TanStack Query, and TypeScript 6, deployed to Cloudflare Workers. Drizzle ORM targets Cloudflare D1/SQLite and R2 stores uploaded files. Scheduling uses FullCalendar; styling is project-local global CSS. Better Auth supplies email one-time-code authentication and database sessions.",
+      "scale": {
+        "lines": 46200,
+        "files": 164,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-13",
+        "lastCommit": "2026-08-16"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "partial",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "partial",
+        "embeds": "absent",
+        "rest-api": "partial",
+        "ai-features": "absent",
+        "speaker-crm": "absent",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "mkly-gatherpulse",
+      "project": "mkly/gatherpulse",
+      "status": "analyzed",
+      "source": "https://github.com/mkly/gatherpulse",
+      "live": null,
+      "foundVia": "pre-cloned survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "ecd5561",
+      "note": "mkly-gatherpulse.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Next.js",
+        "datastore": "PostgreSQL",
+        "dataAccess": "Prisma",
+        "hosting": "unknown",
+        "auth": [
+          "magic link",
+          "2FA"
+        ]
+      },
+      "stackProse": "Next.js 16 and React 19, TypeScript, Prisma 7 over PostgreSQL, Tailwind CSS 4 with shadcn/Base UI components, and Better Auth magic links with optional TOTP two-factor authentication.",
+      "scale": {
+        "lines": 137666,
+        "files": 892,
+        "commits": 118,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-09",
+        "lastCommit": "2026-08-12"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "full",
+        "sponsors": "full"
+      }
+    },
+    {
+      "slug": "mrmichael73-greenroom-kms",
+      "project": "mrmichael73/greenroom-kms",
+      "status": "analyzed",
+      "source": "https://github.com/mrmichael73/greenroom-kms",
+      "live": "https://killmysaas.greenroom-events.workers.dev",
+      "foundVia": "repository supplied in this survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "4c6a29335cce7bb6a5c27d629f736b40e2622d86",
+      "note": "mrmichael73-greenroom-kms.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password"
+        ]
+      },
+      "stackProse": "A single TypeScript Cloudflare Worker uses Hono 4, Cloudflare D1/SQLite, and direct SQL rather than an ORM. Uploads use R2 when configured and a D1-backed fallback otherwise. Pages are hand-rendered, escaped HTML with small inline scripts and custom CSS; there is no client framework. Authentication is a custom email/password flow using WebCrypto PBKDF2 hashes and signed session cookies.",
+      "scale": {
+        "lines": 19700,
+        "files": 43,
+        "commits": 25,
+        "commitsAreLowerBound": false,
+        "authors": 1,
+        "firstCommit": "2026-08-10",
+        "lastCommit": "2026-08-10"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "partial",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "partial",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "absent",
+        "ai-features": "partial",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "nayamoss-namos-sessions-public",
+      "project": "nayamoss/namos-sessions-public",
+      "status": "analyzed",
+      "source": "`git@github.com:nayamoss/namos-sessions-public.git`",
+      "live": null,
+      "foundVia": "provided repository batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "c5e8234",
+      "note": "nayamoss-namos-sessions-public.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "React (Vite)",
+        "datastore": "Convex",
+        "dataAccess": "Convex",
+        "hosting": "unknown",
+        "auth": [
+          "Clerk"
+        ]
+      },
+      "stackProse": "React 18 and Vite, written in TypeScript; Convex is the primary database/function layer, behind a repository adapter that also has an Airtable implementation; there is no conventional ORM. Tailwind CSS 3 and Radix-based components provide styling, Clerk provides authentication, and React Email can deliver through Resend, Amazon SES, or Nodemailer transports.",
+      "scale": {
+        "lines": 45967,
+        "files": 538,
+        "commits": 9,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-13",
+        "lastCommit": "2026-08-15"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "partial",
+        "ai-features": "full",
+        "speaker-crm": "partial",
+        "sponsors": "full"
+      }
+    },
+    {
+      "slug": "openrostrum-openrostrum",
+      "project": "openrostrum/openrostrum",
+      "status": "analyzed",
+      "source": "https://github.com/openrostrum/openrostrum",
+      "live": "https://openrostrum.com",
+      "foundVia": "assigned local survey batch (discovery already complete)",
+      "analyzedOn": "2026-08-16",
+      "commit": "1bd2a9ba1e4d",
+      "note": "openrostrum-openrostrum.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "React Router 7",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password"
+        ]
+      },
+      "stackProse": "React Router 7 Framework Mode and React 19, TypeScript, Drizzle ORM, Cloudflare D1 (SQLite) with R2 blobs, Tailwind CSS 4 plus custom primitives, and first-party PBKDF2 password/session authentication.",
+      "scale": {
+        "lines": 132686,
+        "files": 909,
+        "commits": 156,
+        "commitsAreLowerBound": true,
+        "authors": 3,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-14"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "Phantastic-AI-fireside",
+      "project": "Phantastic-AI/fireside",
+      "status": "analyzed",
+      "source": "https://github.com/Phantastic-AI/fireside",
+      "live": "https://onfireside.com",
+      "foundVia": "pre-discovered batch manifest",
+      "analyzedOn": "2026-08-16",
+      "commit": "aedc8b6d4feb2ed74f66f3e7eff4d395f36f5d75",
+      "note": "Phantastic-AI-fireside.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "raw SQL",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password",
+          "magic link",
+          "OAuth"
+        ]
+      },
+      "stackProse": "Server-rendered Hono on Cloudflare Workers, TypeScript with small progressive-enhancement JavaScript islands, raw Cloudflare D1 SQL, R2, Workers AI, custom CSS, and cookie sessions reached through passwords, magic links, or Google sign-in; no client framework or ORM.",
+      "scale": {
+        "lines": 50903,
+        "files": 118,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-12",
+        "lastCommit": "2026-08-15"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "partial",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "absent",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "realgenekim-curtain-call-cfp",
+      "project": "realgenekim/curtain-call-cfp",
+      "status": "analyzed",
+      "source": "https://github.com/realgenekim/curtain-call-cfp",
+      "live": "https://curtaincallcfp.com",
+      "foundVia": "repository supplied in this survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "639b741dbd98ae9c5fcf7b6e705d98b96e1d5c21",
+      "note": "realgenekim-curtain-call-cfp.md",
+      "stack": {
+        "language": "Clojure",
+        "framework": "Ring / Reitit + Hiccup",
+        "datastore": "JSONL fact log / PostgreSQL",
+        "dataAccess": "next.jdbc",
+        "hosting": "unknown",
+        "auth": [
+          "email token",
+          "OAuth"
+        ]
+      },
+      "stackProse": "Clojure 1.12 with http-kit, Reitit/Ring, Hiccup server rendering, and Datastar server-sent events. The default persistence adapter is an append-only JSONL fact log; production can instead use PostgreSQL through `next.jdbc` and HikariCP. There is no ORM. Styling is custom CSS. Authentication uses signed sessions with email-token and Google OAuth entry paths. Deployment artifacts target Google Cloud Run, with optional cloud object storage and several email adapters.",
+      "scale": {
+        "lines": 44400,
+        "files": 418,
+        "commits": 1,
+        "commitsAreLowerBound": false,
+        "authors": 1,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-11"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "partial",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "red-omotenashi",
+      "project": "red/omotenashi",
+      "status": "analyzed",
+      "source": "https://forge.smol.ai/red/omotenashi.git",
+      "live": null,
+      "foundVia": "pre-cloned alternatives survey batch (discovery supplied)",
+      "analyzedOn": "2026-08-16",
+      "commit": "8b1c140",
+      "note": "red-omotenashi.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "React Router 8",
+        "datastore": "Airtable",
+        "dataAccess": "custom adapter",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "signed session"
+        ]
+      },
+      "stackProse": "React 19 and React Router 8 on Vite, TypeScript, Cloudflare Workers, a custom repository/adapter layer over Airtable rather than an ORM, R2 for files, Tailwind CSS 4 plus application CSS, and Airtable-directory-backed signed sessions with separate reviewer and speaker-portal grants.",
+      "scale": {
+        "lines": 83200,
+        "files": 377,
+        "commits": 1,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-13",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "full",
+        "sponsors": "partial"
+      }
+    },
+    {
+      "slug": "SteveMLC-lectern",
+      "project": "SteveMLC/lectern",
+      "status": "analyzed",
+      "source": "https://github.com/SteveMLC/lectern",
+      "live": "https://lectern.lectern-go7.workers.dev",
+      "foundVia": "pre-cloned survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "de72998",
+      "note": "SteveMLC-lectern.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "repository layer",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "passcode",
+          "capability link",
+          "password"
+        ]
+      },
+      "stackProse": "One Cloudflare Worker running Hono plus a Vite/React 19 SPA, TypeScript, a repository layer over Cloudflare D1 (SQLite), R2 assets, Tailwind CSS 4, organizer bearer-passcode auth, signed speaker/reviewer capability links, and optional password-based submitter accounts.",
+      "scale": {
+        "lines": 30677,
+        "files": 211,
+        "commits": 79,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-12",
+        "lastCommit": "2026-08-14"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "partial",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "full",
+        "speaker-crm": "partial",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "thedatadavis-seshmesh",
+      "project": "thedatadavis/seshmesh",
+      "status": "analyzed",
+      "source": "https://github.com/thedatadavis/seshmesh",
+      "live": "https://seshmesh.christophergdavis.workers.dev",
+      "foundVia": "assigned local survey batch (discovery already complete)",
+      "analyzedOn": "2026-08-16",
+      "commit": "7795676c0e8e",
+      "note": "thedatadavis-seshmesh.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + Inertia React",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password"
+        ]
+      },
+      "stackProse": "Hono on Cloudflare Workers with Inertia React 19 and Vite, TypeScript, Drizzle ORM, Cloudflare D1 (SQLite) plus R2 and an agenda Durable Object, hand-written CSS, and first-party PBKDF2 password/session authentication.",
+      "scale": {
+        "lines": 13397,
+        "files": 185,
+        "commits": 48,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-08",
+        "lastCommit": "2026-08-15"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "absent",
+        "ai-features": "absent",
+        "speaker-crm": "partial",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "TheThingInTheThing-namos-sessions-webapp",
+      "project": "TheThingInTheThing/namos-sessions-webapp",
+      "status": "analyzed",
+      "source": "git@github.com:TheThingInTheThing/namos-sessions-webapp.git",
+      "live": "https://app.namos-sessions.xyz",
+      "foundVia": "Pre-discovered repository batch supplied for this survey.",
+      "analyzedOn": "2026-08-16",
+      "commit": "e4b85d85fbf4f466b4747eb73eacee3822008ecf",
+      "note": "TheThingInTheThing-namos-sessions-webapp.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "React (Vite)",
+        "datastore": "Convex",
+        "dataAccess": "Convex",
+        "hosting": "Cloudflare Pages",
+        "auth": [
+          "Clerk"
+        ]
+      },
+      "stackProse": "Vite single-page application with React 18 and TypeScript; Convex document database and server functions without an ORM; Tailwind CSS and Radix; Clerk authentication; React Query; optional Cloudflare Pages and Airtable transport code.",
+      "scale": {
+        "lines": 39089,
+        "files": 495,
+        "commits": 194,
+        "commitsAreLowerBound": true,
+        "authors": 2,
+        "firstCommit": "2026-08-08",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "partial",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "partial",
+        "ai-features": "absent",
+        "speaker-crm": "absent",
+        "sponsors": "full"
+      }
+    },
+    {
+      "slug": "twilwa-session-bored",
+      "project": "twilwa/session-bored",
+      "status": "analyzed",
+      "source": "https://github.com/twilwa/session-bored",
+      "live": "https://session-bored.techwilliams-warren.workers.dev",
+      "foundVia": "provided survey batch; discovery was completed before analysis",
+      "analyzedOn": "2026-08-16",
+      "commit": "4c0bcc5",
+      "note": "twilwa-session-bored.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Hono + React SPA",
+        "datastore": "Cloudflare D1",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password"
+        ]
+      },
+      "stackProse": "A Vite 8 React 19 single-page application and a Hono 4 Cloudflare Worker, written in TypeScript 7. Drizzle ORM targets Cloudflare D1/SQLite, with R2-backed uploads. The UI uses project-local React components and plain CSS. Better Auth provides email/password accounts and same-origin sessions. Review assistance calls Anthropic when its optional model binding is configured.",
+      "scale": {
+        "lines": 80100,
+        "files": 320,
+        "commits": 50,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-15"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "absent",
+        "ai-features": "full",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "westoque-session-hero",
+      "project": "westoque/session-hero",
+      "status": "analyzed",
+      "source": "git@github.com:westoque/session-hero.git",
+      "live": null,
+      "foundVia": "Pre-discovered repository batch supplied for this survey.",
+      "analyzedOn": "2026-08-16",
+      "commit": "f0c1e02371b2464997cc9115337311cc606ce4fa",
+      "note": "westoque-session-hero.md",
+      "stack": {
+        "language": "Ruby",
+        "framework": "Rails",
+        "datastore": "SQLite",
+        "dataAccess": "Active Record",
+        "hosting": "unknown",
+        "auth": [
+          "password"
+        ]
+      },
+      "stackProse": "Ruby on Rails 8.1 monolith with Active Record and SQLite; HAML, Hotwire, and Stimulus; Tailwind CSS with daisyUI; Devise password authentication; Active Storage; Sidekiq/Solid Queue; Resend email delivery.",
+      "scale": {
+        "lines": 11922,
+        "files": 343,
+        "commits": 47,
+        "commitsAreLowerBound": false,
+        "authors": 1,
+        "firstCommit": "2026-08-11",
+        "lastCommit": "2026-08-13"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "partial",
+        "decisions-notifications": "partial",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "absent",
+        "ai-features": "partial",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "yisding-openboard.events",
+      "project": "yisding/openboard.events",
+      "status": "analyzed",
+      "source": "https://github.com/yisding/openboard.events",
+      "live": "https://openboard.events",
+      "foundVia": "repository supplied in this survey batch",
+      "analyzedOn": "2026-08-16",
+      "commit": "78c15029d8405e2e4494ffad36f38b69d969d1ec",
+      "note": "yisding-openboard.events.md",
+      "stack": {
+        "language": "TypeScript",
+        "framework": "Next.js",
+        "datastore": "PostgreSQL (Neon)",
+        "dataAccess": "Drizzle",
+        "hosting": "Cloudflare Workers",
+        "auth": [
+          "password",
+          "email code"
+        ]
+      },
+      "stackProse": "Next.js 15 and React 19 in TypeScript, deployed to Cloudflare Workers through OpenNext. Drizzle ORM maps a PostgreSQL database accessed through Neon's serverless driver; object uploads use Cloudflare R2. The UI uses custom global and component CSS. Better Auth supplies the administrator account flow, while the speaker portal uses a separate email-code/session flow.",
+      "scale": {
+        "lines": 171000,
+        "files": 1600,
+        "commits": 60,
+        "commitsAreLowerBound": true,
+        "authors": 1,
+        "firstCommit": "2026-08-15",
+        "lastCommit": "2026-08-16"
+      },
+      "coverage": {
+        "cfp-intake": "full",
+        "review-scoring": "full",
+        "anonymized-review": "full",
+        "decisions-notifications": "full",
+        "agenda-scheduling": "full",
+        "conflict-detection": "full",
+        "speaker-portal": "full",
+        "content-deliverables": "full",
+        "comms-templates": "full",
+        "public-pages": "full",
+        "embeds": "full",
+        "rest-api": "full",
+        "ai-features": "absent",
+        "speaker-crm": "full",
+        "sponsors": "absent"
+      }
+    },
+    {
+      "slug": "everyai-com-grandstage-app",
+      "project": "everyai-com/grandstage-app",
+      "status": "source-unreachable",
+      "source": "https://github.com/everyai-com/grandstage-app",
+      "live": null,
+      "foundVia": "shared in Discord #general with the GrandStage live submission",
+      "reason": "GitHub returns Not Found; the repository is private or deleted, so no code was read."
+    },
+    {
+      "slug": "board-to-death",
+      "project": "Board to Death",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://board-to-death.vercel.app",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Likely an early deployment name for mkly/gatherpulse — the same author later shared that repository. Unconfirmed, so it is counted separately."
+    },
+    {
+      "slug": "greenroom-faris-hussain",
+      "project": "Greenroom (Faris Hussain)",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://greenroom.greenroom.workers.dev",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Only the deployed URL was shared. Exact-name and homepage GitHub searches found no public repository. Deployed sites were not fetched or probed — this survey reads code."
+    },
+    {
+      "slug": "marquee-stage-11-agentics",
+      "project": "Marquee (Stage 11 Agentics)",
+      "status": "no-public-source",
+      "source": null,
+      "live": null,
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Named in Discord; only the separate Lattice scheduler repository was shared."
+    },
+    {
+      "slug": "milk-tyler",
+      "project": "Milk (Tyler)",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://milk.animasai.co",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Only the deployed URL was shared. Exact-name and homepage GitHub searches found no public repository. Deployed sites were not fetched or probed — this survey reads code."
+    },
+    {
+      "slug": "opensession-malik",
+      "project": "OpenSession (Malik)",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://opensession.opensession.workers.dev",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Distinct author and deployment from caseymanos/opensession."
+    },
+    {
+      "slug": "programkit-andheller",
+      "project": "ProgramKit (andheller)",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://programkit.dev",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Only the deployed URL was shared. Exact-name and homepage GitHub searches found no public repository. Deployed sites were not fetched or probed — this survey reads code."
+    },
+    {
+      "slug": "session-ajay-k",
+      "project": "Session (Ajay K)",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://session.drawset.com",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Only the deployed URL was shared. Exact-name and homepage GitHub searches found no public repository. Deployed sites were not fetched or probed — this survey reads code."
+    },
+    {
+      "slug": "superstage-ali-zaid",
+      "project": "SuperStage (Ali Zaid)",
+      "status": "no-public-source",
+      "source": null,
+      "live": "https://superstage.alizaidkhoso.workers.dev",
+      "foundVia": "shared in the Kill My SaaS Discord #general channel",
+      "reason": "Only the deployed URL was shared. Exact-name and homepage GitHub searches found no public repository. Deployed sites were not fetched or probed — this survey reads code."
+    }
+  ]
+}

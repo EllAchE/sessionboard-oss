@@ -25,8 +25,37 @@ function cloudflareContext(): object | undefined {
   }
 }
 
+/**
+ * Without these, a database that accepts TCP but never answers — a failed-over primary, an
+ * exhausted connection limit, a partition that drops packets rather than resetting — holds every
+ * request open until something upstream gives up. Locally that reproduces as requests still pending
+ * after 75 seconds with no response and no log line. Each bound below turns that into a prompt
+ * error, which the handlers already translate into a 503: a degraded page instead of a hung tab.
+ */
+const CONNECT_TIMEOUT_MS = Number(process.env.DATABASE_CONNECT_TIMEOUT_MS ?? 5_000);
+const STATEMENT_TIMEOUT_MS = Number(process.env.DATABASE_STATEMENT_TIMEOUT_MS ?? 15_000);
+const IDLE_TIMEOUT_MS = 30_000;
+
 function build(connectionString: string, max: number): Database {
-  return drizzle(new Pool({ connectionString, max }), { schema, casing: 'snake_case' });
+  const pool = new Pool({
+    connectionString,
+    max,
+    connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+    idleTimeoutMillis: IDLE_TIMEOUT_MS,
+    // Server-side, so it also bounds a query that is executing rather than one merely waiting to
+    // start. `query_timeout` is the client-side companion for a server that never replies at all.
+    statement_timeout: STATEMENT_TIMEOUT_MS,
+    query_timeout: STATEMENT_TIMEOUT_MS,
+  });
+
+  // An idle pooled client erroring out — server restarted, connection dropped — is emitted on the
+  // pool. `pg` treats an unhandled 'error' as fatal to the process, so without this a database
+  // restart takes the whole server down with it instead of costing one pooled connection.
+  pool.on('error', (error) => {
+    console.error(`database pool client error: ${error.message}`);
+  });
+
+  return drizzle(pool, { schema, casing: 'snake_case' });
 }
 
 let nodePool: Database | undefined;

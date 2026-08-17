@@ -1,542 +1,610 @@
-# Cicero
+# Cicero — full submission narrative
 
-An open-source replacement for Sessionboard.
+## Philosophy
 
-Live: <https://cicero-three.vercel.app> · Source: `EllAchE/sessionboard-oss`, MIT.
+Anyone here has context for what was built, and why. What I want to share with you is the philosophy behind my product decisions, the experience/process of building and how that ultimately manifested in Cicero.
 
-This is the full submission narrative. For the condensed version sized to a form field, see
-[`06-submission-summary.md`](06-submission-summary.md).
+### Agent-first, portal-second
 
----
+The future of all "SaaS" is agent-first. The way I want someone to use this product is by talking to an agent, not by opening a tab.
+That is why the landing page leads with an agent quick start instead of a product tour, why the MCP server
+is a first-class surface rather than an integration afterthought, and why the REST API is essential.
 
-## 1. What this is
+The portal still has a role under this model: visual review + power user features. Looking at an agenda, reading a proposal, checking what the public page actually renders. Those are judgments a person makes with their eyes, and summarizing them into text is a downgrade. Nearly everything else
+— the reading, the reconciling, the drafting, the chasing — is work an agent should be doing on
+someone's behalf, and the portal is where they go to confirm it looks right.
 
-Cicero is the software a conference runs on between "we should do a call for papers" and "the
-agenda is live on our website." An organizer creates an event, builds a call-for-speakers form and
-publishes it at a public URL. Speakers submit proposals cold — no account beforehand — and land in a
-portal where they fill in a bio, a headshot, slides, and whatever else the organizer asked for. A
-review committee scores the proposals in rounds; the organizer accepts or declines; accepted talks
-get dragged onto a schedule that shouts when two sessions collide or one speaker is booked in two
-rooms at once. Speakers get templated email and calendar invites that update in place when a talk
-moves. The finished programme goes back out as public pages, embeddable widgets, and a REST API.
+The portal complements what you can do with an agent and natural language queries of what you want.
+The final form of this is an in-app agent, with that you basically have a full feature set all living within 1 space.
+I did not implement the in-app agent because:
 
-The whole path works end to end on the deployed instance today, from a cold browser with no account.
+1. Was short on time
+2. I did not wanna link tokens
+3. You expose new attack vectors with a full-access agent
 
-It is Bun + Next.js 15 (App Router), React 19, TypeScript, Drizzle over Postgres, Zod as the API
-contract, plain CSS Modules over a hand-built design system. `docker compose up` brings up the app,
-Postgres and MinIO in one command with no API key from anyone.
+Also, the reality is an app like Session Board is unlikely to dominate your working time, even if you're an organizer. So if your day includes working with other tools as well, you're not going to necessarily want to open a distinct app for each task. A better pattern in that circumstance is to have a central tool like say the Claude or Codex GUI from which you issue requests to all of the different apps you need, in which case an MCP server and/or API is essential; you need them to make the best version possible of the product.
 
----
+### Power users first
 
-## 2. The point of view
+The person to design for is the one who performs an operation five hundred times, not the one who
+performs it once. So each design decision gets measured the same way: what is this person spending
+the most operations on, and can it be automated away so completely that they never touch it again?
 
-The competition brief said two things that decided the shape of this build:
+Unfortunately I did not have a chance to actually speak with any users here so I had to make some
+speculation about who that would be. But I will walk through 1 example that gives you an idea of
+my thought process for this. That example is actually something that did not ship: automatic agenda recalculation (There is a draft PR for it).
 
-> "We do NOT expect to use everything ... Which makes it easier for you to clone and makes less
-> sense for us to pay."
+The idea is this, as new events are added or moved we automatically recalculate the agenda. An organizer moves one session or a session is
+added and the rest of the day settles around it — placements that still
+work stay put, the ones that break get recomputed, and the organizer approves a result instead of
+dragging fifteen cards behind the one they actually meant to move. To make this work you would have to add
+projections in this case, topic metadata to optimize for allowing people with interest in a specific topic to see all speakers
+covering that topic rather than booking them concurrently and other custom rules, Attendee, count projections, etcetera. 
 
-> "Cloning the exact design is not a requirement; the point is to make a good-enough open source
-> alternative."
+Without speaking to users I do not know that it is worth building. It is my guess about where an organizer's hours go. The first
+thing I would do with real users is find out whether recalculation saves the afternoon I think it
+saves, or whether it solves a problem they have already routed around — or whether the manual drag
+is where the judgment actually lives, in which case automating it away makes the product worse. I
+owe reviewers and speakers the same conversation. I designed hardest for organizer repetition
+because that is the loop I can see from here, not because I have evidence it is the expensive one.
 
-So this is not a feature-parity clone. Sessionboard has accumulated awards, marketing, studio, and
-content-remix modules; the AI Engineer team pays >$40k/year and uses a narrow slice. Cloning the
-accumulation would have been the wrong work. The scoping rule was: **coverage of the workflow beats
-depth on any one feature.** A judge walking the speaker journey and hitting a dead end is the only
-failure mode that matters. A plain screen that completes the path is worth more than a polished
-screen that ends halfway through the job.
+The shipped version of this tenet is the keyboard/hotkey layer - I am a huge fan of the product at Linear
+and how quickly I am able to navigate that space using their hotkeys. I believe more SaaS should incorporate
+this for their power users. To me, the power users of Sessionboard are the reviewers and they should also
+have keyboard first enablement to let them move more quickly when making changes in the app. The keyboard
+enablement stops at the organizer workspace on purpose: a speaker visits twice a year and needs an obvious,
+forgiving flow rather than a shortcut sheet. If reviewers working a large committee round, or speakers at
+an event that keeps them busy, turn out to live in the tool the way an organizer does, the keyboard layer
+should follow them there.
 
-The product thesis underneath that, stated in `docs/decisions-long-form.md` and visible in the code:
+### Opinionated over flexible, and subtract before adding
 
-> Keep the human in control, but remove the clerical work that makes conference operations
-> miserable.
+Given the choice between one right answer and a setting that lets each operator pick, I ship the
+answer. A configuration surface is a decision handed back to the user along with the obligation to
+understand the tradeoff, and most of the time they would rather have the tradeoff made well. My
+instinct on a maturing product is to remove features, not to add them.
 
-That is one sentence, and it is falsifiable. It rules things in and out:
+This submission visibly violates that, and I would rather name it than have a reviewer find it:
+Cicero is feature-rich, more so than I would build for a real first release. The breadth is
+deliberate — it is how a submission demonstrates that a surface was considered rather than skipped —
+but it is not the state I would want to be defending a year in.
 
-- The system **can propose a schedule but cannot publish one** behind the organizer's back.
-- It **can read a proposal but cannot accept or reject it.** `lib/ai/review.ts` writes to `ai_review`,
-  a table the human score averages never read.
-- It **can push an accepted speaker into Accelevents, but that platform never becomes the source of
-  truth** for the programme — the sync is one-way and never reconciles remote edits back.
-- It **can draft a chase email, but a named human reads and sends it.**
+So when I say I would talk to users, I do not mean collecting feature requests. I mean consolidating:
+which two screens are one screen, which flow loses a click, which action sits furthest from where a
+person lands and deserves a hot path straight to it. The work I am describing shrinks the product.
 
-That last one is the clearest example of a judgment call a generic CRUD clone would not make. The
-required dashboard row (`B-1`) is "accepted speakers with outstanding tasks" — and Sessionboard's own
-FAQ says it has no central task-completion report, so this is the one place Cicero supplies something
-*missing* rather than clones something *present*. But a report that names who is blocking your event
-and then abandons you to your inbox is only half the feature. The obvious completion is an
-autosender. It was deliberately not built.
+### The line all three sit behind
 
-The reason is evidence, not taste. Before building it, I had an agent read the Slack channel where a
-conference's event coordinator has run speaker logistics for thirteen years — about 13,488 messages
-— and report what actually happens when someone is late. The finding: **in thirteen years of archive
-there is no instance of a tool successfully sending a reminder on the committee's behalf.** The same "it went to spam, I'm
-sending a personal email" incident appears in 2023 and again in 2025. Escalation runs *by medium* —
-the tool's email, then the coordinator's own address, then a cc, then a text, then a phone call —
-because each step up is a deliberate signal.
+> Keep the human in control, but remove the clerical work that makes conference operations miserable.
 
-So Cicero ships **assisted chasing** (`AR-30`–`AR-34`): every outstanding-task row has a "Draft a
-nudge" control that opens a composer prefilled with copy specific to that person and that task. The
-composer is two-step — edit, render, send — enforced on the *server*, not the client: `sendTaskNudge`
-requires the reviewed subject, body and recipient back, and `sendParticipantEmail` re-resolves the
-recipient and re-renders the message and refuses if either moved. There is no bulk action, no
-"remind all", and no code path from a table row to an outbound message that skips the render. And
-because escalation is by medium, the rendered draft offers *Copy* and *Send from my own email*
-(`mailto:`) beside *Send from Cicero* — handing the same reviewed text to the human instead of the
-transport. That is the one thing an autosender structurally cannot do.
+Agent-first is not agent-autonomous. AI proposes review notes and agenda placements but does not
+accept a talk or publish a schedule. Cicero drafts a targeted task reminder but does not silently
+send it. External programme updates can be previewed and replayed idempotently before they are
+applied. The product helps a person move faster without pretending it understands the political,
+commercial, and interpersonal context that makes conference work difficult.
 
-Autonomous chasing from that surface is recorded as `AR-34`, **[EXCLUDED]**, with the reasoning in
-the row. Cicero keeps its opt-in `task.reminder` cron flow, which is a different act: a template an
-organizer configured in advance for a whole event, versus one person, one task, one message, sent by
-a named human.
 
----
+## The Journey & The Tools
 
-## 3. Architecture, and why
+I've spent a decent amount of time vibe coding so I've built up a good stable of tools, skills, tricks and process for shipping quickly. However still learned so much doing this. Here's my process and learnings. A TLDR first
 
-### The service layer, and the rule that "the UI never calls its own HTTP API"
+- Establish an efficient working environment first
+- Build eval loops and run them autonomously
+- Figure out a way to codify "taste"
 
-Three layers, strictly:
+I started by creating a new cicero/sessionboard-oss repo, but I was still launching agents from the working directory of my primary codebase rather than from the new clone. The reasoning behind this was that I built a lot of tooling centered around that repo. It worked decently for a while, but ultimately I decided that the setup time was worth it for the performance benefits I would get from running everything from the root repo. From there, super smooth sailing. Takeaway - Establish an efficient working environment first
 
-```
-app/api/v1/**      REST handlers — thin, Zod-validated, API-key auth
-app/**             Server Components read; Server Actions write — thin
-lib/services/**    ALL domain logic. Pure TS. No HTTP, no React, no Next imports
+The next learning I need to give credit to the Smol team for. They built a great eval tool set that I was able to run to assess the coverage of my own product. I ran it multiple times and even attempted to set it to run overnight in a remote dev box one night. I saw massive massive value in codifying outcomes and giving a verification step. You move so much faster, because you can just let an agent keep trying and verifying until it reaches its goal.
+
+I've laid this philosophy out before at String, but without going deeply into it, there's an order of magnitude greater efficiency that you can achieve with a well structured eval loop and when you're still directing each action/agentic session. Building for verification loops is the next paradigm in agentic coding; if you aren't already doing it you're falling behind the frontier. The trade off of letting an agent run like this is that your agent can drift quite far from the original requirements. The best way to mitigate that is strong verification, simplicity and tests.
+
+The last point is less a learning and more an unsolved problem - in this project the biggest challenge came in the final stage, when I needed to incorporate taste. What that meant - baking in all the lifetime learnings I've had about good product design, good UI and good UX in a way that an agent could follow; not just in places where I saw bad design but app wide. I have yet to succeed in getting an agent to generalize good UX/UI/product design beyond any 1 place in which I call out a bad design decision. I have seen so many skills promise this but have yet to see one deliver on that promise. Would love to change that though!
+
+Thanks for making it this far! The above was mostly me writing, but with a bit of AI assistance/drafting. The below is purely generated so read at your own expense. If you just want the facts of the features head, I would recommend looking at the field survey that I also created and linked here. 
+
+## Cicero (The Submission)
+
+The submission is best understood in three buckets:
+
+1. **The requested feature set:** the end-to-end replacement spine in the competition brief.
+2. **Additional features we shipped:** deliberate product improvements beyond that baseline.
+3. **Future features we chose not to ship:** useful next steps whose complexity, risk, or evidence did
+   not justify putting them in the first release.
+
+That distinction matters. A long feature list is not evidence of a finished product, and a roadmap
+is not a shipped capability. Cicero's central claim is narrower and stronger: the complete working
+spine exists, the additional work has a reason, and the omissions are named rather than hidden.
+
+## 2. The requested feature set is covered end to end
+
+The original requirements remain separately traceable in [`01-requirements.md`](01-requirements.md).
+The following table is the submission-level view: what a judge should test, why it matters, and what
+Cicero supplies.
+
+| Requested capability | What Cicero ships | Why this is replacement-grade |
+| --- | --- | --- |
+| Event setup | Event creation, dates, timezone, branding, tracks, rooms, tags, formats, multi-event scoping, switching, and safe duplication of a prior edition | A judge can create a second event without contaminating the seed or reuse an operating model without carrying over people, submissions, files, credentials, logs, or integration state |
+| Call for speakers | Multiple drag-and-drop forms, built-in and custom fields, conditional logic, category routing, participant roles, welcome/success pages, deadlines | The builder and public runtime use the same definition; deadlines are enforced in the page, actions, upload routes, and API |
+| Cold submission | Public mobile-friendly multi-step flow, account creation inside the flow, draft/resume, review step, confirmation, portal redirect | A speaker arrives without an account and leaves with a usable portal instead of hitting an authentication seam |
+| Speaker portal | Profile and bio editing, headshots, versioned slides/documents, submissions, tasks, resources, raw organizer-authored HTML, group access, availability/blackout windows, calendar download | The accepted speaker can finish the real onboarding work and declare when they cannot present without an organizer relaying every file and field by email |
+| Review and decisions | Status queues, named and weighted score, dropdown, and text criteria, multi-round review, evaluation plans, routing, recusal, anonymized modes, saved views, exports, inline and bulk decisions | Routing begins at the form and drives the reviewer's queue; qualitative evidence stays beside normalized numeric scoring, and staged recommendations remain distinct from committed decisions |
+| Agenda | Drag-and-drop placement, unscheduled rail, list/day/week/room/track/month views, room/track/speaker/availability conflict detection, draft share links, draft versus published state | Organizers can rearrange privately, review a private live programme with stakeholders, see physically impossible collisions, and publish only the intended programme |
+| Communications | Editable templates, triggered and filtered sends, delivery log, task reminders, `.ics` invitations with stable UID and sequence, add-to-calendar links | Rescheduling updates an existing calendar item instead of leaving stale duplicates; the log answers “did we send it?” |
+| Organizer dashboard | Accepted speakers with outstanding tasks, counters, linked next actions, speaker-roster and agenda milestones, accurate overdue pacing, breakdowns, five prebuilt dashboards, custom dashboards | The first screen names the people and work blocking the event instead of showing only decorative totals |
+| Public output | Public event/session/speaker pages, agenda starring and personal itinerary, seven embeddable views, live sample embeds, JSON/XML/subscribable `.ics` feeds, per-event `llms.txt` | Publication is a live read of the same programme; attendees can plan without an account, and websites or agents can consume the same configured output without copied schedules |
+| Required integration | One-way accepted-speaker push behind an Accelevents client interface with deterministic fixture mode | The judged path exercises real field mapping, authentication and error outcomes without inventing credentials or undocumented remote capability |
+| Open-source operation | MIT source, magic-link roles, Postgres, storage abstraction, Docker Compose, Cloudflare/OpenNext target, Vercel-hosted demo, and idempotent sample events at small, medium, and large conference scales | A new operator can run the product without buying a proprietary dependency or providing an email/SMS/AI key, then inspect real queue and agenda pressure rather than judging only a toy fixture |
+
+The complete browser path is mapped in the demo runbook, and the current seed plus hosted smoke
+results are recorded in [`06-submission-evidence.md`](06-submission-evidence.md). The important proof
+is not the number of screens. It is that each stage hands valid state to the next stage.
+
+## 3. What we built beyond the brief
+
+The extra features are not a grab bag. Each one closes a failure mode in the baseline workflow,
+makes frequent use faster, or gives an open-source operator an extension point.
+
+### 3.1 Operational follow-through
+
+#### Assisted speaker chasing
+
+The brief asks for accepted speakers with outstanding tasks. Cicero goes further: every outstanding
+row can open a nudge already tailored to that speaker, task, deadline, blocked sessions, and portal
+link. The organizer edits it, renders the final message, and then chooses whether to send through
+Cicero, copy it, or open it in their own email client.
+
+The human review is enforced server-side. If the recipient, text, or task state changes between
+preview and send, the send is refused. Completed and waived work cannot be chased; a successful
+manual nudge updates the same reminder timestamp the scheduled reminder flow reads.
+
+We deliberately stopped before “remind everyone.” Evidence from years of real event operations
+showed that escalation moves from system email, to a personal address, to text, to a call. The value
+is knowing who needs attention and preparing the right message—not allowing a cron job to impersonate
+the organizer's judgment.
+
+#### Notifications and updates
+
+The organizer Updates feed reconstructs material changes across submissions, decisions, reviews,
+speaker details, tasks, agenda moves, content revisions, and files. It is intentionally marked
+partial: the current watermark is browser-local and some source tables preserve only the latest
+update rather than an append-only history. The shipped slice is useful, but we do not claim it is a
+complete durable audit log yet.
+
+Event-level speaker-roster and agenda milestones now give the dashboard, portal, public event, and
+reminder runner the same deadlines. Overdue counts include only participants who are actually late,
+so the pacing signal cannot be inflated by future or completed work. Organizers reach composing,
+templates, campaigns, preferences, share links, and delivery history through one **Messages** area
+rather than learning the system's channel boundaries first.
+
+#### Review permalinks and decision-note exports
+
+Reviewers and organizers can copy stable submission links and preserve decision context outside the
+live queue. This is small functionality with disproportionate operational value: committee work
+spills into Slack, email, and meetings, and a durable link is the difference between a shared object
+and a screenshot nobody can revisit.
+
+#### Full organizer assistance in the speaker portal
+
+An organizer can enter a speaker's portal and actually finish stuck work, then return to organizer
+mode. The incumbent's read-only preview cannot solve the support case. The current version still
+needs tighter scoping and durable dual-actor attribution on every mutation; that hardening is named
+in the roadmap rather than disguised as complete auditability.
+
+### 3.2 Programme quality and richer event output
+
+#### Speaker double-booking and a configurable conflict policy
+
+The brief names room and track conflicts. Cicero also detects the public failure that matters most:
+one speaker scheduled in two rooms at the same time. Events can choose `warn` or `block`. Physical
+impossibilities are errors; a track overlap remains an editorial warning because parallel sessions
+inside a broad track can be legitimate. The same decision function governs the board and the API.
+
+#### Versioned files and recordings
+
+Speaker deliverables retain versions and comments instead of overwriting the previous upload.
+Session, speaker, agenda, and sponsor edits also produce numbered content revisions that can be
+diffed and restored; a restoration becomes a new revision, so recovery is itself undoable.
+Post-conference recordings have independent organizer and public publication gates. These features
+extend the lifecycle beyond “collect one slide deck” while retaining deliberate visibility control.
+Recording mutations refresh the board in place, so attaching, replacing, publishing, or removing a
+source does not discard the organizer's scroll and navigation context with a full document reload.
+
+#### Sponsors, exhibitors, and an exhibitor-map embed
+
+The data model and public programme include sponsor/exhibitor entities. Organizers can also upload a
+validated PDF exhibitor map and expose it through a stable public embed. We stopped at the static
+document boundary: interactive booths, hotspots, search, and wayfinding would be a different product
+surface and are not implied by “map support.”
+
+### 3.3 Communication safeguards
+
+Cicero adds SMS as a second channel, but only with the preconditions that make it defensible:
+consent, E.164 normalization, OTP verification, delivery state, and quiet hours. It also adds
+per-notification preferences and tokenized no-login unsubscribe. The hosted demo uses log transport,
+so these paths are implemented and tested but not presented as production-proven Twilio delivery.
+
+The key product decision is that a channel is not merely an API call. Preferences, proof of control,
+time-of-day policy, and an audit trail are part of the feature.
+
+### 3.4 CRM and cross-event continuity
+
+The speaker CRM sits above a single event and adds custom fields, import, reversible merges, dynamic
+and curated segments, and a sourcing pipeline. This was initially excluded and then deliberately
+built because recurring conferences do not experience speakers as isolated rows recreated every
+year. The event remains the unit of programme truth; the CRM supplies cross-event memory.
+
+Event duplication handles the other half of recurrence. It copies the reusable operating model—the
+taxonomy, forms, review rounds and criteria, tasks, templates, and selected content—while reopening
+time-bound workflows as drafts and clearing old due dates. The clone plan is exhaustive over the
+event-scoped schema and fails tests when a new table or column has no explicit copy/clear/skip rule.
+People, submissions, files, share links, credentials, logs, and integration state never cross into
+the new edition.
+
+### 3.5 Reviewable drafts and attendee-owned schedules
+
+An organizer can mint a time-limited, revocable no-login share link for the draft programme. The
+preview intentionally includes draft sessions and unapproved copy for stakeholder review, while
+excluding contact, accommodation, credential, and other private data. The plaintext token is never
+stored, and cloning an event cannot revive or carry one forward.
+
+After publication, attendees can star sessions directly from the agenda grid and see the same
+selection as a personal itinerary. The schedule is browser-local and event-scoped: it needs no
+account, does not leak one conference's choices into another, and works in the public pages and
+embeds. It is deliberately personal planning, not an attendee-registration claim.
+
+### 3.6 API and automation surfaces
+
+Beyond the required Accelevents push, Cicero ships:
+
+- a versioned REST API with generated OpenAPI;
+- a readable, deep-linkable API reference plus a Scalar rendering and cross-origin preflight
+  support for browser clients;
+- signed outbound webhooks;
+- a Streamable HTTP MCP server and generated manifest;
+- role-scoped agent workflows;
+- public agenda data used by the same public/embedded programme;
+- JSON, XML, and subscribable `.ics` representations of an organizer's embed configuration;
+- per-event `llms.txt` discovery for agents;
+- an Airtable mirror path;
+- preview/apply/idempotency patterns for programme reconciliation.
+
+These are not separate implementations of the business rules. Server Components, Server Actions,
+REST, and MCP all call the same service layer. That is what makes automation a real product surface
+rather than a second, weaker copy of the UI.
+
+## 4. Ergonomics: designed for repeated organizer use
+
+Cicero serves two very different usage patterns. A speaker may visit twice in a year and needs an
+obvious, forgiving flow. An organizer may live in the product for weeks and repeat the same review,
+scheduling, and follow-up actions hundreds of times. The interface should not force both users into
+the same interaction model.
+
+### Keyboard-first paths
+
+The organizer ergonomics borrow a tactic from Linear: frequent users should be able to stay in the
+keyboard flow and keep context, while every action remains available by mouse and every shortcut
+stays inactive while the user is typing or a dialog owns focus.
+
+Current source includes:
+
+| Context | Keyboard behavior |
+| --- | --- |
+| Anywhere in the organizer shell | `⌘K` / `Ctrl-K` opens a fuzzy command menu for organizer views and common actions |
+| Submission queue | `j` / `k` move, `x` selects, `o` or `Enter` opens, `a` / `d` / `w` decides, uppercase variants stage recommendations, `Esc` clears selection |
+| Review detail | `j` / `k` move between submissions, arrows move through criteria, number keys score, `s` saves, `c` commits, and decision keys accept/waitlist/decline |
+| Manual submission | `⌘Enter` / `Ctrl-Enter` submits |
+
+The point is not to advertise a clever shortcut list. It is to reduce the distance between “I have
+another forty proposals to process” and the next valid action. Keyboard behavior has guardrails:
+inputs and editable regions win, modifier collisions are ignored, and confirmation dialogs retain
+control. The dense queues use one truncation contract for long cell content, and numeric review
+scores print their scale beside the value, so scanability does not erase meaning under load.
+
+### Persistent actions and workspace context
+
+The persistent **Actions** control is the discoverable form of the global keyboard layer. Every row
+shows the binding that invokes the same move without opening the panel, and it includes a narrow
+workspace status: Ready means a signed-in organizer and an active event in this browser. The drawer
+states explicitly that this is not a live database, infrastructure, storage, or third-party health
+check.
+
+That limited promise is intentional. A permanently green “system health” badge that never queried
+the system would erode trust. Workspace readiness is still useful because this is a multi-event,
+multi-persona app: it confirms the context in which the next action will occur and exposes recovery
+shortcuts without overstating what was measured.
+
+### Demo-first entry and quick actions
+
+The same persistent control opens one-click paths to search/jump, the organizer dashboard, event
+creation, the speaker portal, and the active public programme. These are the escape hatches an
+organizer needs when context gets lost. They also make the product easier to demonstrate without
+turning the primary navigation into a wall of buttons.
+
+The signed-out landing page now does the same job for evaluation: its organizer, reviewer, speaker,
+and attendee cards each open the relevant seeded tour; the demo menu groups all role paths; and the
+public embed gallery renders every view the fixture can fill with the exact script and iframe
+snippets that produced it. The API reference and MCP setup prompt remain visible for an evaluator
+who wants to move from the product to its automation surfaces.
+
+The landing page also avoids repeating those claims as abstract About-page facts: API, live embeds,
+and role-scoped agent setup each have one nearby proof-bearing home. The About anchor and repository
+link remain, while the redundant three-column list is gone.
+
+The default `/demo` fixture is now deliberately medium-sized: 96 submissions, 45 speakers, five
+rooms, and two days. The same conference is also seeded as `/demo-small` (18 submissions, eight
+speakers) and `/demo-large` (384 submissions, 180 speakers, ten rooms, and three days). The three
+idempotent scales make pagination, queue density, agenda legibility, and reviewer workload visible
+without changing the story being compared.
+
+The interactive helper shown in that drawer is still a preview, not a shipped assistant. The
+distinction is visible in the interface and retained in this submission.
+
+## 5. Architecture choices that protect the product claims
+
+### One service layer for UI and API
+
+```text
+app/api/v1/**      thin REST handlers, Zod validation, API-key auth
+app/**             Server Components read; Server Actions write
+lib/services/**    domain rules shared by every entry point
 db/**              Drizzle schema, migrations, seed
 ```
 
-The rule is that **both entry points call the same service function.** A Server Action does not POST
-to `/api/v1`; a REST handler does not import a React component. There is no `fetch()` to Cicero's own
-API anywhere in `app/`.
-
-The reason is not architectural taste. It is that there is exactly one implementation of every rule,
-so the REST surface and the admin screens cannot drift. If an organizer cannot schedule a session
-into an occupied room through the UI, they cannot do it through the API either, because it is the
-same `lib/services/schedule.ts` call. The alternative — the UI as a client of its own API — gives you
-two enforcement points and a slow, quiet divergence between them, and the divergence always shows up
-first as an authz hole.
-
-It also made the MCP server nearly free. `/api/v1/events/{slug}/mcp` calls the same
-`lib/services/public-api.ts` reads and `lib/services/program-reconcile.ts` writes that REST calls.
-The MCP route never calls Cicero over HTTP.
-
-There are two honest exceptions to "no Next imports in services," and I would rather name them than
-have someone find them: `lib/services/events.ts` imports `cookies` from `next/headers` for the
-current-event selection, and `lib/services/submissions.ts` imports React's `cache()` — the latter as
-a deliberate per-request memoization fix for duplicate reads. Nothing else in 50-odd service modules
-touches Next or React.
-
-### What that rule buys: the enforcement lives in one place
-
-The reason to care about the service layer is not tidiness, it is that the interesting parts of this
-domain are *rules*, and rules are where clones quietly fail. Four concrete ones, all in the service
-layer, all reachable from every entry point:
-
-**A deadline changes behavior, in more than one direction.** `isAcceptingSubmissions` is nine lines
-and is the only definition of "can this form take an answer right now": status is `open`, the open
-date has passed, the close date has not. Five entry points call it — the public form page, the submit
-Server Action, the file-upload route, the REST form GET, and the REST submission POST — so a closed
-form is closed through the API too, not just visually. Editing is a separate lock with its own copy,
-because the two failure states read differently to a speaker: a session that can no longer be edited
-from the portal while the form is still open says so and points at the organizers; a form that has
-since closed names the date it closed, and an unsent draft on a closed form offers to discard rather
-than pretending it can still be sent.
-
-**Anonymized review redacts before it filters.** `lib/services/review.ts` carries the comment
-"Redacted before the filter runs, so a blind reviewer cannot recover a name by searching for it."
-Hiding a name in the rendered output and then running search over the unredacted row is the obvious
-implementation and it leaks: type the author's name into the filter box and the anonymized card is
-the one that comes back. Blindness is also resolved per viewer, not per round — an organizer who can
-decide always sees the author, because the round setting is about who is scoring, not about the data.
-
-**A decision is staged, then committed, and only a real transition mails.** `decideSubmissions` is
-deliberately the only path that writes `accepted` / `waitlisted` / `declined`, and bulk and single
-share it, "because a bulk decision that behaved differently from twenty individual ones would be a
-bug nobody notices until the agenda is wrong." Re-accepting an already-accepted talk writes the row
-but sends nothing. `reset` sends nothing at all — "taking a decision back is a conversation an
-organizer has in their own words, not a form letter." And the notice is sent *after* the status has
-committed, best-effort, so a mail server refusing recipient nineteen of a bulk accept does not unmake
-the decision; the organizer sees a failed count and resends from the campaign screen.
-
-**Public reads default to published.** `listSessions` defaults `status` to `published`, and asking
-for anything else requires an `includeUnpublished` flag that only key-scoped callers pass. Draft
-sessions are not in the embeds, not in the public agenda, and not in an unauthenticated API response,
-by default rather than by a filter someone remembered to add. The five widgets — sessions list,
-speakers list, agenda grid, itinerary, speaker gallery — are deliberately **one route** that loads
-one bundle and differs only in layout, "so a fix to the published-only filter cannot land on four of
-them and miss the fifth." They are also genuinely public: no login, no token, `frame-ancestors *`,
-and a `/embed.js` snippet that auto-resizes the iframe. An embed behind an auth wall is not an embed.
-
-Every one of those is the kind of thing that is invisible on a screenshot and decides whether the
-software is actually usable.
-
-### The freeze: `db/schema.ts`, service signatures, `components/ui/`
-
-This build ran as nine concurrent workstreams. Before any of them started, one foundation pass wrote
-`db/schema.ts` complete, the `lib/services/*` signatures and Zod schemas with `throw new
-Error('TODO')` bodies, and the design-system primitives in `components/ui/`. Then all three were
-**frozen** — read-only to feature workstreams, with changes routed back through the foundation owner.
-
-That single rule is what makes parallelism possible. Two agents touching submissions never need to
-agree on anything at runtime; they need to agree on a signature that was fixed before either started.
-A schema change at hour eight invalidates work in five directories at once, and a coordination
-protocol invented after the fact does not recover it. Ownership is by *directory*, not by feature,
-because a directory is checkable and a feature is not.
-
-The `components/ui/` half of the freeze is the same argument applied to design: if the primitives are
-not frozen before eight agents start, you get eight different buttons. Any workstream that wanted a
-new primitive routed the request rather than adding one. There is no Tailwind, no shadcn, no Radix,
-no CSS-in-JS anywhere in the tree — introducing any of them would mean fighting the design system
-rather than using it.
-
-The current tree has 23 modules in `components/ui/` and 20 migrations, and the layering held.
-
-### The database: one hybrid table, and event scoping from day one
-
-`submission` is the table to get right. Title, description, format, track, level and status are
-**real Postgres columns** — not JSON, not an EAV side table. The review queue sorts on them, the
-agenda joins on them, conflict detection compares them, the embeds filter on them. Every one of those
-becomes slow, untyped, or unwritable if the value lives inside a blob. Everything a form adds beyond
-those built-ins lands in an `answers` JSONB column, where it is only ever read back whole, per
-submission, on a detail screen or a CSV export — which is the access pattern JSONB is good at.
-
-That split is also why no off-the-shelf form engine survived the survey (SurveyJS, form.io, `@rjsf/core`,
-JSONForms, Formily, HeyForm, OpnForm, Formbricks, `@bpmn-io/form-js`, `@react-form-builder`). The
-license problems were real — SurveyJS's *builder* is a commercial per-developer seat, which would mean
-everyone who clones an MIT repo needs a license; HeyForm/OpnForm/Formbricks are AGPL — but the decisive
-point is license-independent: **every engine assumes it owns the whole schema and emits one blob.** We
-would still have hand-written the locked-column enforcement, the builder-UI locking, and the theme,
-while carrying 300KB–1MB of someone else's runtime. The only thing genuinely rentable is the
-schema-walking loop, which is about eighty lines.
-
-**Every table is event-scoped from the first migration.** Multi-event (`E-6`) is tagged OPTIONAL, but
-the scoping underneath it is not: the deployed demo has to coexist with a judge's cold-created event
-without either seeing the other. Retrofitting `event_id` across a live schema is a rewrite; adding it
-on day one is a column. The event switcher then came nearly free on top of scoping that was needed
-regardless.
-
-One deliberate limit worth naming, because it looks like a gap until you read the reasoning: form
-conditional logic (`showIf`) may reference **only an earlier field, one hop, no chaining**, and hidden
-fields' values are cleared at submit. Arbitrary conditional graphs bring cycles, cascading
-re-evaluation order, and fields visible by one path and hidden by another — a bug class that is
-expensive to find and much worse to find during judging. One backward hop removes all of it by
-construction rather than by testing.
-
-### AI stays advisory, never decides
-
-Two AI features shipped: AI-assisted review (`V-9`) and an AI agenda builder (`A-8`). Both are
-advisory **by construction**, and the constraint is in the code rather than in a policy document.
-
-`lib/ai/review.ts`: "produces a suggestion an organizer reads beside their own scorecard. It writes
-no rows and never touches `submission.status` — persistence goes through `saveAiReview` into
-`ai_review`, a table the human score averages never read."
-
-`lib/ai/agenda.ts`: "Proposes where the unscheduled queue could go, and stops there. It never writes.
-The organizer reviews the placements on the board, edits any of them, and accepts or discards."
-
-The reason it is a boundary and not a default: an AI that silently decided an acceptance or committed
-a schedule would be a worse product than one that does not, and it would be indefensible to a judge
-who found it after the fact. It is also correct on the merits — a model cannot see the sponsor who
-must not follow the keynote, or the speaker whose flight lands at noon. The organizer can.
-
-Both features stay **on screen** with no `ANTHROPIC_API_KEY` set, and say so. Review falls back to a
-rule-based reader; the agenda falls back to a deterministic earliest-free-slot planner. Hiding an
-unconfigured feature hides the shape of it, and the shape — *they propose, they never decide* — is the
-part worth judging. The deployed demo runs with no key.
-
-The same boundary governs the MCP agent-mail slice, which is the one place an agent can cause egress.
-It is deliberately not an agent-owned mailbox: the target must be an existing participant on the API
-key's event, the key must have `write` scope, SMS and calendar sends are excluded, email preference is
-rechecked at dispatch, and the send must echo back the preview's literal target confirmation *plus* a
-content-bound digest. Changing the template, recipient or copy invalidates the preview.
-
-### Magic-link-only auth (`T-4a`)
-
-No passwords anywhere. No password column, no password check, no reset flow, no lockout policy, no
-credential-stuffing surface. Every role — organizer, reviewer, speaker — signs in the same way:
-tokens are stored only as a hash, expire in 30 minutes, are single-use on redemption, and are
-exchanged for a 30-day httpOnly session cookie.
-
-Sessionboard does the opposite for the persona that matters most: participants keep a password for a
-site they visit twice a year. They forget it, and the organizer becomes a help desk. (Sessionboard
-*does* use magic links — for reviewers, AV crew, and advocates. The inconsistency is theirs.)
-
-The real cost of this choice is deliberate and worth stating: **if email does not arrive, nobody gets
-in.** Cicero pays that cost three ways.
-
-1. **`email_log` doubles as the dev mailbox.** Every send is recorded and rendered at `/admin/mail`,
-   sign-in links included, under any transport. A judge who never receives a message can still read
-   it. That single choice removes email deliverability as a single point of failure during judging.
-2. **Reserved recipients are undeliverable by construction.** The seeds are built entirely from
-   IANA-reserved domains (`organizer@example.com`, the senate at `@first-settlement.example`), and
-   `sendMail` routes *any* recipient at a reserved domain to the log transport whatever else is
-   configured. Real addresses in the same run still get real mail, and no provider is ever asked to
-   bounce a roomful of fictional senators.
-3. **On-screen magic links are gated by four conditions, in one place.** `lib/demo-access.ts` carries
-   the whole threat model: an explicit default-off deployment flag, the reserved-domain test, an
-   existing account holding seeded-demo membership, and no membership on any event outside the demo
-   it does not own. Every real organizer, reviewer and speaker fails the domain test, so no real
-   account is reachable through it at any setting.
-
-One thing is explicitly *not* a condition: **a failed send.** Revealing the link whenever a provider
-says no would be an authentication bypass triggerable by a stranger with a bounce. An earlier version
-of the reviewer-invite path did exactly that; it was found in the audit and fixed, and the reasoning
-now lives in the code so it does not come back.
-
-The related judgment call is **impersonation, not preview** (`S-10`). The organizer's session cookie
-carries `impersonated_by`; every write goes through *as the speaker* and stays attributable.
-Sessionboard's "View portal as…" is read-only, which makes it useless for support — the point is to
-finish the stuck speaker's task for them — and useless for judging. Ours lets a judge reach a speaker
-portal in one click without an inbox.
-
----
-
-## 4. Deployment: Cloudflare is supported; the demo runs on Vercel for $5
-
-This is the part of the story most likely to be misread, so here it is straight.
-
-**Cloudflare Workers is a fully supported, first-class deployment target and works today.** It is
-what the architecture was designed against. `bun run cf:build` and `bun run cf:deploy` are real
-scripts. `wrangler.jsonc` is live and complete: Hyperdrive binding, hourly Cron Trigger
-(`0 * * * *`), assets binding, observability, and a commented R2 block that is two uncommented
-blocks away from turning on. `custom-worker.ts` preserves OpenNext's generated `fetch` handler and
-adds Cloudflare's module-format `scheduled` handler, which calls `/api/cron` **in-process** so
-OpenNext's request-local Hyperdrive context exists without a public loopback request. None of this is
-vestigial and none of it is broken.
-
-**The demo runs on Vercel because of one number.** Measured just now with
-`npx wrangler deploy --dry-run` against the current `.open-next` build:
-
-```
-Total Upload: 19499.98 KiB / gzip: 3499.68 KiB
-```
-
-**3.42 MiB gzipped.** Cloudflare's size limits are on the compressed artifact:
-
-| Plan | Ceiling | This bundle |
-|---|---|---|
-| Workers Free | 3 MiB | **~14% over** |
-| Workers Paid ($5/mo) | 10 MiB | **~3× under** |
-
-So the bundle clears the paid ceiling with room to spare and misses the free ceiling by about
-fourteen percent. The fix is a $5/month subscription and no code change at all. I declined it,
-because the Cloudflare bonus is a **"mild"** bonus by the brief's own wording, and paying a
-subscription to keep a mild bonus is the wrong trade for a project whose README asks a stranger to
-clone and run it. Anyone who wants that deployment should upgrade the plan; nothing in this repo has
-to change to take that path.
-
-**This number was wrong in the repo until the last day of the build, and the way it was wrong is
-worth stating.** `docs/02-architecture.md` §1, `README.md`, `wrangler.jsonc` and the audit checklist
-all compared the **13.4 MiB uncompressed** `handler.mjs` against the **3 MiB compressed** ceiling,
-and `02-architecture.md` drew a further conclusion from it — that "Workers Paid's 10 MiB ceiling
-would not have fit it either without splitting the bundle." That is an uncompressed size measured
-against a compressed limit, and the conclusion it produced was false: Paid fits this bundle three
-times over.
-
-The error surfaced because two docs disagreed. The architecture doc said Paid would not have helped;
-the audit checklist said Paid "would likely close this." Rather than pick the more convenient one, I
-ran `wrangler deploy --dry-run` and measured. All four files now carry the corrected figure, each
-marked as a dated correction with the original claim quoted rather than silently overwritten — the
-same convention the repo uses everywhere else it reverses itself.
-
-**What the host change actually cost**, stated in full:
-
-- **Hyperdrive is gone**, so Postgres connections are no longer pooled at the edge. `db/client.ts`
-  falls through to its `DATABASE_URL` branch with a module-scoped pool — correct for Node, and the
-  reason no code changed. The deployment uses a Neon *pooled* connection string.
-- **Cron parity degrades.** Vercel's Hobby plan rejects any schedule running more than once a day *at
-  deploy time* — an hourly `0 * * * *` fails the build outright. `vercel.json` therefore schedules
-  `0 8 * * *`. Reminder jobs carry durable idempotency guards and evaluate their own due times, so a
-  coarser tick **delays delivery rather than corrupting it**. Restoring hourly is Vercel Pro or any
-  external scheduler hitting `GET /api/cron` with a bearer `CRON_SECRET`.
-- The Cloudflare bonus (`Z-1`) is not met by the *deployed instance*.
-
-**What did not change: any application code.** `db/client.ts`, `lib/env.ts` and `lib/storage` each
-already had a non-Cloudflare branch, reached by catching the throw from `getCloudflareContext()`
-(Workers puts bindings on a request-scoped context, not `globalThis`, and that call throws when there
-is no request — under `next start`, `tsx`, and vitest). The only repo changes were `vercel.json`,
-moving `@opennextjs/cloudflare` from `devDependencies` to `dependencies` so Vercel's file tracing sees
-it, and a docs section.
-
-That is the payoff of a decision made on day one and argued for in writing before it was needed:
-**Postgres, S3-compatible storage and HTTP email are all host-agnostic, so the host is reversible.**
-The rejected alternative makes it concrete — SQLite plus `better-sqlite3` plus local disk would have
-been faster to stand up and would have turned this same fallback into a rewrite: different driver,
-different storage story, every query migrated. The escape hatch was worth more than the head start,
-and it got used.
-
-Two smaller deployment decisions in the same spirit:
-
-- **File storage defaults to the database, not R2.** `lib/storage` resolves R2 binding → `S3_BUCKET`
-  → a `file_blob` row. R2 is the better store and costs ~$0/month at conference scale, but Cloudflare
-  requires completing a subscription checkout to enable it, widely reported to need a card. An
-  open-source project that demands a credit card before it will run is a worse product than one that
-  keeps a few headshots in Postgres. The binding always wins where it exists, so turning R2 on
-  changes no code. The bound is made visible rather than hidden: one upload caps at 25 MiB, the admin
-  Files screen warns at 250 MiB of deployment-wide blobs, and 500 MiB is named as the handoff point.
-- **Self-host is a real target, not a README paragraph.** `docker compose up` starts app + Postgres +
-  MinIO, migrates before serving, and creates the bucket. `MAIL_TRANSPORT` defaults to `log`, so a
-  fresh clone needs no API key from anyone and every message — sign-in links included — is readable
-  at `/admin/mail`.
-
----
-
-## 5. What is done, what is partial, what is not built
-
-The repository carries `docs/requirements-audit-checklist.md`, which audits every requirement ID
-against a pinned revision as COMPLETE / PARTIAL / OUTSTANDING. Its own headline count, at revision
-`416101e`:
-
-| Priority | Complete | Partial | Outstanding | Excluded | Total |
-|---|---:|---:|---:|---:|---:|
-| Required | 54 | 2 | 2 | — | 58 |
-| Important | 27 | 0 | 0 | — | 27 |
-| Optional | 29 | 0 | 2 | — | 31 |
-| Bonus | 3 | 1 | 1 | — | 5 |
-| Excluded | — | — | — | 3 | 3 |
-| **Total** | **113** | **3** | **5** | **3** | **124** |
-
-**Read that table with its caveat attached.** It is a dated snapshot: audited 2026-08-13 against
-`416101e`, and the row-by-row verdicts were **not** re-audited when production moved on 2026-08-15.
-Two of its statements were corrected in a superseding note (the Workers host, and First Settlement
-being seeded — that route now returns 200). Anyone using it should treat it as evidence with a
-timestamp, not a live status board.
-
-### Genuinely done, and verifiable in a browser
-
-The full spine: event configuration with tracks/rooms/tags/formats, a drag-and-drop CFP form builder
-over the hybrid schema with conditional logic and multi-step public runtime, cold submission with
-in-flow account creation, the speaker portal (profile, headshot, versioned deliverable uploads,
-tasks, custom portal pages, group access), review rounds with weighted scorecards, auto-distribution,
-blind-until-close and author-anonymized modes, recusal and workload reporting, drag-and-drop agenda
-with room/track/speaker-double-booking conflict detection, five agenda views plus month, templated
-comms with a send log and a real `.ics` `METHOD:REQUEST`, the outstanding-task dashboard plus five
-prebuilt dashboards and a custom board builder, public pages and five embeddable widgets, and a versioned REST
-API with generated OpenAPI.
-
-Beyond the brief: a full speaker CRM above the event layer (`app/crm/*`) with custom fields, import,
-reversible merges, dynamic and curated segments and a sourcing pipeline; sponsor/exhibitor entities
-with a published-only public wall; post-conference recordings behind two publication gates; SMS as a
-second channel with consent, E.164 normalization, OTP verification and quiet hours; per-notification
-opt-out with tokenized no-login unsubscribe; signed outbound webhooks; a Streamable-HTTP MCP server
-with a generated manifest; and four role-scoped agent skills.
-
-Verified by me on the current tree, not quoted:
-
-- `bun run test` — **129 test files, 1371 tests, all passing.**
-- Live routes returning 200: `/`, `/demo/agenda`, `/api/v1/events/demo/agenda`, `/embed/demo/agenda`,
-  `/first-settlement`.
-- No `fetch()` from `app/` to Cicero's own `/api/v1`.
-- 28 API route handlers, 20 migrations, 23 UI primitives, MIT license.
-
-### Partial — the accurate word is partial
-
-- **`T-6` — real outbound transactional email on the deployed instance.** The code is finished: three
-  transports (`log`, `smtp`, `resend`) behind an `auto` resolver that degrades to `log` and warns
-  rather than failing silently. What is missing is deployment configuration — a verified Resend
-  sender domain, an API key secret, and a `MAIL_FROM` that is not Resend's shared test sender. The
-  demo therefore delivers nothing externally; everything is readable at `/admin/mail`. This is a
-  choice with a cost: it is what makes the inbox-free demo work, and it is why this row is not green.
-- **`C-3` — calendar invites landing on a speaker's calendar.** The ICS itself is correct and pinned
-  by golden-byte tests: `METHOD:REQUEST` with real organizer and attendees, a stable UID with a
-  `SEQUENCE` that increments only when an invite was already sent, RFC 5545 escaping and 75-octet
-  folding, and a MIME `method=` parameter re-read from the body so a `METHOD:CANCEL` is not
-  mislabelled. It stays partial purely because it rides on `T-6`: under the log transport the invite
-  is stored, not delivered. `C-3a`, the plain add-to-calendar download, is complete.
-- **`Z-4` — the speed bonus.** A real benchmark exists (`bun run bench`) and it **confirms the concern
-  rather than clearing it.** Across 7,000 requests against a self-hosted `docker compose` target the
-  five public routes returned zero errors at 41–58ms p50 — but cost **29–46ms of server CPU per
-  rendered page**, against the Workers free plan's 10ms ceiling. The JSON API at ~8ms is the
-  exception, which is exactly why an API health check passed while navigation intermittently 503'd on
-  the old Workers deployment. One concrete cause was found and fixed — four public routes ran their
-  read model twice per request, once from `generateMetadata` and once from the page body, now wrapped
-  in React's `cache()` — but that fix was verified on macOS while the CPU sampling only works on
-  Linux, so it has **not** been re-measured. Do not read this row as claiming the routes now fit in
-  10ms; halving one source of duplicate work on a machine that cost 29–46ms is very unlikely to clear
-  a 10ms ceiling by itself. Measuring a problem is progress; it is not a speed bonus.
-
-### Not built, or not met
-
-- **`Z-1` Cloudflare deployment** — not met by the deployed instance. Configuration is present and
-  correct; see §4. One plan upgrade away.
-- **`Z-3` Forge hosting** — not met. The source is on GitHub.
-- **`N-1c` a live Accelevents end-to-end run** — no successful run against a real customer account.
-  The client is built against the documented `POST /rest/events/{eventId}/speaker` contract with a
-  fixture-backed fake for tests and demo mode, but Accelevents publishes per-endpoint OpenAPI
-  fragments and no combined spec, and their auth header name is genuinely ambiguous (the client
-  defaults to `Authorization` and retries once with `Key` on a 401). Attendee creation is a five-call
-  ticket-order sequence with no documented complimentary flag; it ships behind the same interface,
-  marked experimental, and the required speaker path does not depend on it.
-- **`D-5` token-spend receipts** — not collected.
-- **`E-8` role-based admin permission grid** — excluded by the brief. `membership.role` is only the
-  organizer/reviewer/speaker distinction; nothing reads it beyond deciding which surface a session may
-  enter. It is not a permissions matrix and does not pretend to be.
-- **The compose screen cannot address one named person.** `manual` is a real audience kind in
-  `lib/services/comms.ts` and the MCP surface reaches it, but it is not selectable in the composer —
-  every send from that screen goes to a computed group. (Assisted chasing in `AR-30` is the
-  one-person path that does exist.)
-- **The embed builder exports HTML and an iframe snippet only.** JSON, XML and iCal views of the same
-  data are reachable through the REST API but have no button in the embed admin.
-- **R2 and Twilio ship tested but not production-proven.** Both code paths are complete and selectable
-  by environment variable, but the hosted deployment takes no payment method, so it exercises the
-  Postgres storage backend and the `log` SMS transport. A self-hoster who enables either is the first
-  real user of that path. The SMS pre-flight set (`AR-9`–`AR-14`: consent, E.164, OTP verification,
-  delivery state, quiet hours) is shipped and must be re-verified by whoever flips
-  `SMS_TRANSPORT=twilio`; `AR-9` in particular is a legal precondition, not an improvement.
-- **`D-1` / `D-4` — competition entry and delivery deadline.** External to the repository, and satisfied by this
-  submission rather than by anything in the tree. (`docs/00-goals.md` still records an earlier draft
-  date for the deadline; it is a stale note, not a missed date.)
-
----
-
-## 6. What I would do next
-
-In rough order of how much a real organizer would feel it.
-
-1. **Close `T-6`, and with it `C-3`.** Verify a sender domain in Resend, set the secret, point
-   `MAIL_FROM` at it. That converts two PARTIAL required rows to complete with no code change, and it
-   is the only thing standing between the tested `.ics` and an actual calendar entry. It has to be
-   done without breaking the inbox-free demo, and the per-recipient reserved-domain routing already
-   built for exactly that reason means it can be.
-2. **Re-measure `Z-4` properly, on Linux, against the Workers runtime.** The `cache()` fix has never
-   been measured. The honest next step is a Linux benchmark host, `--cpu-pid` against `wrangler dev`,
-   and then a decision: either the public routes fit a real budget, or the answer is a
-   short-TTL cache on the public read model, which is where the CPU actually goes. Both are better
-   answers than "buy the paid plan," even though the paid plan also fixes it.
-3. **Re-run the requirements audit against the current tree.** The pinned checklist is two days and
-   several hundred commits stale, and a stale audit is worse than none because it reads as current. It
-   should also pick up the corrected Cloudflare bundle numbers in §4, which landed after the audit was
-   pinned.
-4. **Split the Cloudflare bundle, or shrink it.** 3.42 MiB against a 3 MiB ceiling is ~14% — that is a
-   tractable engineering problem, not a wall. The Anthropic SDK, the AWS S3 client and `nodemailer` are
-   all conditionally reachable and all in the server bundle; moving the AI and S3 paths behind dynamic
-   imports is the obvious first cut. Getting under 3 MiB would restore free-tier Cloudflare and close
-   `Z-1` without anyone paying anything, which is a better outcome than the $5.
-5. **Give the composer a `manual` audience.** The service layer already supports it; only the
-   organizer screen does not. This is the shortest distance between a known gap and a closed one.
-6. **A live Accelevents run** (`N-1c`) the moment a credential exists — and then decide, on evidence,
-   whether the experimental attendee-order path is worth keeping or should be deleted rather than
-   shipped ambiguous.
-7. **Event cloning.** The requirements doc flagged this as the one genuinely arguable exclusion:
-   organizers run the conference annually, and the brief never mentions a second edition. Everything
-   needed for it exists — event scoping, `S-20` copy-tasks-from-a-previous-event, the CRM's
-   cross-event contact model. It is the highest-value thing the brief did not ask for.
-
----
-
-## A closing note on how this is documented
-
-Every non-obvious decision in this build has a written record, and the records were written *before*
-the decisions were needed rather than reconstructed after. `docs/00-goals.md` is the prose statement
-of the target. `docs/01-requirements.md` is derived **only** from the competition brief and its 42
-screenshots and is closed to additions — that is the property that makes it a faithful record of what
-was actually asked for; everything the owner wanted afterwards lives in
-`docs/05-additional-requirements.md` instead. An independent survey of Sessionboard was produced by a
-separate agent with no access to the brief or the requirements doc, and used strictly as a *coverage
-check* — it was never allowed to silently expand scope.
-
-Where the requirements pass was later reversed — the speaker CRM and sponsor/exhibitor entities were
-both excluded and then built — the exclusions are struck through in place and marked BUILT, rather
-than deleted. A decision record that quietly edits itself is not a decision record.
-
-That habit is also why §5 above can be specific about what does not work. A README that claims
-everything works is one a judge stops trusting at the first dead end.
+The UI does not call Cicero's own HTTP API. Both UI and API call the same service function. A
+conflict rule, deadline, publication filter, authorization check, or idempotency guard therefore has
+one implementation. The MCP layer also calls services directly rather than making a loopback HTTP
+request. Authentication resolves the acting user once per request and reuses that result through the
+server-rendered tree, avoiding repeated session/database work without weakening authorization.
+
+This matters most where a superficial clone fails:
+
+- submission deadlines apply to public pages, actions, uploads, and REST writes;
+- blind review redacts before search, so a hidden author cannot be rediscovered by filtering;
+- decisions commit before best-effort notification and only real state transitions send;
+- public reads default to published, so drafts do not leak through a forgotten endpoint;
+- agenda conflicts behave the same from the board and reconciliation API;
+- event duplication must account for every event-scoped table and column before the clone can ship.
+- malformed identifiers and caller input produce useful client errors, while a genuinely unreachable
+  database produces a retryable service-unavailable response instead of an opaque 500.
+
+### A hybrid submission schema
+
+Title, description, format, track, level, and status are typed Postgres columns because the review
+queue, agenda, exports, filters, and conflict rules query them directly. Form-specific answers live
+in JSONB because they are read as a bundle on detail/export views. This preserves flexible forms
+without turning core programme data into an untyped blob.
+
+Conditional logic is intentionally limited to one reference to an earlier field, and hidden values
+are cleared at submit. That rule eliminates cycles and contradictory visibility paths by
+construction.
+
+### Magic links, with an inbox-free seed
+
+There are no passwords. Tokens are short-lived, single-use, and stored as hashes before redemption
+into an HTTP-only session. Seeded identities use reserved domains and can receive a guarded on-screen
+demo link; real accounts fail that eligibility test. All messages are also recorded in the internal
+mailbox when log transport is active.
+
+This keeps a judge from being blocked by deliverability while ensuring that a fake demo address can
+never send mail to a real person.
+
+### Advisory AI
+
+AI review produces a suggestion beside human scoring and never writes submission status. The agenda
+assistant proposes placements and never commits them. Both retain deterministic fallbacks when no
+model key is configured, so the product shape remains testable without a paid service.
+
+### Reversible hosting
+
+The application is Bun + Next.js + React + TypeScript, with Drizzle over Postgres and a storage
+resolver that prefers R2, then S3-compatible storage, then database blobs. Docker Compose starts the
+app, Postgres, and MinIO without third-party credentials. OpenNext/Cloudflare and Vercel use the same
+application code.
+
+Cloudflare Workers remains a supported target, but the hosted competition demo runs on Vercel. A
+measured OpenNext upload was 3.42 MiB compressed: over the Workers Free 3 MiB limit and under the
+Paid 10 MiB limit. This is a hosting-plan constraint, not a claim that the bundle cannot run on
+Workers.
+
+## 6. What we deliberately did not build
+
+“Not built” contains several different decisions. Some items were explicitly excluded by the brief;
+some are responsible deferrals; some are honest gaps to close. They should not be collapsed into one
+roadmap list.
+
+### Explicitly excluded or intentionally deferred
+
+| Feature | Why it was not in v1 | What would justify revisiting it |
+| --- | --- | --- |
+| Payments and invoices | The brief explicitly says they are not needed; adding money movement would expand security, tax, refund, and support scope | A real customer requirement with a defined processor and accounting boundary |
+| Autonomous per-person chasing | The evidence favored escalation by a named human and by communication medium; silent bulk reminders would undermine that model | Measured organizer demand plus opt-in cadence, clear ownership, stop conditions, and auditability |
+| Intelligent agenda optimization | A useful optimizer needs audience-overlap signals, expected demand, room capacity, speaker constraints, tunable objectives, and evaluation against real schedules | First-class demand/venue data and a corpus of accepted schedules against which to calibrate |
+| Automatic post-conference messages | Ending an event is not consent to send a message; the right follow-up varies between thank-you, feedback, recording, and next-event invitation | Opt-in event policy, editable content/timing, existing preference enforcement, and delivery-log integration |
+| Presigned direct uploads | The current storage abstraction keeps validation and authorization in the application and is adequate for conference-sized files | Proven large-file or throughput pressure that warrants the additional upload-state and cleanup model |
+| Interactive exhibitor map | Static PDF upload and embed satisfies the current operational need | Demand for booths, hotspots, wayfinding, search, or region links as a first-class product |
+| Placeholder sponsor slots on the public wall | The sponsor wall renders the sponsors that exist and nothing else: there is no reserved "your logo here" tile holding space in a tier that is still being sold. A dummy mark on an attendee-facing page states something untrue about who is backing the event, and an event with no sponsors 404s rather than showing an empty grid, so the page never has to invent filler | Sponsorship sales wanting a prospectus surface — which is better answered by an organizer-only or share-link preview of the wall that shows unsold slots, than by mixing real and invented logos on the public page |
+| First-class PowerPoint and Google Slides decks | Speaker deck support is only PDF and Keynote today; PowerPoint and Google Slides are accepted as opaque bytes rather than as understood deck formats | Organizer or speaker demand for PowerPoint and Google Slides as supported deck formats, which we do want to add |
+| Arbitrary event resource uploads | Every upload path is bound to a known slot — headshot, speaker deliverable, submission form file field, exhibitor-map PDF, recording — so type validation, size caps, and publication rules can be specific to each one. Speaker-facing reference material is organizer-written portal pages rather than attached files. A general "attach anything to the event" library would need its own permission, visibility, and retention model | Organizers wanting to publish documents that are not one of the known slots — a speaker handbook, an event history page, a media kit, a sponsor prospectus — at which point a generic resource library with per-file audience control is a better answer than another bespoke slot |
+| Headshot crop and framing control | Squareness is already enforced on the way in — the browser center-crops to a 512 px square and the server rejects anything that is not exactly that — so the gallery never has to reason about mixed aspect ratios. What is deferred is letting the person choose the crop: a center crop of a wide or tall portrait can cut off the subject, and the upload surfaces say so rather than fixing it | Enough off-center portraits to be a real complaint, at which point a crop/zoom step at upload time, with the resulting frame stored alongside the image, beats asking speakers to pre-crop |
+
+### Agent mail as the first-run setup channel
+
+Agent mail ships as a bounded MCP slice: the server can list effective templates and redacted
+delivery metadata, preview one recipient-resolved email, and send it through the same audited
+transport the UI uses. Every one of those tools authenticates with an event-scoped API key.
+
+The obvious next idea is to point that channel at setup itself — give the setup agent its own
+mailbox, let it create the account and the event, have Cicero deliver the freshly minted API key to
+that address, and let the agent wire up its own MCP client and keep going. Setup would become one
+agent-run sequence instead of a human pausing at **Organizer → Integrations** to copy a key that is
+shown exactly once. We did not build it, and the reason is ordering rather than ambition:
+
+- **It is circular.** Agent mail is authenticated by the credential the flow is trying to obtain.
+  Nothing in the send path can run before a key exists, so first-run delivery would have to be a
+  separate, unauthenticated path with its own rules — not a reuse of this one.
+- **Every guardrail assumes an existing event.** The recipient must already be a participant on the
+  key's event, the write must echo a target-specific confirmation literal plus a content-bound
+  digest, and email preference is rechecked at dispatch. None of those checks are evaluable before
+  the event and its participants exist.
+- **Mailing a key widens what the once-only reveal exists to contain.** Keys are stored as hashes
+  and shown a single time on purpose. Emailing a live write credential to an address chosen by the
+  same unauthenticated caller who is creating the account issues that credential to whoever asked,
+  and leaves it sitting in an inbox and a delivery log.
+
+`onboard-cicero` covers the same ground the safe way today: it records non-secret local state —
+host, event slug, account and API-key readiness, completed milestones — resumes at the first
+unfinished step, and narrates key minting instead of performing it, so the credential never leaves
+the human's hands or lands in this repository's state file.
+
+What would justify revisiting it: a verified agent identity bound to an organizer account rather
+than a self-asserted address, a short-lived single-use enrollment token that exchanges for a key
+instead of the key itself, and an explicit human approval on the account side before enrollment
+completes. With those three, first-run delivery becomes an enrollment protocol worth building;
+without them it is credential issuance on request.
+
+### Known gaps, not strategic exclusions
+
+- Mobile responsiveness received less design and verification time on the dense organizer
+  workflows, where frequent review, triage, and scheduling work is most likely to happen on a
+  desktop. That tradeoff does not extend to attendee-facing output: public programme pages and,
+  especially, agenda, itinerary, and speaker embeds inside event websites need a focused mobile and
+  host-site compatibility pass. Agenda starring improves the attendee path but has not replaced
+  that device-and-host verification work.
+- The signed-out landing page now gives organizers, reviewers, speakers, and attendees explicit demo
+  entry points. A real reviewer or speaker who arrives without an invitation still has no event
+  discovery path, however. Sign-in with no `next` begins at `/organizer` and relies on role-aware
+  redirects to reach `/review` or `/portal`; a person with no membership is still sent toward event
+  creation. The next fix is a deliberate post-authentication role/event router, not more shell
+  redirects.
+- The hosted deployment uses log transport, so real transactional delivery and calendar arrival have
+  not been proven there even though message generation and `.ics` behavior are tested.
+- R2 and Twilio adapters are implemented and tested but have not been exercised against paid
+  production accounts.
+- Organizer impersonation needs narrower scope and durable attribution of both organizer and
+  speaker on every assisted mutation.
+- Updates needs a durable cross-device watermark and an append-only activity source for complete
+  history.
+- The requirements audit is a pinned snapshot and should be re-run against the submission commit.
+- The hosted demo was on an older revision during the 2026-08-16 verification; see
+  [`06-submission-evidence.md`](06-submission-evidence.md).
+
+## 7. Proposed integrations and why each is useful
+
+External task management is the most valuable unbuilt integration family because Cicero knows the
+work that must happen, but many operations teams coordinate their day somewhere else. The proposed
+architecture is organization-level provider connection, event-to-project mapping, stable external
+IDs and URLs, webhook-driven status updates, reconciliation for missed events, and explicit
+loop-safe state mapping.
+
+**Linear first.** Linear is the best first provider for a technical event team and the clearest
+reference for Cicero's own keyboard ergonomics. A Cicero task can become an issue with owner, due
+date, event/submission context, and a canonical link. Completion in either product can update the
+other without asking engineers to watch a second task list.
+
+**Jira.** Larger organizations already run programme, marketing, legal, and production work in Jira.
+Mapping Cicero assignments into a project lets conference tasks participate in existing workflows,
+permissions, reporting, SLAs, and automation instead of creating a parallel operating system.
+
+**Asana.** Event and marketing teams often organize campaigns, launches, and dependencies in Asana.
+Cicero tasks would become actionable work inside the project where venue, sponsorship, and content
+work already lives, preserving assignees and dates while linking back to the canonical speaker data.
+
+**Trello.** Smaller and volunteer-run events benefit from a low-configuration visual board. A
+Trello connector can turn onboarding work into cards and lists without forcing the team to adopt a
+more structured issue tracker.
+
+**GitHub Issues.** Developer conferences often coordinate content and production in the same
+repository as their website or tooling. Issues provide a familiar place for technical owners to
+track session assets, demos, and programme changes, with repository-level notifications and links to
+the source that depends on the work.
+
+The provider-neutral contract is more important than any one logo. Cicero should own the conference
+task and its event scope; the provider should own team workflow. Stable IDs prevent retries and
+backfills from duplicating work. Completed and canceled provider states must map separately so
+finishing a requirement is not confused with an organizer waiving it.
+
+The first version should send **canonical links and project metadata**, not copy speaker PII, files,
+comments, or document bodies into third-party systems. Replicating that content requires a separate
+privacy, access, deletion, and retention decision.
+
+Other useful integration directions follow the same rule:
+
+| Integration direction | Incremental value | Boundary |
+| --- | --- | --- |
+| Calendar providers | Give speakers and organizers live programme updates where their time is managed | Preserve stable UID/sequence and do not turn calendar edits into an unreviewed source of programme truth |
+| Slack or Teams | Deliver actionable operational alerts and deep links where staff coordinate | Avoid copying sensitive speaker content; require explicit channels and rate/cadence controls |
+| CRM/marketing systems | Carry consented speaker and attendee relationships across annual events | Cicero remains source of truth for programme data; consent and field mapping must be explicit |
+| Additional event platforms | Push accepted speakers/programme into the execution platform a venue uses | Begin one-way and previewable; add inbound sync only after ownership and conflict rules are defined |
+| Storage/video providers | Publish approved files and recordings without duplicating large media | Keep publication gates and deletion semantics in Cicero |
+
+## 8. Evidence and demo status
+
+On 2026-08-16 the then-current source tree was built as a production Docker image, migrated, seeded,
+and walked in Chrome. Both seed events loaded; public agenda, reserved-address magic-link sign-in,
+organizer dashboard, command menu, and readiness/quick-action drawer were exercised. The hosted demo
+also served the public agenda, embed, First Settlement event, organizer login, and the agenda API;
+the API returned HTTP 200 with five sessions across three rooms.
+
+The documentation refresh audited every product commit through `1017ca9`, including three-scale demo
+data, per-request acting-user reuse, in-place recording-board refresh, resilient error
+classification, clearer dense-table scoring, and a less repetitive landing page. It regenerated the reading copies and reran the
+source checks recorded in the evidence document. A live recheck on 2026-08-17
+found the same deployment boundary: the hosted demo and its five-session agenda are healthy, but the
+organizer shell still uses `/admin` and the landing page predates the current demo-first revision.
+The newest features in this narrative are therefore current-source claims until a fresh application
+deploy closes the gap. The separate static submission Worker was refreshed and verified on 17
+August, so the public reading copy now matches this branch. The screenshots, commands, and route results are preserved in
+[`06-submission-evidence.md`](06-submission-evidence.md).
+
+## 9. What we would build next
+
+In product order rather than novelty order:
+
+1. Deploy the current application `main` and repeat the authenticated evidence checklist so the
+   hosted demo and current source are on one revision.
+2. Verify a sender domain and prove real transactional email/calendar delivery without removing the
+   reserved-address inbox-free demo.
+3. Replace broad impersonation with scoped, dual-attributed organizer assistance.
+4. Make Updates append-only and cross-device.
+5. Bind headshot publication consent to the exact file version being published.
+6. Build the provider-neutral task connector with Linear as the first implementation, then evaluate
+   bidirectional Airtable reconciliation with explicit field ownership.
+7. Re-measure public-route CPU in the target runtime and reduce the OpenNext bundle below the free
+   Workers limit.
+8. Evaluate intelligent agenda optimization only after demand, capacity, and schedule-quality data
+   exist.
+
+Event cloning was the highest-value product feature the brief did not ask for, and it is now part of
+the submission. The next trust boundary is narrower but more important than another broad feature:
+an approved headshot must remain approved only for the exact file the speaker consented to publish.
+
+## Closing
+
+Cicero is not an attempt to recreate every menu item in Sessionboard. It is an argument about what
+an event-operations product should prioritize: a complete workflow, one source of programme truth,
+fast repeated interaction for organizers, forgiving paths for infrequent speakers, human control at
+consequential moments, and honest extension boundaries.
+
+The required spine works. The additional features make it more useful than a literal clone. The
+future list is specific enough to guide a next release without being presented as present-day
+capability. That is the standard this submission asks to be judged against.
+
+## Links
+
+**Live demo:** <https://cicero-three.vercel.app>
+
+**Readable HTML:** <https://cicero-submission.elehche.workers.dev/>
+
+**Repository mirror:** [`submission/index.html`](submission/index.html)
+
+**Field survey:** <https://cicero-field-survey.elehche.workers.dev/>
+
+**Source:** <https://github.com/EllAchE/sessionboard-oss>
+
+**License:** MIT
+
+**Evidence:** [`06-submission-evidence.md`](06-submission-evidence.md)
+
+**Short form:** [`06-submission-summary.md`](06-submission-summary.md)
+
+**Copy-ready form answers:** [`06-submission-form-answers.md`](06-submission-form-answers.md)

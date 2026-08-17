@@ -1,7 +1,7 @@
-import { eq, inArray } from 'drizzle-orm';
 import { getDb } from '@/db/client';
 import {
   event,
+  fileRequest,
   form,
   participant,
   participantRole,
@@ -20,6 +20,7 @@ import {
 import type { EventContext } from '@/lib/context';
 import { requireCapability } from '@/lib/context';
 import { spreadsheetSafeCellText } from '@/lib/csv';
+import { eq, inArray } from 'drizzle-orm';
 import type { ReportId } from './dashboard-catalog';
 
 /**
@@ -97,10 +98,8 @@ export function classifyUrgency(
 }
 
 /**
- * TODO: Replace this proxy when notifications can record an explicit blocked/deferred state.
- * Until then, a missed deadline belongs to the organizer until they follow up; a reminder sent on
- * or after the deadline returns it to the speaker without hiding a later missed deadline behind an
- * earlier scheduled reminder.
+ * Blocked/deferred ownership is not modeled yet. A reminder sent on or after the deadline is the
+ * only durable signal that the organizer followed up and returned the next action to the speaker.
  */
 export function isAwaitingTaskAction(row: TaskActionState, now = new Date()): boolean {
   if (row.status === 'completed' || row.status === 'waived' || !row.dueAt) return false;
@@ -230,7 +229,13 @@ export type TaskCompletionSummary = {
   completed: number;
   waived: number;
   awaitingAction: number;
-  blockedSpeakers: number;
+  /**
+   * Distinct participants carrying at least one *overdue* task — not one outstanding task. Both
+   * surfaces that read this pair it with `overdue` in the same sentence ("N overdue tasks across M
+   * participants"), so counting anyone merely not-yet-due inflated M against the N beside it: an
+   * event with three late tasks and nine assignments due next month read as twelve people behind.
+   */
+  overdueParticipants: number;
   completionPct: number;
 };
 
@@ -250,7 +255,7 @@ export function summarizeTaskCompletion(rows: OutstandingTaskRow[]): TaskComplet
     completed: completed.length,
     waived: waived.length,
     awaitingAction: rows.filter((row) => row.awaitingAction).length,
-    blockedSpeakers: new Set(outstanding.map((row) => row.participantId)).size,
+    overdueParticipants: new Set(overdue.map((row) => row.participantId)).size,
     completionPct: rows.length === 0 ? 0 : Math.round((settled / rows.length) * 100),
   };
 }
@@ -352,42 +357,42 @@ export async function loadNudges(ctx: EventContext, now = new Date()): Promise<N
       id: 'overdue-tasks',
       label: 'overdue speaker tasks',
       count: overdue,
-      href: '/admin/tasks',
+      href: '/organizer/tasks',
       tone: 'danger',
     },
     {
       id: 'needs-slot',
-      label: 'sessions still need a time slot',
+      label: 'sessions need a time slot',
       count: needsSlot,
-      href: '/admin/agenda',
+      href: '/organizer/agenda',
       tone: 'warning',
     },
     {
       id: 'accepted-unscheduled',
-      label: 'accepted talks are not on the agenda yet',
+      label: 'accepted talks not on the agenda',
       count: acceptedWithoutSession,
-      href: '/admin/agenda',
+      href: '/organizer/agenda',
       tone: 'warning',
     },
     {
       id: 'missing-profile',
-      label: 'speakers are missing a bio or headshot',
+      label: 'speakers missing a bio or headshot',
       count: missingProfile,
-      href: '/admin/speakers',
+      href: '/organizer/speakers',
       tone: 'warning',
     },
     {
       id: 'awaiting-review',
-      label: 'submissions are still awaiting a decision',
+      label: 'submissions awaiting a decision',
       count: awaitingReview,
-      href: '/admin/submissions',
+      href: '/organizer/submissions',
       tone: 'info',
     },
     {
       id: 'unpublished',
       label: 'sessions are drafts and stay out of the public embeds',
       count: unpublished,
-      href: '/admin/agenda',
+      href: '/organizer/agenda',
       tone: 'info',
     },
   ];
@@ -642,7 +647,7 @@ export async function loadScheduleHealth(ctx: EventContext): Promise<ScheduleHea
 }
 
 // ---------------------------------------------------------------------------
-// Speaker tracking and the admin task list
+// Speaker tracking and the organizer task list
 // ---------------------------------------------------------------------------
 
 export type SpeakerRow = {
@@ -706,7 +711,7 @@ export async function listSpeakers(ctx: EventContext, now = new Date()): Promise
     .sort((a, b) => b.tasksOverdue - a.tasksOverdue || a.name.localeCompare(b.name));
 }
 
-export type AdminTaskRow = {
+export type OrganizerTaskRow = {
   id: string;
   name: string;
   kind: TaskKindValue;
@@ -719,7 +724,10 @@ export type AdminTaskRow = {
   descriptionMarkdown: string | null;
   linkUrl: string | null;
   formId: string | null;
+  /** `file_upload` only: what the task's upload will accept. Empty means no constraint. */
+  acceptedTypes: string[];
   reminderDaysBefore: number[];
+  reminderDaysAfterSend: number | null;
   participantIds: string[];
   assigned: number;
   notStarted: number;
@@ -730,17 +738,20 @@ export type AdminTaskRow = {
   completionPct: number;
 };
 
-export async function listTasksForAdmin(
+export async function listTasksForOrganizer(
   ctx: EventContext,
   now = new Date(),
-): Promise<AdminTaskRow[]> {
+): Promise<OrganizerTaskRow[]> {
   requireCapability(ctx, 'submission:read_all');
   const db = getDb();
 
-  const [tasks, assignments] = await Promise.all([
+  const [tasks, assignments, requests] = await Promise.all([
     db.query.task.findMany({ where: eq(task.eventId, ctx.eventId) }),
     listTaskCompletion(ctx, now),
+    db.query.fileRequest.findMany({ where: eq(fileRequest.eventId, ctx.eventId) }),
   ]);
+  // The editor has to round-trip the type constraint, and a task owns at most one request.
+  const acceptedByRequest = new Map(requests.map((row) => [row.id, row.acceptedTypes ?? []]));
 
   return tasks
     .map((row) => {
@@ -760,7 +771,9 @@ export async function listTasksForAdmin(
         descriptionMarkdown: row.descriptionMarkdown,
         linkUrl: row.linkUrl,
         formId: row.formId,
+        acceptedTypes: row.fileRequestId ? (acceptedByRequest.get(row.fileRequestId) ?? []) : [],
         reminderDaysBefore: row.reminderDaysBefore ?? [],
+        reminderDaysAfterSend: row.reminderDaysAfterSend,
         // `S-16`. A submission-scoped task gives one speaker a row per session, so the same person
         // legitimately appears more than once here. The manual-selection picker wants each of them
         // named once.
@@ -860,7 +873,10 @@ async function buildReviewScoreReport(ctx: EventContext): Promise<string> {
       let totalWeight = 0;
       for (const entry of mine) {
         const criterion = criterionById.get(entry.criterionId);
-        if (!criterion || criterion.maxScore <= 0) continue;
+        // Dropdown and free-text criteria carry no number, so they sit out the weighted average
+        // rather than being coerced into one.
+        if (!criterion || criterion.type !== 'numeric') continue;
+        if (criterion.maxScore <= 0 || entry.value === null) continue;
         weighted += criterion.weight * (entry.value / criterion.maxScore);
         totalWeight += criterion.weight;
       }
@@ -992,10 +1008,8 @@ export async function buildReport(ctx: EventContext, report: ReportId): Promise<
 }
 
 export {
-  REPORTS,
-  WIDGETS,
-  PREBUILT_DASHBOARDS,
-  isWidgetId,
-  type ReportId,
-  type WidgetId,
+  isWidgetId, PREBUILT_DASHBOARDS, REPORTS,
+  WIDGETS, type ReportId,
+  type WidgetId
 } from './dashboard-catalog';
+

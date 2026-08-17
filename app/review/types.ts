@@ -2,7 +2,8 @@
 
 export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; message: string };
 
-export type ScoreWire = { criterionId: string; value: number };
+/** One answer. `value` for a numeric criterion, `text` for a dropdown choice or a written one. */
+export type ScoreWire = { criterionId: string; value: number | null; text?: string | null };
 
 export type AssignmentWire = {
   assignmentId: string;
@@ -22,6 +23,10 @@ export type CriterionWire = {
   id: string;
   label: string;
   description: string | null;
+  /** `ABS-03`: which control the reviewer is shown for this line of the scorecard. */
+  type: 'numeric' | 'select' | 'text';
+  /** The choices for a `select` criterion; empty for the others. */
+  options: string[];
   weight: number;
   maxScore: number;
 };

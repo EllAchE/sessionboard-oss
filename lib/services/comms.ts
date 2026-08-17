@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, like, lte, notInArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, like, lte, notInArray, or, sql } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import {
   emailLog,
@@ -6,6 +6,7 @@ import {
   event as eventTable,
   form,
   magicToken,
+  membership,
   participant,
   participantRole,
   portalTheme,
@@ -88,6 +89,14 @@ export const TEMPLATE_VARIABLES: TemplateVariable[] = [
   { path: 'event.website', description: 'Event website URL' },
   { path: 'event.url', description: 'Public Cicero page for the event' },
   { path: 'event.supportEmail', description: 'Organizer support address' },
+  {
+    path: 'event.speakerDeadline',
+    description: 'When the speaker roster is meant to be settled (empty when not tracked)',
+  },
+  {
+    path: 'event.agendaDeadline',
+    description: 'When the agenda is meant to be settled (empty when not tracked)',
+  },
   { path: 'speaker.name', description: 'Speaker display name' },
   { path: 'speaker.firstName', description: 'First name only' },
   { path: 'speaker.email', description: 'Speaker email address' },
@@ -120,6 +129,10 @@ export const TEMPLATE_VARIABLES: TemplateVariable[] = [
   { path: 'form.name', description: 'Form name (deadline reminders only)' },
   { path: 'form.closesAt', description: 'Form close date (deadline reminders only)' },
   { path: 'form.url', description: 'Public form URL (deadline reminders only)' },
+  {
+    path: 'organizer.url',
+    description: 'Organizer console for the event (milestone reminders only)',
+  },
 ];
 
 const KNOWN_PATHS = new Set(TEMPLATE_VARIABLES.map((entry) => entry.path));
@@ -140,6 +153,7 @@ const MARKDOWN_URL_VARIABLES = new Set([
   'portal.url',
   'portal.link',
   'form.url',
+  'organizer.url',
 ]);
 
 function renderTemplateMarkdown(source: string, vars: TemplateVars): string {
@@ -492,8 +506,10 @@ export async function resolveRecipients(
     const preferred =
       submissions.find((s) => s.status === 'accepted') ?? submissions[0] ?? null;
     const selectedTask =
-      spec.kind === 'outstanding_tasks' && spec.taskId
-        ? (openTasks.find((entry) => entry.taskId === spec.taskId) ?? null)
+      spec.kind === 'outstanding_tasks'
+        ? spec.taskId
+          ? (openTasks.find((entry) => entry.taskId === spec.taskId) ?? null)
+          : (sortRecipientTasks(openTasks)[0] ?? null)
         : null;
 
     recipients.push({
@@ -626,11 +642,7 @@ function buildVars(input: {
   } = input;
   const zone = event.timezone;
 
-  const sortedTasks = [...openTasks].sort((a, b) => {
-    if (!a.dueAt) return 1;
-    if (!b.dueAt) return -1;
-    return a.dueAt.getTime() - b.dueAt.getTime();
-  });
+  const sortedTasks = sortRecipientTasks(openTasks);
 
   return {
     'event.name': event.name,
@@ -640,6 +652,14 @@ function buildVars(input: {
     'event.website': event.websiteUrl ?? '',
     'event.url': branding.eventUrl,
     'event.supportEmail': branding.supportEmail ?? '',
+    /**
+     * `AR-51`. Available to every template rather than only to the milestone reminders below, because
+     * the one email a speaker is most likely to read — their acceptance — is also the best place to
+     * tell them when the programme firms up. Empty when the edition does not track it, which
+     * `{{event.agendaDeadline|soon}}` turns into whatever the organizer would rather say.
+     */
+    'event.speakerDeadline': formatInZone(event.speakerDeadlineAt, zone, false),
+    'event.agendaDeadline': formatInZone(event.agendaDeadlineAt, zone, false),
 
     'speaker.name': person.name,
     'speaker.firstName': speakerFirstName(person.firstName, person.name),
@@ -672,7 +692,7 @@ function buildVars(input: {
       .map(
         (t) =>
           `- ${t.name}${t.submissionTitle ? ` (${t.submissionTitle})` : ''}` +
-          `${t.dueAt ? ` — due ${formatInZone(t.dueAt, zone, false)}` : ''}`,
+          `${t.dueAt ? `, due ${formatInZone(t.dueAt, zone, false)}` : ''}`,
       )
       .join('\n'),
     'tasks.next': sortedTasks[0]?.name ?? '',
@@ -681,6 +701,21 @@ function buildVars(input: {
 
     'portal.url': `${appUrl()}/portal`,
   };
+}
+
+function sortRecipientTasks(openTasks: readonly RecipientTask[]): RecipientTask[] {
+  return [...openTasks].sort((a, b) => {
+    if (!a.dueAt && !b.dueAt) {
+      return a.name.localeCompare(b.name) || a.taskId.localeCompare(b.taskId);
+    }
+    if (!a.dueAt) return 1;
+    if (!b.dueAt) return -1;
+    return (
+      a.dueAt.getTime() - b.dueAt.getTime() ||
+      a.name.localeCompare(b.name) ||
+      a.taskId.localeCompare(b.taskId)
+    );
+  });
 }
 
 /**
@@ -750,7 +785,7 @@ export type EmailTemplateRow = typeof emailTemplate.$inferSelect;
  * The shipped SMS copy deliberately uses `{{portal.url}}` where the email writes
  * `{{portal.link}}`. Custom SMS templates may now request the one-click link, and the SMS mailbox
  * gates it like the mail archive, but the plain URL keeps the default archive credential-free as
- * defence in depth. See `app/admin/sms/magic-links.ts`.
+ * defence in depth. See `app/organizer/sms/magic-links.ts`.
  */
 export const DEFAULT_TEMPLATES: Array<{
   key: string;
@@ -765,17 +800,15 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission received',
     subject: 'We received "{{submission.title}}"',
     smsBody:
-      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). We will be in touch once the programme committee has reviewed it. Your portal: {{portal.url}}',
+      '{{event.name}}: we received "{{submission.title}}" ({{submission.ref}}). Portal: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thanks for submitting **{{submission.title}}** ({{submission.ref}}) to {{event.name}}.',
-      '',
-      'You can review or edit your submission in your speaker portal at any time:',
+      'We received **{{submission.title}}** ({{submission.ref}}) for {{event.name}}.',
       '',
       '[Open your speaker portal]({{portal.link}})',
       '',
-      'We will be in touch once the programme committee has reviewed it.',
+      'We will be in touch after review.',
     ].join('\n'),
   },
   {
@@ -783,15 +816,13 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission accepted',
     subject: 'Your talk was accepted for {{event.name}}',
     smsBody:
-      '{{event.name}}: good news, "{{submission.title}}" is accepted. Your speaker onboarding tasks are waiting in your portal: {{portal.url}}',
+      '{{event.name}}: "{{submission.title}}" is accepted. Next steps: {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Good news: **{{submission.title}}** ({{submission.ref}}) has been accepted for {{event.name}}.',
+      '**{{submission.title}}** ({{submission.ref}}) is accepted for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
-      '',
-      'Next, please complete your speaker onboarding:',
       '',
       '{{tasks.list}}',
       '',
@@ -803,15 +834,15 @@ export const DEFAULT_TEMPLATES: Array<{
     name: 'Submission waitlisted',
     subject: 'Your {{event.name}} submission is on the waitlist',
     smsBody:
-      '{{event.name}}: "{{submission.title}}" is on the waitlist. Nothing to do for now; we will let you know either way. Your portal: {{portal.url}}',
+      '{{event.name}}: "{{submission.title}}" is waitlisted. We will send an update. {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}. The programme committee rated it highly, and we would like to include it if a slot opens up.',
+      '**{{submission.title}}** ({{submission.ref}}) is on the waitlist for {{event.name}}.',
       '',
       '{{submission.decisionNote}}',
       '',
-      'There is nothing you need to do now. We will email you as soon as we know either way, and your submission stays visible in your speaker portal in the meantime:',
+      'We will send an update when its status changes.',
       '',
       '[Open your speaker portal]({{portal.link}})',
     ].join('\n'),
@@ -822,21 +853,21 @@ export const DEFAULT_TEMPLATES: Array<{
     subject: 'An update on your {{event.name}} submission',
     // No link: the decline email has none either, and there is nothing for the speaker to do.
     smsBody:
-      '{{event.name}}: thank you for submitting "{{submission.title}}". We had more strong proposals than slots and cannot include it this year. We hope you will submit again next time.',
+      '{{event.name}}: we cannot include "{{submission.title}}" this year. Thank you for submitting.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Thank you for submitting **{{submission.title}}** to {{event.name}}. We had many more strong proposals than slots this year, and we are not able to include it in the programme.',
+      'We cannot include **{{submission.title}}** in the {{event.name}} programme this year.',
       '',
       '{{submission.decisionNote}}',
       '',
-      'We hope you will submit again next time.',
+      'Thank you for submitting.',
     ].join('\n'),
   },
   {
     key: 'session.invite',
     name: 'Calendar invitation',
-    subject: '{{session.title}} — {{session.startsAt}}',
+    subject: '{{session.title}} at {{session.startsAt}}',
     attachIcs: true,
     // An SMS cannot carry the .ics part, so the add-to-calendar download (`C-3a`) is the link here.
     smsBody:
@@ -844,7 +875,7 @@ export const DEFAULT_TEMPLATES: Array<{
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'Your session at {{event.name}} is scheduled. This email carries a calendar invitation. Accept it and the session lands on your own calendar, and it updates itself in place if we ever have to move you.',
+      'Your {{event.name}} session is scheduled. A calendar invitation is attached.',
       '',
       '- **Session:** {{session.title}} ({{session.ref}})',
       '- **Starts:** {{session.startsAt}}',
@@ -852,7 +883,7 @@ export const DEFAULT_TEMPLATES: Array<{
       '- **Room:** {{session.room|to be confirmed}}',
       '- **Track:** {{session.track|—}}',
       '',
-      'If your mail client did not show accept and decline buttons, you can [add it to your calendar directly]({{session.calendarUrl}}).',
+      '[Download the calendar invite]({{session.calendarUrl}})',
     ].join('\n'),
   },
   {
@@ -863,11 +894,11 @@ export const DEFAULT_TEMPLATES: Array<{
     // "Reply to this email" does not translate: an SMS reply lands at the provider, not the
     // organizer, so the cancellation names the support address instead.
     smsBody:
-      '{{event.name}}: "{{session.title}}" ({{session.ref}}) has been cancelled and the calendar entry withdrawn. If this is unexpected, please contact {{event.supportEmail|the programme team}}.',
+      '{{event.name}}: "{{session.title}}" ({{session.ref}}) is cancelled. Contact {{event.supportEmail|the programme team}} with questions.',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      '**{{session.title}}** ({{session.ref}}) has been removed from the {{event.name}} programme, and this email cancels the calendar entry we sent you earlier.',
+      '**{{session.title}}** ({{session.ref}}) is cancelled. The calendar entry has been withdrawn.',
       '',
       'If this is unexpected, please reply to this email.',
     ].join('\n'),
@@ -879,13 +910,11 @@ export const DEFAULT_TEMPLATES: Array<{
     // `{{tasks.list}}` is a multi-line markdown list, so it is deliberately not here: over SMS it
     // collapses to one run-on line of unbounded length. One task and one link is the whole message.
     smsBody:
-      '{{event.name}} reminder: {{task.name}} is still outstanding{{task.dueAt}}. Finish it in your portal: {{portal.url}}',
+      '{{event.name}}: {{task.name}} is outstanding{{task.dueAt}}. {{portal.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'A quick reminder that **{{task.name}}** is still outstanding{{task.dueAt| }}.{{task.sessions}}',
-      '',
-      'Everything still open on your list:',
+      'Reminder: **{{task.name}}** is outstanding{{task.dueAt| }}.{{task.sessions}}',
       '',
       '{{tasks.list}}',
       '',
@@ -898,13 +927,52 @@ export const DEFAULT_TEMPLATES: Array<{
     subject: 'Your {{event.name}} draft closes {{form.closesAt}}',
     // `runDraftDeadlineReminders` builds its own `vars`: event, speaker and form fields only.
     smsBody:
-      '{{event.name}}: your draft is not submitted yet, and {{form.name}} closes {{form.closesAt}}. Finish it: {{form.url}}',
+      '{{event.name}}: your draft is not submitted. {{form.name}} closes {{form.closesAt}}. {{form.url}}',
     bodyMarkdown: [
       'Hi {{speaker.firstName|there}},',
       '',
-      'You have a draft submission for **{{event.name}}** that has not been submitted yet, and {{form.name}} closes on {{form.closesAt}}.',
+      'Your **{{event.name}}** draft is not submitted. {{form.name}} closes {{form.closesAt}}.',
       '',
       '[Finish your submission]({{form.url}})',
+    ].join('\n'),
+  },
+  /*
+   * `AR-51`. These two go to organizers, not speakers, which is why they say "your" about the work
+   * rather than about a submission and point at the organizer surfaces. Both are built from the
+   * narrow `vars` map in `runEventDeadlineReminders`, so like `form.deadline` above they may only
+   * use the event fields — there is no speaker or submission in scope.
+   *
+   * Neither says anything is late or blocked. Nothing is: the milestone passing changes no
+   * behaviour anywhere in the product, and copy implying otherwise would be a lie the schema
+   * does not back up.
+   */
+  {
+    key: 'deadline.speakers',
+    name: 'Speaker roster milestone',
+    subject: 'Your {{event.name}} speaker roster date is {{event.speakerDeadline}}',
+    smsBody:
+      '{{event.name}}: your speaker roster date is {{event.speakerDeadline}}. Review: {{organizer.url}}',
+    bodyMarkdown: [
+      'The date you set for the **{{event.name}}** speaker roster is {{event.speakerDeadline}}.',
+      '',
+      'This is a reminder, not a cutoff. Nothing locks and you can still accept, decline or swap a',
+      'speaker afterwards.',
+      '',
+      '[Review the speakers]({{organizer.url}})',
+    ].join('\n'),
+  },
+  {
+    key: 'deadline.agenda',
+    name: 'Agenda milestone',
+    subject: 'Your {{event.name}} agenda date is {{event.agendaDeadline}}',
+    smsBody:
+      '{{event.name}}: your agenda date is {{event.agendaDeadline}}. Review: {{organizer.url}}',
+    bodyMarkdown: [
+      'The date you set for the **{{event.name}}** agenda is {{event.agendaDeadline}}.',
+      '',
+      'This is a reminder, not a cutoff. Nothing locks and you can still move a session afterwards.',
+      '',
+      '[Open the agenda]({{organizer.url}})',
     ].join('\n'),
   },
 ];
@@ -1063,7 +1131,7 @@ async function mintPortalLink(
 
 /**
  * Any channel may request the one-click portal credential. The SMS path was deliberately omitted
- * until its archive gained the same read-time gate as `/admin/mail`; keeping the test in one helper
+ * until its archive gained the same read-time gate as `/organizer/mail`; keeping the test in one helper
  * prevents a future send path from silently rendering `{{portal.link}}` as an empty string again.
  */
 const PORTAL_LINK_PATTERN = /\{\{\s*portal\.link/;
@@ -1570,7 +1638,7 @@ async function loadSubmission(submissionId: string) {
 /** `F-12`, called by the form engine once a submission leaves draft. */
 export async function sendSubmissionConfirmation(submissionId: string): Promise<SendOutcome> {
   const row = await loadSubmission(submissionId);
-  return fanOutSubmissionTemplate(row.eventId, submissionId, 'submission.confirmation');
+  return fanOutSubmissionTemplate(row, 'submission.confirmation');
 }
 
 /**
@@ -1591,15 +1659,20 @@ export async function sendDecisionNotice(submissionId: string): Promise<SendOutc
   if (!key) {
     throw invalid('Only an accepted, waitlisted or declined submission has a decision to send');
   }
-  return fanOutSubmissionTemplate(row.eventId, submissionId, key);
+  return fanOutSubmissionTemplate(row, key);
 }
 
 async function fanOutSubmissionTemplate(
-  eventId: string,
-  submissionId: string,
+  row: typeof submission.$inferSelect,
   key: string,
 ): Promise<SendOutcome> {
-  const participantIds = await participantsForSubmission(submissionId);
+  const participantIds = await participantsForSubmission(row.id);
+  const submissionVars: TemplateVars = {
+    'submission.title': row.title,
+    'submission.ref': formatRef('submission', row.ref),
+    'submission.status': row.status,
+    'submission.decisionNote': row.decisionNote ?? '',
+  };
   const outcome: SendOutcome = {
     recipients: 0,
     sent: 0,
@@ -1610,10 +1683,18 @@ async function fanOutSubmissionTemplate(
   };
 
   for (const participantId of participantIds) {
-    const recipient = await recipientForParticipant(eventId, participantId);
+    const recipient = await recipientForParticipant(row.eventId, participantId);
     if (!recipient) continue;
     outcome.recipients += 1;
-    applyDispatch(outcome, await sendTemplated({ eventId, key, recipient }));
+    applyDispatch(
+      outcome,
+      await sendTemplated({
+        eventId: row.eventId,
+        key,
+        recipient,
+        extraVars: submissionVars,
+      }),
+    );
   }
 
   return outcome;
@@ -1875,14 +1956,21 @@ export const notifySessionCancelled = (sessionId: string) =>
 export type ReminderRun = {
   taskRemindersSent: number;
   deadlineRemindersSent: number;
+  /** `AR-51`. The event's own milestones, counted apart from the form deadlines above. */
+  eventDeadlineRemindersSent: number;
   checkedAt: string;
 };
 
 /**
- * `C-7`. Each task carries `reminder_days_before` — say `[14, 7, 1]` — which is a cadence, not a
- * schedule: the fire time is `due_at` minus each offset. A run sends at most one reminder per
- * **person per task**, for the most recent offset that has passed and has not already been covered
- * by `last_reminded_at`.
+ * `C-7`. A task can carry two independent reminder rules:
+ *
+ * - `reminder_days_before` — say `[14, 7, 1]` — fires relative to `due_at`.
+ * - `reminder_days_after_send` follows up that many days after the most recent task reminder or
+ *   nudge. It has no first-send behavior of its own: without `last_reminded_at`, there is nothing to
+ *   follow up.
+ *
+ * A run sends at most one reminder per **person per task**, when either rule is due. A dispatch
+ * attempt becomes the next after-send anchor through `last_reminded_at`.
  *
  * That comparison is what makes the route re-entrant. Cron Triggers guarantee at-least-once
  * delivery, so "run this hourly" must mean "send once per offset", not "send once per run".
@@ -1912,28 +2000,40 @@ export async function runTaskReminders(
   const db = getDb();
   const now = options.now ?? new Date();
 
+  const tasksWithReminderCadence = or(
+    isNotNull(task.dueAt),
+    isNotNull(task.reminderDaysAfterSend),
+  );
   const tasks = await db
     .select()
     .from(task)
     .where(
       options.eventId
-        ? and(eq(task.eventId, options.eventId), isNotNull(task.dueAt))
-        : isNotNull(task.dueAt),
+        ? and(eq(task.eventId, options.eventId), tasksWithReminderCadence)
+        : tasksWithReminderCadence,
     );
 
   let sent = 0;
 
   for (const row of tasks) {
-    const offsets = (row.reminderDaysBefore ?? []).filter((days) => Number.isFinite(days));
-    if (offsets.length === 0 || !row.dueAt) continue;
-
-    const fireTimes = offsets
-      .map((days) => new Date(row.dueAt!.getTime() - days * 24 * 60 * 60 * 1000))
-      .filter((when) => when.getTime() <= now.getTime())
-      .sort((a, b) => b.getTime() - a.getTime());
-
-    const fireAt = fireTimes[0];
-    if (!fireAt) continue;
+    const offsets = (row.reminderDaysBefore ?? []).filter(
+      (days) => Number.isInteger(days) && days > 0,
+    );
+    const dueAt = row.dueAt;
+    const deadlineFireAt = dueAt
+      ? (offsets
+          .map((days) => new Date(dueAt.getTime() - days * 24 * 60 * 60 * 1000))
+          .filter((when) => when.getTime() <= now.getTime())
+          .sort((a, b) => b.getTime() - a.getTime())[0] ?? null)
+      : null;
+    const configuredAfterSendDays = row.reminderDaysAfterSend;
+    const afterSendDays =
+      typeof configuredAfterSendDays === 'number' &&
+      Number.isInteger(configuredAfterSendDays) &&
+      configuredAfterSendDays > 0
+        ? configuredAfterSendDays
+        : null;
+    if (!deadlineFireAt && !afterSendDays) continue;
 
     const assignments = await db
       .select({
@@ -1949,18 +2049,39 @@ export async function runTaskReminders(
         ),
       );
 
-    const dueByParticipant = new Map<string, string[]>();
+    const byParticipant = new Map<
+      string,
+      Array<{ id: string; lastRemindedAt: Date | null }>
+    >();
     for (const assignment of assignments) {
-      if (assignment.lastRemindedAt && assignment.lastRemindedAt.getTime() >= fireAt.getTime()) {
-        continue;
-      }
-      const group = dueByParticipant.get(assignment.participantId) ?? [];
-      group.push(assignment.id);
-      dueByParticipant.set(assignment.participantId, group);
+      const group = byParticipant.get(assignment.participantId) ?? [];
+      group.push({ id: assignment.id, lastRemindedAt: assignment.lastRemindedAt });
+      byParticipant.set(assignment.participantId, group);
     }
 
-    for (const [participantId, assignmentIds] of dueByParticipant) {
-      const recipient = await recipientForParticipant(row.eventId, participantId);
+    for (const [participantId, participantAssignments] of byParticipant) {
+      const due = participantAssignments.some((assignment) => {
+        const deadlineDue = Boolean(
+          deadlineFireAt &&
+            (!assignment.lastRemindedAt ||
+              assignment.lastRemindedAt.getTime() < deadlineFireAt.getTime()),
+        );
+        const afterSendDue = Boolean(
+          afterSendDays &&
+            assignment.lastRemindedAt &&
+            assignment.lastRemindedAt.getTime() + afterSendDays * 24 * 60 * 60 * 1000 <=
+              now.getTime(),
+        );
+        return deadlineDue || afterSendDue;
+      });
+      if (!due) continue;
+
+      // Re-resolve through the outstanding-task audience immediately before dispatch. The first
+      // assignment read chose what is due; this second read prevents a task completed or waived in
+      // the meantime from being chased with stale state.
+      const recipient = (
+        await resolveRecipients(row.eventId, { kind: 'outstanding_tasks', taskId: row.id })
+      ).find((candidate) => candidate.participantId === participantId);
       if (!recipient) continue;
 
       const result = await sendTemplated({
@@ -1971,14 +2092,23 @@ export async function runTaskReminders(
         // email says which sessions it is about without a query per session.
         extraVars: taskReminderVars(row, outstandingSessions(recipient.openTasks, row.id)),
       });
+      if (!result) continue;
 
-      // Stamped even when the template is disabled, so turning reminders back on does not
-      // immediately fire the whole backlog at everyone. Every row the one email covered is
-      // stamped, or the next run would send it again for the ones that were not.
+      // Every pending row named by the one person-level email gets the same anchor. This matters
+      // when only one of several session-scoped assignments made the follow-up due: leaving the
+      // others untouched would produce duplicate emails on later hourly runs.
       await db
         .update(taskAssignment)
         .set({ lastRemindedAt: now, updatedAt: now })
-        .where(inArray(taskAssignment.id, assignmentIds));
+        .where(
+          and(
+            inArray(
+              taskAssignment.id,
+              participantAssignments.map((assignment) => assignment.id),
+            ),
+            notInArray(taskAssignment.status, ['completed', 'waived']),
+          ),
+        );
 
       if (result?.emailSent || result?.smsSent) sent += 1;
     }
@@ -2133,6 +2263,192 @@ export async function runDraftDeadlineReminders(
 }
 
 /**
+ * `AR-51`. The two advisory milestones on the event, in the order an edition reaches them.
+ *
+ * `field` names the column, `templateKey` the mail, and `variable` the merge field that carries the
+ * date — kept together so a third milestone is one entry rather than three edits.
+ */
+const EVENT_MILESTONES = [
+  {
+    field: 'speakerDeadlineAt',
+    column: eventTable.speakerDeadlineAt,
+    templateKey: 'deadline.speakers',
+  },
+  { field: 'agendaDeadlineAt', column: eventTable.agendaDeadlineAt, templateKey: 'deadline.agenda' },
+] as const;
+
+/**
+ * `AR-51`'s milestone reminder. Each of the two advisory deadlines fires once inside the three days
+ * before it falls, guarded — like the draft reminder above — by a lookup in `email_log`, the only
+ * durable record of a send.
+ *
+ * **Organizers only.** Both dates are the organizers' own commitment about work only they can do:
+ * settling the roster and settling the agenda. A speaker cannot act on either, and mailing the whole
+ * roster a date they have no lever on is noise. Speakers still read both — on the portal, on the
+ * public page, and through the `{{event.speakerDeadline}}` / `{{event.agendaDeadline}}` merge fields
+ * that every template can use — which is what carrying these to speakers actually means.
+ *
+ * Nothing changes when the date passes. The copy says so, and no write anywhere consults it.
+ */
+export async function runEventDeadlineReminders(
+  options: { eventId?: string; now?: Date } = {},
+): Promise<number> {
+  const db = getDb();
+  const now = options.now ?? new Date();
+  const horizon = new Date(now.getTime() + DEADLINE_WINDOW_MS);
+  const approaching = (column: (typeof EVENT_MILESTONES)[number]['column']) =>
+    and(isNotNull(column), gte(column, now), lte(column, horizon));
+
+  const rows = await db
+    .select({ id: eventTable.id })
+    .from(eventTable)
+    .where(
+      and(
+        or(...EVENT_MILESTONES.map((milestone) => approaching(milestone.column))),
+        ...(options.eventId ? [eq(eventTable.id, options.eventId)] : []),
+      ),
+    );
+
+  let sent = 0;
+
+  for (const row of rows) {
+    const { branding, event } = await loadCommsContext(row.id);
+    // Both dates go into every one of this event's milestone mails: an organizer being told the
+    // roster date is days away is the same organizer who wants to know the agenda date behind it.
+    const vars: TemplateVars = {
+      'event.name': event.name,
+      'event.url': branding.eventUrl,
+      'event.speakerDeadline': formatInZone(event.speakerDeadlineAt, event.timezone, false),
+      'event.agendaDeadline': formatInZone(event.agendaDeadlineAt, event.timezone, false),
+      'organizer.url': `${appUrl()}/organizer`,
+    };
+
+    // Organizers of this event, not every member: reviewers and speakers hold no membership role
+    // that makes either milestone their work.
+    const organizers = await db
+      .select({
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        phoneVerifiedAt: user.phoneVerifiedAt,
+        phoneVerificationTransport: user.phoneVerificationTransport,
+        notifyEmail: user.notifyEmail,
+        notifySms: user.notifySms,
+      })
+      .from(membership)
+      .innerJoin(user, eq(user.id, membership.userId))
+      .where(and(eq(membership.eventId, row.id), eq(membership.role, 'organizer')));
+
+    if (organizers.length === 0) continue;
+
+    for (const milestone of EVENT_MILESTONES) {
+      const at = event[milestone.field];
+      if (!at || at.getTime() < now.getTime() || at.getTime() > horizon.getTime()) continue;
+
+      const stored = await getTemplate(row.id, milestone.templateKey);
+      const fallback = DEFAULT_TEMPLATES.find((t) => t.key === milestone.templateKey)!;
+      if (stored && !stored.enabled) continue;
+      const bodyMarkdown = stored?.bodyMarkdown ?? fallback.bodyMarkdown;
+
+      for (const person of organizers) {
+        const delivery = await resolveRecipientDelivery({
+          userId: person.id,
+          eventId: row.id,
+          templateKey: milestone.templateKey,
+          baseEmail: person.notifyEmail,
+          baseSms: person.notifySms,
+          phoneVerified: phoneVerificationIsCurrent(person, activeSmsTransportName()),
+        });
+        /*
+         * Scoped to this event, unlike the form-deadline guard above. A milestone is a property of
+         * the edition, so the same organizer running two conferences holds two genuinely different
+         * `deadline.speakers` dates — and a guard keyed only on address and template key would read
+         * the first event's send as covering the second and drop it silently. The address alone is
+         * enough for `form.deadline` because a form belongs to one event and its recipients are that
+         * event's speakers; it is not enough here, and `email_log_event_created_idx` already covers
+         * the column.
+         */
+        const alreadyEmailed = delivery.notifyEmail
+          ? await db
+              .select({ id: emailLog.id })
+              .from(emailLog)
+              .where(
+                and(
+                  eq(emailLog.eventId, row.id),
+                  eq(emailLog.toEmail, person.email),
+                  eq(emailLog.templateKey, milestone.templateKey),
+                  gte(emailLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
+                ),
+              )
+              .limit(1)
+          : [];
+        const alreadyTexted =
+          delivery.notifySms && person.phone
+            ? await db
+                .select({ id: smsLog.id })
+                .from(smsLog)
+                .where(
+                  and(
+                    eq(smsLog.eventId, row.id),
+                    eq(smsLog.toPhone, person.phone),
+                    eq(smsLog.templateKey, milestone.templateKey),
+                    gte(smsLog.createdAt, new Date(now.getTime() - DEADLINE_WINDOW_MS)),
+                  ),
+                )
+                .limit(1)
+            : [];
+
+        const wantEmail = delivery.notifyEmail && alreadyEmailed.length === 0;
+        const wantSms =
+          Boolean(person.phone) &&
+          alreadyTexted.length === 0 &&
+          (await maySendSmsNow(person.phone!, delivery, now));
+        if (!wantEmail && !wantSms) continue;
+
+        let dispatched = false;
+
+        if (wantEmail) {
+          const message = renderMessage(
+            branding,
+            stored?.subject ?? fallback.subject,
+            bodyMarkdown,
+            vars,
+          );
+          const result = await sendMail({
+            to: person.email,
+            subject: message.subject,
+            html: message.html,
+            text: message.text,
+            eventId: row.id,
+            templateKey: milestone.templateKey,
+          });
+          if (result.sent) dispatched = true;
+        }
+
+        if (wantSms) {
+          const smsText = renderSmsText(
+            stored?.smsBody ?? fallback.smsBody ?? null,
+            bodyMarkdown,
+            vars,
+          );
+          const result = await sendSms({
+            to: person.phone!,
+            body: smsText,
+            eventId: row.id,
+            templateKey: milestone.templateKey,
+          });
+          if (result.sent) dispatched = true;
+        }
+
+        if (dispatched) sent += 1;
+      }
+    }
+  }
+
+  return sent;
+}
+
+/**
  * Everything `/api/cron` runs. Safe to call repeatedly; each job carries its own guard.
  *
  * Cron passes no `eventId` because it is the whole deployment's clock. Anything triggered by a
@@ -2146,9 +2462,11 @@ export async function runScheduledJobs(
   const { eventId } = options;
   const taskRemindersSent = await runTaskReminders({ eventId, now });
   const deadlineRemindersSent = await runDraftDeadlineReminders({ eventId, now });
+  const eventDeadlineRemindersSent = await runEventDeadlineReminders({ eventId, now });
   return {
     taskRemindersSent,
     deadlineRemindersSent,
+    eventDeadlineRemindersSent,
     checkedAt: now.toISOString(),
   };
 }
@@ -2279,34 +2597,34 @@ export async function getSms(eventId: string, id: string): Promise<SmsMailboxEnt
 }
 
 // ---------------------------------------------------------------------------
-// Admin event resolution
+// Organizer event resolution
 // ---------------------------------------------------------------------------
 
-export type AdminEventOption = { id: string; name: string; slug: string };
+export type OrganizerEventOption = { id: string; name: string; slug: string };
 
 /** Newest first, which is what a judge who just made an event wants to find at the top. */
-export async function listEventsForAdmin(userId: string): Promise<AdminEventOption[]> {
+export async function listEventsForOrganizer(userId: string): Promise<OrganizerEventOption[]> {
   const rows = await listEventsForUser(userId);
   return rows.map(({ id, name, slug }) => ({ id, name, slug }));
 }
 
 /**
- * `/admin/comms` and `/admin/mail` carry no event segment, so the event comes from `?event=`, then
- * from the same cookie the rest of the admin shell reads, then from the caller's newest event. The
+ * `/organizer/comms` and `/organizer/mail` carry no event segment, so the event comes from `?event=`, then
+ * from the same cookie the rest of the organizer shell reads, then from the caller's newest event. The
  * cookie step is what keeps the mailbox showing the event the sidebar says is selected.
  *
  * Both candidates are matched against the caller's own events rather than looked up directly. These
  * pages have no `requireEventContext` between them and the database, so resolving `?event=` by slug
  * would hand any signed-in organizer another event's mailbox for the price of guessing a slug.
  */
-export async function resolveAdminEvent(options: {
+export async function resolveOrganizerEvent(options: {
   eventParam?: string | null;
   cookieEventId?: string | null;
   userId: string;
-}): Promise<{ event: EventRow | null; options: AdminEventOption[] }> {
+}): Promise<{ event: EventRow | null; options: OrganizerEventOption[] }> {
   const db = getDb();
   const mine = await listEventsForUser(options.userId);
-  const all: AdminEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
+  const all: OrganizerEventOption[] = mine.map(({ id, name, slug }) => ({ id, name, slug }));
 
   const pick = (wanted: string | null | undefined) =>
     wanted ? mine.find((entry) => entry.id === wanted || entry.slug === wanted) : undefined;
@@ -2319,8 +2637,8 @@ export async function resolveAdminEvent(options: {
 }
 
 export async function listTracksAndFormats(eventId: string): Promise<{
-  tracks: AdminEventOption[];
-  formats: AdminEventOption[];
+  tracks: OrganizerEventOption[];
+  formats: OrganizerEventOption[];
 }> {
   const lookups = await loadLookups(eventId);
   return {
@@ -2329,7 +2647,7 @@ export async function listTracksAndFormats(eventId: string): Promise<{
   };
 }
 
-export async function listTasksForEvent(eventId: string): Promise<AdminEventOption[]> {
+export async function listTasksForEvent(eventId: string): Promise<OrganizerEventOption[]> {
   const db = getDb();
   const rows = await db
     .select({ id: task.id, name: task.name })

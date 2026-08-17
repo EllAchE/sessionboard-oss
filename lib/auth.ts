@@ -1,5 +1,6 @@
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
+import { cache } from 'react';
 import { getDb } from '../db/client';
 import { event, magicToken, membership, sessionCookie, user } from '../db/schema';
 import type { Actor, EventContext, MembershipRole } from './context';
@@ -120,7 +121,7 @@ export async function requestMagicLink(
     '',
     `[Sign in to Cicero](${link})`,
     '',
-    `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+    `Single-use; expires in ${MAGIC_TTL_MINUTES} minutes.`,
     'If you did not ask for it, you can ignore this email.',
   ].join('\n');
 
@@ -133,7 +134,7 @@ export async function requestMagicLink(
       '',
       link,
       '',
-      `This link works once and expires in ${MAGIC_TTL_MINUTES} minutes.`,
+      `Single-use; expires in ${MAGIC_TTL_MINUTES} minutes.`,
       'If you did not ask for it, you can ignore this email.',
     ].join('\n'),
     eventId: request.eventId ?? null,
@@ -227,8 +228,22 @@ async function openSession(userId: string, impersonatedByUserId: string | null):
   });
 }
 
-/** Who is acting right now, or null. Cheap enough to call per render; not cached across requests. */
-export async function currentActor(): Promise<Actor | null> {
+/**
+ * Who is acting right now, or null.
+ *
+ * Memoized for the request, never across requests — `cache()` is per-render-pass storage, the same
+ * mechanism `currentEventId` already uses for the same reason. One organizer page view resolved the
+ * actor three times: `app/organizer/layout.tsx` reads it for the shell, `currentEventId` reads it
+ * again through `requireCurrentActor`, and the page's own context reads it a third time through
+ * `requireEventContext`. Each pass is two sequential queries — session row, then user row — so six
+ * round trips answered a question whose answer cannot change between them. Against a Postgres on
+ * loopback that is invisible; against a managed database an ocean away from the renderer it is the
+ * bulk of the request.
+ *
+ * Safe because every path that changes identity mid-request — `signOut`, `startImpersonation`,
+ * `stopImpersonation` — ends in a `redirect()`, so nothing reads the actor again after the swap.
+ */
+export const currentActor = cache(async (): Promise<Actor | null> => {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -248,7 +263,7 @@ export async function currentActor(): Promise<Actor | null> {
     name: account.name,
     impersonatedByUserId: session.impersonatedByUserId,
   };
-}
+});
 
 export async function requireCurrentActor(): Promise<Actor> {
   const actor = await currentActor();
@@ -303,9 +318,11 @@ export async function signOut(): Promise<void> {
  * speaker is stuck cannot help them — and useless for judging.
  *
  * Here the organizer's session is replaced by a real session as the target user. Every write lands
- * as the speaker and takes effect. `impersonatedByUserId` keeps it attributable and drives the
- * banner and the exit route; nothing else in the codebase branches on it, because a session that
- * behaves differently is a preview wearing a different name.
+ * as the speaker and takes effect. `impersonatedByUserId` identifies the organizer while this
+ * session exists and drives the banner and exit route. Services that need durable attribution must
+ * persist both identities themselves; not every mutation does that yet. Nothing branches on this
+ * value for authorization, because a session that behaves differently is a preview wearing a
+ * different name.
  */
 export async function startImpersonation(ctx: EventContext, targetUserId: string): Promise<void> {
   if (!ctx.roles.includes('organizer')) {

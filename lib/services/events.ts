@@ -1,5 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 import { z } from 'zod';
 import { getDb } from '@/db/client';
 import { event, membership } from '@/db/schema';
@@ -13,12 +14,13 @@ import {
   isValidTimezone,
   resolveEventWindow,
   utcToLocalInput,
+  zonedTimeToUtc,
   type EventWindow,
 } from '@/lib/event-dates';
 import { slugify } from '@/lib/ids';
 
 /**
- * Admin routes carry no event in their path, so the current event travels in a cookie. Putting it
+ * Organizer routes carry no event in their path, so the current event travels in a cookie. Putting it
  * in the URL instead would mean every feature route learns an `[eventSlug]` segment, and the switch
  * is a rare action compared with the navigation it would tax.
  */
@@ -68,7 +70,7 @@ export async function listEventsForUser(userId: string): Promise<EventSummary[]>
 }
 
 /**
- * Which event the admin shell opens on when the cookie says nothing. The edition someone is running
+ * Which event the organizer shell opens on when the cookie says nothing. The edition someone is running
  * is almost always the next one to happen, so an event still ahead beats one already past, and the
  * soonest of those wins. Undated events sort last. Order within a tie is the caller's — newest
  * first, as `listEventsForUser` returns them.
@@ -94,27 +96,47 @@ export function pickDefaultEvent<T extends { startsOn: string | null }>(
 }
 
 /**
- * The cookie is a hint, never an authorisation. `requireEventContext` still checks membership, so a
- * stale or hand-edited cookie resolves to `not_found` rather than to someone else's event.
+ * The cookie is a hint, never an authorisation, and it outlives what it points at: the event is
+ * deleted, the membership is revoked, the local database is reseeded, the browser signs in as
+ * somebody else — and the value stays put. Reading it back unchecked handed that stale id to
+ * `requireEventContext`, which correctly refused it, so every organizer page died on
+ * `That event could not be found` while the shell around them rendered the fallback event happily.
+ *
+ * So the cookie is matched against the caller's own memberships before it is believed, on
+ * `requireEventContext`'s own rule — a membership row, any role — and a value that fails to match
+ * is treated as nothing was set at all. `app/review/context.ts` and `resolveOrganizerEvent` already
+ * matched the cookie this way; this is the same check for everything that resolves the event here.
  */
-export async function currentEventId(): Promise<string> {
-  const store = await cookies();
-  const fromCookie = store.get(EVENT_COOKIE)?.value;
-  if (fromCookie) return fromCookie;
-
-  const actor = await requireCurrentActor();
-  const mine = await listEventsForUser(actor.userId);
-  const fallback = pickDefaultEvent(mine.filter((row) => row.roles.includes('organizer')));
-  if (!fallback) throw notFound('An event you can manage');
-  return fallback.id;
+export function resolveCurrentEvent<
+  T extends { id: string; roles: MembershipRole[]; startsOn: string | null },
+>(cookieEventId: string | null | undefined, mine: T[], today?: Date): T | undefined {
+  const named = cookieEventId ? mine.find((row) => row.id === cookieEventId) : undefined;
+  if (named) return named;
+  return pickDefaultEvent(
+    mine.filter((row) => row.roles.includes('organizer')),
+    today,
+  );
 }
+
+/**
+ * Cached for the request because a single organizer render resolves the event twice — once in
+ * `app/organizer/layout.tsx` for the switcher, once in the page's own `context.ts` — and the answer
+ * cannot change between the two.
+ */
+export const currentEventId = cache(async (): Promise<string> => {
+  const store = await cookies();
+  const actor = await requireCurrentActor();
+  const chosen = resolveCurrentEvent(store.get(EVENT_COOKIE)?.value, await listEventsForUser(actor.userId));
+  if (!chosen) throw notFound('An event you can manage');
+  return chosen.id;
+});
 
 export async function currentEventContext(): Promise<EventContext> {
   return requireEventContext(await currentEventId());
 }
 
 /**
- * The cookie's raw value, for the admin pages that carry no event segment and check membership
+ * The cookie's raw value, for the organizer pages that carry no event segment and check membership
  * themselves. Unlike `currentEventId` it never throws, because those pages have their own empty
  * state for someone who has no events yet.
  */
@@ -194,6 +216,19 @@ const wallClock = (what: string) =>
     .regex(WALL_CLOCK, `Give a ${what} date and time`);
 
 /**
+ * `AR-50`. A milestone is optional in a way the event window is not, so blank has to mean "clear it"
+ * rather than "invalid" — otherwise an organizer who set a deadline could never take it back off.
+ * Non-blank is read as wall clock in the event's own timezone, exactly like `startsAt`.
+ */
+const deadlineField = z
+  .string()
+  .trim()
+  .nullable()
+  .transform((value) => value ?? '')
+  .refine((value) => value === '' || WALL_CLOCK.test(value), 'Give a date and time')
+  .transform((value) => (value === '' ? null : value));
+
+/**
  * `websiteUrl` gets a scheme when the organizer omitted one — people type `example.com` — and is
  * then held to `http`/`https`, because the value is rendered as a link on the public page and a
  * `javascript:` URL there is a stored XSS.
@@ -265,6 +300,8 @@ const createEventSchema = z.object({
   venueAddress: metadataShape.venueAddress.optional(),
   logoFileId: metadataShape.logoFileId.optional(),
   bannerFileId: metadataShape.bannerFileId.optional(),
+  speakerDeadlineAt: deadlineField.optional(),
+  agendaDeadlineAt: deadlineField.optional(),
 });
 
 const updateEventSchema = z
@@ -273,11 +310,16 @@ const updateEventSchema = z
     timezone: timezoneField,
     startsAt: wallClock('start'),
     endsAt: wallClock('end'),
+    speakerDeadlineAt: deadlineField,
+    agendaDeadlineAt: deadlineField,
     ...metadataShape,
   })
   .partial();
 
-/** Exported for the tests: the write path's rules should be checkable without a database. */
+/**
+ * Exported for the tests: the write path's rules should be checkable without a database.
+ * `deadlinePatch` below carries the one rule zod cannot state, and is exported for the same reason.
+ */
 export const eventWriteSchemas = { create: createEventSchema, update: updateEventSchema };
 
 export type CreateEventInput = {
@@ -296,6 +338,9 @@ export type CreateEventInput = {
   venueAddress?: string | null;
   logoFileId?: string | null;
   bannerFileId?: string | null;
+  /** `AR-50`. Wall clock in `timezone` like `startsAt`; blank or null clears the milestone. */
+  speakerDeadlineAt?: string | null;
+  agendaDeadlineAt?: string | null;
 };
 
 export type UpdateEventInput = Partial<CreateEventInput>;
@@ -320,6 +365,74 @@ function metadataPatch(values: Record<string, unknown>): Record<string, unknown>
     if (values[key] !== undefined) patch[key] = values[key];
   }
   return patch;
+}
+
+const DEADLINE_FIELDS = [
+  { key: 'speakerDeadlineAt', what: 'speaker deadline' },
+  { key: 'agendaDeadlineAt', what: 'agenda deadline' },
+] as const;
+
+type DeadlineKey = (typeof DEADLINE_FIELDS)[number]['key'];
+
+/**
+ * `AR-50`. Wall clock in the event's own timezone becomes an instant, and `null` clears the column.
+ *
+ * The one rule is that a milestone cannot fall after the doors open: a roster settled mid-conference
+ * is a mistyped year, not a plan. The two are deliberately *not* ordered against each other —
+ * fixing the programme before the roster is a legitimate way to run an edition, and a rule
+ * forbidding it would be this file inventing policy it has no business inventing.
+ */
+export function deadlinePatch(
+  readings: Partial<Record<DeadlineKey, string | null>>,
+  timezone: string,
+  startsAt: Date,
+): Record<string, Date | null> {
+  const patch: Record<string, Date | null> = {};
+  for (const { key, what } of DEADLINE_FIELDS) {
+    const reading = readings[key];
+    if (reading === undefined) continue;
+    if (reading === null) {
+      patch[key] = null;
+      continue;
+    }
+    const instant = zonedTimeToUtc(reading, timezone);
+    if (!instant) throw invalid(`Give a ${what} date and time`, { [key]: 'Give a date and time' });
+    if (instant.getTime() > startsAt.getTime()) {
+      throw invalid(`The ${what} falls after the event starts`, {
+        [key]: 'Pick a date before the event starts',
+      });
+    }
+    patch[key] = instant;
+  }
+  return patch;
+}
+
+/**
+ * `AR-50`. `deadlinePatch`'s rule, applied to the milestones the caller did *not* send.
+ *
+ * Pulling the conference earlier is the case that matters: a stored deadline does not move when the
+ * window does, so without this an edition could end up persisting a roster date in the middle of
+ * itself — a state `deadlinePatch` refuses to be handed directly. Refusing the window change rather
+ * than quietly clearing or clamping the milestone keeps the organizer the one who decides what the
+ * new date is, and the problem is reported against `startsAt` because that is the field they just
+ * touched.
+ *
+ * The caller only invokes this when the window actually moved. A milestone that is merely in the
+ * past is nobody's error and must stay writable — see §17 of `docs/05-additional-requirements.md`.
+ */
+export function assertUntouchedDeadlinesFit(
+  current: Partial<Record<DeadlineKey, Date | null>>,
+  patch: Partial<Record<DeadlineKey, unknown>>,
+  startsAt: Date,
+): void {
+  for (const { key, what } of DEADLINE_FIELDS) {
+    if (patch[key] !== undefined) continue;
+    const at = current[key];
+    if (!at || at.getTime() <= startsAt.getTime()) continue;
+    throw invalid(`The ${what} falls after the event starts`, {
+      startsAt: `Move the ${what} first, because it falls after this start`,
+    });
+  }
 }
 
 function windowOrThrow(timezone: string, startsAt: string, endsAt: string): EventWindow {
@@ -350,6 +463,14 @@ export async function createEvent(userId: string, input: CreateEventInput) {
     .insert(event)
     .values({
       ...metadataPatch(values),
+      ...deadlinePatch(
+        {
+          speakerDeadlineAt: values.speakerDeadlineAt,
+          agendaDeadlineAt: values.agendaDeadlineAt,
+        },
+        window.timezone,
+        window.startsAt,
+      ),
       name: values.name,
       slug,
       timezone: window.timezone,
@@ -378,10 +499,12 @@ export async function updateEvent(ctx: EventContext, input: UpdateEventInput) {
   const patch: Record<string, unknown> = metadataPatch(values);
   if (values.name !== undefined) patch.name = values.name;
 
+  let timezone = current.timezone;
+  let startsAt = current.startsAt;
+
   if (values.timezone !== undefined || values.startsAt !== undefined || values.endsAt !== undefined) {
-    const timezone = values.timezone ?? current.timezone;
     const window = windowOrThrow(
-      timezone,
+      values.timezone ?? current.timezone,
       values.startsAt ?? utcToLocalInput(current.startsAt, current.timezone),
       values.endsAt ?? utcToLocalInput(current.endsAt, current.timezone),
     );
@@ -390,6 +513,27 @@ export async function updateEvent(ctx: EventContext, input: UpdateEventInput) {
     patch.endsAt = window.endsAt;
     patch.startsOn = window.startsOn;
     patch.endsOn = window.endsOn;
+    timezone = window.timezone;
+    startsAt = window.startsAt;
+  }
+
+  /**
+   * Milestones follow the window's rule above rather than sitting still through a zone correction.
+   * A deadline the organizer set for 17:00 means 17:00 wherever the conference turns out to be, so
+   * one the caller did not resend is re-read in the new zone instead of sliding by the offset.
+   */
+  const rezone = timezone !== current.timezone;
+  const readings: Partial<Record<DeadlineKey, string | null>> = {};
+  for (const { key } of DEADLINE_FIELDS) {
+    if (values[key] !== undefined) readings[key] = values[key] ?? null;
+    else if (rezone && current[key]) readings[key] = utcToLocalInput(current[key]!, current.timezone);
+  }
+  Object.assign(patch, deadlinePatch(readings, timezone, startsAt));
+
+  // A milestone the caller left alone still has to satisfy the rule the caller's own writes do,
+  // but only once the window has actually moved under it.
+  if (startsAt.getTime() !== current.startsAt.getTime()) {
+    assertUntouchedDeadlinesFit(current, patch, startsAt);
   }
 
   if (Object.keys(patch).length === 0) return current;

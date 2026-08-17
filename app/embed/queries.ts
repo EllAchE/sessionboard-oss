@@ -98,6 +98,8 @@ export const getPublicEvent = cache(async (slug: string): Promise<PublicEvent | 
     startsOn: row.startsOn,
     endsOn: row.endsOn,
     endsAt: row.endsAt.toISOString(),
+    speakerDeadlineAt: row.speakerDeadlineAt?.toISOString() ?? null,
+    agendaDeadlineAt: row.agendaDeadlineAt?.toISOString() ?? null,
     websiteUrl: row.websiteUrl,
     venueName: row.venueName,
     eventType: row.eventType,

@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardDescription,
   CardTitle,
+  Dialog,
   Radio,
   useToast,
 } from '@/components/ui';
@@ -37,6 +38,10 @@ function GroupCard({ group, fields }: { group: DuplicateGroupWire; fields: Merge
   const [primaryId, setPrimaryId] = useState(group.contacts[0].id);
   const [choices, setChoices] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
+  const primary = group.contacts.find((entry) => entry.id === primaryId) ?? group.contacts[0];
+  const removedCount = group.contacts.length - 1;
 
   const chosen = (key: string): string => {
     const explicit = choices[key];
@@ -59,6 +64,7 @@ function GroupCard({ group, fields }: { group: DuplicateGroupWire; fields: Merge
         setError(result.error);
         return;
       }
+      setConfirming(false);
       toast({
         title: 'Records merged',
         description: 'One contact now carries both.',
@@ -142,14 +148,42 @@ function GroupCard({ group, fields }: { group: DuplicateGroupWire; fields: Merge
             <Button
               variant="primary"
               iconLeft={<Merge size={14} />}
-              loading={pending}
-              onClick={merge}
+              onClick={() => {
+                setError(null);
+                setConfirming(true);
+              }}
             >
-              Merge into one record
+              Review merge
             </Button>
           </div>
         </div>
       </CardBody>
+
+      <Dialog
+        open={confirming}
+        onOpenChange={(open) => {
+          if (!open && !pending) setConfirming(false);
+        }}
+        title="Merge these records permanently?"
+        description={`${primary.email} will survive. ${removedCount} other record${
+          removedCount === 1 ? '' : 's'
+        } will be permanently removed. This cannot be undone.`}
+        size="sm"
+        dismissible={!pending}
+        hideClose={pending}
+        footer={
+          <>
+            <Button variant="secondary" disabled={pending} onClick={() => setConfirming(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" loading={pending} onClick={merge}>
+              Merge records
+            </Button>
+          </>
+        }
+      >
+        {error ? <p className={styles.error}>{error}</p> : null}
+      </Dialog>
     </Card>
   );
 }
@@ -161,10 +195,7 @@ export function MergePanel({ groups, fields }: Props) {
         <div>
           <p className={styles.eyebrow}>Organization</p>
           <h1 className={styles.title}>Duplicates</h1>
-          <p className={styles.subtitle}>
-            Contacts that share a name but arrived under different addresses. Merging keeps one
-            record and moves the notes, activity and event links onto it.
-          </p>
+          <p className={styles.subtitle}>Review contacts with matching names.</p>
         </div>
       </div>
 
@@ -173,10 +204,7 @@ export function MergePanel({ groups, fields }: Props) {
           <CardBody>
             <div className={styles.empty}>
               <p className={styles.emptyTitle}>No near-duplicates found</p>
-              <p className={styles.emptyBody}>
-                Every contact in the directory has a distinct name. This page fills up on its own
-                after an import that overlaps what you already had.
-              </p>
+              <p className={styles.emptyBody}>No matching names in the directory.</p>
               <Button variant="primary" href="/crm/import">
                 Import a CSV
               </Button>

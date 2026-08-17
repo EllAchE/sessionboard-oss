@@ -3,8 +3,9 @@
 This is the reference plan for adversarially testing Cicero's speaker identity, agenda scheduling,
 and public/API request paths.
 
-**State:** plan and read-only audit only. No adversarial test, database write, email, integration
-call, or deployed-environment probe has been run yet.
+**State:** the matrix remains the reusable test plan. The implementation audit at the bottom is a
+2026-08-12 snapshot; its five highest-priority hypotheses have since been mitigated and covered by
+focused regression tests. A destructive or deployed-environment fuzz campaign has not been run.
 
 ## Shareable core
 
@@ -148,7 +149,7 @@ to a small permanent regression case.
 - The deterministic suite runs in CI; longer fuzz, concurrency, and load suites have an owned
   cadence and failure-triage path.
 
-## Current Cicero audit
+## Historical Cicero audit
 
 Read-only review against commit `1b78092` on 2026-08-12. These are hypotheses to turn into tests,
 not evidence from executed payloads.
@@ -159,36 +160,27 @@ Source map for the audit:
   `lib/services/portal.ts`;
 - public/API ingress: `app/(public)/submit/actions.ts`, `app/api/v1/_lib/schemas.ts`, and
   `app/api/v1/events/[slug]/forms/[formId]/submissions/route.ts`;
-- agenda conflicts and placement: `lib/services/schedule.ts`, `app/admin/agenda/actions.ts`, and
+- agenda conflicts and placement: `lib/services/schedule.ts`, `app/organizer/agenda/actions.ts`, and
   `db/schema.ts`;
 - public names, slugs, search, and avatars: `app/embed/model.ts`, `app/embed/queries.ts`, and
   `components/ui/Avatar/index.tsx`;
 - email, calendar, CSV, and request parsing: `lib/services/comms.ts`, `lib/markdown.ts`, `lib/ics.ts`,
   `lib/csv.ts`, `lib/services/dashboard.ts`, and `app/api/v1/_lib/respond.ts`.
 
-### Highest-priority likely failures
+### Highest-priority hypotheses — current disposition
 
-1. **Unbounded names can bypass the 120-character profile limit.** `profileSchema` limits
-   `displayName` to 120 characters, but the public CFP server payload and
-   `createSubmissionBody.name` do not impose the same bound. `user.name` and
-   `participant.display_name` are unbounded PostgreSQL `text`. A very large name can therefore be
-   persisted through the public/API path and fan out into mail, public reads, reports, and
-   integrations even though profile editing would reject it.
-2. **CSV formula injection is likely.** Both CSV writers quote commas, quotes, and newlines but do
-   not neutralize cells beginning with `=`, `+`, `-`, or `@`. Speaker names and other exported text
-   can therefore be interpreted as formulas when an organizer opens a report in a spreadsheet.
-3. **Emoji/astral initials are likely malformed.** Both avatar helpers use `word[0]`, which selects
-   one UTF-16 code unit rather than a complete grapheme. Emoji-only names and some complex scripts
-   can render a replacement glyph or misleading initial.
-4. **Names can inject Markdown presentation into email.** Speaker names are interpolated into
-   Markdown before the untrusted renderer runs. Script/raw-HTML injection is blocked and unsafe URL
-   schemes are filtered, but a name containing Markdown link/image/emphasis syntax can still alter
-   a magic-link or campaign email's presentation and introduce an allowed `https` link/image.
-5. **Concurrent placement can duplicate one submission on the agenda.** Placement checks for an
-   existing scheduled row and then inserts, while the schema has no unique constraint on
-   `scheduled_session.submission_id`. Two concurrent placements can both pass the check. The
-   per-event reference allocator remains atomic, so the result would likely be two distinct session
-   rows rather than a constraint failure.
+1. **Resolved — bounded, normalized names.** Every speaker-name ingress uses
+   `lib/speaker-name.ts`, including a 120-grapheme limit and control-character policy. See
+   `lib/speaker-name.test.ts`.
+2. **Resolved — inert spreadsheet cells.** `lib/csv.ts` neutralizes formula-shaped values before
+   quoting. See the table-driven cases in `lib/csv.test.ts`.
+3. **Resolved — grapheme-safe initials.** `speakerInitials` uses `Intl.Segmenter` and has emoji and
+   combining-mark regression cases.
+4. **Resolved — merge values cannot create Markdown structure.** Mail and magic-link merge fields
+   pass through `escapeMarkdownText`; `lib/markdown.test.ts` preserves the literal text.
+5. **Resolved at the application boundary — agenda writes serialize per event.** Every placement
+   runs through `mutateAgendaAtomically`, which takes a PostgreSQL transaction advisory lock before
+   checking and inserting. The same guard covers organizer and reconciliation write paths.
 
 ### Medium-priority behavior to pin down
 

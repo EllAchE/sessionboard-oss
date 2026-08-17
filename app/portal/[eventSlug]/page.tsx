@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, CircleDot } from 'lucide-react';
 import { Badge, Button, Card, CardBody, CardHeader, CardTitle } from '@/components/ui';
+import { describeEventDeadlines } from '@/lib/event-deadlines';
 import {
   getBranding,
   listMySubmissions,
@@ -50,6 +51,7 @@ export default async function PortalHomePage({
   const pending = submissions.filter((entry) =>
     ['submitted', 'under_review', 'waitlisted'].includes(entry.status),
   );
+  const deadlines = describeEventDeadlines(event);
   const types = portalTypes(eventSlug, submissions, submissions.length);
   const base = `/portal/${eventSlug}`;
 
@@ -59,14 +61,13 @@ export default async function PortalHomePage({
         <h1 className={styles.pageTitle}>Hello, {speakerName(me, ctx).split(' ')[0]}</h1>
         {branding.welcomeHtml ? (
           <div
-            className={styles.prose}
+            className={`${styles.prose} ${styles.heroProse}`}
             /* Organizer-authored, deliberately trusted: `S-7`. */
             dangerouslySetInnerHTML={{ __html: branding.welcomeHtml }}
           />
         ) : (
           <p className={styles.pageLead}>
-            This is where {event.name} collects everything it needs from you. Work through what is
-            outstanding below — nothing here is lost if you leave and come back.
+            Complete the outstanding work below. Your progress is saved.
           </p>
         )}
       </section>
@@ -85,6 +86,32 @@ export default async function PortalHomePage({
         <Stat label="Accepted sessions" value={String(accepted.length)} />
       </section>
 
+      {/*
+        `AR-50`. Below the stats and above "what you owe", because these are dates a speaker plans
+        around rather than work they owe. They are the organizers' own milestones, so nothing here
+        is addressed to the speaker as a task and none of it reaches the overdue count above.
+      */}
+      {deadlines.length > 0 ? (
+        <section>
+          <h2 className={styles.sectionTitle}>
+            <CalendarClock size={16} aria-hidden /> Key dates from the organizers
+          </h2>
+          <Card padding="none">
+            <CardBody>
+              {deadlines.map((deadline) => (
+                <div key={deadline.key} className={styles.checkRow}>
+                  <div className={styles.spacer}>
+                    <div>{deadline.publicLabel}</div>
+                    <div className={styles.faint}>{deadline.when}</div>
+                  </div>
+                  <span className={styles.muted}>{deadline.relative}</span>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+        </section>
+      ) : null}
+
       <section>
         <h2 className={styles.sectionTitle}>
           <CircleDot size={16} aria-hidden /> What you owe
@@ -92,14 +119,10 @@ export default async function PortalHomePage({
         {outstanding.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyTitle}>You are all caught up</div>
-            <p>
-              Nothing is outstanding right now. If the organizers add a task, it will appear here and
-              you will get an email.
-            </p>
           </div>
         ) : (
           <Card padding="none">
-            <CardBody>
+            <CardBody className={styles.checkList}>
               {outstanding.slice(0, 6).map((entry) => (
                 <div key={entry.assignmentId} className={styles.checkRow}>
                   {entry.overdue ? (
@@ -145,10 +168,7 @@ export default async function PortalHomePage({
           <Card>
             <CardBody>
               {submissions.length === 0 ? (
-                <p className={styles.muted}>
-                  You have no sessions on {event.name} yet. Once a talk is submitted it shows up here
-                  with its status.
-                </p>
+                <p className={styles.muted}>No sessions yet.</p>
               ) : (
                 <div className={styles.stackTight}>
                   {submissions.slice(0, 5).map((entry) => (
@@ -177,9 +197,7 @@ export default async function PortalHomePage({
                     </div>
                   ))}
                   {pending.length > 0 && (
-                    <p className={styles.faint}>
-                      {pending.length} still awaiting a decision from the programme committee.
-                    </p>
+                    <p className={styles.faint}>{pending.length} awaiting a decision.</p>
                   )}
                 </div>
               )}
@@ -195,9 +213,7 @@ export default async function PortalHomePage({
             </CardHeader>
             <CardBody>
               {gaps.length === 0 ? (
-                <p className={styles.muted}>
-                  Your bio, headshot and links are what the organizers publish on the programme.
-                </p>
+                <p className={styles.muted}>This profile appears on the public programme.</p>
               ) : (
                 <div className={styles.stackTight}>
                   {gaps.map((gap) => (
@@ -235,7 +251,7 @@ export default async function PortalHomePage({
       )}
 
       <section>
-        <h2 className={styles.sectionTitle}>Everywhere else in your portal</h2>
+        <h2 className={styles.sectionTitle}>More</h2>
         <div className={styles.typeGrid}>
           {types.map((type) => (
             <Link key={type.id} href={type.href} className={styles.typeCard}>

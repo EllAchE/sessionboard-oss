@@ -33,6 +33,63 @@
   color: var(--text-faint);
 }
 
+/* ---- Exhibitor map ---- */
+
+.mapSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mapHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.mapTitle {
+  font: var(--type-title);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.mapFilename {
+  font: var(--type-label);
+  color: var(--text-faint);
+  margin: var(--space-05) 0 0;
+  overflow-wrap: anywhere;
+  unicode-bidi: plaintext;
+}
+
+.mapLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font: var(--type-label);
+}
+
+.mapLinks a,
+.mapFallback a {
+  color: var(--text-accent);
+}
+
+.mapDocument {
+  display: block;
+  width: 100%;
+  height: clamp(32rem, 80vh, 70rem);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.mapFallback {
+  padding: var(--space-8);
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* ---- Agenda ---- */
 
 .day {
@@ -145,7 +202,9 @@
 .gallery {
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: repeat(var(--embed-columns, 3), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--embed-columns, 3), minmax(0, 240px));
+  justify-content: center;
+  justify-items: center;
 }
 
 .speakerCard {
@@ -165,8 +224,14 @@
   box-shadow: var(--shadow-md);
 }
 
+/*
+  `height: auto` is load-bearing: `next/image` emits `height="640"`, which lands as a presentational
+  hint the browser treats as a used height, and a box with both dimensions resolved ignores
+  `aspect-ratio`. Without it the stored 512 px square renders as a tall rectangle.
+*/
 .headshot {
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: var(--radius-md);
@@ -746,6 +811,8 @@ a.sponsorMark:hover .sponsorName {
   display: flex;
   gap: var(--space-1);
   flex-wrap: wrap;
+  /* The tabs are a control for the grid, not part of it — they need a gap to read as separate. */
+  margin-bottom: var(--space-4);
 }
 
 .dayTab {
@@ -868,9 +935,26 @@ a.sponsorMark:hover .sponsorName {
   pointer-events: none;
 }
 
+/*
+  The lane arithmetic lives on the shell so the block and its star can sit side by side in one placed
+  cell. The block itself then just fills what the shell was given.
+*/
+.blockShell {
+  position: relative;
+  width: calc(100% / var(--lanes, 1) - var(--space-1));
+  margin-left: calc(100% * var(--lane, 0) / var(--lanes, 1) + var(--space-05));
+  margin-right: var(--space-05);
+  z-index: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .block {
-  margin: 0 var(--space-05);
+  flex: 1;
+  min-width: 0;
   padding: var(--space-1) var(--space-2);
+  /* Clears the star, which is absolutely positioned over this edge. */
+  padding-right: var(--space-8);
   border-radius: var(--radius-sm);
   border: var(--border-width) solid var(--border-accent);
   border-left-width: var(--border-width-thick);
@@ -881,14 +965,73 @@ a.sponsorMark:hover .sponsorName {
   display: flex;
   flex-direction: column;
   gap: var(--space-05);
-  width: calc(100% / var(--lanes, 1) - var(--space-1));
-  margin-left: calc(100% * var(--lane, 0) / var(--lanes, 1) + var(--space-05));
-  z-index: 1;
   min-height: 0;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+/* A block already in the schedule keeps the full accent border, so the grid reads at a glance. */
+.block[data-starred='true'] {
+  border-color: var(--accent);
+}
+
+/*
+  Sits over the block's reserved right-hand padding. It is always visible rather than revealed on
+  hover, because a touch device never hovers and this is the whole point of the grid now.
+*/
+.blockStar {
+  position: absolute;
+  top: var(--space-05);
+  right: var(--space-05);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  padding: 0;
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-faint);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.blockStar:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.blockStar:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.blockStar[data-starred='true'] {
+  border-color: var(--border-accent);
+  background: var(--accent-subtle);
+  color: var(--text-accent);
+}
+
+/*
+  A block opens the session detail, so hovering has to say so with more than the cursor: the border
+  takes the full accent and the title underlines, which survives both themes and forced colours.
+*/
 .block:hover {
+  border-color: var(--accent);
   box-shadow: var(--shadow-md);
+}
+
+.block:hover .blockTitle {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.block:hover .blockTime {
+  color: var(--text-body);
 }
 
 .block:focus-visible {
@@ -1016,6 +1159,11 @@ a.sponsorMark:hover .sponsorName {
 
 /* ---- Speaker gallery ---- */
 
+/*
+  Capped rather than column-width: at three columns on a full-width page an uncapped card made the
+  headshot ~330 px, which reads as a poster wall rather than a gallery. The column count an organizer
+  picked in the embed studio still decides how many cards sit in a row.
+*/
 .galleryCard {
   border: var(--border-width) solid var(--border-hairline);
   border-radius: var(--radius-md);
@@ -1024,6 +1172,8 @@ a.sponsorMark:hover .sponsorName {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  width: 100%;
+  max-width: 240px;
   min-width: 0;
   text-align: left;
   color: inherit;
@@ -1095,9 +1245,12 @@ a.sponsorMark:hover .sponsorName {
 }
 
 @media (min-width: 641px) and (max-width: 900px) {
-  .gallery,
   .sessionList,
   .sponsorGrid {
     grid-template-columns: repeat(min(var(--embed-columns, 3), 2), minmax(0, 1fr));
+  }
+
+  .gallery {
+    grid-template-columns: repeat(min(var(--embed-columns, 3), 2), minmax(0, 240px));
   }
 }

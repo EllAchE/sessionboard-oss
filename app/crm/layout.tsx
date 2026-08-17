@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { currentActor, requireEventContext } from '@/lib/auth';
 import { countAwaitingTaskActions } from '@/lib/services/dashboard';
 import { currentEventId, listEventsForUser } from '@/lib/services/events';
-import { AdminShell } from '../admin/AdminShell';
+import { OrganizerShell } from '../organizer/OrganizerShell';
 import { CrmNav } from './CrmNav';
 import styles from './crm.module.css';
 
@@ -32,7 +32,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   const awaitingTaskActions = await countAwaitingTaskActions(await requireEventContext(eventId));
 
   return (
-    <AdminShell
+    <OrganizerShell
       events={organizing}
       currentEventId={eventId}
       actorName={actor.name ?? actor.email}
@@ -42,6 +42,6 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         <CrmNav />
         {children}
       </div>
-    </AdminShell>
+    </OrganizerShell>
   );
 }

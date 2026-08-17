@@ -1,0 +1,513 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-8);
+  max-width: var(--content-max);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  font: var(--type-label);
+  color: var(--text-faint);
+  letter-spacing: var(--tracking-inscribed);
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font: var(--type-title);
+  color: var(--text-strong);
+  letter-spacing: var(--tracking-tight);
+  margin: 0;
+}
+
+.lede {
+  font: var(--type-body);
+  color: var(--text-muted);
+  margin: var(--space-2) 0 0;
+  max-width: var(--prose-max);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tabsRow {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: var(--border-width) solid var(--border-hairline);
+  margin-bottom: var(--space-2);
+}
+
+.tabLink {
+  padding: var(--space-2) var(--space-3);
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: var(--border-width-thick) solid transparent;
+  margin-bottom: -1px;
+}
+
+.tabLink:hover {
+  color: var(--text-strong);
+}
+
+.tabLinkActive {
+  color: var(--text-accent);
+  border-bottom-color: var(--border-accent);
+}
+
+/* --- two-column composer ------------------------------------------------ */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  font: var(--type-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+.hint {
+  font: var(--type-body);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.body {
+  min-height: 260px;
+  font: var(--type-mono);
+}
+
+.mono {
+  font: var(--type-mono);
+}
+
+/* --- variable palette --------------------------------------------------- */
+
+.variables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  max-height: 180px;
+  overflow-y: auto;
+  padding: var(--space-2);
+  background: var(--surface-sunken);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.variableChip {
+  font: var(--type-mono);
+  font-size: var(--text-2xs);
+  padding: var(--space-05) var(--space-2);
+  border-radius: var(--radius-full);
+  border: var(--border-width) solid var(--border-hairline);
+  background: var(--surface-card);
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.variableChip:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+/* --- preview ------------------------------------------------------------ */
+
+.previewFrame {
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  padding: var(--space-4);
+  overflow-x: auto;
+}
+
+.previewFrame :global(img) {
+  max-width: 100%;
+}
+
+.previewSubject {
+  font: var(--type-heading);
+  color: var(--text-strong);
+  margin: 0 0 var(--space-2);
+}
+
+.previewMeta {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font: var(--type-body);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.plainText {
+  font: var(--type-mono);
+  white-space: pre-wrap;
+  color: var(--text-body);
+  background: var(--surface-sunken);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  max-height: 320px;
+  overflow: auto;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+  font: var(--type-body);
+  font-size: var(--text-sm);
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--status-info-bg);
+  color: var(--status-info-fg);
+  font: var(--type-body);
+  font-size: var(--text-sm);
+}
+
+.danger {
+  background: var(--status-danger-bg);
+  color: var(--status-danger-fg);
+}
+
+.success {
+  background: var(--status-success-bg);
+  color: var(--status-success-fg);
+}
+
+/* --- mailbox ------------------------------------------------------------ */
+
+.mailbox {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 0;
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  overflow: hidden;
+  min-height: 620px;
+}
+
+@media (max-width: 900px) {
+  .mailbox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mailList {
+    max-height: 320px;
+  }
+}
+
+.mailList {
+  border-right: var(--border-width) solid var(--border-hairline);
+  overflow-y: auto;
+  max-height: 760px;
+  background: var(--surface-sunken);
+}
+
+.mailSearch {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-card);
+  border-bottom: var(--border-width) solid var(--border-hairline);
+}
+
+.mailItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-bottom: var(--border-width) solid var(--border-hairline);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.mailItem:hover {
+  background: var(--surface-hover);
+}
+
+.mailItemActive {
+  background: var(--surface-selected);
+  box-shadow: inset var(--border-width-thick) 0 0 var(--border-accent);
+}
+
+.mailItemTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* The channel icon rides inside the recipient line, so the truncation moves to the text itself. */
+.mailTo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+}
+
+.channelIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.mailToText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- channel filter, above the sent list --------------------------------- */
+
+/*
+ * Deliberately not sticky. `.mailSearch` below it is, and two sticky bars at `top: 0` would stack
+ * on top of each other the moment the list scrolls.
+ */
+.channelFilter {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-3) 0;
+}
+
+.channelOption {
+  padding: var(--space-05) var(--space-2);
+  border-radius: var(--radius-full);
+  border: var(--border-width) solid var(--border-hairline);
+  font: var(--type-body);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.channelOption:hover {
+  border-color: var(--border-accent);
+  color: var(--text-accent);
+}
+
+.channelOptionActive {
+  border-color: var(--border-accent);
+  background: var(--surface-sunken);
+  color: var(--text-accent);
+  font-weight: var(--weight-medium);
+}
+
+.mailWhen {
+  font: var(--type-body);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.mailSubject {
+  font: var(--type-body);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: var(--space-05);
+}
+
+.mailBadges {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.mailDetail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  overflow-y: auto;
+  max-height: 760px;
+}
+
+.mailHeaders {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  font: var(--type-body);
+  font-size: var(--text-sm);
+}
+
+.mailHeaderKey {
+  font: var(--type-label);
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+.mailHeaderValue {
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+
+.mailBody {
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-page);
+  padding: var(--space-2);
+  overflow-x: auto;
+}
+
+.mailBody :global(a) {
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-16);
+  text-align: center;
+  color: var(--text-muted);
+  font: var(--type-body);
+}
+
+.linkList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font: var(--type-mono);
+  font-size: var(--text-xs);
+}
+
+.linkList a {
+  color: var(--text-link);
+  overflow-wrap: anywhere;
+}
+
+/* --- template list ------------------------------------------------------ */
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-4);
+}
+
+.templateMeta {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+.templateBody {
+  font: var(--type-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  max-height: 120px;
+  overflow: hidden;
+  margin: var(--space-3) 0 0;
+}
+
+.subtle {
+  font: var(--type-body);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.recipientPreview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.recipientRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: var(--border-width) solid var(--border-hairline);
+  font: var(--type-body);
+  font-size: var(--text-sm);
+}
+
+.recipientEmail {
+  font: var(--type-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}

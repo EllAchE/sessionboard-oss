@@ -84,6 +84,17 @@ export const reviewAssignmentStatus = pgEnum('review_assignment_status', [
   'declined',
 ]);
 /**
+ * `ABS-03`. What a reviewer is asked *for* on one line of the scorecard. `numeric` is the only kind
+ * that carries weight and feeds an average; `select` and `text` record a judgment that a number
+ * would misrepresent — a Recommendation of "Maybe" is not 3 out of 5, and no arithmetic should ever
+ * treat it as one.
+ */
+export const scorecardCriterionType = pgEnum('scorecard_criterion_type', [
+  'numeric',
+  'select',
+  'text',
+]);
+/**
  * `V-1`. What an organizer said about a submission's *staging*, which is not a decision and never
  * writes a status. `hold` is the third value on purpose: without it there is no way to take a
  * proposal the panel's average put in a queue back out of it, and "remove from the queue" would
@@ -126,7 +137,17 @@ export const taskStatus = pgEnum('task_status', [
   'completed',
   'waived',
 ]);
-export const contentRevisionKind = pgEnum('content_revision_kind', ['session', 'participant']);
+/**
+ * `session` predates the scheduled agenda and means a *submission* — a proposal — which is why
+ * `scheduled_session` had to be spelled out rather than folded into it. Renaming the older value
+ * would rewrite every stored revision for no reader's benefit, so the two live side by side.
+ */
+export const contentRevisionKind = pgEnum('content_revision_kind', [
+  'session',
+  'participant',
+  'scheduled_session',
+  'sponsor',
+]);
 export const emailStatus = pgEnum('email_status', ['queued', 'sent', 'failed']);
 export const smsStatus = pgEnum('sms_status', [
   'queued',
@@ -183,6 +204,19 @@ export const speakerWorkflowStatus = pgEnum('speaker_workflow_status', [
  * stands somewhere on a floor and a sponsor does not. Two tables would duplicate name, tier, logo
  * and link to buy nothing, and a company that is both would become two unrelated rows.
  */
+/**
+ * `AD-9`. Which single widget a share link opens. Deliberately the bundle-driven subset of
+ * `EMBED_VIEWS` — `exhibitor-map` is absent because it reads a floorplan file through its own
+ * loader rather than the programme bundle, and has no draft state to preview.
+ */
+export const shareLinkView = pgEnum('share_link_view', [
+  'agenda',
+  'itinerary',
+  'sessions',
+  'speakers',
+  'gallery',
+  'sponsors',
+]);
 export const sponsorKind = pgEnum('sponsor_kind', ['sponsor', 'exhibitor']);
 /** A sponsor is staged privately until an organizer explicitly puts it on public surfaces. */
 export const sponsorStatus = pgEnum('sponsor_status', ['draft', 'published']);
@@ -254,6 +288,19 @@ export const event = pgTable(
      */
     startsOn: text('starts_on').notNull(),
     endsOn: text('ends_on').notNull(),
+    /**
+     * `AR-50`. The two internal milestones that pace an edition between the call closing and the
+     * doors opening: when the speaker roster is meant to be settled, and when the agenda is.
+     *
+     * Nothing enforces them. No write is refused, warned on or scored for being past one, because
+     * a talk moved the week of the show is ordinary conference work and a product that argued
+     * about it would be wrong. They exist to be read — on the dashboard, in the portal, on the
+     * public page — and to give the reminder run something to count down to.
+     *
+     * Nullable with no default: an edition that sets neither behaves exactly as it did before.
+     */
+    speakerDeadlineAt: timestamp('speaker_deadline_at', { withTimezone: true }),
+    agendaDeadlineAt: timestamp('agenda_deadline_at', { withTimezone: true }),
     websiteUrl: text('website_url'),
     venueName: text('venue_name'),
     venueAddress: text('venue_address'),
@@ -783,6 +830,52 @@ export const participantRole = pgTable(
   }),
 );
 
+/**
+ * `AD-2`. A window a speaker has declared they cannot present in.
+ *
+ * **Blackout-shaped, not availability-shaped.** A row says "not then"; the absence of rows says
+ * nothing at all. The inverse model — rows meaning "only then" — makes the empty state read as
+ * *available never*, so every speaker who ignores the portal silently becomes unschedulable and the
+ * organizer's board fills with conflicts nobody authored. Declaring absence is also the smaller ask:
+ * a speaker knows their one Thursday clash, not their whole free/busy calendar.
+ *
+ * **Stored as absolute instants, exactly like `scheduled_session.starts_at`.** The comparison the
+ * detector makes is instant-against-instant, so no zone conversion happens at compare time and no
+ * DST rule can move a stored window out from under a schedule that was already checked against it.
+ * The zone belongs to *authoring*: the portal turns the speaker's local wall clock into an instant
+ * with `zonedTimeToUtc` (which resolves the offset twice, so the two days a year a zone shifts are
+ * not off by an hour), and the organizer's board renders the same instant back in the event's zone.
+ * `authoredTimezone` records which zone the speaker typed in — kept so the portal can round-trip the
+ * window to the same wall clock it was entered as, and so an organizer can be told "09:00 in Rome"
+ * rather than only the event-local translation. It is never consulted by conflict detection.
+ */
+export const speakerUnavailability = pgTable(
+  'speaker_unavailability',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    participantId: uuid('participant_id')
+      .notNull()
+      .references(() => participant.id, { onDelete: 'cascade' }),
+    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+    endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+    /** The IANA zone the speaker authored the window in. Display only — see the note above. */
+    authoredTimezone: text('authored_timezone').notNull(),
+    /** Optional, speaker-authored. "Flight lands 14:00" is worth far more to an organizer than a bare block. */
+    note: text('note'),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({
+    byParticipant: index('speaker_unavailability_participant_idx').on(t.participantId, t.startsAt),
+    byEvent: index('speaker_unavailability_event_idx').on(t.eventId, t.startsAt),
+    /** A zero-length or inverted window overlaps nothing, so it can only ever be a data-entry bug. */
+    orderedWindow: check('speaker_unavailability_window_check', sql`${t.endsAt} > ${t.startsAt}`),
+  }),
+);
+
 // ---------------------------------------------------------------------------
 // Review
 // ---------------------------------------------------------------------------
@@ -859,6 +952,9 @@ export const scorecardCriterion = pgTable(
       .references(() => reviewRound.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     description: text('description'),
+    type: scorecardCriterionType('type').notNull().default('numeric'),
+    /** The choices a `select` criterion offers, in the order the reviewer sees them. Empty otherwise. */
+    options: jsonb('options').$type<string[]>().notNull().default([]),
     weight: integer('weight').notNull().default(1),
     maxScore: integer('max_score').notNull().default(5),
     position: integer('position').notNull().default(0),
@@ -944,7 +1040,13 @@ export const score = pgTable(
     criterionId: uuid('criterion_id')
       .notNull()
       .references(() => scorecardCriterion.id, { onDelete: 'cascade' }),
-    value: integer('value').notNull(),
+    /**
+     * `ABS-03`. Set for a `numeric` criterion and null for every other kind, so the weighted average
+     * reads one column and can never pick up a dropdown choice or an essay by accident.
+     */
+    value: integer('value'),
+    /** The reviewer's answer to a `select` or `text` criterion; null for a numeric one. */
+    textValue: text('text_value'),
     createdAt: createdAt(),
   },
   (t) => ({ uniquePair: unique('score_assignment_criterion').on(t.reviewAssignmentId, t.criterionId) }),
@@ -1050,6 +1152,27 @@ export const file = pgTable(
 );
 
 /**
+ * `AR-37`. One deliberately simple exhibitor map per event. The PDF remains an ordinary
+ * event-scoped `file`; this row is the public slot that makes exactly that file reachable from the
+ * map embed. Keeping the slot separate from sponsor/exhibitor records is intentional: the first
+ * version does not model booths, regions, floors, or wayfinding.
+ */
+export const eventExhibitorMap = pgTable(
+  'event_exhibitor_map',
+  {
+    eventId: uuid('event_id')
+      .primaryKey()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    fileId: uuid('file_id')
+      .notNull()
+      .references(() => file.id, { onDelete: 'restrict' }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => ({ oneMapSlotPerFile: unique('event_exhibitor_map_file_unique').on(t.fileId) }),
+);
+
+/**
  * A post-conference recording is deliberately separate from the agenda's publication state. An
  * organizer may attach and review media while the programme remains public, then publish the
  * recording only after the session has ended. Exactly one source is retained: either an
@@ -1116,13 +1239,35 @@ export const contentRevision = pgTable(
       .references(() => event.id, { onDelete: 'cascade' }),
     entityKind: contentRevisionKind('entity_kind').notNull(),
     entityId: uuid('entity_id').notNull(),
+    /**
+     * 1-based and dense per entity, so a person can say "put it back to revision 4" and every
+     * reader agrees which row that is. `created_at` cannot do that job: two edits inside the same
+     * millisecond sort arbitrarily, and the history screen derives what each revision *changed* by
+     * walking the ordered list — under a tie it would attribute the wrong diff to both rows.
+     */
+    revisionNumber: integer('revision_number').notNull(),
     snapshot: jsonb('snapshot').$type<Record<string, unknown>>().notNull(),
     summary: text('summary').notNull(),
     editorUserId: uuid('editor_user_id').references(() => user.id, { onDelete: 'set null' }),
     editorName: text('editor_name').notNull(),
     createdAt: createdAt(),
   },
-  (t) => ({ byEntity: index('content_revision_entity_idx').on(t.entityKind, t.entityId) }),
+  (t) => ({
+    byEntity: index('content_revision_entity_idx').on(t.entityKind, t.entityId),
+    /**
+     * The arbiter for concurrent writers. Two requests snapshotting the same entity at once both
+     * read the same `max(revision_number)` under READ COMMITTED and both try to claim `n + 1`;
+     * Postgres has no gap lock that would stop them. This index makes the second one fail loudly
+     * so the service can retry against the number the winner actually took, which is what keeps
+     * the sequence dense instead of merely unique.
+     */
+    uniqueNumber: unique('content_revision_entity_number').on(
+      t.eventId,
+      t.entityKind,
+      t.entityId,
+      t.revisionNumber,
+    ),
+  }),
 );
 
 const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
@@ -1190,9 +1335,17 @@ export const task = pgTable(
     position: integer('position').notNull().default(0),
     /** `C-7`: days before `dueAt` on which a reminder fires. Empty means no reminders. */
     reminderDaysBefore: jsonb('reminder_days_before').$type<number[]>().notNull().default([]),
+    /** Days after the latest task reminder/nudge before following up again. Null disables it. */
+    reminderDaysAfterSend: integer('reminder_days_after_send'),
     createdAt: createdAt(),
   },
-  (t) => ({ byEvent: index('task_event_idx').on(t.eventId) }),
+  (t) => ({
+    byEvent: index('task_event_idx').on(t.eventId),
+    positiveReminderDaysAfterSend: check(
+      'task_reminder_days_after_send_positive',
+      sql`${t.reminderDaysAfterSend} is null or ${t.reminderDaysAfterSend} > 0`,
+    ),
+  }),
 );
 
 export const taskAssignment = pgTable(
@@ -1318,7 +1471,7 @@ export const emailTemplate = pgTable(
 );
 
 /**
- * Doubles as the dev mailbox rendered at `/admin/mail`, which satisfies `T-7a` and removes email
+ * Doubles as the dev mailbox rendered at `/organizer/mail`, which satisfies `T-7a` and removes email
  * deliverability as a single point of failure during judging: a judge who never receives a message
  * can still read it.
  */
@@ -1497,6 +1650,47 @@ export const apiKey = pgTable(
     createdAt: createdAt(),
   },
   (t) => ({ byPrefix: index('api_key_prefix_idx').on(t.prefix) }),
+);
+
+/**
+ * `AD-9`: a bearer link that shows one view of one event's programme to someone with no account —
+ * the keynote speaker, sponsor or venue contact an organizer needs to send a draft agenda to.
+ *
+ * Shaped after `api_key` on purpose. `prefix` is the first characters of the token, indexed and not
+ * secret, so a row can be found in one indexed lookup and named in a log or on screen without the
+ * secret half; `tokenHash` is the SHA-256 that the presented token must match. Revocation is a
+ * timestamp rather than a delete, so `viewCount` and `lastViewedAt` survive the revoke and an
+ * organizer can still answer "was this link used before I killed it?".
+ *
+ * `expiresAt` is NOT NULL where `api_key` has no expiry at all: a key belongs to a system the
+ * organizer runs, but a share link is handed to an outsider and must stop working on its own.
+ *
+ * There is no `userId`. The holder is not an account and never becomes one by following the link.
+ */
+export const shareLink = pgTable(
+  'share_link',
+  {
+    id: id(),
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => event.id, { onDelete: 'cascade' }),
+    /** Who the organizer sent it to, in their own words: "Ada — keynote", "Vitruvius (venue)". */
+    label: text('label').notNull(),
+    view: shareLinkView('view').notNull().default('agenda'),
+    prefix: text('prefix').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    /** Attribution survives the minter losing their account, so this nulls rather than cascades. */
+    createdByUserId: uuid('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    lastViewedAt: timestamp('last_viewed_at', { withTimezone: true }),
+    viewCount: integer('view_count').notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => ({
+    byPrefix: index('share_link_prefix_idx').on(t.prefix),
+    byEvent: index('share_link_event_idx').on(t.eventId),
+  }),
 );
 
 /**

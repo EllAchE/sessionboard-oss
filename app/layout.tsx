@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { ToastProvider } from '@/components/ui';
 import { appUrl } from '@/lib/env';
+import { hasSiteChrome } from '@/lib/site-chrome';
 import { createSiteMetadata } from '@/lib/site-metadata';
 import { fontVariables } from './fonts';
 import './tokens.css';
@@ -22,12 +24,24 @@ export function generateMetadata(): Metadata {
 }
 
 /**
- * Runs before first paint so the stored theme is on the element the first time anything is styled.
- * Doing this in an effect instead is what produces the light-to-dark flash on every load.
+ * Runs before first paint so a stored theme is on the element the first time anything is styled.
+ * Light is deliberately the default because it is the preferred way to experience Cicero, not
+ * because of a technical constraint; we can revert to following the system preference if needed.
+ * Returning visitors keep their explicit choice without a flash on load.
  */
-const THEME_SCRIPT = `try{var t=localStorage.getItem('cicero-theme');if(!t){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){}`;
+const THEME_SCRIPT = `try{var t=localStorage.getItem('cicero-theme');if(t){document.documentElement.dataset.theme=t}}catch(e){}`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  /**
+   * `/embed/*` renders inside somebody else's page, so it gets the document and none of the
+   * furniture — a widget has no business carrying Cicero's demo sign-in links into a stranger's
+   * DOM. `middleware.ts` is what makes this knowable here; `lib/site-chrome.ts` explains why.
+   *
+   * Reading the request costs nothing that was not already spent: this layout is `force-dynamic`
+   * above, so there is no static rendering left to opt out of.
+   */
+  const siteChrome = hasSiteChrome(await headers());
+
   return (
     <html lang="en" data-theme="light" className={fontVariables} suppressHydrationWarning>
       <head>
@@ -36,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ToastProvider>
           {children}
-          <GlobalFooter />
+          {siteChrome ? <GlobalFooter /> : null}
         </ToastProvider>
       </body>
     </html>

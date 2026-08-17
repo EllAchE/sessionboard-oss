@@ -1,40 +1,58 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, Copy, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Code2, Sparkles } from 'lucide-react';
+import { Button, useToast } from '@/components/ui';
+import type { ButtonProps } from '@/components/ui';
 
-type CopyState = 'idle' | 'copied' | 'failed';
+/**
+ * The button's icon, named rather than passed. Sparkles reads as "AI prompt", which is right for the
+ * setup prompt and wrong for a code snippet, so a caller copying something else can say what it is —
+ * but a server component cannot hand a component across this boundary, so it names one instead.
+ */
+const ICONS = {
+  prompt: Sparkles,
+  snippet: Code2,
+} as const;
 
-const COPY_FEEDBACK: Record<CopyState, { label: string; Icon: LucideIcon }> = {
-  idle: { label: 'Copy prompt', Icon: Copy },
-  copied: { label: 'Prompt copied', Icon: Check },
-  failed: { label: 'Copy failed', Icon: TriangleAlert },
-};
+interface CopyAgentPromptButtonProps {
+  prompt: string;
+  label?: string;
+  /** What landed on the clipboard, for the toast that reports it. */
+  copiedSubject?: string;
+  icon?: keyof typeof ICONS;
+  size?: ButtonProps['size'];
+  variant?: ButtonProps['variant'];
+}
 
-export function CopyAgentPromptButton({ prompt }: { prompt: string }) {
-  const [copyState, setCopyState] = useState<CopyState>('idle');
+export function CopyAgentPromptButton({
+  prompt,
+  label,
+  copiedSubject = 'Prompt',
+  icon = 'prompt',
+  size = 'sm',
+  variant = 'secondary',
+}: CopyAgentPromptButtonProps) {
+  const { toast } = useToast();
+  const Icon = ICONS[icon];
 
   const copyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(prompt);
-      setCopyState('copied');
+      toast({ title: `${copiedSubject} copied`, tone: 'success', duration: 2500 });
     } catch {
-      setCopyState('failed');
+      toast({ title: `Could not copy ${copiedSubject.toLowerCase()}`, tone: 'danger' });
     }
   };
-
-  const { label, Icon } = COPY_FEEDBACK[copyState];
 
   return (
     <Button
       type="button"
-      size="sm"
+      size={size}
+      variant={variant}
       iconLeft={<Icon size={15} aria-hidden="true" />}
       onClick={copyPrompt}
-      aria-live="polite"
     >
-      {label}
+      {label ?? 'Copy prompt'}
     </Button>
   );
 }

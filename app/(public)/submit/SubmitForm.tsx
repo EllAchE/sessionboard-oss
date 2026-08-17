@@ -432,11 +432,9 @@ function SubmitFormSession({
           {form.welcomeHtml && (
             <div className={styles.intro} dangerouslySetInnerHTML={{ __html: form.welcomeHtml }} />
           )}
-          <p className={styles.help}>
-            {form.targetType === 'session'
-              ? 'This form adds a session straight to the programme. Nothing here goes to review.'
-              : 'Nothing is sent until the last step, and you can go back at any point.'}
-          </p>
+          {form.targetType === 'session' ? (
+            <p className={styles.help}>This session goes straight to the programme.</p>
+          ) : null}
         </div>
       )}
 
@@ -472,8 +470,7 @@ function SubmitFormSession({
               </span>
             </label>
             <p className={styles.help}>
-              No password to pick. We create your speaker account with this address and sign you
-              straight in.
+              We’ll use this email for your speaker account.
             </p>
             <Input
               id="submitter-email"
@@ -718,9 +715,7 @@ function ParticipantControl({
         )}
       </label>
       {isAccountEmail ? (
-        <p className={styles.help}>
-          The address on your account. Change it on the account step if it is wrong.
-        </p>
+        <p className={styles.help}>Change this on the Account step.</p>
       ) : (
         field.helpText && <p className={styles.help}>{field.helpText}</p>
       )}

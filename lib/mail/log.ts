@@ -1,7 +1,7 @@
 import type { MailTransport, SendResult } from './transport';
 
 /**
- * The default. Every send is already persisted to `email_log` by `sendMail`, and `/admin/mail`
+ * The default. Every send is already persisted to `email_log` by `sendMail`, and `/organizer/mail`
  * renders that table — so this transport does nothing and loses nothing.
  *
  * This is what makes `T-7a` work and what removes email deliverability from the critical path

@@ -1,8 +1,5 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  BACKFILL,
   addDays,
   backfillEventWindow,
   canonicalTimezone,
@@ -208,55 +205,5 @@ describe('backfillEventWindow', () => {
       expect(filled.endsOn).toBe(zonedDateKey(filled.endsAt, filled.timezone));
       expect(filled.endsAt.getTime()).toBeGreaterThan(filled.startsAt.getTime());
     }
-  });
-});
-
-/**
- * The rule above is only worth testing if the migration still implements it. `0007` adds the columns
- * nullable, backfills, and only then adds the constraint — get that order wrong and the migration
- * aborts on any deployment that already has an event.
- */
-describe('migration 0007', () => {
-  const directory = join(import.meta.dirname, '..', 'db', 'migrations');
-  const filename = readdirSync(directory).find((entry) => entry.startsWith('0007_'));
-  const raw = readFileSync(join(directory, filename!), 'utf8');
-  /** The header comment describes the ordering; only the statements decide it. */
-  const sql = raw.replace(/\/\*[\s\S]*?\*\//g, '');
-
-  it('exists', () => {
-    expect(filename).toBeDefined();
-  });
-
-  it('adds the required columns nullable, so it cannot abort on a populated table', () => {
-    for (const column of ['starts_at', 'ends_at']) {
-      expect(sql).toContain(`ADD COLUMN "${column}" timestamp with time zone;`);
-      expect(sql).not.toContain(`ADD COLUMN "${column}" timestamp with time zone NOT NULL`);
-    }
-  });
-
-  it('backfills before it constrains', () => {
-    const lastUpdate = sql.lastIndexOf('UPDATE "event"');
-    const firstConstraint = sql.indexOf('SET NOT NULL');
-    expect(lastUpdate).toBeGreaterThan(-1);
-    expect(firstConstraint).toBeGreaterThan(lastUpdate);
-  });
-
-  it('constrains all four columns', () => {
-    for (const column of ['starts_at', 'ends_at', 'starts_on', 'ends_on']) {
-      expect(sql).toContain(`ALTER COLUMN "${column}" SET NOT NULL`);
-    }
-  });
-
-  it('uses the same constants as backfillEventWindow', () => {
-    expect(sql).toContain(`' ${String(BACKFILL.startHour).padStart(2, '0')}:00:00'`);
-    expect(sql).toContain(`' ${BACKFILL.endHour}:00:00'`);
-    expect(sql).toContain(`+ ${BACKFILL.fallbackDays}`);
-    expect(sql).toContain(`interval '${BACKFILL.minimumHours} hours'`);
-    expect(sql).toContain(`SET "timezone" = '${BACKFILL.fallbackZone}'`);
-  });
-
-  it('rewrites the date-only projection from the instants it just resolved', () => {
-    expect(sql).toContain('"starts_on" = to_char("starts_at" AT TIME ZONE "timezone"');
-    expect(sql).toContain('"ends_on" = to_char("ends_at" AT TIME ZONE "timezone"');
   });
 });

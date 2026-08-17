@@ -312,7 +312,7 @@ export async function testConnection(): Promise<{
       ok: missing.length === 0,
       message:
         missing.length === 0
-          ? `Connected to ${client.baseId} — all ${wanted.length} tables present`
+          ? `Connected to ${client.baseId}, with all ${wanted.length} tables present`
           : `Connected, but this base has no table named ${missing.join(', ')}`,
       tables: names,
     };

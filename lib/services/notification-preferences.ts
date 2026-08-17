@@ -15,25 +15,31 @@ import { hashToken, randomToken, timingSafeEqual } from '../ids';
 import { normalizePhoneNumber } from '../phone';
 import { blockSmsBeforePreferenceChange, recordSmsConsent } from '../sms/consent';
 import { activeSmsTransportName, sendPhoneVerificationCode } from '../sms';
+import {
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CATEGORY_LABELS,
+  notificationCategory,
+  type NotificationCategory,
+} from '../notification-categories';
 
-export const NOTIFICATION_CATEGORIES = ['submission', 'session', 'task', 'form', 'adhoc'] as const;
-export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+/**
+ * The categories themselves live in `lib/notification-categories.ts`, which imports nothing: the two
+ * client components that render a toggle per category cannot import this module without pulling
+ * `getDb` into the browser bundle. Re-exported here so the many server-side callers that already
+ * reach for them through this module keep working.
+ *
+ * `deadline` is `AR-51`'s, and needed no migration to add: `notification_preference.template_key` is
+ * free text with no enum or check behind it, and the category is derived from the key prefix.
+ */
+export {
+  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_CATEGORY_LABELS,
+  NOTIFICATION_CATEGORY_ROWS,
+  notificationCategory,
+  type NotificationCategory,
+} from '../notification-categories';
+
 export type ChannelOverride = boolean | null;
-
-export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> = {
-  submission: 'Submission updates',
-  session: 'Schedule changes',
-  task: 'Task reminders',
-  form: 'Submission deadlines',
-  adhoc: 'Organizer announcements',
-};
-
-export function notificationCategory(templateKey: string | null | undefined): NotificationCategory {
-  const prefix = (templateKey ?? 'adhoc').split('.')[0];
-  return (NOTIFICATION_CATEGORIES as readonly string[]).includes(prefix)
-    ? (prefix as NotificationCategory)
-    : 'adhoc';
-}
 
 export type CategoryPreference = { notifyEmail: ChannelOverride; notifySms: ChannelOverride };
 

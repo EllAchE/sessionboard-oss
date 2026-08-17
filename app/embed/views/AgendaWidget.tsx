@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import {
   durationMinutes,
   formatClock,
@@ -16,12 +16,25 @@ import {
   type PublicBundle,
   type PublicSession,
 } from '../model';
+import { starActionLabel, useMySchedule } from '../my-schedule';
 import { RecordingLink, SessionChips, ShowMore, SpeakerRoster } from './parts';
 import styles from '../embed.module.css';
 
 /** One row of the grid is a quarter hour; the gutter is labelled on the half hour. */
 const ROW_MINUTES = 15;
 const LABEL_MINUTES = 30;
+/**
+ * Empty time held either side of the programme. Starting the gutter on the first session makes the
+ * day look like it begins the instant the first talk does, and leaves that block flush against the
+ * room header; an hour in front and a half hour behind reads as a day with edges.
+ */
+const LEAD_MINUTES = 60;
+const TAIL_MINUTES = 30;
+/**
+ * Row 1 is the sticky room header. Row 2 is deliberately left empty so the first time label clears
+ * the header instead of tucking underneath it when the grid is scrolled to the top.
+ */
+const FIRST_GRID_ROW = 3;
 const UNASSIGNED = 'Unassigned';
 
 type Placement = {
@@ -98,17 +111,23 @@ function layoutFor(day: AgendaDay, timezone: string, roomOrder: string[]): DayLa
     placements.length > 0 ? 0 : 17 * 60,
   );
 
-  const gridStart = Math.floor(earliest / LABEL_MINUTES) * LABEL_MINUTES;
-  const gridEnd = Math.max(
-    Math.ceil(latest / LABEL_MINUTES) * LABEL_MINUTES,
-    gridStart + LABEL_MINUTES * 2,
+  const gridStart = Math.max(
+    0,
+    Math.floor((earliest - LEAD_MINUTES) / LABEL_MINUTES) * LABEL_MINUTES,
+  );
+  const gridEnd = Math.min(
+    24 * 60,
+    Math.max(
+      Math.ceil((latest + TAIL_MINUTES) / LABEL_MINUTES) * LABEL_MINUTES,
+      gridStart + LABEL_MINUTES * 2,
+    ),
   );
 
   for (const entry of placements) {
-    entry.startRow = 2 + Math.round((entry.startsAtMinute - gridStart) / ROW_MINUTES);
+    entry.startRow = FIRST_GRID_ROW + Math.round((entry.startsAtMinute - gridStart) / ROW_MINUTES);
     entry.endRow = Math.max(
       entry.startRow + 2,
-      2 + Math.round((entry.endsAtMinute - gridStart) / ROW_MINUTES),
+      FIRST_GRID_ROW + Math.round((entry.endsAtMinute - gridStart) / ROW_MINUTES),
     );
   }
 
@@ -140,6 +159,9 @@ export function AgendaWidget({
   const initialDay = days.findIndex((day) => day.date === options.day);
   const [dayIndex, setDayIndex] = useState(initialDay === -1 ? 0 : initialDay);
   const [openId, setOpenId] = useState<string | null>(null);
+  /* `EMB-09`. The grid writes into the same store the itinerary reads, so a talk starred here is
+     already in the attendee's schedule by the time they open that tab. */
+  const { isStarred, toggle: toggleStar } = useMySchedule(bundle.event.slug);
 
   const roomOrder = useMemo(
     () => [...bundle.rooms.map((room) => room.name)].sort((a, b) => a.localeCompare(b)),
@@ -166,6 +188,17 @@ export function AgendaWidget({
           <button type="button" className={styles.controlButton} onClick={() => setOpenId(null)}>
             <ArrowLeft size={14} aria-hidden />
             Back to agenda
+          </button>
+          <button
+            type="button"
+            className={styles.starButton}
+            data-starred={isStarred(open.id)}
+            aria-pressed={isStarred(open.id)}
+            aria-label={starActionLabel(open.title, isStarred(open.id))}
+            onClick={() => toggleStar(open.id)}
+          >
+            <Star size={14} aria-hidden fill={isStarred(open.id) ? 'currentColor' : 'none'} />
+            {isStarred(open.id) ? 'In my schedule' : 'Add to my schedule'}
           </button>
         </div>
         <div className={styles.detail}>
@@ -279,14 +312,14 @@ export function AgendaWidget({
           ))}
 
           {labelRows.map((minute) => {
-            const row = 2 + (minute - layout.gridStart) / ROW_MINUTES;
+            const row = FIRST_GRID_ROW + (minute - layout.gridStart) / ROW_MINUTES;
             return (
               <div key={`rule-${minute}`} className={styles.gridRule} style={{ gridRow: row }} />
             );
           })}
 
           {labelRows.map((minute) => {
-            const row = 2 + (minute - layout.gridStart) / ROW_MINUTES;
+            const row = FIRST_GRID_ROW + (minute - layout.gridStart) / ROW_MINUTES;
             return (
               <span
                 key={`time-${minute}`}
@@ -298,49 +331,88 @@ export function AgendaWidget({
             );
           })}
 
-          {layout.placements.map((entry) => (
-            <button
-              key={entry.session.id}
-              type="button"
-              className={styles.block}
-              data-compact={entry.endRow - entry.startRow <= 2}
-              id={`session-${entry.session.ref}`}
-              aria-label={`${entry.session.title}, ${formatTimeRange(entry.session, bundle.event.timezone)}, ${entry.session.room ?? 'room to be announced'}${entry.session.track ? `, ${entry.session.track} track` : ''}`}
-              style={
-                {
-                  gridColumn: entry.column + 2,
-                  gridRow: `${entry.startRow} / ${entry.endRow}`,
-                  '--lane': entry.lane,
-                  '--lanes': entry.lanes,
-                } as CSSProperties
-              }
-              onClick={() => setOpenId(entry.session.id)}
-            >
-              <span className={styles.blockTime}>
-                {formatTimeRange(entry.session, bundle.event.timezone)}
-              </span>
-              <span className={styles.blockTitle}>{entry.session.title}</span>
-              <span className={styles.blockMeta}>
-                {[entry.session.track, entry.session.format].filter(Boolean).join(' · ')}
-              </span>
-            </button>
-          ))}
+          {/*
+            The block and its star are siblings inside the placed cell rather than nested controls:
+            one opens the session, the other adds it to the schedule, and a button inside a button is
+            neither valid markup nor operable from a keyboard.
+          */}
+          {layout.placements.map((entry) => {
+            const starred = isStarred(entry.session.id);
+            return (
+              <div
+                key={entry.session.id}
+                className={styles.blockShell}
+                style={
+                  {
+                    gridColumn: entry.column + 2,
+                    gridRow: `${entry.startRow} / ${entry.endRow}`,
+                    '--lane': entry.lane,
+                    '--lanes': entry.lanes,
+                  } as CSSProperties
+                }
+              >
+                <button
+                  type="button"
+                  className={styles.block}
+                  data-compact={entry.endRow - entry.startRow <= 2}
+                  data-starred={starred}
+                  id={`session-${entry.session.ref}`}
+                  aria-label={`${entry.session.title}, ${formatTimeRange(entry.session, bundle.event.timezone)}, ${entry.session.room ?? 'room to be announced'}${entry.session.track ? `, ${entry.session.track} track` : ''}`}
+                  onClick={() => setOpenId(entry.session.id)}
+                >
+                  <span className={styles.blockTime}>
+                    {formatTimeRange(entry.session, bundle.event.timezone)}
+                  </span>
+                  <span className={styles.blockTitle}>{entry.session.title}</span>
+                  <span className={styles.blockMeta}>
+                    {[entry.session.track, entry.session.format].filter(Boolean).join(' · ')}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.blockStar}
+                  data-starred={starred}
+                  aria-pressed={starred}
+                  aria-label={starActionLabel(entry.session.title, starred)}
+                  onClick={() => toggleStar(entry.session.id)}
+                >
+                  <Star size={12} aria-hidden fill={starred ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {layout.undated.length > 0 ? (
         <div className={styles.itineraryList} style={{ marginTop: 'var(--space-4)' }}>
-          {layout.undated.map((session) => (
-            <article key={session.id} className={styles.sessionCard}>
-              <h3 className={styles.sessionTitle}>{session.title}</h3>
-              <SessionChips session={session} options={options} />
-              <SpeakerRoster session={session} speakerBase={speakerBase} />
-              <RecordingLink session={session} />
-              {options.showDescription ? (
-                <ShowMore text={session.descriptionText} html={session.descriptionHtml} />
-              ) : null}
-            </article>
-          ))}
+          {layout.undated.map((session) => {
+            const starred = isStarred(session.id);
+            return (
+              <article key={session.id} className={styles.itineraryCard}>
+                <div className={styles.itineraryBody}>
+                  <h3 className={styles.sessionTitle}>{session.title}</h3>
+                  <SessionChips session={session} options={options} />
+                  <SpeakerRoster session={session} speakerBase={speakerBase} />
+                  <RecordingLink session={session} />
+                  {options.showDescription ? (
+                    <ShowMore text={session.descriptionText} html={session.descriptionHtml} />
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className={styles.starButton}
+                  data-starred={starred}
+                  aria-pressed={starred}
+                  aria-label={starActionLabel(session.title, starred)}
+                  onClick={() => toggleStar(session.id)}
+                >
+                  <Star size={14} aria-hidden fill={starred ? 'currentColor' : 'none'} />
+                  {starred ? 'In my schedule' : 'Add to my schedule'}
+                </button>
+              </article>
+            );
+          })}
         </div>
       ) : null}
     </div>

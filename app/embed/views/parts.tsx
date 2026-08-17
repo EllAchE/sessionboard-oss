@@ -275,7 +275,7 @@ export function SpeakerRoster({
             <a className={styles.rosterName} href={`${speakerBase}/${person.slug}`} dir="auto">
               {person.name}
             </a>
-            {role ? ` — ${role}` : null}
+            {role ? `, ${role}` : null}
           </span>
         );
       })}
@@ -291,21 +291,60 @@ export function SpeakerAvatar({
   show?: boolean;
 }) {
   if (!show) return null;
-  if (!speaker.headshotUrl) {
+  return (
+    <SpeakerPhoto
+      speaker={speaker}
+      className={styles.avatar}
+      fallbackClassName={styles.avatarFallback}
+      width={48}
+      height={48}
+    />
+  );
+}
+
+export function hasUsableSpeakerPhoto(
+  headshotUrl: string | null,
+  failedUrl: string | null,
+): headshotUrl is string {
+  return Boolean(headshotUrl && headshotUrl !== failedUrl);
+}
+
+/** A stored file can disappear after the read model was built; keep that from becoming a broken img. */
+export function SpeakerPhoto({
+  speaker,
+  className,
+  fallbackClassName,
+  width,
+  height,
+  alt = '',
+}: {
+  speaker: Pick<PublicSpeaker, 'name' | 'headshotUrl'>;
+  className: string;
+  fallbackClassName: string;
+  width: number;
+  height: number;
+  alt?: string;
+}) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const { headshotUrl } = speaker;
+
+  if (!hasUsableSpeakerPhoto(headshotUrl, failedUrl)) {
     return (
-      <span className={styles.avatarFallback} aria-hidden>
+      <span className={fallbackClassName} aria-hidden>
         {initialsOf(speaker.name)}
       </span>
     );
   }
+
   return (
     <Image
-      className={styles.avatar}
-      src={speaker.headshotUrl}
-      alt=""
-      width={48}
-      height={48}
+      className={className}
+      src={headshotUrl}
+      alt={alt}
+      width={width}
+      height={height}
       unoptimized
+      onError={() => setFailedUrl(headshotUrl)}
     />
   );
 }
@@ -335,20 +374,14 @@ export function SpeakerProfile({
     <>
       <div className={styles.detailHead}>
         {showPhoto ? (
-          speaker.headshotUrl ? (
-            <Image
-              className={styles.detailPhoto}
-              src={speaker.headshotUrl}
-              alt={speaker.name}
-              width={128}
-              height={128}
-              unoptimized
-            />
-          ) : (
-            <span className={styles.detailPhotoFallback} aria-hidden>
-              {initialsOf(speaker.name)}
-            </span>
-          )
+          <SpeakerPhoto
+            speaker={speaker}
+            className={styles.detailPhoto}
+            fallbackClassName={styles.detailPhotoFallback}
+            alt={speaker.name}
+            width={128}
+            height={128}
+          />
         ) : null}
         <div className={styles.detailIdentity}>
           {showName ? (

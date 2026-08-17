@@ -1,0 +1,308 @@
+/* Event settings. Tokens only — no literal colours anywhere in this file. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  max-width: var(--content-max);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 0 0 var(--space-1);
+}
+
+.title {
+  font: var(--type-title);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+.lede {
+  font: var(--type-body);
+  color: var(--text-muted);
+  margin: var(--space-2) 0 0;
+  max-width: var(--prose-max);
+}
+
+.tabCount {
+  margin-left: var(--space-2);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.panel .lede {
+  margin: 0;
+}
+
+/* ---- Inline-editable table ---- */
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.faint {
+  color: var(--text-faint);
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-05);
+  justify-content: flex-end;
+}
+
+.colorCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.swatch {
+  flex: 0 0 auto;
+  width: var(--space-4);
+  height: var(--space-4);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid var(--border-default);
+  background: var(--surface-sunken);
+}
+
+.swatch[data-empty] {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--surface-sunken),
+    var(--surface-sunken) var(--space-1),
+    var(--surface-card) var(--space-1),
+    var(--surface-card) var(--space-2)
+  );
+}
+
+/* ---- The add row under each table ---- */
+
+.newRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-4);
+  background: var(--surface-sunken);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+}
+
+.newCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 9rem;
+  flex: 1 1 9rem;
+}
+
+.newLabel {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
+/* ---- Event form ---- */
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.field,
+.fieldWide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.label {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
+.hint {
+  font: var(--type-label);
+  color: var(--text-faint);
+}
+
+.error {
+  font: var(--type-label);
+  color: var(--status-danger-fg);
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/*
+ * ---- Milestone deadlines — AR-44 ----
+ *
+ * A rule across the grid rather than another pair of date boxes in the run. The milestones are
+ * internal and advisory; the conference dates above them are neither, and a reader skimming the
+ * panel should be able to tell which is which without reading the hints.
+ */
+
+.groupHeading {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+/* ---- Event branding — E-3 ---- */
+
+.subPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.subTitle {
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+  margin: 0;
+}
+
+/* The sub-panel is a flex column with its own gap; a paragraph's default margin doubles it. */
+.subPanel > .hint {
+  margin: 0;
+}
+
+.brandingPreview {
+  display: grid;
+  place-items: center;
+  padding: var(--space-3);
+  min-height: 6rem;
+  background: var(--surface-sunken);
+  border: var(--border-width) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.brandingImage {
+  max-width: 100%;
+  max-height: 6rem;
+  display: block;
+}
+
+.brandingPreview[data-kind='banner'] .brandingImage {
+  width: 100%;
+  max-height: 8rem;
+  object-fit: cover;
+}
+
+/* ---- Portal appearance — S-11 ---- */
+
+.accentRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.accentRow .swatch {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
+.accentPresets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/*
+ * A literal `background` from `ACCENT_PRESETS` is set inline, which is the point of the control —
+ * it is the only place a colour reaches this screen without a token, and the same exception the
+ * portal masthead makes.
+ */
+.accentPreset {
+  width: var(--space-5);
+  height: var(--space-5);
+  padding: 0;
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.accentPreset:hover {
+  border-color: var(--border-strong);
+}
+
+.accentPreset:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.accentPreset[aria-pressed='true'] {
+  box-shadow: var(--ring-focus);
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.switchRow:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.switchText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-05);
+}
+
+.switchLabel {
+  font: var(--type-body);
+  font-weight: var(--weight-medium);
+  color: var(--text-strong);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

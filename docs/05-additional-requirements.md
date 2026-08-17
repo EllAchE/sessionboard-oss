@@ -68,9 +68,9 @@ Nothing here is mocked. The rows below are the gap between that and the ask.
 | --- | --- | --- | --- |
 | AR-1 | **[REQUIRED]** | SHIPPED | **A new profile can set its picture as part of creating the profile.** When no headshot exists, `ProfileForm` now includes the picture picker in the first-save form. Its client action prepares the image, performs the ordinary profile Server Action without file bytes, then posts the normalized file to the existing upload route; one Save profile action composes both transports without raising the Server Action body limit (`app/portal/[eventSlug]/profile/ProfileForm.tsx`, `app/portal/[eventSlug]/profile/page.tsx`) |
 | AR-2 | **[REQUIRED]** | SHIPPED | **Uploads reach a real object bucket wherever one is configured.** Self-hosted `docker compose` gets MinIO with `cicero-files` auto-created; any S3-compatible endpoint works via `S3_*`; a Cloudflare deployment that turns the binding on gets R2. **Decision (2026-08-13): the hosted demo does not get a payment method, so R2 stays commented out in `wrangler.jsonc:67-76` and that deployment runs on the Postgres `file_blob` backend by choice, not by accident.** See [§6](#6-what-the-add-ons-cost-a-self-hoster) for what enabling it would actually cost |
-| AR-2a | **[IMPORTANT]** | SHIPPED | **Make the `file_blob` ceiling visible.** The admin Files screen reports the active backend and deployment-wide Postgres blob usage, warns at 250 MiB, and names 500 MiB as the practical R2/S3 handoff (`lib/storage/index.ts`, `lib/storage/status.ts`, `app/admin/submissions/files/page.tsx`). `README.md` and `docs/02-architecture.md` explain that these are operating bounds rather than Postgres limits: blobs enlarge the primary and every backup, the app caps one file at 25 MiB, and reads traverse Worker/Hyperdrive rather than an object CDN |
+| AR-2a | **[IMPORTANT]** | SHIPPED | **Make the `file_blob` ceiling visible.** The organizer Files screen reports the active backend and deployment-wide Postgres blob usage, warns at 250 MiB, and names 500 MiB as the practical R2/S3 handoff (`lib/storage/index.ts`, `lib/storage/status.ts`, `app/organizer/submissions/files/page.tsx`). `README.md` and `docs/02-architecture.md` explain that these are operating bounds rather than Postgres limits: blobs enlarge the primary and every backup, the app caps one file at 25 MiB, and reads traverse Worker/Hyperdrive rather than an object CDN |
 | AR-3 | **[REQUIRED]** | SHIPPED | **A profile picture referenced by the public API is fetchable.** The public API and Accelevents sync now share `lib/speaker-headshot.ts`, which points at the existing `app/embed/[slug]/headshot/[fileId]` route. That route proves access structurally: the file must be the headshot of a confirmed participant on the event named in the path. An unconfirmed profile returns `null` instead of a dead `/api/files/{fileId}` URL |
-| AR-4 | **[IMPORTANT]** | SHIPPED | **Validate and normalize uploaded images.** Both portal and organizer pickers center-crop and re-encode in the browser to one 512×512 WebP no larger than 1 MiB, which serves as the detail image and bounded roster thumbnail without putting a native image library in the Worker. Both upload routes independently inspect the WebP bytes, dimensions, declared type and stored size, so a direct route call cannot bypass the contract (`lib/profile-image.ts`, `app/portal/[eventSlug]/upload/route.ts`, `app/admin/speakers/upload/route.ts`) |
+| AR-4 | **[IMPORTANT]** | SHIPPED | **Validate and normalize uploaded images.** Both portal and organizer pickers center-crop and re-encode in the browser to one 512×512 WebP no larger than 1 MiB, which serves as the detail image and bounded roster thumbnail without putting a native image library in the Worker. Both upload routes independently inspect the WebP bytes, dimensions, declared type and stored size, so a direct route call cannot bypass the contract (`lib/profile-image.ts`, `app/portal/[eventSlug]/upload/route.ts`, `app/organizer/speakers/upload/route.ts`) |
 | AR-5 | **[IMPORTANT]** | SHIPPED | **One headshot model, not two.** `participant.headshotFileId` is the sole event/public profile image and always points at controlled `Storage` bytes. `contact.headshotUrl` is now explicitly a normalized http(s) CRM discovery/source reference, rendered without a referrer and never hotlinked when a contact becomes an event participant. The conversion is surfaced beside the URL and Add to event flow: open and download the source, upload it on the resulting speaker record, and the AR-4 path creates the canonical stored copy (`lib/services/crm.ts`, `app/crm/[contactId]/ContactProfile.tsx`, `docs/02-architecture.md`) |
 | AR-6 | **[OPTIONAL]** | SHIPPED | **Honor `S3_FORCE_PATH_STYLE`.** The S3 client reads the flag at request time through the Worker-safe env accessor, defaults to path-style for MinIO, and switches to virtual-hosted addressing only for an explicit false value. Strict boolean parsing accepts `true`/`1` and `false`/`0`; missing, blank, or unrecognized values use the safe default (`lib/env.ts`, `lib/storage/index.ts`). Tests cover true, false, default, whitespace/case normalization, and malformed input (`lib/env.test.ts`, `lib/storage/index.test.ts`; shipped in `56db9c8`) |
 | AR-7 | **[EXCLUDED]** | — | **Presigned direct-to-bucket uploads.** Declined on purpose: routing every read through the app is what makes "only someone with a role on this event can download this deck" enforceable per request, and the R2 binding cannot presign at all (`lib/storage/index.ts:18-23`). The previously unused `@aws-sdk/s3-request-presigner` package has been removed from both `package.json` and `bun.lock` (`56db9c8`) |
@@ -86,7 +86,7 @@ updated to `sent`/`failed`, and `sendSms()` never throws.
 > the intended production setting for any deployment not paying Twilio — and per
 > [§6](#6-what-the-add-ons-cost-a-self-hoster), US A2P 10DLC registration means the standing fee
 > dwarfs the per-message cost for a conference-sized sender. The `log` transport is a genuine
-> archive at `/admin/sms`, not a stub, so the whole notification path stays exercised and a
+> archive at `/organizer/sms`, not a stub, so the whole notification path stays exercised and a
 > self-hoster who does want live SMS only has to set three env vars.
 >
 > **This makes AR-9 through AR-13 a pre-flight set rather than open bugs.** None of them can hurt
@@ -97,20 +97,20 @@ updated to `sent`/`failed`, and `sendSms()` never throws.
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-8 | **[REQUIRED]** | SHIPPED | **SMS as a delivery channel alongside email**, across all eight templated events (submission confirmation, accept/waitlist/decline, session invite/cancel, task reminder, form deadline) plus ad-hoc campaigns with an `auto`/`email`/`sms` selector. Admin archive at `/admin/sms`, transport badge on the integrations screen |
+| AR-8 | **[REQUIRED]** | SHIPPED | **SMS as a delivery channel alongside email**, across all eight templated events (submission confirmation, accept/waitlist/decline, session invite/cancel, task reminder, form deadline) plus ad-hoc campaigns with an `auto`/`email`/`sms` selector. Admin archive at `/organizer/sms`, transport badge on the integrations screen |
 | AR-9 | **[REQUIRED]** | SHIPPED | **Consent and opt-out.** Enabling SMS from either profile surface records destination-level consent; disabling it blocks first and writes the preference second. Every dispatch checks that record, including manually selected SMS campaigns. The signed `/api/webhooks/twilio/sms` endpoint handles Twilio Advanced Opt-Out and the standard `STOP`/`START`/`HELP` keyword families, updates every matching account, and avoids duplicate replies when Twilio already handled the keyword. Upgrades disable legacy SMS preferences until consent is renewed rather than treating an old boolean as retroactive authorization |
 | AR-10 | **[REQUIRED]** | SHIPPED | **Normalize and validate phone numbers to E.164.** Profile, settings, participant, and public-API writes share `libphonenumber-js` parsing, with a configurable `SMS_DEFAULT_COUNTRY` for national input. `user.phone` also has an E.164 database check, outbound dispatch normalizes again, and the upgrade migration conservatively normalizes unambiguous legacy values while clearing values it cannot convert without guessing |
 | AR-11 | **[IMPORTANT]** | SHIPPED | **Verify ownership of a phone number.** A six-digit, ten-minute OTP is bound to the signed-in user and exact E.164 destination, limited to five requests an hour and five attempts, and stored only as a digest. Log mode records the message without contacting Twilio and shows the development code only to that signed-in requester; that proof is tagged `log` and automatically becomes invalid if the deployment later enables Twilio. Changing a number clears verification and disables SMS; every dispatch fails closed until the current number is verified through the active transport |
 | AR-12 | **[IMPORTANT]** | SHIPPED | **Give the default templates real SMS bodies.** All eight defaults now carry concise SMS-specific copy, remain below the 300-character limit under representative long merge values, contain only GSM-7 characters, and point somewhere whenever the corresponding email does |
 | AR-13 | **[IMPORTANT]** | SHIPPED | **Record final delivery state.** Every Twilio REST send includes the signed `/api/webhooks/twilio/status` callback. Final `delivered`, `undelivered`, and `failed` states update the row by provider SID with carrier error details and a status timestamp; transient callbacks are ignored so out-of-order `sent` events cannot regress a final state. The admin SMS archive renders the final result |
-| AR-13a | **[REQUIRED]** | SHIPPED | **Give `/admin/sms` the redaction `/admin/mail` already has.** The reader detects sign-in credentials, resolves the destination phone to exactly one user account, and applies `magicLinkMayBeShown` with the actual SMS transport. Missing or duplicate phone matches fail closed; Twilio cannot inherit the mail transport's log-mode exception; and a visible notice explains every withheld link |
+| AR-13a | **[REQUIRED]** | SHIPPED | **Give `/organizer/sms` the redaction `/organizer/mail` already has.** The reader detects sign-in credentials, resolves the destination phone to exactly one user account, and applies `magicLinkMayBeShown` with the actual SMS transport. Missing or duplicate phone matches fail closed; Twilio cannot inherit the mail transport's log-mode exception; and a visible notice explains every withheld link |
 | AR-13b | **[IMPORTANT]** | SHIPPED | **Make `{{portal.link}}` behave predictably in an SMS body.** The portal-link detector now covers subject, email body, and SMS body for both triggered and ad-hoc sends. A custom SMS template that asks for the merge field receives a minted link instead of an empty string, while previews still use a non-credential placeholder and the guarded archive handles the stored copy |
 | AR-14 | **[OPTIONAL]** | SHIPPED | **Quiet hours and rate ceiling per recipient.** Both preference surfaces capture an IANA timezone, a cross-midnight-capable quiet window, and a 1–100 SMS hourly ceiling (six by default). The shared dispatcher checks successful sends in the rolling hour and suppresses SMS during the recipient's local quiet window; invalid stored timezones fail closed while email remains available |
 
 ## 3. Notification management in settings
 
 Shipped alongside the SMS work: a "Courier edicts" tab in organizer settings
-(`app/admin/settings/NotificationsPanel.tsx`) and the same three fields on the speaker profile form,
+(`app/organizer/settings/NotificationsPanel.tsx`) and the same three fields on the speaker profile form,
 backed by `user.phone` / `user.notify_email` / `user.notify_sms`.
 
 | ID | Tag | Status | Requirement |
@@ -130,8 +130,9 @@ so it is restated here as `[REQUIRED]` and the gaps are tracked against that hig
 | --- | --- | --- | --- |
 | AR-19 | **[REQUIRED]** | SHIPPED | **A versioned public HTTP API** at `/api/v1` with three access tiers — unauthenticated public reads, `requireSpeakerSession` for the speaker `/me/*` surface (profile, submissions, tasks), and `requireApiKey` for organizer-scoped operations. Keys are per-event and stored as hashes (`api_key`, prefix-indexed lookup, revoke-by-timestamp, plaintext revealed once). The OpenAPI 3.1 schema is **generated from the Zod schemas** rather than hand-maintained (`app/api/v1/openapi.json/route.ts`) |
 | AR-20 | **[REQUIRED]** | SHIPPED | **Inbound rate limiting.** A Postgres-backed fixed-window counter coordinates limits across both Cloudflare Worker isolates and self-hosted Node processes without retaining raw client addresses. Public API reads allow 120 requests per caller per minute, speaker sessions 300, and API keys 600; magic-link requests allow 5 per address and 30 per client address per 15 minutes. Limit responses are `429 rate_limited` with `Retry-After`, and the generated OpenAPI contract documents the policy (`lib/rate-limit.ts`, `inbound_rate_limit`) |
-| AR-21 | **[IMPORTANT]** | SHIPPED | **Scoped API keys.** Keys are explicitly `read` or `write`; write includes read, while a read-only key receives 403 before either reconcile endpoint can mutate an event. Existing keys migrate to `write` so an upgrade does not silently break an integration, while the issue function and Admin → Integrations default new keys to least-privilege `read`. Scope is visible in the key ledger and the OpenAPI security description (`api_key.scope`, `requireApiKey(request, slug, requiredScope)`) |
-| AR-22 | **[OPTIONAL]** | SHIPPED | **Outbound webhooks** fire on `submission.received`, `submission.decision_made`, and `session.scheduled`. Per-event endpoints are managed under Admin → Integrations; signing secrets are revealed once, bodies carry delivery IDs and timestamps, and `X-Cicero-Signature` is an HMAC-SHA256 over the raw JSON. Local, private, link-local, and metadata-network targets are rejected before storage; Cloudflare additionally enforces public-only fetches. Delivery status, response code, and errors are retained in `webhook_delivery`, while a failed endpoint never rolls back the lifecycle write that triggered it (`lib/webhooks.ts`) |
+| AR-21 | **[IMPORTANT]** | SHIPPED | **Scoped API keys.** Keys are explicitly `read` or `write`; write includes read, while a read-only key receives 403 before either reconcile endpoint can mutate an event. Existing keys migrate to `write` so an upgrade does not silently break an integration, while the issue function and Organizer → Integrations default new keys to least-privilege `read`. Scope is visible in the key ledger and the OpenAPI security description (`api_key.scope`, `requireApiKey(request, slug, requiredScope)`) |
+| AR-22 | **[OPTIONAL]** | SHIPPED | **Outbound webhooks** fire on `submission.received`, `submission.decision_made`, and `session.scheduled`. Per-event endpoints are managed under Organizer → Integrations; signing secrets are revealed once, bodies carry delivery IDs and timestamps, and `X-Cicero-Signature` is an HMAC-SHA256 over the raw JSON. Local, private, link-local, and metadata-network targets are rejected before storage; Cloudflare additionally enforces public-only fetches. Delivery status, response code, and errors are retained in `webhook_delivery`, while a failed endpoint never rolls back the lifecycle write that triggered it (`lib/webhooks.ts`) |
+| AR-52 | **[OPTIONAL]** | OUTSTANDING | **A reviewer-scoped API key.** Keys carry a `read`/`write` scope (AR-21) but no role. `requireApiKey` resolves a key to its event and nothing narrower, so the only durable credential Cicero issues is an organizer's, and it reads every submission on that event. A reviewer has no programmatic surface at all: `submission:read_all` and `submission:review` (`lib/context.ts:60`) are reachable only through the server actions behind `app/review/**`, never through `/api/v1`. Reviewer is the one role where closing that is worth the cost — panel scoring is the repetitive, batchable work on an event, and it is the surface an external review tool or a reviewer's own agent would want. The work is a role or capability column on `api_key`, `requireApiKey` narrowing to that reviewer's assigned queue rather than the whole event, and read-assignments / submit-score routes under `/api/v1`. Speakers are deliberately out of scope: the `/me/*` surface already accepts a speaker session as its Bearer token (AR-19), which fits the one-off, per-person shape of speaker work |
 
 ## 5. MCP server
 
@@ -301,7 +302,7 @@ anchors, which three rows above link to, keep resolving.
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-28 | **[IMPORTANT]** | SHIPPED | **A submission permalink is copyable in one click** from both review surfaces: every queue row and the submission detail header (`app/admin/submissions/CopyPermalinkButton.tsx`). `/admin/submissions/{id}` already resolved and was already linked; what was missing was getting the absolute URL out of the page without selecting the address bar, which a row in a queue of forty does not let you do. The origin is read at click time, so the copied link is on whichever host the reader is already using. The row's own link is untouched — copying is an addition, not a replacement — and the affordance is offered to reviewers as well as organizers, since circulating a link is not a decision |
+| AR-28 | **[IMPORTANT]** | SHIPPED | **A submission permalink is copyable in one click** from both review surfaces: every queue row and the submission detail header (`app/organizer/submissions/CopyPermalinkButton.tsx`). `/organizer/submissions/{id}` already resolved and was already linked; what was missing was getting the absolute URL out of the page without selecting the address bar, which a row in a queue of forty does not let you do. The origin is read at click time, so the copied link is on whichever host the reader is already using. The row's own link is untouched — copying is an addition, not a replacement — and the affordance is offered to reviewers as well as organizers, since circulating a link is not a decision |
 | AR-29 | **[IMPORTANT]** | SHIPPED | **The review results export carries `submission.decision_note`**, in a `Decision note` column beside `Submission status` (`reviewResultsCsv`, `lib/services/review.ts`). The export already carried per-criterion scores, criterion weights and reviewer comments, so it answered what was decided and by whom — but never why, leaving the organizer's reasoning locked in the tool the moment anyone opened the results in a spreadsheet. The note repeats on each reviewer row of its submission, matching every other submission-level column in that file. `ai_review.rationale_markdown` is deliberately **excluded**: it is advisory by construction (`03-plan.md` §2), and a paragraph of model prose sitting between `Submission status` and `Reviewer comment` reads as reasoning that decided something, carrying none of the caveat the AI panel carries on screen |
 
 A third fix shipped alongside these is a defect repair rather than a new requirement, so it gets no
@@ -336,7 +337,7 @@ Cicero already had the send primitives — `previewParticipantEmail` and `sendPa
 
 | ID | Tag | Status | Requirement |
 | --- | --- | --- | --- |
-| AR-30 | **[REQUIRED]** | SHIPPED | **Every outstanding-task row can be chased from where it is read.** A per-row "Draft a nudge" control on the `B-1` report opens a composer prefilled with copy specific to that person and that task — overdue by how long, which sessions it blocks, a one-click portal link. Composition is a pure function (`composeTaskNudge`) so the wording is regression-tested rather than buried in JSX (`lib/services/task-nudge.ts`, `app/admin/dashboard/OutstandingTasks.tsx`, `app/admin/dashboard/NudgeComposer.tsx`) |
+| AR-30 | **[REQUIRED]** | SHIPPED | **Every outstanding-task row can be chased from where it is read.** A per-row "Draft a nudge" control on the `B-1` report opens a composer prefilled with copy specific to that person and that task — overdue by how long, which sessions it blocks, a one-click portal link. Composition is a pure function (`composeTaskNudge`) so the wording is regression-tested rather than buried in JSX (`lib/services/task-nudge.ts`, `app/organizer/dashboard/OutstandingTasks.tsx`, `app/organizer/dashboard/NudgeComposer.tsx`) |
 | AR-31 | **[REQUIRED]** | SHIPPED | **Nothing leaves without a human reading it.** The composer is two-step: edit, then render, then send — and any edit invalidates the rendering. This is enforced on the server, not in the client: `sendTaskNudge` requires the reviewed subject/body/recipient back and passes them to `sendParticipantEmail`, which re-resolves the recipient and re-renders the message and refuses if either moved. There is no bulk action, no "remind all", and no code path from a table row to an outbound message that skips the render |
 | AR-32 | **[IMPORTANT]** | SHIPPED | **The draft can escalate to the organizer's own address.** Once rendered, the composer offers *Copy* and *Send from my own email* (`mailto:`) beside *Send from Cicero* — the same reviewed text, handed to the human instead of the transport. This is the escalation-by-medium finding, and it is the one thing an autosender structurally cannot do |
 | AR-33 | **[IMPORTANT]** | SHIPPED | **A settled task is never chased.** Completed and waived assignments get no button, and both the draft and send paths re-check status against the live report — so a task finished while the composer was open fails closed. A successful send stamps `task_assignment.last_reminded_at`, which is the same field the cron reminder reads, so the automatic reminder does not chase someone a human chased an hour ago. The row shows when that person was last reminded |
@@ -345,7 +346,7 @@ Cicero already had the send primitives — `previewParticipantEmail` and `sendPa
 **Behavior on the `log` transport.** The hosted deployment runs `MAIL_TRANSPORT=log` on purpose
 (§2, and the on-screen magic link judges sign in with depends on it). Assisted chasing is fully
 exercisable there: the draft renders, the review gate applies, and the send lands in `email_log`
-under `templateKey: 'task.nudge'`, visible at Admin → Mail. The organizer is told which of the two
+under `templateKey: 'task.nudge'`, visible at Organizer → Mail. The organizer is told which of the two
 happened rather than being shown a false "delivered" — and *Send from my own email* delivers for
 real regardless of transport.
 
@@ -371,7 +372,224 @@ organizer's call.
 
 ---
 
+## 10. Intelligent agenda optimization
+
+The current builder finds a valid, conflict-free placement. A later version should optimize the
+draft for likely attendees and the physical venue. That is outside v1 because it needs new input
+data, a scoring model, and tuning against real conference programs; a model prompt alone is not an
+optimizer.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-36 | **[EXCLUDED]** | — | **Build intelligent automatic agenda allocation as a post-v1 goal.** A future auto-drafter should infer likely audience overlap from talk content, format, and expected interest, then avoid placing talks for the same cohort in parallel. For example, energy-and-software and bioweapons-and-software talks may compete for much of the same software audience. It should also estimate demand from speaker popularity or clout and map each talk to the venue structure, stage or room capacity, and available slot shapes. Speaker popularity and venue structure need first-class fields if the current data model does not carry them. The optimizer needs a tunable weighting system for these competing objectives and an evaluation loop that calibrates the weights against real schedules. This is a recorded product goal, not current implementation scope. |
+
+---
+
+## 11. Exhibitor map
+
+The first version is deliberately a document, not a floor-plan editor. An organizer should be able
+to publish the map they already have without recreating booths or exhibitor data in Cicero. The
+upload is the configuration: no coordinates, booth records, or map-specific authoring are required.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-37 | **[REQUIRED]** | SHIPPED | **An organizer can upload one PDF exhibitor map for an event and expose it as an embed.** Organizer → Exhibitor map uploads, replaces, or removes the current PDF through the ordinary event-scoped storage path; server validation checks the MIME type, `.pdf` extension, 25 MB ceiling, and `%PDF-` signature. Uploading publishes immediately, while replacement keeps the stable embed URL and removal revokes it before deleting the bytes. The same screen previews the map and copies script or iframe snippets for `/embed/:slug/exhibitor-map`; its current-slot-only file route is unauthenticated, responsive, non-cacheable, and offers inline, open, and download paths. The embedded result remains the uploaded static document — there are no interactive booths, hotspots, search, wayfinding, or map-region links (`event_exhibitor_map`, `lib/services/exhibitor-map.ts`, `app/organizer/exhibitor-map/**`, `app/embed/views/ExhibitorMapWidget.tsx`, migration `0021`) |
+
+**Future work, not part of AR-37:** multiple floors or maps, structured booth placement, clickable
+exhibitor regions, map search and filtering, attendee wayfinding, and richer embed presentation or
+accessibility controls. Those enhancements should build on the basic upload-and-embed path rather
+than block it.
+
+---
+
+## 12. Notifications and update rundown
+
+An organizer should not have to inspect the submission queue, review rounds, speaker roster, task
+board, content history, deliverables, and agenda one by one just to learn what moved while they were
+away. Cicero needs one event-scoped place that answers: **what changed, when, who was involved, and
+where can I act on it?** This is an in-app operational feed, distinct from the outbound email/SMS
+delivery preferences in §3.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-38 | **[REQUIRED]** | PARTIAL | **An organizer-facing Notifications & updates section gives a chronological rundown of material changes since that organizer last used Cicero.** Each entry is event-scoped, names the change and its time, attributes the person when the underlying record knows them, and links to the relevant organizer workflow. Unread changes lead the default feed, visually distinct from already-viewed changes retained below; an unread-only view is available without hiding older context by default. The first slice at `/organizer/updates` covers submissions and decisions, completed reviews, speaker/profile changes, task state, schedule changes, attributed content revisions, uploads, and file comments over the latest 30 days; it groups and filters those entries and remembers the last time this browser checked the feed per organizer and event. The requirement remains PARTIAL until the watermark is durable across browsers/devices and every material mutation writes an append-only activity event: tables that retain only `updated_at` can currently report the latest state change, not reconstruct several successive edits made between visits. |
+
+---
+
+## 13. Post-conference speaker messaging
+
+Cicero sends nothing merely because a session or an event has ended. Organizers who want to reach
+speakers afterwards do it manually today, through the same reviewed composer as any other message.
+This section records a possible future addition; it is not a requirement and carries no
+implementation commitment.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-39 | **[EXCLUDED]** | — | **Add automatic post-conference speaker messaging as a possible future feature.** Cicero currently sends no message merely because a session or event has ended; organizers can manually message accepted or scheduled speakers today. A future addition could provide an opt-in, organizer-editable follow-up after the conference, such as a thank-you, feedback request, recording link, or next-event invitation, while respecting the existing notification preferences and delivery log. This is a recorded product idea, not current implementation scope. |
+
+---
+
+## 14. External task-management sync
+
+The ask: many organizing teams already run all work in **Linear or another task-management system**
+such as Jira, Asana, Trello, or GitHub Issues. A Cicero to-do produced for a speaker or submission
+should appear there automatically, without the organizer re-entering it, and progress recorded in
+either system should be reflected in the other.
+
+**Decision for the current release: accepted as product direction, but not scheduled to build.** The
+`[EXCLUDED]` tag below describes the release boundary, not a one-way-export product decision. When
+this work enters scope, the intended feature is a durable sync with the following shape.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-40 | **[EXCLUDED]** | — | **Organization-level provider connection and project mapping.** An organizer connects a Cicero organization once to a provider workspace, then maps each Cicero event to the provider team and project where its work belongs. An event may override organization defaults. Provider credentials and provider membership stay at the organization connection; individual event organizers do not each install a separate integration. Build against a provider-neutral connector contract, with **Linear as the first provider**, so Jira, Asana, Trello, or GitHub Issues can be added without changing Cicero's task model |
+| AR-41 | **[EXCLUDED]** | — | **Cicero task assignments automatically create and maintain external to-dos.** When a speaker submission causes Cicero to fan out a `task_assignment` — per contact, per submission, or once for a session group — the mapped provider receives one corresponding work item without a manual export step. Its title and description identify the task, speaker or group, event, and submission; carry due date and stable Cicero links; and retain provider ID and URL so retries and backfills update the same item instead of creating duplicates. Changes to the Cicero task's name, due date, scope, or cancellation propagate outward |
+| AR-42 | **[EXCLUDED]** | — | **Task state synchronizes in both directions.** Cicero `not_started`, `in_progress`, `completed`, and `waived` states map explicitly to provider states. Completing, waiving, reopening, or starting a task in Cicero updates the external work item; moving the external item between mapped states updates the Cicero assignment and the speaker/organizer views. Provider webhooks drive the normal path, a reconciliation job repairs missed deliveries, and every transition is idempotent, loop-safe, event-scoped, and visible in a sync log. A provider's completed and canceled states map separately so finishing a requirement is not confused with an organizer waiving it |
+| AR-43 | **[EXCLUDED]** | — | **Project context travels with the task.** The mapped external project can carry links to the Cicero event, submission, speaker record, and relevant organizer-authored documents so the operations team can understand the to-do without hunting through Cicero. Start with canonical links and provider project metadata; copying document bodies, comments, files, or speaker PII into the provider requires a separate privacy and retention decision and is not implicit in task sync |
+
+---
+
+## 15. Keyboard shortcuts and power-user hotkeys
+
+The brief never asked for keyboard shortcuts, so `01-requirements.md` contains no keyboard, hotkey,
+or shortcut requirement anywhere in it. Cicero nonetheless grew them by accident: three people
+independently wrote `window` keydown listeners — the command palette's ⌘K, the submission queue's
+`j k x o Enter a d w` block, and the review detail's `1`–`9` scoring keys — each with its own copy of
+the "are they typing?" guard and its own ad-hoc "a dialog is open, stand down" check. Nothing knew
+about anything else, the help dialog listed two keys while twenty were live, and the agenda board
+registered only a pointer sensor, so moving a session was physically impossible without a mouse.
+
+The ask, recorded here as an owner requirement: **an organizer who works in Cicero all day should be
+able to drive it from the keyboard**, with shortcuts that mean the right thing for the window they
+are in and that a new user can discover without reading the source.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-44 | **[REQUIRED]** | SHIPPED | **One declarative shortcut registry, resolved against a scope stack.** Every binding is a row in `lib/hotkeys/registry.ts`; a single `keydown` listener in `components/hotkeys/HotkeyProvider.tsx` resolves it. Screens claim a scope while mounted (`useHotkeyScope`) and bind handlers for that scope's ids (`useHotkeys`); resolution walks the stack innermost-first, so the same key can mean one thing on the submission queue and another on the review detail without either screen knowing what the other bound. A scope marked `modal` truncates the walk at itself, which is how an open dialog silences the screen beneath it generically rather than through per-screen open-state checks. Typing targets are handled once, in the engine. The two hand-rolled listeners were migrated onto it with their chord sets unchanged, fenced by a test that asserts the exact pre-migration keys (`lib/hotkeys/registry.test.ts`; shipped in `bf0a625`). The registry has since been rebound under AR-55: the `g`-prefixed sequences and the arming timer that served them are gone, and no screen logic moved with them, because handlers are keyed by binding id rather than by keystroke |
+| AR-45 | **[REQUIRED]** | SHIPPED | **Shortcuts are discoverable and cannot go stale.** ⌘⌃/ (Ctrl+Alt+/) opens an overlay that reads the live scope stack and renders only the bindings actually active on that screen, grouped and labelled from the registry rows themselves. Because the help is generated rather than written, a shortcut cannot ship undocumented and a documented shortcut cannot quietly stop existing — the exact failure of the previous hand-written dialog. The organizer info panel links into the same overlay. Chords render platform-correctly (⌘ on Apple, Ctrl elsewhere) from an injected platform value rather than a sniff (`components/hotkeys/ShortcutsDialog.tsx`; shipped in `bf0a625`). AR-55 extended the same rule to the caps a screen keeps in view: the submissions queue, the review detail and the organizer info panel drew theirs by hand and were advertising keys that no longer existed, so all three now render from the registry through `components/hotkeys/KeyLegend.tsx` |
+| AR-46 | **[IMPORTANT]** | SHIPPED | **A session can be placed on the agenda without a mouse.** This is an accessibility gap as much as a power-user one. Rather than hand-rolling arrow-key nudges that would bypass conflict preview and the warn/block policy, the board gained a `KeyboardSensor` with a coordinate getter that snaps to the grid's existing droppable cells: space lifts a focused session, arrows walk it across rooms and time slots, space drops it — through the same drag path a pointer uses, so conflict detection, the warning toast, and `placeSessionAction` come along and no second mutation path exists. Collision detection falls back to nearest-center only when there are no pointer coordinates, leaving mouse behaviour unchanged (`app/organizer/agenda/keyboardCoordinates.ts`, `app/organizer/agenda/AgendaBoard.tsx`; shipped in `bf0a625`) |
+| AR-47 | **[IMPORTANT]** | OUTSTANDING | **Extend shortcuts to the reviewer surfaces, the speaker portal, and the CRM.** Only the organizer workspace is bound today. A reviewer working `app/review/**` gets nothing — the scoring hotkeys live on the *organizer's* copy of the review screen, not theirs — and `app/portal/**` and `app/crm/**` have no shortcuts at all. The engine was built profile-aware for this: the work is mounting `HotkeyProvider` in those three shells and adding their binding tables to the same registry, not new machinery. Deferred deliberately so the engine could land and be proven on one profile first |
+| AR-48 | **[OPTIONAL]** | OUTSTANDING | **Let a user remap shortcuts.** Defaults are fixed and compiled in. Personal or per-organization overrides would need a durable per-user store, which means a `db/schema.ts` change that `docs/03-plan.md` §3 freezes for feature workstreams; the owner decision was that fixed defaults are the right first release, and remapping is worth building only if the fixed set proves wrong for real users. The registry is the single source the overlay and the matcher both read, so an override layer would sit above it without touching either |
+| AR-55 | **[REQUIRED]** | SHIPPED | **Every shortcut is one chord on a reserved modifier, and holding it shows the keys.** The original scheme mixed three kinds of binding, and two were hazards: bare letters (`a` accept, `d` decline, `j`/`k` move) fired on any keystroke outside a text field, so a stray key decided a submission; and `g`-prefixed sequences made navigation a two-step with a 1.5 s arming window. Both are gone. Every binding is now a single chord on `hyper` — ⌘⌃ on Apple keyboards, Ctrl+Alt elsewhere, matched either way on either platform so a Mac with a PC keyboard works — with exactly two bare keys left: Escape and Enter, which are activation rather than shortcuts and cannot be typed at by accident. ⌘⌥ is deliberately not a third spelling: ⌘⌥I/J/U and their kin are taken by devtools above the page and cannot be reclaimed, and Option rewrites `event.key`. Reading `KeyboardEvent.code` alongside `key` is what keeps the chords reachable when a modifier rewrites the character. Two invariants are asserted rather than remembered: no chord is unmodified bar those two keys, and no screen may claim a chord the shell uses everywhere — resolution shadows outer scopes, so a queue binding on the agenda's key would silently turn "go to the agenda" into "accept this submission". Holding the modifier for 400 ms reveals a cap on each section it opens — the sidebar's nav items, the actions trigger, the agenda and tasks controls — which is what carries people across from the muscle memory this deliberately breaks. Known cost: GNOME binds Ctrl+Alt+T and Ctrl+Alt+arrows above the browser, so those keystrokes are unavailable there; ⌘K still reaches everything (`lib/hotkeys/`, `components/hotkeys/HotkeyHint.tsx`) |
+
+---
+
+## 16. Reinvite speakers from a prior event
+
+Cicero can add one CRM contact to an event today, while event duplication deliberately carries over
+none of its people. What is missing for an annual conference is a workflow that starts with a prior
+event's speaker roster and lets the organizer choose who should be invited back.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-49 | **[EXCLUDED]** | — | **Import speakers from a previously hosted event into a new event, individually or in bulk.** An organizer can select one, some, or all speakers from a prior event and add them to the new event without exporting and re-importing a CSV or recreating their profiles. The import reuses each person's existing account and CRM identity, creates at most one speaker record in the target event, and preserves the prior event's history rather than copying its submissions, sessions, task state, or availability. Imported speakers begin as invited, but the import does not publish them or send a message; any reinvitation remains an explicit, organizer-reviewed outreach action. This is a recorded product goal, not current implementation scope. |
+
+---
+
+## 17. Milestone deadlines between the CFP and the doors
+
+The ask: an organizer can already say when submissions close (`form.closes_at`), when a review round
+runs (`review_round.opens_at` / `closes_at`), and when a speaker's task is due (`task.due_at`). They
+had nowhere to say when the **speaker roster** is meant to be settled or when the **agenda** is —
+the two internal milestones that pace a conference between the CFP closing and the doors opening.
+
+**These are informative, and deliberately so.** The owner's decision was that they should not be
+enforced: nothing is refused, warned on, or scored against either date, and no readiness count is
+derived from them. An organizer moving a talk the week of the show is ordinary conference work, and
+a product that argued with them about it would be wrong. That choice is what keeps the change
+additive — `mutateAgendaAtomically`, `decideSubmissions`, `setSpeakerWorkflowStatus` and
+`isAcceptingSubmissions` are untouched, and `passed` in `lib/event-deadlines.ts` exists for phrasing
+rather than for gating.
+
+The columns are named `deadline`, not `lock`, for the same reason: nothing locks.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-50 | **[IMPORTANT]** | SHIPPED | **The event carries two advisory milestone deadlines: when the speaker roster is meant to be settled, and when the agenda is.** They are nullable properties of `event` (`speaker_deadline_at` / `agenda_deadline_at`), not a separate milestone entity — an event that sets neither behaves exactly as before. Both are entered as wall clock in the event's own timezone, alongside the conference window in organizer settings; the one write rule is that a milestone may not fall after the event starts, and there is no ordering between the two, because settling the agenda before the roster is legitimate. They are read on the organizer dashboard, the speaker portal, the public event page, and `/api/v1/events/:slug`, all through one shared description so no surface disagrees with another about what day it is |
+| AR-51 | **[IMPORTANT]** | SHIPPED | **Each milestone reminds the organizers once inside the three days before it falls.** The send rides the existing scheduled-reminder pass and is guarded by `email_log`, so re-running it sends no duplicate. Recipients are the event's **organizers only**: both dates describe work only they can do, and a speaker has no lever on either. Speakers still read the dates — on the portal, on the public page, and through the `{{event.speakerDeadline}}` / `{{event.agendaDeadline}}` merge fields available to every template, so an acceptance email can carry the date without a second fan-out. The mails belong to their own `deadline` notification category rather than falling in with organizer announcements |
+
+---
+
+## 18. Moderators as a role of their own
+
+Cicero knows what a moderator is and then does nothing with it. `participant_role_kind` carries
+`moderator` alongside `speaker`, `co_speaker` and `panelist` (`db/schema.ts:74`); `F-7` lets each
+form decide which of the four it offers, what to call them, and how many it wants
+(`form_participant_role`); and a speaker adds one from the portal's group view
+(`app/portal/[eventSlug]/group/GroupPanel.tsx:99`). Past that point the four kinds are
+interchangeable. Nothing in the application branches on `kind === 'moderator'`: a moderator signs in
+through the speaker portal, is asked the same participant questions, appears in the same speaker
+column on the review queue, and counts the same way against the agenda's double-booking guard. The
+label is the entire difference.
+
+**No space was made for moderators anywhere, and that was deliberate rather than an oversight.**
+The brief's spine is talks, rooms, tracks and a published schedule, so a panel host is a person on a
+session rather than a fifth actor. [`04-user-roles-and-actions.md`](04-user-roles-and-actions.md)
+names four actors — public visitor, speaker, reviewer, organizer — and moderators are in none of
+them; the landing page's products-by-role grid is Organizer, Reviewer, Speaker, Attendee
+(`app/page.tsx:109`) for the same reason, and got a reviewer section without gaining a moderator
+one. This section exists so the next reader treats that as a decision with a follow-up attached, not
+as a gap nobody noticed.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-53 | **[OPTIONAL]** | OUTSTANDING | **Differentiate the moderator role beyond its label.** Two ends, and they are not the same size. The cheap end is carrying the distinction outward to places that already model it: `toSpeakerDto` hard-codes `moderator: false` (`lib/accelevents/mapping.ts:77`) even though the Accelevents speaker DTO accepts the flag (`lib/accelevents/types.ts:26`), so a panel host pushed across arrives there as an ordinary speaker, and the public programme and the embeds likewise print the person without the role beside them. The expensive end is a moderator *surface* — a run-of-show for the panel, the panellist roster, a question queue to work from — which is a new product area rather than a fifth label, and should not be started on the strength of an enum value alone. Until one exists, the role grid on the landing page stays at four. Nothing is blocked meanwhile: an organizer who needs a moderator names the role on the form, bounds the count, and gets exactly what `F-7` promised |
+
+---
+
+## 19. Common-action FAQ for people and agents
+
+Several ordinary workflows are implemented but not discoverable from one place. Registering a
+speaker does not create a talk; a signed-in speaker starts a new one from the event's public CFP,
+while **My sessions** only lists existing submissions and drafts. An organizer can create another
+submission for the same speaker by entering the same email, which reuses the account. Adding that
+person to an existing panel is a different operation: the session group gains them as a panellist,
+moderator, co-speaker or speaker. The organizer can perform that operation through **View portal
+as** the primary speaker, but there is no equivalent control on the organizer submission detail.
+
+Those distinctions are reasonable once known and unnecessarily hard for a person or agent to
+reconstruct. They should be recorded as product guidance rather than duplicated as prose in every
+agent prompt.
+
+| ID | Tag | Status | Requirement |
+| --- | --- | --- | --- |
+| AR-54 | **[OPTIONAL]** | OUTSTANDING | **Create one maintained FAQ for common role-scoped actions and make bot/agent guidance reference it.** Start with the speaker-to-programme path: how a registered speaker submits another talk, how an organizer creates another submission for an existing speaker, and how that speaker is added to an existing panel. Each answer should distinguish the current capability, its actual UI entry point, and any current workaround, so an agent does not mistake **My sessions** for a creation surface or invent a direct organizer panel-membership control. The role-scoped speaker and organizer guides should reference the FAQ rather than carry independent copies. This follow-up does not authorize an in-product chatbot, new mutation endpoints, or either underlying UX change; none of it is implemented by recording this requirement |
+
+---
+
 ## Decisions
+
+**2026-08-17 — one chord per shortcut, on ⌘⌃ rather than ⌘⌥.** The owner asked for every shortcut
+to be a single Command-based chord, with no chaining and no bare keys, and for the sections a key
+opens to show that key while the modifier is held. The modifier tier was the one real decision.
+⌘⌥ is the obvious first choice and is unusable: ⌘⌥I/J/C (devtools), ⌘⌥U (view source), ⌘⌥B/L/W
+(Safari), ⌘⌥D/H (macOS) and ⌘⌥←/→ are intercepted above the page where `preventDefault()` cannot
+reach them, and Option rewrites `event.key` on macOS besides. ⌘⌃ is nearly empty by comparison —
+only full screen, dictionary, lock and emoji — and its PC equivalent, Ctrl+Alt, is one the browsers
+leave alone. Forms moved to ⌘⌃⇧F and decline to ⌘⌃R to clear the four macOS reservations that
+remained. The cost is accepted rather than worked around: GNOME claims Ctrl+Alt+T and Ctrl+Alt+arrows
+above the browser, so those keystrokes do not reach a Linux user's page, and ⌘K remains the way
+anything can be reached from anywhere. Escape and Enter stayed bare because they are activation
+rather than shortcuts, and neither can be typed at by accident outside a field. AR-55 records the
+scheme; AR-44 and AR-45 are amended where the old sequences and the old `?` key were described.
+
+**2026-08-17 — the common-action FAQ remains follow-up work.** The speaker, submission and panel
+membership capabilities already exist; the gap is a maintained explanation that both people and
+agents can find. AR-54 records that discovery work without treating this document as the FAQ or
+changing any bot, agent, portal or organizer behaviour.
+
+**2026-08-16 — the milestone deadlines inform, they do not enforce.** Section 17's two dates were
+the owner's, and the owner's second decision about them was that nothing may be refused, warned on,
+scored, or counted against either one. That is what keeps AR-50–AR-51 additive: the placement,
+decision and submission-window paths are untouched, and `passed` exists so a surface can phrase a
+date, never so a caller can gate on one. An enforced version of this is a different requirement and
+would have to be written as one.
+
+**2026-08-16 — keyboard shortcuts are an owner requirement, not a brief one.** Section 15 exists
+because the brief is silent on keyboard use and `01-requirements.md` must stay a faithful reading of
+it. Recording the requirement here keeps that boundary intact while making the shortcut work
+auditable: AR-44–AR-46 and AR-55 are shipped and AR-47–AR-48 are the scope that was deliberately
+left out.
 
 **2026-08-13 — no paid infrastructure.** Cicero's hosted deployment takes no payment method, so
 neither R2 (AR-2) nor Twilio (§2) is activated. Both code paths stay complete and selectable by
@@ -396,7 +614,7 @@ question that blocks a build.
 | Document | Relationship |
 | --- | --- |
 | [`00-goals.md`](00-goals.md) | Unchanged. The eight-step spine still describes the product; nothing here alters it |
-| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3 and 5 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP is not mentioned at all |
-| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule and AR-25's transport choice belong there once decided |
-| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, AR-35 in W4 (and crosses W0 for the one `event` column it adds) |
+| [`01-requirements.md`](01-requirements.md) | Brief-derived, frozen. AR-1 refines `S-3` (headshot upload) and `T-5` (file storage); AR-19 promotes `Z-5` (`01-requirements.md:378`) from `[BONUS]` to `[REQUIRED]`; §8 extends `B-1` from a report into a workflow without changing what `B-1` asked for. Sections 2, 3, 5, 10, 12, 13, 14 and 16 have no counterpart there — SMS is listed at `01-requirements.md:408` as genuinely absent from the brief, and MCP, intelligent agenda optimization, the update rundown, post-conference speaker messaging, and prior-event speaker import are not mentioned at all. AR-40–AR-43 specify an owner-requested task-management sync under the brief's existing optional `N-2` "other integrations" umbrella without changing that frozen row. §15 likewise has no counterpart: the brief says nothing about keyboard use, so AR-44–AR-48 and AR-55 are owner requirements in full and `01-requirements.md` correctly stays silent on shortcuts. §17 is adjacent to the brief without being covered by it: `P-5` and `C-2` are both about the submission form's own closing date, and AR-50–AR-51 are about the dates *after* it, so they are owner requirements too rather than a reading of either row. AR-52 is likewise owner-only: `Z-5` asks for a public API without saying who may authenticate against it, so a reviewer-scoped key is neither required nor excluded by that row. §18 sits beside `F-7` without reading it: the brief asks a form to collect participant roles with counts, which is shipped, and says nothing about the product treating a moderator differently once collected, so AR-53 is owner-only too |
+| [`02-architecture.md`](02-architecture.md) | AR-23's service-layer rule, AR-25's transport choice, and AR-37's public-file authorization boundary are recorded there |
+| [`03-plan.md`](03-plan.md) | Workstream ownership still applies: AR-1–AR-7 land in W2, AR-8–AR-18 in W5, AR-19–AR-27 in W7, AR-28–AR-29 in W3, AR-30–AR-34 in W6 on W5's send primitives, and AR-35 in W4 (crossing W0 for the one `event` column it adds). AR-36 is a post-v1 W4 goal and stays unassigned until optimizer work is authorized; AR-37 belongs to W6 on W2's file-storage primitives, AR-38 starts in W6 while a future append-only activity table must cross W0 deliberately, and AR-39 would be a post-v1 W5 goal that stays unassigned until that work is authorized. AR-40–AR-43 have no workstream or estimate while excluded; this preserves §2's recommendation against building unspecified integrations in the current scope. AR-44–AR-46 cut across the table rather than sitting in one row: the engine is shared infrastructure in `lib/hotkeys/` and `components/hotkeys/`, consumed by W3 (submissions), W4 (agenda) and W6 (organizer shell), and adding a binding is a registry row plus a handler in the screen its owning workstream already holds. AR-55 is the same shared infrastructure rebound, so it crosses those three workstreams the same way and adds no rows of its own to any of them. AR-47 extends the same registry into W3's reviewer surfaces, W2's portal, and the CRM; AR-48 stays unassigned because it needs a `db/schema.ts` change that §3 freezes. AR-49 is a post-v1 cross-event CRM and speaker-roster goal and stays unassigned until that work is authorized. AR-50 sits where AR-35 does — W6 for the settings write and the dashboard read, crossing W0 for the two `event` columns it adds — and its remaining readers are W2's portal and public page and W7's event API, each consuming `lib/event-deadlines.ts` rather than owning a copy. AR-51 is W6 on W5's send primitives, like AR-30–AR-34. AR-52 is W7 like the rest of §4, but stays unassigned while optional: it needs a `db/schema.ts` change that §3 freezes, and it would cross into W3, which owns the reviewer surfaces its routes would expose. AR-53 stays unassigned for a different reason — no schema change is needed, since the enum value already exists — but its two halves belong to different owners: carrying the role outward is W7 for the Accelevents DTO and W6 for the public pages and embeds, while a moderator surface would be new W2 work rather than an extension of any row in this table |
 | [`requirements-audit-checklist.md`](requirements-audit-checklist.md) | Audits brief requirements at a pinned revision. AR IDs are deliberately absent; the Status column here serves the same purpose for this scope |

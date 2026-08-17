@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { Button, Input, useToast } from '@/components/ui';
+import type { ToastOptions } from '@/components/ui';
 import { COMMON_EVENT_TYPES, COMMON_TIMEZONES } from '@/lib/event-dates';
-import { createEventAction } from '@/app/admin/shell-actions';
+import { createEventAction, type CreateEventResult } from '@/app/organizer/shell-actions';
 import styles from './new-event.module.css';
 
 /**
@@ -21,6 +22,24 @@ type Props = {
   defaultEndsAt: string;
   defaultTimezone: string;
 };
+
+/**
+ * What a submit should draw, given whatever the action settled with. Split out from the handler so
+ * the two cases can be pinned without a browser.
+ *
+ * A create that worked comes back as nothing — the action sets the event cookie and redirects — so
+ * there is no failure to announce and no field to mark. The form used to skip that distinction and
+ * read `.details` off every outcome, which both raised a danger toast on a successful create and
+ * threw a `TypeError` the moment the success path resolved instead of throwing. No success toast:
+ * the router is already leaving this page for `/organizer`, which is the confirmation.
+ */
+export function createEventFeedback(result: CreateEventResult): {
+  errors: Record<string, string>;
+  toast: ToastOptions | null;
+} {
+  if (!result) return { errors: {}, toast: null };
+  return { errors: result.details ?? {}, toast: { title: result.message, tone: 'danger' } };
+}
 
 export function NewEventForm({ defaultStartsAt, defaultEndsAt, defaultTimezone }: Props) {
   const { toast } = useToast();
@@ -46,9 +65,12 @@ export function NewEventForm({ defaultStartsAt, defaultEndsAt, defaultTimezone }
     event.preventDefault();
     setErrors({});
     startTransition(async () => {
-      const result = await createEventAction(values);
-      setErrors(result.details ?? {});
-      toast({ title: result.message, tone: 'danger' });
+      // Deliberately not wrapped in try/catch. A successful create redirects, and Next signals that
+      // by throwing `NEXT_REDIRECT` through the caller; catching here would swallow the navigation
+      // and report the event that was just created as a failure.
+      const feedback = createEventFeedback(await createEventAction(values));
+      setErrors(feedback.errors);
+      if (feedback.toast) toast(feedback.toast);
     });
   };
 

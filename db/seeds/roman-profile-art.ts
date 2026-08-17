@@ -151,14 +151,35 @@ export type RomanProfileArtAssignment<SpeakerKey extends string = string> = {
   bytes: Uint8Array;
 };
 
+export type RomanProfileArtOptions<SpeakerKey extends string> = {
+  /**
+   * Where in the generated set to start. Slots decide the face, hair and material combination on
+   * their own — the speaker key only varies the secondary traits — so two events drawing from slot
+   * 0 hand out the same silhouettes. A second roster passes the first one's length to sit beside it
+   * rather than on top of it.
+   */
+  slotOffset?: number;
+  /**
+   * Portraits for a roster this module does not itself describe. Returning `undefined` leaves the
+   * gender to the generator, which keeps the full 600-slot set evenly split.
+   */
+  gender?: (speakerKey: SpeakerKey) => RomanSpeakerHeadshotGender | undefined;
+};
+
 export function createRomanProfileArtAssignments<SpeakerKey extends string>(
   speakerKeys: readonly SpeakerKey[],
+  options: RomanProfileArtOptions<SpeakerKey> = {},
 ): RomanProfileArtAssignment<SpeakerKey>[] {
-  return speakerKeys.map((speakerKey, slot) => ({
-    speakerKey,
-    slot,
-    filename: `roman-speaker-${String(slot + 1).padStart(3, '0')}.svg`,
-    contentType: ROMAN_PROFILE_ART_CONTENT_TYPE,
-    bytes: romanSpeakerHeadshotBytes(speakerKey, slot, ROMAN_PROFILE_ART_GENDER.get(speakerKey)),
-  }));
+  const slotOffset = options.slotOffset ?? 0;
+  const genderFor = options.gender ?? ((speakerKey) => ROMAN_PROFILE_ART_GENDER.get(speakerKey));
+  return speakerKeys.map((speakerKey, index) => {
+    const slot = slotOffset + index;
+    return {
+      speakerKey,
+      slot,
+      filename: `roman-speaker-${String(slot + 1).padStart(3, '0')}.svg`,
+      contentType: ROMAN_PROFILE_ART_CONTENT_TYPE,
+      bytes: romanSpeakerHeadshotBytes(speakerKey, slot, genderFor(speakerKey)),
+    };
+  });
 }

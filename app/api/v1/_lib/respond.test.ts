@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { errorJson, parseBody, parseQuery } from './respond';
-import { rateLimited } from '@/lib/errors';
+import { errorJson, handle, json, parseBody, parseQuery } from './respond';
+import { notFound, rateLimited } from '@/lib/errors';
 import {
   createSubmissionBody,
   sessionListQuery,
@@ -155,6 +155,48 @@ describe('rate-limit responses', () => {
     expect(response.headers.get('retry-after')).toBe('18');
     await expect(response.json()).resolves.toMatchObject({
       error: { code: 'rate_limited', details: { retryAfterSeconds: '18' } },
+    });
+  });
+});
+
+describe('handle', () => {
+  it('passes a successful response through untouched', async () => {
+    const response = await handle(async () => json({ ok: true }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true });
+  });
+
+  it('keeps translating an AppError by its own code', async () => {
+    const response = await handle(async () => {
+      throw notFound('That event');
+    });
+
+    expect(response.status).toBe(404);
+  });
+
+  // An embed reads a 500 as "broken, stop"; a 503 with Retry-After as "come back". The second is
+  // the truth when the database is merely unreachable, and it is what lets the embed heal itself.
+  it('reports an unreachable database as a retryable 503', async () => {
+    const response = await handle(async () => {
+      throw Object.assign(new Error('Failed query: select 1'), {
+        cause: new Error('Connection terminated due to connection timeout'),
+      });
+    });
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get('retry-after')).toBe('30');
+    await expect(response.json()).resolves.toMatchObject({ error: { code: 'unavailable' } });
+  });
+
+  it('still reports a genuine defect as an opaque 500', async () => {
+    const response = await handle(async () => {
+      throw new TypeError('Cannot read properties of undefined');
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toMatchObject({
+      error: { code: 'internal', message: 'Something went wrong' },
     });
   });
 });

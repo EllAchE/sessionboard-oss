@@ -297,6 +297,17 @@
   padding: var(--space-6);
 }
 
+/*
+ * The organizer's welcome is a banner, not an article. `.prose` caps every other body of text at the
+ * 68ch reading measure, which is right for a task description or an info page but leaves this block
+ * wrapping halfway across an empty hero on a wide screen. The hero is already bounded by
+ * `--content-max`, so the text tracks the container instead of a fixed measure.
+ */
+.heroProse {
+  max-width: none;
+  margin-top: var(--space-2);
+}
+
 .statGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
@@ -360,16 +371,31 @@
   align-items: center;
 }
 
+/*
+ * The rows sit inside a `padding="none"` card so the dividers run edge to edge, which means the row
+ * itself owns the inset. It matches the card default (`md`) so the list lines up with the padded
+ * cards beside it.
+ */
 .checkRow {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
   border-bottom: var(--border-width) solid var(--border-hairline);
 }
 
 .checkRow:last-child {
   border-bottom: 0;
+}
+
+/* Rows carry their own vertical padding; the body gap would double it around each divider. */
+.checkList {
+  gap: var(--space-0);
+}
+
+/* The final row of the list is not the final row of the card: the footer action still follows it. */
+.checkList .checkRow:last-child {
+  border-bottom: var(--border-width) solid var(--border-hairline);
 }
 
 .checkLink {
@@ -523,6 +549,38 @@
   font: var(--type-body);
   font-weight: var(--weight-medium);
   color: var(--text-strong);
+}
+
+/*
+ * ---- Alert groups ----
+ *
+ * The alerts card holds three tiers — the account default, the quiet hours that bound it, and the
+ * per-event overrides — and they only read as tiers if each one is titled and ruled off. Without
+ * this the card was a single run of rows in which "Email" meant two different scopes.
+ */
+
+.alertGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--border-hairline);
+}
+
+.alertGroup:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.groupTitle {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.alertGroup .groupTitle + .hint {
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .choiceList {

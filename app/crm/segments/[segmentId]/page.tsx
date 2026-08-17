@@ -46,8 +46,8 @@ export default async function SegmentPage({ params }: { params: Promise<{ segmen
   const events = await listOrganizerEvents(actor);
   const subtitle =
     found.segment.kind === 'dynamic'
-      ? 'Dynamic segment — membership re-runs the saved filters every time this page opens.'
-      : 'Curated segment — the members were fixed when it was saved.';
+      ? 'Dynamic segment. Membership re-runs the saved filters every time this page opens.'
+      : 'Curated segment. The members were fixed when it was saved.';
 
   return (
     <Directory

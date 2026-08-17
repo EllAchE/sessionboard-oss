@@ -20,18 +20,19 @@
   // (An earlier version of this note said "13.4 MiB against 3 MiB". That compared an uncompressed
   // size to a compressed limit; Cloudflare weighs the gzipped upload. Corrected above.)
   //
-  // One thing a reviver must change: APP_URL below is this account's own workers.dev host. Point it
-  // at your own origin. docs/02-architecture.md section 1 has the full reasoning.
+  // A different Cloudflare account must change two values: APP_URL below must point at its own
+  // origin, and the Hyperdrive binding id must be the id returned by that account's
+  // `wrangler hyperdrive create`. docs/02-architecture.md section 1 has the full reasoning.
   //
   // Magic links, calendar invites and embed snippets are all read outside a request — in an inbox,
   // a calendar client, or someone else's website — so a relative path is never enough and this has
   // to be the real origin. Self-hosters set APP_URL in the environment instead.
   //
   // MAIL_TRANSPORT is `auto`: whichever transport has credentials wins, and with none it is the dev
-  // mailbox at /admin/mail. So turning this deployment's mail on is two operator steps and no
+  // mailbox at /organizer/mail. So turning this deployment's mail on is two operator steps and no
   // commit — verify a domain in Resend, point MAIL_FROM at it, then
   // `wrangler secret put RESEND_API_KEY` (a secret, never a var). Until then nothing is delivered
-  // and every message is still readable at /admin/mail, which is what the demo has always done.
+  // and every message is still readable at /organizer/mail, which is what the demo has always done.
   //
   // MAIL_FROM below is Resend's shared test sender, which delivers to the Resend account owner and
   // 403s every other recipient (https://resend.com/docs/knowledge-base/403-error-resend-dev-domain).

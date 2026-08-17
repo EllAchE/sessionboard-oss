@@ -1,0 +1,36 @@
+.hint {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-05);
+  white-space: nowrap;
+  animation: hint-in 120ms ease-out;
+}
+
+/*
+ * Louder than a resting key cap on purpose: these appear all at once across the workspace and are
+ * read at a glance, in the moment between pressing the modifier and picking a letter.
+ */
+.cap {
+  color: var(--text-strong);
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-1px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The caps still appear — instantly. Motion is the decoration, not the message. */
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}

@@ -1,0 +1,886 @@
+{
+  "generated": "by scripts/alternatives/build.ts — do not edit",
+  "surveyedOn": "2026-08-16",
+  "brief": "Kill My SaaS — Sessionboard clone",
+  "counts": {
+    "submissionsFound": 41,
+    "analyzed": 32,
+    "sourceUnreachable": 1,
+    "noPublicSource": 8,
+    "baselineAreas": 15,
+    "extras": 48,
+    "extrasClosedSince": 7,
+    "ciceroDifferentiators": 8,
+    "totalFeatureRows": 71,
+    "attributions": 85
+  },
+  "scale": {
+    "lines": {
+      "min": 9218,
+      "max": 233075,
+      "median": 65220
+    },
+    "files": {
+      "min": 43,
+      "max": 1600,
+      "median": 412
+    },
+    "authors": {
+      "min": 1,
+      "max": 5
+    },
+    "firstCommit": "2026-08-08",
+    "lastCommit": "2026-08-16"
+  },
+  "stack": {
+    "language": {
+      "TypeScript": 27,
+      "Clojure": 1,
+      "Go": 1,
+      "JavaScript": 1,
+      "Python": 1,
+      "Ruby": 1
+    },
+    "framework": {
+      "Hono + React SPA": 7,
+      "Next.js": 5,
+      "TanStack Start": 3,
+      "Hono": 2,
+      "React (Vite)": 2,
+      "React Router 8": 2,
+      "Django (Pretalx plugin)": 1,
+      "GoSX": 1,
+      "Hono + Inertia React": 1,
+      "Hono + React Router": 1,
+      "PylonSync": 1,
+      "Rails": 1,
+      "React Router 7": 1,
+      "React SPA + tRPC": 1,
+      "React SPA + Worker API": 1,
+      "Ring / Reitit + Hiccup": 1,
+      "SvelteKit": 1
+    },
+    "datastore": {
+      "Cloudflare D1": 15,
+      "PostgreSQL": 6,
+      "Convex": 3,
+      "Airtable": 2,
+      "Airtable + D1 projection": 1,
+      "JSON / SQLite / PostgreSQL aggregate": 1,
+      "JSONL fact log / PostgreSQL": 1,
+      "PostgreSQL (Neon)": 1,
+      "PylonSync entity store": 1,
+      "SQLite": 1
+    },
+    "dataAccess": {
+      "Drizzle": 13,
+      "raw SQL": 7,
+      "Convex": 3,
+      "Active Record": 1,
+      "custom adapter": 1,
+      "custom aggregate": 1,
+      "Django ORM": 1,
+      "next.jdbc": 1,
+      "Prisma": 1,
+      "PylonSync": 1,
+      "repository layer": 1,
+      "REST adapter": 1
+    },
+    "hosting": {
+      "Cloudflare Workers": 20,
+      "unknown": 10,
+      "Cloudflare Pages": 1,
+      "PylonSync runtime": 1
+    },
+    "auth": {
+      "password": 13,
+      "magic link": 12,
+      "OAuth": 6,
+      "Clerk": 3,
+      "email code": 3,
+      "API key": 2,
+      "API token": 2,
+      "passkey": 2,
+      "2FA": 1,
+      "capability link": 1,
+      "email token": 1,
+      "inherited from Pretalx": 1,
+      "magic code": 1,
+      "none": 1,
+      "OAuth 2.1": 1,
+      "passcode": 1,
+      "signed session": 1
+    }
+  },
+  "areaTotals": [
+    {
+      "area": "cfp-intake",
+      "label": "CFP intake",
+      "full": 32,
+      "partial": 0,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "review-scoring",
+      "label": "Review rounds & scoring",
+      "full": 28,
+      "partial": 4,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "anonymized-review",
+      "label": "Anonymized review",
+      "full": 28,
+      "partial": 3,
+      "absent": 1,
+      "unknown": 0
+    },
+    {
+      "area": "decisions-notifications",
+      "label": "Decisions & notifications",
+      "full": 29,
+      "partial": 3,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "agenda-scheduling",
+      "label": "Agenda / scheduling",
+      "full": 32,
+      "partial": 0,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "conflict-detection",
+      "label": "Conflict detection",
+      "full": 31,
+      "partial": 1,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "speaker-portal",
+      "label": "Speaker portal & tasks",
+      "full": 31,
+      "partial": 1,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "content-deliverables",
+      "label": "Content deliverables",
+      "full": 31,
+      "partial": 1,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "comms-templates",
+      "label": "Comms / templates",
+      "full": 27,
+      "partial": 5,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "public-pages",
+      "label": "Public event pages",
+      "full": 30,
+      "partial": 2,
+      "absent": 0,
+      "unknown": 0
+    },
+    {
+      "area": "embeds",
+      "label": "Embeddable widgets",
+      "full": 30,
+      "partial": 0,
+      "absent": 2,
+      "unknown": 0
+    },
+    {
+      "area": "rest-api",
+      "label": "Public REST API",
+      "full": 21,
+      "partial": 5,
+      "absent": 6,
+      "unknown": 0
+    },
+    {
+      "area": "ai-features",
+      "label": "AI features",
+      "full": 14,
+      "partial": 8,
+      "absent": 10,
+      "unknown": 0
+    },
+    {
+      "area": "speaker-crm",
+      "label": "Speaker CRM",
+      "full": 19,
+      "partial": 7,
+      "absent": 6,
+      "unknown": 0
+    },
+    {
+      "area": "sponsors",
+      "label": "Sponsors",
+      "full": 3,
+      "partial": 3,
+      "absent": 26,
+      "unknown": 0
+    }
+  ],
+  "extrasByConvergence": [
+    {
+      "id": "AD-1",
+      "title": "Whole-event cloning / reusable event templates",
+      "convergence": 5,
+      "projects": [
+        "agrimsingh-conference-engine",
+        "jpoehnelt-session-party",
+        "maddiedreese-ProgramLoom",
+        "TheThingInTheThing-namos-sessions-webapp",
+        "adityak6798-ManageMyConference"
+      ],
+      "ciceroShipped": {
+        "pr": 199,
+        "on": "2026-08-17",
+        "note": "`lib/services/event-clone.ts` plans a structure-only clone and `app/organizer/duplicate/` previews it before applying; people and operational history are deliberately excluded."
+      }
+    },
+    {
+      "id": "AD-3",
+      "title": "Richer embed output formats",
+      "convergence": 5,
+      "projects": [
+        "mrmichael73-greenroom-kms",
+        "d4mr-opensesh",
+        "iankar8-event-manager-os",
+        "westoque-session-hero",
+        "akakabrian-sessionslate"
+      ],
+      "ciceroShipped": {
+        "pr": 210,
+        "on": "2026-08-17",
+        "note": "`app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as `feed.json`, `feed.xml` and a subscribable `feed.ics` off the same query string the iframe and script snippets carry."
+      }
+    },
+    {
+      "id": "AD-5",
+      "title": "Bidirectional Airtable sync",
+      "convergence": 5,
+      "projects": [
+        "openrostrum-openrostrum",
+        "jpoehnelt-session-party",
+        "guangyusong-opencallboard",
+        "SteveMLC-lectern",
+        "red-omotenashi"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-6",
+      "title": "Authentication beyond magic links",
+      "convergence": 5,
+      "projects": [
+        "akakabrian-sessionslate",
+        "twilwa-session-bored",
+        "M31-Labs-rostrum",
+        "adityak6798-ManageMyConference",
+        "mkly-gatherpulse"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-2",
+      "title": "Speaker availability / blackout windows as a scheduling constraint",
+      "convergence": 4,
+      "projects": [
+        "nayamoss-namos-sessions-public",
+        "TheThingInTheThing-namos-sessions-webapp",
+        "0xOsprey-saas-killa",
+        "yisding-openboard.events"
+      ],
+      "ciceroShipped": {
+        "pr": 194,
+        "on": "2026-08-17",
+        "note": "A `speaker_unavailability` window declared in the portal is read by `lib/services/speaker-availability.ts` and enforced through the same agenda guard as double-booking."
+      }
+    },
+    {
+      "id": "AD-4",
+      "title": "Revision history with organizer restore",
+      "convergence": 4,
+      "projects": [
+        "conorbronsdon-callboard-app",
+        "westoque-session-hero",
+        "SteveMLC-lectern",
+        "realgenekim-curtain-call-cfp"
+      ],
+      "ciceroShipped": {
+        "pr": 200,
+        "on": "2026-08-17",
+        "note": "Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage."
+      }
+    },
+    {
+      "id": "AD-7",
+      "title": "Real-time collaborative agenda over Durable Objects + WebSockets",
+      "convergence": 4,
+      "projects": [
+        "agrimsingh-conference-engine",
+        "caseymanos-opensession",
+        "jpoehnelt-session-party",
+        "thedatadavis-seshmesh"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-8",
+      "title": "In-product streaming AI assistant with tool use",
+      "convergence": 4,
+      "projects": [
+        "CampbellVentures-smolboard",
+        "getzenai-untitledconference",
+        "nayamoss-namos-sessions-public",
+        "Phantastic-AI-fireside"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-9",
+      "title": "Tokenized no-login share links",
+      "convergence": 4,
+      "projects": [
+        "iankar8-event-manager-os",
+        "Phantastic-AI-fireside",
+        "mkly-gatherpulse",
+        "adityak6798-ManageMyConference"
+      ],
+      "ciceroShipped": {
+        "pr": 201,
+        "on": "2026-08-17",
+        "note": "`lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account."
+      }
+    },
+    {
+      "id": "AD-14",
+      "title": "Organization-level team administration",
+      "convergence": 3,
+      "projects": [
+        "yisding-openboard.events",
+        "CampbellVentures-smolboard",
+        "adityak6798-ManageMyConference"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-10",
+      "title": "OAuth 2.1 authorization server for MCP",
+      "convergence": 2,
+      "projects": [
+        "d4mr-opensesh",
+        "maddiedreese-ProgramLoom"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-11",
+      "title": "Per-event `llms.txt`",
+      "convergence": 2,
+      "projects": [
+        "conorbronsdon-callboard-app",
+        "red-omotenashi"
+      ],
+      "ciceroShipped": {
+        "pr": 188,
+        "on": "2026-08-17",
+        "note": "`app/(public)/[slug]/llms.txt/route.ts` generates a per-event file from current published state, alongside the site-level `app/llms.txt`."
+      }
+    },
+    {
+      "id": "AD-12",
+      "title": "Accelevents integration",
+      "convergence": 2,
+      "projects": [
+        "iankar8-event-manager-os",
+        "jpoehnelt-session-party"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-13",
+      "title": "Privacy export and erasure",
+      "convergence": 2,
+      "projects": [
+        "caseymanos-opensession",
+        "yisding-openboard.events"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-15",
+      "title": "Awards",
+      "convergence": 1,
+      "projects": [
+        "0xOsprey-saas-killa"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-16",
+      "title": "Embargo-aware poster hall",
+      "convergence": 1,
+      "projects": [
+        "0xOsprey-saas-killa"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-17",
+      "title": "Versioned external policy language",
+      "convergence": 1,
+      "projects": [
+        "M31-Labs-rostrum"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-18",
+      "title": "Automatic reviewer-company conflict recusal",
+      "convergence": 1,
+      "projects": [
+        "M31-Labs-rostrum"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-19",
+      "title": "Hash-chained audit ledger",
+      "convergence": 1,
+      "projects": [
+        "M31-Labs-rostrum"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-20",
+      "title": "Attendee social layer",
+      "convergence": 1,
+      "projects": [
+        "Phantastic-AI-fireside"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-21",
+      "title": "Attendee-facing Q&A concierge",
+      "convergence": 1,
+      "projects": [
+        "Phantastic-AI-fireside"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-22",
+      "title": "Named acceptance waves",
+      "convergence": 1,
+      "projects": [
+        "ChaiWithJai-open-speaker-operations"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-23",
+      "title": "Cross-conference historical program corpus",
+      "convergence": 1,
+      "projects": [
+        "ChaiWithJai-open-speaker-operations"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-24",
+      "title": "Primary-manager delegation",
+      "convergence": 1,
+      "projects": [
+        "EquipeAI-stagestack"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-25",
+      "title": "Approval-gated AI import planning",
+      "convergence": 1,
+      "projects": [
+        "EquipeAI-stagestack"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-26",
+      "title": "Resubmit-with-guidance as a first-class decision",
+      "convergence": 1,
+      "projects": [
+        "getzenai-untitledconference"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-27",
+      "title": "Predecessor-linked carry-forward lane",
+      "convergence": 1,
+      "projects": [
+        "getzenai-untitledconference"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-28",
+      "title": "Printable organizer run-of-show",
+      "convergence": 1,
+      "projects": [
+        "getzenai-untitledconference"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-29",
+      "title": "Named agenda draft variants",
+      "convergence": 1,
+      "projects": [
+        "d4mr-opensesh"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-30",
+      "title": "Organizer-defined roles with per-field hide/edit policies",
+      "convergence": 1,
+      "projects": [
+        "adityak6798-ManageMyConference"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-31",
+      "title": "Organization-level branded multi-program sites",
+      "convergence": 1,
+      "projects": [
+        "adityak6798-ManageMyConference"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-32",
+      "title": "First-party TypeScript SDK and CLI",
+      "convergence": 1,
+      "projects": [
+        "blockbrain-ai-speakerops"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-33",
+      "title": "Deployable AWS SES infrastructure stacks",
+      "convergence": 1,
+      "projects": [
+        "guangyusong-opencallboard"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-34",
+      "title": "Public incremental changes feed",
+      "convergence": 1,
+      "projects": [
+        "realgenekim-curtain-call-cfp"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-35",
+      "title": "Direct Sessionize speaker-profile import",
+      "convergence": 1,
+      "projects": [
+        "realgenekim-curtain-call-cfp"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-36",
+      "title": "Fail-closed audit persistence",
+      "convergence": 1,
+      "projects": [
+        "red-omotenashi"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-37",
+      "title": "Mixed-type rubric criteria",
+      "convergence": 1,
+      "projects": [
+        "akakabrian-sessionslate"
+      ],
+      "ciceroShipped": {
+        "pr": 212,
+        "on": "2026-08-17",
+        "note": "`scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning."
+      }
+    },
+    {
+      "id": "AD-38",
+      "title": "AI-seeded scorecards that the server refuses",
+      "convergence": 1,
+      "projects": [
+        "twilwa-session-bored"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-39",
+      "title": "Cancellable queued decision notices",
+      "convergence": 1,
+      "projects": [
+        "twilwa-session-bored"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-40",
+      "title": "Persistent cross-device attendee schedules",
+      "convergence": 1,
+      "projects": [
+        "twilwa-session-bored"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-41",
+      "title": "Self-expiring per-visitor demo sandbox",
+      "convergence": 1,
+      "projects": [
+        "westoque-session-hero"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-42",
+      "title": "Sponsor tiers with contacts, onboarding tasks, and form routing",
+      "convergence": 1,
+      "projects": [
+        "TheThingInTheThing-namos-sessions-webapp"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-43",
+      "title": "Public sponsor/exhibitor intake forms",
+      "convergence": 1,
+      "projects": [
+        "mkly-gatherpulse"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-44",
+      "title": "Immutable numbered program publication snapshots",
+      "convergence": 1,
+      "projects": [
+        "mkly-gatherpulse"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-45",
+      "title": "Headshot publication consent bound to the current file",
+      "convergence": 1,
+      "projects": [
+        "conorbronsdon-callboard-app"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-46",
+      "title": "Two-step content publication gate",
+      "convergence": 1,
+      "projects": [
+        "CampbellVentures-smolboard"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-47",
+      "title": "In-app problem reporting",
+      "convergence": 1,
+      "projects": [
+        "mauricedesaxe-openboard"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-48",
+      "title": "AI-drafted decision emails and schedule notices",
+      "convergence": 1,
+      "projects": [
+        "SteveMLC-lectern"
+      ],
+      "ciceroShipped": null
+    }
+  ],
+  "extrasPerProject": {
+    "adityak6798-ManageMyConference": [
+      "AD-1",
+      "AD-6",
+      "AD-9",
+      "AD-14",
+      "AD-30",
+      "AD-31"
+    ],
+    "getzenai-untitledconference": [
+      "AD-8",
+      "AD-26",
+      "AD-27",
+      "AD-28"
+    ],
+    "jpoehnelt-session-party": [
+      "AD-1",
+      "AD-5",
+      "AD-7",
+      "AD-12"
+    ],
+    "M31-Labs-rostrum": [
+      "AD-6",
+      "AD-17",
+      "AD-18",
+      "AD-19"
+    ],
+    "mkly-gatherpulse": [
+      "AD-6",
+      "AD-9",
+      "AD-43",
+      "AD-44"
+    ],
+    "Phantastic-AI-fireside": [
+      "AD-8",
+      "AD-9",
+      "AD-20",
+      "AD-21"
+    ],
+    "twilwa-session-bored": [
+      "AD-6",
+      "AD-38",
+      "AD-39",
+      "AD-40"
+    ],
+    "0xOsprey-saas-killa": [
+      "AD-2",
+      "AD-15",
+      "AD-16"
+    ],
+    "akakabrian-sessionslate": [
+      "AD-3",
+      "AD-6",
+      "AD-37"
+    ],
+    "CampbellVentures-smolboard": [
+      "AD-8",
+      "AD-14",
+      "AD-46"
+    ],
+    "conorbronsdon-callboard-app": [
+      "AD-4",
+      "AD-11",
+      "AD-45"
+    ],
+    "d4mr-opensesh": [
+      "AD-3",
+      "AD-10",
+      "AD-29"
+    ],
+    "iankar8-event-manager-os": [
+      "AD-3",
+      "AD-9",
+      "AD-12"
+    ],
+    "realgenekim-curtain-call-cfp": [
+      "AD-4",
+      "AD-34",
+      "AD-35"
+    ],
+    "red-omotenashi": [
+      "AD-5",
+      "AD-11",
+      "AD-36"
+    ],
+    "SteveMLC-lectern": [
+      "AD-4",
+      "AD-5",
+      "AD-48"
+    ],
+    "TheThingInTheThing-namos-sessions-webapp": [
+      "AD-1",
+      "AD-2",
+      "AD-42"
+    ],
+    "westoque-session-hero": [
+      "AD-3",
+      "AD-4",
+      "AD-41"
+    ],
+    "yisding-openboard.events": [
+      "AD-2",
+      "AD-13",
+      "AD-14"
+    ],
+    "agrimsingh-conference-engine": [
+      "AD-1",
+      "AD-7"
+    ],
+    "caseymanos-opensession": [
+      "AD-7",
+      "AD-13"
+    ],
+    "ChaiWithJai-open-speaker-operations": [
+      "AD-22",
+      "AD-23"
+    ],
+    "EquipeAI-stagestack": [
+      "AD-24",
+      "AD-25"
+    ],
+    "guangyusong-opencallboard": [
+      "AD-5",
+      "AD-33"
+    ],
+    "maddiedreese-ProgramLoom": [
+      "AD-1",
+      "AD-10"
+    ],
+    "nayamoss-namos-sessions-public": [
+      "AD-2",
+      "AD-8"
+    ],
+    "blockbrain-ai-speakerops": [
+      "AD-32"
+    ],
+    "mauricedesaxe-openboard": [
+      "AD-47"
+    ],
+    "mrmichael73-greenroom-kms": [
+      "AD-3"
+    ],
+    "openrostrum-openrostrum": [
+      "AD-5"
+    ],
+    "thedatadavis-seshmesh": [
+      "AD-7"
+    ],
+    "chuchuisrich-rgb-speaker-harmony": []
+  }
+}

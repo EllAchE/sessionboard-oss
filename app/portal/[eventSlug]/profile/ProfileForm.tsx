@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useState } from 'react';
+import { Fragment, useActionState, useState } from 'react';
 import { ImageIcon, Plus, Trash2 } from 'lucide-react';
 import { Button, Card, CardBody, CardHeader, CardTitle, IconButton, Input, Switch, Textarea } from '@/components/ui';
+import { AlertOverrideGrid, overrideField } from '@/components/notifications/AlertOverrideGrid';
 import { PhoneVerificationControl } from '@/components/notifications/PhoneVerificationControl';
 import { renderMarkdown } from '@/lib/markdown';
+import { NOTIFICATION_CATEGORY_ROWS } from '@/lib/notification-categories';
 import { normalizeProfileImage } from '@/lib/profile-image';
 import type { Participant, ProfileName } from '@/lib/services/portal';
 import type { NotificationPrefs } from '@/lib/services/settings';
@@ -98,6 +100,11 @@ export function ProfileForm({
     notifications.phoneVerified ? (notifications.phone ?? null) : null,
   );
   const phoneVerified = Boolean(verifiedPhone && phone === verifiedPhone);
+  const [event, setEvent] = useState({
+    notifyEmail: notifications.eventNotifyEmail,
+    notifySms: notifications.eventNotifySms,
+  });
+  const [categories, setCategories] = useState(notifications.categories);
 
   const setLink = (index: number, patch: Partial<LinkRow>) =>
     setLinks((current) => current.map((row, at) => (at === index ? { ...row, ...patch } : row)));
@@ -137,8 +144,8 @@ export function ProfileForm({
                   }}
                 />
                 <p id="headshot-help" className={styles.hint}>
-                  Optional on your first save. JPEG, PNG, GIF or WebP up to 10 MB; center-cropped and
-                  stored as an optimized 512 px WebP.
+                  JPEG, PNG, GIF or WebP up to 10 MB. Upload a square photo. Anything else is
+                  center-cropped to a 512 px square.
                 </p>
                 <FieldError state={state} field="headshot" />
               </div>
@@ -233,7 +240,7 @@ export function ProfileForm({
                 Gender
               </label>
               <Input id="gender" name="gender" defaultValue={me.gender ?? ''} placeholder="Woman" />
-              <span className={styles.hint}>Optional, and yours to word however you like.</span>
+              <span className={styles.hint}>Optional.</span>
               <FieldError state={state} field="gender" />
             </div>
             <div className={styles.field}>
@@ -265,7 +272,7 @@ export function ProfileForm({
                 defaultValue={me.timezone ?? ''}
                 placeholder="Europe/London"
               />
-              <span className={styles.hint}>Used when organizers schedule anything with you.</span>
+              <span className={styles.hint}>Used for scheduling.</span>
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="phone">
@@ -304,72 +311,87 @@ export function ProfileForm({
         </CardHeader>
         <CardBody>
           <div className={styles.stackTight}>
-            <div className={styles.switchRow}>
-              <span className={styles.switchText}>
-                <span className={styles.switchLabel}>Email</span>
-                <span className={styles.hint}>Reminders, decisions and session details by email.</span>
-              </span>
-              <input type="hidden" name="notifyEmail" value={notifyEmail ? 'on' : ''} />
-              <Switch checked={notifyEmail} aria-label="Email alerts" onCheckedChange={setNotifyEmail} />
-            </div>
-            <div className={styles.switchRow}>
-              <span className={styles.switchText}>
-                <span className={styles.switchLabel}>Text message</span>
-                <span className={styles.hint}>
-                  {phone.trim()
-                    ? 'Turning this on records your consent. Message rates may apply; reply STOP to opt out or HELP for help.'
-                    : 'Add a phone number above to turn this on.'}
+            <div className={styles.alertGroup}>
+              <span className={styles.groupTitle}>Across every event</span>
+              <div className={styles.switchRow}>
+                <span className={styles.switchText}>
+                  <span className={styles.switchLabel}>Email</span>
+                  <span className={styles.hint}>Reminders, decisions, and schedule changes.</span>
                 </span>
-              </span>
-              <input type="hidden" name="notifySms" value={notifySms ? 'on' : ''} />
-              <Switch
-                checked={notifySms}
-                disabled={!phone.trim() || !phoneVerified}
-                aria-label="Text message alerts"
-                onCheckedChange={setNotifySms}
-              />
-            </div>
-            <div className={styles.fieldGrid}>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="notificationTimezone">Alert timezone</label>
-                <Input
-                  id="notificationTimezone"
-                  name="notificationTimezone"
-                  defaultValue={notifications.timezone ?? me.timezone ?? ''}
-                  placeholder="America/New_York"
+                <input type="hidden" name="notifyEmail" value={notifyEmail ? 'on' : ''} />
+                <Switch checked={notifyEmail} aria-label="Email alerts" onCheckedChange={setNotifyEmail} />
+              </div>
+              <div className={styles.switchRow}>
+                <span className={styles.switchText}>
+                  <span className={styles.switchLabel}>Text message</span>
+                  <span className={styles.hint}>
+                    {phone.trim()
+                      ? 'Turning this on records your consent. Message rates may apply; reply STOP to opt out or HELP for help.'
+                      : 'Add a phone number above to turn this on.'}
+                  </span>
+                </span>
+                <input type="hidden" name="notifySms" value={notifySms ? 'on' : ''} />
+                <Switch
+                  checked={notifySms}
+                  disabled={!phone.trim() || !phoneVerified}
+                  aria-label="Text message alerts"
+                  onCheckedChange={setNotifySms}
                 />
               </div>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="quietStart">Text quiet hours start</label>
-                <Input id="quietStart" name="quietStart" type="time" defaultValue={notifications.quietStart ?? ''} />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="quietEnd">Text quiet hours end</label>
-                <Input id="quietEnd" name="quietEnd" type="time" defaultValue={notifications.quietEnd ?? ''} />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label} htmlFor="smsHourlyLimit">Maximum texts per hour</label>
-                <Input id="smsHourlyLimit" name="smsHourlyLimit" type="number" min={1} max={100} defaultValue={notifications.smsHourlyLimit} />
-              </div>
-              <PreferenceSelect name="eventNotifyEmail" label="Email for this event" value={notifications.eventNotifyEmail} />
-              <PreferenceSelect name="eventNotifySms" label="Texts for this event" value={notifications.eventNotifySms} />
             </div>
-            <div className={styles.stackTight}>
-              {(
-                [
-                  ['submission', 'Submission updates'],
-                  ['session', 'Schedule changes'],
-                  ['task', 'Task reminders'],
-                  ['form', 'Submission deadlines'],
-                  ['adhoc', 'Organizer announcements'],
-                ] as const
-              ).map(([key, label]) => (
-                <div className={styles.switchRow} key={key}>
-                  <span className={styles.switchLabel}>{label}</span>
-                  <PreferenceSelect name={`category:${key}:email`} label="Email" value={notifications.categories[key].notifyEmail} />
-                  <PreferenceSelect name={`category:${key}:sms`} label="Text" value={notifications.categories[key].notifySms} />
+            <div className={styles.alertGroup}>
+              <span className={styles.groupTitle}>Quiet hours</span>
+              <span className={styles.hint}>Texts pause between these times. Email is unaffected.</span>
+              <div className={styles.fieldGrid}>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="notificationTimezone">Alert timezone</label>
+                  <Input
+                    id="notificationTimezone"
+                    name="notificationTimezone"
+                    defaultValue={notifications.timezone ?? me.timezone ?? ''}
+                    placeholder="America/New_York"
+                  />
                 </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="quietStart">Quiet hours start</label>
+                  <Input id="quietStart" name="quietStart" type="time" defaultValue={notifications.quietStart ?? ''} />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label} htmlFor="quietEnd">Quiet hours end</label>
+                  <Input id="quietEnd" name="quietEnd" type="time" defaultValue={notifications.quietEnd ?? ''} />
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.alertGroup}>
+              <span className={styles.groupTitle}>This event</span>
+              <input type="hidden" name="eventNotifyEmail" value={overrideField(event.notifyEmail)} />
+              <input type="hidden" name="eventNotifySms" value={overrideField(event.notifySms)} />
+              {NOTIFICATION_CATEGORY_ROWS.map(([key]) => (
+                <Fragment key={key}>
+                  <input
+                    type="hidden"
+                    name={`category:${key}:email`}
+                    value={overrideField(categories[key].notifyEmail)}
+                  />
+                  <input
+                    type="hidden"
+                    name={`category:${key}:sms`}
+                    value={overrideField(categories[key].notifySms)}
+                  />
+                </Fragment>
               ))}
+              <AlertOverrideGrid
+                accountEmail={notifyEmail}
+                accountSms={notifySms}
+                smsLocked={!phoneVerified}
+                event={event}
+                onEventChange={setEvent}
+                categories={categories}
+                onCategoryChange={(key, patch) =>
+                  setCategories((current) => ({ ...current, [key]: patch }))
+                }
+              />
             </div>
           </div>
         </CardBody>
@@ -458,8 +480,7 @@ export function ProfileForm({
               </div>
             )}
             <span className={styles.hint}>
-              LinkedIn, X, Facebook, your own site — anything you want on the programme. Addresses
-              without https:// are fixed up for you.
+              URLs without https:// are fixed automatically.
             </span>
           </div>
         </CardBody>
@@ -497,26 +518,5 @@ export function ProfileForm({
         <SubmitButton variant="primary">Save profile</SubmitButton>
       </div>
     </form>
-  );
-}
-
-function PreferenceSelect({
-  name,
-  label,
-  value,
-}: {
-  name: string;
-  label: string;
-  value: boolean | null;
-}) {
-  return (
-    <label className={styles.field}>
-      <span className={styles.label}>{label}</span>
-      <select name={name} defaultValue={value === null ? 'inherit' : value ? 'on' : 'off'}>
-        <option value="inherit">Use global default</option>
-        <option value="on">On</option>
-        <option value="off">Off</option>
-      </select>
-    </label>
   );
 }

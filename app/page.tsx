@@ -1,82 +1,115 @@
-import Image from 'next/image';
+import { SiteNav } from '@/components/SiteNav';
+import { Button } from '@/components/ui';
+import dashboardImage from '@/docs/images/submission-evidence/local-seeded-organizer.png';
+import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
+import { DEMO_ENTRY_LINKS, DEMO_PUBLIC_SITE_LINK } from '@/lib/demo-entry-links';
 import {
   ArrowRight,
-  Bot,
-  CalendarCheck,
+  CalendarDays,
+  ClipboardCheck,
   ExternalLink,
-  FileCheck,
-  Github,
-  Landmark,
+  KeyRound,
+  LayoutDashboard,
   ListChecks,
   Megaphone,
-  Scale,
+  Plug,
   ShieldCheck,
+  Sparkles,
   UserPlus,
 } from 'lucide-react';
-import { CiceroBrand } from '@/components/CiceroBrand';
-import { Button } from '@/components/ui';
-import { demoEntryPointsAreAvailable } from '@/lib/demo-availability';
-import { DEMO_ENTRY_LINKS } from '@/lib/demo-entry-links';
-import dashboardImage from '@/docs/images/dashboard.jpg';
-import publicAgendaImage from '@/docs/images/public-agenda.jpg';
+import Image from 'next/image';
 import { CopyAgentPromptButton } from './CopyAgentPromptButton';
 import styles from './home.module.css';
 
-const AGENT_STARTER_PROMPT = `$onboard-cicero
+/**
+ * Deliberately one instruction and one URL. The guide at that URL already owns resuming from saved
+ * state, asking only for unknown facts, one milestone at a time, and confirmation before any live
+ * change -- restating those rules here only gave the page a wall of text to render and a second
+ * copy to keep in sync. Anything this prompt should do belongs in `onboard-cicero/SKILL.md`.
+ */
+const AGENT_STARTER_PROMPT = `Set up Cicero for my conference, then connect its MCP server so you can run the event for me. Follow the guide at https://github.com/EllAchE/sessionboard-oss/blob/main/.agents/skills/onboard-cicero/SKILL.md`;
 
-Resume Cicero onboarding from this working directory. Read or establish the local onboarding state, then discover only the missing hosting, account, event, and API-key readiness facts. Walk me through one unfinished milestone at a time. Keep every live or destructive action behind an explicit confirmation. When setup is complete, hand off to $manage-cicero-event for a preview-only reconciliation.`;
-
-const FEATURES = [
-  {
-    icon: <FileCheck size={20} aria-hidden="true" />,
-    title: 'Receive petitions. Reach a verdict.',
-    body: 'Proclaim your call for orators, send each proposal before the right council, and record every decision without excavating a spreadsheet ruin.',
-  },
-  {
-    icon: <CalendarCheck size={20} aria-hidden="true" />,
-    title: 'Set the imperial calendar',
-    body: 'Marshal orations across chambers and themes while Cicero exposes every clash before the gates open.',
-  },
-  {
-    icon: <ListChecks size={20} aria-hidden="true" />,
-    title: 'Ready every orator for the Forum',
-    body: 'Survey missing biographies, portraits, scrolls, and approvals at a glance, then send a dispatch from the same command post.',
-  },
-];
+/** Event-scoped by construction, so the slug stays a placeholder until the organizer has an event. */
+const MCP_ENDPOINT = '/api/v1/events/{event-slug}/mcp';
 
 /**
- * The seeded demo identities (`lib/demo-entry-links.ts`), surfaced above the fold so a first-time
- * visitor reaches a populated view of the role they care about without reading the page first. The
- * same three entry points also close the page and sit in the global footer.
- *
- * `label` leads with a verb rather than the role noun on purpose, and the role noun opens `blurb`
- * instead. Automated walkthroughs pick a click target by matching label text from the start and
- * treat two matches as an error rather than choosing between them, and the footer already ships
- * `Organizer demo`, `Reviewer demo`, and `Speaker demo` on this same page. That rules out the role
- * nouns and their stems here -- `Organize`, `Review` and `Speak` are each still a prefix of the
- * matching footer label -- so `Run`, `Score` and `Give` keep all six entry points separable at their
- * first word. Only the start of the link text disambiguates, so naming the role inside `blurb`
- * stays clear for a reader without reintroducing the clash. Re-check the whole page before
- * rewording any of these.
+ * The clients the starter prompt is known to work in. Both places that offer the prompt render this
+ * same list, so the hero cannot advertise a different set of agents than the MCP panel further down
+ * that explains what connecting one actually does.
  */
-const PERSONAS = [
+const AGENT_PROVIDERS = [
+  { src: '/brand/agents/openai.svg', alt: 'OpenAI' },
+  { src: '/brand/agents/claude.svg', alt: 'Anthropic Claude' },
+  { src: '/brand/agents/google-antigravity.svg', alt: 'Google Antigravity' },
+] as const;
+
+/** Marks only; the surface each row sits on owns the ring and the label colour in `home.module.css`. */
+function AgentProviders({ size }: { size: number }) {
+  return (
+    <div className={styles.agentProviders} aria-label="Supported AI agents">
+      {AGENT_PROVIDERS.map((provider) => (
+        <Image
+          key={provider.src}
+          src={provider.src}
+          alt={provider.alt}
+          width={size}
+          height={size}
+        />
+      ))}
+      <span className={styles.agentProvidersMore}>+ more</span>
+    </div>
+  );
+}
+
+/**
+ * The four experiences, and the only route into the seeded demo from the page body. Each card
+ * carries the demo for its own role (`lib/demo-entry-links.ts`), so a visitor picks a tour from the
+ * description of what that role does rather than from a separate list of names above the fold. The
+ * attendee tour is the published event site, which needs no sign-in: it is what the other three
+ * produce, and the cheapest look at a finished conference.
+ *
+ * `demoLabel` leads with a verb rather than the role noun on purpose. Automated walkthroughs pick a
+ * click target by matching label text from the start and treat two matches as an error rather than
+ * choosing between them, and the footer already ships `Organizer demo`, `Reviewer demo`, and
+ * `Speaker demo` on this same page. That rules out the role nouns and their stems here --
+ * `Organize`, `Review` and `Speak` are each still a prefix of the matching footer label -- so `Run`,
+ * `Score`, `Give`, and `Browse` keep every entry point separable at its first word. Only the start
+ * of the link text disambiguates, so the role stays legible from `role` and `body` without
+ * reintroducing the clash. `DemoMenu` in the navigation holds a third copy of the same rule; check
+ * it and the footer before rewording any of these.
+ */
+const ROLE_PRODUCTS = [
   {
-    href: DEMO_ENTRY_LINKS.organizer,
-    icon: Landmark,
-    label: 'Run the conference',
-    blurb: 'Organizer — the programme, the fasti, and every outstanding duty.',
+    icon: LayoutDashboard,
+    role: 'Organizer',
+    title: 'Keep the whole conference moving.',
+    body: 'Manage proposals, reviews, schedules, communications, and speaker follow-up.',
+    demoHref: DEMO_ENTRY_LINKS.organizer,
+    demoLabel: 'Run the conference',
   },
   {
-    href: DEMO_ENTRY_LINKS.reviewer,
-    icon: Scale,
-    label: 'Score the petitions',
-    blurb: 'Reviewer — weigh the docket before you and record a verdict.',
+    icon: ClipboardCheck,
+    role: 'Reviewer',
+    title: 'Score proposals, not spreadsheets.',
+    body: 'Work an assigned queue, rate the round’s criteria, and stay blind to peer scores until it closes.',
+    demoHref: DEMO_ENTRY_LINKS.reviewer,
+    demoLabel: 'Score the proposals',
   },
   {
-    href: DEMO_ENTRY_LINKS.speaker,
     icon: Megaphone,
-    label: 'Give a talk',
-    blurb: 'Speaker — an accepted oration, your profile, and stage duties.',
+    role: 'Speaker',
+    title: 'Stay ready from proposal to stage.',
+    body: 'Submit a talk, maintain your profile, send deliverables, and upload your slides.',
+    demoHref: DEMO_ENTRY_LINKS.speaker,
+    demoLabel: 'Give a talk',
+  },
+  {
+    icon: CalendarDays,
+    role: 'Attendee',
+    title: 'Plan the day from the live programme.',
+    body: 'Browse the agenda, discover speakers, and build a personal itinerary, no account needed.',
+    demoHref: DEMO_PUBLIC_SITE_LINK,
+    demoLabel: 'Browse the programme',
   },
 ] as const;
 
@@ -87,255 +120,186 @@ export default async function Home() {
 export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
   return (
     <main className={styles.root}>
-      <nav className={styles.nav} aria-label="Primary navigation">
-        <a className={styles.brand} href="/" aria-label="Cicero home">
-          <CiceroBrand markSize={34} />
-        </a>
-        <div className={styles.navLinks}>
-          <a className={styles.aboutLink} href="#about">
-            About the Forum
-          </a>
-          {demoAvailable ? (
-            <a className={styles.demoLink} href="/demo">
-              Tour the empire
-            </a>
-          ) : null}
-          <a className={styles.agentLink} href="#agent-quick-start">
-            Agent quick start
-          </a>
-          <a
-            className={styles.githubLink}
-            href="https://github.com/EllAchE/sessionboard-oss"
-            aria-label="Cicero on GitHub"
-          >
-            <Github size={17} aria-hidden="true" />
-            <span>GitHub</span>
-          </a>
-          <a className={styles.signInLink} href="/signin">
-            Enter
-          </a>
-          <Button
-            className={styles.navCta}
-            href="/signup"
-            variant="primary"
-            size="sm"
-          >
-            Join Cicero
-          </Button>
-        </div>
-      </nav>
+      {/*
+        Bare hashes rather than `/#products`: this is the page those sections are on. `About` used
+        to lead this list and pointed at a section that restated the products section above it and
+        the agent section below it; both the section and the link to it are gone.
+      */}
+      <SiteNav
+        demoAvailable={demoAvailable}
+        links={[
+          { href: '#products', label: 'Product' },
+          { href: '#agent-quick-start', label: 'Agent quick start' },
+          { href: '/docs/api', label: 'API' },
+        ]}
+      />
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>From first proclamation to final ovation</p>
-          <h1>Convene the crowd. Command the programme.</h1>
+          <p className={styles.eyebrow}>Conference operations, end to end</p>
+          <h1>From call for speakers to first day</h1>
           <p className={styles.heroLead}>
-            Cicero gathers petitions, councils, fasti, orator duties, and dispatches in one
-            Forum, so organizers can govern the programme instead of chasing it.
+            Manage submissions, review, sourcing, scheduling, speaker tasks, and publishing in one place.
           </p>
-          <div className={styles.actions}>
+          <div className={styles.agentStarter}>
+            <div className={styles.agentStarterCopy}>
+              <p className={styles.agentStarterLabel}>
+                <Sparkles size={17} aria-hidden="true" />
+                AI-guided setup
+              </p>
+              <p className={styles.agentStarterHint}>
+                Claude or ChatGPT walks you through it.
+              </p>
+              {/*
+                The hint names two agents in prose; the marks show the rest, and they are the same
+                marks the MCP panel carries beside the same prompt. Smaller here because the copy
+                button, not the logo row, is what this card is asking a visitor to press.
+              */}
+              <AgentProviders size={28} />
+            </div>
+            <CopyAgentPromptButton
+              prompt={AGENT_STARTER_PROMPT}
+              size="lg"
+              variant="primary"
+            />
+          </div>
+          <div className={styles.manualStart}>
+            <span>Prefer to start in the app?</span>
             <Button
               href="/signup"
-              variant="primary"
               size="lg"
               iconRight={<UserPlus size={17} aria-hidden="true" />}
             >
-              Convene your event
+              Create an event
             </Button>
           </div>
 
-          {demoAvailable ? (
-            <div className={styles.personas}>
-              <p className={styles.personasTitle} id="personas-title">
-                Or enter a conference already in motion
-              </p>
-              <ul className={styles.personaList} aria-labelledby="personas-title">
-                {PERSONAS.map((persona) => (
-                  <li key={persona.label}>
-                    <a className={styles.persona} href={persona.href}>
-                      <span className={styles.personaIcon}>
-                        <persona.icon size={18} aria-hidden="true" />
-                      </span>
-                      <span className={styles.personaLabel}>
-                        {persona.label}
-                        <ArrowRight size={15} aria-hidden="true" />
-                      </span>
-                      <span className={styles.personaBlurb}>{persona.blurb}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
+          {/*
+            The role demos used to sit here as a fourth stack of links under the two setup calls to
+            action, which pushed the hero long and asked a first-time visitor to pick a role before
+            the page had said what each one does. They now hang off the matching card in the
+            products section, where the role is already described.
+          */}
+          {demoAvailable ? null : (
             <div className={styles.freshStart}>
-              <p className={styles.personasTitle}>Fresh instance</p>
-              <p>
-                There is no sample conference in this database yet. Create the first event, or load
-                the optional demo data from the README to unlock the guided role tours.
-              </p>
+              <p className={styles.freshStartTitle}>Fresh instance</p>
+              <p>No demo event yet. Create an event or load demo data from the README.</p>
             </div>
           )}
         </div>
 
-        <div className={styles.heroVisual} aria-label="Cicero organizer Forum preview">
+        <div className={styles.heroVisual} aria-label="Cicero organizer dashboard preview">
           <div className={styles.windowBar} aria-hidden="true">
             <span />
             <span />
             <span />
           </div>
-          <Image
-            className={styles.heroImage}
-            src={dashboardImage}
-            alt="Cicero organizer Forum showing imperial progress and next duties"
-            priority
-            sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1080px"
-          />
+          <div className={styles.heroImageFrame}>
+            <Image
+              className={styles.heroImage}
+              src={dashboardImage}
+              alt="Cicero organizer dashboard showing event progress and outstanding tasks"
+              priority
+              sizes="(max-width: 760px) 94vw, (max-width: 1100px) 88vw, 1080px"
+            />
+          </div>
           <div className={`${styles.callout} ${styles.calloutTasks}`}>
             <ListChecks size={17} aria-hidden="true" />
-            <span>Every outstanding duty, on one tablet</span>
+            <span>See the next action immediately</span>
           </div>
           <div className={`${styles.callout} ${styles.calloutSchedule}`}>
-            <CalendarCheck size={17} aria-hidden="true" />
-            <span>Every clash exposed before the gates open</span>
+            <LayoutDashboard size={17} aria-hidden="true" />
+            <span>Review, speakers, and schedule in one view</span>
           </div>
         </div>
       </section>
 
       <div className={styles.mosaicRule} aria-hidden="true" />
 
-      <section className={styles.about} id="about" aria-labelledby="about-title">
-        <div className={styles.aboutHeading}>
-          <p className={styles.eyebrow}>The charter of Cicero</p>
-          <h2 id="about-title">Built for the magistrates who make assemblies happen.</h2>
-        </div>
-        <div className={styles.aboutBody}>
-          <p>
-            Cicero is an open-source Forum for the work between a proclamation for orators and the
-            day the gates open. It unites petitions, councils, fasti, orator duties, dispatches, and
-            the public programme without making the organizer govern a tangle of systems.
-          </p>
-          <p>
-            Magistrates retain command: raise it on your own infrastructure, adapt the customs, and
-            proclaim fasti that any citizen may read without presenting a seal.
-          </p>
-          <dl className={styles.aboutFacts}>
-            <div>
-              <dt>License</dt>
-              <dd>MIT, open source</dd>
-            </div>
-            <div>
-              <dt>Province</dt>
-              <dd>Your infrastructure</dd>
-            </div>
-            <div>
-              <dt>Public Forum</dt>
-              <dd>No seal required</dd>
-            </div>
-          </dl>
-          <div className={styles.aboutLinks}>
-            <a className={styles.textLink} href="#product">
-              Enter the Forum <ArrowRight size={16} aria-hidden="true" />
-            </a>
-            <a
-              className={styles.textLink}
-              href="https://github.com/EllAchE/sessionboard-oss"
-            >
-              Read the source scrolls <Github size={16} aria-hidden="true" />
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.product} id="product">
+      <section
+        className={styles.productsOverview}
+        id="products"
+        aria-labelledby="products-title"
+      >
         <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>One commanding Forum</p>
-          <h2>All roads lead from proposal to stage.</h2>
+          <p className={styles.eyebrow}>Products by role</p>
+          <h2 id="products-title">One conference, four purpose-built experiences.</h2>
           <p>
-            The whole programme travels together, from the first petition to the final public
-            calendar.
+            Everyone works from the same event, while each person sees the tools and context that
+            belong to their role.
           </p>
         </div>
-        <div className={styles.features}>
-          {FEATURES.map((feature) => (
-            <article className={styles.feature} key={feature.title}>
-              <span className={styles.featureIcon}>{feature.icon}</span>
-              <h3>{feature.title}</h3>
-              <p>{feature.body}</p>
+        <div className={styles.roleProducts}>
+          {ROLE_PRODUCTS.map(({ icon: Icon, role, title, body, demoHref, demoLabel }) => (
+            <article className={`${styles.feature} ${styles.roleProduct}`} key={role}>
+              <span className={styles.featureIcon}>
+                <Icon size={20} aria-hidden="true" />
+              </span>
+              <p className={styles.roleProductRole}>{role}</p>
+              <h3>{title}</h3>
+              <p>{body}</p>
+              {demoAvailable ? (
+                <a className={styles.roleProductDemo} href={demoHref}>
+                  {demoLabel} <ArrowRight size={15} aria-hidden="true" />
+                </a>
+              ) : null}
             </article>
           ))}
         </div>
       </section>
 
-      <section className={styles.programme}>
-        <div className={styles.programmeVisual}>
-          <Image
-            src={publicAgendaImage}
-            alt="A public Cicero fasti laid out by hour and chamber"
-            sizes="(max-width: 820px) 94vw, 58vw"
-          />
-        </div>
-        <div className={styles.programmeCopy}>
-          <p className={styles.eyebrow}>Published from the Forum</p>
-          <h2>A public programme worthy of the city.</h2>
-          <p>
-            Proclaim clear fasti, a roll of orations, and a gallery of orators without copying a
-            single record or awaiting another courier.
-          </p>
-          <a className={styles.textLink} href={demoAvailable ? '/demo/agenda' : '/signup'}>
-            {demoAvailable ? 'Consult the demo programme' : 'Publish your first programme'}{' '}
-            <ArrowRight size={16} aria-hidden="true" />
-          </a>
-        </div>
-      </section>
+      {/*
+        A `For attendees` section sat here, between the role cards above and the agent section
+        below: a `Give attendees the programme, not a PDF.` heading, five deep links into the
+        seeded event's public pages, and a link to `/embeds`. It is gone by request. The programme
+        it pointed at is still one click from the page -- the attendee role card above opens the
+        published event site -- and `/embeds` keeps its own home, reachable from the navigation.
+      */}
 
+      {/*
+        An `Open source and self-hostable` section sat here, between that attendee section and the
+        agent section below. It had already been reduced to one paragraph and two links once, and
+        what was left restated its neighbours: the paragraph promised the API, the embeds, and the
+        extensibility that the API navigation item, the attendee section above, and this agent
+        section directly below each demonstrate, and its two links pointed at the agent section and
+        at GitHub, which the footer carries. The `Open source and self-hostable` claim itself still
+        leads the footer, next to the licence and the repository.
+
+        Its `border-bottom` and this section's `border-block` also stacked two hairlines in the gap
+        between them, and the second of this section's pair drew a rule under the last section on
+        the page. No other band here separates itself with a line -- the mosaic between the hero and
+        the products section is a full illustrated strip, not a rule -- so both are gone rather than
+        collapsed to one.
+      */}
       <section
         className={styles.agentQuickStart}
         id="agent-quick-start"
         aria-labelledby="agent-quick-start-title"
       >
         <div className={styles.agentQuickIntro}>
-          <p className={styles.eyebrow}>Agent quick start</p>
+          <p className={styles.eyebrow}>
+            <Sparkles size={17} aria-hidden="true" />
+            For organizers · Agent-first
+          </p>
           <h2 id="agent-quick-start-title">
-            Give your agent a brief. Keep every decree reviewable.
+            Let your agent handle the boring work.
           </h2>
           <p>
-            Cicero ships with a stateful repo-local guide. It discovers how far you have already
-            reached, records only non-secret progress in your working directory, walks the next
-            missing step, and hands ongoing programme work to a preview-first agent.
+            Cicero is built to be driven by an agent. Connect its MCP server and Claude or ChatGPT
+            works the event itself: it reads the submissions, reconciles the program, and writes the
+            speaker email, instead of telling you what to click.
           </p>
-
-          <ol className={styles.agentSteps}>
-            <li>
-              <span className={styles.agentStepNumber}>1</span>
-              <div className={styles.agentStepCopy}>
-                <h3>Clone the repository</h3>
-                <p>Open the repository root in Codex so it discovers both bundled skills.</p>
-                <code>git clone https://github.com/EllAchE/sessionboard-oss.git</code>
-              </div>
-            </li>
-            <li>
-              <span className={styles.agentStepNumber}>2</span>
-              <div className={styles.agentStepCopy}>
-                <h3>Paste the resumable brief</h3>
-                <p>
-                  The guide establishes <code>.cicero/onboarding.json</code>, asks only what it
-                  cannot discover, and resumes from the same point next time.
-                </p>
-              </div>
-            </li>
-            <li>
-              <span className={styles.agentStepNumber}>3</span>
-              <div className={styles.agentStepCopy}>
-                <h3>Hand off when ready</h3>
-                <p>
-                  When you reach{' '}
-                  <a href="/signin?next=/admin/integrations">Admin → Integrations</a>, expose the
-                  event key as <code>CICERO_API_KEY</code>. The guide never stores its value and
-                  the programme agent still previews before every apply.
-                </p>
-              </div>
-            </li>
-          </ol>
+          {/*
+            A numbered `Copy one line / Create a key / Connect the MCP` list used to sit here and
+            spent three headings restating the panel beside it: the prompt to copy, the endpoint to
+            point a client at, and the key that authenticates it are all already shown there, as the
+            literal strings a reader has to use rather than a description of them. Setup is one
+            sentence and a link, not a section.
+          */}
+          <p>
+            Copy the prompt, paste it into your agent, and it handles the rest: hosting, your first
+            event, and the API key the MCP server needs.
+          </p>
 
           <div className={styles.agentLinks}>
             <a
@@ -360,78 +324,38 @@ export function HomeContent({ demoAvailable }: { demoAvailable: boolean }) {
         <div className={styles.agentPrompt}>
           <div className={styles.agentPromptHeader}>
             <span className={styles.agentPromptLabel}>
-              <Bot size={17} aria-hidden="true" />
-              Preview-first prompt
+              <Plug size={17} aria-hidden="true" />
+              MCP server <code>{MCP_ENDPOINT}</code>
             </span>
-            <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+            <a className={styles.textLink} href="/api/v1/mcp-tools.json">
+              Tool manifest
+            </a>
+          </div>
+          <p className={styles.agentPromptNote}>
+            <KeyRound size={17} aria-hidden="true" />
+            Streamable HTTP, authenticated with an event API key as a Bearer token. Create one under
+            Organizer → Integrations, either read-only or read and write. 
+          </p>
+
+          <div className={styles.agentPromptHeader}>
+            <span className={styles.agentPromptLabel}>
+              <Sparkles size={17} aria-hidden="true" />
+              Paste into your agent
+            </span>
+            <div className={styles.agentPromptActions}>
+              <AgentProviders size={34} />
+              <CopyAgentPromptButton prompt={AGENT_STARTER_PROMPT} />
+            </div>
           </div>
           <pre>
             <code>{AGENT_STARTER_PROMPT}</code>
           </pre>
           <p className={styles.agentPromptSafety}>
             <ShieldCheck size={17} aria-hidden="true" />
-            Applying changes and deleting records always require separate confirmation.
+            Changes and deletions require confirmation.
           </p>
         </div>
       </section>
-
-      {demoAvailable ? (
-        <section className={styles.finalCta}>
-          <p className={styles.eyebrow}>Take command</p>
-          <h2>Enter a conference already in motion.</h2>
-          <p>
-            The live province is filled with petitions, orators, unfinished duties, and a two-day
-            programme ready for inspection. Take the seat you want to try: the magistrate who
-            governs it, a censor weighing petitions, or an orator readying for the stage.
-          </p>
-          <div className={styles.finalCtaActions}>
-            <Button
-              href={DEMO_ENTRY_LINKS.organizer}
-              variant="primary"
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Open the organizer Forum
-            </Button>
-            <Button
-              href={DEMO_ENTRY_LINKS.reviewer}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Judge petitions as a reviewer
-            </Button>
-            <Button
-              href={DEMO_ENTRY_LINKS.speaker}
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Prepare a talk as a speaker
-            </Button>
-          </div>
-        </section>
-      ) : (
-        <section className={styles.finalCta}>
-          <p className={styles.eyebrow}>Ready for its first event</p>
-          <h2>Convene your own conference.</h2>
-          <p>
-            This fresh instance is fully operational without fixture data. Create an account to
-            build the first event, or sign in if another organizer has already invited you.
-          </p>
-          <div className={styles.finalCtaActions}>
-            <Button
-              href="/signup"
-              variant="primary"
-              size="lg"
-              iconRight={<ArrowRight size={17} aria-hidden="true" />}
-            >
-              Create the first event
-            </Button>
-            <Button href="/signin" size="lg">
-              Sign in
-            </Button>
-          </div>
-        </section>
-      )}
 
     </main>
   );

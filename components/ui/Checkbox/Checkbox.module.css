@@ -3,8 +3,11 @@
   display: inline-block;
   vertical-align: middle;
   box-sizing: border-box;
-  width: var(--control-xs);
-  height: var(--control-xs);
+  width: var(--control-2xs);
+  height: var(--control-2xs);
+  /* A tick-box is a fixed square in every context. Left to the flex default it shrinks against a
+     long label, so rows in the same list end up with boxes of different widths. */
+  flex: none;
   margin: 0;
   position: relative;
   background: var(--surface-card);

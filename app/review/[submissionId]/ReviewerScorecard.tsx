@@ -12,6 +12,7 @@ import {
   CardTitle,
   Dialog,
   ScoreStars,
+  Select,
   Tag,
   Textarea,
 } from '@/components/ui';
@@ -63,8 +64,24 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
   const router = useRouter();
   const [saving, startSaving] = useTransition();
   const [recusing, startRecusing] = useTransition();
+  /**
+   * `ABS-03`. Numbers and words are held apart in state exactly as they are in storage, so a
+   * dropdown choice can never leak into the weighted average and a rating can never be saved as a
+   * string. `textAnswers` covers the `select` and `text` criteria, `scores` the numeric ones.
+   */
   const [scores, setScores] = useState<Record<string, number>>(() =>
-    Object.fromEntries(props.myScores.map((score) => [score.criterionId, score.value])),
+    Object.fromEntries(
+      props.myScores
+        .filter((score) => typeof score.value === 'number')
+        .map((score) => [score.criterionId, score.value as number]),
+    ),
+  );
+  const [textAnswers, setTextAnswers] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      props.myScores
+        .filter((score) => typeof score.text === 'string' && score.text.length > 0)
+        .map((score) => [score.criterionId, score.text as string]),
+    ),
   );
   const [comment, setComment] = useState(props.myComment ?? '');
   const [message, setMessage] = useState<string | null>(null);
@@ -72,16 +89,36 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
   const [recusalOpen, setRecusalOpen] = useState(false);
   const [reason, setReason] = useState('');
 
-  const scoredCount = props.criteria.filter((criterion) => scores[criterion.id]).length;
-  const allScored = props.criteria.length > 0 && scoredCount === props.criteria.length;
+  const numericCriteria = useMemo(
+    () => props.criteria.filter((criterion) => criterion.type === 'numeric'),
+    [props.criteria],
+  );
+
+  const answered = useCallback(
+    (criterion: CriterionWire) =>
+      criterion.type === 'numeric'
+        ? Boolean(scores[criterion.id])
+        : Boolean((textAnswers[criterion.id] ?? '').trim()),
+    [scores, textAnswers],
+  );
+
+  const scoredCount = numericCriteria.filter((criterion) => scores[criterion.id]).length;
+  /**
+   * A written criterion is a prompt, not a gate: an organizer who wants "anything else?" on the
+   * scorecard should not be able to trap a reviewer who has nothing to add. Ratings and dropdowns
+   * are choices the reviewer was asked to make, so those must be made before submitting.
+   */
+  const allScored =
+    props.criteria.length > 0 &&
+    props.criteria.every((criterion) => criterion.type === 'text' || answered(criterion));
 
   const preview = useMemo(() => {
-    const criteria = props.criteria.map((criterion, position) => ({ ...criterion, position }));
+    const criteria = numericCriteria.map((criterion, position) => ({ ...criterion, position }));
     const values = criteria
       .filter((criterion) => scores[criterion.id])
       .map((criterion) => ({ criterionId: criterion.id, value: scores[criterion.id] }));
     return weightedScore(criteria, values).average;
-  }, [props.criteria, scores]);
+  }, [numericCriteria, scores]);
 
   const save = useCallback(
     (complete: boolean) => {
@@ -97,8 +134,16 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
           roundId,
           submissionId: props.submissionId,
           scores: props.criteria
-            .filter((criterion) => scores[criterion.id])
-            .map((criterion) => ({ criterionId: criterion.id, value: scores[criterion.id] })),
+            .filter((criterion) => answered(criterion))
+            .map<ScoreWire>((criterion) =>
+              criterion.type === 'numeric'
+                ? { criterionId: criterion.id, value: scores[criterion.id], text: null }
+                : {
+                    criterionId: criterion.id,
+                    value: null,
+                    text: textAnswers[criterion.id].trim(),
+                  },
+            ),
           comment: comment.trim() ? comment.trim() : null,
           complete,
         });
@@ -110,7 +155,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
         router.refresh();
       });
     },
-    [comment, props.criteria, props.round, props.submissionId, router, scores],
+    [answered, comment, props.criteria, props.round, props.submissionId, router, scores, textAnswers],
   );
 
   const confirmRecusal = useCallback(() => {
@@ -212,8 +257,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
             <CardBody>
               {props.authorHidden ? (
                 <p className={styles.muted}>
-                  <EyeOff size={13} aria-hidden /> This round is anonymized. Names, contact details,
-                  affiliations and bios are withheld so you score the proposal on its own terms.
+                  <EyeOff size={13} aria-hidden /> This round hides speaker identities.
                 </p>
               ) : (
                 <div className={styles.answerList}>
@@ -260,35 +304,71 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
               {props.criteria.map((criterion) => (
                 <div key={criterion.id} className={styles.criterion}>
                   <div className={styles.criterionHead}>
-                    <span className={styles.criterionLabel}>{criterion.label}</span>
-                    <span className={styles.criterionWeight}>×{criterion.weight}</span>
+                    <span className={styles.criterionLabel} id={`criterion-${criterion.id}`}>
+                      {criterion.label}
+                    </span>
+                    {criterion.type === 'numeric' ? (
+                      <span className={styles.criterionWeight}>×{criterion.weight}</span>
+                    ) : null}
                   </div>
                   {criterion.description ? (
                     <span className={styles.criterionDescription}>{criterion.description}</span>
                   ) : null}
-                  <div className={styles.criterionControl}>
-                    <ScoreStars
-                      value={scores[criterion.id] ?? 0}
-                      max={criterion.maxScore}
-                      readOnly={false}
-                      label={criterion.label}
-                      onChange={(value) =>
-                        setScores((current) => ({ ...current, [criterion.id]: value }))
+                  {/* `ABS-03`: one control per criterion type, chosen by the organizer's scorecard. */}
+                  {criterion.type === 'numeric' ? (
+                    <div className={styles.criterionControl}>
+                      <ScoreStars
+                        value={scores[criterion.id] ?? 0}
+                        max={criterion.maxScore}
+                        readOnly={false}
+                        label={criterion.label}
+                        onChange={(value) =>
+                          setScores((current) => ({ ...current, [criterion.id]: value }))
+                        }
+                      />
+                      <span className={styles.criterionValue}>
+                        {scores[criterion.id]
+                          ? `${scores[criterion.id]}/${criterion.maxScore}`
+                          : '—'}
+                      </span>
+                    </div>
+                  ) : criterion.type === 'select' ? (
+                    <Select
+                      selectSize="sm"
+                      aria-label={criterion.label}
+                      value={textAnswers[criterion.id] ?? ''}
+                      onChange={(event) =>
+                        setTextAnswers((current) => ({
+                          ...current,
+                          [criterion.id]: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Choose…</option>
+                      {criterion.options.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <Textarea
+                      rows={4}
+                      aria-label={criterion.label}
+                      value={textAnswers[criterion.id] ?? ''}
+                      onChange={(event) =>
+                        setTextAnswers((current) => ({
+                          ...current,
+                          [criterion.id]: event.target.value,
+                        }))
                       }
                     />
-                    <span className={styles.criterionValue}>
-                      {scores[criterion.id]
-                        ? `${scores[criterion.id]}/${criterion.maxScore}`
-                        : '—'}
-                    </span>
-                  </div>
+                  )}
                 </div>
               ))}
 
               {props.criteria.length === 0 ? (
-                <p className={styles.muted}>
-                  The organizer has not added scoring criteria to this round yet.
-                </p>
+                <p className={styles.muted}>No scoring criteria yet.</p>
               ) : null}
 
               <div className={styles.field}>
@@ -309,7 +389,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                   {preview === null ? '—' : preview.toFixed(1)}
                 </span>
                 <span className={styles.scoreOutOf}>
-                  out of 5 · {scoredCount}/{props.criteria.length} criteria scored
+                  out of 5 · {scoredCount}/{numericCriteria.length} rated criteria scored
                 </span>
               </div>
 
@@ -334,7 +414,10 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
                 </Button>
               </div>
               {!allScored && props.criteria.length > 0 ? (
-                <p className={styles.hint}>Score every criterion to submit.</p>
+                <p className={styles.hint}>
+                  Answer every rating and dropdown criterion to submit. Written criteria are
+                  optional.
+                </p>
               ) : null}
             </CardBody>
           </Card>
@@ -346,8 +429,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
               </CardHeader>
               <CardBody>
                 <p className={styles.muted}>
-                  If you cannot judge this fairly, recuse yourself. It leaves your queue and the
-                  organizer can reassign it.
+                  Recusing removes this from your queue for reassignment.
                 </p>
                 <div className={styles.metaRow}>
                   <Button
@@ -365,8 +447,8 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
 
           {props.blinded ? (
             <p className={styles.hint}>
-              {props.peerCount} other {props.peerCount === 1 ? 'reviewer is' : 'reviewers are'} on
-              this submission. Their scores stay hidden until the round closes.
+              {props.peerCount} other reviewer{props.peerCount === 1 ? '' : 's'}; scores remain
+              hidden until the round closes.
             </p>
           ) : null}
         </div>
@@ -376,7 +458,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
         open={recusalOpen}
         onOpenChange={setRecusalOpen}
         title="Recuse yourself from this submission"
-        description={`${props.displayRef} — ${props.title}`}
+        description={`${props.displayRef}: ${props.title}`}
         footer={
           <>
             <Button variant="ghost" onClick={() => setRecusalOpen(false)}>
@@ -396,7 +478,7 @@ export function ReviewerScorecard(props: ReviewerScorecardProps) {
             id="recusal-reason-detail"
             rows={3}
             value={reason}
-            placeholder="A conflict of interest, or simply no capacity."
+            placeholder="Conflict of interest or availability."
             onChange={(event) => setReason(event.target.value)}
           />
         </div>

@@ -92,6 +92,36 @@ const SYSTEM_PROMPT = [
   'submission drove each score. A vague abstract earns a middle score with the vagueness named.',
 ].join('\n');
 
+/**
+ * `max_tokens` is one ceiling over reasoning *and* visible text, and on `claude-sonnet-5` the model
+ * reasons by default — so a budget sized for the JSON body alone gets spent thinking and the object
+ * arrives cut off mid-string. The neighbouring fixes are both worse here: `budget_tokens` is
+ * rejected outright by this model, and turning thinking off is documented to let reasoning prose
+ * leak into the text block, which is the exact string handed to `JSON.parse` below. So the ceiling
+ * is simply set wide enough for both halves. An unused ceiling is free — billing counts tokens
+ * generated, not tokens allowed — and this one stays under the size where a non-streaming request
+ * starts risking an HTTP timeout.
+ */
+const MAX_OUTPUT_TOKENS = 16_000;
+
+/**
+ * A cut-off answer is a different failure from an unusable one and has to say so. Left to fall
+ * through, `parseModelJson` gets half an object, `normalizeScores` keeps whatever survived, and an
+ * exhausted budget reaches the organizer wearing the face of a broken feature. `max_tokens` is the
+ * one stop reason that means the model had more to say.
+ */
+export function responseText(response: Anthropic.Message): string {
+  if (response.stop_reason === 'max_tokens') {
+    throw unavailable(
+      'The AI reviewer ran out of room before finishing its answer. Try again, or shorten the scorecard.',
+    );
+  }
+  return response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+    .map((block) => block.text)
+    .join('\n');
+}
+
 /** Models wrap JSON in prose or fences often enough that parsing must tolerate both. */
 export function parseModelJson(text: string): { scores?: unknown; rationale?: unknown } | null {
   const trimmed = text.trim();
@@ -218,8 +248,8 @@ function heuristicReview(subject: AiReviewSubject): AiReviewResult {
   });
 
   const observations = [
-    `- Abstract: **${abstract} words**${abstract < 25 ? ' — thin enough that a reviewer cannot judge it' : ''}`,
-    `- Speaker bio: **${bio} words**${bio === 0 ? ' — none supplied' : ''}`,
+    `- Abstract: **${abstract} words**${abstract < 25 ? ', thin enough that a reviewer cannot judge it' : ''}`,
+    `- Speaker bio: **${bio} words**${bio === 0 ? ', none supplied' : ''}`,
     `- Title: **${titleWords} words**`,
     `- Classification: **${classified} of 3** set (track, format, level)`,
     `- Extra questions answered: **${answered}**`,
@@ -230,13 +260,13 @@ function heuristicReview(subject: AiReviewSubject): AiReviewResult {
     rationaleMarkdown: [
       AI_KEY_MISSING_NOTE_MARKDOWN,
       '',
-      'Until then, what follows is a rule-based reading of how complete the submission is, not an opinion on whether the talk is good. Treat it as triage and score it yourself.',
+      'This is a completeness check, not a quality score.',
       '',
       observations,
       '',
       abstract < 25 || bio === 0
-        ? '_This proposal is missing enough that it would be worth asking the speaker for more before reviewing it properly._'
-        : '_Nothing obviously missing; the substance is a judgement call for a human reviewer._',
+        ? '_Ask the speaker for more detail before review._'
+        : '_No obvious gaps. Judge the substance yourself._',
     ].join('\n'),
     criterionScores,
   };
@@ -263,22 +293,22 @@ export async function generateAiReview(subject: AiReviewSubject): Promise<AiRevi
     '===== SUBMISSION END =====',
   ].join('\n');
 
-  let text: string;
+  let response: Anthropic.Message;
   try {
-    const response = await client.messages.create({
+    response = await client.messages.create({
       model: AI_REVIEW_MODEL,
-      max_tokens: 1500,
+      max_tokens: MAX_OUTPUT_TOKENS,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }],
     });
-    text = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('\n');
   } catch (error) {
     console.error(`AI review request failed: ${error instanceof Error ? error.message : String(error)}`);
     throw unavailable('The AI reviewer could not be reached. Try again in a moment.');
   }
+
+  // Outside the `catch` on purpose: a truncated answer is a budget problem, and reporting it as
+  // "could not be reached" would send whoever debugs it to look at the network.
+  const text = responseText(response);
 
   const parsed = parseModelJson(text);
   const scores = normalizeScores(parsed?.scores, subject.criteria);

@@ -256,6 +256,20 @@
             "type": "string",
             "description": "ISO 8601 instant the event ends"
           },
+          "speakerDeadlineAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601 instant the speaker roster is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
+          },
+          "agendaDeadlineAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ISO 8601 instant the agenda is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
+          },
           "websiteUrl": {
             "type": [
               "string",
@@ -287,6 +301,8 @@
           "endsOn",
           "startsAt",
           "endsAt",
+          "speakerDeadlineAt",
+          "agendaDeadlineAt",
           "websiteUrl",
           "venueName",
           "venueAddress"
@@ -2298,6 +2314,20 @@
                 "type": "string",
                 "description": "ISO 8601 instant the event ends"
               },
+              "speakerDeadlineAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO 8601 instant the speaker roster is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
+              },
+              "agendaDeadlineAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "ISO 8601 instant the agenda is meant to be settled. Advisory, so no write is refused after it passes. Null when the organizers do not track it"
+              },
               "websiteUrl": {
                 "type": [
                   "string",
@@ -2329,6 +2359,8 @@
               "endsOn",
               "startsAt",
               "endsAt",
+              "speakerDeadlineAt",
+              "agendaDeadlineAt",
               "websiteUrl",
               "venueName",
               "venueAddress"

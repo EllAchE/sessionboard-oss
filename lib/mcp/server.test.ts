@@ -67,6 +67,8 @@ describe('Cicero MCP server', () => {
       endsOn: null,
       startsAt: '2026-08-13T13:00:00.000Z',
       endsAt: '2026-08-14T21:00:00.000Z',
+      speakerDeadlineAt: null,
+      agendaDeadlineAt: null,
       websiteUrl: null,
       venueName: null,
       venueAddress: null,

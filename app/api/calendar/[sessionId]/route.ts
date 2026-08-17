@@ -1,3 +1,4 @@
+import { isUuid } from '@/lib/identifiers';
 import { sessionCalendarDownload } from '@/lib/services/comms';
 
 /**
@@ -9,14 +10,35 @@ import { sessionCalendarDownload } from '@/lib/services/comms';
  */
 export const dynamic = 'force-dynamic';
 
+const MISSING = 'That session has no confirmed time yet.';
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<Response> {
   const { sessionId } = await params;
-  const calendar = await sessionCalendarDownload(sessionId);
+  // A mail client that truncated the link, or a crawler walking the path space, hands us something
+  // that is not a UUID. That is a 404, not a database error — the `uuid` column would reject it at
+  // the driver and the throw would escape this handler as a 500.
+  if (!isUuid(sessionId)) {
+    return new Response(MISSING, { status: 404 });
+  }
+
+  let calendar: Awaited<ReturnType<typeof sessionCalendarDownload>>;
+  try {
+    calendar = await sessionCalendarDownload(sessionId);
+  } catch (error) {
+    // This link lives in an email forever. When the read fails, say so in a way a calendar client
+    // will retry rather than cache.
+    console.error(error instanceof Error ? error.message : String(error));
+    return new Response('The calendar file could not be built right now. Try again shortly.', {
+      status: 503,
+      headers: { 'retry-after': '30' },
+    });
+  }
+
   if (!calendar) {
-    return new Response('That session has no confirmed time yet.', { status: 404 });
+    return new Response(MISSING, { status: 404 });
   }
 
   return new Response(calendar.body, {

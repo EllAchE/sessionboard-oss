@@ -28,8 +28,8 @@ import {
  * nudge is a different bug from renumbering none.
  *
  * Cross-kind name uniqueness is a database property rather than a service one: the fake ignores
- * `where`, so it cannot prove a `kind`-scoped lookup. `db/migrations/sponsor-entities.test.ts` pins
- * the constraint's shape, and it was exercised against real Postgres on the upgrade path.
+ * `where`, so it cannot prove a `kind`-scoped lookup. The constraint lives in `db/schema.ts`, and
+ * integration CI verifies that the generated baseline applies to a clean Postgres database.
  */
 
 type Recorder = {
@@ -53,6 +53,17 @@ type Recorder = {
 const state = vi.hoisted(() => ({ db: null as unknown }));
 
 vi.mock('../../db/client', () => ({ getDb: () => state.db }));
+
+/**
+ * `recordRevision` reads the live sponsor and its revision list back through query shapes this
+ * fake does not implement, and teaching the fake to answer them would be testing the fake rather
+ * than the service. Mocked at the module boundary — the pattern `app/portal/[eventSlug]/actions
+ * .test.ts` established — so these tests can still assert *that* a mutation snapshots first.
+ * Whether the snapshot itself is right is `content.integration.test.ts`'s job, against real rows.
+ */
+const recordRevision = vi.hoisted(() => vi.fn());
+
+vi.mock('./content', () => ({ recordRevision }));
 
 function recorder(): Recorder {
   return {
@@ -189,6 +200,8 @@ beforeEach(() => {
   rec.findFirst.set('sponsor', EXISTING);
   rec.rows.set(sponsor, SPONSOR_ROWS);
   state.db = fakeDb(rec);
+  /** Reset rather than clear: one test below installs an implementation to observe call order. */
+  recordRevision.mockReset();
 });
 
 const dialect = new PgDialect();
@@ -535,5 +548,69 @@ describe('reorderSponsors', () => {
   it('is closed to a reviewer', async () => {
     const error = await rejection(reorderSponsors(context(['reviewer']), 'sponsor', ['sponsor-a']));
     expect(error.code).toBe('forbidden');
+  });
+});
+
+/**
+ * `AD-4`. Sponsors had no history at all, so "who unpublished this logo the week of the event" had
+ * no answer. These assert the hook and its ordering; `content.integration.test.ts` asserts that
+ * what gets snapshotted is right.
+ */
+describe('sponsor edit history', () => {
+  it('snapshots before an edit lands, so the revision holds the pre-edit state', async () => {
+    const order: string[] = [];
+    recordRevision.mockImplementation(() => {
+      order.push('recordRevision');
+    });
+    const originalUpdate = (state.db as { update: (table: unknown) => unknown }).update;
+    (state.db as { update: (table: unknown) => unknown }).update = (table: unknown) => {
+      order.push('update');
+      return originalUpdate(table);
+    };
+
+    await updateSponsor(context(), 'sponsor-b', { name: 'Fabrica Vitraria Nova' });
+
+    expect(order).toEqual(['recordRevision', 'update']);
+    expect(rec.updates).toHaveLength(1);
+  });
+
+  it('names the sponsor being edited', async () => {
+    await updateSponsor(context(), 'sponsor-b', { tier: 'Principal' });
+
+    expect(recordRevision).toHaveBeenCalledWith(
+      expect.anything(),
+      'sponsor',
+      'sponsor-b',
+      'Edited Fabrica Vitraria',
+    );
+  });
+
+  /** A rejected rename must not leave a revision claiming an edit that never reached the table. */
+  it('does not snapshot when the name is already taken', async () => {
+    rec.findFirst.set('sponsor', [EXISTING, { ...EXISTING, id: 'sponsor-a' }]);
+
+    const error = await rejection(updateSponsor(context(), 'sponsor-b', { name: 'Taken' }));
+
+    expect(error.code).toBe('conflict');
+    expect(recordRevision).not.toHaveBeenCalled();
+  });
+
+  it('records publishing and unpublishing under their own summaries', async () => {
+    await setSponsorStatus(context(), 'sponsor-b', 'published');
+
+    expect(recordRevision).toHaveBeenCalledWith(
+      expect.anything(),
+      'sponsor',
+      'sponsor-b',
+      'Published Fabrica Vitraria',
+    );
+  });
+
+  /** The service already early-returns on an unchanged status; no write means no history. */
+  it('does not snapshot a status that is already set', async () => {
+    await setSponsorStatus(context(), 'sponsor-b', 'draft');
+
+    expect(recordRevision).not.toHaveBeenCalled();
+    expect(rec.updates).toHaveLength(0);
   });
 });

@@ -49,7 +49,7 @@ export function getGateway(): AccelEventsGateway | null {
 
 export type SpeakerCandidate = SpeakerSource & {
   displayName: string;
-  /** Accepted talks this person is on, for the admin list. */
+  /** Accepted talks this person is on, for the organizer list. */
   sessionTitles: string[];
   lastSync: {
     status: 'pending' | 'synced' | 'failed';
@@ -377,7 +377,7 @@ export async function testConnection(): Promise<{
     const listed = await gateway.listSpeakers({ size: 1 });
     return {
       ok: true,
-      message: `Connected to ${gateway.eventUrl} — ${listed.total} speaker${listed.total === 1 ? '' : 's'} on file`,
+      message: `Connected to ${gateway.eventUrl}, with ${listed.total} speaker${listed.total === 1 ? '' : 's'} on file`,
       authHeaderUsed: listed.authHeaderUsed,
     };
   } catch (error) {

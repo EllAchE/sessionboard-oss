@@ -6,16 +6,29 @@ import { cn } from '../cn';
 import { Checkbox } from '../Checkbox';
 import styles from './DataTable.module.css';
 
+export type DataTableColumnSpace = 'compact' | 'standard' | 'wide';
+
 export interface DataTableColumn<T> {
   id: string;
   header: ReactNode;
-  /** Any CSS width. Prefer a token expression; `1fr` is not valid on a <col>, use a percentage. */
+  /**
+   * Preferred distribution at roomy widths. Use fixed values for bounded controls and percentages
+   * for text; `1fr` is not valid on a `<col>`.
+   */
   width?: string;
+  /** Readable space to preserve before the table scrolls. Independent of the preferred width. */
+  space?: DataTableColumnSpace;
   align?: 'left' | 'center' | 'right';
   /** Renders the value in the mono face — for refs like SESS-4 and other identifiers. */
   mono?: boolean;
   /** Emphasises the cell as the row's primary label. */
   strong?: boolean;
+  /**
+   * Cells truncate their own text with an ellipsis by default. Set `false` on columns that render
+   * a control or a badge rather than a run of text: the ellipsis cannot truncate those, so it only
+   * paints beside them and reads as text that was cut off.
+   */
+  truncate?: boolean;
   render: (row: T, rowIndex: number) => ReactNode;
 }
 
@@ -23,6 +36,11 @@ export interface DataTableProps<T> {
   columns: Array<DataTableColumn<T>>;
   rows: T[];
   getRowId: (row: T, index: number) => string;
+  /**
+   * Prevents dense tables from crushing their columns before the grid scrolls horizontally.
+   * Defaults to the sum of each column's semantic space, plus the selection control when present.
+   */
+  minWidth?: string;
   selectionMode?: 'none' | 'single' | 'multiple';
   selectedIds?: string[];
   defaultSelectedIds?: string[];
@@ -41,11 +59,18 @@ export interface DataTableProps<T> {
 }
 
 const PAGE_JUMP = 10;
+const SELECTION_COLUMN_WIDTH_REM = 3;
+const COLUMN_MIN_WIDTH_REM: Record<DataTableColumnSpace, number> = {
+  compact: 6,
+  standard: 8,
+  wide: 12,
+};
 
 export function DataTable<T>({
   columns,
   rows,
   getRowId,
+  minWidth,
   selectionMode = 'none',
   selectedIds,
   defaultSelectedIds,
@@ -183,6 +208,12 @@ export function DataTable<T>({
 
   const activeRowId = rows.length > 0 ? `${baseId}-row-${active}` : undefined;
   const columnCount = columns.length + (selectable ? 1 : 0);
+  const inferredMinWidth = `${
+    columns.reduce(
+      (total, column) => total + COLUMN_MIN_WIDTH_REM[column.space ?? 'standard'],
+      selectable ? SELECTION_COLUMN_WIDTH_REM : 0,
+    )
+  }rem`;
 
   return (
     <div
@@ -196,7 +227,7 @@ export function DataTable<T>({
       aria-activedescendant={activeRowId}
       onKeyDown={handleKeyDown}
     >
-      <table className={styles.table}>
+      <table className={styles.table} style={{ minWidth: minWidth ?? inferredMinWidth }}>
         {caption ? <caption className={styles.caption}>{caption}</caption> : null}
         <colgroup>
           {selectable ? <col style={{ width: 'var(--control-lg)' }} /> : null}
@@ -270,6 +301,7 @@ export function DataTable<T>({
                         styles[column.align ?? 'left'],
                         column.mono && styles.mono,
                         column.strong && styles.strong,
+                        column.truncate === false && styles.noTruncate,
                       )}
                     >
                       {column.render(row, index)}

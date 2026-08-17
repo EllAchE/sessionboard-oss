@@ -22,10 +22,9 @@ target, create-or-replace action, and whether the organizer identity will be reu
 bun run db:seed:first-settlement --apply --confirm=first-settlement
 ```
 
-The equivalent npm and container commands are:
+The equivalent command inside the Node-based runtime container is:
 
 ```bash
-npm run db:seed:first-settlement -- --apply --confirm=first-settlement
 docker compose exec app npm run db:seed:first-settlement -- --apply --confirm=first-settlement
 ```
 

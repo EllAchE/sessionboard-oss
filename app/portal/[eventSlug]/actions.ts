@@ -24,6 +24,7 @@ import {
   withdrawSubmission,
   type Participant,
 } from '@/lib/services/portal';
+import { addUnavailability, removeUnavailability } from '@/lib/services/speaker-availability';
 import {
   completeSimpleTask,
   listPortalTasks,
@@ -147,7 +148,8 @@ export async function saveProfileAction(_prev: FormState, formData: FormData): P
       timezone: text(formData, 'notificationTimezone').trim() || null,
       quietStart: text(formData, 'quietStart') || null,
       quietEnd: text(formData, 'quietEnd') || null,
-      smsHourlyLimit: Number(text(formData, 'smsHourlyLimit')),
+      // No `smsHourlyLimit`: the hourly cap is a guardrail, not a preference. Leaving it out of the
+      // patch keeps whatever the account already stores, and the service's own default otherwise.
       eventNotifyEmail: channelOverride(formData, 'eventNotifyEmail'),
       eventNotifySms: channelOverride(formData, 'eventNotifySms'),
       categories: Object.fromEntries(
@@ -233,7 +235,7 @@ export async function saveTaskFormAction(_prev: FormState, formData: FormData): 
     refresh(eventSlug);
     return {
       status: 'ok',
-      message: submit ? 'Submitted — check your email for a copy' : 'Progress saved',
+      message: submit ? 'Submitted. Check your email for a copy' : 'Progress saved',
     };
   } catch (error) {
     return fail(error);
@@ -257,7 +259,7 @@ export async function postDeliverableCommentAction(
     const deliverable = await myDeliverable(ctx, me, text(formData, 'fileId'));
     await addFileComment(ctx, deliverable.current.id, text(formData, 'body'));
     refresh(eventSlug);
-    return { status: 'ok', message: 'Comment posted — the organizers can see it' };
+    return { status: 'ok', message: 'Comment posted. The organizers can see it' };
   } catch (error) {
     return fail(error);
   }
@@ -337,6 +339,59 @@ export async function revokeAccessAction(_prev: FormState, formData: FormData): 
     );
     refresh(eventSlug);
     return { status: 'ok', message: 'Access removed' };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Unavailability — `AD-2`
+// ---------------------------------------------------------------------------
+
+/**
+ * The speaker declares when they *cannot* present. Blackout-shaped on purpose: no rows means no
+ * constraint, so a speaker who never opens this page stays schedulable — see
+ * `lib/services/speaker-availability.ts`.
+ *
+ * The authoring zone is resolved on the server rather than taken from the form, because the form is
+ * the one place it could be tampered with or simply be stale. It is the speaker's profile timezone
+ * when they have set one and the event's otherwise, which is exactly what the panel tells them it is.
+ */
+async function authoringTimezone(session: ActionSession): Promise<string> {
+  const event = await getEventBySlug(session.eventSlug);
+  return session.me.timezone ?? event?.timezone ?? 'UTC';
+}
+
+export async function addUnavailabilityAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const session = await actionSession(formData);
+    await addUnavailability(session.ctx.eventId, session.me.id, {
+      startDate: text(formData, 'startDate'),
+      startTime: text(formData, 'startTime'),
+      endDate: text(formData, 'endDate'),
+      endTime: text(formData, 'endTime'),
+      note: text(formData, 'note'),
+      timezone: await authoringTimezone(session),
+    });
+    refresh(session.eventSlug);
+    return { status: 'ok', message: 'Saved. Your organizers will see this on the agenda.' };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+export async function removeUnavailabilityAction(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  try {
+    const { ctx, me, eventSlug } = await actionSession(formData);
+    await removeUnavailability(ctx.eventId, me.id, text(formData, 'windowId'));
+    refresh(eventSlug);
+    return { status: 'ok', message: 'Removed' };
   } catch (error) {
     return fail(error);
   }

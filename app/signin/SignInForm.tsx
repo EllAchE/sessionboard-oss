@@ -41,7 +41,7 @@ export function SignInForm({
           {state.sent ? (
             <div className={styles.sent} aria-live="polite">
               <p className={styles.sentLead}>{delivery?.lead}</p>
-              <p className={styles.hint}>It works once and expires in 30 minutes.</p>
+              <p className={styles.hint}>Single-use · expires in 30 minutes.</p>
               {state.link ? (
                 <>
                   <Button href={state.link} variant="primary" fullWidth>
@@ -74,11 +74,11 @@ export function SignInForm({
               </Button>
             </form>
           )}
+          {!state.sent && copy.note ? <p className={styles.note}>{copy.note}</p> : null}
           {!state.sent && demoEmail ? (
             <div className={styles.demo}>
               <p className={styles.hint}>
-                Only here to look? <strong>{demoEmail}</strong> is a seeded demo account. It has no
-                inbox, so its link comes back on this page.
+                Try the demo account below. Its sign-in link appears here: <strong>{demoEmail}</strong>
               </p>
               <form action={action}>
                 <input type="hidden" name="next" value={next} />

@@ -9,7 +9,7 @@ import {
 } from '../../db/schema';
 import { isAppError, type AppError } from '../errors';
 import type { EventContext } from '../context';
-import { listTasksForAdmin } from './dashboard';
+import { listTasksForOrganizer } from './dashboard';
 import {
   assertCompletable,
   createTask,
@@ -276,6 +276,7 @@ function fakeDb(rec: Recorder) {
     delete: remove,
     query: {
       task: { findMany: () => Promise.resolve(rec.rows.get(task) ?? []) },
+      fileRequest: { findMany: () => Promise.resolve(rec.rows.get(fileRequest) ?? []) },
     },
   };
 }
@@ -393,10 +394,41 @@ describe('createTask', () => {
     });
 
     const request = rec.inserted.find((entry) => entry.table === fileRequest);
-    expect(request?.values).toMatchObject({ eventId: EVENT_ID, label: 'Send your badge photo' });
+    expect(request?.values).toMatchObject({
+      eventId: EVENT_ID,
+      label: 'Send your badge photo',
+      acceptedTypes: [],
+    });
     const created = rec.inserted.find((entry) => entry.table === task);
     expect(created?.values).toMatchObject({ kind: 'file_upload', required: false });
     expect((created?.values as { fileRequestId: string }).fileRequestId).toBeTruthy();
+  });
+
+  /**
+   * `CNT-02`. The constraint the organizer picked has to reach the request row, or the portal shows
+   * "Any file type" no matter what the task instructions asked for.
+   */
+  it('stores the accepted file types the organizer chose for an upload task', async () => {
+    await createTask(context(), {
+      name: 'File the written oration',
+      kind: 'file_upload',
+      audience: 'accepted_participants',
+      acceptedTypes: ['Application/PDF', ' application/pdf ', ''],
+    });
+
+    const request = rec.inserted.find((entry) => entry.table === fileRequest);
+    expect(request?.values).toMatchObject({ acceptedTypes: ['application/pdf'] });
+  });
+
+  it('keeps a type constraint off a task that collects no files', async () => {
+    await createTask(context(), {
+      name: 'Confirm your travel',
+      kind: 'acknowledge',
+      audience: 'accepted_participants',
+      acceptedTypes: ['application/pdf'],
+    });
+
+    expect(rec.inserted.find((entry) => entry.table === fileRequest)).toBeUndefined();
   });
 
   it('drops reminder offsets that are not usable and sorts the rest furthest-out first', async () => {
@@ -410,6 +442,33 @@ describe('createTask', () => {
     const created = rec.inserted.find((entry) => entry.table === task);
     expect(created?.values).toMatchObject({ reminderDaysBefore: [14, 1] });
   });
+
+  it('keeps one positive whole-day follow-up interval after a reminder send', async () => {
+    await createTask(context(), {
+      name: 'Confirm your travel dates',
+      kind: 'acknowledge',
+      audience: 'all_participants',
+      reminderDaysAfterSend: 3,
+    });
+
+    const created = rec.inserted.find((entry) => entry.table === task);
+    expect(created?.values).toMatchObject({ reminderDaysAfterSend: 3 });
+  });
+
+  it.each([0, -2, 1.5, Number.NaN])(
+    'disables an unusable after-send interval of %s',
+    async (reminderDaysAfterSend) => {
+      await createTask(context(), {
+        name: 'Confirm your travel dates',
+        kind: 'acknowledge',
+        audience: 'all_participants',
+        reminderDaysAfterSend,
+      });
+
+      const created = rec.inserted.find((entry) => entry.table === task);
+      expect(created?.values).toMatchObject({ reminderDaysAfterSend: null });
+    },
+  );
 
   it('assigns the new task to every current participant it applies to, immediately', async () => {
     await createTask(context(), {
@@ -470,7 +529,7 @@ describe('selected-speaker assignments', () => {
     ]);
   });
 
-  it('assigns exactly two selected speakers and exposes the same rows to admin and portal reads', async () => {
+  it('assigns exactly two selected speakers and exposes the same rows to organizer and portal reads', async () => {
     const created = await createTask(context(), {
       name: 'Confirm travel details',
       kind: 'acknowledge',
@@ -488,7 +547,7 @@ describe('selected-speaker assignments', () => {
     ]);
     expect(assignments.every((row) => row.taskId === created.id)).toBe(true);
 
-    const adminRows = await listTasksForAdmin(context());
+    const adminRows = await listTasksForOrganizer(context());
     expect(adminRows[0]).toMatchObject({
       assigned: 2,
       participantIds: ['participant-1', 'participant-3'],

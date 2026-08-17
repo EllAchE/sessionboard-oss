@@ -1,17 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Image from 'next/image';
 import { Dialog } from '@/components/ui';
 import {
-  initialsOf,
   sessionsForSpeaker,
   sortSpeakers,
   speakerMatches,
   type EmbedOptions,
   type PublicBundle,
 } from '../model';
-import { SearchField, SpeakerProfile } from './parts';
+import { SearchField, SpeakerPhoto, SpeakerProfile } from './parts';
 import styles from '../embed.module.css';
 
 /**
@@ -22,10 +20,13 @@ export function GalleryWidget({
   bundle,
   options,
   sessionBase,
+  showSearch = true,
 }: {
   bundle: PublicBundle;
   options: EmbedOptions;
   sessionBase: string;
+  /** Off where the caller shows a short excerpt, so the box cannot search the speakers it left out. */
+  showSearch?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -40,17 +41,19 @@ export function GalleryWidget({
 
   return (
     <div>
-      <div className={styles.toolbar}>
-        <SearchField
-          value={query}
-          onChange={setQuery}
-          label="Search speakers, companies, or talks"
-          placeholder="Search speakers, companies, or talks…"
-        />
-        <span className={styles.resultCount} role="status">
-          {visible.length} of {ordered.length} speakers
-        </span>
-      </div>
+      {showSearch ? (
+        <div className={styles.toolbar}>
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            label="Search speakers, companies, or talks"
+            placeholder="Search speakers, companies, or talks…"
+          />
+          <span className={styles.resultCount} role="status">
+            {visible.length} of {ordered.length} speakers
+          </span>
+        </div>
+      ) : null}
 
       {visible.length === 0 ? (
         <p className={styles.empty}>
@@ -69,20 +72,13 @@ export function GalleryWidget({
               onClick={() => setOpenId(speaker.id)}
             >
               {options.showPhoto ? (
-                speaker.headshotUrl ? (
-                  <Image
-                    className={styles.headshot}
-                    src={speaker.headshotUrl}
-                    alt=""
-                    width={640}
-                    height={640}
-                    unoptimized
-                  />
-                ) : (
-                  <span className={styles.headshotFallback} aria-hidden>
-                    {initialsOf(speaker.name)}
-                  </span>
-                )
+                <SpeakerPhoto
+                  speaker={speaker}
+                  className={styles.headshot}
+                  fallbackClassName={styles.headshotFallback}
+                  width={640}
+                  height={640}
+                />
               ) : null}
               <span className={styles.speakerName} dir="auto">
                 {speaker.name}

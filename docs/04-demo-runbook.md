@@ -6,10 +6,12 @@ spine first, then shows API and automation work as bonus value. The source of tr
 [`01-requirements.md`](01-requirements.md); the public Sessionboard survey is supporting context,
 not an extra scope list.
 
-> **Status on 12 August 2026.** The existing `demo` event is live. The Roman Senate event and the
-> two program-reconciliation routes are not deployed from `main` yet. At the last approved
-> read-only check, `/first-settlement` returned 404. Do not imply otherwise. Re-run the preflight
-> after the relevant PRs are approved, merged, deployed, and seeded.
+> **Last verified 16 August 2026.** The hosted `demo` and `first-settlement` public programmes,
+> agenda embed, public agenda API, reserved-address magic-link flow, and organizer dashboard were
+> exercised successfully. The host uses the older `/admin` organizer shell while current source
+> uses `/organizer` and includes newer command-menu, review-keyboard, Updates, exhibitor-map, and
+> chasing ergonomics. The shared data is mutable, so record the deployed revision and re-run the
+> checklist before presenting. See [`06-submission-evidence.md`](06-submission-evidence.md).
 
 ## Demo charter
 
@@ -44,17 +46,17 @@ The production base URL is <https://cicero-three.vercel.app>.
 | --- | --- | --- |
 | Home | <https://cicero-three.vercel.app> | Live |
 | Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
-| Organizer dashboard | <https://cicero-three.vercel.app/admin> | Live after sign-in |
-| Captured demo mail | <https://cicero-three.vercel.app/admin/mail> | Live after sign-in |
+| Organizer dashboard | <https://cicero-three.vercel.app/admin> | Live after sign-in; legacy hosted route |
+| Captured demo mail | <https://cicero-three.vercel.app/admin/mail> | Verify during preflight; legacy hosted route |
 | Existing public demo | <https://cicero-three.vercel.app/demo> | Live fallback |
 | Existing demo agenda | <https://cicero-three.vercel.app/demo/agenda> | Live fallback |
 | Existing public CFP | <https://cicero-three.vercel.app/submit/demo/speak> | Live fallback |
 | Existing agenda embed | <https://cicero-three.vercel.app/embed/demo/agenda> | Live fallback |
 | Existing public agenda API | <https://cicero-three.vercel.app/api/v1/events/demo/agenda> | Live fallback |
-| Live OpenAPI | <https://cicero-three.vercel.app/api/v1/openapi.json> | Live; proves whether a provisional route is deployed |
+| Live OpenAPI | <https://cicero-three.vercel.app/api/v1/openapi.json> | Live; proves which repository contract is deployed |
 
-The First Settlement seed was approved and run against production on 2026-08-15, so these links are
-live. Statuses below were re-verified against the deployment that same day:
+The First Settlement seed was approved and run against production on 2026-08-15. The statuses below
+were re-verified read-only on 2026-08-16:
 
 | Purpose | URL | Status |
 | --- | --- | --- |
@@ -75,7 +77,7 @@ six accepted speakers, six additional confirmed dummy gallery profiles, five pub
 unscheduled accepted motion, review, speaker tasks, portal resources, recorded communications, and
 Roman-themed tracks, rooms, and formats. The twelve database-backed gallery profiles are evenly
 split between women and men. Its dates advance to the current or next January anniversary. Fixed
-2027 dates in the provisional API fixture are demonstration inputs, not a claim that they match the
+2027 dates in the API fixture are demonstration inputs, not a claim that they match the
 moving seed.
 
 The committed Roman seed has one configured review round and its CFP does not have a conditional
@@ -103,16 +105,14 @@ approving this runbook does not approve any of them.
 
 | Action requiring approval | Exact scope to approve |
 | --- | --- |
-| Merge and deploy | Name every PR and the target production worker |
+| Deploy a revision | Record the exact commit and target Vercel/Worker deployment |
 | Seed the Roman event | A reviewed, targeted operation that affects only slug `first-settlement` and its known demo identities |
 | Create a demo API key | One event-scoped key for `first-settlement`, with an owner and expiry/revocation plan |
 | Live rehearsal | Every production create, update, delete, email, calendar, fixture reset, or integration mutation to be exercised |
 | Real Accelevents push | The named Accelevents event and the accepted speakers that will be created or treated as already present |
 
-Never run the full `npm run db:seed` against production. The full seed removes and recreates known
-demo identities and their events. The targeted seed is proposed in
-[`PR #50`](https://github.com/EllAchE/sessionboard-oss/pull/50), which was open, ready, mergeable,
-and green when this runbook was written. After review and merge, its commands are:
+Never run the full `bun run db:seed` against production. The full seed removes and recreates known
+demo identities and their events. Use the targeted First Settlement commands:
 
 ```bash
 bun run db:seed:first-settlement
@@ -120,9 +120,8 @@ bun run db:seed:first-settlement --apply --confirm=first-settlement
 ```
 
 The first command is a dry-run. The second creates or replaces only the named Roman fixture, but it
-still requires separate production approval and an explicit `DATABASE_URL`; the PR is not deployed
-merely because it is green. Database migrations remain a human-run operation and are not part of
-this demo.
+still requires separate production approval and an explicit `DATABASE_URL`. Database migrations
+are an explicit deployment step and are not part of the demo.
 
 ## Run of show
 
@@ -132,22 +131,22 @@ The checkpoint column tells the producer what must be visibly true before the dr
 | --- | --- | --- | --- |
 | 0:00–1:30 | Required: value first | Sign in as `organizer@example.com`, select **The First Settlement** if deployed, and open the dashboard. Say: “Sessionboard has no central task-completion report; Cicero starts with the accepted speakers who still owe us something.” | Outstanding people, exact tasks, counters, and linked actions are visible. |
 | 1:30–3:00 | Required: organizer cold start | In a fresh profile, sign up with an approved disposable address. Create an event, set dates/timezone, then add two tracks, two rooms, and a format. Return to the seeded organizer. | A new organizer reaches event creation without an invitation; tenant separation is evident. |
-| 3:00–5:00 | Required: event and CFP configuration | Open Roman Admin → Settings and Order of Debate to show branding, taxonomy, required fields, and a custom field. Switch to the seeded `demo` form for the prebuilt conditional rule and routed track/category, unless approved disposable Roman configuration was prepared. | Event-scoped taxonomy and conditional/routed form configuration are visible without overstating the Roman seed. |
+| 3:00–5:00 | Required: event and CFP configuration | Open Roman Organizer → Settings and Order of Debate to show branding, taxonomy, required fields, and a custom field. Switch to the seeded `demo` form for the prebuilt conditional rule and routed track/category, unless approved disposable Roman configuration was prepared. | Event-scoped taxonomy and conditional/routed form configuration are visible without overstating the Roman seed. |
 | 5:00–7:00 | Required: cold submission | In incognito, use the seeded `demo` CFP to trigger its conditional question, or `/submit/first-settlement/motions` if an approved Roman condition was prepared. Start cold, progress through the multi-step flow, review, and submit. | Account is created in-flow; confirmation is captured; redirect reaches the portal. |
-| 7:00–9:30 | Required: speaker self-service | Show Home, Submissions, Profile, Tasks, and portal resources. Update a disposable bio, upload approved headshot/slides, complete a task, and show an organizer-authored HTML resource. Demonstrate **View portal as** and return to Admin Mode. | Profile/file/task changes are visible to both roles; impersonation can perform work and is reversible. |
+| 7:00–9:30 | Required: speaker self-service | Show Home, Submissions, Profile, Tasks, and portal resources. Update a disposable bio, upload approved headshot/slides, complete a task, and show an organizer-authored HTML resource. Demonstrate **View portal as** and return to Organizer Mode. | Profile/file/task changes are visible to both roles; impersonation can perform work and is reversible. |
 | 9:30–12:30 | Required: evaluation | Use the seeded `demo` event for its two rounds, or an approved disposable Roman second round. Show routed reviewer assignments, scorecard criteria, named scores, round one, queue state, round two, and acceptance. | The submission moves through multi-round evaluation to accepted; acceptance mail appears. |
 | 12:30–15:30 | Required: agenda | Show the unscheduled rail, drag a disposable accepted session into a slot, provoke room/track and speaker conflicts, switch among list/day/week/room/track views, then return to a valid slot. Keep changes draft until the approved publish moment. | Three conflict classes are visible; draft is private; publish exposes only the intended version. |
 | 15:30–17:30 | Required: communications and calendar | Show templates, task reminder, filtered manual audience, and send log. Open the attached `.ics` in a real calendar, reschedule the same session, then show stable `UID` and increased `SEQUENCE`. | The original calendar item updates rather than duplicating; the send log records it. |
 | 17:30–18:30 | Required: dashboard closure | Return to the dashboard and show that the completed task left outstanding work while remaining auditable on the speaker. | Dashboard reflects the write without a report rebuild. |
 | 18:30–20:00 | Required: public output | Open event, sessions, speakers, gallery, agenda, itinerary, and embeds signed out. Show the changed title/time in public agenda and embed without replacing the iframe snippet. | Public and embedded surfaces agree, work without auth, and reflect publication. |
-| 20:00–21:30 | Required: Accelevents outbound | Admin → Integrations → **Push accepted speakers**. Use fixture mode unless a real push was separately approved. Explain verified live scope: speaker create/list, duplicate email treated as already present. | Summary shows `created`, `alreadyThere`, `skipped`, and `failed`; log retains outcomes. |
-| 21:30–23:00 | Bonus: Accelevents-shaped program update | Show live OpenAPI first. If the provisional reconcile route exists, preview the First Settlement collection, apply the approved change, repeat for no-ops, and verify the public agenda. | Stable external IDs yield create/update/delete/no-op; second applied run is idempotent. |
+| 20:00–21:30 | Required: Accelevents outbound | Organizer → Integrations → **Push accepted speakers**. Use fixture mode unless a real push was separately approved. Explain verified live scope: speaker create/list, duplicate email treated as already present. | Summary shows `created`, `alreadyThere`, `skipped`, and `failed`; log retains outcomes. |
+| 21:30–23:00 | Bonus: Accelevents-shaped program update | Show live OpenAPI first. If the reconcile route is deployed, preview the First Settlement collection, apply the approved change, repeat for no-ops, and verify the public agenda. | Stable external IDs yield create/update/delete/no-op; second applied run is idempotent. |
 | 23:00–24:00 | Bonus: full outbound CRUD fixture | If deployed, reset the deterministic fake Accelevents program, preview drift, safely apply creates/updates, approve the fixture delete, and repeat. Never describe this as live remote support. | Response says `adapter: "fake"`; expected counts and final all-noop result are visible. |
-| 24:00–25:00 | Bonus and close | Show the `$manage-cicero-event` prompt, then summarize: open source, Cloudflare deployed, self-hostable, no passwords, API bonus, safe automation. | Audience can name the replacement spine and added value. |
+| 24:00–25:00 | Ergonomics and close | On current source, open `⌘K`/`Ctrl-K`, show queue/review keyboard hints, and open workspace readiness/quick actions. Then summarize: MIT source, Vercel-hosted demo, Cloudflare-supported and self-hostable, no passwords, human-controlled automation. | Audience can name the replacement spine, added value, and why frequent organizers can work without constant mouse travel. |
 
-If the Roman event is still 404, do not attempt a production seed during the presentation. Use the
-existing `demo` event for the required browser flow, show the Roman seed and expected links as the
-prepared scenario, and state exactly which approval remains.
+If the Roman event fails preflight, do not repair or seed production during the presentation. Use
+the existing `demo` event for the required browser flow and report the Roman environment as
+unavailable rather than implying a pending merge.
 
 ## Requirement-to-demo traceability
 
@@ -159,7 +158,7 @@ prepared scenario, and state exactly which approval remains.
 | Cold submission and account creation | Required | `P-1`–`P-4` | Incognito multi-step submission and portal redirect |
 | Draft/resume, review, redirect, confirmation | Important | `F-11`, `F-12`, `P-6`, `P-7` | Draft, review, mail, portal |
 | Profile, files, portal pages/HTML | Required | `S-1`–`S-7`, `T-5` | Speaker portal and deliverables |
-| Full organizer impersonation | Required | `S-10` | Complete a task as speaker; return to Admin Mode |
+| Full organizer impersonation | Required | `S-10` | Complete a task as speaker; return to Organizer Mode |
 | Speaker tasks and completion | Required | `S-14`, `S-15` | Portal tasks and organizer state |
 | Statuses, scoring, rounds, evaluation plans | Required | `V-1`–`V-5`, coupled to `F-3` | Queue, scorecard, assignments, acceptance |
 | Agenda placement, conflicts, views, fields | Required | `A-1`–`A-4`, `A-7` | Drag, room/track/speaker warnings, view switcher |
@@ -180,7 +179,7 @@ prepared scenario, and state exactly which approval remains.
 | --- | --- |
 | Lead with outstanding tasks | Cicero supplies a central completion view the incumbent's FAQ says it lacks. |
 | Passwordless cold paths | Infrequent speakers do not create and forget another password; evaluation needs no inbox. |
-| Full impersonation | Support can finish a stuck task while the action remains attributable; read-only preview cannot. |
+| Full impersonation | Support can finish a stuck task; the live session identifies the organizer, but durable per-action attribution remains a documented hardening gap. |
 | Speaker double-booking | Cicero protects against the public failure, not only room and track collisions. |
 | Stable calendar UID and sequence | Rescheduling updates an accepted calendar entry instead of creating a stale duplicate. |
 | Live server-rendered embeds | Public pages and iframes update from one source without replacing markup. |
@@ -189,14 +188,11 @@ prepared scenario, and state exactly which approval remains.
 
 ## Bonus API segment: Accelevents-shaped program reconciliation
 
-This contract is implemented in
-[`PR #53`](https://github.com/EllAchE/sessionboard-oss/pull/53) but remains **unavailable live until
-that PR is reviewed, merged, and deployed and the deployed OpenAPI contains the path**. The endpoint
-accepts Accelevents-shaped program records as JSON so field validation, identifiers, and preview
-output are explicit and reproducible. Treat this as a provisional deployment segment until those
-gates pass.
+This contract is implemented on `main`. The endpoint accepts Accelevents-shaped program records as
+JSON so field validation, identifiers, and preview output are explicit and reproducible. The live
+OpenAPI check remains mandatory because a deployment can lag the repository.
 
-### Proposed contract
+### Contract
 
 `POST /api/v1/events/{slug}/program/reconcile` uses an event-scoped Bearer API key.
 
@@ -249,7 +245,7 @@ operation matches the intended source record rather than memorizing the illustra
 
 ### First Settlement demonstration input
 
-PR #53 includes the safe request fixture
+The repository includes the safe request fixture
 `docs/fixtures/first-settlement-accelevents-program.json` and its preview-only response fixture
 `docs/fixtures/first-settlement-accelevents-program-preview-response.json`. Its initial
 full-collection preview uses three fixed demonstration records. The base request deliberately omits
@@ -409,7 +405,7 @@ route, create a production key, or bypass the application with a database write.
 ## Required Accelevents outbound segment
 
 The requirement is one-way accepted-speaker push: Cicero → Accelevents. Choose the Roman event,
-open Admin → Integrations, inspect accepted speakers, and click **Push accepted speakers** only in
+open Organizer → Integrations, inspect accepted speakers, and click **Push accepted speakers** only in
 the approved environment.
 
 The real client is based on Accelevents speaker create/list at
@@ -425,10 +421,8 @@ not substitute an unverified remote endpoint.
 
 ## Added fixture bonus: full Accelevents-shaped CRUD
 
-This bonus is implemented in
-[`PR #42`](https://github.com/EllAchE/sessionboard-oss/pull/42), whose lint, build, and test checks
-were green when this runbook was written. Until it is merged and deployed, it remains a fallback-
-ready bonus rather than a live claim.
+This deterministic fixture bonus is implemented on `main`. Check live OpenAPI before presenting it;
+the route can still be unavailable when the deployment lags the repository.
 
 ```text
 POST /api/v1/events/{slug}/integrations/accelevents/program
@@ -490,11 +484,9 @@ use the required accepted-speaker UI.
 
 ## Added agent bonus: `$manage-cicero-event`
 
-The portable workflow landed through
-[`PR #38`](https://github.com/EllAchE/sessionboard-oss/pull/38) with green lint, build, and test
-checks. Its [official repo skill](../.agents/skills/manage-cicero-event/SKILL.md) lives at
+The portable workflow's [official repo skill](../.agents/skills/manage-cicero-event/SKILL.md) lives at
 `.agents/skills/manage-cicero-event/SKILL.md`. It stops when live OpenAPI does not expose the write
-route, so use the manual read-only fallback until the inbound API is deployed.
+route, so use the manual read-only fallback when a deployment is behind.
 
 The skill inspects live OpenAPI first, keeps the event key in `CICERO_API_KEY`, previews every
 change, requests separate approvals for writes/deletes/outbound effects, replays for no-ops,
@@ -562,23 +554,24 @@ or remote Accelevents calls to make the screen look right during a demo.
 
 | Failure | Presenter response |
 | --- | --- |
-| First Settlement returns 404 | State that targeted seed approval is pending; use `/demo`; show Roman source and expected URLs. |
-| Admin returns Cloudflare 503/1102 | Reload once. The README documents the free-plan 10 ms CPU ceiling. Then use open public tabs and captured evidence. |
-| Sign-in email unavailable | Use the on-page magic link or `/admin/mail`; for a seeded speaker, use organizer impersonation. |
+| First Settlement returns 404 | Treat it as deployment or shared-data drift; use `/demo` and do not mutate production during the presentation. |
+| Hosted organizer route errors | Reload once, record the failing route and deployed revision, then use open public tabs and captured evidence. |
+| Sign-in email unavailable | Use the on-page magic link or hosted `/admin/mail`; on current source use `/organizer/mail`; for a seeded speaker, use organizer impersonation. |
 | Upload or task write fails | Show pre-seeded file/task state; do not retry with personal files. |
 | Calendar client cannot import | Show captured mail attachment and UID/SEQUENCE fixture; do not send another real invitation. |
 | Reconcile route missing from OpenAPI | Stop the write segment, show proposed contract/fixture, and use the public read API. |
 | API key unavailable | Use public GET and browser UI. Do not create or reveal a key during the presentation. |
 | Required Accelevents credentials unavailable | Use the accepted-speaker fixture path; live end-to-end is optional `N-1c`. |
 | Full CRUD route unavailable | Omit it; required accepted-speaker push remains the proof. |
-| No network | Use README images, local test evidence, committed OpenAPI, Roman seed, and this runbook. Do not claim a live check. |
+| No network | Use local test evidence, committed OpenAPI, Roman seed, and this runbook. Do not claim a live check. |
 | No credentials | Restrict to public pages, embeds, public GET, source/tests, and prerecorded approved evidence. |
 
 ## Rehearsal checklist
 
 - [ ] Approval owner and scope are written down for every live mutation.
 - [ ] Live home, sign-in, `demo` pages, embed, and public API respond.
-- [ ] Organizer magic link works without an inbox and `/admin/mail` is reachable.
+- [ ] Organizer magic link works without an inbox and the environment's mail route (`/admin/mail`
+      hosted, `/organizer/mail` on current source) is reachable.
 - [ ] First Settlement is verified live after an approved targeted seed, or fallback wording is in
       the speaker notes.
 - [ ] Event switcher selects the intended event before every write.
@@ -590,7 +583,7 @@ or remote Accelevents calls to make the screen look right during a demo.
 - [ ] Conflict and draft/publish paths need no improvised data.
 - [ ] Calendar client demonstrates stable UID plus raised sequence, or captured evidence is ready.
 - [ ] Required accepted-speaker push uses the fake or separately approved real path.
-- [ ] Live OpenAPI is checked immediately before either provisional API segment.
+- [ ] Live OpenAPI is checked immediately before either write API segment.
 - [ ] Event key is loaded from the approved secret store, event-scoped, unprinted, and scheduled for
       revocation.
 - [ ] Preview and exact inverse are reviewed before apply.
@@ -615,13 +608,12 @@ Proceed with the live 25-minute plan only if every required box is true:
 - [ ] **NO-GO:** Unexpected delete, cross-event record, unresolved taxonomy, row error, or exposed
       secret stops the write portion immediately.
 
-## Post-PR finalization
+## Pre-demo finalization
 
-The runbook remains honest while sibling work is landing. Before declaring the demo final:
+Before declaring a demo rehearsal final:
 
-- [ ] Confirm [PR #53](https://github.com/EllAchE/sessionboard-oss/pull/53) is reviewed, merged, and
-      deployed and the inbound reconcile path is present in live OpenAPI before calling it live.
-- [ ] Re-check PR #53's request and preview-response fixtures against the deployed fields, defaults,
+- [ ] Confirm the inbound reconcile path is present in live OpenAPI before calling it live.
+- [ ] Re-check the request and preview-response fixtures against the deployed fields, defaults,
       errors, null semantics, and confirmation behavior.
 - [ ] Replace illustrative inbound counts with captured approved preview/apply/replay results while
       retaining the state-dependent warning.
@@ -631,10 +623,9 @@ The runbook remains honest while sibling work is landing. Before declaring the d
 - [ ] Confirm the official skill matches the final inbound contract and retains its missing-OpenAPI
       fallback.
 - [ ] Record the production revision and exact merge/deploy approvals.
-- [ ] Confirm [PR #50](https://github.com/EllAchE/sessionboard-oss/pull/50) is reviewed and merged,
-      then use its dry-run `bun run db:seed:first-settlement` and separately approved apply
+- [ ] Use the targeted seed's dry-run `bun run db:seed:first-settlement` and separately approved apply
       `bun run db:seed:first-settlement --apply --confirm=first-settlement`. Never replace it with
-      full `db:seed`, and do not imply merge means deployment.
+      full `db:seed`.
 - [ ] Obtain separate approval, run the targeted seed, and verify every First Settlement URL before
       changing “not live” to “live.”
 - [ ] Create/revoke the event-scoped demo key under separate approval and retest without printing it.

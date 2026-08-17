@@ -50,11 +50,12 @@ The remaining work is validation and implementation work rather than another act
 | Prospective speaker    | Starts a proposal through a public CFP                      | None initially; account created during submission |
 | Speaker / participant  | Maintains their proposal, profile, files, and assigned work | Magic link                                        |
 | Reviewer               | Scores only the proposals assigned to them                  | Magic link                                        |
-| Organizer / admin      | Configures and operates the conference program              | Magic link                                        |
+| Organizer              | Configures and operates the conference program              | Magic link                                        |
 
-The requirements formally name organizer/admin and speaker/participant as the two core authenticated
-roles. Reviewers are a constrained supporting workflow: they can score assigned proposals but do not
-receive organizer powers merely by being reviewers.
+The source requirements sometimes say “admin”; Cicero consistently calls that role **organizer**.
+Organizer and speaker are the two core authenticated roles. Reviewers are a constrained supporting
+workflow: they can score assigned proposals but do not receive organizer powers merely by being
+reviewers.
 
 ## End-to-end lifecycle
 
@@ -186,7 +187,9 @@ as examples.
 
 Every task has completion state visible to both the assigned speaker and the organizer. Tasks can be
 scoped to a contact, group, or submission. An organizer may also set instructions, a due date,
-whether the task is required, and reminder timing.
+whether the task is required, reminders a set number of days before the deadline, and a repeating
+follow-up interval after the latest reminder or nudge. Both reminder rules stop once the assignment
+is completed or waived.
 
 Speakers can save progress on form tasks before submitting them. A file or form task cannot be
 marked complete without its required evidence, while acknowledgement and external-link tasks
@@ -232,7 +235,7 @@ Blind and author-anonymized review modes may hide speaker identity from reviewer
 gain event configuration, acceptance, scheduling, communication, or publishing controls. Final
 acceptance decisions remain with organizers.
 
-## Organizers and administrators
+## Organizer workspace
 
 Organizers control the program from event setup through publication.
 
@@ -323,8 +326,10 @@ An organizer can:
   implementation.
 - Impersonate a speaker to diagnose or complete a stuck workflow on their behalf.
 
-Impersonation is full, attributable action rather than a read-only preview. Anything changed while
-impersonating is saved as the speaker while retaining the organizer's identity for attribution.
+Impersonation is full action rather than a read-only preview. Anything changed while impersonating
+is saved through the speaker's authorization context. The live session retains the organizer's
+identity, but not every task, file or comment record persists it; the organizer-assist audit trail is
+a documented production-hardening gap.
 
 ### Build and modify the agenda
 
@@ -343,6 +348,7 @@ An organizer can:
 - Detect overlapping use of the same room.
 - Detect track clashes.
 - Detect a speaker assigned to overlapping sessions.
+- Detect a session placed inside a window the speaker declared themselves unavailable in.
 - Keep sessions in draft while rearranging them.
 - Publish individual sessions or a day of sessions.
 - Return published sessions to draft or cancel them.
@@ -353,11 +359,15 @@ An organizer can:
 
 Therefore, for the concrete question "Can an organizer look at a particular speaker's time and move
 them?": the organizer can locate that speaker's session and move the session to another time or room.
-The conflict detector warns if the new placement double-books the speaker.
+The conflict detector warns if the new placement double-books the speaker, or falls inside a
+window that speaker declared unavailable in their portal.
+
+Speakers declare **unavailability**, not availability: a window means "not then," and a speaker
+with no windows may be scheduled anywhere. The organizer sees a violation as a warning next to
+the other conflict kinds and can still place the session deliberately.
 
 The requirements do not define:
 
-- A separate speaker-availability calendar such as "available only after 2 PM."
 - A required agenda view grouped or filtered solely by speaker.
 - Moving a speaker without moving the session to which they are attached.
 - Automatically finding a slot from travel availability or personal calendar data.
@@ -498,9 +508,9 @@ mechanism used for speaker registration.
 | -------------------------------------- | -------------: | ------: | -------: | ---------------------------------: |
 | Browse published program               |            Yes |     Yes |      Yes |                                Yes |
 | Start a public CFP submission          |            Yes |     Yes |       No |                                Yes |
-| Edit own profile and proposal          |             No |     Yes |       No | Through attributable impersonation |
-| Upload speaker deliverables            |             No |     Yes |       No | Through attributable impersonation |
-| Complete assigned speaker tasks        |             No |     Yes |       No | Through attributable impersonation |
+| Edit own profile and proposal          |             No |     Yes |       No | Through full impersonation |
+| Upload speaker deliverables            |             No |     Yes |       No | Through full impersonation |
+| Complete assigned speaker tasks        |             No |     Yes |       No | Through full impersonation |
 | Score assigned proposals               |             No |      No |      Yes |                                Yes |
 | Accept, waitlist, or decline proposals |             No |      No |       No |                                Yes |
 | Configure forms and review rounds      |             No |      No |       No |                                Yes |
@@ -542,7 +552,7 @@ deep functionality in any one screen.
 - [Accelevents API contract](reference/accelevents-api.md)
 - [Frozen competition brief](reference/source-brief.txt)
 - [Sessionboard coverage survey](reference/sessionboard-survey.md)
-- Current task behavior: `app/admin/tasks/TaskEditor.tsx`
-- Current agenda behavior: `app/admin/agenda/AgendaBoard.tsx`
+- Current task behavior: `app/organizer/tasks/TaskEditor.tsx`
+- Current agenda behavior: `app/organizer/agenda/AgendaBoard.tsx`
 - Current embed behavior: `public/embed.js` and `app/embed/`
-- Current Accelevents behavior: `lib/accelevents/` and `app/admin/integrations/`
+- Current Accelevents behavior: `lib/accelevents/` and `app/organizer/integrations/`
