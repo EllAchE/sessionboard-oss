@@ -490,22 +490,28 @@ export async function resolveRecipients(
 
   const manual = new Set(spec.participantIds ?? []);
 
+  const isScheduled = (submissionId: string) => sessionBySubmission.has(submissionId);
+
   const recipients: Recipient[] = [];
   for (const person of people) {
     const submissions = submissionsByParticipant.get(person.participantId) ?? [];
     const openTasks = tasksByParticipant.get(person.participantId) ?? [];
-    const session =
-      submissions.map((s) => sessionBySubmission.get(s.id)).find((row) => row !== undefined) ??
-      null;
 
-    if (!matchesAudience(spec, { submissions, openTasks, session, manual, id: person.participantId })) {
+    if (
+      !matchesAudience(spec, { submissions, openTasks, isScheduled, manual, id: person.participantId })
+    ) {
       continue;
     }
 
     const name = person.displayName || person.userName || person.email.split('@')[0];
     const firstName = recipientFirstNameColumn(person);
-    const preferred =
-      submissions.find((s) => s.status === 'accepted') ?? submissions[0] ?? null;
+    const preferred = mergeSubmission(spec, submissions, isScheduled);
+    /*
+      The session belonging to that same submission, so `{{session.room}}` cannot describe one talk
+      while `{{submission.title}}` names another. A speaker whose qualifying proposal is not on the
+      agenda gets empty session fields and no calendar attachment, which is the truth about it.
+    */
+    const session = preferred ? (sessionBySubmission.get(preferred.id) ?? null) : null;
     const selectedTask =
       spec.kind === 'outstanding_tasks'
         ? spec.taskId
@@ -542,40 +548,83 @@ export async function resolveRecipients(
   return recipients.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** No decision yet. Waitlisted belongs here: the speaker is still in the running. */
+const PENDING_STATUSES = ['submitted', 'under_review', 'waitlisted'];
+
+/**
+ * `CMS-S2`. Which of a recipient's submissions put them in this audience — not merely whether one
+ * did. A speaker with an accepted talk and a declined one belongs in both segments, so "yes, they
+ * match" is not enough to write them an email: the declined mailing has to name the declined talk.
+ * `matchesAudience` asks whether this list is non-empty, and the merge fields are built from what
+ * is in it.
+ *
+ * The three audiences that are not about a submission — everyone, an outstanding task, a
+ * hand-picked list — return the lot, which is the set the merge fields were already chosen from.
+ */
+export function qualifyingSubmissions(
+  spec: AudienceSpec,
+  submissions: readonly RecipientSubmission[],
+  isScheduled: (submissionId: string) => boolean,
+): RecipientSubmission[] {
+  switch (spec.kind) {
+    case 'accepted_speakers':
+      return submissions.filter((s) => s.status === 'accepted');
+    case 'pending_speakers':
+      return submissions.filter((s) => PENDING_STATUSES.includes(s.status));
+    case 'declined_speakers':
+      return submissions.filter((s) => s.status === 'declined');
+    case 'scheduled_speakers':
+      return submissions.filter((s) => isScheduled(s.id));
+    case 'track':
+      return submissions.filter((s) => s.trackId === spec.trackId);
+    case 'format':
+      return submissions.filter((s) => s.formatId === spec.formatId);
+    case 'all_speakers':
+    case 'outstanding_tasks':
+    case 'manual':
+      return [...submissions];
+    default:
+      return [];
+  }
+}
+
+/**
+ * The submission an audience send is about. Accepted first and then oldest, but only ever from the
+ * submissions that qualified this recipient — choosing accepted-first across everything they own is
+ * what made a "Submission declined" mailing name a speaker's accepted talk.
+ *
+ * Ordered by `ref` rather than by row order, so the same audience resolved twice names the same
+ * talk. `ref` is also the number the speaker sees on their own proposal.
+ */
+export function mergeSubmission(
+  spec: AudienceSpec,
+  submissions: readonly RecipientSubmission[],
+  isScheduled: (submissionId: string) => boolean,
+): RecipientSubmission | null {
+  const ordered = qualifyingSubmissions(spec, submissions, isScheduled).sort(
+    (a, b) => a.ref - b.ref,
+  );
+  return ordered.find((s) => s.status === 'accepted') ?? ordered[0] ?? null;
+}
+
 function matchesAudience(
   spec: AudienceSpec,
   candidate: {
     id: string;
     submissions: RecipientSubmission[];
     openTasks: RecipientTask[];
-    session: unknown;
+    isScheduled: (submissionId: string) => boolean;
     manual: Set<string>;
   },
 ): boolean {
-  const { submissions, openTasks } = candidate;
-  const has = (statuses: string[]) => submissions.some((s) => statuses.includes(s.status));
-
   switch (spec.kind) {
-    case 'all_speakers':
-      return submissions.length > 0;
-    case 'accepted_speakers':
-      return has(['accepted']);
-    case 'pending_speakers':
-      return has(['submitted', 'under_review', 'waitlisted']);
-    case 'declined_speakers':
-      return has(['declined']);
-    case 'scheduled_speakers':
-      return candidate.session !== null;
-    case 'track':
-      return submissions.some((s) => s.trackId === spec.trackId);
-    case 'format':
-      return submissions.some((s) => s.formatId === spec.formatId);
     case 'outstanding_tasks':
-      return openTasks.length > 0;
+      return candidate.openTasks.length > 0;
     case 'manual':
       return candidate.manual.has(candidate.id);
     default:
-      return false;
+      /* Every other audience is about the submissions themselves, and one qualifying is enough. */
+      return qualifyingSubmissions(spec, candidate.submissions, candidate.isScheduled).length > 0;
   }
 }
 
