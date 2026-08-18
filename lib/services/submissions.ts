@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { cache } from 'react';
+import { supportsOptions } from '../../app/organizer/forms/field-rules';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -136,15 +137,28 @@ export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeFi
       options = row.options?.length ? row.options : [...DEFAULT_LEVELS];
     }
 
+    const type = resolveFieldType({ builtinKey, type: row.type });
+
+    /**
+     * A choice question the event has no choices for cannot be answered, so requiring it would
+     * reject every submission with an error the submitter has no control over. The built-ins are
+     * where this bites: their options come from the taxonomy above rather than from the builder,
+     * and a new event starts with no formats, tracks or tags at all — so the default call for
+     * papers shipped a required `Tags` that rendered as nothing at all and then refused the form.
+     * Dropping the requirement keeps the question visible for whenever the taxonomy fills in,
+     * without holding the submission hostage to it. `publishForm` warns the organizer separately.
+     */
+    const answerable = !supportsOptions(type) || (options ?? []).length > 0;
+
     return {
       id: row.id,
       key: row.key,
       builtinKey,
-      type: resolveFieldType({ builtinKey, type: row.type }),
+      type,
       label: row.label,
       position: row.position,
       step: row.step,
-      required: row.required || builtinKey === 'title',
+      required: (row.required || builtinKey === 'title') && answerable,
       options: options ?? null,
       showIf: row.showIf,
       minLength: row.minLength,

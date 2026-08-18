@@ -216,7 +216,9 @@ export function FieldControl({
             </label>
           ))}
           {(field.options ?? []).length === 0 && (
-            <p className={styles.help}>No choices configured.</p>
+            <p className={styles.help}>
+              Nothing to choose from yet, so you can skip this one.
+            </p>
           )}
         </div>
       );
