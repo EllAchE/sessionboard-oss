@@ -384,6 +384,14 @@
   color: var(--text-accent);
 }
 
+/* The countdown and the control that stops it read as one sentence, so they sit on one line. */
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 @media (max-width: 640px) {
   .page {
     padding: var(--space-4) var(--space-3) var(--space-12);

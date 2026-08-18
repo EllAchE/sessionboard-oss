@@ -689,29 +689,25 @@ export function SubmissionQueue(props: QueueProps) {
         <div className={styles.actions}>
           {props.canDecide ? (
             <>
-              <Button
-                variant="ghost"
-                iconLeft={<Upload size={14} />}
-                onClick={() => router.push('/organizer/submissions/import')}
-              >
+              {/*
+                Links, not click handlers. This header is the only route to the rounds screen, and
+                an `onClick` on a `<button>` does nothing at all until React has hydrated — an
+                organizer who reached this page and clicked straight away got no navigation, no
+                error and no URL change, which reads as a dead control rather than as "not yet".
+                An `href` is live in the first paint, survives a middle-click, and shows where it
+                goes on hover, which is also how the rounds screen stops being a URL to guess.
+              */}
+              <Button variant="ghost" iconLeft={<Upload size={14} />} href="/organizer/submissions/import">
                 Import
               </Button>
-              <Button
-                variant="ghost"
-                iconLeft={<Download size={14} />}
-                onClick={() => router.push('/organizer/submissions/files')}
-              >
+              <Button variant="ghost" iconLeft={<Download size={14} />} href="/organizer/submissions/files">
                 Files
               </Button>
               {props.roundId ? <ReviewExportButton roundId={props.roundId} /> : null}
-              <Button variant="ghost" onClick={() => router.push('/organizer/submissions/rounds')}>
+              <Button variant="ghost" href="/organizer/submissions/rounds">
                 Rounds
               </Button>
-              <Button
-                variant="primary"
-                iconLeft={<Plus size={14} />}
-                onClick={() => router.push('/organizer/submissions/new')}
-              >
+              <Button variant="primary" iconLeft={<Plus size={14} />} href="/organizer/submissions/new">
                 Add submission
               </Button>
             </>

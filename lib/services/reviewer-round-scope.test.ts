@@ -140,6 +140,8 @@ describe('loadAssignedReview round scope', () => {
             email: 'speaker@example.test',
           }),
         },
+        /* `CNT-S3`: the detail resolves the submitter's name through this event, not the account. */
+        participant: { findFirst: async () => ({ displayName: 'Renamed Speaker' }) },
         aiReview: { findFirst: async () => undefined },
       },
     };

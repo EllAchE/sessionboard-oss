@@ -18,6 +18,7 @@ import { HotkeyHint } from '@/components/hotkeys/HotkeyHint';
 import { useHotkeys, useHotkeyScope } from '@/components/hotkeys/HotkeyProvider';
 import { Badge, Button, useToast } from '@/components/ui';
 import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
+import { describeHold, withholdsSession, type PublicHold } from '@/lib/public-visibility';
 import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import {
   DEFAULT_SESSION_MINUTES,
@@ -138,6 +139,7 @@ export function AgendaBoard({
   unavailability: wireUnavailability,
   queue: initialQueue,
   descriptions,
+  publicHolds,
   modelConfigured,
   canManage,
 }: {
@@ -150,6 +152,7 @@ export function AgendaBoard({
   unavailability: WireUnavailability[];
   queue: QueueItem[];
   descriptions: Record<string, string>;
+  publicHolds: Record<string, PublicHold[]>;
   modelConfigured: boolean;
   canManage: boolean;
 }) {
@@ -237,6 +240,19 @@ export function AgendaBoard({
   const conflictIndex = useMemo(() => conflictsBySession(live), [live]);
   const summary = useMemo(() => summarizeConflicts(live), [live]);
   const counts = useMemo(() => publishCounts(entries), [entries]);
+
+  /**
+   * "4 published" next to a public page reading "3 published sessions" is the complaint this
+   * answers: the board counts what the organizer did, the public counts what attendees can reach,
+   * and until now nothing here admitted the two could differ.
+   */
+  const withheld = useMemo(
+    () =>
+      entries.filter(
+        (entry) => entry.status === 'published' && withholdsSession(publicHolds[entry.id] ?? []),
+      ),
+    [entries, publicHolds],
+  );
 
   const sensors = useSensors(
     // A block is both draggable and clickable; without a threshold, opening one is impossible.
@@ -601,6 +617,19 @@ export function AgendaBoard({
         <div className={styles.headerActions}>
           <Badge tone="neutral">{counts.draft} draft</Badge>
           <Badge tone="success">{counts.published} published</Badge>
+          {withheld.length > 0 && (
+            <Badge
+              tone="warning"
+              title={withheld
+                .map(
+                  (entry) =>
+                    `${entry.title} — ${(publicHolds[entry.id] ?? []).map(describeHold).join(' ')}`,
+                )
+                .join('\n')}
+            >
+              {withheld.length} not public yet
+            </Badge>
+          )}
           <Button
             iconLeft={<Plus size={14} />}
             iconRight={<HotkeyHint scope={SCOPES.agenda} binding="new-session" />}
@@ -819,6 +848,7 @@ export function AgendaBoard({
         formats={formats}
         conflicts={dialogConflicts}
         status={dialog?.status ?? null}
+        holds={dialog?.draft.sessionId ? (publicHolds[dialog.draft.sessionId] ?? []) : []}
         onOpenChange={(open) => {
           if (!open) setDialog(null);
         }}

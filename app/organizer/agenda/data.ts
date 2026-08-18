@@ -12,6 +12,8 @@ import {
   user,
 } from '@/db/schema';
 import { formatRef } from '@/lib/ids';
+import { publicHolds, type PublicHold } from '@/lib/public-visibility';
+import type { SpeakerWorkflowStatus } from '@/lib/services/participants';
 import type { NamedFormat, NamedRoom, NamedTrack } from './wire';
 import {
   DEFAULT_SESSION_MINUTES,
@@ -61,12 +63,24 @@ export type AgendaData = {
    * back over it on save.
    */
   descriptions: Record<string, string>;
+  /**
+   * Why a published session is not reaching attendees, keyed by session id and absent when nothing
+   * holds it. Published status is what the board draws, but it is not what the public read model
+   * obeys — see `lib/public-visibility.ts` for the two gates in front of it.
+   */
+  publicHolds: Record<string, PublicHold[]>;
 };
+
+/**
+ * The board only needs a name to draw a byline, but `publicHolds` needs to know whether that
+ * speaker has confirmed, so the index carries the status and the grid drops it again below.
+ */
+type RosterSpeaker = SpeakerRef & { workflowStatus: SpeakerWorkflowStatus };
 
 async function speakersBySubmission(
   submissionIds: string[],
-): Promise<Map<string, SpeakerRef[]>> {
-  const index = new Map<string, SpeakerRef[]>();
+): Promise<Map<string, RosterSpeaker[]>> {
+  const index = new Map<string, RosterSpeaker[]>();
   if (submissionIds.length === 0) return index;
 
   const rows = await getDb()
@@ -77,6 +91,7 @@ async function speakersBySubmission(
       displayName: participant.displayName,
       userName: user.name,
       email: user.email,
+      workflowStatus: participant.workflowStatus,
     })
     .from(participantRole)
     .innerJoin(participant, eq(participant.id, participantRole.participantId))
@@ -88,7 +103,7 @@ async function speakersBySubmission(
     const name = row.displayName ?? row.userName ?? row.email;
     index.set(row.submissionId, [
       ...(index.get(row.submissionId) ?? []),
-      { participantId: row.participantId, name },
+      { participantId: row.participantId, name, workflowStatus: row.workflowStatus },
     ]);
   }
   return index;
@@ -128,6 +143,34 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
   ];
   const speakers = await speakersBySubmission(submissionIds);
 
+  /**
+   * Only the accepted submissions were loaded above, and a scheduled session can hang off one that
+   * has since moved on, so the approval state is read for every id the grid actually references.
+   */
+  const contentStatusBySubmission = new Map(
+    submissionIds.length === 0
+      ? []
+      : (
+          await db
+            .select({ id: submission.id, contentStatus: submission.contentStatus })
+            .from(submission)
+            .where(and(eq(submission.eventId, eventId), inArray(submission.id, submissionIds)))
+        ).map((row) => [row.id, row.contentStatus] as const),
+  );
+
+  const holds: Record<string, PublicHold[]> = {};
+  for (const row of sessions) {
+    const linked = row.submissionId ? (speakers.get(row.submissionId) ?? []) : [];
+    const found = publicHolds({
+      status: row.status,
+      contentStatus: row.submissionId
+        ? (contentStatusBySubmission.get(row.submissionId) ?? null)
+        : null,
+      speakers: linked,
+    });
+    if (found.length > 0) holds[row.id] = found;
+  }
+
   const entries: ScheduleEntry[] = sessions.map((row) => ({
     id: row.id,
     ref: row.ref,
@@ -141,7 +184,9 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
     status: row.status,
     ceuCredits: row.ceuCredits,
     clientId: row.clientId,
-    speakers: row.submissionId ? (speakers.get(row.submissionId) ?? []) : [],
+    speakers: (row.submissionId ? (speakers.get(row.submissionId) ?? []) : []).map(
+      ({ participantId, name }) => ({ participantId, name }),
+    ),
   }));
 
   const durationByFormat = new Map(formats.map((row) => [row.id, row.durationMinutes]));
@@ -220,6 +265,7 @@ export async function loadAgenda(eventId: string): Promise<AgendaData> {
         .filter((row) => row.descriptionMarkdown)
         .map((row) => [row.id, row.descriptionMarkdown as string]),
     ),
+    publicHolds: holds,
   };
 }
 

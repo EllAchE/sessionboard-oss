@@ -30,6 +30,7 @@ export default async function AgendaPage() {
       unavailability={unavailabilityToWire(data.unavailability)}
       queue={data.queue}
       descriptions={data.descriptions}
+      publicHolds={data.publicHolds}
       modelConfigured={modelConfigured}
       canManage={can(ctx, 'agenda:manage')}
     />

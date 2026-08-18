@@ -29,6 +29,8 @@ import {
   type CriterionSpec,
   type ReviewAnswerField,
   type QueueRow,
+  countsTowardProgress,
+  type AssignmentOrigin,
   type ReviewerScorecard,
 } from './review';
 
@@ -219,12 +221,14 @@ describe('summarizeReviews', () => {
     id: string,
     scores: Array<[string, number]>,
     status: 'pending' | 'completed' | 'declined' = 'completed',
+    origin: AssignmentOrigin = 'assigned',
   ): ReviewerScorecard => ({
     assignmentId: `a-${id}`,
     reviewerUserId: id,
     reviewerName: id,
     reviewerEmail: `${id}@example.test`,
     status,
+    origin,
     comment: null,
     completedAt: null,
     scores: scores.map(([criterionId, value]) => ({ criterionId, value })),
@@ -258,6 +262,68 @@ describe('summarizeReviews', () => {
 
   it('is null with no assignments at all', () => {
     expect(summarizeReviews(CRITERIA, []).average).toBeNull();
+  });
+
+  /**
+   * An organizer opening a scorecard on a submission nobody assigned them used to add a row to the
+   * denominator, so a round every assigned reviewer had finished reported itself unfinished — and
+   * the reason was an organizer having looked at it.
+   */
+  it('does not owe a review to an organizer who opened a scorecard nobody assigned', () => {
+    const summary = summarizeReviews(CRITERIA, [
+      reviewer('assigned-and-done', [['relevance', 4]]),
+      reviewer('organizer', [['relevance', 5]], 'pending', 'self_opened'),
+    ]);
+
+    expect(summary.assignedCount).toBe(1);
+    expect(summary.completedCount).toBe(1);
+  });
+
+  /** Finished, it is a real review: both sides of the ratio, so the round stays where it was. */
+  it('counts that scorecard once the organizer completes it', () => {
+    const summary = summarizeReviews(CRITERIA, [
+      reviewer('assigned-and-done', [['relevance', 4]]),
+      reviewer('organizer', [['relevance', 2]], 'completed', 'self_opened'),
+    ]);
+
+    expect(summary.assignedCount).toBe(2);
+    expect(summary.completedCount).toBe(2);
+  });
+
+  /**
+   * The average is not the progress ratio. A partial scorecard is still an opinion, and an
+   * organizer's counts like anyone's — the row is only excluded from what the round is waiting on.
+   */
+  it('still averages in a self-opened scorecard that has scores', () => {
+    const summary = summarizeReviews(CRITERIA, [
+      reviewer('assigned-and-done', [['relevance', 4]]),
+      reviewer('organizer', [['relevance', 2]], 'pending', 'self_opened'),
+    ]);
+
+    expect(summary.average).toBe(3);
+    expect(summary.scoredCount).toBe(2);
+  });
+});
+
+describe('countsTowardProgress', () => {
+  it('counts every assignment an organizer handed out, finished or not', () => {
+    expect(countsTowardProgress({ origin: 'assigned', status: 'pending' })).toBe(true);
+    expect(countsTowardProgress({ origin: 'assigned', status: 'completed' })).toBe(true);
+  });
+
+  /** A recusal is a gap the organizer has to fill, so it stays visible. */
+  it('keeps a declined assignment in view', () => {
+    expect(countsTowardProgress({ origin: 'assigned', status: 'declined' })).toBe(true);
+  });
+
+  it('waits for a self-opened scorecard to finish before counting it', () => {
+    expect(countsTowardProgress({ origin: 'self_opened', status: 'pending' })).toBe(false);
+    expect(countsTowardProgress({ origin: 'self_opened', status: 'completed' })).toBe(true);
+  });
+
+  /** Nobody assigned it, so abandoning it leaves nothing behind for the organizer to chase. */
+  it('drops a self-opened scorecard the organizer recused themselves from', () => {
+    expect(countsTowardProgress({ origin: 'self_opened', status: 'declined' })).toBe(false);
   });
 });
 

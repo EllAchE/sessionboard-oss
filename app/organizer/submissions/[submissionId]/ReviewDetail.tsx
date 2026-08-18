@@ -367,12 +367,8 @@ export function ReviewDetail(props: ReviewDetailProps) {
   return (
     <div className={styles.page}>
       <div className={styles.navBar}>
-        <Button
-          variant="ghost"
-          size="sm"
-          iconLeft={<ChevronLeft size={14} />}
-          onClick={() => router.push(props.backHref)}
-        >
+        {/* A link, so it works in the first paint. The `back` keyboard shortcut still routes. */}
+        <Button variant="ghost" size="sm" iconLeft={<ChevronLeft size={14} />} href={props.backHref}>
           Back to queue
         </Button>
         <span className={styles.navPosition}>
