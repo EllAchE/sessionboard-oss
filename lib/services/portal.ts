@@ -24,7 +24,7 @@ import { can } from '../context';
 import { appUrl } from '../env';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import type { AnswerMap, FormFieldSpec } from '../forms/contract';
-import { clearHiddenAnswers, validateAnswers } from '../forms/contract';
+import { clearHiddenAnswers, isBuiltinKey, validateAnswers } from '../forms/contract';
 import { formatRef } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown, renderTrustedMarkdown } from '../markdown';
@@ -39,7 +39,7 @@ import {
 import { activeSmsTransportName } from '../sms';
 import { mutateAgendaAtomically } from './agenda-guard';
 import { assertParticipantLimits } from './forms';
-import { DEFAULT_LEVELS, type NamedRow } from './submissions';
+import { DEFAULT_LEVELS, askedQuestions, type AskedSource, type NamedRow } from './submissions';
 import { phoneVerificationIsCurrent } from './notification-preferences';
 
 /**
@@ -572,30 +572,50 @@ export async function getMySubmission(
   return found;
 }
 
-/** The organizer-authored questions a speaker can still answer from the portal. */
-export async function submissionFields(formId: string): Promise<FormFieldSpec[]> {
+/**
+ * The organizer-authored questions this submission was asked and a speaker can still answer.
+ *
+ * Conditions are resolved over the whole form and only then are the built-ins dropped. Filtering
+ * them out first is what put "Workshop prerequisites" on a Talk: the rule pointed at the Session
+ * format question, which was no longer in the list, and an unresolvable rule shows its field.
+ */
+export async function submissionFields(
+  formId: string,
+  row: AskedSource,
+): Promise<FormFieldSpec[]> {
   const rows = await getDb()
     .select()
     .from(formField)
     .where(eq(formField.formId, formId))
     .orderBy(asc(formField.position));
-  return rows
-    .filter((row) => !row.builtinKey && row.type !== 'file')
-    .map((row) => ({
-      id: row.id,
-      key: row.key,
-      builtinKey: null,
-      type: row.type,
-      label: row.label,
-      position: row.position,
-      step: row.step,
-      required: row.required,
-      options: row.options ?? null,
-      showIf: row.showIf ?? null,
-      minLength: row.minLength,
-      maxLength: row.maxLength,
-      charLimitGroup: row.charLimitGroup,
+  const specs = rows
+    /* The abstract's own questions. The participant set is answered on a different screen. */
+    .filter((entry) => entry.entity === 'abstract')
+    .map((entry) => ({
+      id: entry.id,
+      key: entry.key,
+      /* The column is free text; only the keys the contract knows carry built-in behaviour. */
+      builtinKey: isBuiltinKey(entry.builtinKey) ? entry.builtinKey : null,
+      type: entry.type,
+      label: entry.label,
+      position: entry.position,
+      step: entry.step,
+      required: entry.required,
+      options: entry.options ?? null,
+      showIf: entry.showIf ?? null,
+      minLength: entry.minLength,
+      maxLength: entry.maxLength,
+      charLimitGroup: entry.charLimitGroup,
     }));
+
+  /*
+    A file question is left out of what the portal renders rather than out of what it resolves: it
+    is still an answer another question can be conditioned on, and the portal simply has nowhere to
+    re-upload from.
+  */
+  return askedQuestions(specs, row).filter(
+    (field) => !field.builtinKey && field.type !== 'file',
+  );
 }
 
 /**
@@ -788,7 +808,27 @@ export async function updateMySubmission(
   note('tagIds', tagsError(parsed.data.tagIds, taxonomy.tags));
   if (Object.keys(details).length > 0) throw invalid('Some details need attention', details);
 
-  const fields = await submissionFields(current.formId);
+  /*
+    What the record will say once this save lands.
+
+    Only the questions the form asks move: the editor renders no control for one it does not have,
+    so an empty value there means "nobody was shown this" rather than "cleared", and writing it
+    through would quietly drop a value on the next unrelated save.
+
+    The conditions below are resolved against this rather than against `current`, because a speaker
+    switching a Talk to a Workshop is asked the workshop questions by that same save.
+  */
+  const written = {
+    title: parsed.data.title,
+    descriptionMarkdown: blankToNull(parsed.data.descriptionMarkdown),
+    level: levelOptions ? blankToNull(parsed.data.level) : current.level,
+    formatId: taxonomy.formats ? blankToNull(parsed.data.formatId) : current.formatId,
+    trackId: taxonomy.tracks ? blankToNull(parsed.data.trackId) : current.trackId,
+    answers: input.answers ?? current.answers,
+    tagIds: taxonomy.tags && parsed.data.tagIds ? parsed.data.tagIds : current.tagIds,
+  };
+
+  const fields = await submissionFields(current.formId, written);
   const answers = input.answers ? clearHiddenAnswers(fields, input.answers) : current.answers;
   if (input.answers) validateAnswers(fields, answers);
 
@@ -796,16 +836,11 @@ export async function updateMySubmission(
   await db
     .update(submission)
     .set({
-      title: parsed.data.title,
-      descriptionMarkdown: blankToNull(parsed.data.descriptionMarkdown),
-      /*
-        Only the questions the form asks. The editor renders no control for one it does not have,
-        so an empty value in that case means "nobody was shown this" rather than "cleared" — writing
-        it through would quietly drop a value on the next unrelated save.
-      */
-      ...(levelOptions ? { level: blankToNull(parsed.data.level) } : {}),
-      ...(taxonomy.formats ? { formatId: blankToNull(parsed.data.formatId) } : {}),
-      ...(taxonomy.tracks ? { trackId: blankToNull(parsed.data.trackId) } : {}),
+      title: written.title,
+      descriptionMarkdown: written.descriptionMarkdown,
+      ...(levelOptions ? { level: written.level } : {}),
+      ...(taxonomy.formats ? { formatId: written.formatId } : {}),
+      ...(taxonomy.tracks ? { trackId: written.trackId } : {}),
       answers,
       updatedAt: new Date(),
     })

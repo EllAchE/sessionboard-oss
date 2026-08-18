@@ -274,10 +274,17 @@ export async function saveSubmissionAction(_prev: FormState, formData: FormData)
     const { ctx, me, eventSlug } = await actionSession(formData);
     const submissionId = text(formData, 'submissionId');
     const formId = text(formData, 'formId');
-    const fields = formId ? await submissionFields(formId) : [];
 
     const mine = await listMySubmissions(me.id);
-    if (!mine.some((entry) => entry.id === submissionId)) throw notFound('That session');
+    const current = mine.find((entry) => entry.id === submissionId);
+    if (!current) throw notFound('That session');
+
+    /*
+      Only the questions this submission was asked are read back. Reading every question the form
+      holds records an empty answer to one that was never shown, which afterwards is
+      indistinguishable from a speaker who was asked and skipped it.
+    */
+    const fields = formId ? await submissionFields(formId, current) : [];
     await recordRevision(ctx, 'session', submissionId, 'Edited the session content');
 
     await updateMySubmission(ctx, me.id, submissionId, {

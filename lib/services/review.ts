@@ -28,6 +28,8 @@ import { can, requireCapability } from '../context';
 import { toCsv } from '../csv';
 import { appUrl } from '../env';
 import { DEFAULT_TIMEZONE, zonedDateKey } from '../event-dates';
+import type { AnswerMap, FormFieldSpec } from '../forms/contract';
+import { isBuiltinKey } from '../forms/contract';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef, slugify } from '../ids';
 import { sendMail } from '../mail';
@@ -36,7 +38,12 @@ import { parseSpeakerName } from '../speaker-name';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
 import { DECISION_TEMPLATES, loadCommsContext, sendDecisionNotice, wrapInBranding } from './comms';
-import { ensureParticipant, linkPrimarySpeaker } from './submissions';
+import {
+  askedQuestions,
+  ensureParticipant,
+  linkPrimarySpeaker,
+  type AskedSource,
+} from './submissions';
 import { emitWebhook } from '../webhooks';
 
 /**
@@ -2582,6 +2589,27 @@ export type SubmissionReview = {
   conflictedReviewerUserIds: string[];
 };
 
+/**
+ * `CFP-S2`. The answers a reader should see: everything except answers to questions the form holds
+ * but this submission was never asked. "Workshop prerequisites —" on a talk reads as a question the
+ * speaker skipped, which for a reviewer scoring completeness is worse than not showing it at all.
+ *
+ * An answer whose question is no longer on the form is kept. There is no rule left to consult, and
+ * losing sight of a real answer is worse than an unlabelled one — the panel already falls back to
+ * the raw key for those.
+ */
+export function askedAnswers(
+  answers: Record<string, unknown>,
+  fields: FormFieldSpec[],
+  row: AskedSource,
+): Record<string, unknown> {
+  const asked = new Set(askedQuestions(fields, row).map((field) => field.key));
+  const onTheForm = new Set(fields.map((field) => field.key));
+  return Object.fromEntries(
+    Object.entries(answers).filter(([key]) => asked.has(key) || !onTheForm.has(key)),
+  );
+}
+
 export async function loadSubmissionReview(
   ctx: EventContext,
   submissionId: string,
@@ -2656,10 +2684,20 @@ export async function loadSubmissionReview(
       }),
       db
         .select({
+          id: formField.id,
           key: formField.key,
           label: formField.label,
           type: formField.type,
           builtinKey: formField.builtinKey,
+          entity: formField.entity,
+          position: formField.position,
+          step: formField.step,
+          required: formField.required,
+          options: formField.options,
+          showIf: formField.showIf,
+          minLength: formField.minLength,
+          maxLength: formField.maxLength,
+          charLimitGroup: formField.charLimitGroup,
         })
         .from(formField)
         .where(eq(formField.formId, row.formId)),
@@ -2730,7 +2768,18 @@ export async function loadSubmissionReview(
     trackName: trackRow?.name ?? null,
     formatName: formatRow?.name ?? null,
     tags: tagRows,
-    answers: row.answers as Record<string, unknown>,
+    answers: askedAnswers(
+      row.answers as Record<string, unknown>,
+      fieldRows
+        /* The abstract's own questions. The participant set is answered on a different screen. */
+        .filter((field) => field.entity === 'abstract')
+        .map((field) => ({
+          ...field,
+          /* The column is free text; only the keys the contract knows carry built-in behaviour. */
+          builtinKey: isBuiltinKey(field.builtinKey) ? field.builtinKey : null,
+        })),
+      { ...row, answers: row.answers as AnswerMap, tagIds: tagRows.map((entry) => entry.id) },
+    ),
     answerLabels: Object.fromEntries(fieldRows.map((field) => [field.key, field.label])),
     submittedAt: row.submittedAt,
     decidedAt: row.decidedAt,
