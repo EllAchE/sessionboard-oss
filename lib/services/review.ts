@@ -71,6 +71,28 @@ export type SubmissionStatus =
 
 export type AssignmentStatus = 'pending' | 'completed' | 'declined';
 
+/** `db/schema.ts`. Who decided this reviewer would look at this submission. */
+export type AssignmentOrigin = 'assigned' | 'self_opened';
+
+/**
+ * Is this assignment work the round is waiting on?
+ *
+ * An organizer who opens a scorecard on a submission nobody assigned them gets a row, because a
+ * score has to hang off one. That row is not an obligation anybody handed out, so while it is
+ * unfinished the round is not waiting on it — counting it reported a fully-reviewed round as
+ * incomplete purely because an organizer had looked at a submission, and put a reviewer nobody
+ * invited into the workload panel owing 0 of 1.
+ *
+ * Once they finish it is a real review and counts on both sides of the ratio, which leaves the
+ * round's percentage exactly where it was and its average honestly including the opinion.
+ */
+export function countsTowardProgress(assignment: {
+  origin: AssignmentOrigin;
+  status: AssignmentStatus;
+}): boolean {
+  return assignment.origin === 'assigned' || assignment.status === 'completed';
+}
+
 /**
  * `ABS-03`. The three shapes a scorecard line can take. `numeric` is the historical one and the only
  * one that carries weight into an average; `select` offers organizer-defined choices, such as a
@@ -185,6 +207,7 @@ export type ReviewerScorecard = {
   reviewerName: string;
   reviewerEmail: string;
   status: AssignmentStatus;
+  origin: AssignmentOrigin;
   comment: string | null;
   completedAt: Date | null;
   scores: ScoreValue[];
@@ -230,7 +253,7 @@ export function summarizeReviews(
       averages.length > 0
         ? round(averages.reduce((sum, value) => sum + value, 0) / averages.length, 2)
         : null,
-    assignedCount: reviewers.length,
+    assignedCount: reviewers.filter(countsTowardProgress).length,
     completedCount: reviewers.filter((reviewer) => reviewer.status === 'completed').length,
     scoredCount: averages.length,
     spread: averages.length > 1 ? round(Math.max(...averages) - Math.min(...averages), 2) : null,
@@ -1458,12 +1481,18 @@ export async function saveScorecard(
     if (!can(ctx, 'submission:decide')) {
       throw conflict('You are not assigned to review that submission');
     }
+    /**
+     * Nobody assigned this. An organizer with `submission:decide` can score anything in the round,
+     * and a score has to hang off an assignment, so the row is created here rather than refused —
+     * but it is marked, so the round does not report itself unfinished for having been looked at.
+     */
     const [created] = await db
       .insert(reviewAssignment)
       .values({
         reviewRoundId: input.roundId,
         submissionId: input.submissionId,
         reviewerUserId: ctx.actor.userId,
+        origin: 'self_opened',
       })
       .onConflictDoNothing()
       .returning();
@@ -2189,6 +2218,7 @@ export async function buildReviewResultsExport(
             reviewerName: user.name,
             reviewerEmail: user.email,
             status: reviewAssignment.status,
+            origin: reviewAssignment.origin,
             comment: reviewAssignment.comment,
             completedAt: reviewAssignment.completedAt,
           })
@@ -2258,6 +2288,7 @@ export async function buildReviewResultsExport(
       reviewerName: row.reviewerName ?? row.reviewerEmail,
       reviewerEmail: row.reviewerEmail,
       status: row.status,
+      origin: row.origin,
       comment: row.comment,
       completedAt: row.completedAt,
       scores: scoresByAssignment.get(row.id) ?? [],
@@ -2363,6 +2394,7 @@ export async function loadQueue(
             submissionId: reviewAssignment.submissionId,
             reviewerUserId: reviewAssignment.reviewerUserId,
             status: reviewAssignment.status,
+            origin: reviewAssignment.origin,
           })
           .from(reviewAssignment)
           .where(
@@ -2426,6 +2458,7 @@ export async function loadQueue(
         reviewerName: '',
         reviewerEmail: '',
         status: assignment.status,
+        origin: assignment.origin,
         comment: null,
         completedAt: null,
         scores: scoresByAssignment.get(assignment.id) ?? [],
@@ -2692,6 +2725,7 @@ export async function loadSubmissionReview(
               id: reviewAssignment.id,
               reviewerUserId: reviewAssignment.reviewerUserId,
               status: reviewAssignment.status,
+              origin: reviewAssignment.origin,
               comment: reviewAssignment.comment,
               completedAt: reviewAssignment.completedAt,
               reviewerName: user.name,
@@ -2757,6 +2791,7 @@ export async function loadSubmissionReview(
     reviewerName: assignment.reviewerName ?? assignment.reviewerEmail,
     reviewerEmail: assignment.reviewerEmail,
     status: assignment.status,
+    origin: assignment.origin,
     comment: assignment.comment,
     completedAt: assignment.completedAt,
     scores: scoresByAssignment.get(assignment.id) ?? [],
@@ -3072,6 +3107,7 @@ export async function reviewerWorkload(
         id: reviewAssignment.id,
         reviewerUserId: reviewAssignment.reviewerUserId,
         status: reviewAssignment.status,
+        origin: reviewAssignment.origin,
         completedAt: reviewAssignment.completedAt,
         name: user.name,
         email: user.email,
@@ -3107,6 +3143,14 @@ export async function reviewerWorkload(
 
   const byReviewer = new Map<string, WorkloadRow & { averages: number[] }>();
   for (const assignment of assignments) {
+    /**
+     * An organizer's own unfinished scorecard is not a workload. Skipping it here rather than
+     * zeroing its counts is what keeps them out of the panel entirely when it is all they have —
+     * the complaint was a reviewer nobody invited appearing at 0 of 1 and taking the round off
+     * 100%.
+     */
+    if (!countsTowardProgress(assignment)) continue;
+
     const entry = byReviewer.get(assignment.reviewerUserId) ?? {
       reviewerUserId: assignment.reviewerUserId,
       name: assignment.name ?? assignment.email,
