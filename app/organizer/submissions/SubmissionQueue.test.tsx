@@ -327,3 +327,40 @@ describe('SubmissionQueue permalink copy', () => {
     expect(html).toContain('aria-label="Copy link to ABS-1"');
   });
 });
+
+/**
+ * `CFP-S3`. The rounds screen is reachable from nowhere else in the product, and its header control
+ * used to be a `<button onClick>`: dead until React hydrated, and silent about it. An evaluator who
+ * clicked on arrival got the same page at the same URL and reasonably called the control broken,
+ * then reached the screen by guessing the URL. These assert the markup the server sends, which is
+ * exactly what a click before hydration has to work against.
+ */
+describe('SubmissionQueue header navigation', () => {
+  it('sends the organizer to the rounds screen with a link, not a click handler', () => {
+    const html = renderToStaticMarkup(<SubmissionQueue {...props} />);
+
+    expect(html).toContain('href="/organizer/submissions/rounds"');
+  });
+
+  it('links the rest of the header the same way', () => {
+    const html = renderToStaticMarkup(<SubmissionQueue {...props} />);
+
+    expect(html).toContain('href="/organizer/submissions/import"');
+    expect(html).toContain('href="/organizer/submissions/files"');
+    expect(html).toContain('href="/organizer/submissions/new"');
+  });
+
+  /**
+   * A link is reachable in ways a handler is not — typed, bookmarked, opened in a tab — so it
+   * matters that these still sit behind the same permission gate. The routes check the actor too;
+   * this pins that the queue does not advertise them to someone who cannot use them.
+   */
+  it('offers none of it to a reviewer who cannot decide', () => {
+    const html = renderToStaticMarkup(<SubmissionQueue {...props} canDecide={false} />);
+
+    expect(html).not.toContain('href="/organizer/submissions/rounds"');
+    expect(html).not.toContain('href="/organizer/submissions/import"');
+    expect(html).not.toContain('href="/organizer/submissions/files"');
+    expect(html).not.toContain('href="/organizer/submissions/new"');
+  });
+});

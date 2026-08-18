@@ -158,11 +158,7 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
           <p className={queue.subtitle}>Creates the speaker if needed. ⌘&#8629; submits.</p>
         </div>
         <div className={queue.actions}>
-          <Button
-            variant="ghost"
-            iconLeft={<ChevronLeft size={14} />}
-            onClick={() => router.push('/organizer/submissions')}
-          >
+          <Button variant="ghost" iconLeft={<ChevronLeft size={14} />} href="/organizer/submissions">
             Back to queue
           </Button>
         </div>
@@ -380,7 +376,11 @@ export function NewSubmissionForm(props: NewSubmissionFormProps) {
           <Button type="submit" variant="primary" loading={pending} disabled={props.forms.length === 0}>
             Create submission
           </Button>
-          <Button type="button" variant="ghost" onClick={() => router.push('/organizer/submissions')}>
+          {/*
+            An anchor rather than a `type="button"` inside the form. The type was there to stop it
+            submitting the very form it cancels, and a link cannot submit anything at all.
+          */}
+          <Button variant="ghost" href="/organizer/submissions">
             Cancel
           </Button>
         </div>

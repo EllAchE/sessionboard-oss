@@ -204,11 +204,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
           </p>
         </div>
         <div className={queue.actions}>
-          <Button
-            variant="ghost"
-            iconLeft={<ChevronLeft size={14} />}
-            onClick={() => router.push('/organizer/submissions')}
-          >
+          <Button variant="ghost" iconLeft={<ChevronLeft size={14} />} href="/organizer/submissions">
             Back to queue
           </Button>
         </div>
@@ -434,7 +430,7 @@ export function ImportSubmissions({ forms }: { forms: ImportFormWire[] }) {
             ) : null}
 
             <div className={styles.footer}>
-              <Button variant="primary" onClick={() => router.push('/organizer/submissions')}>
+              <Button variant="primary" href="/organizer/submissions">
                 Go to the queue
               </Button>
               <Button variant="ghost" onClick={() => editCsv('', null)}>
