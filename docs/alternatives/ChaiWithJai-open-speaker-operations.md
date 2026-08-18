@@ -1,6 +1,6 @@
 # ChaiWithJai/open-speaker-operations
 
-**Source:** `git@github.com:ChaiWithJai/open-speaker-operations.git` · **Live:** none found
+**Source:** <https://github.com/ChaiWithJai/open-speaker-operations> · **Live:** none found
 **Found via:** provided repository batch
 **Analyzed:** 2026-08-16 at commit `0960280`
 

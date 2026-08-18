@@ -83,14 +83,15 @@
       "n": 1,
       "title": "Whole-event cloning / reusable event templates",
       "description": "Copy forms, tracks, rooms, scorecards, task and message templates, and optionally the team, into a new event. Several implementations preview the copy before applying, and deliberately exclude operational history.",
-      "convergence": 5,
+      "convergence": 6,
       "tier": "Shipped by many teams",
       "projects": [
         "agrimsingh-conference-engine",
         "jpoehnelt-session-party",
         "maddiedreese-ProgramLoom",
         "TheThingInTheThing-namos-sessions-webapp",
-        "adityak6798-ManageMyConference"
+        "adityak6798-ManageMyConference",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": {
         "pr": 199,
@@ -142,13 +143,14 @@
       "n": 4,
       "title": "Revision history with organizer restore",
       "description": "Attributed, numbered snapshots of proposal and session titles/abstracts that an organizer can roll back.",
-      "convergence": 4,
+      "convergence": 5,
       "tier": "Shipped by many teams",
       "projects": [
         "conorbronsdon-callboard-app",
         "westoque-session-hero",
         "SteveMLC-lectern",
-        "realgenekim-curtain-call-cfp"
+        "realgenekim-curtain-call-cfp",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": {
         "pr": 200,
@@ -161,57 +163,62 @@
       "n": 5,
       "title": "Bidirectional Airtable sync",
       "description": "Cicero's Airtable integration is one-way. Others reconcile in both directions with field ownership, conflict handling, retries, and dead letters.",
-      "convergence": 5,
+      "convergence": 6,
       "tier": "Shipped by many teams",
       "projects": [
         "openrostrum-openrostrum",
         "jpoehnelt-session-party",
         "guangyusong-opencallboard",
         "SteveMLC-lectern",
-        "red-omotenashi"
+        "red-omotenashi",
+        "DeanStr-programcue"
       ]
     },
     {
       "id": "AD-6",
       "n": 6,
       "title": "Authentication beyond magic links",
-      "description": "Cicero is magic-link-only by design (`T-4a`); five teams read the brief as permitting more.",
-      "convergence": 5,
+      "description": "Cicero is magic-link-only by design (`T-4a`); several teams read the brief as permitting passwords or social sign-in too.",
+      "convergence": 7,
       "tier": "Shipped by many teams",
       "projects": [
         "akakabrian-sessionslate",
         "twilwa-session-bored",
         "M31-Labs-rostrum",
         "adityak6798-ManageMyConference",
-        "mkly-gatherpulse"
+        "mkly-gatherpulse",
+        "Frostbite1536-greenroom",
+        "DeanStr-programcue"
       ]
     },
     {
       "id": "AD-7",
       "n": 7,
       "title": "Real-time collaborative agenda over Durable Objects + WebSockets",
-      "description": "A per-event Cloudflare Durable Object serializes schedule writes and broadcasts invalidations, so several operators can drag the grid at once.",
-      "convergence": 4,
+      "description": "A per-event Cloudflare Durable Object broadcasts committed schedule invalidations over WebSockets so several operators can drag the grid at once. Most implementations serialize commands in the object; Program Cue pairs optimistic D1 revisions with the realtime channel.",
+      "convergence": 5,
       "tier": "Shipped by many teams",
       "projects": [
         "agrimsingh-conference-engine",
         "caseymanos-opensession",
         "jpoehnelt-session-party",
-        "thedatadavis-seshmesh"
+        "thedatadavis-seshmesh",
+        "DeanStr-programcue"
       ]
     },
     {
       "id": "AD-8",
       "n": 8,
       "title": "In-product streaming AI assistant with tool use",
-      "description": "A chat surface inside the organizer app that drives the same tool registry the MCP server exposes, with persisted threads and an approval step before mutations. Cicero's AI is advisory-only and out-of-band.",
-      "convergence": 4,
+      "description": "A chat surface inside the organizer app streams model output, invokes governed tools, persists threads, and requires approval before mutations. Several implementations share that registry with MCP; Program Cue ships the governed in-product surface without an MCP endpoint. Cicero's AI is advisory-only and out-of-band.",
+      "convergence": 5,
       "tier": "Shipped by many teams",
       "projects": [
         "CampbellVentures-smolboard",
         "getzenai-untitledconference",
         "nayamoss-namos-sessions-public",
-        "Phantastic-AI-fireside"
+        "Phantastic-AI-fireside",
+        "DeanStr-programcue"
       ]
     },
     {
@@ -219,13 +226,14 @@
       "n": 9,
       "title": "Tokenized no-login share links",
       "description": "Expiring, revocable links that expose a proposal, deliverable, or report to someone without an account.",
-      "convergence": 4,
+      "convergence": 5,
       "tier": "Shipped by many teams",
       "projects": [
         "iankar8-event-manager-os",
         "Phantastic-AI-fireside",
         "mkly-gatherpulse",
-        "adityak6798-ManageMyConference"
+        "adityak6798-ManageMyConference",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": {
         "pr": 201,
@@ -267,11 +275,12 @@
       "n": 12,
       "title": "Accelevents integration",
       "description": "with preview/apply diffs against a real external event platform.",
-      "convergence": 2,
-      "tier": "Shipped by two teams",
+      "convergence": 3,
+      "tier": "Shipped by many teams",
       "projects": [
         "iankar8-event-manager-os",
-        "jpoehnelt-session-party"
+        "jpoehnelt-session-party",
+        "DeanStr-programcue"
       ]
     },
     {
@@ -291,12 +300,13 @@
       "n": 14,
       "title": "Organization-level team administration",
       "description": "above the event — roles, invitations, per-event access grants, audit trail. Cicero scopes membership to the event.",
-      "convergence": 3,
-      "tier": "Shipped by two teams",
+      "convergence": 4,
+      "tier": "Shipped by many teams",
       "projects": [
         "yisding-openboard.events",
         "CampbellVentures-smolboard",
-        "adityak6798-ManageMyConference"
+        "adityak6798-ManageMyConference",
+        "DeanStr-programcue"
       ]
     },
     {
@@ -369,11 +379,12 @@
       "id": "AD-21",
       "n": 21,
       "title": "Attendee-facing Q&A concierge",
-      "description": "with per-event usage budgets.",
-      "convergence": 1,
-      "tier": "Shipped by one team each",
+      "description": "A model-backed help surface grounded in public event facts. Fireside adds per-event budgets; Open Events scopes Orby to the current page and refuses claims about private state.",
+      "convergence": 2,
+      "tier": "Shipped by two teams",
       "projects": [
-        "Phantastic-AI-fireside"
+        "Phantastic-AI-fireside",
+        "MoizIbnYousaf-open-events"
       ]
     },
     {
@@ -546,10 +557,11 @@
       "n": 37,
       "title": "Mixed-type rubric criteria",
       "description": "(numeric, single-select, and free text in one scorecard).",
-      "convergence": 1,
-      "tier": "Shipped by one team each",
+      "convergence": 2,
+      "tier": "Shipped by two teams",
       "projects": [
-        "akakabrian-sessionslate"
+        "akakabrian-sessionslate",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": {
         "pr": 212,
@@ -677,65 +689,120 @@
       "projects": [
         "SteveMLC-lectern"
       ]
+    },
+    {
+      "id": "AD-49",
+      "n": 49,
+      "title": "Direct Google and Microsoft calendar synchronization",
+      "description": "OAuth-connected participant calendars receive provider events that are refreshed and reconciled when the programme changes, beyond downloadable or subscribable iCalendar.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "DeanStr-programcue"
+      ]
+    },
+    {
+      "id": "AD-50",
+      "n": 50,
+      "title": "Reviewer discussion threads attached to proposals",
+      "description": "Assigned reviewers and chairs can discuss one proposal inside the review workspace without leaking the thread outside the round's authorization boundary.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "DeanStr-programcue"
+      ]
+    },
+    {
+      "id": "AD-51",
+      "n": 51,
+      "title": "Conflict-aware agenda undo",
+      "description": "Place, move, and unassign operations return a one-use revision-bound undo token and refuse reversal after an intervening schedule change.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "DeanStr-programcue"
+      ]
+    },
+    {
+      "id": "AD-52",
+      "n": 52,
+      "title": "Immutable participant-retention completion",
+      "description": "Transactional redaction ends in a durable tombstone, and database triggers reject later writes that would reintroduce participant PII.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "DeanStr-programcue"
+      ]
+    },
+    {
+      "id": "AD-53",
+      "n": 53,
+      "title": "AI-drafted organizer notes and speaker resource pages",
+      "description": "Model output becomes an editable suggestion for a personal decision note or resource-wiki page, with no automatic persistence or publication.",
+      "convergence": 1,
+      "tier": "Shipped by one team each",
+      "projects": [
+        "Frostbite1536-greenroom"
+      ]
     }
   ],
   "ciceroDifferentiators": [
     {
       "id": "CD-1",
       "title": "Embeddable venue/exhibitor-hall map (organizer PDF upload, public widget)",
-      "absentIn": 32,
-      "of": 32
+      "absentIn": 35,
+      "of": 35
     },
     {
       "id": "CD-2",
       "title": "Sponsors / exhibitors with a publication-gated public wall",
-      "absentIn": 30,
-      "of": 32,
+      "absentIn": 32,
+      "of": 35,
       "derivedFromArea": "sponsors"
     },
     {
       "id": "CD-3",
       "title": "Consent-aware SMS (E.164 normalization, OTP verification, quiet hours)",
-      "absentIn": 26,
-      "of": 32
+      "absentIn": 29,
+      "of": 35
     },
     {
       "id": "CD-4",
       "title": "Streamable-HTTP MCP server with role-scoped agent skills",
-      "absentIn": 18,
-      "of": 32
+      "absentIn": 21,
+      "of": 35
     },
     {
       "id": "CD-5",
       "title": "Post-conference recording ingestion with publication gates",
-      "absentIn": 17,
-      "of": 32
+      "absentIn": 19,
+      "of": 35
     },
     {
       "id": "CD-6",
       "title": "Signed outbound webhooks",
-      "absentIn": 16,
-      "of": 32
+      "absentIn": 18,
+      "of": 35
     },
     {
       "id": "CD-7",
       "title": "Cross-event speaker CRM (segments, sourcing)",
-      "absentIn": 15,
-      "of": 32,
+      "absentIn": 17,
+      "of": 35,
       "derivedFromArea": "speaker-crm"
     },
     {
       "id": "CD-8",
       "title": "Versioned public REST API with a generated OpenAPI contract",
-      "absentIn": 12,
-      "of": 32,
+      "absentIn": 13,
+      "of": 35,
       "derivedFromArea": "rest-api"
     },
     {
       "id": "CD-9",
       "title": "Reversible CRM merges",
-      "absentIn": 9,
-      "of": 32
+      "absentIn": 12,
+      "of": 35
     }
   ]
 }

@@ -1,6 +1,6 @@
 # nayamoss/namos-sessions-public
 
-**Source:** `git@github.com:nayamoss/namos-sessions-public.git` · **Live:** none found
+**Source:** <https://github.com/nayamoss/namos-sessions-public> · **Live:** none found
 **Found via:** provided repository batch
 **Analyzed:** 2026-08-16 at commit `c5e8234`
 

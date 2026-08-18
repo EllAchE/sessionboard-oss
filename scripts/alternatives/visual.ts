@@ -11,8 +11,6 @@ import { analyzed, areaTotals, extrasByProject, summarize, type Coverage, type S
 
 export const FIELD_SURVEY_SITE_URL = 'https://cicero-field-survey.elehche.workers.dev/';
 const FIELD_SURVEY_TITLE = 'Sessionboard clones — the full feature grid';
-const FIELD_SURVEY_DESCRIPTION =
-  'A source-verified feature survey of 32 Sessionboard clone codebases.';
 
 type Cell = { value: Coverage; title: string };
 
@@ -224,6 +222,7 @@ const SYMBOL: Record<Coverage, string> = { full: '✓', partial: '~', absent: '�
 export function renderVisual(survey: Survey): string {
   const projects = analyzed(survey);
   const stats = summarize(survey);
+  const description = `A source-verified feature survey of ${stats.counts.analyzed} Sessionboard clone codebases.`;
   const byProject = extrasByProject(survey);
   const totals = areaTotals(survey);
 
@@ -418,12 +417,12 @@ export function renderVisual(survey: Survey): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="${FIELD_SURVEY_DESCRIPTION}">
+<meta name="description" content="${description}">
 ${renderStaticSocialMetadata({
   origin: FIELD_SURVEY_SITE_URL,
   path: '/',
   title: FIELD_SURVEY_TITLE,
-  description: FIELD_SURVEY_DESCRIPTION,
+  description,
 })}
 <title>${FIELD_SURVEY_TITLE}</title>
 <style>${CSS}</style>

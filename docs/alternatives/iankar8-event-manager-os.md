@@ -1,6 +1,6 @@
 # iankar8/event-manager-os
 
-**Source:** git@github.com:iankar8/event-manager-os.git · **Live:** https://program-desk.ian-208.workers.dev
+**Source:** <https://github.com/iankar8/event-manager-os> · **Live:** <https://program-desk.ian-208.workers.dev>
 **Found via:** pre-cloned alternatives survey batch (discovery supplied)
 **Analyzed:** 2026-08-16 at commit 84b6fcb
 

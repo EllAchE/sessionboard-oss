@@ -9,60 +9,61 @@ notes describe; they do not grade.
 
 ## Status
 
-**32 repositories analyzed**, each read from source at a pinned commit rather than from its README.
+**35 repositories analyzed**, each read from source at a pinned commit rather than from its README.
 
 | | Count |
 |---|---|
-| Submissions found | 41 |
-| Source repositories located | 33 |
-| Repositories analyzed | 32 |
-| Found but not analyzed | 9 |
+| Submissions found | 45 |
+| Source repositories located | 36 |
+| Repositories analyzed | 35 |
+| Found but not analyzed | 10 |
 
-The nine not analyzed, with reasons — an honest denominator matters more than a big numerator:
+The ten not analyzed, with reasons — an honest denominator matters more than a big numerator:
 
 - **1 repository unreachable.** `everyai-com/grandstage-app` was shared publicly but GitHub returns
   Not Found; it is either private or deleted.
-- **8 submissions with a live deployment but no locatable public source.** Board to Death, Greenroom
-  (Faris Hussain), Marquee (Stage 11 Agentics), Milk (Tyler), OpenSession (Malik), ProgramKit
-  (andheller), Ajay K's `session.drawset.com`, and SuperStage (Ali Zaid). Only the deployed URL was
-  shared. Deployed sites were **not** fetched or probed — this survey reads code, and no code was
-  available.
+- **9 submissions without locatable public source.** Board to Death, Greenroom (Faris Hussain),
+  Marquee (Stage 11 Agentics), ChartStead (Tyler), OpenSession (Malik), ProgramKit (andheller), Ajay
+  K's `session.drawset.com`, SuperStage (Ali Zaid), and Bodhi's request. Eight have a name and/or
+  deployed URL; Bodhi asked to join the list without sharing either source or deployment. Deployed
+  sites were **not** fetched or probed — this survey reads code, and no code was available.
 
 Discovery is recorded in [`discovery-log.md`](discovery-log.md). The survey was specified in
 [`../handoff/alternative-designs-survey.md`](../handoff/alternative-designs-survey.md).
 
 ## Derived from this survey
 
-The prose on this page is hand-written. Everything below is generated from
-[`data/projects.json`](data/projects.json) and [`data/features.json`](data/features.json) by
-`bun run alternatives:build` — do not hand-edit it, and rerun the build after changing the data.
-`bun run alternatives:check` fails CI if a generated file is stale.
+The prose on this page is hand-written. The linked matrix, visual, comparative requirements, and
+machine-readable rollup are generated from [`data/projects.json`](data/projects.json) and
+[`data/features.json`](data/features.json) by `bun run alternatives:build` — do not hand-edit those
+derived files, and rerun the build after changing the data. `bun run alternatives:check` fails CI
+if a generated file is stale.
 
 The public reading copy is at <https://cicero-field-survey.elehche.workers.dev/> and links back to
 the companion submission at <https://cicero-submission.elehche.workers.dev/>.
 
 | | |
 |---|---|
-| [`feature-matrix.md`](feature-matrix.md) | All 71 features × all 32 projects, unfiltered. |
+| [`feature-matrix.md`](feature-matrix.md) | All 77 features × all 35 projects, unfiltered. |
 | [`visual/index.html`](visual/index.html) | The same grid, browsable, with filtering and rollups. |
-| [`../07-comparative-requirements.md`](../07-comparative-requirements.md) | `AD-1`…`AD-48` — what the field built that Cicero did not, and which of them Cicero has closed since. |
+| [`../07-comparative-requirements.md`](../07-comparative-requirements.md) | `AD-1`…`AD-53` — what the field built that Cicero did not, and which of them Cicero has closed since. |
 | [`data/survey.json`](data/survey.json) | Machine-readable rollup: counts, scale, stack, area totals. |
 
 To add a project to the survey, use the `survey-alternative-designs` skill in
 [`../../.agents/skills/`](../../.agents/skills/survey-alternative-designs/SKILL.md). It carries the
 security constraints, the note template, and the data contract.
 
-The 32 analyzed projects span 43–1,600 files (median ≈ 380), 1–5 contributors, and commit histories
+The 35 analyzed projects span 43–1,600 files (median ≈ 466), 1–5 contributors, and commit histories
 that begin no earlier than 2026-08-08 — everyone built inside the same short window.
 
 ## Features others shipped that Cicero did not
 
-**This is the list the survey exists to produce.** Consolidated across all 32 projects,
+**This is the list the survey exists to produce.** Consolidated across all 35 projects,
 deduplicated, each attributed to the projects that have it. Ordered by how many independent teams
 arrived at the same thing — convergence is the signal.
 
-Everything here describes Cicero as it stood when the field was read on 2026-08-16. **Seven of the
-48 have been closed since**, and are marked in place below rather than deleted — the attribution and
+Everything here describes Cicero as it stood when the field was read on 2026-08-16 and in the
+narrow 2026-08-17 refresh. **Seven of the 53 have been closed since**, and are marked in place below rather than deleted — the attribution and
 the fact that the field arrived at the gap first are both worth keeping. `AD-4` is the one item the
 survey mis-scored: `lib/services/content.ts` already recorded, listed, diffed and restored
 revisions, and [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) added the monotonic
@@ -90,7 +91,8 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
    and message templates, and optionally the team, into a new event. Several implementations preview
    the copy before applying, and deliberately exclude operational history.
    — `agrimsingh/conference-engine`, `jpoehnelt/session-party`, `maddiedreese/ProgramLoom`,
-   `TheThingInTheThing/namos-sessions-webapp`, `adityak6798/ManageMyConference`
+   `TheThingInTheThing/namos-sessions-webapp`, `adityak6798/ManageMyConference`,
+   `DeanStr/programcue`
    **Closed since:** `lib/services/event-clone.ts` plans a structure-only clone and
    `app/organizer/duplicate/` previews it before applying
    ([#199](https://github.com/EllAchE/sessionboard-oss/pull/199)).
@@ -117,7 +119,8 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
 4. **Revision history with organizer restore.** Attributed, numbered snapshots of proposal and
    session titles/abstracts that an organizer can roll back.
    — `conorbronsdon/callboard-app`, `westoque/session-hero`, `SteveMLC/lectern`,
-   `realgenekim/curtain-call-cfp` (append-only whole-application history with time travel)
+   `realgenekim/curtain-call-cfp` (append-only whole-application history with time travel),
+   `DeanStr/programcue`
    **Mis-scored, and closed since:** record → list → diff → restore already existed in
    `lib/services/content.ts`; the monotonic revision number and agenda/sponsor coverage landed in
    [#200](https://github.com/EllAchE/sessionboard-oss/pull/200).
@@ -126,35 +129,48 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
    both directions with field ownership, conflict handling, retries, and dead letters.
    — `openrostrum/openrostrum` (three-way reconciliation, signed webhooks, mass-deletion circuit
    breaker), `jpoehnelt/session-party`, `guangyusong/opencallboard` (delete-free confirmed diff),
-   `SteveMLC/lectern` (ten-table mirror), `red/omotenashi` (Airtable as the system of record)
+   `SteveMLC/lectern` (ten-table mirror), `red/omotenashi` (Airtable as the system of record),
+   `DeanStr/programcue` (Airtable can become the event's programme authority)
 
-6. **Authentication beyond magic links.** Cicero is magic-link-only by design (`T-4a`); five teams
-   read the brief as permitting more.
+6. **Authentication beyond magic links.** Cicero is magic-link-only by design (`T-4a`); several
+   teams read the brief as permitting passwords or social sign-in too.
    — `akakabrian/sessionslate` (Argon2id passwords), `twilwa/session-bored` (Better Auth passwords),
    `M31-Labs/rostrum` (WebAuthn passkeys + GitHub/Google OAuth), `adityak6798/ManageMyConference`
    (Google OAuth with PKCE and account linking), `mkly/gatherpulse` (optional TOTP 2FA with backup
-   codes)
+   codes), `Frostbite1536/greenroom` (scrypt passwords), `DeanStr/programcue` (Google and Microsoft
+   sign-in)
 
 7. **Real-time collaborative agenda over Durable Objects + WebSockets.** A per-event Cloudflare
-   Durable Object serializes schedule writes and broadcasts invalidations, so several operators can
-   drag the grid at once.
+   Durable Object broadcasts committed schedule invalidations so several operators can drag the
+   grid at once. Most implementations serialize commands in the object; Program Cue pairs
+   optimistic D1 revisions with the realtime channel.
    — `agrimsingh/conference-engine`, `caseymanos/opensession`, `jpoehnelt/session-party`,
-   `thedatadavis/seshmesh`
+   `thedatadavis/seshmesh`, `DeanStr/programcue`
 
-8. **In-product streaming AI assistant with tool use.** A chat surface inside the organizer app that
-   drives the same tool registry the MCP server exposes, with persisted threads and an approval step
-   before mutations. Cicero's AI is advisory-only and out-of-band.
+8. **In-product streaming AI assistant with tool use.** A chat surface inside the organizer app
+   streams model output, invokes governed tools, persists threads, and requires approval before
+   mutations. Several share that registry with MCP; Program Cue ships the governed in-product
+   surface without an MCP endpoint. Cicero's AI is advisory-only and out-of-band.
    — `CampbellVentures/smolboard`, `getzenai/untitledconference`,
-   `nayamoss/namos-sessions-public`, `Phantastic-AI/fireside`
+   `nayamoss/namos-sessions-public`, `Phantastic-AI/fireside`, `DeanStr/programcue`
 
 9. **Tokenized no-login share links.** Expiring, revocable links that expose a proposal, deliverable,
    or report to someone without an account.
    — `iankar8/event-manager-os` (guest advisors with comments), `Phantastic-AI/fireside`
    (rotatable per-deliverable), `mkly/gatherpulse` (single-use file fulfillment),
-   `adityak6798/ManageMyConference` (expiring report shares with scheduled delivery)
+   `adityak6798/ManageMyConference` (expiring report shares with scheduled delivery),
+   `DeanStr/programcue` (read-only itinerary shares)
    **Closed since:** `lib/services/share-links.ts` issues expiring, revocable links over six
    programme views, so an unpublished programme can be reviewed without an account
    ([#201](https://github.com/EllAchE/sessionboard-oss/pull/201)).
+
+12. **Accelevents integration** with preview/apply diffs against a real external event platform.
+    — `iankar8/event-manager-os`, `jpoehnelt/session-party`, `DeanStr/programcue`
+
+14. **Organization-level team administration** above the event — roles, invitations, per-event
+    access grants, audit trail. Cicero scopes membership to the event.
+    — `yisding/openboard.events`, `CampbellVentures/smolboard`,
+    `adityak6798/ManageMyConference`, `DeanStr/programcue`
 
 ### Shipped by two teams
 
@@ -167,16 +183,18 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
     **Closed since:** `app/(public)/[slug]/llms.txt/route.ts`, alongside the site-level `app/llms.txt`
     ([#188](https://github.com/EllAchE/sessionboard-oss/pull/188)).
 
-12. **Accelevents integration** with preview/apply diffs against a real external event platform.
-    — `iankar8/event-manager-os`, `jpoehnelt/session-party`
-
 13. **Privacy export and erasure** — self-service data export and transactional deletion.
     — `caseymanos/opensession` (bounded JSON export by email), `yisding/openboard.events`
     (contact/org export, erasure, scheduled retention cleanup)
 
-14. **Organization-level team administration** above the event — roles, invitations, per-event access
-    grants, audit trail. Cicero scopes membership to the event.
-    — `yisding/openboard.events`, `CampbellVentures/smolboard`, `adityak6798/ManageMyConference`
+21. **Attendee-facing Q&A concierge.** A model-backed help surface grounded in public event facts.
+    Fireside adds per-event budgets; Open Events scopes Orby to the current page and refuses claims
+    about private state. — `Phantastic-AI/fireside`, `MoizIbnYousaf/open-events`
+
+37. **Mixed-type rubric criteria** (numeric, single-select, and free text in one scorecard).
+    — `akakabrian/sessionslate`, `DeanStr/programcue`
+    **Closed since:** `scorecard_criterion.type` carries all three, and only numeric criteria feed
+    the weighted average ([#212](https://github.com/EllAchE/sessionboard-oss/pull/212)).
 
 ### Shipped by one team each
 
@@ -191,7 +209,6 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
     — `M31-Labs/rostrum`
 20. **Attendee social layer** — mutual connections, shared starred-session overlap, speaker follows.
     — `Phantastic-AI/fireside`
-21. **Attendee-facing Q&A concierge** with per-event usage budgets. — `Phantastic-AI/fireside`
 22. **Named acceptance waves** that stage decisions and release them as a batch, separately from
     waitlist and rejection. — `ChaiWithJai/open-speaker-operations`
 23. **Cross-conference historical program corpus** with field provenance and auditable
@@ -220,10 +237,6 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
 35. **Direct Sessionize speaker-profile import** from the public CFP flow. — `realgenekim/curtain-call-cfp`
 36. **Fail-closed audit persistence** on private token-scoped REST reads — the read fails if the audit
     write fails. — `red/omotenashi`
-37. **Mixed-type rubric criteria** (numeric, single-select, and free text in one scorecard).
-    — `akakabrian/sessionslate`
-    **Closed since:** `scorecard_criterion.type` carries all three, and only numeric criteria feed
-    the weighted average ([#212](https://github.com/EllAchE/sessionboard-oss/pull/212)).
 38. **AI-seeded scorecards that the server refuses** until every unchanged suggestion is confirmed or
     edited. — `twilwa/session-bored`
 39. **Cancellable queued decision notices** with an audit reason and recipient correction before a
@@ -245,39 +258,54 @@ answer; the ranked pick-up order is [`../08-field-backlog.md`](../08-field-backl
     policy. — `mauricedesaxe/openboard`
 48. **AI-drafted decision emails and schedule notices** that preserve required portal/checklist facts
     and require human send approval. — `SteveMLC/lectern`
+49. **Direct Google and Microsoft calendar synchronization.** OAuth-connected participant calendars
+    receive provider events that are refreshed and reconciled when the programme changes.
+    — `DeanStr/programcue`
+50. **Reviewer discussion threads attached to proposals.** Assigned reviewers and chairs can discuss
+    one proposal inside the review workspace without crossing the round's authorization boundary.
+    — `DeanStr/programcue`
+51. **Conflict-aware agenda undo.** Place, move, and unassign operations return a one-use,
+    revision-bound undo token and refuse reversal after an intervening schedule change.
+    — `DeanStr/programcue`
+52. **Immutable participant-retention completion.** Transactional redaction ends in a durable
+    tombstone, and database triggers reject later writes that would reintroduce participant PII.
+    — `DeanStr/programcue`
+53. **AI-drafted organizer notes and speaker resource pages.** Model output becomes an editable
+    suggestion, with no automatic persistence or publication. — `Frostbite1536/greenroom`
 
 ## Features Cicero shipped that others did not
 
-Counted across the 32 analyzed projects — how many of them lack each thing.
+Counted across the 35 analyzed projects — how many of them lack each thing.
 
 | Cicero capability | Absent in |
 |---|---|
-| Sponsors / exhibitors with a publication-gated public wall | 30 of 32 |
-| Consent-aware SMS (E.164 normalization, OTP verification, quiet hours) | 26 of 32 |
-| Streamable-HTTP MCP server with role-scoped agent skills | 18 of 32 |
-| Post-conference recording ingestion with publication gates | 17 of 32 |
-| Signed outbound webhooks | 16 of 32 |
-| Cross-event speaker CRM (segments, sourcing) | 15 of 32 |
-| Versioned public REST API with a generated OpenAPI contract | 12 of 32 |
-| Reversible CRM merges | 9 of 32 |
+| Embeddable venue/exhibitor-hall map (organizer PDF upload, public widget) | 35 of 35 |
+| Sponsors / exhibitors with a publication-gated public wall | 32 of 35 |
+| Consent-aware SMS (E.164 normalization, OTP verification, quiet hours) | 29 of 35 |
+| Streamable-HTTP MCP server with role-scoped agent skills | 21 of 35 |
+| Post-conference recording ingestion with publication gates | 19 of 35 |
+| Signed outbound webhooks | 18 of 35 |
+| Cross-event speaker CRM (segments, sourcing) | 17 of 35 |
+| Versioned public REST API with a generated OpenAPI contract | 13 of 35 |
+| Reversible CRM merges | 12 of 35 |
 
-Sponsors is the clearest differentiator: 26 of 32 projects have no sponsor entity at all, 3 have
-scaffolding only, and 3 shipped it. Nobody skipped CFP intake or agenda scheduling — those are the
-floor everyone cleared.
+The exhibitor-hall map remains unique to Cicero in this field. Sponsors is the clearest baseline
+differentiator: 28 of 35 projects have no sponsor entity at all, 3 have scaffolding only, and 4
+shipped it. Nobody skipped CFP intake or agenda scheduling — those are the floor everyone cleared.
 
 The seven gaps Cicero has closed since the survey are deliberately **not** promoted into this table.
 The counts above come from a pass that checked every project for that capability; extras attribution
-is positive-only, so "absent in 32 − convergence" would be an upper bound dressed up as a count.
+is positive-only, so "absent in 35 − convergence" would be an upper bound dressed up as a count.
 
 Two caveats on reading this table. It measures presence, not quality, and it is a comparison against
-32 hackathon-window projects, not against the commercial products in this space. And several Cicero
+35 hackathon-window projects, not against the commercial products in this space. And several Cicero
 capabilities in it remain **unproven against paid third-party accounts** — outbound email
 (`T-6`/`C-3`), SMS, and R2 storage have never been exercised end-to-end with live credentials. Those
 rows say we built it, not that we watched it work.
 
 ## Comparison matrix
 
-Projects down the side, feature areas across the top — with 32 projects, the brief's orientation
+Projects down the side, feature areas across the top — with 35 projects, the brief's orientation
 does not fit on a page. `✓` shipped and verified in code, `~` partial (schema without queries, UI
 without a server action, a handler returning a fixture), `✗` absent, `?` could not determine.
 
@@ -316,26 +344,29 @@ without a server action, a handler returning a fixture), `✗` absent, `?` could
 | [twilwa/session-bored](twilwa-session-bored.md) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | ✗ |
 | [westoque/session-hero](westoque-session-hero.md) | ✓ | ✓ | ~ | ~ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ~ | ✓ | ✗ |
 | [yisding/openboard.events](yisding-openboard.events.md) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ | ✗ |
+| [Frostbite1536/greenroom](Frostbite1536-greenroom.md) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ |
+| [DeanStr/programcue](DeanStr-programcue.md) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| [MoizIbnYousaf/open-events](MoizIbnYousaf-open-events.md) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ | ✗ | ✗ |
 
-Area totals across the 32:
+Area totals across the 35:
 
 | Area | ✓ | ~ | ✗ |
 |---|---|---|---|
-| CFP intake | 32 | 0 | 0 |
-| Agenda / scheduling | 32 | 0 | 0 |
-| Conflict detection | 31 | 1 | 0 |
-| Speaker portal & tasks | 31 | 1 | 0 |
-| Content deliverables | 31 | 1 | 0 |
-| Public event pages | 30 | 2 | 0 |
-| Embeddable widgets | 30 | 0 | 2 |
-| Decisions & notifications | 29 | 3 | 0 |
-| Review rounds & scoring | 28 | 4 | 0 |
-| Anonymized review | 28 | 3 | 1 |
-| Comms / templates | 27 | 5 | 0 |
-| Public REST API | 21 | 5 | 6 |
-| Speaker CRM | 19 | 7 | 6 |
-| AI features | 14 | 8 | 10 |
-| Sponsors | 3 | 3 | 26 |
+| CFP intake | 35 | 0 | 0 |
+| Agenda / scheduling | 35 | 0 | 0 |
+| Conflict detection | 34 | 1 | 0 |
+| Speaker portal & tasks | 34 | 1 | 0 |
+| Content deliverables | 34 | 1 | 0 |
+| Public event pages | 33 | 2 | 0 |
+| Embeddable widgets | 33 | 0 | 2 |
+| Decisions & notifications | 32 | 3 | 0 |
+| Review rounds & scoring | 31 | 4 | 0 |
+| Anonymized review | 31 | 3 | 1 |
+| Comms / templates | 30 | 5 | 0 |
+| Public REST API | 23 | 5 | 7 |
+| Speaker CRM | 20 | 7 | 8 |
+| AI features | 17 | 8 | 10 |
+| Sponsors | 4 | 3 | 28 |
 
 ## Project template
 

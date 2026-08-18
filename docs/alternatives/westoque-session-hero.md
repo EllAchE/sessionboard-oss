@@ -1,6 +1,6 @@
 # westoque/session-hero
 
-**Source:** git@github.com:westoque/session-hero.git · **Live:** none found
+**Source:** <https://github.com/westoque/session-hero> · **Live:** none found
 **Found via:** Pre-discovered repository batch supplied for this survey.
 **Analyzed:** 2026-08-16 at commit f0c1e02371b2464997cc9115337311cc606ce4fa
 

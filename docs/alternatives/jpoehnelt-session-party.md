@@ -1,6 +1,6 @@
 # jpoehnelt/session-party
 
-**Source:** git@github.com:jpoehnelt/session-party.git · **Live:** https://sessionparty.com
+**Source:** <https://github.com/jpoehnelt/session-party> · **Live:** <https://sessionparty.com>
 **Found via:** pre-cloned alternatives survey batch (discovery supplied)
 **Analyzed:** 2026-08-16 at commit bc46bee
 

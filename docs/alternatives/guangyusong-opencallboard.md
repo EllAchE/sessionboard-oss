@@ -1,6 +1,6 @@
 # guangyusong/opencallboard
 
-**Source:** `git@github.com:guangyusong/opencallboard.git` · **Live:** https://opencallboard.com
+**Source:** <https://github.com/guangyusong/opencallboard> · **Live:** <https://opencallboard.com>
 **Found via:** provided repository batch
 **Analyzed:** 2026-08-16 at commit `a131cca`
 
