@@ -32,8 +32,16 @@ export default async function SubmissionDonePage({ params, searchParams }: PageP
         </header>
 
         <div className={styles.done}>
-          {ref && <p className={styles.refBadge}>{ref}</p>}
+          {/*
+            Labelled, because the reference on its own was read as decoration rather than as the
+            receipt it is. It is the thing a speaker quotes back at an organizer, so it says what
+            it is and what to do with it.
+          */}
+          {ref && <p className={styles.refBadge}>We received {ref}</p>}
           <p>We emailed your confirmation and sign-in link.</p>
+          <p className={styles.help}>
+            Quote that reference if you write to the organizers. Your portal lists it too.
+          </p>
           <p className={styles.help}>Next: add your bio and headshot in the portal.</p>
 
           <Link href={portal}>
