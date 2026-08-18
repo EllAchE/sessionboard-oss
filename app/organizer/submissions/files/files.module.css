@@ -280,8 +280,18 @@
   border-radius: var(--radius-md);
 }
 
+/*
+  The name takes a line of its own and the approval controls sit under it.
+
+  They used to share one line, and a `Select` wrapper is `width: 100%`, which as a flex sibling
+  claims the whole row. The name sets `min-width: 0` so it can ellipsize, so it was the thing that
+  gave: every row with an approval control showed a status chip and a dropdown and no session at
+  all. Rows without one were untouched, which is why the speakers in the same list read fine while
+  the sessions above them did not.
+*/
 .entityRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
@@ -296,7 +306,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-05);
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
   border: none;
   background: none;
@@ -321,6 +331,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The chip and the dropdown, on the line below whatever they are the status of. */
+.entityStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 100%;
+}
+
+/* Bounded, so the dropdown stops at the row rather than setting the row's width. */
+.entityStatusPick {
+  flex: 1;
+  min-width: 0;
+  max-width: 14rem;
 }
 
 .field {
