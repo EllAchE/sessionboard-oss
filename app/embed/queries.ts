@@ -128,6 +128,8 @@ export const loadPublicBundle = cache(async (slug: string): Promise<PublicBundle
         and(
           eq(scheduledSession.eventId, event.id),
           eq(scheduledSession.status, 'published'),
+          // Gate one. `lib/public-visibility.ts` says the same thing in TypeScript so the organizer
+          // agenda can explain a session that is published and still not here; change both together.
           or(isNull(scheduledSession.submissionId), eq(submission.contentStatus, 'approved')),
         ),
       )
@@ -188,6 +190,8 @@ export const loadPublicBundle = cache(async (slug: string): Promise<PublicBundle
               inArray(participantRole.submissionId, submissionIds),
               eq(submission.eventId, event.id),
               eq(submission.contentStatus, 'approved'),
+              // Gate two, and the reason a session can appear with a co-speaker missing rather than
+              // not at all. Mirrored in `lib/public-visibility.ts`; change both together.
               eq(participant.workflowStatus, 'confirmed'),
             ),
           )
