@@ -304,3 +304,39 @@ describe('0001_event_deadlines', () => {
     }
   });
 });
+
+describe('0002_review_assignment_origin', () => {
+  const statements = migration('0002_review_assignment_origin');
+
+  it('adds the enum and one column to review_assignment, and nothing else', () => {
+    expect(statements).toHaveLength(2);
+    expect(statements[0]).toMatch(
+      /^CREATE TYPE "public"\."review_assignment_origin" AS ENUM\('assigned', 'self_opened'\)/,
+    );
+    expect(statements[1]).toMatch(/^ALTER TABLE "review_assignment" ADD COLUMN "origin"/);
+  });
+
+  /**
+   * The default is what makes this migration safe to run against a live round. Every existing row
+   * was created by `assignReviewers`, so `assigned` is not a placeholder — it is what those rows
+   * mean, and it leaves every already-reported denominator exactly where it was.
+   *
+   * `NOT NULL` alongside it costs nothing: Postgres has stored the default in the catalogue rather
+   * than rewriting the table since 11, and a nullable origin would make every read decide for
+   * itself what a missing one meant.
+   */
+  it('defaults every row that already exists to an assignment an organizer made', () => {
+    expect(statements[1]).toMatch(/DEFAULT 'assigned'/);
+    expect(statements[1]).toMatch(/NOT NULL/);
+  });
+
+  /**
+   * What it cannot do is find the rows the old `saveScorecard` created for an organizer who opened
+   * a scorecard unassigned — those are indistinguishable from real assignments now, so they keep
+   * counting. The fix is forward-looking by construction, and pinning that here stops a later reader
+   * assuming a backfill happened.
+   */
+  it('backfills nothing, because no column recorded what it would need', () => {
+    expect(statements.join('\n')).not.toMatch(/\bUPDATE\b/i);
+  });
+});

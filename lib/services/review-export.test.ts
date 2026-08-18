@@ -178,6 +178,7 @@ const SUBMISSIONS: ReviewResultsExportSubmission[] = [
         reviewerName: 'Sam Reviewer',
         reviewerEmail: 'sam@example.test',
         status: 'completed',
+        origin: 'assigned',
         comment: 'Strong, but\nverify',
         completedAt: new Date('2026-08-13T01:02:03.000Z'),
         scores: [
@@ -191,6 +192,7 @@ const SUBMISSIONS: ReviewResultsExportSubmission[] = [
         reviewerName: 'Alex Reviewer',
         reviewerEmail: 'alex@example.test',
         status: 'pending',
+        origin: 'assigned',
         comment: null,
         completedAt: null,
         scores: [{ criterionId: 'relevance', value: 5 }],
