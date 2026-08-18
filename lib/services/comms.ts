@@ -503,6 +503,7 @@ export async function resolveRecipients(
     }
 
     const name = person.displayName || person.userName || person.email.split('@')[0];
+    const firstName = recipientFirstNameColumn(person);
     const preferred =
       submissions.find((s) => s.status === 'accepted') ?? submissions[0] ?? null;
     const selectedTask =
@@ -529,7 +530,7 @@ export async function resolveRecipients(
         event,
         branding,
         lookups,
-        person: { ...person, name, firstName: person.userFirstName },
+        person: { ...person, name, firstName },
         submission: preferred,
         session,
         openTasks,
@@ -611,6 +612,28 @@ export function speakerFirstName(
   displayName: string,
 ): string {
   return firstName?.trim() || splitPersonName(displayName).firstName || displayName;
+}
+
+/**
+ * Which `first_name` to hand `speakerFirstName` for one recipient — and, more to the point, when to
+ * hand it none.
+ *
+ * The account column wins outright above, which is right until an organizer renames the speaker for
+ * this event. That writes `participant.display_name` and leaves the account untouched, so the column
+ * goes stale while every other line of the message follows the new name: a real send opened
+ * "Hi Marcus Vitruvius," to a speaker the same email called Priya Raman throughout.
+ *
+ * So the column is dropped only when the two genuinely disagree. While the display name still
+ * matches the account the column keeps winning — it is the half the speaker typed themselves, and
+ * the only thing that knows "Marcus Tullius" is one given name rather than two.
+ */
+export function recipientFirstNameColumn(person: {
+  displayName: string | null;
+  userName: string | null;
+  userFirstName: string | null;
+}): string | null {
+  const renamedForThisEvent = !!person.displayName && person.displayName !== person.userName;
+  return renamedForThisEvent ? null : person.userFirstName;
 }
 
 function buildVars(input: {
