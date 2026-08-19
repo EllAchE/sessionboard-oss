@@ -5,7 +5,10 @@ import {
   form,
   formField,
   formParticipantRole,
+  sessionFormat,
   submission,
+  tag,
+  track,
 } from '../../db/schema';
 import {
   canChangeFieldType,
@@ -712,6 +715,32 @@ export async function ensureFormBuiltins(formId: string, kind: FormKind): Promis
 }
 
 /**
+ * The built-in choice questions and the taxonomy table each one draws its choices from. `level` is
+ * absent on purpose: it falls back to a constant list, so it is never empty.
+ */
+const BUILTIN_CHOICE_SOURCES = [
+  { key: 'format' as const, noun: 'session formats', table: sessionFormat },
+  { key: 'track' as const, noun: 'tracks', table: track },
+  { key: 'tags' as const, noun: 'tags', table: tag },
+];
+
+async function firstRequiredBuiltinWithoutChoices(
+  eventId: string,
+  fields: FormFieldSpec[],
+): Promise<{ label: string; noun: string } | null> {
+  for (const source of BUILTIN_CHOICE_SOURCES) {
+    const field = fields.find((entry) => entry.builtinKey === source.key && entry.required);
+    if (!field) continue;
+    const [row] = await getDb()
+      .select({ total: count() })
+      .from(source.table)
+      .where(eq(source.table.eventId, eventId));
+    if ((row?.total ?? 0) === 0) return { label: field.label, noun: source.noun };
+  }
+  return null;
+}
+
+/**
  * `validateConditions` is the last gate before a form goes live: a one-hop violation that reaches
  * the runtime is a question that renders for nobody, and nothing on screen says so.
  */
@@ -751,6 +780,22 @@ export async function publishForm(ctx: EventContext, formId: string): Promise<Fo
   );
   if (missingOptions) {
     throw invalid(`“${missingOptions.label}” needs at least one choice before the form can open`);
+  }
+
+  /**
+   * The same rule, for the built-ins the check above deliberately skips. Their choices come from the
+   * event taxonomy rather than from the builder, so the field row looks fine while the question is
+   * unanswerable — and a new event starts with no formats, tracks or tags at all. Left alone, the
+   * default call for papers opened with a required `Tags` that rendered as no control whatsoever and
+   * then rejected every submission. The runtime drops the requirement so nobody is stuck, and this
+   * says so at the one moment the organizer can still fix it.
+   */
+  const emptyBuiltin = await firstRequiredBuiltinWithoutChoices(ctx.eventId, fields);
+  if (emptyBuiltin) {
+    throw invalid(
+      `“${emptyBuiltin.label}” is required but this event has no ${emptyBuiltin.noun} to choose from. ` +
+        `Add at least one under Settings, or make the question optional.`,
+    );
   }
 
   // `F-7`: a form whose minimums cannot fit under its own cap would take nobody's submission.

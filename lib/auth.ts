@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { getDb } from '../db/client';
 import { event, magicToken, membership, sessionCookie, user } from '../db/schema';
 import type { Actor, EventContext, MembershipRole } from './context';
+import { EVENT_COOKIE } from './context';
 import {
   demoEventSlugs,
   magicLinkPrecheck,
@@ -202,8 +203,44 @@ export async function consumeMagicLink(token: string): Promise<{ redirectTo: str
 
   await db.update(magicToken).set({ usedAt: new Date() }).where(eq(magicToken.id, record.id));
   await openSession(record.userId, null);
+  await adoptTokenEvent(record.userId, record.eventId);
 
   return { redirectTo: record.redirectTo ?? '/' };
+}
+
+/**
+ * The event the link was sent *about*, carried onto the session that link opened.
+ *
+ * `magic_token.event_id` has always been written — `review.inviteReviewer` files the event it is
+ * inviting into, the public submit action files the event submitted to — and until now nothing read
+ * it back. The recipient therefore arrived with no event cookie at all, and every surface that has
+ * to name an event without one falls back differently: the organizer shell takes the soonest
+ * upcoming event (`pickDefaultEvent`), the reviewer queue took whichever row the database returned
+ * first, and the portal index offers a list. Someone invited to review event X, who already reviews
+ * event Y, landed on Y and read "Nothing is assigned to you" — a true sentence about the wrong
+ * conference.
+ *
+ * Membership is rechecked here rather than trusted from the token, because a token outlives the
+ * grant that justified it: an invitation can be withdrawn between the send and the click. It stays
+ * a hint even when it survives — `resolveCurrentEvent` and `reviewerSession` both match the cookie
+ * against live memberships again before believing it — so this decides what someone sees first and
+ * never what they may do.
+ */
+async function adoptTokenEvent(userId: string, eventId: string | null): Promise<void> {
+  if (!eventId) return;
+
+  const held = await getDb().query.membership.findFirst({
+    where: and(eq(membership.userId, userId), eq(membership.eventId, eventId)),
+  });
+  if (!held) return;
+
+  const store = await cookies();
+  store.set(EVENT_COOKIE, eventId, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: secureCookies(),
+    path: '/',
+  });
 }
 
 async function openSession(userId: string, impersonatedByUserId: string | null): Promise<void> {

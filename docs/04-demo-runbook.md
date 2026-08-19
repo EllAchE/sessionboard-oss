@@ -45,7 +45,7 @@ The production base URL is <https://cicero-three.vercel.app>.
 | Purpose | URL | Pre-demo expectation |
 | --- | --- | --- |
 | Home | <https://cicero-three.vercel.app> | Live |
-| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin> | Live; submit `organizer@example.com`; the page returns the demo magic link |
+| Organizer sign-in | <https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin&event=demo> | Live; submit `organizer@example.com`; the page returns the demo magic link. `event=demo` names the event the session opens on — the seed builds four, and without it the workspace opens on whichever happens next |
 | Organizer dashboard | <https://cicero-three.vercel.app/admin> | Live after sign-in; legacy hosted route |
 | Captured demo mail | <https://cicero-three.vercel.app/admin/mail> | Verify during preflight; legacy hosted route |
 | Existing public demo | <https://cicero-three.vercel.app/demo> | Live fallback |

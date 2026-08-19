@@ -6,7 +6,13 @@
  * has to open straight from disk too. Its style and behavior therefore stay inline.
  */
 
+import { renderStaticSocialMetadata } from '../../lib/site-metadata';
 import { analyzed, areaTotals, extrasByProject, summarize, type Coverage, type Survey } from './survey';
+
+export const FIELD_SURVEY_SITE_URL = 'https://cicero-field-survey.elehche.workers.dev/';
+const FIELD_SURVEY_TITLE = 'Sessionboard clones — the full feature grid';
+const FIELD_SURVEY_DESCRIPTION =
+  'A source-verified feature survey of 32 Sessionboard clone codebases.';
 
 type Cell = { value: Coverage; title: string };
 
@@ -412,8 +418,14 @@ export function renderVisual(survey: Survey): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="A source-verified feature survey of 32 Sessionboard clone codebases.">
-<title>Sessionboard clones — the full feature grid</title>
+<meta name="description" content="${FIELD_SURVEY_DESCRIPTION}">
+${renderStaticSocialMetadata({
+  origin: FIELD_SURVEY_SITE_URL,
+  path: '/',
+  title: FIELD_SURVEY_TITLE,
+  description: FIELD_SURVEY_DESCRIPTION,
+})}
+<title>${FIELD_SURVEY_TITLE}</title>
 <style>${CSS}</style>
 </head>
 <body>

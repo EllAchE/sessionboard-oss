@@ -300,7 +300,17 @@ export type SpeakerInput = {
   jobTitle?: string;
   company?: string;
   bioMarkdown?: string;
+  /**
+   * A CSV column and an API convenience, not what the organizer screen sends. It names one link out
+   * of a set — `mergeLinks` folds it in beside whatever else the person has — so a caller that
+   * supplies only this can neither see nor disturb the rest.
+   */
   website?: string;
+  /**
+   * The whole set, replacing what is stored. Present only from a caller that showed the organizer
+   * every link first, because that is the only caller entitled to say a link is gone.
+   */
+  links?: { label: string; url: string }[];
   workflowStatus?: string;
   timezone?: string;
   dietaryNotes?: string;
@@ -332,6 +342,25 @@ function mergeLinks(
 }
 
 /**
+ * `SPK-S1`. What a speaker's links become after this write.
+ *
+ * A caller that sent the whole set is replacing it, and is the only caller entitled to: it is the
+ * one that showed the organizer every link before asking. A caller that sent only `website` is
+ * naming one link out of the set and leaving the rest alone — the CSV import, and the API.
+ *
+ * Reading `website` off the stored set and writing it back was the organizer screen's whole view of
+ * this field, which is how a speaker's own LinkedIn and Twitter stayed invisible on the organizer
+ * record, and how a portal save looked as though it had destroyed an organizer-entered Website when
+ * what it had really done was relabel the one link either side could see.
+ */
+export function profileLinks(
+  current: readonly { label: string; url: string }[],
+  input: { links?: { label: string; url: string }[]; website?: string },
+): { label: string; url: string }[] {
+  return mergeLinks(input.links ?? [...current], clean(input.website));
+}
+
+/**
  * Every field is sent on every write because `updateProfile` replaces the whole profile; a value the
  * caller did not supply falls back to what is stored rather than blanking it.
  */
@@ -345,7 +374,7 @@ function mergedProfile(current: Participant, input: SpeakerInput): ProfileInput 
     timezone: clean(input.timezone) ?? clean(current.timezone),
     dietaryNotes: clean(input.dietaryNotes) ?? clean(current.dietaryNotes),
     accessibilityNotes: clean(input.accessibilityNotes) ?? clean(current.accessibilityNotes),
-    links: mergeLinks(current.links, clean(input.website)),
+    links: profileLinks(current.links, input),
   };
 }
 

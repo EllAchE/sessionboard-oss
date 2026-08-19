@@ -11,11 +11,18 @@ export const DEMO_ENTRY_IDENTITIES = [
  * Passwordless sign-in entry points for the seeded demo identities, one per product role. Kept
  * relative so they follow whatever origin serves the page; `APP_URL` alone owns the absolute
  * deployed origin.
+ *
+ * Each names `DEMO_EVENT_SLUG`, which rides through the sign-in form onto `magic_token.event_id`
+ * and is adopted onto the session by `consumeMagicLink`. `db/seed.ts` builds four events, and the
+ * three tours used to arrive with none of them named — so each surface fell back by its own rule:
+ * the organizer shell to the soonest upcoming event, which is the provincial assembly; the reviewer
+ * queue to the newest created, which has no submissions and reports nothing assigned; the portal to
+ * a chooser. Three roles, three different conferences, none of them the one being demonstrated.
  */
 export const DEMO_ENTRY_LINKS = {
-  organizer: `/signin?email=${DEMO_ENTRY_IDENTITIES[0].email}&next=/organizer`,
-  reviewer: `/signin?email=${DEMO_ENTRY_IDENTITIES[1].email}&next=/review`,
-  speaker: `/signin?email=${DEMO_ENTRY_IDENTITIES[2].email}&next=/portal`,
+  organizer: `/signin?email=${DEMO_ENTRY_IDENTITIES[0].email}&next=/organizer&event=${DEMO_EVENT_SLUG}`,
+  reviewer: `/signin?email=${DEMO_ENTRY_IDENTITIES[1].email}&next=/review&event=${DEMO_EVENT_SLUG}`,
+  speaker: `/signin?email=${DEMO_ENTRY_IDENTITIES[2].email}&next=/portal&event=${DEMO_EVENT_SLUG}`,
 } as const;
 
 /**

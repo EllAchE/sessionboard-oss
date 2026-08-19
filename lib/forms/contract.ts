@@ -318,6 +318,10 @@ export function evaluateCondition(condition: Condition, value: AnswerValue): boo
  * Whether a field is currently on screen. Because conditions are one hop, this is a direct lookup
  * against the referenced field's own answer — never a recursive walk, and never dependent on
  * whether the referenced field is itself visible.
+ *
+ * A condition whose question is not in `byId` shows the field. That is the right answer for a rule
+ * left dangling by a deleted question, and the wrong one for a caller that handed over a filtered
+ * list — pass the whole form, then drop what you are not rendering.
  */
 export function isFieldVisible(field: FormFieldSpec, values: AnswerMap, byId: Map<string, FormFieldSpec>): boolean {
   if (!field.showIf) return true;
@@ -326,8 +330,12 @@ export function isFieldVisible(field: FormFieldSpec, values: AnswerMap, byId: Ma
   return evaluateCondition(field.showIf, values[target.key] ?? null);
 }
 
-export function visibleFields(fields: FormFieldSpec[], values: AnswerMap): FormFieldSpec[] {
-  const byId = new Map(fields.map((field) => [field.id, field]));
+/**
+ * Generic in the field, so a caller holding `RuntimeField`s gets `RuntimeField`s back rather than
+ * having to cast its resolved options away to ask what is on screen.
+ */
+export function visibleFields<T extends FormFieldSpec>(fields: T[], values: AnswerMap): T[] {
+  const byId = new Map<string, FormFieldSpec>(fields.map((field) => [field.id, field]));
   return fields.filter((field) => isFieldVisible(field, values, byId));
 }
 

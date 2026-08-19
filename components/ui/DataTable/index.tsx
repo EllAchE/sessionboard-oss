@@ -66,6 +66,83 @@ const COLUMN_MIN_WIDTH_REM: Record<DataTableColumnSpace, number> = {
   wide: 12,
 };
 
+/**
+ * `space` is the readable floor and `width` the preferred share, and the two used to be applied in
+ * different places: the floors were summed into the table's `min-width`, while each `<col>` got its
+ * declared `width` alone. So a column asking for `10%` of a table sitting at exactly that min-width
+ * rendered at 100px against a 128px floor — narrow enough to lose its own heading, and never wide
+ * enough to overflow the scroller, so no scrollbar appeared to say the rest was reachable. At
+ * 1280px that quietly cut `SCORE` off the submissions table and truncated the reviewer queue's
+ * header to `YOUR SCOR`.
+ *
+ * `max()` applies the floor where the width actually resolves, so a percentage can grow the column
+ * on a roomy screen and never shrink it below what it takes to read.
+ */
+function columnWidth(column: { width?: string; space?: DataTableColumnSpace }): string | undefined {
+  const floor = `${COLUMN_MIN_WIDTH_REM[column.space ?? 'standard']}rem`;
+  if (!column.width) return undefined;
+  return `max(${column.width}, ${floor})`;
+}
+
+/** Only used to compare a `px` preference against a `rem` floor. */
+const ROOT_FONT_PX = 16;
+/** The width below converges geometrically; this is a guard against a pathological column spec. */
+const WIDTH_PASSES = 24;
+
+/**
+ * How wide the table has to be before every column clears its floor at once.
+ *
+ * Summing the floors understated it twice over. A column declared `140px` occupies more than its
+ * 6rem `compact` floor. And a percentage column is worth its floor at narrow widths — `columnWidth`
+ * guarantees that much — but *more* than its floor once the table is roomy, and under
+ * `table-layout: fixed` that surplus comes out of the columns declaring no width at all. So the
+ * table sat at the summed floors, the 16% column took a fifth more than its share of them, and the
+ * title column it stole from ended up under the 12rem it had asked for.
+ *
+ * The width therefore depends on the percentages and the percentages depend on the width, so it is
+ * iterated rather than summed: start at the floors and re-resolve until it stops moving. Converges
+ * from below by a factor of the declared share each pass, so a handful of passes is exact to the
+ * hundredth of a rem this rounds to.
+ */
+function requiredMinWidthRem(
+  columns: Array<{ width?: string; space?: DataTableColumnSpace }>,
+  selectionRem: number,
+): number {
+  /** Columns whose width the table's own width cannot change. */
+  const fixed: number[] = [];
+  const shares: Array<{ share: number; floor: number }> = [];
+
+  for (const column of columns) {
+    const floor = COLUMN_MIN_WIDTH_REM[column.space ?? 'standard'];
+    const declared = column.width?.trim();
+    const share = declared?.endsWith('%') ? Number.parseFloat(declared) / 100 : Number.NaN;
+    if (Number.isFinite(share) && share > 0 && share < 1) {
+      shares.push({ share, floor });
+      continue;
+    }
+    // An `auto` column and one declared in `px` are both fixed here; only the floor differs.
+    const rem = declared?.endsWith('px') ? Number.parseFloat(declared) / ROOT_FONT_PX : Number.NaN;
+    fixed.push(Number.isFinite(rem) ? Math.max(floor, rem) : floor);
+  }
+
+  const base = fixed.reduce((total, rem) => total + rem, selectionRem);
+  const atFloors = shares.reduce((total, column) => total + column.floor, base);
+  // Shares totalling a whole table leave nothing to converge on; the floors are the honest answer.
+  if (shares.reduce((total, column) => total + column.share, 0) >= 1) return atFloors;
+
+  let width = atFloors;
+  for (let pass = 0; pass < WIDTH_PASSES; pass += 1) {
+    const next = shares.reduce(
+      (total, column) => total + Math.max(column.floor, column.share * width),
+      base,
+    );
+    if (next - width < 0.001) break;
+    width = next;
+  }
+
+  return Math.ceil(width * 100) / 100;
+}
+
 export function DataTable<T>({
   columns,
   rows,
@@ -208,12 +285,10 @@ export function DataTable<T>({
 
   const activeRowId = rows.length > 0 ? `${baseId}-row-${active}` : undefined;
   const columnCount = columns.length + (selectable ? 1 : 0);
-  const inferredMinWidth = `${
-    columns.reduce(
-      (total, column) => total + COLUMN_MIN_WIDTH_REM[column.space ?? 'standard'],
-      selectable ? SELECTION_COLUMN_WIDTH_REM : 0,
-    )
-  }rem`;
+  const inferredMinWidth = `${requiredMinWidthRem(
+    columns,
+    selectable ? SELECTION_COLUMN_WIDTH_REM : 0,
+  )}rem`;
 
   return (
     <div
@@ -231,9 +306,10 @@ export function DataTable<T>({
         {caption ? <caption className={styles.caption}>{caption}</caption> : null}
         <colgroup>
           {selectable ? <col style={{ width: 'var(--control-lg)' }} /> : null}
-          {columns.map((column) => (
-            <col key={column.id} style={column.width ? { width: column.width } : undefined} />
-          ))}
+          {columns.map((column) => {
+            const width = columnWidth(column);
+            return <col key={column.id} style={width ? { width } : undefined} />;
+          })}
         </colgroup>
         <thead className={cn(styles.head, stickyHeader && styles.sticky)}>
           <tr>

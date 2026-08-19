@@ -3,6 +3,7 @@ import {
   FIELD_SURVEY_SITE_URL,
   renderStandalonePage,
   renderSubmissionMarkdown,
+  SUBMISSION_SITE_URL,
   SUBMISSION_DOCUMENTS,
 } from './generate-submission-html';
 
@@ -44,6 +45,10 @@ describe('standalone submission HTML', () => {
     expect(html).toContain('href="../06-submission-summary.md"');
     expect(html).toContain('href="summary.html" aria-current="page"');
     expect(html).toContain(`href="${FIELD_SURVEY_SITE_URL}"`);
+    expect(html).toContain(
+      `<meta property="og:image" content="${SUBMISSION_SITE_URL}social/cicero-card-archetypes.png">`,
+    );
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
     expect(html).toContain('<h1 id="short-form">Short form</h1>');
   });
 });

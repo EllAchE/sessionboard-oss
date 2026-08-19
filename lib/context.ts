@@ -1,5 +1,17 @@
 import { forbidden, unauthorized } from './errors';
 
+/**
+ * Organizer routes carry no event in their path, so the current event travels in a cookie. Putting
+ * it in the URL instead would mean every feature route learns an `[eventSlug]` segment, and the
+ * switch is a rare action compared with the navigation it would tax.
+ *
+ * It lives here, in the leaf module, rather than beside the code that reads it in
+ * `lib/services/events.ts` — which re-exports it, so every existing import still resolves. `lib/auth.ts`
+ * is what forced the move: it has to write the cookie when a sign-in link names an event, and
+ * `events.ts` imports `auth.ts`, so importing the name back the other way would close a cycle.
+ */
+export const EVENT_COOKIE = 'cicero_event';
+
 export type MembershipRole = 'organizer' | 'reviewer' | 'speaker';
 
 /**

@@ -110,7 +110,7 @@ export function DeliverableDetail({
           <Button
             variant="ghost"
             iconLeft={<ChevronLeft size={14} />}
-            onClick={() => router.push('/organizer/submissions/files')}
+            href="/organizer/submissions/files"
           >
             Back to files
           </Button>

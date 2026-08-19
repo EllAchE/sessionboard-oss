@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { submitFormStateKey } from '../../app/(public)/submit/shared';
 import { submission, submissionTag } from '../../db/schema';
-import { visibleFields } from '../forms/contract';
+import { validateAnswers, visibleFields } from '../forms/contract';
 import {
   buildFieldSpecs,
   rehydrateDraftValues,
@@ -225,6 +225,40 @@ describe('resumed draft submission', () => {
     ]);
     expect(recorder.inserts).toEqual([]);
     expect(recorder.deletes).toEqual([submissionTag]);
+  });
+});
+
+describe('buildFieldSpecs required choice questions with no choices', () => {
+  const tagsRow = fieldRow({
+    id: 'tags',
+    key: 'tags',
+    builtinKey: 'tags',
+    type: 'multi_select',
+    label: 'Tags',
+    required: true,
+  });
+
+  it('drops the requirement when the event taxonomy is empty', () => {
+    const [tags] = buildFieldSpecs([tagsRow], TAXONOMY);
+
+    expect(tags.options).toEqual([]);
+    expect(tags.required).toBe(false);
+  });
+
+  it('accepts a submission that leaves the unanswerable question blank', () => {
+    const fields = buildFieldSpecs([tagsRow], TAXONOMY);
+
+    expect(() => validateAnswers(fields, { tags: null })).not.toThrow();
+  });
+
+  it('keeps the requirement once the event has tags to offer', () => {
+    const [tags] = buildFieldSpecs([tagsRow], {
+      ...TAXONOMY,
+      tags: [{ id: 'tag-ai', name: 'AI' }],
+    });
+
+    expect(tags.required).toBe(true);
+    expect(() => validateAnswers([tags], { tags: null })).toThrow();
   });
 });
 

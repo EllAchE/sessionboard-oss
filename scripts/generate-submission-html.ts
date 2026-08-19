@@ -3,9 +3,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { renderStaticSocialMetadata } from '../lib/site-metadata';
+
 const REPOSITORY_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DOCS_DIRECTORY = path.join(REPOSITORY_ROOT, 'docs');
 const OUTPUT_DIRECTORY = path.join(DOCS_DIRECTORY, 'submission');
+export const SUBMISSION_SITE_URL = 'https://cicero-submission.elehche.workers.dev/';
 export const FIELD_SURVEY_SITE_URL = 'https://cicero-field-survey.elehche.workers.dev/';
 
 export const SUBMISSION_DOCUMENTS = [
@@ -137,6 +140,9 @@ function ciceroMark(): string {
 
 export function renderStandalonePage(document: SubmissionDocument, markdown: string): string {
   const article = renderSubmissionMarkdown(markdown);
+  const title = `${document.tabLabel} — Cicero submission`;
+  const canonicalPath =
+    document.outputFile === 'index.html' ? '/' : `/submission/${document.outputFile}`;
   const tabs = SUBMISSION_DOCUMENTS.map((item) => {
     const active = item.slug === document.slug;
     return `<a class="document-link${active ? ' document-link-active' : ''}" href="${item.outputFile}"${active ? ' aria-current="page"' : ''}>${escapeHtml(item.tabLabel)}</a>`;
@@ -149,7 +155,13 @@ export function renderStandalonePage(document: SubmissionDocument, markdown: str
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="${escapeHtml(document.description)}">
-  <title>${escapeHtml(document.tabLabel)} — Cicero submission</title>
+  ${renderStaticSocialMetadata({
+    origin: SUBMISSION_SITE_URL,
+    path: canonicalPath,
+    title,
+    description: document.description,
+  })}
+  <title>${escapeHtml(title)}</title>
   <link rel="stylesheet" href="submission.css">
 </head>
 <body>

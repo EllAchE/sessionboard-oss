@@ -2,8 +2,11 @@ import { cp, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { SOCIAL_IMAGE_PATH } from '../lib/site-metadata';
+
 const REPOSITORY_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DOCS_DIRECTORY = path.join(REPOSITORY_ROOT, 'docs');
+const PUBLIC_DIRECTORY = path.join(REPOSITORY_ROOT, 'public');
 const STAGING_DIRECTORY = path.join(REPOSITORY_ROOT, '.wrangler-artifacts');
 
 /**
@@ -14,11 +17,14 @@ const STAGING_DIRECTORY = path.join(REPOSITORY_ROOT, '.wrangler-artifacts');
 export async function prepareReadableSiteAssets(): Promise<void> {
   const submissionDirectory = path.join(STAGING_DIRECTORY, 'submission');
   const surveyDirectory = path.join(STAGING_DIRECTORY, 'field-survey');
+  const socialImagePath = SOCIAL_IMAGE_PATH.slice(1);
+  const socialImageSource = path.join(PUBLIC_DIRECTORY, socialImagePath);
 
   await rm(STAGING_DIRECTORY, { recursive: true, force: true });
   await Promise.all([
     mkdir(path.join(submissionDirectory, 'images'), { recursive: true }),
-    mkdir(surveyDirectory, { recursive: true }),
+    mkdir(path.join(submissionDirectory, path.dirname(socialImagePath)), { recursive: true }),
+    mkdir(path.join(surveyDirectory, path.dirname(socialImagePath)), { recursive: true }),
   ]);
 
   await Promise.all([
@@ -34,6 +40,8 @@ export async function prepareReadableSiteAssets(): Promise<void> {
       path.join(DOCS_DIRECTORY, 'alternatives', 'visual', 'index.html'),
       path.join(surveyDirectory, 'index.html'),
     ),
+    cp(socialImageSource, path.join(submissionDirectory, socialImagePath)),
+    cp(socialImageSource, path.join(surveyDirectory, socialImagePath)),
   ]);
 }
 

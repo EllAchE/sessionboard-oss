@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { cache } from 'react';
+import { supportsOptions } from '../../app/organizer/forms/field-rules';
 import { getDb } from '../../db/client';
 import {
   event,
@@ -29,6 +30,7 @@ import {
   splitAnswers,
   validateAnswers,
   validateParticipantCounts,
+  visibleFields,
   type AnswerMap,
   type AnswerValue,
   type BuiltinKey,
@@ -136,15 +138,28 @@ export function buildFieldSpecs(rows: FieldRow[], taxonomy: Taxonomy): RuntimeFi
       options = row.options?.length ? row.options : [...DEFAULT_LEVELS];
     }
 
+    const type = resolveFieldType({ builtinKey, type: row.type });
+
+    /**
+     * A choice question the event has no choices for cannot be answered, so requiring it would
+     * reject every submission with an error the submitter has no control over. The built-ins are
+     * where this bites: their options come from the taxonomy above rather than from the builder,
+     * and a new event starts with no formats, tracks or tags at all — so the default call for
+     * papers shipped a required `Tags` that rendered as nothing at all and then refused the form.
+     * Dropping the requirement keeps the question visible for whenever the taxonomy fills in,
+     * without holding the submission hostage to it. `publishForm` warns the organizer separately.
+     */
+    const answerable = !supportsOptions(type) || (options ?? []).length > 0;
+
     return {
       id: row.id,
       key: row.key,
       builtinKey,
-      type: resolveFieldType({ builtinKey, type: row.type }),
+      type,
       label: row.label,
       position: row.position,
       step: row.step,
-      required: row.required || builtinKey === 'title',
+      required: (row.required || builtinKey === 'title') && answerable,
       options: options ?? null,
       showIf: row.showIf,
       minLength: row.minLength,
@@ -627,7 +642,7 @@ export type DraftValueSource = {
 export function rehydrateDraftValues(
   row: DraftValueSource,
   tagIds: string[],
-  fields: RuntimeField[],
+  fields: readonly FormFieldSpec[],
 ): AnswerMap {
   const values: AnswerMap = { ...row.answers };
   for (const field of fields) {
@@ -655,6 +670,24 @@ export function rehydrateDraftValues(
     }
   }
   return values;
+}
+
+export type AskedSource = DraftValueSource & { tagIds: string[] };
+
+/**
+ * `CFP-S2`. The questions a submission was actually asked, in form order.
+ *
+ * Every surface that shows a submission after the fact has to answer this, and none of them can
+ * answer it from `answers` alone: a question conditioned on "Session format is Workshop" is gated
+ * by a value that lives in a column. Rehydrating the built-ins first is what makes the condition
+ * resolvable at all — filter them out and `isFieldVisible` sees a rule pointing at nothing, treats
+ * it as no rule, and shows a workshop question on a talk.
+ *
+ * Pass the whole form. Callers drop the built-ins from what they render afterwards, which is a
+ * different question from what was asked.
+ */
+export function askedQuestions<T extends FormFieldSpec>(fields: T[], row: AskedSource): T[] {
+  return visibleFields(fields, rehydrateDraftValues(row, row.tagIds, fields));
 }
 
 /** Rehydrates a draft into the shape the runtime renders, built-in columns folded back in. */

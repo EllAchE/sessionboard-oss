@@ -12,6 +12,7 @@ import {
   type QueueItem,
   type ScheduleEntry,
 } from '@/lib/services/schedule';
+import { describeHold, type PublicHold } from '@/lib/public-visibility';
 import type { NamedFormat, NamedRoom, NamedTrack } from './wire';
 import styles from './agenda.module.css';
 
@@ -126,6 +127,7 @@ export function SessionDialog({
   formats,
   conflicts,
   status,
+  holds,
   onOpenChange,
   onSave,
   onDelete,
@@ -141,6 +143,8 @@ export function SessionDialog({
   formats: NamedFormat[];
   conflicts: Conflict[];
   status: ScheduleEntry['status'] | null;
+  /** `lib/public-visibility.ts`. Empty unless publishing this session was not enough to show it. */
+  holds: PublicHold[];
   onOpenChange: (open: boolean) => void;
   onSave: (payload: SavePayload) => Promise<string | null>;
   onDelete: (sessionId: string) => Promise<void>;
@@ -261,6 +265,20 @@ export function SessionDialog({
             </span>
           </div>
         )}
+
+        {/*
+          Published is not the same as visible, and this dialog is where an organizer comes to ask
+          why. One banner per hold, each naming the thing to go and fix.
+        */}
+        {holds.map((hold) => (
+          <div
+            key={hold.kind}
+            className={`${styles.banner} ${styles.bannerWarning}`}
+            role="status"
+          >
+            <span>{describeHold(hold)}</span>
+          </div>
+        ))}
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="agenda-title">

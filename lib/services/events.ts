@@ -7,7 +7,7 @@ import { event, membership } from '@/db/schema';
 import { grantRole, requireCurrentActor } from '@/lib/auth';
 import { requireEventContext } from '@/lib/auth';
 import type { EventContext, MembershipRole } from '@/lib/context';
-import { requireCapability } from '@/lib/context';
+import { EVENT_COOKIE, requireCapability } from '@/lib/context';
 import { conflict, invalid, notFound } from '@/lib/errors';
 import {
   DEFAULT_TIMEZONE,
@@ -19,12 +19,8 @@ import {
 } from '@/lib/event-dates';
 import { slugify } from '@/lib/ids';
 
-/**
- * Organizer routes carry no event in their path, so the current event travels in a cookie. Putting it
- * in the URL instead would mean every feature route learns an `[eventSlug]` segment, and the switch
- * is a rare action compared with the navigation it would tax.
- */
-export const EVENT_COOKIE = 'cicero_event';
+/** Defined in `lib/context.ts` so `lib/auth.ts` can write it without closing an import cycle. */
+export { EVENT_COOKIE };
 
 export type EventSummary = {
   id: string;

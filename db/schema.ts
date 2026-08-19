@@ -84,6 +84,19 @@ export const reviewAssignmentStatus = pgEnum('review_assignment_status', [
   'declined',
 ]);
 /**
+ * Who decided this reviewer would look at this submission.
+ *
+ * `assigned` is the ordinary case: an organizer put them on it, so an incomplete one is outstanding
+ * work and belongs in every progress denominator. `self_opened` is the organizer who opened a
+ * scorecard on a submission nobody had assigned them — the row exists only because a score has to
+ * hang off an assignment, and counting it as outstanding reported the round as unfinished because
+ * an organizer had looked at it.
+ */
+export const reviewAssignmentOrigin = pgEnum('review_assignment_origin', [
+  'assigned',
+  'self_opened',
+]);
+/**
  * `ABS-03`. What a reviewer is asked *for* on one line of the scorecard. `numeric` is the only kind
  * that carries weight and feeds an average; `select` and `text` record a judgment that a number
  * would misrepresent — a Recommendation of "Maybe" is not 3 out of 5, and no arithmetic should ever
@@ -976,6 +989,8 @@ export const reviewAssignment = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     status: reviewAssignmentStatus('status').notNull().default('pending'),
+    /** Defaulted, so every row an organizer assigns keeps counting exactly as it always has. */
+    origin: reviewAssignmentOrigin('origin').notNull().default('assigned'),
     comment: text('comment'),
     assignedAt: createdAt(),
     completedAt: timestamp('completed_at', { withTimezone: true }),

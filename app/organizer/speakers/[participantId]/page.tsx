@@ -48,7 +48,7 @@ export default async function SpeakerDetailPage({
     jobTitle: speaker.jobTitle ?? '',
     company: speaker.company ?? '',
     bioMarkdown: speaker.bioMarkdown ?? '',
-    website: speaker.website ?? '',
+    links: speaker.links,
     timezone: speaker.timezone ?? '',
     dietaryNotes: speaker.dietaryNotes ?? '',
     accessibilityNotes: speaker.accessibilityNotes ?? '',

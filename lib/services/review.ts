@@ -28,15 +28,23 @@ import { can, requireCapability } from '../context';
 import { toCsv } from '../csv';
 import { appUrl } from '../env';
 import { DEFAULT_TIMEZONE, zonedDateKey } from '../event-dates';
+import type { AnswerMap, FormFieldSpec } from '../forms/contract';
+import { isBuiltinKey } from '../forms/contract';
 import { conflict, forbidden, invalid, notFound } from '../errors';
 import { formatRef, slugify } from '../ids';
 import { sendMail } from '../mail';
 import { markdownToText, renderMarkdown } from '../markdown';
+import { eventPersonName } from '../person-name';
 import { parseSpeakerName } from '../speaker-name';
 import { assertRoundDateOrder } from '../review-round-dates';
 import { weightedScore } from '../review-scoring';
 import { DECISION_TEMPLATES, loadCommsContext, sendDecisionNotice, wrapInBranding } from './comms';
-import { ensureParticipant, linkPrimarySpeaker } from './submissions';
+import {
+  askedQuestions,
+  ensureParticipant,
+  linkPrimarySpeaker,
+  type AskedSource,
+} from './submissions';
 import { emitWebhook } from '../webhooks';
 
 /**
@@ -62,6 +70,28 @@ export type SubmissionStatus =
   | 'withdrawn';
 
 export type AssignmentStatus = 'pending' | 'completed' | 'declined';
+
+/** `db/schema.ts`. Who decided this reviewer would look at this submission. */
+export type AssignmentOrigin = 'assigned' | 'self_opened';
+
+/**
+ * Is this assignment work the round is waiting on?
+ *
+ * An organizer who opens a scorecard on a submission nobody assigned them gets a row, because a
+ * score has to hang off one. That row is not an obligation anybody handed out, so while it is
+ * unfinished the round is not waiting on it — counting it reported a fully-reviewed round as
+ * incomplete purely because an organizer had looked at a submission, and put a reviewer nobody
+ * invited into the workload panel owing 0 of 1.
+ *
+ * Once they finish it is a real review and counts on both sides of the ratio, which leaves the
+ * round's percentage exactly where it was and its average honestly including the opinion.
+ */
+export function countsTowardProgress(assignment: {
+  origin: AssignmentOrigin;
+  status: AssignmentStatus;
+}): boolean {
+  return assignment.origin === 'assigned' || assignment.status === 'completed';
+}
 
 /**
  * `ABS-03`. The three shapes a scorecard line can take. `numeric` is the historical one and the only
@@ -177,6 +207,7 @@ export type ReviewerScorecard = {
   reviewerName: string;
   reviewerEmail: string;
   status: AssignmentStatus;
+  origin: AssignmentOrigin;
   comment: string | null;
   completedAt: Date | null;
   scores: ScoreValue[];
@@ -222,7 +253,7 @@ export function summarizeReviews(
       averages.length > 0
         ? round(averages.reduce((sum, value) => sum + value, 0) / averages.length, 2)
         : null,
-    assignedCount: reviewers.length,
+    assignedCount: reviewers.filter(countsTowardProgress).length,
     completedCount: reviewers.filter((reviewer) => reviewer.status === 'completed').length,
     scoredCount: averages.length,
     spread: averages.length > 1 ? round(Math.max(...averages) - Math.min(...averages), 2) : null,
@@ -1450,12 +1481,18 @@ export async function saveScorecard(
     if (!can(ctx, 'submission:decide')) {
       throw conflict('You are not assigned to review that submission');
     }
+    /**
+     * Nobody assigned this. An organizer with `submission:decide` can score anything in the round,
+     * and a score has to hang off an assignment, so the row is created here rather than refused —
+     * but it is marked, so the round does not report itself unfinished for having been looked at.
+     */
     const [created] = await db
       .insert(reviewAssignment)
       .values({
         reviewRoundId: input.roundId,
         submissionId: input.submissionId,
         reviewerUserId: ctx.actor.userId,
+        origin: 'self_opened',
       })
       .onConflictDoNothing()
       .returning();
@@ -2181,6 +2218,7 @@ export async function buildReviewResultsExport(
             reviewerName: user.name,
             reviewerEmail: user.email,
             status: reviewAssignment.status,
+            origin: reviewAssignment.origin,
             comment: reviewAssignment.comment,
             completedAt: reviewAssignment.completedAt,
           })
@@ -2250,6 +2288,7 @@ export async function buildReviewResultsExport(
       reviewerName: row.reviewerName ?? row.reviewerEmail,
       reviewerEmail: row.reviewerEmail,
       status: row.status,
+      origin: row.origin,
       comment: row.comment,
       completedAt: row.completedAt,
       scores: scoresByAssignment.get(row.id) ?? [],
@@ -2310,11 +2349,17 @@ export async function loadQueue(
         formatId: submission.formatId,
         level: submission.level,
         stagedDecision: submission.stagedDecision,
+        /* This event's name for them, which is the one the organizer set — see `eventPersonName`. */
+        submitterDisplayName: participant.displayName,
         submitterName: user.name,
         submitterEmail: user.email,
       })
       .from(submission)
       .innerJoin(user, eq(user.id, submission.submitterUserId))
+      .leftJoin(
+        participant,
+        and(eq(participant.userId, user.id), eq(participant.eventId, ctx.eventId)),
+      )
       .where(eq(submission.eventId, ctx.eventId))
       .orderBy(asc(submission.ref)),
     db
@@ -2349,6 +2394,7 @@ export async function loadQueue(
             submissionId: reviewAssignment.submissionId,
             reviewerUserId: reviewAssignment.reviewerUserId,
             status: reviewAssignment.status,
+            origin: reviewAssignment.origin,
           })
           .from(reviewAssignment)
           .where(
@@ -2412,6 +2458,7 @@ export async function loadQueue(
         reviewerName: '',
         reviewerEmail: '',
         status: assignment.status,
+        origin: assignment.origin,
         comment: null,
         completedAt: null,
         scores: scoresByAssignment.get(assignment.id) ?? [],
@@ -2432,7 +2479,11 @@ export async function loadQueue(
       formatName: row.formatId ? (formatNames.get(row.formatId) ?? null) : null,
       level: row.level,
       tagIds: tagsBySubmission.get(row.id) ?? [],
-      submitterName: row.submitterName ?? row.submitterEmail,
+      submitterName: eventPersonName({
+        displayName: row.submitterDisplayName,
+        name: row.submitterName,
+        email: row.submitterEmail,
+      }),
       submitterEmail: row.submitterEmail,
       averageScore: summary.average,
       spread: summary.spread,
@@ -2582,6 +2633,27 @@ export type SubmissionReview = {
   conflictedReviewerUserIds: string[];
 };
 
+/**
+ * `CFP-S2`. The answers a reader should see: everything except answers to questions the form holds
+ * but this submission was never asked. "Workshop prerequisites —" on a talk reads as a question the
+ * speaker skipped, which for a reviewer scoring completeness is worse than not showing it at all.
+ *
+ * An answer whose question is no longer on the form is kept. There is no rule left to consult, and
+ * losing sight of a real answer is worse than an unlabelled one — the panel already falls back to
+ * the raw key for those.
+ */
+export function askedAnswers(
+  answers: Record<string, unknown>,
+  fields: FormFieldSpec[],
+  row: AskedSource,
+): Record<string, unknown> {
+  const asked = new Set(askedQuestions(fields, row).map((field) => field.key));
+  const onTheForm = new Set(fields.map((field) => field.key));
+  return Object.fromEntries(
+    Object.entries(answers).filter(([key]) => asked.has(key) || !onTheForm.has(key)),
+  );
+}
+
 export async function loadSubmissionReview(
   ctx: EventContext,
   submissionId: string,
@@ -2598,9 +2670,26 @@ export async function loadSubmissionReview(
   const round = await resolveRound(ctx, roundId ?? null);
   const criteria = round ? await listCriteria(round.id) : [];
 
-  const [submitter, trackRow, formatRow, tagRows, speakerRows, assignmentRows, aiRow, fieldRows] =
+  const [
+    submitter,
+    submitterParticipant,
+    trackRow,
+    formatRow,
+    tagRows,
+    speakerRows,
+    assignmentRows,
+    aiRow,
+    fieldRows,
+  ] =
     await Promise.all([
       db.query.user.findFirst({ where: eq(user.id, row.submitterUserId) }),
+      /* What this event calls them, which is what the organizer set — see `eventPersonName`. */
+      db.query.participant.findFirst({
+        where: and(
+          eq(participant.userId, row.submitterUserId),
+          eq(participant.eventId, ctx.eventId),
+        ),
+      }),
       row.trackId
         ? db.query.track.findFirst({ where: eq(trackTable.id, row.trackId) })
         : Promise.resolve(undefined),
@@ -2636,6 +2725,7 @@ export async function loadSubmissionReview(
               id: reviewAssignment.id,
               reviewerUserId: reviewAssignment.reviewerUserId,
               status: reviewAssignment.status,
+              origin: reviewAssignment.origin,
               comment: reviewAssignment.comment,
               completedAt: reviewAssignment.completedAt,
               reviewerName: user.name,
@@ -2656,10 +2746,20 @@ export async function loadSubmissionReview(
       }),
       db
         .select({
+          id: formField.id,
           key: formField.key,
           label: formField.label,
           type: formField.type,
           builtinKey: formField.builtinKey,
+          entity: formField.entity,
+          position: formField.position,
+          step: formField.step,
+          required: formField.required,
+          options: formField.options,
+          showIf: formField.showIf,
+          minLength: formField.minLength,
+          maxLength: formField.maxLength,
+          charLimitGroup: formField.charLimitGroup,
         })
         .from(formField)
         .where(eq(formField.formId, row.formId)),
@@ -2691,6 +2791,7 @@ export async function loadSubmissionReview(
     reviewerName: assignment.reviewerName ?? assignment.reviewerEmail,
     reviewerEmail: assignment.reviewerEmail,
     status: assignment.status,
+    origin: assignment.origin,
     comment: assignment.comment,
     completedAt: assignment.completedAt,
     scores: scoresByAssignment.get(assignment.id) ?? [],
@@ -2730,12 +2831,25 @@ export async function loadSubmissionReview(
     trackName: trackRow?.name ?? null,
     formatName: formatRow?.name ?? null,
     tags: tagRows,
-    answers: row.answers as Record<string, unknown>,
+    answers: askedAnswers(
+      row.answers as Record<string, unknown>,
+      fieldRows
+        /* The abstract's own questions. The participant set is answered on a different screen. */
+        .filter((field) => field.entity === 'abstract')
+        .map((field) => ({
+          ...field,
+          /* The column is free text; only the keys the contract knows carry built-in behaviour. */
+          builtinKey: isBuiltinKey(field.builtinKey) ? field.builtinKey : null,
+        })),
+      { ...row, answers: row.answers as AnswerMap, tagIds: tagRows.map((entry) => entry.id) },
+    ),
     answerLabels: Object.fromEntries(fieldRows.map((field) => [field.key, field.label])),
     submittedAt: row.submittedAt,
     decidedAt: row.decidedAt,
     decisionNote: row.decisionNote,
-    submitterName: submitter?.name ?? submitter?.email ?? 'Unknown',
+    submitterName: submitter
+      ? eventPersonName({ ...submitter, displayName: submitterParticipant?.displayName ?? null })
+      : 'Unknown',
     submitterEmail: submitter?.email ?? '',
     speakers: speakerRows.map((speaker) => ({
       participantId: speaker.participantId,
@@ -2993,6 +3107,7 @@ export async function reviewerWorkload(
         id: reviewAssignment.id,
         reviewerUserId: reviewAssignment.reviewerUserId,
         status: reviewAssignment.status,
+        origin: reviewAssignment.origin,
         completedAt: reviewAssignment.completedAt,
         name: user.name,
         email: user.email,
@@ -3028,6 +3143,14 @@ export async function reviewerWorkload(
 
   const byReviewer = new Map<string, WorkloadRow & { averages: number[] }>();
   for (const assignment of assignments) {
+    /**
+     * An organizer's own unfinished scorecard is not a workload. Skipping it here rather than
+     * zeroing its counts is what keeps them out of the panel entirely when it is all they have —
+     * the complaint was a reviewer nobody invited appearing at 0 of 1 and taking the round off
+     * 100%.
+     */
+    if (!countsTowardProgress(assignment)) continue;
+
     const entry = byReviewer.get(assignment.reviewerUserId) ?? {
       reviewerUserId: assignment.reviewerUserId,
       name: assignment.name ?? assignment.email,
@@ -3691,12 +3814,14 @@ export async function loadReviewerQueue(
       trackId: submission.trackId,
       formatId: submission.formatId,
       level: submission.level,
+      submitterDisplayName: participant.displayName,
       submitterName: user.name,
       submitterEmail: user.email,
     })
     .from(reviewAssignment)
     .innerJoin(submission, eq(submission.id, reviewAssignment.submissionId))
     .innerJoin(user, eq(user.id, submission.submitterUserId))
+    .leftJoin(participant, and(eq(participant.userId, user.id), eq(participant.eventId, ctx.eventId)))
     .where(
       and(
         eq(reviewAssignment.reviewRoundId, round.id),
@@ -3757,7 +3882,11 @@ export async function loadReviewerQueue(
       status: row.status,
       comment: row.comment,
       completedAt: row.completedAt,
-      submitterName: row.submitterName ?? row.submitterEmail,
+      submitterName: eventPersonName({
+        displayName: row.submitterDisplayName,
+        name: row.submitterName,
+        email: row.submitterEmail,
+      }),
       average: aggregate.average,
       scoredCount: aggregate.scoredCount,
     };

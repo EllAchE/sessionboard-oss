@@ -682,51 +682,57 @@
   "ciceroDifferentiators": [
     {
       "id": "CD-1",
+      "title": "Embeddable venue/exhibitor-hall map (organizer PDF upload, public widget)",
+      "absentIn": 32,
+      "of": 32
+    },
+    {
+      "id": "CD-2",
       "title": "Sponsors / exhibitors with a publication-gated public wall",
       "absentIn": 30,
       "of": 32,
       "derivedFromArea": "sponsors"
     },
     {
-      "id": "CD-2",
+      "id": "CD-3",
       "title": "Consent-aware SMS (E.164 normalization, OTP verification, quiet hours)",
       "absentIn": 26,
       "of": 32
     },
     {
-      "id": "CD-3",
+      "id": "CD-4",
       "title": "Streamable-HTTP MCP server with role-scoped agent skills",
       "absentIn": 18,
       "of": 32
     },
     {
-      "id": "CD-4",
+      "id": "CD-5",
       "title": "Post-conference recording ingestion with publication gates",
       "absentIn": 17,
       "of": 32
     },
     {
-      "id": "CD-5",
+      "id": "CD-6",
       "title": "Signed outbound webhooks",
       "absentIn": 16,
       "of": 32
     },
     {
-      "id": "CD-6",
+      "id": "CD-7",
       "title": "Cross-event speaker CRM (segments, sourcing)",
       "absentIn": 15,
       "of": 32,
       "derivedFromArea": "speaker-crm"
     },
     {
-      "id": "CD-7",
+      "id": "CD-8",
       "title": "Versioned public REST API with a generated OpenAPI contract",
       "absentIn": 12,
       "of": 32,
       "derivedFromArea": "rest-api"
     },
     {
-      "id": "CD-8",
+      "id": "CD-9",
       "title": "Reversible CRM merges",
       "absentIn": 9,
       "of": 32

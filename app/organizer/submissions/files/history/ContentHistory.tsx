@@ -207,27 +207,34 @@ export function ContentHistory({
                       <span className={styles.entityName}>{entity.label}</span>
                       <span className={styles.faint}>{entity.secondary ?? 'Speaker'}</span>
                     </button>
+                    {/*
+                      Its own row under the name rather than a sibling competing with it for the
+                      line. The name is what says which session is being approved, and it was the
+                      part that lost.
+                    */}
                     {entity.contentStatus ? (
-                      <>
+                      <div className={styles.entityStatus}>
                         <Badge tone={APPROVAL_TONE[entity.contentStatus]}>
                           {approvalLabel(entity.contentStatus)}
                         </Badge>
-                        <Select
-                          selectSize="sm"
-                          aria-label={`Content approval for ${entity.label}`}
-                          value={entity.contentStatus}
-                          disabled={pending}
-                          onChange={(event) =>
-                            setStatus(entity, event.target.value as ContentApprovalStatus)
-                          }
-                        >
-                          {APPROVAL_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </Select>
-                      </>
+                        <div className={styles.entityStatusPick}>
+                          <Select
+                            selectSize="sm"
+                            aria-label={`Content approval for ${entity.label}`}
+                            value={entity.contentStatus}
+                            disabled={pending}
+                            onChange={(event) =>
+                              setStatus(entity, event.target.value as ContentApprovalStatus)
+                            }
+                          >
+                            {APPROVAL_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </Select>
+                        </div>
+                      </div>
                     ) : null}
                   </li>
                 ))}

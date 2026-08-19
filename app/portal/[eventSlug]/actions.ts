@@ -274,16 +274,27 @@ export async function saveSubmissionAction(_prev: FormState, formData: FormData)
     const { ctx, me, eventSlug } = await actionSession(formData);
     const submissionId = text(formData, 'submissionId');
     const formId = text(formData, 'formId');
-    const fields = formId ? await submissionFields(formId) : [];
 
     const mine = await listMySubmissions(me.id);
-    if (!mine.some((entry) => entry.id === submissionId)) throw notFound('That session');
+    const current = mine.find((entry) => entry.id === submissionId);
+    if (!current) throw notFound('That session');
+
+    /*
+      Only the questions this submission was asked are read back. Reading every question the form
+      holds records an empty answer to one that was never shown, which afterwards is
+      indistinguishable from a speaker who was asked and skipped it.
+    */
+    const fields = formId ? await submissionFields(formId, current) : [];
     await recordRevision(ctx, 'session', submissionId, 'Edited the session content');
 
     await updateMySubmission(ctx, me.id, submissionId, {
       title: text(formData, 'title'),
       descriptionMarkdown: text(formData, 'descriptionMarkdown'),
       level: text(formData, 'level'),
+      formatId: text(formData, 'formatId'),
+      trackId: text(formData, 'trackId'),
+      /* Checkboxes, so an empty list is "untag everything" and has to reach the service as one. */
+      tagIds: formData.getAll('tagIds').map((entry) => String(entry)),
       answers: fields.length > 0 ? readAnswers(fields, formData) : undefined,
     });
 

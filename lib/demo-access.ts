@@ -1,3 +1,4 @@
+import { DEMO_ENTRY_IDENTITIES } from './demo-entry-links';
 import { env, envFlag } from './env';
 import { undeliverableRecipient } from './mail/config';
 
@@ -82,6 +83,28 @@ export function onScreenLinksEnabled(): boolean {
 export function demoSignInEmail(): string | null {
   if (!onScreenLinksEnabled()) return null;
   return env('DEMO_SIGNIN_EMAIL') ?? 'organizer@example.com';
+}
+
+/**
+ * The same offer, for a sign-in page that was reached by one of the role tours in
+ * `DEMO_ENTRY_LINKS` and therefore already knows which identity the visitor came for.
+ *
+ * The button used to submit `demoSignInEmail()` whatever page it was on, while carrying that page's
+ * `next`. On the reviewer tour's own sign-in page that combination signs the visitor in as the
+ * organizer and then sends them to `/review` — a surface organizers may open and hold no
+ * assignments on — so the queue renders empty and the reviewer demo looks unseeded when it is not.
+ *
+ * Only the seeded entry identities are honoured. `?email=` is attacker-controlled, and while
+ * submitting it changes nothing that typing it into the box above would not, the sentence beside
+ * the button promises a link will appear — which is true of these three addresses and of nothing
+ * else. `magicLinkMayBeShown` remains the only thing that decides disclosure.
+ */
+export function demoSignInEmailFor(requested: string | null | undefined): string | null {
+  const offered = demoSignInEmail();
+  if (!offered) return null;
+  const wanted = (requested ?? '').trim().toLowerCase();
+  const named = DEMO_ENTRY_IDENTITIES.find((identity) => identity.email === wanted);
+  return named?.email ?? offered;
 }
 
 export type DemoMembership = { slug: string; ownerUserId: string | null };

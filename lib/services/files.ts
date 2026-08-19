@@ -17,6 +17,7 @@ import {
 import { requireCapability } from '../context';
 import { formatRef } from '../ids';
 import { renderMarkdown } from '../markdown';
+import { eventPersonName } from '../person-name';
 
 /**
  * `S-3`, `S-4`, `S-18`. Every read and write goes through the app rather than a presigned URL, so a
@@ -279,6 +280,29 @@ export type FileVersion = FileRecord & {
 };
 
 /**
+ * `CNT-S3`. Accounts, each carrying whatever this event calls them.
+ *
+ * The join is left, not inner: an organizer who uploaded on a speaker's behalf may hold their role
+ * through membership and have no participant row, and dropping their name off the version history
+ * would be a worse answer than their account name.
+ */
+async function eventPeople(
+  eventId: string,
+  userIds: string[],
+): Promise<Array<{ id: string; displayName: string | null; name: string | null; email: string }>> {
+  return getDb()
+    .select({
+      id: user.id,
+      displayName: participant.displayName,
+      name: user.name,
+      email: user.email,
+    })
+    .from(user)
+    .leftJoin(participant, and(eq(participant.userId, user.id), eq(participant.eventId, eventId)))
+    .where(inArray(user.id, userIds));
+}
+
+/**
  * Every version of one deliverable, oldest first. Any id in the lineage resolves the same list, so a
  * stale link to version 1 still opens the history rather than a dead end.
  */
@@ -289,12 +313,7 @@ export async function listFileVersions(eventId: string, fileId: string): Promise
   const uploaderIds = [
     ...new Set(rows.map((row) => row.uploadedByUserId).filter((id): id is string => Boolean(id))),
   ];
-  const uploaders = uploaderIds.length
-    ? await getDb()
-        .select({ id: user.id, name: user.name, email: user.email })
-        .from(user)
-        .where(inArray(user.id, uploaderIds))
-    : [];
+  const uploaders = uploaderIds.length ? await eventPeople(eventId, uploaderIds) : [];
   const uploaderById = new Map(uploaders.map((row) => [row.id, row]));
 
   const top = rows.reduce((highest, row) => Math.max(highest, row.version), 0);
@@ -302,7 +321,7 @@ export async function listFileVersions(eventId: string, fileId: string): Promise
     const uploader = row.uploadedByUserId ? uploaderById.get(row.uploadedByUserId) : undefined;
     return {
       ...row,
-      uploaderName: uploader?.name ?? null,
+      uploaderName: uploader ? eventPersonName(uploader) : null,
       uploaderEmail: uploader?.email ?? null,
       isCurrent: row.version === top,
     };
@@ -354,6 +373,22 @@ export async function supersedeFile(
 // `CNT-05` review conversation on a deliverable
 // ---------------------------------------------------------------------------
 
+/**
+ * `CNT-S3`. Who a stored comment is from, now.
+ *
+ * Kept separate from the query so the precedence is testable: this event's name for the author,
+ * then their account name, and only then the string written into the row when it was posted. That
+ * last one is a fallback for an author whose account is gone, not a preference — it is exactly the
+ * value that was showing the wrong speaker's name on every comment she had ever posted.
+ */
+export function commentAuthorName(
+  row: { authorUserId: string | null; authorName: string },
+  people: ReadonlyMap<string, { displayName: string | null; name: string | null; email: string }>,
+): string {
+  const person = row.authorUserId ? people.get(row.authorUserId) : undefined;
+  return person ? eventPersonName(person) : row.authorName;
+}
+
 export type DeliverableComment = {
   id: string;
   fileId: string;
@@ -385,12 +420,24 @@ export async function listFileComments(eventId: string, fileId: string): Promise
     )
     .orderBy(asc(fileComment.createdAt));
 
+  /*
+    `authorName` was written at post time, so a comment posted before an organizer renamed its author
+    still carries the old string. The name is re-resolved from the account instead, and the stored
+    copy kept only for an author with no account left to resolve through.
+  */
+  const authorIds = [
+    ...new Set(comments.map((row) => row.authorUserId).filter((id): id is string => Boolean(id))),
+  ];
+  const authorById = new Map(
+    (authorIds.length ? await eventPeople(eventId, authorIds) : []).map((row) => [row.id, row]),
+  );
+
   return comments.map((row) => ({
     id: row.id,
     fileId: row.fileId,
     version: versionById.get(row.fileId) ?? 1,
     authorUserId: row.authorUserId,
-    authorName: row.authorName,
+    authorName: commentAuthorName(row, authorById),
     bodyMarkdown: row.bodyMarkdown,
     bodyHtml: renderMarkdown(row.bodyMarkdown),
     createdAt: row.createdAt,
@@ -407,12 +454,17 @@ export async function addFileComment(
   if (body.length > 4000) throw invalid('Keep a comment under 4000 characters');
 
   const record = await getFileRecord(ctx.eventId, fileId);
+  /*
+    Stored so a comment survives its author's account being deleted, and so the row is readable
+    without a join. It is a snapshot, not the answer: `listFileComments` re-resolves it.
+  */
+  const [person] = await eventPeople(ctx.eventId, [ctx.actor.userId]);
   const [row] = await getDb()
     .insert(fileComment)
     .values({
       fileId: record.id,
       authorUserId: ctx.actor.userId,
-      authorName: ctx.actor.name ?? ctx.actor.email,
+      authorName: person ? eventPersonName(person) : (ctx.actor.name ?? ctx.actor.email),
       bodyMarkdown: body,
     })
     .returning();
@@ -525,6 +577,7 @@ export type FileIndexSubmission = {
   status: string;
   answers: Record<string, unknown>;
   participantId: string | null;
+  ownerDisplayName: string | null;
   ownerName: string | null;
   ownerEmail: string | null;
 };
@@ -539,6 +592,7 @@ export type FileIndexTaskUpload = {
   pinnedSubmissionId: string | null;
   taskName: string;
   taskStatus: string;
+  ownerDisplayName: string | null;
   ownerName: string | null;
   ownerEmail: string | null;
 };
@@ -546,6 +600,7 @@ export type FileIndexTaskUpload = {
 export type FileIndexHeadshot = {
   fileId: string | null;
   participantId: string;
+  ownerDisplayName: string | null;
   ownerName: string | null;
   ownerEmail: string | null;
 };
@@ -557,9 +612,28 @@ export type FileIndexInput = {
   headshots: FileIndexHeadshot[];
   /** One entry per session a speaker presents on, which is what makes the fallback below safe. */
   speakingRoles: Array<{ participantId: string; submissionId: string }>;
-  uploaders: Array<{ id: string; name: string | null; email: string }>;
+  uploaders: Array<{ id: string; displayName: string | null; name: string | null; email: string }>;
   commentCounts: Map<string, number>;
 };
+
+/**
+ * `CNT-S3`. Null rather than an email when there is neither, because these rows describe a file's
+ * owner and an owner with nothing at all to call them is genuinely unknown — the column that renders
+ * this already has an empty state for it.
+ */
+function ownerOf(row: {
+  ownerDisplayName: string | null;
+  ownerName: string | null;
+  ownerEmail: string | null;
+}): string | null {
+  return (
+    eventPersonName({
+      displayName: row.ownerDisplayName,
+      name: row.ownerName,
+      email: row.ownerEmail ?? '',
+    }) || null
+  );
+}
 
 const UNATTACHED: FileAttribution = {
   source: 'unattached',
@@ -625,7 +699,7 @@ export function attributeEventFiles(input: FileIndexInput): EventFileRow[] {
       ...UNATTACHED,
       source: 'headshot',
       participantId: row.participantId,
-      ownerName: row.ownerName,
+      ownerName: ownerOf(row),
       ownerEmail: row.ownerEmail,
     });
   }
@@ -635,7 +709,7 @@ export function attributeEventFiles(input: FileIndexInput): EventFileRow[] {
     const attributed: FileAttribution = {
       source: 'task',
       participantId: row.participantId,
-      ownerName: row.ownerName,
+      ownerName: ownerOf(row),
       ownerEmail: row.ownerEmail,
       taskName: row.taskName,
       taskStatus: row.taskStatus,
@@ -653,7 +727,7 @@ export function attributeEventFiles(input: FileIndexInput): EventFileRow[] {
       attribution.set(candidate, {
         source: 'submission',
         participantId: row.participantId,
-        ownerName: row.ownerName,
+        ownerName: ownerOf(row),
         ownerEmail: row.ownerEmail,
         taskName: null,
         taskStatus: null,
@@ -689,7 +763,7 @@ export function attributeEventFiles(input: FileIndexInput): EventFileRow[] {
     return {
       ...record,
       ...(attribution.get(record.id) ?? byLineage.get(root) ?? UNATTACHED),
-      uploaderName: uploader?.name ?? null,
+      uploaderName: uploader ? eventPersonName(uploader) : null,
       uploaderEmail: uploader?.email ?? null,
       lineageId: root,
       versionCount: versionCounts.get(root) ?? 1,
@@ -719,6 +793,7 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
         status: submission.status,
         answers: submission.answers,
         participantId: participant.id,
+        ownerDisplayName: participant.displayName,
         ownerName: user.name,
         ownerEmail: user.email,
       })
@@ -739,6 +814,7 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
         pinnedSubmissionId: task.submissionId,
         taskName: task.name,
         taskStatus: taskAssignment.status,
+        ownerDisplayName: participant.displayName,
         ownerName: user.name,
         ownerEmail: user.email,
       })
@@ -751,6 +827,7 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
       .select({
         fileId: participant.headshotFileId,
         participantId: participant.id,
+        ownerDisplayName: participant.displayName,
         ownerName: user.name,
         ownerEmail: user.email,
       })
@@ -773,12 +850,7 @@ export async function listEventFileIndex(ctx: EventContext): Promise<EventFileRo
     ...new Set(files.map((row) => row.uploadedByUserId).filter((id): id is string => Boolean(id))),
   ];
   const [uploaders, commentCounts] = await Promise.all([
-    uploaderIds.length
-      ? db
-          .select({ id: user.id, name: user.name, email: user.email })
-          .from(user)
-          .where(inArray(user.id, uploaderIds))
-      : Promise.resolve([] as Array<{ id: string; name: string | null; email: string }>),
+    uploaderIds.length ? eventPeople(ctx.eventId, uploaderIds) : Promise.resolve([]),
     countCommentsByLineage(ctx.eventId),
   ]);
 

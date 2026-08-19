@@ -40,6 +40,13 @@
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
   white-space: nowrap;
+  /*
+    A heading too long for its column used to be cut mid-glyph, so `YOUR SCORE` read as `YOUR SCOR`
+    and looked like the whole word. The ellipsis admits the label continues; the floors applied in
+    `index.tsx` are what stop most headings reaching this point at all.
+  */
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: left;
   background: var(--surface-card);
   box-shadow: inset 0 -1px 0 var(--border-default);

@@ -156,7 +156,7 @@ Copy/paste answer:
 
 Useful direct links:
 
-- [Organizer sign-in](https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin)
+- [Organizer sign-in](https://cicero-three.vercel.app/signin?email=organizer%40example.com&next=/admin&event=demo)
 - [Captured demo mail](https://cicero-three.vercel.app/admin/mail)
 - [Public demo](https://cicero-three.vercel.app/demo)
 - [Public agenda](https://cicero-three.vercel.app/demo/agenda)
