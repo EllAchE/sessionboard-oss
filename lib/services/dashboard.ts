@@ -64,6 +64,13 @@ export type OutstandingTaskRow = {
   daysUntilDue: number | null;
   urgency: TaskUrgency;
   lastRemindedAt: string | null;
+  awaitingAction: boolean;
+};
+
+export type TaskActionState = {
+  status: TaskStatusValue;
+  dueAt: Date | null;
+  lastRemindedAt: Date | null;
 };
 
 function displayNameOf(
@@ -88,6 +95,34 @@ export function classifyUrgency(
   if (due < now) return 'overdue';
   if (due - now <= DUE_SOON_DAYS * DAY_MS) return 'due_soon';
   return 'open';
+}
+
+/**
+ * Blocked/deferred ownership is not modeled yet. A reminder sent on or after the deadline is the
+ * only durable signal that the organizer followed up and returned the next action to the speaker.
+ */
+export function isAwaitingTaskAction(row: TaskActionState, now = new Date()): boolean {
+  if (row.status === 'completed' || row.status === 'waived' || !row.dueAt) return false;
+  if (row.dueAt.getTime() >= now.getTime()) return false;
+  return !row.lastRemindedAt || row.lastRemindedAt.getTime() < row.dueAt.getTime();
+}
+
+export async function countAwaitingTaskActions(
+  ctx: EventContext,
+  now = new Date(),
+): Promise<number> {
+  requireCapability(ctx, 'submission:read_all');
+  const rows = await getDb()
+    .select({
+      status: taskAssignment.status,
+      dueAt: task.dueAt,
+      lastRemindedAt: taskAssignment.lastRemindedAt,
+    })
+    .from(taskAssignment)
+    .innerJoin(task, eq(taskAssignment.taskId, task.id))
+    .where(eq(task.eventId, ctx.eventId));
+
+  return rows.filter((row) => isAwaitingTaskAction(row, now)).length;
 }
 
 export function sortOutstanding(rows: OutstandingTaskRow[]): OutstandingTaskRow[] {
@@ -173,6 +208,14 @@ export async function listTaskCompletion(
         lastRemindedAt: row.assignment.lastRemindedAt
           ? row.assignment.lastRemindedAt.toISOString()
           : null,
+        awaitingAction: isAwaitingTaskAction(
+          {
+            status: row.assignment.status,
+            dueAt: due,
+            lastRemindedAt: row.assignment.lastRemindedAt,
+          },
+          now,
+        ),
       };
     }),
   );
@@ -185,6 +228,7 @@ export type TaskCompletionSummary = {
   dueSoon: number;
   completed: number;
   waived: number;
+  awaitingAction: number;
   /**
    * Distinct participants carrying at least one *overdue* task — not one outstanding task. Both
    * surfaces that read this pair it with `overdue` in the same sentence ("N overdue tasks across M
@@ -210,6 +254,7 @@ export function summarizeTaskCompletion(rows: OutstandingTaskRow[]): TaskComplet
     dueSoon: dueSoon.length,
     completed: completed.length,
     waived: waived.length,
+    awaitingAction: rows.filter((row) => row.awaitingAction).length,
     overdueParticipants: new Set(overdue.map((row) => row.participantId)).size,
     completionPct: rows.length === 0 ? 0 : Math.round((settled / rows.length) * 100),
   };

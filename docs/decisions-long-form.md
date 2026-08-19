@@ -459,6 +459,15 @@ to open the portal. That means the dashboard count changes immediately and repre
 audience. A task can target all speakers, accepted speakers, or selected people. Conferences can
 copy a checklist from a previous event, including the file-request rules behind upload tasks.
 
+The sidebar badge deliberately counts less than the dashboard. Every outstanding assignment is a
+fact about the event; only an overdue assignment nobody has chased is a claim on the organizer's
+next hour. So the badge counts assignments past their deadline with no reminder sent since that
+deadline, and the task report opens on the matching "Awaiting me" queue. This model has an honest
+limit: Cicero does not yet record a blocked or deferred state, so once a reminder goes out, a
+speaker who replied "waiting on my employer's approval" looks the same as one who ignored it.
+The assignment stays visible in the Outstanding view either way — it just stops claiming the
+organizer's attention until the product can carry that distinction durably.
+
 A speaker may start, save, complete, or reopen their own task. They cannot waive it; waiving is the
 organizer's decision that the work is no longer required. Upload and form tasks cannot become
 complete without a file or an answer set. Reads also reconcile stored status with the evidence, so

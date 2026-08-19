@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { HotkeyProvider } from '@/components/hotkeys/HotkeyProvider';
-import { currentActor } from '@/lib/auth';
+import { currentActor, requireEventContext } from '@/lib/auth';
+import { countAwaitingTaskActions } from '@/lib/services/dashboard';
 import { currentEventId, listEventsForUser } from '@/lib/services/events';
 import { OrganizerShell } from './OrganizerShell';
 
@@ -36,6 +37,7 @@ export default async function OrganizerLayout({ children }: { children: React.Re
     eventId = organizing[0].id;
   }
   if (!organizing.some((candidate) => candidate.id === eventId)) eventId = organizing[0].id;
+  const awaitingTaskActions = await countAwaitingTaskActions(await requireEventContext(eventId));
 
   /**
    * The provider wraps the shell rather than living inside it, so the shell itself can register the
@@ -48,6 +50,7 @@ export default async function OrganizerLayout({ children }: { children: React.Re
         events={organizing}
         currentEventId={eventId}
         actorName={actor.name ?? actor.email}
+        awaitingTaskActions={awaitingTaskActions}
       >
         {children}
       </OrganizerShell>

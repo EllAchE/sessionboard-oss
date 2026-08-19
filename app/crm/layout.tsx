@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { currentActor } from '@/lib/auth';
+import { currentActor, requireEventContext } from '@/lib/auth';
+import { countAwaitingTaskActions } from '@/lib/services/dashboard';
 import { currentEventId, listEventsForUser } from '@/lib/services/events';
 import { OrganizerShell } from '../organizer/OrganizerShell';
 import { CrmNav } from './CrmNav';
@@ -28,9 +29,15 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
     }
     if (!organizing.some((candidate) => candidate.id === eventId)) eventId = organizing[0].id;
   }
+  const awaitingTaskActions = await countAwaitingTaskActions(await requireEventContext(eventId));
 
   return (
-    <OrganizerShell events={organizing} currentEventId={eventId} actorName={actor.name ?? actor.email}>
+    <OrganizerShell
+      events={organizing}
+      currentEventId={eventId}
+      actorName={actor.name ?? actor.email}
+      awaitingTaskActions={awaitingTaskActions}
+    >
       <div className={styles.shell}>
         <CrmNav />
         {children}

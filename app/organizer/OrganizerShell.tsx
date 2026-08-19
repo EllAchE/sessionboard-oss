@@ -26,7 +26,7 @@ import {
 import { CiceroBrand } from '@/components/CiceroBrand';
 import { HotkeyHint } from '@/components/hotkeys/HotkeyHint';
 import { useHotkeyContext, useHotkeys } from '@/components/hotkeys/HotkeyProvider';
-import { Avatar, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
+import { Avatar, Badge, CommandMenu, SidebarNav, type CommandMenuItem } from '@/components/ui';
 import { ariaKeyshortcuts } from '@/lib/hotkeys/match';
 import { SCOPES, getBinding } from '@/lib/hotkeys/registry';
 import type { EventSummary } from '@/lib/services/events';
@@ -160,11 +160,13 @@ export function OrganizerShell({
   events,
   currentEventId,
   actorName,
+  awaitingTaskActions,
 }: {
   children: React.ReactNode;
   events: EventSummary[];
   currentEventId: string;
   actorName: string;
+  awaitingTaskActions: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -221,15 +223,34 @@ export function OrganizerShell({
           const chord = bindingId
             ? getBinding(SCOPES.organizerGlobal, bindingId)?.chords[0]
             : undefined;
-          if (!chord) return item;
+          const actionBadge =
+            item.id === 'tasks' && awaitingTaskActions > 0 ? (
+              <Badge
+                tone="danger"
+                aria-label={`${awaitingTaskActions} overdue task follow-ups awaiting you`}
+                title="Overdue task follow-ups awaiting you"
+              >
+                {awaitingTaskActions > 99 ? '99+' : awaitingTaskActions}
+              </Badge>
+            ) : null;
+          if (!chord && !actionBadge) return item;
+          const shortcutHint = chord ? <HotkeyHint chord={chord} /> : null;
           return {
             ...item,
-            keyshortcuts: ariaKeyshortcuts(chord),
-            badge: <HotkeyHint chord={chord} />,
+            ...(chord ? { keyshortcuts: ariaKeyshortcuts(chord) } : {}),
+            badge:
+              actionBadge && shortcutHint ? (
+                <span className={styles.navBadges}>
+                  {actionBadge}
+                  {shortcutHint}
+                </span>
+              ) : (
+                (actionBadge ?? shortcutHint)
+              ),
           };
         }),
       })),
-    [],
+    [awaitingTaskActions],
   );
 
   /** Longest matching href wins, so /organizer/forms/abc highlights Forms rather than Overview. */
