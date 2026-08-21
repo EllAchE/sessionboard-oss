@@ -106,6 +106,21 @@ describe('sendSms', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  it('keeps public test mode on log even when Twilio is fully configured', async () => {
+    vi.stubEnv('CICERO_PUBLIC_TEST_MODE', 'true');
+    vi.stubEnv('SMS_TRANSPORT', 'twilio');
+    vi.stubEnv('TWILIO_ACCOUNT_SID', 'AC_test');
+    vi.stubEnv('TWILIO_AUTH_TOKEN', 'secret');
+    vi.stubEnv('SMS_FROM', '+15550000000');
+    vi.stubEnv('APP_URL', 'https://cicero.example');
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    expect(activeSmsTransportName()).toBe('log');
+    expect((await sendSms({ to: '+15551234567', body: 'Reminder' })).sent).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('keeps Twilio off when its signed callbacks have no public HTTPS origin', async () => {
     vi.stubEnv('SMS_TRANSPORT', 'twilio');
     vi.stubEnv('TWILIO_ACCOUNT_SID', 'AC_test');

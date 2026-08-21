@@ -1,4 +1,4 @@
-import { env, envFlag } from '../env';
+import { env, envFlag, publicTestModeEnabled } from '../env';
 import { smtpConfigured, type SmtpConfig } from './smtp';
 
 /**
@@ -48,6 +48,8 @@ function smtpFromEnv(): ResolvedMail | null {
 }
 
 export function resolveMailTransport(): ResolvedMail {
+  if (publicTestModeEnabled()) return { transport: 'log', warning: null };
+
   const configured = env('MAIL_TRANSPORT') ?? 'log';
 
   /**

@@ -40,6 +40,13 @@ describe('transport selection', () => {
     });
   });
 
+  it('keeps public test mode on log even when Resend is fully configured', () => {
+    vi.stubEnv('CICERO_PUBLIC_TEST_MODE', 'true');
+    vi.stubEnv('MAIL_TRANSPORT', 'resend');
+    vi.stubEnv('RESEND_API_KEY', 're_123');
+    expect(resolveMailTransport()).toEqual({ transport: 'log', warning: null });
+  });
+
   it('warns when resend is asked for without a key', () => {
     vi.stubEnv('MAIL_TRANSPORT', 'resend');
     const resolved = resolveMailTransport();

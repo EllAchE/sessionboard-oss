@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { ToastProvider } from '@/components/ui';
-import { appUrl } from '@/lib/env';
+import { appUrl, publicTestModeEnabled } from '@/lib/env';
 import { hasSiteChrome } from '@/lib/site-chrome';
 import { createSiteMetadata } from '@/lib/site-metadata';
 import { fontVariables } from './fonts';
@@ -49,6 +49,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <ToastProvider>
+          {siteChrome && publicTestModeEnabled() ? (
+            <aside className="publicTestBanner" role="alert">
+              <strong>Public test site.</strong> This site does not verify email or phone ownership,
+              and any visitor can sign in with any email address. It never sends email or SMS. Do
+              not add private information or use it for a real event.
+            </aside>
+          ) : null}
           {children}
           {siteChrome ? <GlobalFooter /> : null}
         </ToastProvider>

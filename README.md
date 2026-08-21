@@ -178,6 +178,11 @@ on real delivery, in this order:
 Step 3 selects the real transport, but a key without a verified domain and matching sender still
 does not produce production delivery.
 
+Set `CICERO_PUBLIC_TEST_MODE=true` only on a public sandbox. It overrides every mail and SMS provider
+configuration: messages stay in Cicero's logs, and the sign-in page returns a magic link for any
+address. The app displays a persistent warning because email ownership is not verified in this mode.
+Remove the setting before using a deployment for a real event or enabling outbound delivery.
+
 #### Letting a visitor in without an inbox
 
 Under a real transport the sign-in page keeps the magic link to itself — printing it is handing out

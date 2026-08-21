@@ -64,6 +64,10 @@ export function envFlag(key: string, fallback = false): boolean {
   return fallback;
 }
 
+export function publicTestModeEnabled(): boolean {
+  return envFlag('CICERO_PUBLIC_TEST_MODE');
+}
+
 /**
  * Absolute origin for magic links, ICS URLs and embed snippets — all of which are read outside a
  * request, in an inbox or on someone else's website, so a relative path is never enough.

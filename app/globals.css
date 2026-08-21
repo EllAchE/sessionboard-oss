@@ -26,6 +26,23 @@ body {
   min-height: 100vh;
 }
 
+.publicTestBanner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-width-thick) solid var(--status-warning-fg);
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+  font: var(--type-label);
+  text-align: center;
+}
+
+.publicTestBanner strong {
+  font-weight: var(--weight-bold);
+}
+
 h1,
 h2,
 h3,

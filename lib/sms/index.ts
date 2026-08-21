@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { getDb } from '../../db/client';
 import { smsLog } from '../../db/schema';
-import { appUrl, env } from '../env';
+import { appUrl, env, publicTestModeEnabled } from '../env';
 import { normalizePhoneNumber } from '../phone';
 import { hasActiveSmsConsent } from './consent';
 import { logTransport } from './log';
@@ -11,6 +11,8 @@ import type { OutgoingSms, SmsTransport } from './transport';
 export type { OutgoingSms, SmsTransport } from './transport';
 
 function selectTransport(): SmsTransport {
+  if (publicTestModeEnabled()) return logTransport();
+
   const configured = env('SMS_TRANSPORT') ?? 'log';
   if (configured === 'twilio') {
     const sid = env('TWILIO_ACCOUNT_SID');
