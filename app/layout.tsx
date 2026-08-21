@@ -51,9 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ToastProvider>
           {siteChrome && publicTestModeEnabled() ? (
             <aside className="publicTestBanner" role="alert">
-              <strong>Public test site.</strong> This site does not verify email or phone ownership,
-              and any visitor can sign in with any email address. It never sends email or SMS. Do
-              not add private information or use it for a real event.
+              <strong>Public test site.</strong> I did not purchase a domain or set up outbound email
+              or SMS for this demo. It does not verify email or phone ownership, so any visitor can
+              sign in with any email address. Do not add private information or use it for a real
+              event.
             </aside>
           ) : null}
           {children}
