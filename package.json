@@ -50,7 +50,7 @@
     "drizzle-orm": "^0.45.2",
     "libphonenumber-js": "^1.13.10",
     "lucide-react": "^0.469.0",
-    "marked": "^15.0.0",
+    "marked": "^18.0.10",
     "next": "^15.1.0",
     "nodemailer": "^9.0.5",
     "pg": "^8.13.1",
