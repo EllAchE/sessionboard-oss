@@ -79,12 +79,24 @@ For every unfinished scenario:
 2. Drive the hosted product with `snapshot`, `click`, `fill`, `select`, `press`, `scroll`, `drag`,
    and `upload` as needed.
 3. Save screenshots at meaningful states and record factual findings with `observe`.
-4. Finish with `done`, including an honest `completed`, `blocked`, or `feature_not_found` outcome.
+4. Declare every substitution before finishing. The evaluator's browse skill tells you to continue
+   with whatever data exists when the brief's sample data does not match the app, so runs can end up
+   exercising Cicero's seeded demo entities instead of the data the brief specifies — legitimately,
+   but never silently. Whenever a scenario proceeds against a seeded entity in place of the brief's
+   sample data, or in place of an entity an upstream scenario was supposed to create, record an
+   `observe` note naming what the brief specified, what was actually used, and why.
+5. Finish with `done`, including an honest `completed`, `blocked`, or `feature_not_found` outcome.
+   A `completed` scenario that ran on substituted data must restate the substitution in its
+   summary; an undeclared substitution leaves the evidence ambiguous, so the scenario is not
+   honestly complete without it.
 
 Run browsing scenarios serially and in spec order. They intentionally share application state: CFP
 submissions feed review, accepted submissions feed agenda construction, and the published agenda
-feeds public widgets. The evaluator also has one shared `.sbek-current-run` pointer and no scenario
-claim lock, so parallel browser workers can corrupt the run or race the product state.
+feeds public widgets. That chain is why substitutions must be declared per scenario: a screenshot of
+a seeded session in the agenda scenario looks identical to one the CFP→review→accept chain produced,
+and only the declaration tells a judge which data path the evidence actually proves. The evaluator
+also has one shared `.sbek-current-run` pointer and no scenario claim lock, so parallel browser
+workers can corrupt the run or race the product state.
 
 Re-run `plan` to see remaining coverage. Resume an interrupted API-path run with the command printed
 at the end of `run.log`; in harness mode, completed `evidence.json` files remain valid and only the
@@ -101,7 +113,13 @@ pnpm run sbek -- judge-brief --area call-for-papers
 
 Read every selected screenshot and write the area judgement under
 `runs/<timestamp>/judgements/`. Distinguish `not_found` (the product lacks it) from `cannot_judge`
-(the evidence did not reach it). Judge areas may run in parallel because each writes a distinct
+(the evidence did not reach it). Browsing agents are required to declare, in `observe` notes and
+`done` summaries, any scenario that ran against seeded demo entities instead of the brief's sample
+data or an upstream scenario's output — those declarations reach you through the rendered evidence,
+so read them before crediting a scenario, and state in the judgement when a verdict rests on a
+seeded stand-in rather than the scenario's own data path. Evidence showing seeded entities with no
+declared substitution is ambiguous: flag it as an evidence defect rather than crediting the flow.
+Judge areas may run in parallel because each writes a distinct
 file; scoring must have exactly one writer:
 
 ```bash
