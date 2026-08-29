@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CalendarDays, KeyRound, Mail, MessageSquare } from 'lucide-react';
-import { Badge, useToast } from '@/components/ui';
+import { useToast } from '@/components/ui';
 import type { SimulatedFeed, SimulatedMessage } from '@/lib/services/comms-simulator';
 import { SimulatedMessageDialog } from './SimulatedMessageDialog';
 import styles from './CommsSimulator.module.css';

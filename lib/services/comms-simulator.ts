@@ -51,11 +51,17 @@ import { activeSmsTransportName } from '@/lib/sms';
  * the first poll lands they are a recipient in their own right.
  *
  * **Redaction.** A body can carry a `/auth/verify?token=…`, which is a live session as whoever it
- * was minted for. That is gated here by the same `magicLinkMayBeShown` predicate, through the same
- * `mailboxBody` / `smsMailboxBody` helpers, that `/organizer/sent` goes through — asked per message
- * about *that message's* recipient. This surface therefore adds no policy of its own and cannot
- * drift from the archive's. `app/organizer/mail/magic-links.ts` and `lib/demo-access.ts` explain
- * why the rule is shaped the way it is.
+ * was minted for. Every body here goes through the same `magicLinkMayBeShown` predicate, via the
+ * same `mailboxBody` / `smsMailboxBody` helpers, that `/organizer/sent` goes through — asked per
+ * message about *that message's* recipient.
+ *
+ * Be clear about what that is worth today: it withholds nothing. The simulator only runs on a
+ * channel whose transport is `log`, and `magicLinkPrecheck` answers `instance-delivers-nothing` for
+ * exactly that case, so every link is shown — which is the same answer the archive gives on the
+ * same instance, and is `T-7a` working as intended. The gate is here so this surface has no policy
+ * of its own to drift: if the conditions in `lib/demo-access.ts` ever change, or a future channel
+ * is simulated while still delivering, this follows without being edited. The load-bearing limit on
+ * this surface is the scope above, not this.
  */
 
 export type SimulatedChannel = 'email' | 'sms';
