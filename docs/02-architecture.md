@@ -287,6 +287,21 @@ With `MAIL_TRANSPORT=log` — or alongside any real transport — every send is 
 `/organizer/mail` renders it. That single choice satisfies `T-7a` and removes email deliverability as a
 single point of failure during judging. A judge who never receives a message can still see it.
 
+The mailbox answers "what was sent", but only if you go and look. While a channel's transport is
+`log` nothing announces itself, so approving a submission or inviting a co-organizer appears to do
+nothing. `lib/services/comms-simulator.ts` closes that gap: it reports what has been written to
+`email_log` and `sms_log` since the caller last asked, and `components/comms/CommsSimulator` raises
+each one as a toast at roughly the moment a provider would have delivered it, with the full message
+behind a dialog.
+
+Two properties keep it from being a second, divergent inbox. It reads the *live* transport per
+channel rather than a flag of its own, so a real `RESEND_API_KEY` turns email pop-ups off while SMS
+carries on being simulated — the feature disables itself as delivery becomes real. And it widens
+nothing: a row is visible only to its recipient (an account address, or a phone number an OTP has
+bound) or to someone holding the `organizer` role on that row's event, and every body goes through
+the same `magicLinkMayBeShown` gate `/organizer/mail` uses. A first poll deliberately returns no
+backlog, so opening the seeded demo does not replay six hundred senators as toasts.
+
 ### Reserved recipients are why `T-6` and `T-7a` can both hold
 
 `T-6` wants real mail leaving the deployed instance. `T-7a` wants a visitor with no mailbox on it to
