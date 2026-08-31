@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
+import { CommsSimulator } from '@/components/comms/CommsSimulator';
 import { GlobalFooter } from '@/components/GlobalFooter';
 import { ToastProvider } from '@/components/ui';
 import { appUrl } from '@/lib/env';
@@ -51,6 +52,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ToastProvider>
           {children}
           {siteChrome ? <GlobalFooter /> : null}
+          {/*
+            Inside the provider, so a simulated delivery queues in the same stack as every other
+            toast instead of fighting it for the same corner. Behind the same `siteChrome` gate as
+            the footer: an embedded widget must not narrate our outbox into a stranger's page. It
+            asks the server whether there is anything to watch and goes quiet when there is not, so
+            mounting it on public pages costs one request.
+          */}
+          {siteChrome ? <CommsSimulator /> : null}
         </ToastProvider>
       </body>
     </html>
