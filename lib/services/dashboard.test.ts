@@ -24,6 +24,7 @@ function row(
     daysOverdue: null,
     daysUntilDue: null,
     urgency,
+    awaitingAction: false,
     lastRemindedAt: null,
   };
 }
@@ -33,7 +34,7 @@ describe('summarizeTaskCompletion', () => {
     // The regression: `overdueParticipants` used to count anyone with an *outstanding* task, so
     // this fixture reported 3 people beside a headline of 1 overdue task.
     const summary = summarizeTaskCompletion([
-      row('ana', 'overdue'),
+      { ...row('ana', 'overdue'), awaitingAction: true },
       row('ben', 'due_soon'),
       row('cleo', 'open'),
     ]);
@@ -41,6 +42,7 @@ describe('summarizeTaskCompletion', () => {
     expect(summary.overdue).toBe(1);
     expect(summary.overdueParticipants).toBe(1);
     expect(summary.outstanding).toBe(3);
+    expect(summary.awaitingAction).toBe(1);
   });
 
   it('counts one participant once however many tasks they are late on', () => {

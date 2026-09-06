@@ -87,6 +87,12 @@
   background: var(--surface-selected);
 }
 
+.navBadges {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .content {
   padding: var(--space-5);
   min-width: 0;

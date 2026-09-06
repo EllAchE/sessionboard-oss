@@ -1,17 +1,27 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { currentActor, currentEventId, listEventsForUser, redirect } = vi.hoisted(() => ({
+const {
+  countAwaitingTaskActions,
+  currentActor,
+  currentEventId,
+  listEventsForUser,
+  redirect,
+  requireEventContext,
+} = vi.hoisted(() => ({
+  countAwaitingTaskActions: vi.fn(),
   currentActor: vi.fn(),
   currentEventId: vi.fn(),
   listEventsForUser: vi.fn(),
   redirect: vi.fn((destination: string) => {
     throw new Error(`redirect:${destination}`);
   }),
+  requireEventContext: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({ redirect }));
-vi.mock('@/lib/auth', () => ({ currentActor }));
+vi.mock('@/lib/auth', () => ({ currentActor, requireEventContext }));
+vi.mock('@/lib/services/dashboard', () => ({ countAwaitingTaskActions }));
 vi.mock('@/lib/services/events', () => ({ currentEventId, listEventsForUser }));
 vi.mock('../organizer/OrganizerShell', () => ({ OrganizerShell: vi.fn() }));
 vi.mock('./CrmNav', () => ({ CrmNav: vi.fn() }));
@@ -32,6 +42,8 @@ describe('CRM route authorization', () => {
     redirect.mockClear();
     currentActor.mockResolvedValue(actor);
     currentEventId.mockResolvedValue('organized-event');
+    requireEventContext.mockResolvedValue({ eventId: 'organized-event' });
+    countAwaitingTaskActions.mockResolvedValue(3);
   });
 
   it('sends an unauthenticated visitor to sign in', async () => {
@@ -65,5 +77,6 @@ describe('CRM route authorization', () => {
     expect(result.type).toBe(OrganizerShell);
     expect(result.props.currentEventId).toBe('organized-event');
     expect(result.props.events).toEqual([event('organized-event', ['organizer'])]);
+    expect(result.props.awaitingTaskActions).toBe(3);
   });
 });
