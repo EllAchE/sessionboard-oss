@@ -30,13 +30,13 @@ Items below that Cicero has since built. Everything else in this file is still o
 <!-- generated:closed -->
 | ID | Capability | Independent arrivals | Closed by |
 |---|---|--:|---|
-| AD-1 | Whole-event cloning / reusable event templates | 5/32 | [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) on 2026-08-17 |
-| AD-2 | Speaker availability / blackout windows as a scheduling constraint | 4/32 | [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) on 2026-08-17 |
-| AD-3 | Richer embed output formats | 5/32 | [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) on 2026-08-17 |
-| AD-4 | Revision history with organizer restore | 4/32 | [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) on 2026-08-17 |
-| AD-9 | Tokenized no-login share links | 4/32 | [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) on 2026-08-17 |
-| AD-11 | Per-event `llms.txt` | 2/32 | [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) on 2026-08-17 |
-| AD-37 | Mixed-type rubric criteria | 1/32 | [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) on 2026-08-17 |
+| AD-1 | Whole-event cloning / reusable event templates | 6/35 | [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) on 2026-08-17 |
+| AD-2 | Speaker availability / blackout windows as a scheduling constraint | 4/35 | [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) on 2026-08-17 |
+| AD-3 | Richer embed output formats | 5/35 | [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) on 2026-08-17 |
+| AD-4 | Revision history with organizer restore | 5/35 | [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) on 2026-08-17 |
+| AD-9 | Tokenized no-login share links | 5/35 | [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) on 2026-08-17 |
+| AD-11 | Per-event `llms.txt` | 2/35 | [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) on 2026-08-17 |
+| AD-37 | Mixed-type rubric criteria | 2/35 | [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) on 2026-08-17 |
 <!-- /generated:closed -->
 
 ## Baseline coverage across the field
@@ -44,21 +44,21 @@ Items below that Cicero has since built. Everything else in this file is still o
 <!-- generated:baseline -->
 | Area | Full | Partial | Absent |
 |---|--:|--:|--:|
-| CFP intake | 32 | 0 | 0 |
-| Review rounds & scoring | 28 | 4 | 0 |
-| Anonymized review | 28 | 3 | 1 |
-| Decisions & notifications | 29 | 3 | 0 |
-| Agenda / scheduling | 32 | 0 | 0 |
-| Conflict detection | 31 | 1 | 0 |
-| Speaker portal & tasks | 31 | 1 | 0 |
-| Content deliverables | 31 | 1 | 0 |
-| Comms / templates | 27 | 5 | 0 |
-| Public event pages | 30 | 2 | 0 |
-| Embeddable widgets | 30 | 0 | 2 |
-| Public REST API | 21 | 5 | 6 |
-| AI features | 14 | 8 | 10 |
-| Speaker CRM | 19 | 7 | 6 |
-| Sponsors | 3 | 3 | 26 |
+| CFP intake | 35 | 0 | 0 |
+| Review rounds & scoring | 31 | 4 | 0 |
+| Anonymized review | 31 | 3 | 1 |
+| Decisions & notifications | 32 | 3 | 0 |
+| Agenda / scheduling | 35 | 0 | 0 |
+| Conflict detection | 34 | 1 | 0 |
+| Speaker portal & tasks | 34 | 1 | 0 |
+| Content deliverables | 34 | 1 | 0 |
+| Comms / templates | 30 | 5 | 0 |
+| Public event pages | 33 | 2 | 0 |
+| Embeddable widgets | 33 | 0 | 2 |
+| Public REST API | 23 | 5 | 7 |
+| AI features | 17 | 8 | 10 |
+| Speaker CRM | 20 | 7 | 8 |
+| Sponsors | 4 | 3 | 28 |
 <!-- /generated:baseline -->
 
 ## What each project added
@@ -66,6 +66,7 @@ Items below that Cicero has since built. Everything else in this file is still o
 <!-- generated:per-project -->
 | Project | Beyond-the-brief features | Baseline areas cleared |
 |---|--:|--:|
+| DeanStr/programcue | 14 | 15/15 |
 | adityak6798/ManageMyConference | 6 | 14/15 |
 | getzenai/untitledconference | 4 | 13/15 |
 | jpoehnelt/session-party | 4 | 13/15 |
@@ -89,11 +90,13 @@ Items below that Cicero has since built. Everything else in this file is still o
 | caseymanos/opensession | 2 | 10/15 |
 | ChaiWithJai/open-speaker-operations | 2 | 12/15 |
 | EquipeAI/stagestack | 2 | 14/15 |
+| Frostbite1536/greenroom | 2 | 13/15 |
 | guangyusong/opencallboard | 2 | 11/15 |
 | maddiedreese/ProgramLoom | 2 | 14/15 |
 | nayamoss/namos-sessions-public | 2 | 13/15 |
 | blockbrain-ai/speakerops | 1 | 11/15 |
 | mauricedesaxe/openboard | 1 | 8/15 |
+| MoizIbnYousaf/open-events | 1 | 12/15 |
 | mrmichael73/greenroom-kms | 1 | 10/15 |
 | openrostrum/openrostrum | 1 | 14/15 |
 | thedatadavis/seshmesh | 1 | 11/15 |
@@ -105,103 +108,117 @@ Items below that Cicero has since built. Everything else in this file is still o
 <!-- generated:requirements -->
 ### Shipped by many teams
 
+#### AD-6 — Authentication beyond magic links
+
+Cicero is magic-link-only by design (`T-4a`); several teams read the brief as permitting passwords or social sign-in too.
+
+**Independent arrivals:** 7 of 35 · **Built by:** akakabrian/sessionslate, twilwa/session-bored, M31-Labs/rostrum, adityak6798/ManageMyConference, mkly/gatherpulse, Frostbite1536/greenroom, DeanStr/programcue
+
 #### AD-1 — Whole-event cloning / reusable event templates
 
 Copy forms, tracks, rooms, scorecards, task and message templates, and optionally the team, into a new event. Several implementations preview the copy before applying, and deliberately exclude operational history.
 
-**Independent arrivals:** 5 of 32 · **Built by:** agrimsingh/conference-engine, jpoehnelt/session-party, maddiedreese/ProgramLoom, TheThingInTheThing/namos-sessions-webapp, adityak6798/ManageMyConference
+**Independent arrivals:** 6 of 35 · **Built by:** agrimsingh/conference-engine, jpoehnelt/session-party, maddiedreese/ProgramLoom, TheThingInTheThing/namos-sessions-webapp, adityak6798/ManageMyConference, DeanStr/programcue
 
 **Cicero shipped this on 2026-08-17** in [#199](https://github.com/EllAchE/sessionboard-oss/pull/199) — `lib/services/event-clone.ts` plans a structure-only clone and `app/organizer/duplicate/` previews it before applying; people and operational history are deliberately excluded.
-
-#### AD-3 — Richer embed output formats
-
-JSON, XML, subscribable iCalendar, and script-loader snippets emitted from the same widget configuration, alongside the iframe. This confirms a gap we had already recorded against ourselves.
-
-**Independent arrivals:** 5 of 32 · **Built by:** mrmichael73/greenroom-kms, d4mr/opensesh, iankar8/event-manager-os, westoque/session-hero, akakabrian/sessionslate
-
-**Cicero shipped this on 2026-08-17** in [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) — `app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as `feed.json`, `feed.xml` and a subscribable `feed.ics` off the same query string the iframe and script snippets carry.
 
 #### AD-5 — Bidirectional Airtable sync
 
 Cicero's Airtable integration is one-way. Others reconcile in both directions with field ownership, conflict handling, retries, and dead letters.
 
-**Independent arrivals:** 5 of 32 · **Built by:** openrostrum/openrostrum, jpoehnelt/session-party, guangyusong/opencallboard, SteveMLC/lectern, red/omotenashi
+**Independent arrivals:** 6 of 35 · **Built by:** openrostrum/openrostrum, jpoehnelt/session-party, guangyusong/opencallboard, SteveMLC/lectern, red/omotenashi, DeanStr/programcue
 
-#### AD-6 — Authentication beyond magic links
+#### AD-3 — Richer embed output formats
 
-Cicero is magic-link-only by design (`T-4a`); five teams read the brief as permitting more.
+JSON, XML, subscribable iCalendar, and script-loader snippets emitted from the same widget configuration, alongside the iframe. This confirms a gap we had already recorded against ourselves.
 
-**Independent arrivals:** 5 of 32 · **Built by:** akakabrian/sessionslate, twilwa/session-bored, M31-Labs/rostrum, adityak6798/ManageMyConference, mkly/gatherpulse
+**Independent arrivals:** 5 of 35 · **Built by:** mrmichael73/greenroom-kms, d4mr/opensesh, iankar8/event-manager-os, westoque/session-hero, akakabrian/sessionslate
 
-#### AD-2 — Speaker availability / blackout windows as a scheduling constraint
-
-Collected during CFP or in the portal as dates, times, or dayparts, then surfaced as explicit conflicts against the agenda. Cicero detects room and speaker double-booking but has no concept of a speaker being unavailable at a time they were never scheduled.
-
-**Independent arrivals:** 4 of 32 · **Built by:** nayamoss/namos-sessions-public, TheThingInTheThing/namos-sessions-webapp, 0xOsprey/saas-killa, yisding/openboard.events
-
-**Cicero shipped this on 2026-08-17** in [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) — A `speaker_unavailability` window declared in the portal is read by `lib/services/speaker-availability.ts` and enforced through the same agenda guard as double-booking.
+**Cicero shipped this on 2026-08-17** in [#210](https://github.com/EllAchE/sessionboard-oss/pull/210) — `app/embed/[slug]/[view]/[format]/route.ts` renders one widget configuration as `feed.json`, `feed.xml` and a subscribable `feed.ics` off the same query string the iframe and script snippets carry.
 
 #### AD-4 — Revision history with organizer restore
 
 Attributed, numbered snapshots of proposal and session titles/abstracts that an organizer can roll back.
 
-**Independent arrivals:** 4 of 32 · **Built by:** conorbronsdon/callboard-app, westoque/session-hero, SteveMLC/lectern, realgenekim/curtain-call-cfp
+**Independent arrivals:** 5 of 35 · **Built by:** conorbronsdon/callboard-app, westoque/session-hero, SteveMLC/lectern, realgenekim/curtain-call-cfp, DeanStr/programcue
 
 **Cicero shipped this on 2026-08-17** in [#200](https://github.com/EllAchE/sessionboard-oss/pull/200) — Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage.
 
 #### AD-7 — Real-time collaborative agenda over Durable Objects + WebSockets
 
-A per-event Cloudflare Durable Object serializes schedule writes and broadcasts invalidations, so several operators can drag the grid at once.
+A per-event Cloudflare Durable Object broadcasts committed schedule invalidations over WebSockets so several operators can drag the grid at once. Most implementations serialize commands in the object; Program Cue pairs optimistic D1 revisions with the realtime channel.
 
-**Independent arrivals:** 4 of 32 · **Built by:** agrimsingh/conference-engine, caseymanos/opensession, jpoehnelt/session-party, thedatadavis/seshmesh
+**Independent arrivals:** 5 of 35 · **Built by:** agrimsingh/conference-engine, caseymanos/opensession, jpoehnelt/session-party, thedatadavis/seshmesh, DeanStr/programcue
 
 #### AD-8 — In-product streaming AI assistant with tool use
 
-A chat surface inside the organizer app that drives the same tool registry the MCP server exposes, with persisted threads and an approval step before mutations. Cicero's AI is advisory-only and out-of-band.
+A chat surface inside the organizer app streams model output, invokes governed tools, persists threads, and requires approval before mutations. Several implementations share that registry with MCP; Program Cue ships the governed in-product surface without an MCP endpoint. Cicero's AI is advisory-only and out-of-band.
 
-**Independent arrivals:** 4 of 32 · **Built by:** CampbellVentures/smolboard, getzenai/untitledconference, nayamoss/namos-sessions-public, Phantastic-AI/fireside
+**Independent arrivals:** 5 of 35 · **Built by:** CampbellVentures/smolboard, getzenai/untitledconference, nayamoss/namos-sessions-public, Phantastic-AI/fireside, DeanStr/programcue
 
 #### AD-9 — Tokenized no-login share links
 
 Expiring, revocable links that expose a proposal, deliverable, or report to someone without an account.
 
-**Independent arrivals:** 4 of 32 · **Built by:** iankar8/event-manager-os, Phantastic-AI/fireside, mkly/gatherpulse, adityak6798/ManageMyConference
+**Independent arrivals:** 5 of 35 · **Built by:** iankar8/event-manager-os, Phantastic-AI/fireside, mkly/gatherpulse, adityak6798/ManageMyConference, DeanStr/programcue
 
 **Cicero shipped this on 2026-08-17** in [#201](https://github.com/EllAchE/sessionboard-oss/pull/201) — `lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account.
-
-### Shipped by two teams
 
 #### AD-14 — Organization-level team administration
 
 above the event — roles, invitations, per-event access grants, audit trail. Cicero scopes membership to the event.
 
-**Independent arrivals:** 3 of 32 · **Built by:** yisding/openboard.events, CampbellVentures/smolboard, adityak6798/ManageMyConference
+**Independent arrivals:** 4 of 35 · **Built by:** yisding/openboard.events, CampbellVentures/smolboard, adityak6798/ManageMyConference, DeanStr/programcue
 
-#### AD-10 — OAuth 2.1 authorization server for MCP
+#### AD-2 — Speaker availability / blackout windows as a scheduling constraint
 
-dynamic registration, PKCE, consent, discovery, refresh rotation. Cicero's MCP is token-scoped without an authorization-code flow.
+Collected during CFP or in the portal as dates, times, or dayparts, then surfaced as explicit conflicts against the agenda. Cicero detects room and speaker double-booking but has no concept of a speaker being unavailable at a time they were never scheduled.
 
-**Independent arrivals:** 2 of 32 · **Built by:** d4mr/opensesh, maddiedreese/ProgramLoom
+**Independent arrivals:** 4 of 35 · **Built by:** nayamoss/namos-sessions-public, TheThingInTheThing/namos-sessions-webapp, 0xOsprey/saas-killa, yisding/openboard.events
 
-#### AD-11 — Per-event `llms.txt`
-
-generated from current public state, for AI agents reading the event.
-
-**Independent arrivals:** 2 of 32 · **Built by:** conorbronsdon/callboard-app, red/omotenashi
-
-**Cicero shipped this on 2026-08-17** in [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) — `app/(public)/[slug]/llms.txt/route.ts` generates a per-event file from current published state, alongside the site-level `app/llms.txt`.
+**Cicero shipped this on 2026-08-17** in [#194](https://github.com/EllAchE/sessionboard-oss/pull/194) — A `speaker_unavailability` window declared in the portal is read by `lib/services/speaker-availability.ts` and enforced through the same agenda guard as double-booking.
 
 #### AD-12 — Accelevents integration
 
 with preview/apply diffs against a real external event platform.
 
-**Independent arrivals:** 2 of 32 · **Built by:** iankar8/event-manager-os, jpoehnelt/session-party
+**Independent arrivals:** 3 of 35 · **Built by:** iankar8/event-manager-os, jpoehnelt/session-party, DeanStr/programcue
+
+### Shipped by two teams
+
+#### AD-10 — OAuth 2.1 authorization server for MCP
+
+dynamic registration, PKCE, consent, discovery, refresh rotation. Cicero's MCP is token-scoped without an authorization-code flow.
+
+**Independent arrivals:** 2 of 35 · **Built by:** d4mr/opensesh, maddiedreese/ProgramLoom
+
+#### AD-11 — Per-event `llms.txt`
+
+generated from current public state, for AI agents reading the event.
+
+**Independent arrivals:** 2 of 35 · **Built by:** conorbronsdon/callboard-app, red/omotenashi
+
+**Cicero shipped this on 2026-08-17** in [#188](https://github.com/EllAchE/sessionboard-oss/pull/188) — `app/(public)/[slug]/llms.txt/route.ts` generates a per-event file from current published state, alongside the site-level `app/llms.txt`.
 
 #### AD-13 — Privacy export and erasure
 
 self-service data export and transactional deletion.
 
-**Independent arrivals:** 2 of 32 · **Built by:** caseymanos/opensession, yisding/openboard.events
+**Independent arrivals:** 2 of 35 · **Built by:** caseymanos/opensession, yisding/openboard.events
+
+#### AD-21 — Attendee-facing Q&A concierge
+
+A model-backed help surface grounded in public event facts. Fireside adds per-event budgets; Open Events scopes Orby to the current page and refuses claims about private state.
+
+**Independent arrivals:** 2 of 35 · **Built by:** Phantastic-AI/fireside, MoizIbnYousaf/open-events
+
+#### AD-37 — Mixed-type rubric criteria
+
+(numeric, single-select, and free text in one scorecard).
+
+**Independent arrivals:** 2 of 35 · **Built by:** akakabrian/sessionslate, DeanStr/programcue
+
+**Cicero shipped this on 2026-08-17** in [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) — `scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning.
 
 ### Shipped by one team each
 
@@ -209,207 +226,223 @@ self-service data export and transactional deletion.
 
 nominations, committee rubric ballots, attendee voting, published tallies and winner notifications.
 
-**Independent arrivals:** 1 of 32 · **Built by:** 0xOsprey/saas-killa
+**Independent arrivals:** 1 of 35 · **Built by:** 0xOsprey/saas-killa
 
 #### AD-16 — Embargo-aware poster hall
 
 with board assignments and visitor bookmarks.
 
-**Independent arrivals:** 1 of 32 · **Built by:** 0xOsprey/saas-killa
+**Independent arrivals:** 1 of 35 · **Built by:** 0xOsprey/saas-killa
 
 #### AD-17 — Versioned external policy language
 
 for CFP routing, form visibility, review governance, and schedule conflicts, with persisted rule traces.
 
-**Independent arrivals:** 1 of 32 · **Built by:** M31-Labs/rostrum
+**Independent arrivals:** 1 of 35 · **Built by:** M31-Labs/rostrum
 
 #### AD-18 — Automatic reviewer-company conflict recusal
 
 enforced at assignment, queue, and scoring.
 
-**Independent arrivals:** 1 of 32 · **Built by:** M31-Labs/rostrum
+**Independent arrivals:** 1 of 35 · **Built by:** M31-Labs/rostrum
 
 #### AD-19 — Hash-chained audit ledger
 
 plus checksummed whole-workspace export/import with uploads.
 
-**Independent arrivals:** 1 of 32 · **Built by:** M31-Labs/rostrum
+**Independent arrivals:** 1 of 35 · **Built by:** M31-Labs/rostrum
 
 #### AD-20 — Attendee social layer
 
 mutual connections, shared starred-session overlap, speaker follows.
 
-**Independent arrivals:** 1 of 32 · **Built by:** Phantastic-AI/fireside
-
-#### AD-21 — Attendee-facing Q&A concierge
-
-with per-event usage budgets.
-
-**Independent arrivals:** 1 of 32 · **Built by:** Phantastic-AI/fireside
+**Independent arrivals:** 1 of 35 · **Built by:** Phantastic-AI/fireside
 
 #### AD-22 — Named acceptance waves
 
 that stage decisions and release them as a batch, separately from waitlist and rejection.
 
-**Independent arrivals:** 1 of 32 · **Built by:** ChaiWithJai/open-speaker-operations
+**Independent arrivals:** 1 of 35 · **Built by:** ChaiWithJai/open-speaker-operations
 
 #### AD-23 — Cross-conference historical program corpus
 
 with field provenance and auditable link/split/relink into CRM.
 
-**Independent arrivals:** 1 of 32 · **Built by:** ChaiWithJai/open-speaker-operations
+**Independent arrivals:** 1 of 35 · **Built by:** ChaiWithJai/open-speaker-operations
 
 #### AD-24 — Primary-manager delegation
 
 for a session, including non-speaking managers, with an organizer-mediated handoff that preserves the incumbent until acceptance.
 
-**Independent arrivals:** 1 of 32 · **Built by:** EquipeAI/stagestack
+**Independent arrivals:** 1 of 35 · **Built by:** EquipeAI/stagestack
 
 #### AD-25 — Approval-gated AI import planning
 
 across CSV/XLS/XLSX/ODS, then deterministic idempotent application of the selected operations.
 
-**Independent arrivals:** 1 of 32 · **Built by:** EquipeAI/stagestack
+**Independent arrivals:** 1 of 35 · **Built by:** EquipeAI/stagestack
 
 #### AD-26 — Resubmit-with-guidance as a first-class decision
 
 , with required organizer guidance and its own portal state.
 
-**Independent arrivals:** 1 of 32 · **Built by:** getzenai/untitledconference
+**Independent arrivals:** 1 of 35 · **Built by:** getzenai/untitledconference
 
 #### AD-27 — Predecessor-linked carry-forward lane
 
 for inviting or discarding prior-edition proposals.
 
-**Independent arrivals:** 1 of 32 · **Built by:** getzenai/untitledconference
+**Independent arrivals:** 1 of 35 · **Built by:** getzenai/untitledconference
 
 #### AD-28 — Printable organizer run-of-show
 
 with authorized deliverable links.
 
-**Independent arrivals:** 1 of 32 · **Built by:** getzenai/untitledconference
+**Independent arrivals:** 1 of 35 · **Built by:** getzenai/untitledconference
 
 #### AD-29 — Named agenda draft variants
 
 duplicate, discard, diff against live, selectively accept.
 
-**Independent arrivals:** 1 of 32 · **Built by:** d4mr/opensesh
+**Independent arrivals:** 1 of 35 · **Built by:** d4mr/opensesh
 
 #### AD-30 — Organizer-defined roles with per-field hide/edit policies
 
 and preview-as-role.
 
-**Independent arrivals:** 1 of 32 · **Built by:** adityak6798/ManageMyConference
+**Independent arrivals:** 1 of 35 · **Built by:** adityak6798/ManageMyConference
 
 #### AD-31 — Organization-level branded multi-program sites
 
 with custom pages and versioned privacy consent.
 
-**Independent arrivals:** 1 of 32 · **Built by:** adityak6798/ManageMyConference
+**Independent arrivals:** 1 of 35 · **Built by:** adityak6798/ManageMyConference
 
 #### AD-32 — First-party TypeScript SDK and CLI
 
 over the same OpenAPI contract, with stable exit codes.
 
-**Independent arrivals:** 1 of 32 · **Built by:** blockbrain-ai/speakerops
+**Independent arrivals:** 1 of 35 · **Built by:** blockbrain-ai/speakerops
 
 #### AD-33 — Deployable AWS SES infrastructure stacks
 
 with DKIM, suppression, encrypted bounce/complaint feedback, and delivery metrics.
 
-**Independent arrivals:** 1 of 32 · **Built by:** guangyusong/opencallboard
+**Independent arrivals:** 1 of 35 · **Built by:** guangyusong/opencallboard
 
 #### AD-34 — Public incremental changes feed
 
 with monotonic sequence numbers, a `since` cursor, and ETags.
 
-**Independent arrivals:** 1 of 32 · **Built by:** realgenekim/curtain-call-cfp
+**Independent arrivals:** 1 of 35 · **Built by:** realgenekim/curtain-call-cfp
 
 #### AD-35 — Direct Sessionize speaker-profile import
 
 from the public CFP flow.
 
-**Independent arrivals:** 1 of 32 · **Built by:** realgenekim/curtain-call-cfp
+**Independent arrivals:** 1 of 35 · **Built by:** realgenekim/curtain-call-cfp
 
 #### AD-36 — Fail-closed audit persistence
 
 on private token-scoped REST reads — the read fails if the audit write fails.
 
-**Independent arrivals:** 1 of 32 · **Built by:** red/omotenashi
-
-#### AD-37 — Mixed-type rubric criteria
-
-(numeric, single-select, and free text in one scorecard).
-
-**Independent arrivals:** 1 of 32 · **Built by:** akakabrian/sessionslate
-
-**Cicero shipped this on 2026-08-17** in [#212](https://github.com/EllAchE/sessionboard-oss/pull/212) — `scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning.
+**Independent arrivals:** 1 of 35 · **Built by:** red/omotenashi
 
 #### AD-38 — AI-seeded scorecards that the server refuses
 
 until every unchanged suggestion is confirmed or edited.
 
-**Independent arrivals:** 1 of 32 · **Built by:** twilwa/session-bored
+**Independent arrivals:** 1 of 35 · **Built by:** twilwa/session-bored
 
 #### AD-39 — Cancellable queued decision notices
 
 with an audit reason and recipient correction before a reviewed replacement is sent.
 
-**Independent arrivals:** 1 of 32 · **Built by:** twilwa/session-bored
+**Independent arrivals:** 1 of 35 · **Built by:** twilwa/session-bored
 
 #### AD-40 — Persistent cross-device attendee schedules
 
 for signed-in attendees, with anonymous fallback to local storage.
 
-**Independent arrivals:** 1 of 32 · **Built by:** twilwa/session-bored
+**Independent arrivals:** 1 of 35 · **Built by:** twilwa/session-bored
 
 #### AD-41 — Self-expiring per-visitor demo sandbox
 
 with rate limits, a global cap, and recurring purge.
 
-**Independent arrivals:** 1 of 32 · **Built by:** westoque/session-hero
+**Independent arrivals:** 1 of 35 · **Built by:** westoque/session-hero
 
 #### AD-42 — Sponsor tiers with contacts, onboarding tasks, and form routing
 
 the only sponsor implementation deeper than Cicero's in any dimension.
 
-**Independent arrivals:** 1 of 32 · **Built by:** TheThingInTheThing/namos-sessions-webapp
+**Independent arrivals:** 1 of 35 · **Built by:** TheThingInTheThing/namos-sessions-webapp
 
 #### AD-43 — Public sponsor/exhibitor intake forms
 
 reviewed into tiered partner groups.
 
-**Independent arrivals:** 1 of 32 · **Built by:** mkly/gatherpulse
+**Independent arrivals:** 1 of 35 · **Built by:** mkly/gatherpulse
 
 #### AD-44 — Immutable numbered program publication snapshots
 
 with publish/republish/unpublish history.
 
-**Independent arrivals:** 1 of 32 · **Built by:** mkly/gatherpulse
+**Independent arrivals:** 1 of 35 · **Built by:** mkly/gatherpulse
 
 #### AD-45 — Headshot publication consent bound to the current file
 
 , unable to carry through replacement.
 
-**Independent arrivals:** 1 of 32 · **Built by:** conorbronsdon/callboard-app
+**Independent arrivals:** 1 of 35 · **Built by:** conorbronsdon/callboard-app
 
 #### AD-46 — Two-step content publication gate
 
 pinning an approved revision while later speaker edits stay draft.
 
-**Independent arrivals:** 1 of 32 · **Built by:** CampbellVentures/smolboard
+**Independent arrivals:** 1 of 35 · **Built by:** CampbellVentures/smolboard
 
 #### AD-47 — In-app problem reporting
 
 with anti-bot checks, privacy redaction, and delivery to an incident policy.
 
-**Independent arrivals:** 1 of 32 · **Built by:** mauricedesaxe/openboard
+**Independent arrivals:** 1 of 35 · **Built by:** mauricedesaxe/openboard
 
 #### AD-48 — AI-drafted decision emails and schedule notices
 
 that preserve required portal/checklist facts and require human send approval.
 
-**Independent arrivals:** 1 of 32 · **Built by:** SteveMLC/lectern
+**Independent arrivals:** 1 of 35 · **Built by:** SteveMLC/lectern
+
+#### AD-49 — Direct Google and Microsoft calendar synchronization
+
+OAuth-connected participant calendars receive provider events that are refreshed and reconciled when the programme changes, beyond downloadable or subscribable iCalendar.
+
+**Independent arrivals:** 1 of 35 · **Built by:** DeanStr/programcue
+
+#### AD-50 — Reviewer discussion threads attached to proposals
+
+Assigned reviewers and chairs can discuss one proposal inside the review workspace without leaking the thread outside the round's authorization boundary.
+
+**Independent arrivals:** 1 of 35 · **Built by:** DeanStr/programcue
+
+#### AD-51 — Conflict-aware agenda undo
+
+Place, move, and unassign operations return a one-use revision-bound undo token and refuse reversal after an intervening schedule change.
+
+**Independent arrivals:** 1 of 35 · **Built by:** DeanStr/programcue
+
+#### AD-52 — Immutable participant-retention completion
+
+Transactional redaction ends in a durable tombstone, and database triggers reject later writes that would reintroduce participant PII.
+
+**Independent arrivals:** 1 of 35 · **Built by:** DeanStr/programcue
+
+#### AD-53 — AI-drafted organizer notes and speaker resource pages
+
+Model output becomes an editable suggestion for a personal decision note or resource-wiki page, with no automatic persistence or publication.
+
+**Independent arrivals:** 1 of 35 · **Built by:** Frostbite1536/greenroom
 
 <!-- /generated:requirements -->
 
@@ -420,13 +453,13 @@ Recorded for symmetry — the same reading pass that produced the list above pro
 <!-- generated:differentiators -->
 | ID | Capability | Absent in |
 |---|---|--:|
-| CD-1 | Embeddable venue/exhibitor-hall map (organizer PDF upload, public widget) | 32/32 |
-| CD-2 | Sponsors / exhibitors with a publication-gated public wall | 30/32 |
-| CD-3 | Consent-aware SMS (E.164 normalization, OTP verification, quiet hours) | 26/32 |
-| CD-4 | Streamable-HTTP MCP server with role-scoped agent skills | 18/32 |
-| CD-5 | Post-conference recording ingestion with publication gates | 17/32 |
-| CD-6 | Signed outbound webhooks | 16/32 |
-| CD-7 | Cross-event speaker CRM (segments, sourcing) | 15/32 |
-| CD-8 | Versioned public REST API with a generated OpenAPI contract | 12/32 |
-| CD-9 | Reversible CRM merges | 9/32 |
+| CD-1 | Embeddable venue/exhibitor-hall map (organizer PDF upload, public widget) | 35/35 |
+| CD-2 | Sponsors / exhibitors with a publication-gated public wall | 32/35 |
+| CD-3 | Consent-aware SMS (E.164 normalization, OTP verification, quiet hours) | 29/35 |
+| CD-4 | Streamable-HTTP MCP server with role-scoped agent skills | 21/35 |
+| CD-5 | Post-conference recording ingestion with publication gates | 19/35 |
+| CD-6 | Signed outbound webhooks | 18/35 |
+| CD-7 | Cross-event speaker CRM (segments, sourcing) | 17/35 |
+| CD-8 | Versioned public REST API with a generated OpenAPI contract | 13/35 |
+| CD-9 | Reversible CRM merges | 12/35 |
 <!-- /generated:differentiators -->

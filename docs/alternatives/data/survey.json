@@ -1,40 +1,40 @@
 {
   "generated": "by scripts/alternatives/build.ts — do not edit",
-  "surveyedOn": "2026-08-16",
+  "surveyedOn": "2026-08-17",
   "brief": "Kill My SaaS — Sessionboard clone",
   "counts": {
-    "submissionsFound": 41,
-    "analyzed": 32,
+    "submissionsFound": 45,
+    "analyzed": 35,
     "sourceUnreachable": 1,
-    "noPublicSource": 8,
+    "noPublicSource": 9,
     "baselineAreas": 15,
-    "extras": 48,
+    "extras": 53,
     "extrasClosedSince": 7,
     "ciceroDifferentiators": 9,
-    "totalFeatureRows": 72,
-    "attributions": 85
+    "totalFeatureRows": 77,
+    "attributions": 102
   },
   "scale": {
     "lines": {
       "min": 9218,
-      "max": 233075,
-      "median": 65220
+      "max": 396170,
+      "median": 80100
     },
     "files": {
       "min": 43,
       "max": 1600,
-      "median": 412
+      "median": 466
     },
     "authors": {
       "min": 1,
       "max": 5
     },
     "firstCommit": "2026-08-08",
-    "lastCommit": "2026-08-16"
+    "lastCommit": "2026-08-17"
   },
   "stack": {
     "language": {
-      "TypeScript": 27,
+      "TypeScript": 30,
       "Clojure": 1,
       "Go": 1,
       "JavaScript": 1,
@@ -43,7 +43,7 @@
     },
     "framework": {
       "Hono + React SPA": 7,
-      "Next.js": 5,
+      "Next.js": 6,
       "TanStack Start": 3,
       "Hono": 2,
       "React (Vite)": 2,
@@ -54,17 +54,20 @@
       "Hono + React Router": 1,
       "PylonSync": 1,
       "Rails": 1,
+      "React Router": 1,
       "React Router 7": 1,
       "React SPA + tRPC": 1,
       "React SPA + Worker API": 1,
       "Ring / Reitit + Hiccup": 1,
-      "SvelteKit": 1
+      "SvelteKit": 1,
+      "Vite, React and Hono": 1
     },
     "datastore": {
       "Cloudflare D1": 15,
-      "PostgreSQL": 6,
+      "PostgreSQL": 7,
       "Convex": 3,
       "Airtable": 2,
+      "Cloudflare D1 and R2": 2,
       "Airtable + D1 projection": 1,
       "JSON / SQLite / PostgreSQL aggregate": 1,
       "JSONL fact log / PostgreSQL": 1,
@@ -73,30 +76,32 @@
       "SQLite": 1
     },
     "dataAccess": {
-      "Drizzle": 13,
+      "Drizzle": 14,
       "raw SQL": 7,
       "Convex": 3,
+      "Prisma": 2,
       "Active Record": 1,
       "custom adapter": 1,
       "custom aggregate": 1,
       "Django ORM": 1,
       "next.jdbc": 1,
-      "Prisma": 1,
       "PylonSync": 1,
+      "raw SQL with Drizzle schema types": 1,
       "repository layer": 1,
       "REST adapter": 1
     },
     "hosting": {
-      "Cloudflare Workers": 20,
+      "Cloudflare Workers": 22,
       "unknown": 10,
       "Cloudflare Pages": 1,
-      "PylonSync runtime": 1
+      "PylonSync runtime": 1,
+      "Vercel": 1
     },
     "auth": {
-      "password": 13,
-      "magic link": 12,
+      "password": 14,
+      "magic link": 13,
       "OAuth": 6,
-      "Clerk": 3,
+      "Clerk": 4,
       "email code": 3,
       "API key": 2,
       "API token": 2,
@@ -104,11 +109,14 @@
       "2FA": 1,
       "capability link": 1,
       "email token": 1,
+      "Google OAuth": 1,
       "inherited from Pretalx": 1,
       "magic code": 1,
+      "Microsoft OAuth": 1,
       "none": 1,
       "OAuth 2.1": 1,
       "passcode": 1,
+      "signed email access links": 1,
       "signed session": 1
     }
   },
@@ -116,7 +124,7 @@
     {
       "area": "cfp-intake",
       "label": "CFP intake",
-      "full": 32,
+      "full": 35,
       "partial": 0,
       "absent": 0,
       "unknown": 0
@@ -124,7 +132,7 @@
     {
       "area": "review-scoring",
       "label": "Review rounds & scoring",
-      "full": 28,
+      "full": 31,
       "partial": 4,
       "absent": 0,
       "unknown": 0
@@ -132,7 +140,7 @@
     {
       "area": "anonymized-review",
       "label": "Anonymized review",
-      "full": 28,
+      "full": 31,
       "partial": 3,
       "absent": 1,
       "unknown": 0
@@ -140,7 +148,7 @@
     {
       "area": "decisions-notifications",
       "label": "Decisions & notifications",
-      "full": 29,
+      "full": 32,
       "partial": 3,
       "absent": 0,
       "unknown": 0
@@ -148,7 +156,7 @@
     {
       "area": "agenda-scheduling",
       "label": "Agenda / scheduling",
-      "full": 32,
+      "full": 35,
       "partial": 0,
       "absent": 0,
       "unknown": 0
@@ -156,7 +164,7 @@
     {
       "area": "conflict-detection",
       "label": "Conflict detection",
-      "full": 31,
+      "full": 34,
       "partial": 1,
       "absent": 0,
       "unknown": 0
@@ -164,7 +172,7 @@
     {
       "area": "speaker-portal",
       "label": "Speaker portal & tasks",
-      "full": 31,
+      "full": 34,
       "partial": 1,
       "absent": 0,
       "unknown": 0
@@ -172,7 +180,7 @@
     {
       "area": "content-deliverables",
       "label": "Content deliverables",
-      "full": 31,
+      "full": 34,
       "partial": 1,
       "absent": 0,
       "unknown": 0
@@ -180,7 +188,7 @@
     {
       "area": "comms-templates",
       "label": "Comms / templates",
-      "full": 27,
+      "full": 30,
       "partial": 5,
       "absent": 0,
       "unknown": 0
@@ -188,7 +196,7 @@
     {
       "area": "public-pages",
       "label": "Public event pages",
-      "full": 30,
+      "full": 33,
       "partial": 2,
       "absent": 0,
       "unknown": 0
@@ -196,7 +204,7 @@
     {
       "area": "embeds",
       "label": "Embeddable widgets",
-      "full": 30,
+      "full": 33,
       "partial": 0,
       "absent": 2,
       "unknown": 0
@@ -204,15 +212,15 @@
     {
       "area": "rest-api",
       "label": "Public REST API",
-      "full": 21,
+      "full": 23,
       "partial": 5,
-      "absent": 6,
+      "absent": 7,
       "unknown": 0
     },
     {
       "area": "ai-features",
       "label": "AI features",
-      "full": 14,
+      "full": 17,
       "partial": 8,
       "absent": 10,
       "unknown": 0
@@ -220,37 +228,67 @@
     {
       "area": "speaker-crm",
       "label": "Speaker CRM",
-      "full": 19,
+      "full": 20,
       "partial": 7,
-      "absent": 6,
+      "absent": 8,
       "unknown": 0
     },
     {
       "area": "sponsors",
       "label": "Sponsors",
-      "full": 3,
+      "full": 4,
       "partial": 3,
-      "absent": 26,
+      "absent": 28,
       "unknown": 0
     }
   ],
   "extrasByConvergence": [
     {
+      "id": "AD-6",
+      "title": "Authentication beyond magic links",
+      "convergence": 7,
+      "projects": [
+        "akakabrian-sessionslate",
+        "twilwa-session-bored",
+        "M31-Labs-rostrum",
+        "adityak6798-ManageMyConference",
+        "mkly-gatherpulse",
+        "Frostbite1536-greenroom",
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
+    },
+    {
       "id": "AD-1",
       "title": "Whole-event cloning / reusable event templates",
-      "convergence": 5,
+      "convergence": 6,
       "projects": [
         "agrimsingh-conference-engine",
         "jpoehnelt-session-party",
         "maddiedreese-ProgramLoom",
         "TheThingInTheThing-namos-sessions-webapp",
-        "adityak6798-ManageMyConference"
+        "adityak6798-ManageMyConference",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": {
         "pr": 199,
         "on": "2026-08-17",
         "note": "`lib/services/event-clone.ts` plans a structure-only clone and `app/organizer/duplicate/` previews it before applying; people and operational history are deliberately excluded."
       }
+    },
+    {
+      "id": "AD-5",
+      "title": "Bidirectional Airtable sync",
+      "convergence": 6,
+      "projects": [
+        "openrostrum-openrostrum",
+        "jpoehnelt-session-party",
+        "guangyusong-opencallboard",
+        "SteveMLC-lectern",
+        "red-omotenashi",
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
     },
     {
       "id": "AD-3",
@@ -270,30 +308,64 @@
       }
     },
     {
-      "id": "AD-5",
-      "title": "Bidirectional Airtable sync",
+      "id": "AD-4",
+      "title": "Revision history with organizer restore",
       "convergence": 5,
       "projects": [
-        "openrostrum-openrostrum",
-        "jpoehnelt-session-party",
-        "guangyusong-opencallboard",
+        "conorbronsdon-callboard-app",
+        "westoque-session-hero",
         "SteveMLC-lectern",
-        "red-omotenashi"
+        "realgenekim-curtain-call-cfp",
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": {
+        "pr": 200,
+        "on": "2026-08-17",
+        "note": "Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage."
+      }
+    },
+    {
+      "id": "AD-7",
+      "title": "Real-time collaborative agenda over Durable Objects + WebSockets",
+      "convergence": 5,
+      "projects": [
+        "agrimsingh-conference-engine",
+        "caseymanos-opensession",
+        "jpoehnelt-session-party",
+        "thedatadavis-seshmesh",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": null
     },
     {
-      "id": "AD-6",
-      "title": "Authentication beyond magic links",
+      "id": "AD-8",
+      "title": "In-product streaming AI assistant with tool use",
       "convergence": 5,
       "projects": [
-        "akakabrian-sessionslate",
-        "twilwa-session-bored",
-        "M31-Labs-rostrum",
-        "adityak6798-ManageMyConference",
-        "mkly-gatherpulse"
+        "CampbellVentures-smolboard",
+        "getzenai-untitledconference",
+        "nayamoss-namos-sessions-public",
+        "Phantastic-AI-fireside",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": null
+    },
+    {
+      "id": "AD-9",
+      "title": "Tokenized no-login share links",
+      "convergence": 5,
+      "projects": [
+        "iankar8-event-manager-os",
+        "Phantastic-AI-fireside",
+        "mkly-gatherpulse",
+        "adityak6798-ManageMyConference",
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": {
+        "pr": 201,
+        "on": "2026-08-17",
+        "note": "`lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account."
+      }
     },
     {
       "id": "AD-2",
@@ -312,69 +384,25 @@
       }
     },
     {
-      "id": "AD-4",
-      "title": "Revision history with organizer restore",
-      "convergence": 4,
-      "projects": [
-        "conorbronsdon-callboard-app",
-        "westoque-session-hero",
-        "SteveMLC-lectern",
-        "realgenekim-curtain-call-cfp"
-      ],
-      "ciceroShipped": {
-        "pr": 200,
-        "on": "2026-08-17",
-        "note": "Mis-scored at survey time: `lib/services/content.ts` already recorded, listed, diffed and restored revisions. #200 added the monotonic revision number this item names, plus agenda and sponsor coverage."
-      }
-    },
-    {
-      "id": "AD-7",
-      "title": "Real-time collaborative agenda over Durable Objects + WebSockets",
-      "convergence": 4,
-      "projects": [
-        "agrimsingh-conference-engine",
-        "caseymanos-opensession",
-        "jpoehnelt-session-party",
-        "thedatadavis-seshmesh"
-      ],
-      "ciceroShipped": null
-    },
-    {
-      "id": "AD-8",
-      "title": "In-product streaming AI assistant with tool use",
-      "convergence": 4,
-      "projects": [
-        "CampbellVentures-smolboard",
-        "getzenai-untitledconference",
-        "nayamoss-namos-sessions-public",
-        "Phantastic-AI-fireside"
-      ],
-      "ciceroShipped": null
-    },
-    {
-      "id": "AD-9",
-      "title": "Tokenized no-login share links",
-      "convergence": 4,
-      "projects": [
-        "iankar8-event-manager-os",
-        "Phantastic-AI-fireside",
-        "mkly-gatherpulse",
-        "adityak6798-ManageMyConference"
-      ],
-      "ciceroShipped": {
-        "pr": 201,
-        "on": "2026-08-17",
-        "note": "`lib/services/share-links.ts` issues expiring, revocable, prefix-indexed links over the six programme views in `lib/share-link-views.ts`, so an unpublished programme can be reviewed without an account."
-      }
-    },
-    {
       "id": "AD-14",
       "title": "Organization-level team administration",
-      "convergence": 3,
+      "convergence": 4,
       "projects": [
         "yisding-openboard.events",
         "CampbellVentures-smolboard",
-        "adityak6798-ManageMyConference"
+        "adityak6798-ManageMyConference",
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-12",
+      "title": "Accelevents integration",
+      "convergence": 3,
+      "projects": [
+        "iankar8-event-manager-os",
+        "jpoehnelt-session-party",
+        "DeanStr-programcue"
       ],
       "ciceroShipped": null
     },
@@ -403,16 +431,6 @@
       }
     },
     {
-      "id": "AD-12",
-      "title": "Accelevents integration",
-      "convergence": 2,
-      "projects": [
-        "iankar8-event-manager-os",
-        "jpoehnelt-session-party"
-      ],
-      "ciceroShipped": null
-    },
-    {
       "id": "AD-13",
       "title": "Privacy export and erasure",
       "convergence": 2,
@@ -421,6 +439,30 @@
         "yisding-openboard.events"
       ],
       "ciceroShipped": null
+    },
+    {
+      "id": "AD-21",
+      "title": "Attendee-facing Q&A concierge",
+      "convergence": 2,
+      "projects": [
+        "Phantastic-AI-fireside",
+        "MoizIbnYousaf-open-events"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-37",
+      "title": "Mixed-type rubric criteria",
+      "convergence": 2,
+      "projects": [
+        "akakabrian-sessionslate",
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": {
+        "pr": 212,
+        "on": "2026-08-17",
+        "note": "`scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning."
+      }
     },
     {
       "id": "AD-15",
@@ -470,15 +512,6 @@
     {
       "id": "AD-20",
       "title": "Attendee social layer",
-      "convergence": 1,
-      "projects": [
-        "Phantastic-AI-fireside"
-      ],
-      "ciceroShipped": null
-    },
-    {
-      "id": "AD-21",
-      "title": "Attendee-facing Q&A concierge",
       "convergence": 1,
       "projects": [
         "Phantastic-AI-fireside"
@@ -621,19 +654,6 @@
       "ciceroShipped": null
     },
     {
-      "id": "AD-37",
-      "title": "Mixed-type rubric criteria",
-      "convergence": 1,
-      "projects": [
-        "akakabrian-sessionslate"
-      ],
-      "ciceroShipped": {
-        "pr": 212,
-        "on": "2026-08-17",
-        "note": "`scorecard_criterion.type` now carries numeric, single-select and free text in one rubric; `aggregateScorecard` averages only the numeric criteria, so the decision-queue bar keeps its meaning."
-      }
-    },
-    {
       "id": "AD-38",
       "title": "AI-seeded scorecards that the server refuses",
       "convergence": 1,
@@ -731,9 +751,70 @@
         "SteveMLC-lectern"
       ],
       "ciceroShipped": null
+    },
+    {
+      "id": "AD-49",
+      "title": "Direct Google and Microsoft calendar synchronization",
+      "convergence": 1,
+      "projects": [
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-50",
+      "title": "Reviewer discussion threads attached to proposals",
+      "convergence": 1,
+      "projects": [
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-51",
+      "title": "Conflict-aware agenda undo",
+      "convergence": 1,
+      "projects": [
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-52",
+      "title": "Immutable participant-retention completion",
+      "convergence": 1,
+      "projects": [
+        "DeanStr-programcue"
+      ],
+      "ciceroShipped": null
+    },
+    {
+      "id": "AD-53",
+      "title": "AI-drafted organizer notes and speaker resource pages",
+      "convergence": 1,
+      "projects": [
+        "Frostbite1536-greenroom"
+      ],
+      "ciceroShipped": null
     }
   ],
   "extrasPerProject": {
+    "DeanStr-programcue": [
+      "AD-1",
+      "AD-4",
+      "AD-5",
+      "AD-6",
+      "AD-7",
+      "AD-8",
+      "AD-9",
+      "AD-12",
+      "AD-14",
+      "AD-37",
+      "AD-49",
+      "AD-50",
+      "AD-51",
+      "AD-52"
+    ],
     "adityak6798-ManageMyConference": [
       "AD-1",
       "AD-6",
@@ -854,6 +935,10 @@
       "AD-24",
       "AD-25"
     ],
+    "Frostbite1536-greenroom": [
+      "AD-6",
+      "AD-53"
+    ],
     "guangyusong-opencallboard": [
       "AD-5",
       "AD-33"
@@ -871,6 +956,9 @@
     ],
     "mauricedesaxe-openboard": [
       "AD-47"
+    ],
+    "MoizIbnYousaf-open-events": [
+      "AD-21"
     ],
     "mrmichael73-greenroom-kms": [
       "AD-3"

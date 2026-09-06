@@ -66,3 +66,36 @@ Exact-name and/or homepage GitHub searches produced no matching public repositor
 - Source repository unavailable: **1** (`everyai-com/grandstage-app`)
 - Additional live/name-only project candidates without public source: **8**, including one likely alias pending code inspection
 
+## Narrow Discord refresh — 2026-08-17
+
+After the first survey preview was shared, the server was searched incrementally for recent requests
+to add or refresh a submission. The search ran through the latest indexed message at the time of the
+refresh. It was read-only, stopped after the targeted result set, and did not retain credentials or
+private message content.
+
+### Newly reachable public source
+
+1. `Frostbite1536/greenroom` — <https://github.com/Frostbite1536/greenroom> — Jeremy Limitless asked for the live Greenroom submission to be added and supplied both repository and <https://greenroom-hq.com/>.
+2. `DeanStr/programcue` — <https://github.com/DeanStr/programcue> — Dean supplied the repository and <https://programcue.com/> after being tagged in the narrow refresh request. Only the public source and landing URL were retained; no gated-evaluation credential was used or recorded.
+3. `MoizIbnYousaf/open-events` — <https://github.com/MoizIbnYousaf/open-events> — Noah asked for <https://openevents.engineer/> to be added and had shared the repository earlier in the same server.
+
+All three repositories were cloned into a temporary scratch directory, read at the commits pinned in
+`data/projects.json`, and received full baseline and beyond-the-brief analysis notes.
+
+### Requests inventoried without public source
+
+- **ChartStead by Tyler** — <https://ChartStead.com/>. Tyler's earlier `milk.animasai.co` link was described as a design bench test; the later add request identifies ChartStead as the submission. The existing participant record was renamed rather than double-counted. No public repository was shared.
+- **Bodhi submission** — Bodhi asked how to join the list but did not include a deployment or repository, and targeted searches of the author's earlier server messages found neither. The request is inventoried pending public source.
+
+### Already tracked or source-correction messages
+
+- Yi Ding's report that several GitHub links were broken led to replacing every SSH-style `git@github.com:` source in the dataset and analysis notes with a browser-safe HTTPS repository URL.
+- `realgenekim/curtain-call-cfp` was already analyzed. The entrant later supplied an official GitLab public snapshot at <https://gitlab.com/realgenekim/curtaincall-cfp-public/>. That snapshot is recorded here as an additional discovery, but the matrix remains pinned to the previously analyzed GitHub commit; the updated snapshot was not silently substituted without a full re-score.
+- `adityak6798/ManageMyConference` was already in the matrix when its author posted a later build. The narrow refresh did not spend a second full-project pass on already tracked entries unless a source correction was required.
+
+### Accounting after the narrow refresh
+
+- Project candidates inventoried: **45**
+- Publicly reachable source repositories analyzed: **35**
+- Source repository unavailable: **1** (`everyai-com/grandstage-app`)
+- Live/name-only candidates without public source: **9**

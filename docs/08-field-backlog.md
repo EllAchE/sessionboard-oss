@@ -4,16 +4,16 @@ What the rest of the field built that Cicero did not, ranked in the order Cicero
 
 ## Where this comes from
 
-[`docs/alternatives/`](alternatives/README.md) is a survey of 32 other implementations of the same
-frozen brief, each read from source at a pinned commit. It produced 48 capabilities that appear in
-at least one of those 32 codebases and in none of Cicero's, catalogued as `AD-1`…`AD-48`. The prose
+[`docs/alternatives/`](alternatives/README.md) is a survey of 35 other implementations of the same
+frozen brief, each read from source at a pinned commit. It produced 53 capabilities that appear in
+at least one of those 35 codebases and in none of Cicero's, catalogued as `AD-1`…`AD-53`. The prose
 record is one file per project in that directory; the structured record is
 `docs/alternatives/data/features.json`, which carries each item's title, description, convergence
 count, and the project slugs it is attributed to.
 
 This document is the next step: a priority order over those items, with the reasoning shown.
 
-**Seven of the 48 have shipped.** They are not "skipped":
+**Seven of the 53 have shipped.** They are not "skipped":
 
 | | | |
 |---|---|---|
@@ -36,11 +36,13 @@ with holes in it.
 were a complete record → list → diff → restore loop before any of this work started. What #200 adds
 is a monotonic revision number and coverage for the agenda and sponsors, not the feature.
 
-That leaves **41 open items**, and 43 entries below — each appearing exactly once.
+That leaves **46 open items**. The original ranking below contains 43 entries — 41 still open and
+two since shipped — while the five capabilities found in the 17 August refresh are recorded in a
+separate intake section pending a deliberate re-ranking.
 
 ### Convergence is evidence about the brief, not a grade
 
-The convergence count is "how many of the 32 analyzed teams independently built this thing." A high
+The convergence count is "how many of the 35 analyzed teams independently built this thing." A high
 count is used here as evidence that *the brief implies the capability* — when five teams who never
 spoke to each other all read "publish the finished program back out to the event website" and all
 concluded it needed more than an iframe, that is information about the requirement, not about the
@@ -53,14 +55,14 @@ four-team items in this ranking. The survey's own rule holds here: describe, do 
 Two asymmetries carried over from the survey are worth restating, because they bound how hard this
 ranking can lean on the numbers. Attribution is positive-only — a project with no attribution for
 `AD-n` was not verified to lack it, only not recorded as having it, so every count is a floor. And
-the field is 32 hackathon-window projects, not the commercial products in this space.
+the field is 35 hackathon-window projects, not the commercial products in this space.
 
 ## The rubric
 
 Each item was scored on four axes. They are stated plainly so a reader can disagree with the
 weighting rather than only with the outcome.
 
-1. **Convergence** — how many of the 32 teams built it. Highest nominal weight, for the reason
+1. **Convergence** — how many of the 35 teams built it. Highest nominal weight, for the reason
    above. Range in this document: 1 to 5.
 2. **Leverage on what Cicero already has** — does the item *complete an existing investment*, or
    does it *open a new surface*? Cicero already ships an MCP server (`lib/mcp/server.ts`), a
@@ -166,9 +168,9 @@ column plus a check at the publish boundary.
 *Touches:* `file` or `participant` (W0, one column), `lib/services/files.ts` /
 `lib/speaker-headshot.ts` (W2), public speaker page and gallery embed (W6).
 
-### 4. `AD-5` — Bidirectional Airtable sync · convergence 5 · **L**
+### 4. `AD-5` — Bidirectional Airtable sync · convergence 6 · **L**
 
-Joint-highest convergence, ranked last in the tier, and the disagreement is worth naming: this is
+Second-highest convergence, ranked last in the tier, and the disagreement is worth naming: this is
 the item where axis 1 and axis 3 point hardest in opposite directions. `lib/airtable/mirror.ts:29`
 states the current design as a deliberate one — "`Z-2`, one way only. Airtable is a mirror an
 organizer's team can build views over, never the store" — and
@@ -176,7 +178,7 @@ organizer's team can build views over, never the store" — and
 ownership, conflict resolution, retries, and dead-lettering, which is not an extension of a
 best-effort mirror but a replacement for it.
 
-It stays in Tier 1 anyway because five independent teams reading the same optional `Z-2` row all
+It stays in Tier 1 anyway because six independent teams reading the same optional `Z-2` row all
 built the reconciling version, which is strong evidence the one-way reading is the minority one. But
 it is the tier's biggest single commitment, and it is the one item here that cannot be verified
 without a live third-party account — a constraint `docs/05-additional-requirements.md` already
@@ -313,7 +315,7 @@ explicitly declining an assignment — proposing is the reading that fits.
 
 *Touches:* reviewer affiliation column (W0), `lib/services/review.ts` auto-assign and queue (W3).
 
-### 14. `AD-37` — Mixed-type rubric criteria · convergence 1 · **M** · **shipped**
+### 14. `AD-37` — Mixed-type rubric criteria · convergence 2 · **M** · **shipped**
 
 `scorecard_criterion` (`db/schema.ts:853`) carried `weight` and `max_score` and nothing else, and
 `score.value` was `integer` (`db/schema.ts:947`) — the rubric was numeric by construction. Adding
@@ -371,7 +373,7 @@ surface, not a feature — it is the wrong thing to build in a hurry.
 *Touches:* new `.well-known` and authorization routes, client/grant/refresh tables (W0),
 `lib/mcp/server.ts` and `app/api/v1/_lib/auth.ts` (W7).
 
-### 18. `AD-12` — Accelevents preview/apply against the live platform · convergence 2 · **S/M**
+### 18. `AD-12` — Accelevents preview/apply against the live platform · convergence 3 · **S/M**
 
 Listed as a gap, but the honest description is narrower than the title: Cicero *has* the preview/apply
 diff machinery. `lib/accelevents/program.ts` implements `ProgramSyncMode = 'preview' | 'apply'`,
@@ -522,7 +524,7 @@ build on (`lib/mail/redact.ts`), and the delivery half is `lib/services/comms.ts
 rather than in Tier 2 because a self-hosted product's problem reports go to the self-hoster, and
 what "an incident policy" means is theirs to decide, not Cicero's.
 
-### 30. `AD-14` — Organization-level team administration · convergence 3 · **XL**
+### 30. `AD-14` — Organization-level team administration · convergence 4 · **XL**
 
 Highest convergence in this tier, and the item whose placement is most likely to be wrong. There is
 no organization entity: `membership` is `(userId, eventId, role)` (`db/schema.ts:291`), `event` has
@@ -576,13 +578,51 @@ A coherent feature, cleanly separable, waiting on someone to want it.
 
 ---
 
+## Refresh intake — not yet ranked
+
+The 17 August refresh added five single-project capabilities. They are kept out of the numbered
+order until the same cost, leverage, and risk review used above is rerun; recording them here keeps
+the backlog complete without pretending that discovery alone decided priority.
+
+### `AD-49` — Direct Google and Microsoft calendar synchronization · convergence 1
+
+OAuth-connected participant calendars receive provider events that are refreshed when the programme
+changes. This goes beyond Cicero's downloadable and subscribable iCalendar feeds and adds provider
+credentials, reconciliation, and revocation work.
+
+### `AD-50` — Reviewer discussion threads attached to proposals · convergence 1
+
+Assigned reviewers and chairs can discuss one proposal inside the review workspace while the thread
+stays inside the round's authorization boundary. Cicero has scorecards and assignments but no
+proposal-scoped reviewer conversation.
+
+### `AD-51` — Conflict-aware agenda undo · convergence 1
+
+Place, move, and unassign operations return a one-use, revision-bound undo token that refuses to
+reverse after another schedule change. Cicero already guards agenda writes transactionally; this is
+a recoverability layer over the same revision boundary.
+
+### `AD-52` — Immutable participant-retention completion · convergence 1
+
+Transactional redaction ends in a durable tombstone, and database triggers reject later writes that
+would reintroduce participant PII. It is a stricter completion guarantee than `AD-13`'s export and
+erasure surface.
+
+### `AD-53` — AI-drafted organizer notes and speaker resource pages · convergence 1
+
+Model output becomes an editable suggestion for a personal decision note or resource-wiki page,
+with no automatic persistence or publication. This is narrower than the declined in-product agent:
+it drafts bounded content and leaves every write to a person.
+
+---
+
 ## Deliberately declining
 
 Eight items. These are not ranked low; they are declined, because they conflict with a decision
 Cicero has already made and written down, or because they belong to a product Cicero is not. Saying
 so plainly is more useful than burying them at position 43.
 
-### `AD-8` — In-product streaming AI assistant with tool use · convergence 4 · **L**
+### `AD-8` — In-product streaming AI assistant with tool use · convergence 5 · **L**
 
 On leverage this is the strongest item in the whole catalogue, and it is declined anyway. **The
 reason is inference cost, and it is a product-economics decision rather than a technical one.**
@@ -612,14 +652,14 @@ purpose.
 **What would reverse this:** organizer-supplied API keys, or a plan tier priced to carry inference.
 Both make the cost land somewhere other than us, which is the only objection.
 
-### `AD-6` — Authentication beyond magic links · convergence 5
+### `AD-6` — Authentication beyond magic links · convergence 7
 
-Joint-highest convergence in the catalogue, and declined anyway — the clearest case in this document
+Highest convergence in the catalogue, and declined anyway — the clearest case in this document
 of evidence about the brief losing to a documented product decision. `T-4a`
 (`docs/01-requirements.md:358`) is "magic-link auth everywhere — every role, no passwords anywhere in
 the system", `lib/auth.ts:26` restates it as "Magic links everywhere, passwords nowhere (`T-4a`)",
 and `user` has no password column. `docs/06-submission-narrative.md` §"Magic-link-only auth" argues the case, including
-the observation that the incumbent itself uses magic links for reviewers and AV crew. Five teams read
+the observation that the incumbent itself uses magic links for reviewers and AV crew. Seven teams read
 the brief as permitting more; Cicero read it as permitting less on purpose, and the demo deployment's
 on-screen-magic-link path (`T-7a`, `lib/demo-access.ts`) is built on that reading.
 
@@ -628,7 +668,7 @@ attributed WebAuthn implementation does not actually violate the letter of `T-4a
 deliverability ever becomes the binding constraint, passkeys are the re-entry point — not passwords,
 and not third-party OAuth.
 
-### `AD-7` — Real-time collaborative agenda over Durable Objects + WebSockets · convergence 4
+### `AD-7` — Real-time collaborative agenda over Durable Objects + WebSockets · convergence 5
 
 Declined on infrastructure, not on desirability. Cicero's production deployment is Vercel
 (`vercel.json`, with the daily cron at `/api/cron`), so Cloudflare Durable Objects are not available
@@ -652,7 +692,7 @@ and a debugger. It is a defensible design; it is not Cicero's, and adopting it h
 worse than either end.
 
 ### `AD-20` — Attendee social layer · convergence 1
-### `AD-21` — Attendee-facing Q&A concierge · convergence 1
+### `AD-21` — Attendee-facing Q&A concierge · convergence 2
 
 Declined together, for one reason: **Cicero has no attendees.** There is no attendee account,
 no attendee table, and the only attendee-facing state in the product is `localStorage` in an embed
@@ -692,13 +732,13 @@ ever asks, this is a fork of `AR-37`'s "future work" list rather than a new area
 
 Three patterns are worth naming, because they say more than any individual row.
 
-**The convergence signal and Cicero's decisions disagree at the top.** Three of the ranked items
-share the highest count of 5, and they land in three different places: `AD-3` 1st, `AD-5` 6th,
-`AD-6` declined outright. Identical evidence, three outcomes, because of what each one collides
-with. `AD-3` contradicts nothing Cicero decided, so the evidence carries it. `AD-5` contradicts a
-design note — `Z-2`, the one-way mirror — and a note is exactly the kind of decision five
-independent readings should be able to reopen. `AD-6` contradicts a `[REQUIRED]` row, `T-4a`, which
-they should not. The gradation is the rubric working as intended rather than a flaw in it.
+**The convergence signal and Cicero's decisions disagree at the top.** Three high-convergence items
+land in three different places: `AD-3` (five teams) shipped from the top of Tier 1, `AD-5` (six)
+remains a large Tier 1 commitment, and `AD-6` (seven) is declined outright. `AD-3` contradicts
+nothing Cicero decided, so the evidence carries it. `AD-5` contradicts a design note — `Z-2`, the
+one-way mirror — and a note is exactly the kind of decision six independent readings should be able
+to reopen. `AD-6` contradicts a `[REQUIRED]` row, `T-4a`, which they should not. The gradation is the
+rubric working as intended rather than a flaw in it.
 
 **Most of the cheap wins are half-built.** `AD-3`, `AD-22`, `AD-38`, `AD-46`, `AD-12`, and `AD-36`
 are all cases where Cicero has the schema, the primitive, or the machinery and is missing the last
@@ -709,6 +749,6 @@ connection turned out to be one route, and it is the first ranked item to ship.
 
 **The single largest structural gap has a convergence of 1.** No append-only activity ledger
 (`AD-19`) is the root cause of a requirement Cicero has already marked PARTIAL (`AR-38`), and it
-blocks or cheapens `AD-36`, `AD-34`, `AD-44`, and `AD-14`'s audit trail. One team out of 32 built
+blocks or cheapens `AD-36`, `AD-34`, `AD-44`, and `AD-14`'s audit trail. One team out of 35 built
 the full hash-chained version. Convergence is evidence about the brief; it is not evidence about
 what a given codebase most needs next, and this row is the sharpest illustration of the difference.

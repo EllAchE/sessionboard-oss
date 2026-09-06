@@ -1,6 +1,6 @@
 # EquipeAI/stagestack
 
-**Source:** `git@github.com:EquipeAI/stagestack.git` · **Live:** https://stagestack.dev
+**Source:** <https://github.com/EquipeAI/stagestack> · **Live:** <https://stagestack.dev>
 **Found via:** provided repository batch
 **Analyzed:** 2026-08-16 at commit `d3ed11f`
 

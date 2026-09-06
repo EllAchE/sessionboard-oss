@@ -1,6 +1,6 @@
 # getzenai/untitledconference
 
-**Source:** git@github.com:getzenai/untitledconference.git · **Live:** https://untitledconference.com
+**Source:** <https://github.com/getzenai/untitledconference> · **Live:** <https://untitledconference.com>
 **Found via:** pre-cloned alternatives survey batch (discovery supplied)
 **Analyzed:** 2026-08-16 at commit 6c2bbb8
 
